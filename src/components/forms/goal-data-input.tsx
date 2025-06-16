@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -9,17 +10,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Slider } from '@/components/ui/slider';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { PROMPT_TYPES } from '@/lib/constants';
+import { PROMPT_TYPES, PROMPT_COLORS, PROMPT_ABBREVIATIONS } from '@/lib/constants';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 interface GoalDataInputComponentProps {
   goal: Goal;
   data: SessionGoalData['data']; // Current data for this goal
   onChange: (data: SessionGoalData['data']) => void;
+  isFocused?: boolean;
 }
 
-export default function GoalDataInputComponent({ goal, data, onChange }: GoalDataInputComponentProps) {
+export default function GoalDataInputComponent({ goal, data, onChange, isFocused }: GoalDataInputComponentProps) {
   
   const handleChange = (field: string, value: any) => {
     onChange({ ...data, [field]: value });
@@ -70,17 +72,6 @@ export default function GoalDataInputComponent({ goal, data, onChange }: GoalDat
                 />
               </FormItem>
             </div>
-            <FormItem>
-              <FormLabel>Prompt Level</FormLabel>
-              <Select value={data.promptLevel || 'Independent'} onValueChange={(value) => handleChange('promptLevel', value as PromptType)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select prompt level" />
-                </SelectTrigger>
-                <SelectContent>
-                  {PROMPT_TYPES.map(pt => <SelectItem key={pt} value={pt}>{pt}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </FormItem>
           </>
         );
       case 'FLUENCY_SYLLABLE_STUTTER':
@@ -142,8 +133,6 @@ export default function GoalDataInputComponent({ goal, data, onChange }: GoalDat
           </>
         );
       case 'LANGUAGE_COMPREHENSION':
-      case 'LANGUAGE_EXPRESSION':
-        const isComprehension = goal.type === 'LANGUAGE_COMPREHENSION';
         return (
           <>
              <FormItem>
@@ -152,39 +141,80 @@ export default function GoalDataInputComponent({ goal, data, onChange }: GoalDat
                 type="text"
                 value={data.details || ''}
                 onChange={(e) => handleChange('details', e.target.value)}
-                placeholder={isComprehension ? "e.g., WH-questions, 2-step directions" : "e.g., Past tense verbs, describing objects"}
+                placeholder={"e.g., WH-questions, 2-step directions"}
               />
             </FormItem>
             <div className="grid grid-cols-2 gap-4">
               <FormItem>
-                <FormLabel>{isComprehension ? 'Questions Attempted' : 'Opportunities'}</FormLabel>
+                <FormLabel>Questions Correct</FormLabel>
                 <Input
                   type="number"
                   min="0"
-                  value={data[isComprehension ? 'questionsAttempted' : 'opportunities'] ?? 0}
-                  onChange={(e) => handleChange(isComprehension ? 'questionsAttempted' : 'opportunities', parseInt(e.target.value) || 0)}
+                  value={data.questionsCorrect ?? 0}
+                  onChange={(e) => handleChange('questionsCorrect', parseInt(e.target.value) || 0)}
                 />
               </FormItem>
               <FormItem>
-                <FormLabel>{isComprehension ? 'Questions Correct' : 'Successful Responses'}</FormLabel>
+                <FormLabel>Questions Incorrect</FormLabel>
                 <Input
                   type="number"
                   min="0"
-                  value={data[isComprehension ? 'questionsCorrect' : 'successfulResponses'] ?? 0}
-                  onChange={(e) => handleChange(isComprehension ? 'questionsCorrect' : 'successfulResponses', parseInt(e.target.value) || 0)}
+                  value={data.questionsIncorrect ?? 0}
+                  onChange={(e) => handleChange('questionsIncorrect', parseInt(e.target.value) || 0)}
+                />
+              </FormItem>
+            </div>
+             <FormItem>
+                <FormLabel>Questions Attempted (Optional)</FormLabel>
+                <Input
+                  type="number"
+                  min="0"
+                  value={data.questionsAttempted ?? ((data.questionsCorrect ?? 0) + (data.questionsIncorrect ?? 0))}
+                  onChange={(e) => handleChange('questionsAttempted', parseInt(e.target.value) || 0)}
+                />
+              </FormItem>
+          </>
+        );
+      case 'LANGUAGE_EXPRESSION':
+         return (
+          <>
+             <FormItem>
+              <FormLabel>Details / Target Skill</FormLabel>
+              <Input
+                type="text"
+                value={data.details || ''}
+                onChange={(e) => handleChange('details', e.target.value)}
+                placeholder={"e.g., Past tense verbs, describing objects"}
+              />
+            </FormItem>
+            <div className="grid grid-cols-2 gap-4">
+              <FormItem>
+                <FormLabel>Successful Responses</FormLabel>
+                <Input
+                  type="number"
+                  min="0"
+                  value={data.successfulResponses ?? 0}
+                  onChange={(e) => handleChange('successfulResponses', parseInt(e.target.value) || 0)}
+                />
+              </FormItem>
+              <FormItem>
+                <FormLabel>Unsuccessful Responses</FormLabel>
+                <Input
+                  type="number"
+                  min="0"
+                  value={data.unsuccessfulResponses ?? 0}
+                  onChange={(e) => handleChange('unsuccessfulResponses', parseInt(e.target.value) || 0)}
                 />
               </FormItem>
             </div>
             <FormItem>
-              <FormLabel>Prompt Level</FormLabel>
-              <Select value={data.promptLevel || 'Independent'} onValueChange={(value) => handleChange('promptLevel', value as PromptType)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select prompt level" />
-                </SelectTrigger>
-                <SelectContent>
-                  {PROMPT_TYPES.map(pt => <SelectItem key={pt} value={pt}>{pt}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <FormLabel>Opportunities (Optional)</FormLabel>
+              <Input
+                  type="number"
+                  min="0"
+                  value={data.opportunities ?? ((data.successfulResponses ?? 0) + (data.unsuccessfulResponses ?? 0))}
+                  onChange={(e) => handleChange('opportunities', parseInt(e.target.value) || 0)}
+                />
             </FormItem>
           </>
         );
@@ -202,15 +232,6 @@ export default function GoalDataInputComponent({ goal, data, onChange }: GoalDat
             </FormItem>
             <div className="grid grid-cols-2 gap-4">
               <FormItem>
-                <FormLabel>Opportunities</FormLabel>
-                <Input
-                  type="number"
-                  min="0"
-                  value={data.opportunities ?? 0}
-                  onChange={(e) => handleChange('opportunities', parseInt(e.target.value) || 0)}
-                />
-              </FormItem>
-              <FormItem>
                 <FormLabel>Correct Productions</FormLabel>
                 <Input
                   type="number"
@@ -219,18 +240,25 @@ export default function GoalDataInputComponent({ goal, data, onChange }: GoalDat
                   onChange={(e) => handleChange('correctProductions', parseInt(e.target.value) || 0)}
                 />
               </FormItem>
+              <FormItem>
+                <FormLabel>Incorrect Productions</FormLabel>
+                <Input
+                  type="number"
+                  min="0"
+                  value={data.incorrectProductions ?? 0}
+                  onChange={(e) => handleChange('incorrectProductions', parseInt(e.target.value) || 0)}
+                />
+              </FormItem>
             </div>
             <FormItem>
-              <FormLabel>Prompt Level</FormLabel>
-              <Select value={data.promptLevel || 'Independent'} onValueChange={(value) => handleChange('promptLevel', value as PromptType)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select prompt level" />
-                </SelectTrigger>
-                <SelectContent>
-                  {PROMPT_TYPES.map(pt => <SelectItem key={pt} value={pt}>{pt}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </FormItem>
+                <FormLabel>Opportunities (Optional)</FormLabel>
+                <Input
+                  type="number"
+                  min="0"
+                  value={data.opportunities ?? ((data.correctProductions ?? 0) + (data.incorrectProductions ?? 0))}
+                  onChange={(e) => handleChange('opportunities', parseInt(e.target.value) || 0)}
+                />
+              </FormItem>
           </>
         );
       default:
@@ -238,15 +266,32 @@ export default function GoalDataInputComponent({ goal, data, onChange }: GoalDat
     }
   };
 
+  const currentPromptLevel = data.promptLevel || ('Independent' as PromptType);
+  const promptColor = PROMPT_COLORS[currentPromptLevel] || '#8B5CF6'; // Default to Independent color
+
   return (
-    <Card className="border-border bg-card/50">
+    <Card className={cn(
+        "border-border bg-card/50 transition-all duration-150 ease-in-out",
+        isFocused && "ring-2 ring-primary ring-offset-2 shadow-lg"
+      )}>
       <CardHeader className="p-3 bg-muted/30 rounded-t-lg">
         <CardTitle className="text-base font-semibold flex justify-between items-center">
-          <span>{goal.name}</span>
+          <span className="truncate pr-2">{goal.name}</span>
           <Badge variant="outline">{goal.type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}</Badge>
         </CardTitle>
       </CardHeader>
       <CardContent className="p-3 space-y-3">
+        {goal.type !== 'QUALITATIVE_OBSERVATION' && goal.type !== 'FLUENCY_SYLLABLE_STUTTER' && (
+          <FormItem>
+            <FormLabel>Prompt Level</FormLabel>
+            <Badge 
+              style={{ backgroundColor: promptColor, color: 'white' }}
+              className="text-sm px-3 py-1"
+            >
+              {currentPromptLevel}
+            </Badge>
+          </FormItem>
+        )}
         {renderInputFields()}
       </CardContent>
     </Card>
@@ -260,4 +305,3 @@ const FormItem: React.FC<{children: React.ReactNode, className?: string}> = ({ c
 const FormLabel: React.FC<{children: React.ReactNode, htmlFor?: string}> = ({ children, htmlFor }) => (
   <Label htmlFor={htmlFor} className="text-xs font-medium text-muted-foreground">{children}</Label>
 );
-
