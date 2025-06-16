@@ -82,6 +82,18 @@ export default function DataEntryPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedStudentIds, students]); // studentSessionStates intentionally omitted
 
+  const handleGoalDataChange = useCallback((studentId: string, goalId: string, data: SessionGoalData['data']) => {
+    setStudentSessionStates(prev => ({
+      ...prev,
+      [studentId]: {
+        ...prev[studentId],
+        goalData: {
+          ...prev[studentId]?.goalData,
+          [goalId]: data,
+        },
+      },
+    }));
+  }, []); // setStudentSessionStates is stable
 
   const getCurrentFocusedGoalInfo = useCallback(() => {
     if (selectedStudentIds.length === 0 || focusedStudentSlotIndex >= selectedStudentIds.length) {
@@ -220,19 +232,6 @@ export default function DataEntryPage() {
       [studentId]: { ...prev[studentId], [field]: value },
     }));
   };
-
-  const handleGoalDataChange = useCallback((studentId: string, goalId: string, data: SessionGoalData['data']) => {
-    setStudentSessionStates(prev => ({
-      ...prev,
-      [studentId]: {
-        ...prev[studentId],
-        goalData: {
-          ...prev[studentId]?.goalData,
-          [goalId]: data,
-        },
-      },
-    }));
-  }, []);
   
   const toggleCollapse = (studentId: string) => {
     setStudentSessionStates(prev => ({
@@ -280,6 +279,13 @@ export default function DataEntryPage() {
             if(newStates[id]) {
                 newStates[id].activity = '';
                 newStates[id].notes = '';
+                 // Reset goal data as well
+                const initialGoalData: Record<string, SessionGoalData['data']> = {};
+                const student = students.find(s => s.id === id);
+                student?.goals.forEach(goal => {
+                  initialGoalData[goal.id] = JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type]));
+                });
+                newStates[id].goalData = initialGoalData;
             }
         });
         setStudentSessionStates(newStates);
@@ -506,3 +512,6 @@ export default function DataEntryPage() {
     </div>
   );
 }
+
+
+    
