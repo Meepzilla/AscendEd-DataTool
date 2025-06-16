@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -123,9 +124,14 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
                   </FormItem>
                 )}
               />
-              <Button type="submit" disabled={isSubmitting || dataLoading}>
-                {isSubmitting || dataLoading ? 'Saving...' : 'Save Changes'}
-              </Button>
+              <div className="flex gap-2">
+                <Button type="submit" disabled={isSubmitting || dataLoading}>
+                  {isSubmitting || dataLoading ? 'Saving...' : 'Save Changes'}
+                </Button>
+                <Button type="button" variant="outline" onClick={closeEditStudentModal} disabled={isSubmitting || dataLoading}>
+                  Cancel
+                </Button>
+              </div>
             </form>
           </Form>
         </div>
