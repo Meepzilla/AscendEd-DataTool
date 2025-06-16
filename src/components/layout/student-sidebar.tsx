@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -96,8 +97,6 @@ export default function StudentSidebar() {
                    <Link
                       href={`/student-profile/${student.id}`}
                       onClick={() => handleSelectStudent(student)}
-                      passHref
-                      legacyBehavior // Important for custom component like Button as child
                     >
                     <SidebarMenuButton
                       asChild
@@ -105,12 +104,11 @@ export default function StudentSidebar() {
                       className="justify-between w-full"
                       tooltip={student.name}
                     >
-                      <a> {/* Actual anchor tag for navigation */}
-                        <div className="flex items-center gap-2 overflow-hidden">
-                          <User className="h-5 w-5 flex-shrink-0" />
-                          <span className={cn("truncate", sidebarState === 'collapsed' && "sr-only")}>{student.name}</span>
-                        </div>
-                      </a>
+                      {/* Content of the old 'a' tag now goes directly here */}
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        <User className="h-5 w-5 flex-shrink-0" />
+                        <span className={cn("truncate", sidebarState === 'collapsed' && "sr-only")}>{student.name}</span>
+                      </div>
                     </SidebarMenuButton>
                   </Link>
                   {sidebarState !== 'collapsed' && (
@@ -159,3 +157,4 @@ export default function StudentSidebar() {
     </Sidebar>
   );
 }
+

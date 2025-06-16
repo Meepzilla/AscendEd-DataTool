@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Edit, Trash2, PlusCircle, Info, Target, Edit3, CheckSquare } from 'lucide-react';
 import { formatDate } from '@/lib/helpers';
-import Link from 'next/link'; // Added Link import
+import Link from 'next/link';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,8 +35,8 @@ export default function StudentProfilePage() {
   const { 
     students, 
     loading, 
-    error, // This error is now for actual Firebase errors
-    isFirebaseDBAvailable, // Use this to check for local mode
+    error,
+    isFirebaseDBAvailable, 
     selectedStudent, 
     setSelectedStudent, 
     openEditStudentModal, 
@@ -66,11 +66,11 @@ export default function StudentProfilePage() {
     return <StudentProfileSkeleton />;
   }
 
-  if (error) { // This will now only show for actual Firebase data loading errors
-    return <div className="text-destructive p-4">Error loading student data from Firebase: {error.message}</div>;
+  if (error) { 
+    return <div className="text-destructive p-4">Error loading student data: {error.message}</div>;
   }
 
-  if (!currentStudent && !loading) { // Check !loading to ensure data fetch attempt has completed
+  if (!currentStudent && !loading) { 
     return (
       <Card className="mt-4">
         <CardHeader>
@@ -85,7 +85,6 @@ export default function StudentProfilePage() {
     );
   }
   
-  // Render skeleton or a message if currentStudent is still null but page is not in an error state
   if (!currentStudent) {
     return <StudentProfileSkeleton />;
   }
@@ -160,10 +159,9 @@ export default function StudentProfilePage() {
                     </div>
                   </div>
                   <div className="mt-3 pt-3 border-t">
-                     <Link href={`/data-entry?studentId=${currentStudent.id}&goalId=${goal.id}`} legacyBehavior>
-                        <a className="inline-flex items-center text-sm text-primary hover:underline">
-                           <CheckSquare className="mr-2 h-4 w-4" /> Enter/View Progress Data
-                        </a>
+                     <Link href={`/data-entry?studentId=${currentStudent.id}&goalId=${goal.id}`} 
+                           className="inline-flex items-center text-sm text-primary hover:underline">
+                        <CheckSquare className="mr-2 h-4 w-4" /> Enter/View Progress Data
                      </Link>
                   </div>
                 </li>
