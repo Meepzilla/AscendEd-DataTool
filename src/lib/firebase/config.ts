@@ -67,7 +67,10 @@ if (finalFirebaseConfig.apiKey && finalFirebaseConfig.projectId) {
         });
     }
   } catch (e) {
-    console.error("Firebase initialization error (e.g., invalid API key or config):", e);
+    const errorMessage = e instanceof Error ? e.message : String(e);
+    console.error(`Firebase initialization error: ${errorMessage}. Check your Firebase config (e.g. API key). Full error details may follow if applicable or can be found in browser console during debugging.`);
+    // Log the original error if needed for deeper debugging but avoid passing the full object directly if it causes overlay issues
+    // console.error("Original Firebase initialization error object:", e); 
     app = null;
     authModule = null;
     dbModule = null;
