@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -16,6 +17,7 @@ import { PROMPT_COLORS, PROMPT_TYPES } from '@/lib/constants';
 import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
 import type { DateRange } from "react-day-picker";
 import { useSearchParams } from 'next/navigation';
+import { formatDate } from '@/lib/helpers';
 
 
 // Helper to transform session data for charts
