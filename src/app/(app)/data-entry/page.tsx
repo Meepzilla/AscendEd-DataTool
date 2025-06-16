@@ -96,7 +96,6 @@ export default function DataEntryPage() {
         const existingState = studentSessionStates[id];
         const initialGoalData: Record<string, SessionGoalData['data']> = {};
         student.goals.forEach(goal => {
-          // Ensure GOAL_TYPE_FIELDS provides a clean slate, prompt counts are added dynamically
           initialGoalData[goal.id] = JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type]));
         });
         newStates[id] = {
@@ -129,7 +128,8 @@ export default function DataEntryPage() {
 
       const focusedInfo = getCurrentFocusedGoalInfo();
 
-      if (alt && key.match(/^[1-4]$/)) { 
+      // Student Slot Focus Hotkeys (1-4, no Alt)
+      if (!alt && key.match(/^[1-4]$/)) { 
         event.preventDefault();
         const slotIndex = parseInt(key, 10) - 1;
         if (slotIndex < selectedStudentIds.length) {
@@ -142,6 +142,7 @@ export default function DataEntryPage() {
 
       const { studentId, studentState, goal, goalData, goalIndex } = focusedInfo;
 
+      // Goal Cycling Hotkeys (S/Alt+S)
       if (key === 'S') {
         event.preventDefault();
         const numGoals = studentState.originalGoalHeaders.length;
@@ -280,7 +281,6 @@ export default function DataEntryPage() {
           goalId: goal.id,
           goalName: goal.name,
           goalType: goal.type,
-          // Ensure data includes dynamic prompt counts if any were made
           data: state.goalData[goal.id] || JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type])),
         }));
 
@@ -389,7 +389,7 @@ export default function DataEntryPage() {
             </div>
           </div>
            <p className="text-sm text-muted-foreground">
-            Hotkeys: Alt+[1-4] Focus Student | S/Alt+S Cycle Goals | C/Alt+C Correct/Total | N/Alt+N Incorrect/Stutter | V/G/P/F/I Prompts.
+            Hotkeys: [1-4] Focus Student | S/Alt+S Cycle Goals | C/Alt+C Correct/Total | N/Alt+N Incorrect/Stutter | V/G/P/F/I Prompts.
           </p>
         </CardContent>
       </Card>
@@ -436,7 +436,7 @@ export default function DataEntryPage() {
                     <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); toggleCollapse(studentId);}} className="h-8 w-8" title={state.isCollapsed ? "Expand" : "Collapse"}>
                       {state.isCollapsed ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
                     </Button>
-                    {selectedStudentIds.length > 0 && ( // Show remove if any student is selected
+                    {selectedStudentIds.length > 0 && (
                        <Button variant="ghost" size="icon" onClick={(e) => {e.stopPropagation(); removeStudentSlot(slotIndex);}} className="h-8 w-8" title="Remove Student Slot">
                         <XCircle className="h-5 w-5 text-destructive" />
                       </Button>
