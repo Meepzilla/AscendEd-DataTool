@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -9,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Edit, Trash2, PlusCircle, Info, Target, Edit3, CheckSquare } from 'lucide-react';
 import { formatDate } from '@/lib/helpers';
+import Link from 'next/link'; // Added Link import
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,7 +24,7 @@ import {
 import EditStudentModal from '@/components/modals/edit-student-modal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import AssignGoalToStudentModal from '@/components/modals/assign-goal-to-student-modal'; // To be created
+import AssignGoalToStudentModal from '@/components/modals/assign-goal-to-student-modal';
 
 
 export default function StudentProfilePage() {
@@ -33,18 +35,19 @@ export default function StudentProfilePage() {
   const { 
     students, 
     loading, 
-    error, 
+    error, // This error is now for actual Firebase errors
+    isFirebaseDBAvailable, // Use this to check for local mode
     selectedStudent, 
     setSelectedStudent, 
     openEditStudentModal, 
     openDeleteStudentModal,
     removeGoalFromStudent,
-    updateStudentGoal, // Placeholder for editing a goal directly
+    updateStudentGoal, 
   } = useStudentData();
 
   const [currentStudent, setCurrentStudent] = useState<Student | null>(null);
   const [isAssignGoalModalOpen, setIsAssignGoalModalOpen] = useState(false);
-  const [editingGoal, setEditingGoal] = useState<Goal | null>(null); // Placeholder for editing goal
+  const [editingGoal, setEditingGoal] = useState<Goal | null>(null); 
 
   useEffect(() => {
     const foundStudent = students.find(s => s.id === studentId);
@@ -53,10 +56,8 @@ export default function StudentProfilePage() {
       if (!selectedStudent || selectedStudent.id !== foundStudent.id) {
         setSelectedStudent(foundStudent);
       }
-    } else if (!loading && students.length > 0) {
-      // If studentId is invalid or not found, but other students exist,
-      // redirect to the general student profile page or select first student.
-      // router.push('/student-profile');
+    } else if (!loading && students.length > 0 && studentId) {
+      // router.push('/student-profile'); // Avoid redirecting if studentId simply not found yet
     }
   }, [studentId, students, loading, selectedStudent, setSelectedStudent, router]);
 
@@ -65,11 +66,11 @@ export default function StudentProfilePage() {
     return <StudentProfileSkeleton />;
   }
 
-  if (error) {
-    return <div className="text-destructive p-4">Error loading student data: {error.message}</div>;
+  if (error) { // This will now only show for actual Firebase data loading errors
+    return <div className="text-destructive p-4">Error loading student data from Firebase: {error.message}</div>;
   }
 
-  if (!currentStudent) {
+  if (!currentStudent && !loading) { // Check !loading to ensure data fetch attempt has completed
     return (
       <Card className="mt-4">
         <CardHeader>
@@ -77,47 +78,52 @@ export default function StudentProfilePage() {
         </CardHeader>
         <CardContent>
           <p>The student with ID "{studentId}" could not be found. They may have been deleted or the ID is incorrect.</p>
+          {!isFirebaseDBAvailable && <p className="text-orange-500 font-semibold mt-2">(Operating in Local Mode: Data might not persist across sessions if not saved to cloud.)</p>}
           <Button onClick={() => router.push('/student-profile')} className="mt-4">Go to Student Selection</Button>
         </CardContent>
       </Card>
     );
   }
   
+  // Render skeleton or a message if currentStudent is still null but page is not in an error state
+  if (!currentStudent) {
+    return <StudentProfileSkeleton />;
+  }
+  
   const handleRemoveGoal = async (goalId: string) => {
-    // Confirmation could be added here
     await removeGoalFromStudent(currentStudent.id, goalId);
   };
 
-  // Placeholder for editing goal directly on profile page
   const handleEditGoal = (goal: Goal) => {
     setEditingGoal(goal);
     alert(`Editing goal "${goal.name}" - implement EditGoalModal or inline editing.`);
-    // Example: openEditGoalModal(goal);
   }
 
 
   return (
     <div className="space-y-6">
       <EditStudentModal studentToEdit={currentStudent} /> 
-      {/* Delete modal is handled by StudentSidebar/useStudentData context */}
 
       <Card className="shadow-lg">
         <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-center gap-4">
             <Avatar className="h-16 w-16">
-              <AvatarImage src={`https://avatar.vercel.sh/${currentStudent.id}.png`} alt={currentStudent.name} />
+              <AvatarImage src={`https://avatar.vercel.sh/${currentStudent.id}.png?text=${currentStudent.name.substring(0,2).toUpperCase()}`} alt={currentStudent.name} data-ai-hint="abstract avatar" />
               <AvatarFallback>{currentStudent.name.substring(0, 2).toUpperCase()}</AvatarFallback>
             </Avatar>
             <div>
               <CardTitle className="text-3xl font-bold">{currentStudent.name}</CardTitle>
-              <CardDescription>Student ID: {currentStudent.id} | Joined: {formatDate(currentStudent.createdAt)}</CardDescription>
+              <CardDescription>
+                Student ID: {currentStudent.id} | Joined: {formatDate(currentStudent.createdAt)}
+                {!isFirebaseDBAvailable && !loading && <span className="text-orange-500 font-semibold block">(Local Mode)</span>}
+              </CardDescription>
             </div>
           </div>
           <div className="flex gap-2 mt-2 sm:mt-0">
             <Button variant="outline" size="sm" onClick={() => openEditStudentModal(currentStudent)}>
               <Edit3 className="mr-2 h-4 w-4" /> Edit Student
             </Button>
-            <Button variant="destructive" outline size="sm" onClick={() => openDeleteStudentModal(currentStudent)}>
+            <Button variant="destructive"  size="sm" onClick={() => openDeleteStudentModal(currentStudent)}>
               <Trash2 className="mr-2 h-4 w-4" /> Delete Student
             </Button>
           </div>
@@ -153,12 +159,11 @@ export default function StudentProfilePage() {
                       </Button>
                     </div>
                   </div>
-                  {/* Placeholder for quick progress view or link to data entry */}
                   <div className="mt-3 pt-3 border-t">
-                     <Link href={`/data-entry?studentId=${currentStudent.id}&goalId=${goal.id}`}>
-                        <Button variant="link" size="sm" className="p-0 h-auto text-sm">
+                     <Link href={`/data-entry?studentId=${currentStudent.id}&goalId=${goal.id}`} legacyBehavior>
+                        <a className="inline-flex items-center text-sm text-primary hover:underline">
                            <CheckSquare className="mr-2 h-4 w-4" /> Enter/View Progress Data
-                        </Button>
+                        </a>
                      </Link>
                   </div>
                 </li>
@@ -175,10 +180,6 @@ export default function StudentProfilePage() {
           onClose={() => setIsAssignGoalModalOpen(false)}
         />
       )}
-      
-      {/* TODO: Create EditGoalModal if needed, or handle inline editing */}
-      {/* {editingGoal && <EditGoalModal goal={editingGoal} studentId={currentStudent.id} onClose={() => setEditingGoal(null)} />} */}
-
     </div>
   );
 }
@@ -217,6 +218,10 @@ function StudentProfileSkeleton() {
               <Skeleton className="h-4 w-5/6" />
             </div>
           ))}
+           <div className="text-center py-6 text-muted-foreground">
+                <Info className="mx-auto h-10 w-10 mb-2 text-primary" />
+                Loading student goals...
+            </div>
         </CardContent>
       </Card>
     </div>

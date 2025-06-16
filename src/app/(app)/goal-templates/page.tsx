@@ -28,12 +28,13 @@ export default function GoalTemplatesPage() {
   const { 
     goalTemplates, 
     loading, 
-    error, 
+    error, // This error is now for actual Firebase errors
+    isFirebaseDBAvailable, // Use this to check for local mode
     openAddGoalTemplateModal,
     openEditGoalTemplateModal,
     openDeleteGoalTemplateModal,
-    editingGoalTemplate, // To pass to EditGoalTemplateModal
-    deletingGoalTemplate, // To pass to ConfirmationModal
+    editingGoalTemplate, 
+    deletingGoalTemplate, 
   } = useStudentData();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -45,12 +46,16 @@ export default function GoalTemplatesPage() {
       const typeMatch = filterType === 'ALL' || template.type === filterType;
       const promptMatch = template.smartGoalPrompt?.toLowerCase().includes(searchTerm.toLowerCase());
       return (nameMatch || promptMatch) && typeMatch;
-    }).sort((a,b) => new Date(b.createdAt.toDate()).getTime() - new Date(a.createdAt.toDate()).getTime());
+    }).sort((a,b) => {
+        const dateA = a.createdAt instanceof Date ? a.createdAt.getTime() : a.createdAt.toDate().getTime();
+        const dateB = b.createdAt instanceof Date ? b.createdAt.getTime() : b.createdAt.toDate().getTime();
+        return dateB - dateA;
+    });
   }, [goalTemplates, searchTerm, filterType]);
 
 
-  if (error) {
-    return <div className="text-destructive p-4">Error loading goal templates: {error.message}</div>;
+  if (error) { // This will now only show for actual Firebase data loading errors
+    return <div className="text-destructive p-4">Error loading goal templates from Firebase: {error.message}</div>;
   }
 
   return (
@@ -60,18 +65,12 @@ export default function GoalTemplatesPage() {
       {deletingGoalTemplate && (
         <ConfirmationModal
           isOpen={!!deletingGoalTemplate}
-          onClose={() => openDeleteGoalTemplateModal(null)} // Pass null to close
-          onConfirm={() => {
-            if(deletingGoalTemplate) {
-              // Actual delete logic is in useStudentData context for this modal
-              // This is just confirming the action for the modal shown by context
-              // This will trigger the delete function in the context
-            }
-          }}
+          onClose={() => openDeleteGoalTemplateModal(null)} 
+          onConfirm={() => { /* Context handles delete */ }}
           title={`Delete Template: ${deletingGoalTemplate.name}`}
           description="Are you sure you want to delete this goal template? This action cannot be undone."
-          itemToDelete={deletingGoalTemplate} // Pass the item to the modal
-          deleteActionType="goalTemplate" // Specify type for context handler
+          itemToDelete={deletingGoalTemplate} 
+          deleteActionType="goalTemplate" 
         />
       )}
 
@@ -80,7 +79,10 @@ export default function GoalTemplatesPage() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
             <div>
               <CardTitle className="text-2xl font-bold flex items-center gap-2"><ListPlus className="h-7 w-7 text-primary"/>Goal Templates</CardTitle>
-              <CardDescription>Manage your library of reusable goal templates. Use AI to help craft SMART goals.</CardDescription>
+              <CardDescription>
+                Manage your library of reusable goal templates. 
+                {!isFirebaseDBAvailable && !loading && <span className="text-orange-500 font-semibold">(Local Mode: Data not saved to cloud)</span>}
+              </CardDescription>
             </div>
             <Button onClick={openAddGoalTemplateModal} size="sm">
               <PlusCircle className="mr-2 h-4 w-4" /> Add New Template
@@ -121,7 +123,7 @@ export default function GoalTemplatesPage() {
           
           {!loading && filteredTemplates.length === 0 && (
             <div className="text-center py-10 text-muted-foreground">
-              <Info className="mx-auto h-12 w-12 mb-4" />
+              <Info className="mx-auto h-12 w-12 mb-4 text-primary" />
               <p>No goal templates found matching your criteria.</p>
               <p>Try adjusting your search or filters, or add a new template.</p>
             </div>
@@ -152,7 +154,7 @@ export default function GoalTemplatesPage() {
                   </CardContent>
                   <CardFooter className="flex justify-between items-center pt-3 border-t">
                     <p className="text-xs text-muted-foreground">
-                      Created: {template.createdAt ? formatDate(template.createdAt.toDate()) : 'N/A'}
+                      Created: {template.createdAt ? formatDate(template.createdAt instanceof Date ? template.createdAt : template.createdAt.toDate()) : 'N/A'}
                     </p>
                     <div className="flex gap-1">
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditGoalTemplateModal(template)}>
