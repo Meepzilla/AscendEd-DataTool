@@ -18,9 +18,10 @@ interface GoalDataInputComponentProps {
   data: SessionGoalData['data']; // Current data for this goal
   onChange: (data: SessionGoalData['data']) => void;
   isFocused?: boolean;
+  id: string; 
 }
 
-export default function GoalDataInputComponent({ goal, data, onChange, isFocused }: GoalDataInputComponentProps) {
+export default function GoalDataInputComponent({ goal, data, onChange, isFocused, id }: GoalDataInputComponentProps) {
   
   const handleChange = (field: string, value: any) => {
     onChange({ ...data, [field]: value });
@@ -268,7 +269,9 @@ export default function GoalDataInputComponent({ goal, data, onChange, isFocused
   const showPromptCounters = goal.type !== 'QUALITATIVE_OBSERVATION' && goal.type !== 'FLUENCY_SYLLABLE_STUTTER';
 
   return (
-    <Card className={cn(
+    <Card 
+      id={id}
+      className={cn(
         "border-border bg-card/50 transition-all duration-150 ease-in-out",
         isFocused && "ring-2 ring-primary ring-offset-2 shadow-lg"
       )}>
@@ -304,3 +307,4 @@ const FormItem: React.FC<{children: React.ReactNode, className?: string}> = ({ c
 const FormLabel: React.FC<{children: React.ReactNode, htmlFor?: string}> = ({ children, htmlFor }) => (
   <Label htmlFor={htmlFor} className="text-xs font-medium text-muted-foreground">{children}</Label>
 );
+

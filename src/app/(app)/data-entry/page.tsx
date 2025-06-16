@@ -45,6 +45,7 @@ export default function DataEntryPage() {
   const [focusedStudentSlotIndex, setFocusedStudentSlotIndex] = useState<number>(0);
   const [focusedGoalIndexByStudentId, setFocusedGoalIndexByStudentId] = useState<Record<string, number>>({});
 
+
   const handleGoalDataChange = useCallback((studentId: string, goalId: string, data: SessionGoalData['data']) => {
     setStudentSessionStates(prev => ({
       ...prev,
@@ -200,6 +201,20 @@ export default function DataEntryPage() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedStudentIds, studentSessionStates, focusedStudentSlotIndex, focusedGoalIndexByStudentId, handleGoalDataChange, getCurrentFocusedGoalInfo]);
+
+
+  // Effect to scroll focused goal into view
+  useEffect(() => {
+    const focusedInfo = getCurrentFocusedGoalInfo();
+    if (focusedInfo && focusedInfo.goal && focusedInfo.studentState && !focusedInfo.studentState.isCollapsed) {
+      const { studentId, goal } = focusedInfo;
+      const elementId = `goal-input-${studentId}-${goal.id}`;
+      const element = document.getElementById(elementId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  }, [focusedStudentSlotIndex, focusedGoalIndexByStudentId, studentSessionStates, getCurrentFocusedGoalInfo]);
 
 
   const handleStudentSelect = (studentId: string, index: number) => {
@@ -450,6 +465,7 @@ export default function DataEntryPage() {
                       return (
                         <GoalDataInputComponent
                           key={goal.id}
+                          id={`goal-input-${studentId}-${goal.id}`}
                           goal={goal}
                           data={state.goalData[goal.id] || GOAL_TYPE_FIELDS[goal.type]}
                           onChange={(newData) => handleGoalDataChange(studentId, goal.id, newData)}
@@ -523,3 +539,4 @@ export default function DataEntryPage() {
     </div>
   );
 }
+
