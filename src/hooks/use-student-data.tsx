@@ -126,6 +126,9 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       return;
     }
 
+    let unsubscribeStudents = () => {};
+    let unsubscribeTemplates = () => {};
+
     if (!isFirebaseDBAvailable) {
       setError(new Error("Firestore not available. Operating in local data mode. Data will not be saved to the cloud."));
       seedLocalDefaultTemplates();
@@ -139,10 +142,10 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const studentQuery = query(collection(firestoreDbModule, getStudentsCollectionPath(APP_ID)), where("userId", "==", currentUser.uid));
     const templateQuery = query(collection(firestoreDbModule, getGoalTemplatesCollectionPath(APP_ID)), where("userId", "==", currentUser.uid));
 
-    const unsubscribeStudents = onSnapshot(studentQuery, (snapshot) => {
+    unsubscribeStudents = onSnapshot(studentQuery, (snapshot) => {
       const studentData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Student));
       setStudentsState(studentData);
-      setLoading(false);
+      setLoading(false); // Set loading to false after students are fetched
     }, (err) => {
       console.error("Error fetching students:", err);
       setError(err);
@@ -150,17 +153,19 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       setLoading(false);
     });
 
-    const unsubscribeTemplates = onSnapshot(templateQuery, async (snapshot) => {
+    unsubscribeTemplates = onSnapshot(templateQuery, async (snapshot) => {
       let templateData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as GoalTemplate));
       if (templateData.length === 0 && currentUser && firestoreDbModule) {
         const seededTemplates = await seedFirebaseDefaultTemplates(currentUser, firestoreDbModule);
         if (seededTemplates) templateData = seededTemplates;
       }
       setGoalTemplatesState(templateData);
+      // Consider setting loading to false here only if students are also loaded or if it's the last listener
     }, (err) => {
       console.error("Error fetching goal templates:", err);
       setError(err);
       toast({ title: "Error", description: "Could not load goal templates from Firebase.", variant: "destructive" });
+      // Consider setting loading to false here too
     });
 
     return () => {
@@ -470,3 +475,4 @@ export const useStudentData = (): StudentDataContextType => {
   }
   return context;
 };
+
