@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -9,48 +10,48 @@ import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
 import { APP_NAME } from '@/lib/constants';
-import { LogIn } from "lucide-react";
+import { LogIn, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function LoginPage() {
-  const { currentUser, signInAsGuest, loading } = useAuth();
+  const { currentUser, signInAsGuest, loading, error: authError } = useAuth();
   const router = useRouter();
-  const [email, setEmail] = useState(''); // Example for email/password form
-  const [password, setPassword] = useState(''); // Example
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   useEffect(() => {
-    if (currentUser && !currentUser.isAnonymous) { // Redirect if logged in and not anonymous
+    if (currentUser && !currentUser.isAnonymous && !authError) { // Redirect if logged in, not anonymous, and no auth error
       router.push('/dashboard'); 
     }
-  }, [currentUser, router]);
+  }, [currentUser, router, authError]);
 
   const handleGuestLogin = async () => {
     try {
       await signInAsGuest();
-      router.push('/dashboard'); // Redirect after guest login
+      // router.push will be handled by useEffect or onAuthStateChanged if successful
     } catch (error) {
       console.error("Guest login failed", error);
-      // Show error to user
+      // Toast or local error state can be set here if needed, useAuth already sets its own error.
     }
   };
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     // Placeholder for email/password login
-    alert(`Email/Password login not implemented. Email: ${email}`);
+    alert(`Email/Password login not implemented. Email: ${email}. This app currently supports guest login for demonstration.`);
     // Example: await signInWithEmailAndPassword(auth, email, password);
     // Then redirect or handle errors
   };
 
-  if (loading) {
+  if (loading && !authError) { // Only show generic loading if no specific auth error
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
   
-  // If user is anonymous, allow them to proceed or show a different message
-  if (currentUser && currentUser.isAnonymous) {
+  // If user is anonymous and no overriding authError, allow them to proceed or show a different message
+  if (currentUser && currentUser.isAnonymous && !authError) {
      router.push('/dashboard');
      return <div className="flex items-center justify-center min-h-screen">Redirecting...</div>;
   }
-
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background to-secondary p-4">
@@ -61,6 +62,17 @@ export default function LoginPage() {
           <CardDescription>Sign in to manage student goals</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {authError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Authentication Error</AlertTitle>
+              <AlertDescription>
+                {authError.message || "An unexpected error occurred during authentication setup."}
+                 <br />
+                Please ensure your Firebase environment variables (e.g., API key) are correctly set in your <code>.env</code> file.
+              </AlertDescription>
+            </Alert>
+          )}
           <form onSubmit={handleEmailLogin} className="space-y-4">
             <div>
               <Label htmlFor="email">Email</Label>
@@ -71,6 +83,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required 
+                disabled={!!authError} // Disable form if there's a critical auth error
               />
             </div>
             <div>
@@ -82,9 +95,10 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required 
+                disabled={!!authError}
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full" disabled={loading || !!authError}>
               {loading ? 'Signing In...' : 'Sign In'}
             </Button>
           </form>
@@ -98,7 +112,7 @@ export default function LoginPage() {
               </span>
             </div>
           </div>
-          <Button variant="outline" className="w-full" onClick={handleGuestLogin} disabled={loading}>
+          <Button variant="outline" className="w-full" onClick={handleGuestLogin} disabled={loading || !!authError}>
             {loading ? 'Signing In...' : 'Sign In as Guest'}
           </Button>
         </CardContent>
@@ -106,3 +120,4 @@ export default function LoginPage() {
     </div>
   );
 }
+
