@@ -1,5 +1,7 @@
 
 import type { Timestamp } from 'firebase/firestore';
+import type { ToastActionElement, ToastProps } from "@/components/ui/toast"
+
 
 export interface Student {
   id: string;
@@ -47,6 +49,7 @@ export interface SessionData {
   notes: string;
   goals: SessionGoalData[];
   originalGoalHeaders: Goal[]; // Snapshot of student's goals at time of session
+  userId?: string; // Added userId to SessionData
 }
 
 export interface SessionGoalData {
@@ -99,3 +102,12 @@ export const GoalTemplateSchema = z.object({
   generatedSmartGoal: z.string().optional(),
   // isDefault is handled internally, not part of the form for user creation/edit
 });
+
+// For useToast hook
+type ToasterToast = ToastProps & {
+  id: string
+  title?: React.ReactNode
+  description?: React.ReactNode
+  action?: ToastActionElement
+}
+export type Toast = Omit<ToasterToast, "id">;
