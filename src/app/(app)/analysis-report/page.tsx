@@ -8,9 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BarChart2, Download, Info, RefreshCw, Lightbulb, MessageSquare } from 'lucide-react';
-import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, ChartStyle } from '@/components/ui/chart';
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart'; // ChartStyle removed as it's internal to ChartContainer
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, LineChart, Line, Legend } from 'recharts';
-import { generateTechnicalSummary } from '@/ai/flows/technical-summary-generation'; // AI Import
+import { generateTechnicalSummary } from '@/ai/flows/technical-summary-generation'; 
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PROMPT_COLORS, PROMPT_TYPES } from '@/lib/constants';
@@ -26,12 +26,12 @@ const transformSessionDataForChart = (sessions: SessionData[], selectedGoalId?: 
     let correct = 0;
     let incorrect = 0;
     let opportunities = 0;
+    // Initialize promptCounts for each session based on PROMPT_TYPES
     let promptCounts: Record<PromptType, number> = PROMPT_TYPES.reduce((acc, pt) => ({...acc, [pt]:0}), {} as Record<PromptType, number>);
 
     session.goals.forEach(goalData => {
       if (selectedGoalId && goalData.goalId !== selectedGoalId) return;
       
-      // ARTICULATION, LANGUAGE_COMPREHENSION, LANGUAGE_EXPRESSION, PHONOLOGICAL_PROCESSES like types
       if (goalData.data.correct !== undefined && goalData.data.incorrect !== undefined) {
         correct += Number(goalData.data.correct) || 0;
         incorrect += Number(goalData.data.incorrect) || 0;
@@ -41,11 +41,22 @@ const transformSessionDataForChart = (sessions: SessionData[], selectedGoalId?: 
         opportunities += Number(goalData.data.opportunities) || 0;
         correct += successes;
         incorrect += (Number(goalData.data.opportunities) || 0) - successes;
+      } else if (goalData.goalType === 'FLUENCY_SYLLABLE_STUTTER') {
+        // For fluency, 'correct' could represent non-stuttered, 'incorrect' stuttered
+        // Or we can define accuracy differently. For now, let's use total - stuttered for 'correct'
+        const totalSyllables = Number(goalData.data.totalSyllables) || 0;
+        const stutteredSyllables = Number(goalData.data.stutteredSyllables) || 0;
+        opportunities += totalSyllables;
+        correct += totalSyllables - stutteredSyllables;
+        incorrect += stutteredSyllables;
       }
       
-      if (goalData.data.promptLevel && PROMPT_TYPES.includes(goalData.data.promptLevel as PromptType)) {
-        promptCounts[goalData.data.promptLevel as PromptType] = (promptCounts[goalData.data.promptLevel as PromptType] || 0) + 1;
-      }
+      // Sum up prompt counts from goalData.data
+      PROMPT_TYPES.forEach(pt => {
+        if (goalData.data[pt] && typeof goalData.data[pt] === 'number') {
+          promptCounts[pt] = (promptCounts[pt] || 0) + (goalData.data[pt] as number);
+        }
+      });
     });
     
     const accuracy = opportunities > 0 ? (correct / opportunities) * 100 : 0;
@@ -56,9 +67,9 @@ const transformSessionDataForChart = (sessions: SessionData[], selectedGoalId?: 
       correct,
       incorrect,
       opportunities,
-      ...promptCounts, // Spread prompt counts
+      ...promptCounts, // Spread summed prompt counts for this session
     };
-  }).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()); // Sort by date for line chart
+  }).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()); 
 };
 
 
@@ -75,7 +86,6 @@ export default function AnalysisReportPage() {
   const selectedStudent = useMemo(() => students.find(s => s.id === selectedStudentId), [students, selectedStudentId]);
 
   useEffect(() => {
-    // If studentId from query param is valid, set it. Otherwise, if students exist, set to first.
     const studentIdFromQuery = searchParams.get('studentId');
     if (studentIdFromQuery && students.find(s => s.id === studentIdFromQuery)) {
       setSelectedStudentId(studentIdFromQuery);
@@ -110,7 +120,7 @@ export default function AnalysisReportPage() {
     });
     return Object.entries(aggregatedPrompts)
       .map(([name, value]) => ({ name: name as PromptType, value, fill: PROMPT_COLORS[name as PromptType] }))
-      .filter(item => item.value > 0); // Only show prompts that were used
+      .filter(item => item.value > 0); 
   }, [chartData]);
 
 
@@ -122,7 +132,6 @@ export default function AnalysisReportPage() {
     setIsAiLoading(true);
     setTechnicalSummary(null);
     try {
-      // Create a concise progress data string
       const progressDataPoints = studentSessions.slice(-5).map(s => 
         `On ${formatDate(s.date)}: Activity "${s.activity}", Notes: "${s.notes}". Goals covered: ${s.goals.length}.`
       ).join('\n');
@@ -145,7 +154,6 @@ export default function AnalysisReportPage() {
   };
   
   const handleExportData = () => {
-    // Placeholder for CSV export functionality
     if (chartData.length === 0) {
         toast({title:"Info", description:"No data to export.", variant:"default"});
         return;
@@ -174,7 +182,7 @@ export default function AnalysisReportPage() {
   const promptChartConfig = PROMPT_TYPES.reduce((config, pt) => {
     config[pt] = { label: pt, color: PROMPT_COLORS[pt] };
     return config;
-  }, {} as any);
+  }, {} as Record<PromptType, { label: string; color: string }>);
 
 
   if (dataLoading && students.length === 0) {
@@ -339,4 +347,3 @@ function AnalysisReportSkeleton() {
         </div>
     )
 }
-

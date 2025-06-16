@@ -26,7 +26,7 @@ interface StudentSessionState {
   studentName: string;
   activity: string;
   notes: string;
-  goalData: Record<string, SessionGoalData['data']>;
+  goalData: Record<string, SessionGoalData['data']>; // Prompt counts will be in here e.g. { Verbal: 1 }
   originalGoalHeaders: Goal[];
   isCollapsed: boolean;
 }
@@ -44,6 +44,38 @@ export default function DataEntryPage() {
 
   const [focusedStudentSlotIndex, setFocusedStudentSlotIndex] = useState<number>(0);
   const [focusedGoalIndexByStudentId, setFocusedGoalIndexByStudentId] = useState<Record<string, number>>({});
+
+  const handleGoalDataChange = useCallback((studentId: string, goalId: string, data: SessionGoalData['data']) => {
+    setStudentSessionStates(prev => ({
+      ...prev,
+      [studentId]: {
+        ...prev[studentId],
+        goalData: {
+          ...prev[studentId]?.goalData,
+          [goalId]: data,
+        },
+      },
+    }));
+  }, []); 
+
+  const getCurrentFocusedGoalInfo = useCallback(() => {
+    if (selectedStudentIds.length === 0 || focusedStudentSlotIndex >= selectedStudentIds.length) {
+      return null;
+    }
+    const studentId = selectedStudentIds[focusedStudentSlotIndex];
+    const studentState = studentSessionStates[studentId];
+    if (!studentState || !studentState.originalGoalHeaders || studentState.originalGoalHeaders.length === 0) {
+      return { studentId, studentState: studentState || null, goal: null, goalData: null, goalIndex: -1 };
+    }
+    const goalIndex = focusedGoalIndexByStudentId[studentId] ?? 0;
+    if (goalIndex >= studentState.originalGoalHeaders.length) {
+      return { studentId, studentState, goal: null, goalData: null, goalIndex: -1 };
+    }
+    const goal = studentState.originalGoalHeaders[goalIndex];
+    const goalData = studentState.goalData[goal.id];
+    return { studentId, studentState, goal, goalData, goalIndex };
+  }, [selectedStudentIds, focusedStudentSlotIndex, studentSessionStates, focusedGoalIndexByStudentId]);
+
 
   useEffect(() => {
     if (!studentsLoading && students.length > 0) {
@@ -63,6 +95,7 @@ export default function DataEntryPage() {
         const existingState = studentSessionStates[id];
         const initialGoalData: Record<string, SessionGoalData['data']> = {};
         student.goals.forEach(goal => {
+          // Ensure GOAL_TYPE_FIELDS provides a clean slate, prompt counts are added dynamically
           initialGoalData[goal.id] = JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type]));
         });
         newStates[id] = {
@@ -80,39 +113,7 @@ export default function DataEntryPage() {
     setStudentSessionStates(newStates);
     setFocusedGoalIndexByStudentId(prev => ({ ...prev, ...newFocusedGoalIndexes }));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedStudentIds, students]); // studentSessionStates intentionally omitted
-
-  const handleGoalDataChange = useCallback((studentId: string, goalId: string, data: SessionGoalData['data']) => {
-    setStudentSessionStates(prev => ({
-      ...prev,
-      [studentId]: {
-        ...prev[studentId],
-        goalData: {
-          ...prev[studentId]?.goalData,
-          [goalId]: data,
-        },
-      },
-    }));
-  }, []); // setStudentSessionStates is stable
-
-  const getCurrentFocusedGoalInfo = useCallback(() => {
-    if (selectedStudentIds.length === 0 || focusedStudentSlotIndex >= selectedStudentIds.length) {
-      return null;
-    }
-    const studentId = selectedStudentIds[focusedStudentSlotIndex];
-    const studentState = studentSessionStates[studentId];
-    if (!studentState || !studentState.originalGoalHeaders || studentState.originalGoalHeaders.length === 0) {
-      return null;
-    }
-    const goalIndex = focusedGoalIndexByStudentId[studentId] ?? 0;
-    if (goalIndex >= studentState.originalGoalHeaders.length) {
-      return { studentId, studentState, goal: null, goalData: null, goalIndex: -1 };
-    }
-    const goal = studentState.originalGoalHeaders[goalIndex];
-    const goalData = studentState.goalData[goal.id];
-    return { studentId, studentState, goal, goalData, goalIndex };
-  }, [selectedStudentIds, focusedStudentSlotIndex, studentSessionStates, focusedGoalIndexByStudentId]);
-
+  }, [selectedStudentIds, students]); 
 
   // Hotkey Handler
   useEffect(() => {
@@ -127,7 +128,7 @@ export default function DataEntryPage() {
 
       const focusedInfo = getCurrentFocusedGoalInfo();
 
-      if (alt && key.match(/^[1-4]$/)) { // Alt + Digit for student focus
+      if (alt && key.match(/^[1-4]$/)) { 
         event.preventDefault();
         const slotIndex = parseInt(key, 10) - 1;
         if (slotIndex < selectedStudentIds.length) {
@@ -136,11 +137,10 @@ export default function DataEntryPage() {
         return;
       }
       
-      if (!focusedInfo || !focusedInfo.goal || !focusedInfo.goalData) return; // No student/goal focused
+      if (!focusedInfo || !focusedInfo.goal || !focusedInfo.goalData) return; 
 
       const { studentId, studentState, goal, goalData, goalIndex } = focusedInfo;
 
-      // Goal Cycling (S, Alt+S)
       if (key === 'S') {
         event.preventDefault();
         const numGoals = studentState.originalGoalHeaders.length;
@@ -151,38 +151,48 @@ export default function DataEntryPage() {
         return;
       }
 
-      // Prompt Level (V, G, P, F)
-      if (PROMPT_HOTKEY_MAP[key] && !alt) {
+      // Prompt Level Hotkeys (V, G, P, F, I) - now increments/decrements counts
+      const promptToUpdate = PROMPT_HOTKEY_MAP[key];
+      if (promptToUpdate && !alt && goal.type !== 'QUALITATIVE_OBSERVATION' && goal.type !== 'FLUENCY_SYLLABLE_STUTTER') {
         event.preventDefault();
-        const newPromptLevel = PROMPT_HOTKEY_MAP[key];
-        if (PROMPT_TYPES.includes(newPromptLevel)) {
-            handleGoalDataChange(studentId, goal.id, { ...goalData, promptLevel: newPromptLevel });
-        }
+        const currentCount = Number(goalData[promptToUpdate] || 0);
+        const newValue = currentCount + 1;
+        handleGoalDataChange(studentId, goal.id, { ...goalData, [promptToUpdate]: newValue });
+        return;
+      }
+      if (promptToUpdate && alt && goal.type !== 'QUALITATIVE_OBSERVATION' && goal.type !== 'FLUENCY_SYLLABLE_STUTTER') {
+        event.preventDefault();
+        const currentCount = Number(goalData[promptToUpdate] || 0);
+        const newValue = Math.max(0, currentCount - 1);
+        handleGoalDataChange(studentId, goal.id, { ...goalData, [promptToUpdate]: newValue });
         return;
       }
 
-      // Correct/Incorrect Counts (C, Alt+C, N, Alt+N)
+
+      // Correct/Incorrect/Syllable Counts 
       let fieldToUpdate: string | null = null;
       let increment = 0;
 
-      if (key === 'C') {
+      if (key === 'C') { // Correct / Total Syllables
         increment = alt ? -1 : 1;
         if (goal.type === 'ARTICULATION') fieldToUpdate = 'correct';
         else if (goal.type === 'LANGUAGE_COMPREHENSION') fieldToUpdate = 'questionsCorrect';
         else if (goal.type === 'LANGUAGE_EXPRESSION') fieldToUpdate = 'successfulResponses';
         else if (goal.type === 'PHONOLOGICAL_PROCESSES') fieldToUpdate = 'correctProductions';
-      } else if (key === 'N') {
+        else if (goal.type === 'FLUENCY_SYLLABLE_STUTTER') fieldToUpdate = 'totalSyllables';
+      } else if (key === 'N') { // Incorrect / Stuttered Syllables
         increment = alt ? -1 : 1;
         if (goal.type === 'ARTICULATION') fieldToUpdate = 'incorrect';
         else if (goal.type === 'LANGUAGE_COMPREHENSION') fieldToUpdate = 'questionsIncorrect';
         else if (goal.type === 'LANGUAGE_EXPRESSION') fieldToUpdate = 'unsuccessfulResponses';
         else if (goal.type === 'PHONOLOGICAL_PROCESSES') fieldToUpdate = 'incorrectProductions';
+        else if (goal.type === 'FLUENCY_SYLLABLE_STUTTER') fieldToUpdate = 'stutteredSyllables';
       }
 
       if (fieldToUpdate && increment !== 0) {
         event.preventDefault();
         const currentValue = Number(goalData[fieldToUpdate] || 0);
-        const newValue = Math.max(0, currentValue + increment); // Ensure not negative
+        const newValue = Math.max(0, currentValue + increment); 
         handleGoalDataChange(studentId, goal.id, { ...goalData, [fieldToUpdate]: newValue });
       }
     };
@@ -198,7 +208,7 @@ export default function DataEntryPage() {
       newSelection[index] = studentId;
       return Array.from(new Set(newSelection)).slice(0, MAX_STUDENTS_DATA_ENTRY);
     });
-    setFocusedStudentSlotIndex(index); // Focus the newly selected student slot
+    setFocusedStudentSlotIndex(index); 
   };
 
   const addStudentSlot = () => {
@@ -220,9 +230,10 @@ export default function DataEntryPage() {
       delete newStates[studentIdToRemove];
       return newStates;
     });
-    // Adjust focused student slot if necessary
-    if (focusedStudentSlotIndex >= selectedStudentIds.length - 1) {
+    if (focusedStudentSlotIndex >= selectedStudentIds.length - 1 && selectedStudentIds.length > 1) {
       setFocusedStudentSlotIndex(Math.max(0, selectedStudentIds.length - 2));
+    } else if (selectedStudentIds.length <=1){
+        setFocusedStudentSlotIndex(0);
     }
   };
   
@@ -254,7 +265,8 @@ export default function DataEntryPage() {
           goalId: goal.id,
           goalName: goal.name,
           goalType: goal.type,
-          data: state.goalData[goal.id] || GOAL_TYPE_FIELDS[goal.type],
+          // Ensure data includes dynamic prompt counts if any were made
+          data: state.goalData[goal.id] || JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type])),
         }));
 
         const session: Omit<SessionData, 'sessionId'> = {
@@ -267,7 +279,7 @@ export default function DataEntryPage() {
           goals: sessionGoals,
           originalGoalHeaders: state.originalGoalHeaders,
         };
-        await addSession(session); // This is now async
+        await addSession(session); 
         sessionsSavedCount++;
       }
     }
@@ -279,7 +291,6 @@ export default function DataEntryPage() {
             if(newStates[id]) {
                 newStates[id].activity = '';
                 newStates[id].notes = '';
-                 // Reset goal data as well
                 const initialGoalData: Record<string, SessionGoalData['data']> = {};
                 const student = students.find(s => s.id === id);
                 student?.goals.forEach(goal => {
@@ -343,7 +354,7 @@ export default function DataEntryPage() {
           <CardTitle className="text-2xl font-bold flex items-center gap-2">
             <Edit2 className="h-7 w-7 text-primary"/> Data Entry
           </CardTitle>
-          <CardDescription>Record session data for one or more students. AI can suggest activities. Use hotkeys for speed.</CardDescription>
+          <CardDescription>Record session data for students. AI suggests activities. Use hotkeys for speed.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-4 items-center">
@@ -363,7 +374,7 @@ export default function DataEntryPage() {
             </div>
           </div>
            <p className="text-sm text-muted-foreground">
-            Select up to {MAX_STUDENTS_DATA_ENTRY} students. Use Alt+[1-4] to focus student, S/Alt+S for goals, V/G/P/F for prompts, C/Alt+C for correct, N/Alt+N for incorrect.
+            Hotkeys: Alt+[1-4] Focus Student | S/Alt+S Cycle Goals | C/Alt+C Correct/Total | N/Alt+N Incorrect/Stutter | V/G/P/F/I Prompts.
           </p>
         </CardContent>
       </Card>
@@ -384,7 +395,7 @@ export default function DataEntryPage() {
                 state.isCollapsed ? 'min-h-0' : 'min-h-[300px]',
                 isStudentFocused && 'ring-2 ring-primary ring-offset-2 shadow-xl'
               )}
-              onClick={() => setFocusedStudentSlotIndex(slotIndex)} // Allow click to focus student
+              onClick={() => setFocusedStudentSlotIndex(slotIndex)} 
             >
               <CardHeader className="bg-muted/50 p-3">
                 <div className="flex items-center justify-between">
@@ -410,7 +421,7 @@ export default function DataEntryPage() {
                     <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); toggleCollapse(studentId);}} className="h-8 w-8" title={state.isCollapsed ? "Expand" : "Collapse"}>
                       {state.isCollapsed ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
                     </Button>
-                    {selectedStudentIds.length > 1 && (
+                    {selectedStudentIds.length > 0 && ( // Show remove if any student is selected
                        <Button variant="ghost" size="icon" onClick={(e) => {e.stopPropagation(); removeStudentSlot(slotIndex);}} className="h-8 w-8" title="Remove Student Slot">
                         <XCircle className="h-5 w-5 text-destructive" />
                       </Button>
@@ -512,6 +523,3 @@ export default function DataEntryPage() {
     </div>
   );
 }
-
-
-    

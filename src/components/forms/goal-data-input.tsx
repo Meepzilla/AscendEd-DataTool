@@ -7,8 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+// Checkbox, RadioGroup, RadioGroupItem are removed as prompt selection changes
 import { Slider } from '@/components/ui/slider';
 import { PROMPT_TYPES, PROMPT_COLORS, PROMPT_ABBREVIATIONS } from '@/lib/constants';
 import { Badge } from '@/components/ui/badge';
@@ -114,7 +113,7 @@ export default function GoalDataInputComponent({ goal, data, onChange, isFocused
             <FormItem>
               <FormLabel>Observation Notes</FormLabel>
               <Textarea
-                value={data.notes || ''}
+                value={data.notes || ''} // Ensure field name 'notes' matches constants
                 onChange={(e) => handleChange('notes', e.target.value)}
                 placeholder="Describe observed behaviors, participation, etc."
                 rows={3}
@@ -266,8 +265,7 @@ export default function GoalDataInputComponent({ goal, data, onChange, isFocused
     }
   };
 
-  const currentPromptLevel = data.promptLevel || ('Independent' as PromptType);
-  const promptColor = PROMPT_COLORS[currentPromptLevel] || '#8B5CF6'; // Default to Independent color
+  const showPromptCounters = goal.type !== 'QUALITATIVE_OBSERVATION' && goal.type !== 'FLUENCY_SYLLABLE_STUTTER';
 
   return (
     <Card className={cn(
@@ -281,18 +279,19 @@ export default function GoalDataInputComponent({ goal, data, onChange, isFocused
         </CardTitle>
       </CardHeader>
       <CardContent className="p-3 space-y-3">
-        {goal.type !== 'QUALITATIVE_OBSERVATION' && goal.type !== 'FLUENCY_SYLLABLE_STUTTER' && (
+        {renderInputFields()}
+        {showPromptCounters && (
           <FormItem>
-            <FormLabel>Prompt Level</FormLabel>
-            <Badge 
-              style={{ backgroundColor: promptColor, color: 'white' }}
-              className="text-sm px-3 py-1"
-            >
-              {currentPromptLevel}
-            </Badge>
+            <FormLabel>Prompt Counts</FormLabel>
+            <div className="flex flex-wrap gap-1.5 mt-1">
+              {PROMPT_TYPES.map(pt => (
+                <Badge key={pt} variant="outline" className="px-2 py-0.5 text-xs" style={{ borderColor: PROMPT_COLORS[pt], color: PROMPT_COLORS[pt] }}>
+                  {PROMPT_ABBREVIATIONS[pt]}: {Number(data[pt] || 0)}
+                </Badge>
+              ))}
+            </div>
           </FormItem>
         )}
-        {renderInputFields()}
       </CardContent>
     </Card>
   );

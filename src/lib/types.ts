@@ -56,28 +56,50 @@ export interface SessionGoalData {
   goalId: string;
   goalName: string; // For convenience
   goalType: GoalType; // For convenience
-  data: Record<string, any>; // Goal-specific data based on GOAL_TYPE_FIELDS
+  // Data object can contain specific fields for the goal type
+  // AND/OR prompt counts like Verbal: 1, Gestural: 2, etc.
+  data: Record<string, any>; 
 }
 
-// Example structure for GOAL_TYPE_FIELDS (defined in constants.ts)
+// Example structures for what might be IN data, but prompt counts are dynamic
 export interface ArticulationData {
   targetSound: string;
-  position: 'initial' | 'medial' | 'final' | 'all';
+  // position: 'initial' | 'medial' | 'final' | 'all'; // Not currently used, but example
   correct: number;
   incorrect: number;
-  promptLevel?: PromptType;
+  // promptLevel is no longer here, counts like Verbal: 1 are in data directly
 }
 
 export interface FluencySyllableStutterData {
   totalSyllables: number;
   stutteredSyllables: number;
-  stutterTypes: string[]; // e.g., "repetition", "block"
+  observationNotes: string; 
 }
 
 export interface QualitativeObservationData {
-  observationText: string;
+  notes: string; // Renamed from observationText for consistency
   rating?: 1 | 2 | 3 | 4 | 5;
 }
+
+export interface LanguageComprehensionData {
+  details: string;
+  questionsAttempted: number;
+  questionsCorrect: number;
+  questionsIncorrect: number;
+}
+export interface LanguageExpressionData {
+  details: string;
+  opportunities: number;
+  successfulResponses: number;
+  unsuccessfulResponses: number;
+}
+export interface PhonologicalProcessesData {
+  targetProcess: string;
+  opportunities: number;
+  correctProductions: number;
+  incorrectProductions: number;
+}
+
 
 export type PromptType = "Verbal" | "Gestural" | "PartialPhysical" | "FullPhysical" | "Independent";
 
@@ -111,3 +133,4 @@ type ToasterToast = ToastProps & {
   action?: ToastActionElement
 }
 export type Toast = Omit<ToasterToast, "id">;
+

@@ -4,7 +4,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, onSnapshot, serverTimestamp, Timestamp, writeBatch } from 'firebase/firestore';
 import { db as firestoreDbModule } from '@/lib/firebase/config';
-import type { Student, Goal, GoalTemplate, SessionData, User, Toast } from '@/lib/types'; // Added Toast type for safeToast options
+import type { Student, Goal, GoalTemplate, SessionData, User, Toast } from '@/lib/types';
 import { useAuth } from './use-auth';
 import { DEFAULT_GOAL_TEMPLATES } from '@/lib/constants';
 import { generateUUID } from '@/lib/helpers';
@@ -50,7 +50,7 @@ interface StudentDataContextType {
   closeEditStudentModal: () => void;
 
   deletingStudent: Student | null;
-  openDeleteStudentModal: (student: Student) => void;
+  openDeleteStudentModal: (student: Student | null) => void; // Allow null to match closer
   closeDeleteStudentModal: () => void;
 
   isAddGoalTemplateModalOpen: boolean;
@@ -62,7 +62,7 @@ interface StudentDataContextType {
   closeEditGoalTemplateModal: () => void;
   
   deletingGoalTemplate: GoalTemplate | null;
-  openDeleteGoalTemplateModal: (template: GoalTemplate) => void;
+  openDeleteGoalTemplateModal: (template: GoalTemplate | null) => void; // Allow null
   closeDeleteGoalTemplateModal: () => void;
 
   editingSession: SessionData | null;
@@ -70,7 +70,7 @@ interface StudentDataContextType {
   closeEditSessionModal: () => void;
 
   deletingSession: SessionData | null;
-  openDeleteSessionModal: (session: SessionData) => void;
+  openDeleteSessionModal: (session: SessionData | null) => void; // Allow null
   closeDeleteSessionModal: () => void;
 }
 
@@ -103,9 +103,6 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const safeToast = useCallback((options: Omit<Toast, 'id'>) => {
     if (typeof window !== 'undefined') {
       toast(options);
-    } else {
-      // Optional: Log to server console if needed for debugging SSR toasts
-      // console.log(`SSR Toast (suppressed): ${options.title} - ${options.description}`);
     }
   }, [toast]);
 
@@ -124,39 +121,38 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const seedFirebaseDefaultTemplates = useCallback(async (user: User, dbInstance: typeof firestoreDbModule) => {
     if (!user || !dbInstance) return null;
-    const defaultTemplateNames = DEFAULT_GOAL_TEMPLATES.map(t => t.name);
     const q = query(collection(dbInstance, getGoalTemplatesCollectionPath(APP_ID)), where("userId", "==", user.uid), where("isDefault", "==", true));
     const existingDefaultsSnapshot = await getDocs(q);
-    const existingDefaultCount = existingDefaultsSnapshot.size;
+    
+    const templatesToSeed = DEFAULT_GOAL_TEMPLATES.filter(defaultTemplate => 
+        !existingDefaultsSnapshot.docs.some(doc => doc.data().name === defaultTemplate.name)
+    );
 
-    if (existingDefaultCount >= DEFAULT_GOAL_TEMPLATES.length) {
+    if (templatesToSeed.length === 0) {
         return;
     }
 
-    console.log("StudentData: Seeding Firebase default templates.");
+    console.log("StudentData: Seeding Firebase default templates for missing ones.");
     try {
       const batch = writeBatch(dbInstance);
-      for (const template of DEFAULT_GOAL_TEMPLATES) {
-          const templateExists = existingDefaultsSnapshot.docs.some(doc => doc.data().name === template.name);
-          if (!templateExists) {
-            const newTemplateRef = doc(collection(dbInstance, getGoalTemplatesCollectionPath(APP_ID)));
-            const newTemplateData = { 
-              ...template, 
-              userId: user.uid, 
-              createdAt: serverTimestamp(), 
-              id: newTemplateRef.id,
-            };
-            batch.set(newTemplateRef, newTemplateData);
-        }
+      for (const template of templatesToSeed) {
+          const newTemplateRef = doc(collection(dbInstance, getGoalTemplatesCollectionPath(APP_ID)));
+          const newTemplateData = { 
+            ...template, 
+            userId: user.uid, 
+            createdAt: serverTimestamp(), 
+            id: newTemplateRef.id, // Use Firestore generated ID
+          };
+          batch.set(newTemplateRef, newTemplateData);
       }
       await batch.commit();
-      safeToast({ title: "Success", description: "Default Firebase goal templates seeded." });
+      safeToast({ title: "Success", description: `${templatesToSeed.length} default Firebase goal templates seeded.` });
     } catch (e) {
       console.error("Error seeding Firebase default templates:", e);
       safeToast({ title: "Error", description: "Could not seed Firebase default templates.", variant: "destructive" });
     }
   }, [safeToast, APP_ID]);
-
+  
   useEffect(() => {
     setEditingStudent(null);
     setDeletingStudent(null);
@@ -186,7 +182,8 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
 
     setLoading(true);
-    setError(null); 
+    // Error state is for actual Firebase errors, not for local mode indication.
+    // setError(null); // Reset error on user change, if appropriate
 
     let unsubscribeStudents = () => {};
     let unsubscribeTemplates = () => {};
@@ -223,7 +220,10 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       unsubscribeTemplates = onSnapshot(templateQuery, async (snapshot) => {
         const templateData = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as GoalTemplate));
         setGoalTemplatesState(templateData.sort((a,b) => a.name.localeCompare(b.name)));
-        if (templateData.filter(t => t.isDefault).length < DEFAULT_GOAL_TEMPLATES.length && currentUser && firestoreDbModule) {
+        
+        // Check if default templates need seeding after initial load
+        const defaultTemplatesInDb = templateData.filter(t => t.isDefault && t.userId === currentUser.uid);
+        if (defaultTemplatesInDb.length < DEFAULT_GOAL_TEMPLATES.length && currentUser && firestoreDbModule) {
          await seedFirebaseDefaultTemplates(currentUser, firestoreDbModule);
         }
         templatesLoaded = true;
@@ -248,7 +248,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
     } else {
       console.log("StudentData: Operating in local data mode.");
-      setStudentsState(prev => prev.length === 0 ? [] : prev);
+      setStudentsState(prev => prev.length === 0 ? [] : prev); // Keep existing local data if any
       setSessionsState(prev => prev.length === 0 ? [] : prev);
       seedLocalDefaultTemplates(); 
       setLoading(false); 
@@ -309,29 +309,51 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   }, [isFirebaseDBAvailable, safeToast, APP_ID, selectedStudent]);
 
-  const deleteStudent = useCallback(async (studentId: string) => {
+ const deleteStudent = useCallback(async (studentId: string) => {
+    if (!currentUser) {
+      safeToast({ title: "Error", description: "User not authenticated.", variant: "destructive" });
+      return;
+    }
     if (isFirebaseDBAvailable && firestoreDbModule) {
       try {
-        await deleteDoc(doc(firestoreDbModule, getStudentsCollectionPath(APP_ID), studentId));
-        safeToast({ title: "Success", description: "Student deleted." });
+        // Start a batch
+        const batch = writeBatch(firestoreDbModule);
+
+        // Delete the student document
+        const studentDocRef = doc(firestoreDbModule, getStudentsCollectionPath(APP_ID), studentId);
+        batch.delete(studentDocRef);
+
+        // Query and delete associated sessions
+        const sessionsQuery = query(
+          collection(firestoreDbModule, getSessionsCollectionPath(APP_ID)),
+          where("studentId", "==", studentId),
+          where("userId", "==", currentUser.uid) // Important for security rules
+        );
+        const sessionsSnapshot = await getDocs(sessionsQuery);
+        sessionsSnapshot.docs.forEach(sessionDoc => batch.delete(sessionDoc.ref));
+        
+        await batch.commit();
+        safeToast({ title: "Success", description: "Student and their associated sessions deleted." });
       } catch (e) {
-        console.error("Firebase deleteStudent error:", e);
+        console.error("Firebase deleteStudent and sessions error:", e);
         setError(e as Error);
-        safeToast({ title: "Error", description: "Could not delete student.", variant: "destructive" });
+        safeToast({ title: "Error", description: "Could not delete student and/or their sessions.", variant: "destructive" });
       }
     } else {
+      // Local mode
       setStudentsState(prev => prev.filter(s => s.id !== studentId));
-      setSessionsState(prev => prev.filter(s => s.studentId !== studentId)); 
-      safeToast({ title: "Success", description: "Student deleted locally." });
+      setSessionsState(prev => prev.filter(s => s.studentId !== studentId));
+      safeToast({ title: "Success", description: "Student and their sessions deleted locally." });
     }
     if (selectedStudent?.id === studentId) setSelectedStudentState(null);
-  }, [isFirebaseDBAvailable, selectedStudent, safeToast, APP_ID]);
+    // closeDeleteStudentModal(); // ConfirmationModal handles its own closure via onClose prop
+  }, [isFirebaseDBAvailable, firestoreDbModule, currentUser, selectedStudent, safeToast, APP_ID]);
   
   const assignGoalToStudent = useCallback(async (studentId: string, goal: Goal) => {
     const student = studentsState.find(s => s.id === studentId);
     if (!student) { safeToast({ title: "Error", description: "Student not found.", variant: "destructive" }); return; }
     
-    const newGoal = { ...goal, id: goal.id || generateUUID() };
+    const newGoal = { ...goal, id: goal.id || generateUUID() }; // Ensure ID exists
     const updatedGoals = [...student.goals, newGoal];
     
     await updateStudent(studentId, { goals: updatedGoals });
@@ -361,7 +383,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const fullTemplateData = { 
         ...templateData, 
         userId: currentUser.uid, 
-        createdAt: serverTimestamp(), 
+        createdAt: serverTimestamp(), // For Firebase
         isDefault: false,
     };
 
@@ -369,7 +391,9 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       try {
         const docRef = await addDoc(collection(firestoreDbModule, getGoalTemplatesCollectionPath(APP_ID)), fullTemplateData);
         safeToast({ title: "Success", description: `Template "${templateData.name}" added.` });
-        return { id: docRef.id, ...fullTemplateData } as unknown as GoalTemplate; 
+        // For onSnapshot to pick up, we don't need to return and merge locally.
+        // The ID will be part of the snapshot data.
+        return { id: docRef.id, ...templateData, userId:currentUser.uid, createdAt: new Date(), isDefault: false }; // Return with expected fields
       } catch (e) {
         console.error("Firebase addGoalTemplate error:", e);
         setError(e as Error);
@@ -377,7 +401,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         return null;
       }
     } else {
-      const newTemplate: GoalTemplate = { id: generateUUID(), ...fullTemplateData, createdAt: new Date() } as unknown as GoalTemplate;
+      const newTemplate: GoalTemplate = { id: generateUUID(), ...templateData, userId:currentUser.uid, createdAt: new Date(), isDefault: false };
       setGoalTemplatesState(prev => [...prev, newTemplate].sort((a,b) => a.name.localeCompare(b.name)));
       safeToast({ title: "Success", description: `Template "${templateData.name}" added locally.` });
       return newTemplate;
@@ -488,17 +512,17 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const closeAddStudentModal = useCallback(() => setIsAddStudentModalOpen(false), []);
   const openEditStudentModal = useCallback((student: Student) => setEditingStudent(student), []);
   const closeEditStudentModal = useCallback(() => setEditingStudent(null), []);
-  const openDeleteStudentModal = useCallback((student: Student) => setDeletingStudent(student), []);
+  const openDeleteStudentModal = useCallback((student: Student | null) => setDeletingStudent(student), []);
   const closeDeleteStudentModal = useCallback(() => setDeletingStudent(null), []);
   const openAddGoalTemplateModal = useCallback(() => setIsAddGoalTemplateModalOpen(true), []);
   const closeAddGoalTemplateModal = useCallback(() => setIsAddGoalTemplateModalOpen(false), []);
   const openEditGoalTemplateModal = useCallback((template: GoalTemplate) => setEditingGoalTemplate(template), []);
   const closeEditGoalTemplateModal = useCallback(() => setEditingGoalTemplate(null), []);
-  const openDeleteGoalTemplateModal = useCallback((template: GoalTemplate) => setDeletingGoalTemplate(template), []);
+  const openDeleteGoalTemplateModal = useCallback((template: GoalTemplate | null) => setDeletingGoalTemplate(template), []);
   const closeDeleteGoalTemplateModal = useCallback(() => setDeletingGoalTemplate(null), []);
   const openEditSessionModal = useCallback((session: SessionData) => setEditingSession(session), []);
   const closeEditSessionModal = useCallback(() => setEditingSession(null), []);
-  const openDeleteSessionModal = useCallback((session: SessionData) => setDeletingSession(session), []);
+  const openDeleteSessionModal = useCallback((session: SessionData | null) => setDeletingSession(session), []);
   const closeDeleteSessionModal = useCallback(() => setDeletingSession(null), []);
 
   const contextValue = useMemo(() => ({
