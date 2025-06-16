@@ -11,6 +11,12 @@ import { SidebarProvider, SidebarInset, SidebarTrigger, SidebarRail } from '@/co
 import { useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts';
 import { Toaster } from '@/components/ui/toaster';
 
+// New component to initialize keyboard shortcuts within the SidebarProvider context
+function KeyboardShortcutInitializer() {
+  useKeyboardShortcuts();
+  return null; // This component does not render anything itself
+}
+
 export default function AppLayout({
   children,
 }: {
@@ -18,8 +24,6 @@ export default function AppLayout({
 }) {
   const { currentUser, loading } = useAuth();
   const router = useRouter();
-
-  useKeyboardShortcuts(); // Initialize global keyboard shortcuts
 
   useEffect(() => {
     if (!loading && !currentUser) {
@@ -34,6 +38,7 @@ export default function AppLayout({
 
   return (
     <SidebarProvider defaultOpen={true}>
+      <KeyboardShortcutInitializer /> {/* Initialize shortcuts here */}
       <div className="flex min-h-screen flex-col bg-background">
         <AppHeader />
         <div className="flex flex-1">
