@@ -17,7 +17,7 @@ export function useKeyboardShortcuts() {
       return;
     }
 
-    if (event.altKey) {
+    if (event.AltKey) {
       switch (event.key.toUpperCase()) {
         // Navigation Hotkeys (Alt+1 to Alt+5)
         case '1':
