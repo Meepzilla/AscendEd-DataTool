@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -10,13 +11,14 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Users, Save, PlusCircle, XCircle, Edit2, Info, ChevronDown, ChevronUp } from 'lucide-react';
-import { DatePicker } from '@/components/ui/date-picker'; // Assuming a DatePicker component exists or will be created
+import { DatePicker } from '@/components/ui/date-picker';
 import GoalDataInputComponent from '@/components/forms/goal-data-input';
 import { GOAL_TYPE_FIELDS, MAX_STUDENTS_DATA_ENTRY } from '@/lib/constants';
 import { generateUUID } from '@/lib/helpers';
 import { getActivitySuggestions } from '@/ai/flows/activity-suggestions'; // AI Import
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Label } from '@/components/ui/label';
 
 interface StudentSessionState {
   studentId: string;
@@ -247,11 +249,11 @@ export default function DataEntryPage() {
         <CardContent className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-4 items-center">
             <div className="w-full sm:w-auto">
-              <label htmlFor="sessionDate" className="block text-sm font-medium mb-1">Session Date</label>
+              <Label htmlFor="sessionDate" className="block text-sm font-medium mb-1">Session Date</Label>
               <DatePicker date={sessionDate} setDate={setSessionDate} />
             </div>
             <div className="w-full sm:w-auto">
-                <label htmlFor="sessionTime" className="block text-sm font-medium mb-1">Session Time</label>
+                <Label htmlFor="sessionTime" className="block text-sm font-medium mb-1">Session Time</Label>
                 <Input 
                     id="sessionTime"
                     type="time" 
@@ -399,13 +401,3 @@ export default function DataEntryPage() {
     </div>
   );
 }
-
-// Basic DatePicker, replace with ShadCN's if available or a proper one.
-const DatePicker: React.FC<{date: Date | undefined, setDate: (date: Date | undefined) => void}> = ({date, setDate}) => (
-  <Input 
-    type="date" 
-    value={date ? date.toISOString().split('T')[0] : ''} 
-    onChange={(e) => setDate(e.target.value ? new Date(e.target.value) : undefined)}
-    className="w-full sm:w-[180px]" 
-  />
-);
