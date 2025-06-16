@@ -32,9 +32,9 @@ export interface GoalTemplate {
   type: GoalType;
   smartGoalPrompt: string;
   generatedSmartGoal: string;
-  createdAt: Timestamp; // Firestore Server Timestamp
+  createdAt: Timestamp | Date; // Allow Date for local mode, Timestamp for Firebase
   isDefault: boolean;
-  userId?: string; // Optional: if templates can be user-specific
+  userId?: string; 
 }
 
 export interface SessionData {
@@ -97,5 +97,5 @@ export const GoalTemplateSchema = z.object({
   type: z.string(), // Should validate against GoalType values
   smartGoalPrompt: z.string().min(10, "SMART goal prompt is required."),
   generatedSmartGoal: z.string().optional(),
+  // isDefault is handled internally, not part of the form for user creation/edit
 });
-

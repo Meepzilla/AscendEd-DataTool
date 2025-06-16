@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -8,15 +9,16 @@ import GenericModal from './generic-modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useStudentData } from '@/hooks/use-student-data';
-import { GoalTemplateSchema, GoalType } from '@/lib/types';
+import { GoalTemplateSchema, GoalType, type GoalTemplate } from '@/lib/types';
 import { GOAL_TYPES } from '@/lib/constants';
 import { generateSmartGoal } from '@/ai/flows/smart-goal-generation';
 import { Sparkles, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
+// FormData matches the schema, but GoalTemplate might have 'id' and 'createdAt' from DB
 type AddGoalTemplateFormData = z.infer<typeof GoalTemplateSchema>;
 
 export default function AddGoalTemplateModal() {
@@ -29,7 +31,7 @@ export default function AddGoalTemplateModal() {
     resolver: zodResolver(GoalTemplateSchema),
     defaultValues: {
       name: '',
-      type: Object.keys(GOAL_TYPES)[0] as GoalType,
+      type: Object.keys(GOAL_TYPES)[0] as GoalType, // Default to first goal type
       smartGoalPrompt: '',
       generatedSmartGoal: '',
     },
@@ -72,10 +74,9 @@ export default function AddGoalTemplateModal() {
 
   const onSubmit = async (data: AddGoalTemplateFormData) => {
     setIsSubmitting(true);
-    const newTemplate = await addGoalTemplate({
-      ...data,
-      isDefault: false, // User-created templates are not default
-    });
+    // addGoalTemplate expects Omit<GoalTemplate, 'id' | 'createdAt' | 'userId' | 'isDefault'>
+    // The form data (AddGoalTemplateFormData) matches this, as 'isDefault' and 'userId' are handled by the hook.
+    const newTemplate = await addGoalTemplate(data);
     setIsSubmitting(false);
     if (newTemplate) {
       closeAddGoalTemplateModal();
