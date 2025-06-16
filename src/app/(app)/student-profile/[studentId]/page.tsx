@@ -34,22 +34,22 @@ export default function StudentProfilePage() {
   const router = useRouter();
   const studentId = params.studentId as string;
 
-  const { 
-    students, 
-    loading, 
+  const {
+    students,
+    loading,
     error,
-    isFirebaseDBAvailable, 
-    selectedStudent, 
-    setSelectedStudent, 
-    openEditStudentModal, 
+    isFirebaseDBAvailable,
+    selectedStudent,
+    setSelectedStudent,
+    openEditStudentModal,
+    editingStudent, // Added editingStudent here
     openDeleteStudentModal,
     removeGoalFromStudent,
-    updateStudentGoal, // Keep for potential future direct edit of assigned goal's SMART text
+    updateStudentGoal,
   } = useStudentData();
 
   const [currentStudent, setCurrentStudent] = useState<Student | null>(null);
   const [isAssignGoalModalOpen, setIsAssignGoalModalOpen] = useState(false);
-  // const [editingGoal, setEditingGoal] = useState<Goal | null>(null); // Removed: Not used for direct edit now.
 
   useEffect(() => {
     const foundStudent = students.find(s => s.id === studentId);
@@ -80,12 +80,12 @@ export default function StudentProfilePage() {
           </Card>
       )
   }
-  
-  if (error) { 
+
+  if (error) {
     return <div className="text-destructive p-4">Error loading student data: {error.message}</div>;
   }
-  
-  if (!currentStudent && !loading) { 
+
+  if (!currentStudent && !loading) {
     return (
       <Card className="mt-4">
         <CardHeader>
@@ -99,12 +99,12 @@ export default function StudentProfilePage() {
       </Card>
     );
   }
-  
+
   // This ensures we don't try to render with a null currentStudent if it's just loading
   if (!currentStudent) {
     return <StudentProfileSkeleton />;
   }
-  
+
   const handleRemoveGoal = async (goalId: string) => {
     await removeGoalFromStudent(currentStudent.id, goalId);
   };
@@ -120,7 +120,7 @@ export default function StudentProfilePage() {
   return (
     <div className="space-y-6">
       {/* EditStudentModal is for student's name, not their goals directly */}
-      {editingStudent && <EditStudentModal studentToEdit={editingStudent} />} 
+      {editingStudent && <EditStudentModal studentToEdit={editingStudent} />}
 
       <Card className="shadow-lg">
         <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -178,7 +178,7 @@ export default function StudentProfilePage() {
                     </div>
                   </div>
                   <div className="mt-3 pt-3 border-t">
-                     <Link href={`/data-entry?studentId=${currentStudent.id}&goalId=${goal.id}`} 
+                     <Link href={`/data-entry?studentId=${currentStudent.id}&goalId=${goal.id}`}
                            className="inline-flex items-center text-sm text-primary hover:underline">
                         <CheckSquare className="mr-2 h-4 w-4" /> Enter/View Progress Data
                      </Link>
@@ -189,7 +189,7 @@ export default function StudentProfilePage() {
           )}
         </CardContent>
       </Card>
-      
+
       {isAssignGoalModalOpen && currentStudent && (
         <AssignGoalToStudentModal
           student={currentStudent}
@@ -236,5 +236,3 @@ function StudentProfileSkeleton() {
     </div>
   );
 }
-
-        
