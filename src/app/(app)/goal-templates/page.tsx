@@ -6,7 +6,7 @@ import { useStudentData } from '@/hooks/use-student-data';
 import type { GoalTemplate } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { PlusCircle, Edit, Trash2, Search, ListFilter, Sparkles, Info, ListPlus } from 'lucide-react';
 import { formatDate } from '@/lib/helpers';
 import AddGoalTemplateModal from '@/components/modals/add-goal-template-modal';
