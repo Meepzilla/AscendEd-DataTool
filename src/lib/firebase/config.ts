@@ -76,8 +76,11 @@ if (finalFirebaseConfig.apiKey && finalFirebaseConfig.projectId) {
     dbModule = null;
   }
 } else {
-  console.error("Firebase API Key or Project ID is missing from config. Firebase services will not be initialized. Please ensure NEXT_PUBLIC_FIREBASE_API_KEY and NEXT_PUBLIC_FIREBASE_PROJECT_ID are set in your .env file or that Firebase is otherwise correctly configured.");
+  console.warn(
+    "Firebase API Key or Project ID is missing. App will use local data mode. For Firebase integration, ensure NEXT_PUBLIC_FIREBASE_API_KEY and NEXT_PUBLIC_FIREBASE_PROJECT_ID are set in your .env file."
+  );
   // app, authModule, dbModule remain null
 }
 
 export { app, authModule as auth, dbModule as db };
+
