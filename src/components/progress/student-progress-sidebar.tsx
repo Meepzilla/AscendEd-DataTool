@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { TrendingUp, CheckCircle2, ListChecks } from 'lucide-react';
+import { TrendingUp, CheckCircle2, ListChecks, BarChart2 } from 'lucide-react';
 
 interface StudentProgressSidebarProps {
   student: Student;
