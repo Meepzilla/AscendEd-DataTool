@@ -112,11 +112,12 @@ export default function StudentSidebar() {
                    <Link
                       href={`/student-profile/${student.id}`}
                       onClick={() => handleSelectStudent(student)}
+                      className="w-full block" // Make link take full width for better click area
                     >
                     <SidebarMenuButton
-                      asChild
+                      asChild // Allow Link to control navigation
                       isActive={selectedStudent?.id === student.id}
-                      className="justify-between w-full"
+                      className="justify-between w-full" // Ensure button itself takes full width of its container
                       tooltip={student.name}
                     >
                       {/* Content of the old 'a' tag now goes directly here */}
@@ -128,10 +129,22 @@ export default function StudentSidebar() {
                   </Link>
                   {sidebarState !== 'collapsed' && (
                     <div className="absolute right-1 top-1/2 -translate-y-1/2 flex opacity-0 group-hover/menu-item:opacity-100 focus-within:opacity-100 transition-opacity">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditStudentModal(student)} title={`Edit ${student.name}`}>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-7 w-7" 
+                        onClick={(e) => { e.stopPropagation(); openEditStudentModal(student);}} 
+                        title={`Edit ${student.name}`}
+                      >
                         <Edit3 className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openDeleteStudentModal(student)} title={`Delete ${student.name}`}>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-7 w-7" 
+                        onClick={(e) => { e.stopPropagation(); openDeleteStudentModal(student);}} 
+                        title={`Delete ${student.name}`}
+                      >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>

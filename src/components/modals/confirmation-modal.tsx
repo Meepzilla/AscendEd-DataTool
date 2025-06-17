@@ -59,10 +59,10 @@ export default function ConfirmationModal({
     try {
       switch (deleteActionType) {
         case 'student':
-          await contextDeleteStudent(itemToDelete.id);
+          await contextDeleteStudent(itemToDelete.id); // itemToDelete.id should be studentId
           break;
         case 'goalTemplate':
-          await contextDeleteGoalTemplate(itemToDelete.id);
+          await contextDeleteGoalTemplate(itemToDelete.id); // itemToDelete.id should be templateId
           break;
         case 'session':
           await contextDeleteSession((itemToDelete as SessionData).sessionId);
@@ -113,3 +113,4 @@ export default function ConfirmationModal({
     </AlertDialog>
   );
 }
+

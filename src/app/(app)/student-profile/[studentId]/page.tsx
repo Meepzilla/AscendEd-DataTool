@@ -16,6 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import AssignGoalToStudentModal from '@/components/modals/assign-goal-to-student-modal';
 import EditAssignedGoalModal from '@/components/modals/edit-assigned-goal-modal';
+import ConfirmationModal from '@/components/modals/confirmation-modal';
 
 
 export default function StudentProfilePage() {
@@ -30,9 +31,10 @@ export default function StudentProfilePage() {
     isFirebaseDBAvailable,
     selectedStudent,
     setSelectedStudent,
-    openEditStudentModal, // This function from context will be used to trigger the global modal
-    // editingStudent, // No longer needed here for local modal control
-    openDeleteStudentModal,
+    openEditStudentModal, 
+    deletingStudent, // Get deletingStudent state from context
+    openDeleteStudentModal, // Get open function
+    closeDeleteStudentModal, // Get close function for ConfirmationModal
     removeGoalFromStudent,
     editingAssignedGoal, 
     openEditAssignedGoalModal, 
@@ -116,6 +118,17 @@ export default function StudentProfilePage() {
           onClose={closeEditAssignedGoalModal}
           studentId={editingAssignedGoal.studentId} 
           goalToEdit={editingAssignedGoal.goal}
+        />
+      )}
+
+      {deletingStudent && (
+        <ConfirmationModal
+          isOpen={!!deletingStudent}
+          onClose={closeDeleteStudentModal}
+          title={`Delete Student: ${deletingStudent.name}`}
+          description="Are you sure you want to delete this student and all their associated session data? This action cannot be undone."
+          itemToDelete={deletingStudent}
+          deleteActionType="student"
         />
       )}
 

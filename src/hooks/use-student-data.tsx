@@ -50,7 +50,7 @@ interface StudentDataContextType {
   closeEditStudentModal: () => void;
 
   deletingStudent: Student | null;
-  openDeleteStudentModal: (student: Student | null) => void; // Allow null to match closer
+  openDeleteStudentModal: (student: Student | null) => void; 
   closeDeleteStudentModal: () => void;
 
   isAddGoalTemplateModalOpen: boolean;
@@ -62,7 +62,7 @@ interface StudentDataContextType {
   closeEditGoalTemplateModal: () => void;
 
   deletingGoalTemplate: GoalTemplate | null;
-  openDeleteGoalTemplateModal: (template: GoalTemplate | null) => void; // Allow null
+  openDeleteGoalTemplateModal: (template: GoalTemplate | null) => void; 
   closeDeleteGoalTemplateModal: () => void;
 
   editingSession: SessionData | null;
@@ -70,7 +70,7 @@ interface StudentDataContextType {
   closeEditSessionModal: () => void;
 
   deletingSession: SessionData | null;
-  openDeleteSessionModal: (session: SessionData | null) => void; // Allow null
+  openDeleteSessionModal: (session: SessionData | null) => void; 
   closeDeleteSessionModal: () => void;
 
   editingAssignedGoal: { studentId: string; goal: Goal } | null;
@@ -332,23 +332,20 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
     if (isFirebaseDBAvailable && firestoreDbModule) {
       try {
-        // Start a batch
-        const batch = writeBatch(firestoreDbModule);
+        const batchOp = writeBatch(firestoreDbModule); // Renamed to avoid conflict with function name
 
-        // Delete the student document
         const studentDocRef = doc(firestoreDbModule, getStudentsCollectionPath(APP_ID), studentId);
-        batch.delete(studentDocRef);
+        batchOp.delete(studentDocRef);
 
-        // Query and delete associated sessions
         const sessionsQuery = query(
           collection(firestoreDbModule, getSessionsCollectionPath(APP_ID)),
           where("studentId", "==", studentId),
-          where("userId", "==", currentUser.uid) // Important for security rules
+          where("userId", "==", currentUser.uid)
         );
         const sessionsSnapshot = await getDocs(sessionsQuery);
-        sessionsSnapshot.docs.forEach(sessionDoc => batch.delete(sessionDoc.ref));
+        sessionsSnapshot.docs.forEach(sessionDoc => batchOp.delete(sessionDoc.ref));
 
-        await batch.commit();
+        await batchOp.commit();
         safeToast({ title: "Success", description: "Student and their associated sessions deleted." });
       } catch (e) {
         console.error("Firebase deleteStudent and sessions error:", e);
@@ -356,13 +353,12 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         safeToast({ title: "Error", description: "Could not delete student and/or their sessions.", variant: "destructive" });
       }
     } else {
-      // Local mode
       setStudentsState(prev => prev.filter(s => s.id !== studentId));
       setSessionsState(prev => prev.filter(s => s.studentId !== studentId));
       safeToast({ title: "Success", description: "Student and their sessions deleted locally." });
     }
     if (selectedStudent?.id === studentId) setSelectedStudentState(null);
-    // closeDeleteStudentModal(); // ConfirmationModal handles its own closure via onClose prop
+    setDeletingStudent(null); // Close the confirmation modal
   }, [isFirebaseDBAvailable, firestoreDbModule, currentUser, selectedStudent, safeToast, APP_ID]);
 
   const assignGoalToStudent = useCallback(async (studentId: string, goal: Goal) => {
@@ -472,6 +468,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       setGoalTemplatesState(prev => prev.filter(t => t.id !== templateId));
       safeToast({ title: "Success", description: "Goal template deleted locally." });
     }
+     setDeletingGoalTemplate(null); // Close confirmation modal
   }, [isFirebaseDBAvailable, goalTemplatesState, safeToast, APP_ID]);
 
   const addSession = useCallback(async (sessionDataOmitId: Omit<SessionData, 'sessionId'>): Promise<SessionData | null> => {
@@ -530,6 +527,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       setSessionsState(prev => prev.filter(s => s.sessionId !== sessionId));
       safeToast({ title: "Success", description: "Session deleted locally." });
     }
+    setDeletingSession(null); // Close confirmation modal
   }, [isFirebaseDBAvailable, safeToast, APP_ID]);
 
   const getSessionsForStudent = useCallback((studentId: string) => {
