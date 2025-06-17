@@ -4,7 +4,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon } from 'lucide-react';
+import { ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone } from 'lucide-react';
 import { APP_NAME } from '@/lib/constants';
 
 interface ChangelogEntry {
@@ -17,6 +17,20 @@ interface ChangelogEntry {
 }
 
 const changelogEntries: ChangelogEntry[] = [
+  {
+    date: '2025-06-17',
+    title: 'Enhanced Mobile & Tablet Responsiveness',
+    description: 'Improved application layout and usability on smaller screens, including adjustments to dashboards, forms, tables, and modals for better mobile device support.',
+    type: 'improvement',
+    icon: Smartphone, 
+  },
+  {
+    date: '2025-06-17',
+    title: 'Data Entry Hotkey Update: Student Slot Focus',
+    description: 'Changed the hotkey to focus on specific student slots (1-4) on the Data Entry page from "Alt + #" to just "#".',
+    type: 'hotkey',
+    icon: KeyboardIcon,
+  },
   {
     date: '2025-06-17', // Placeholder date
     title: 'Changelog Page Added',
@@ -89,6 +103,8 @@ const changelogEntries: ChangelogEntry[] = [
   },
 ];
 
+// Note: getIconForType is not strictly necessary if each entry defines its icon,
+// but it can be a fallback or utility if needed elsewhere.
 const getIconForType = (type: ChangelogEntry['type']): React.ElementType => {
   switch (type) {
     case 'feature': return Zap;
@@ -124,7 +140,7 @@ export default function ChangelogPage() {
           {changelogEntries.length === 0 ? (
             <p className="text-muted-foreground">No changelog entries yet. Check back soon!</p>
           ) : (
-            <Accordion type="multiple" className="w-full" defaultValue={[changelogEntries[0]?.date + changelogEntries[0]?.title]}>
+            <Accordion type="multiple" className="w-full" defaultValue={changelogEntries[0] ? [changelogEntries[0].date + changelogEntries[0].title] : []}>
               {changelogEntries.map((entry, index) => (
                 <AccordionItem value={entry.date + entry.title} key={index}>
                   <AccordionTrigger>
