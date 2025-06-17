@@ -9,11 +9,15 @@ import { useAuth } from './use-auth';
 import { DEFAULT_GOAL_TEMPLATES } from '@/lib/constants';
 import { generateUUID } from '@/lib/helpers';
 import { useToast as useShadcnToast } from "@/hooks/use-toast"; 
-import { useErrorLog } from './use-error-log'; // Import useErrorLog
+import { useErrorLog } from './use-error-log';
 
 const getStudentsCollectionPath = (appId: string) => `artifacts/${appId}/public/data/students`;
 const getGoalTemplatesCollectionPath = (appId: string) => `artifacts/${appId}/public/data/goal_templates`;
 const getSessionsCollectionPath = (appId: string) => `artifacts/${appId}/public/data/sessions`;
+
+const LOCAL_STORAGE_STUDENTS_KEY = 'ascended_students_v2';
+const LOCAL_STORAGE_GOAL_TEMPLATES_KEY = 'ascended_goal_templates_v2';
+const LOCAL_STORAGE_SESSIONS_KEY = 'ascended_sessions_v2';
 
 
 interface StudentDataContextType {
@@ -116,17 +120,55 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
 
   const seedLocalDefaultTemplates = useCallback(() => {
-    if (goalTemplatesState.length === 0 && !isFirebaseDBAvailable) {
       const localDefaultTemplates = DEFAULT_GOAL_TEMPLATES.map(t => ({
         ...t,
         id: generateUUID(),
-        createdAt: new Date(),
+        createdAt: new Date(), // Store as Date object for local
         userId: currentUser?.uid || 'local-user',
       }));
       setGoalTemplatesState(localDefaultTemplates);
       safeToast({ title: "Info", description: "Loaded default local goal templates."});
+  }, [currentUser?.uid, safeToast]);
+
+
+  useEffect(() => {
+    if (!isFirebaseDBAvailable && !authLoading && currentUser) {
+      try {
+        localStorage.setItem(LOCAL_STORAGE_STUDENTS_KEY, JSON.stringify(studentsState));
+      } catch (e) {
+        console.error("Error saving students to localStorage:", e);
+        addErrorLog({ message: 'Error saving students to localStorage.', source: 'useStudentData.saveStudents', details: (e as Error).message, type: 'error' });
+      }
     }
-  }, [currentUser?.uid, goalTemplatesState.length, safeToast, isFirebaseDBAvailable]);
+  }, [studentsState, isFirebaseDBAvailable, authLoading, currentUser, addErrorLog]);
+
+  useEffect(() => {
+    if (!isFirebaseDBAvailable && !authLoading && currentUser) {
+      try {
+        // Ensure createdAt is stored as ISO string for GoalTemplates in localStorage
+        const storableTemplates = goalTemplatesState.map(t => ({
+          ...t,
+          createdAt: t.createdAt instanceof Date ? t.createdAt.toISOString() : t.createdAt, // Timestamps won't exist in local-only
+        }));
+        localStorage.setItem(LOCAL_STORAGE_GOAL_TEMPLATES_KEY, JSON.stringify(storableTemplates));
+      } catch (e) {
+        console.error("Error saving goal templates to localStorage:", e);
+        addErrorLog({ message: 'Error saving goal templates to localStorage.', source: 'useStudentData.saveGoalTemplates', details: (e as Error).message, type: 'error' });
+      }
+    }
+  }, [goalTemplatesState, isFirebaseDBAvailable, authLoading, currentUser, addErrorLog]);
+
+  useEffect(() => {
+    if (!isFirebaseDBAvailable && !authLoading && currentUser) {
+      try {
+        localStorage.setItem(LOCAL_STORAGE_SESSIONS_KEY, JSON.stringify(sessionsState));
+      } catch (e) {
+        console.error("Error saving sessions to localStorage:", e);
+        addErrorLog({ message: 'Error saving sessions to localStorage.', source: 'useStudentData.saveSessions', details: (e as Error).message, type: 'error' });
+      }
+    }
+  }, [sessionsState, isFirebaseDBAvailable, authLoading, currentUser, addErrorLog]);
+
 
   const seedFirebaseDefaultTemplates = useCallback(async (user: User, dbInstance: typeof firestoreDbModule) => {
     if (!user || !dbInstance) return null;
@@ -226,7 +268,11 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       });
 
       unsubscribeTemplates = onSnapshot(templateQuery, async (snapshot) => {
-        const templateData = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as GoalTemplate));
+        const templateData = snapshot.docs.map(docSnap => {
+            const data = docSnap.data();
+            // Convert Firestore Timestamp to Date for GoalTemplate.createdAt
+            return { id: docSnap.id, ...data, createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(data.createdAt) } as GoalTemplate;
+        });
         setGoalTemplatesState(templateData.sort((a,b) => a.name.localeCompare(b.name)));
 
         const defaultTemplatesInDb = templateData.filter(t => t.isDefault && t.userId === currentUser.uid);
@@ -260,9 +306,29 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     } else {
       console.log("StudentData: Operating in local data mode.");
       addErrorLog({ message: 'Operating in local data mode. Firestore DB not available.', source: 'useStudentData.init', type: 'warning' });
-      setStudentsState(prev => prev.length === 0 ? [] : prev); 
-      setSessionsState(prev => prev.length === 0 ? [] : prev);
-      seedLocalDefaultTemplates();
+      try {
+        const localStudents = JSON.parse(localStorage.getItem(LOCAL_STORAGE_STUDENTS_KEY) || 'null');
+        if (localStudents) setStudentsState(localStudents.sort((a:Student,b:Student) => a.name.localeCompare(b.name)));
+        else setStudentsState([]);
+
+        const localSessions = JSON.parse(localStorage.getItem(LOCAL_STORAGE_SESSIONS_KEY) || 'null');
+        if (localSessions) setSessionsState(localSessions.sort((a:SessionData,b:SessionData) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        else setSessionsState([]);
+        
+        const rawTemplates = JSON.parse(localStorage.getItem(LOCAL_STORAGE_GOAL_TEMPLATES_KEY) || 'null');
+        if (rawTemplates) {
+          setGoalTemplatesState(rawTemplates.map((t: any) => ({ ...t, createdAt: new Date(t.createdAt) })).sort((a:GoalTemplate,b:GoalTemplate) => a.name.localeCompare(b.name)));
+        } else {
+          seedLocalDefaultTemplates();
+        }
+
+      } catch (e) {
+          console.error("Error loading data from localStorage:", e);
+          addErrorLog({ message: 'Error loading data from localStorage.', source: 'useStudentData.initLocal', details: (e as Error).message, type: 'error' });
+          setStudentsState([]);
+          setSessionsState([]);
+          seedLocalDefaultTemplates(); // Seed defaults if localStorage parsing fails
+      }
       setLoading(false);
     }
 
@@ -413,16 +479,23 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       addErrorLog({ message: 'Attempted to add goal template without authenticated user.', source: 'useStudentData.addGoalTemplate', type: 'error' });
       return null;
     }
-    const fullTemplateData = {
+    const fullTemplateDataFirebase = { // For Firebase, use serverTimestamp
         ...templateData,
         userId: currentUser.uid,
         createdAt: serverTimestamp(), 
         isDefault: false,
     };
+    const fullTemplateDataLocal = { // For Local, use JS Date
+        ...templateData,
+        userId: currentUser.uid,
+        createdAt: new Date(), 
+        isDefault: false,
+    };
+
 
     if (isFirebaseDBAvailable && firestoreDbModule) {
       try {
-        const docRef = await addDoc(collection(firestoreDbModule, getGoalTemplatesCollectionPath(APP_ID)), fullTemplateData);
+        const docRef = await addDoc(collection(firestoreDbModule, getGoalTemplatesCollectionPath(APP_ID)), fullTemplateDataFirebase);
         safeToast({ title: "Success", description: `Template "${templateData.name}" added.` });
         return { id: docRef.id, ...templateData, userId:currentUser.uid, createdAt: new Date(), isDefault: false, sessionTargetValue: templateData.sessionTargetValue }; 
       } catch (e: any) {
@@ -433,7 +506,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         return null;
       }
     } else {
-      const newTemplate: GoalTemplate = { id: generateUUID(), ...templateData, userId:currentUser.uid, createdAt: new Date(), isDefault: false, sessionTargetValue: templateData.sessionTargetValue };
+      const newTemplate: GoalTemplate = { id: generateUUID(), ...fullTemplateDataLocal };
       setGoalTemplatesState(prev => [...prev, newTemplate].sort((a,b) => a.name.localeCompare(b.name)));
       safeToast({ title: "Success", description: `Template "${templateData.name}" added locally.` });
       return newTemplate;
@@ -447,11 +520,17 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
     if (isFirebaseDBAvailable && firestoreDbModule) {
       try {
-        const updateData = {...data, userId: currentUser.uid};
-        if (data.sessionTargetValue === undefined || data.sessionTargetValue === null || data.sessionTargetValue === '') {
+        const updateData: Partial<GoalTemplate> = {...data, userId: currentUser.uid};
+        // Ensure createdAt is not overwritten with local Date if it's a server timestamp
+        if (data.createdAt && !(data.createdAt instanceof Timestamp)) {
+            delete updateData.createdAt; 
+        }
+        if (data.sessionTargetValue === undefined || data.sessionTargetValue === null || String(data.sessionTargetValue).trim() === '') {
+          updateData.sessionTargetValue = undefined; // Or use delete if your Firestore rules allow
         } else if (typeof data.sessionTargetValue === 'string') {
             updateData.sessionTargetValue = Number(data.sessionTargetValue);
         }
+
 
         await updateDoc(doc(firestoreDbModule, getGoalTemplatesCollectionPath(APP_ID), templateId), updateData);
         safeToast({ title: "Success", description: "Goal template updated." });
@@ -462,7 +541,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         safeToast({ title: "Error", description: "Could not update goal template.", variant: "destructive" });
       }
     } else {
-      setGoalTemplatesState(prev => prev.map(t => t.id === templateId ? { ...t, ...data } as GoalTemplate : t).sort((a,b) => a.name.localeCompare(b.name)));
+      setGoalTemplatesState(prev => prev.map(t => t.id === templateId ? { ...t, ...data, createdAt: t.createdAt } as GoalTemplate : t).sort((a,b) => a.name.localeCompare(b.name)));
       safeToast({ title: "Success", description: "Goal template updated locally." });
     }
   }, [isFirebaseDBAvailable, safeToast, APP_ID, currentUser, addErrorLog]);
@@ -639,3 +718,4 @@ export const useStudentData = (): StudentDataContextType => {
   }
   return context;
 };
+
