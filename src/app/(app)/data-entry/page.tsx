@@ -10,10 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Users, Save, PlusCircle, XCircle, Edit2, Info, ChevronDown, ChevronUp, ArrowUp, ArrowDown } from 'lucide-react';
+import { Users, Save, PlusCircle, XCircle, Edit2, Info, ArrowUp, ArrowDown } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 import GoalDataInputComponent from '@/components/forms/goal-data-input';
-import { GOAL_TYPE_FIELDS, MAX_STUDENTS_DATA_ENTRY, PROMPT_HOTKEY_MAP, PROMPT_TYPES } from '@/lib/constants';
+import { GOAL_TYPE_FIELDS, MAX_STUDENTS_DATA_ENTRY, PROMPT_HOTKEY_MAP } from '@/lib/constants';
 import { generateUUID } from '@/lib/helpers';
 import { getActivitySuggestions } from '@/ai/flows/activity-suggestions';
 import { useToast } from '@/hooks/use-toast';
@@ -28,17 +28,17 @@ interface StudentSessionState {
   studentName: string;
   activity: string;
   notes: string;
-  goalData: Record<string, SessionGoalData['data']>; 
+  goalData: Record<string, SessionGoalData['data']>;
   originalGoalHeaders: Goal[];
-  isCollapsed: boolean;
+  isCollapsed: boolean; // This will mean content is hidden if true
 }
 
 export default function DataEntryPage() {
-  const { 
-    students, 
-    loading: studentsLoading, 
-    addSession, 
-    getSessionsForStudent, 
+  const {
+    students,
+    loading: studentsLoading,
+    addSession,
+    getSessionsForStudent,
     selectedStudent: studentFromContext,
     openEditStudentModal
   } = useStudentData();
@@ -65,19 +65,19 @@ export default function DataEntryPage() {
         const goal = studentState.originalGoalHeaders.find(g => g.id === goalId);
         if (!goal) return prevStates;
 
-        let processedData = { ...newData }; 
+        let processedData = { ...newData };
 
         if (goal.type === 'FLUENCY_SYLLABLE_STUTTER') {
           let newTotalSyllables = Math.max(0, Number(processedData.totalSyllables || 0));
           let newStutteredSyllables = Math.max(0, Number(processedData.stutteredSyllables || 0));
-          
+
           if (updatedFieldName === 'stutteredSyllables') {
             newTotalSyllables = Math.max(newTotalSyllables, newStutteredSyllables);
-          } 
+          }
           else if (updatedFieldName === 'totalSyllables') {
             newStutteredSyllables = Math.min(newStutteredSyllables, newTotalSyllables);
           }
-          
+
           processedData.totalSyllables = newTotalSyllables;
           processedData.stutteredSyllables = newStutteredSyllables;
         }
@@ -94,9 +94,9 @@ export default function DataEntryPage() {
         };
       });
     },
-    [] 
+    []
   );
-  
+
   const getCurrentFocusedGoalInfo = useCallback(() => {
     if (selectedStudentIds.length === 0 || focusedStudentSlotIndex >= selectedStudentIds.length) {
       return null;
@@ -142,7 +142,7 @@ export default function DataEntryPage() {
           goals: sessionGoals,
           originalGoalHeaders: state.originalGoalHeaders,
         };
-        await addSession(session); 
+        await addSession(session);
         sessionsSavedCount++;
       }
     }
@@ -172,7 +172,7 @@ export default function DataEntryPage() {
 
   useEffect(() => {
     if (!studentsLoading && students.length > 0) {
-      const initialIds = studentFromContext 
+      const initialIds = studentFromContext
         ? [studentFromContext.id, ...students.filter(s => s.id !== studentFromContext.id).map(s => s.id)]
         : students.map(s => s.id);
       setSelectedStudentIds(initialIds.slice(0, MAX_STUDENTS_DATA_ENTRY));
@@ -188,11 +188,11 @@ export default function DataEntryPage() {
       if (student) {
         const existingState = studentSessionStates[id];
         const initialGoalData: Record<string, SessionGoalData['data']> = {};
-        
-        const goalsToUse = existingState?.originalGoalHeaders && 
-                           existingState.originalGoalHeaders.length > 0 && 
+
+        const goalsToUse = existingState?.originalGoalHeaders &&
+                           existingState.originalGoalHeaders.length > 0 &&
                            existingState.originalGoalHeaders.every(g => student.goals.some(sg => sg.id === g.id))
-                           ? existingState.originalGoalHeaders 
+                           ? existingState.originalGoalHeaders
                            : student.goals;
 
         goalsToUse.forEach(goal => {
@@ -206,9 +206,9 @@ export default function DataEntryPage() {
           notes: existingState?.notes || '',
           goalData: initialGoalData,
           originalGoalHeaders: goalsToUse,
-          isCollapsed: idx !== focusedStudentSlotIndex, // Focused student expands, others collapse
+          isCollapsed: idx !== focusedStudentSlotIndex, // Content hidden if not focused
         };
-        
+
         if (newFocusedGoalIndexes[id] === undefined ) {
             newFocusedGoalIndexes[id] = 0;
         } else if (existingState && focusedGoalIndexByStudentId[id] !== undefined) {
@@ -233,9 +233,9 @@ export default function DataEntryPage() {
           event.preventDefault();
           handleSaveSession();
         }
-        return; 
+        return;
       }
-      
+
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable) {
         return;
       }
@@ -245,7 +245,7 @@ export default function DataEntryPage() {
 
       const focusedInfo = getCurrentFocusedGoalInfo();
 
-      if (!alt && key.match(/^[1-4]$/)) { 
+      if (!alt && key.match(/^[1-4]$/)) {
         event.preventDefault();
         const slotIndex = parseInt(key, 10) - 1;
         if (slotIndex < selectedStudentIds.length) {
@@ -256,15 +256,15 @@ export default function DataEntryPage() {
 
       if (key === 'A' && selectedStudentIds.length > 0) {
         event.preventDefault();
-        if (alt) { 
+        if (alt) {
           setFocusedStudentSlotIndex(prev => (prev - 1 + selectedStudentIds.length) % selectedStudentIds.length);
-        } else { 
+        } else {
           setFocusedStudentSlotIndex(prev => (prev + 1) % selectedStudentIds.length);
         }
         return;
       }
-      
-      if (!focusedInfo || !focusedInfo.goal || !focusedInfo.goalData) return; 
+
+      if (!focusedInfo || !focusedInfo.goal || !focusedInfo.goalData) return;
 
       const { studentId, studentState, goal, goalData, goalIndex } = focusedInfo;
 
@@ -297,14 +297,14 @@ export default function DataEntryPage() {
       let fieldToUpdate: string | null = null;
       let increment = 0;
 
-      if (key === 'C') { 
+      if (key === 'C') {
         increment = alt ? -1 : 1;
         if (goal.type === 'ARTICULATION') fieldToUpdate = 'correct';
         else if (goal.type === 'LANGUAGE_COMPREHENSION') fieldToUpdate = 'questionsCorrect';
         else if (goal.type === 'LANGUAGE_EXPRESSION') fieldToUpdate = 'successfulResponses';
         else if (goal.type === 'PHONOLOGICAL_PROCESSES') fieldToUpdate = 'correctProductions';
         else if (goal.type === 'FLUENCY_SYLLABLE_STUTTER') fieldToUpdate = 'totalSyllables';
-      } else if (key === 'N') { 
+      } else if (key === 'N') {
         increment = alt ? -1 : 1;
         if (goal.type === 'ARTICULATION') fieldToUpdate = 'incorrect';
         else if (goal.type === 'LANGUAGE_COMPREHENSION') fieldToUpdate = 'questionsIncorrect';
@@ -316,7 +316,7 @@ export default function DataEntryPage() {
       if (fieldToUpdate && increment !== 0) {
         event.preventDefault();
         const currentValue = Number(goalData[fieldToUpdate] || 0);
-        const newValue = Math.max(0, currentValue + increment); 
+        const newValue = Math.max(0, currentValue + increment);
         handleGoalDataChange(studentId, goal.id, fieldToUpdate, { ...goalData, [fieldToUpdate]: newValue });
       }
     };
@@ -342,9 +342,10 @@ export default function DataEntryPage() {
     setSelectedStudentIds(prev => {
       const newSelection = [...prev];
       newSelection[index] = studentId;
+      // Ensure unique students, capped by MAX_STUDENTS_DATA_ENTRY
       return Array.from(new Set(newSelection)).slice(0, MAX_STUDENTS_DATA_ENTRY);
     });
-    setFocusedStudentSlotIndex(index); 
+    setFocusedStudentSlotIndex(index);
   };
 
   const addStudentSlot = () => {
@@ -372,18 +373,11 @@ export default function DataEntryPage() {
         setFocusedStudentSlotIndex(0);
     }
   };
-  
+
   const handleInputChange = (studentId: string, field: 'activity' | 'notes', value: string) => {
     setStudentSessionStates(prev => ({
       ...prev,
       [studentId]: { ...prev[studentId], [field]: value },
-    }));
-  };
-  
-  const toggleCollapse = (studentId: string) => {
-    setStudentSessionStates(prev => ({
-      ...prev,
-      [studentId]: { ...prev[studentId], isCollapsed: !prev[studentId]?.isCollapsed },
     }));
   };
 
@@ -403,16 +397,16 @@ export default function DataEntryPage() {
 
       const [movedGoal] = goals.splice(goalIndex, 1);
       goals.splice(newIndex, 0, movedGoal);
-      
+
       setFocusedGoalIndexByStudentId(prevFocused => {
         const currentFocusedIdx = prevFocused[studentId] ?? 0;
         let newFocusedIdx = currentFocusedIdx;
 
-        if (currentFocusedIdx === goalIndex) { 
+        if (currentFocusedIdx === goalIndex) {
           newFocusedIdx = newIndex;
-        } else if (goalIndex < currentFocusedIdx && newIndex >= currentFocusedIdx) { 
+        } else if (goalIndex < currentFocusedIdx && newIndex >= currentFocusedIdx) {
           newFocusedIdx = currentFocusedIdx - 1;
-        } else if (goalIndex > currentFocusedIdx && newIndex <= currentFocusedIdx) { 
+        } else if (goalIndex > currentFocusedIdx && newIndex <= currentFocusedIdx) {
           newFocusedIdx = currentFocusedIdx + 1;
         }
         return { ...prevFocused, [studentId]: newFocusedIdx };
@@ -456,7 +450,7 @@ export default function DataEntryPage() {
       setIsAiLoading(prev => ({...prev, [studentId]: false}));
     }
   };
-  
+
   const availableStudentsForDropdown = useMemo(() => {
     return students.filter(s => !selectedStudentIds.includes(s.id));
   }, [students, selectedStudentIds]);
@@ -487,10 +481,10 @@ export default function DataEntryPage() {
             </div>
             <div className="w-full sm:w-auto">
                 <Label htmlFor="sessionTime" className="block text-sm font-medium mb-1">Session Time</Label>
-                <Input 
+                <Input
                     id="sessionTime"
-                    type="time" 
-                    value={sessionTime} 
+                    type="time"
+                    value={sessionTime}
                     onChange={(e) => setSessionTime(e.target.value)}
                     className="w-full sm:w-[150px]"
                 />
@@ -502,25 +496,24 @@ export default function DataEntryPage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-start">
+      <div className="flex flex-col md:flex-row md:flex-wrap gap-4 items-stretch">
         {selectedStudentIds.map((studentId, slotIndex) => {
           const student = students.find(s => s.id === studentId);
           const state = studentSessionStates[studentId];
           if (!student || !state) return null;
 
           const isStudentFocused = slotIndex === focusedStudentSlotIndex;
-
           const goalsToDisplay = state.originalGoalHeaders;
 
           return (
-            <Card 
-              key={studentId} 
+            <Card
+              key={studentId}
               className={cn(
-                `flex flex-col transition-all duration-150 ease-in-out shadow-md`, 
-                state.isCollapsed ? 'min-h-0' : 'min-h-[300px]',
+                `flex flex-col transition-all duration-300 ease-in-out shadow-md w-full`,
+                isStudentFocused ? 'sm:flex-grow-[2] sm:basis-2/5' : 'sm:flex-grow-[1] sm:basis-1/5', // Adjusted flex properties
                 isStudentFocused && 'ring-2 ring-primary ring-offset-2 shadow-xl'
               )}
-              onClick={() => setFocusedStudentSlotIndex(slotIndex)} 
+              onClick={() => setFocusedStudentSlotIndex(slotIndex)}
             >
               <CardHeader className="bg-muted/50 p-3">
                 <div className="flex items-center justify-between">
@@ -555,9 +548,6 @@ export default function DataEntryPage() {
                     </Select>
                   </div>
                   <div className="flex items-center">
-                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); toggleCollapse(studentId);}} className="h-8 w-8" title={state.isCollapsed ? "Expand" : "Collapse"}>
-                      {state.isCollapsed ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
-                    </Button>
                     {selectedStudentIds.length > 0 && (
                        <Button variant="ghost" size="icon" onClick={(e) => {e.stopPropagation(); removeStudentSlot(slotIndex);}} className="h-8 w-8" title="Remove Student Slot">
                         <XCircle className="h-5 w-5 text-destructive" />
@@ -566,8 +556,7 @@ export default function DataEntryPage() {
                   </div>
                 </div>
               </CardHeader>
-              {!state.isCollapsed && (
-                <ScrollArea className="flex-grow">
+              <ScrollArea className={cn("flex-grow", state.isCollapsed ? 'hidden' : '')}>
                 <CardContent className="p-3 space-y-3">
                   <div>
                     <Label htmlFor={`activity-${studentId}`}>Activity</Label>
@@ -578,7 +567,7 @@ export default function DataEntryPage() {
                       onChange={(e) => handleInputChange(studentId, 'activity', e.target.value)}
                     />
                   </div>
-                  
+
                   {goalsToDisplay.length === 0 ? (
                      <p className="text-sm text-muted-foreground p-4 text-center border rounded-md">No goals assigned to this student. Assign goals in the Student Profile.</p>
                   ) : (
@@ -614,10 +603,10 @@ export default function DataEntryPage() {
                     />
                   </div>
                   <div className="border-t pt-3 space-y-2">
-                    <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => fetchAiActivitySuggestions(studentId)} 
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => fetchAiActivitySuggestions(studentId)}
                         disabled={isAiLoading[studentId] || state.originalGoalHeaders.length === 0}
                         className="w-full"
                     >
@@ -633,15 +622,18 @@ export default function DataEntryPage() {
                     )}
                   </div>
                 </CardContent>
-                </ScrollArea>
-              )}
+              </ScrollArea>
             </Card>
           );
         })}
 
         {selectedStudentIds.length < MAX_STUDENTS_DATA_ENTRY && (
-          <Button variant="outline" onClick={addStudentSlot} className="w-full py-8 border-dashed hover:border-primary hover:text-primary">
-            <PlusCircle className="mr-2 h-5 w-5" /> Add Another Student ({selectedStudentIds.length}/{MAX_STUDENTS_DATA_ENTRY})
+          <Button
+            variant="outline"
+            onClick={addStudentSlot}
+            className="w-full md:w-auto md:flex-grow-[1] md:basis-1/5 py-8 border-dashed hover:border-primary hover:text-primary"
+          >
+            <PlusCircle className="mr-2 h-5 w-5" /> Add Student Slot ({selectedStudentIds.length}/{MAX_STUDENTS_DATA_ENTRY})
           </Button>
         )}
       </div>
@@ -667,5 +659,5 @@ export default function DataEntryPage() {
     </div>
   );
 }
-
+    
     
