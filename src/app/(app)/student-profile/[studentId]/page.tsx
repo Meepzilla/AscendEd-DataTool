@@ -19,19 +19,19 @@ import EditAssignedGoalModal from '@/components/modals/edit-assigned-goal-modal'
 
 
 export default function StudentProfilePage() {
-  const params = useParams();
+  const routeParams = useParams(); // Renamed from params to avoid confusion
   const router = useRouter();
-  const studentId = params.studentId as string;
+  // const studentIdFromRoute = routeParams?.studentId as string; // Initial derivation if needed, but prefer in-effect
 
   const {
     students,
-    loading,
+    loading, // This is studentData loading
     error,
     isFirebaseDBAvailable,
     selectedStudent,
     setSelectedStudent,
     openEditStudentModal,
-    editingStudent,
+    editingStudent, // This comes from useStudentData, used to control EditStudentModal
     openDeleteStudentModal,
     removeGoalFromStudent,
     editingAssignedGoal, 
@@ -43,59 +43,72 @@ export default function StudentProfilePage() {
   const [isAssignGoalModalOpen, setIsAssignGoalModalOpen] = useState(false);
 
   useEffect(() => {
-    const foundStudent = students.find(s => s.id === studentId);
-    if (foundStudent) {
-      setCurrentStudent(foundStudent);
-      if (!selectedStudent || selectedStudent.id !== foundStudent.id) {
-        setSelectedStudent(foundStudent);
-      }
-    } else if (!loading && students.length > 0 && studentId) {
-      // router.push('/student-profile'); 
+    let studentIdToProcess: string | undefined = undefined;
+
+    if (routeParams && typeof routeParams.studentId === 'string') {
+      studentIdToProcess = routeParams.studentId;
     }
-  }, [studentId, students, loading, selectedStudent, setSelectedStudent, router]);
+
+    if (studentIdToProcess) {
+      const foundStudent = students.find(s => s.id === studentIdToProcess);
+      if (foundStudent) {
+        setCurrentStudent(foundStudent);
+        // Ensure the global selected student in context is updated if this page is directly navigated to
+        if (!selectedStudent || selectedStudent.id !== foundStudent.id) {
+          setSelectedStudent(foundStudent);
+        }
+      } else if (!loading && students.length > 0) {
+        // studentId is valid from URL, but student not found in loaded data
+        setCurrentStudent(null); // Explicitly set to null if not found
+        // Optionally, redirect or show a more specific "not found" message here
+        // For now, existing "Student Not Found" card will handle display
+      }
+    } else if (routeParams === null && !loading) {
+      // useParams resolved to null, meaning route might not be a dynamic match or error in routing
+      setCurrentStudent(null);
+      // router.push('/student-profile'); // Redirect to general student page
+    }
+    // If routeParams is undefined (still loading), do nothing, let loading skeletons show
+  }, [routeParams, students, loading, selectedStudent, setSelectedStudent, router]);
 
 
   if (loading && !currentStudent) { 
     return <StudentProfileSkeleton />;
   }
 
-  if (!isFirebaseDBAvailable && !loading && !currentStudent && students.length === 0) {
-      return (
-          <Card className="mt-4">
-            <CardHeader><CardTitle>No Students</CardTitle></CardHeader>
-            <CardContent>
-                <p>No students found in local mode. Please add a student first.</p>
-                <Button onClick={() => router.push('/dashboard')} className="mt-4">Go to Dashboard</Button>
-            </CardContent>
-          </Card>
-      )
-  }
-
   if (error) {
     return <div className="text-destructive p-4">Error loading student data: {error.message}</div>;
   }
 
+  // This condition handles cases where studentId might be invalid, or student not found after data loads
   if (!currentStudent && !loading) {
+    const studentIdDisplay = typeof routeParams?.studentId === 'string' ? routeParams.studentId : 'unknown';
     return (
       <Card className="mt-4">
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Info className="text-destructive"/>Student Not Found</CardTitle>
         </CardHeader>
         <CardContent>
-          <p>The student with ID "{studentId}" could not be found. They may have been deleted or the ID is incorrect.</p>
+          <p>The student with ID "{studentIdDisplay}" could not be found. They may have been deleted or the ID is incorrect.</p>
           {!isFirebaseDBAvailable && <p className="text-orange-500 font-semibold mt-2">(Operating in Local Mode)</p>}
           <Button onClick={() => router.push('/student-profile')} className="mt-4">Go to Student Selection</Button>
         </CardContent>
       </Card>
     );
   }
-
+  
+  // If currentStudent is still null but loading is false, it means it was not found or id was invalid
+  // This check might be redundant if the above one catches all !currentStudent cases post-loading.
+  // However, it's a fallback.
   if (!currentStudent) {
-    return <StudentProfileSkeleton />;
+    return <StudentProfileSkeleton />; // Or a "Student not found" message if preferred
   }
 
+
   const handleRemoveGoal = async (goalId: string) => {
-    await removeGoalFromStudent(currentStudent.id, goalId);
+    if (currentStudent) { // Ensure currentStudent is not null
+        await removeGoalFromStudent(currentStudent.id, goalId);
+    }
   };
 
   const handleOpenEditAssignedGoalModal = (goal: Goal) => {
@@ -107,12 +120,14 @@ export default function StudentProfilePage() {
 
   return (
     <div className="space-y-6">
+      {/* The `editingStudent` for EditStudentModal is managed by useStudentData context */}
       {editingStudent && <EditStudentModal studentToEdit={editingStudent} />}
+      {/* `editingAssignedGoal` is also from context */}
       {editingAssignedGoal && currentStudent && (
         <EditAssignedGoalModal
           isOpen={!!editingAssignedGoal}
           onClose={closeEditAssignedGoalModal}
-          studentId={editingAssignedGoal.studentId}
+          studentId={editingAssignedGoal.studentId} // This should be currentStudent.id
           goalToEdit={editingAssignedGoal.goal}
         />
       )}
@@ -238,3 +253,4 @@ function StudentProfileSkeleton() {
     </div>
   );
 }
+
