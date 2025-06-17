@@ -35,7 +35,12 @@ export const ErrorLogProvider: React.FC<{ children: ReactNode }> = ({ children }
       timestamp: new Date(),
     };
     setErrorLogs(prevLogs => [newLogEntry, ...prevLogs].slice(0, 50)); // Keep last 50 logs
-    console.error(`Error Logged [${log.type}]: ${log.message}`, {source: log.source, details: log.details});
+    
+    if (log.type === 'warning') {
+      console.warn(`Logged [${log.type}]: ${log.message}`, {source: log.source, details: log.details});
+    } else {
+      console.error(`Logged [${log.type}]: ${log.message}`, {source: log.source, details: log.details});
+    }
   }, []);
 
   const clearErrorLogs = useCallback(() => {
@@ -64,3 +69,4 @@ export const useErrorLog = (): ErrorLogContextType => {
   }
   return context;
 };
+
