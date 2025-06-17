@@ -235,78 +235,77 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
         <div className="space-y-3 flex flex-col">
           <h3 className="text-lg font-medium text-foreground flex items-center gap-2">
             <Edit3 className="h-5 w-5 text-primary" />
-            Or Create & Assign Custom Goal
+            Or Create &amp; Assign Custom Goal
           </h3>
-          <ScrollArea className="flex-grow pr-0 md:pr-2">
-            <div className="space-y-3">
-              <div>
-                <Label htmlFor="customGoalName">Goal Name</Label>
-                <Input
-                  id="customGoalName"
-                  value={customGoalName}
-                  onChange={(e) => setCustomGoalName(e.target.value)}
-                  placeholder="e.g., Follow 2-step directions"
-                  disabled={dataLoading || isAssigningTemplates || isAssigningCustom}
-                />
-              </div>
-              <div>
-                <Label htmlFor="customGoalType">Goal Type</Label>
-                <Select
-                  value={customGoalType}
-                  onValueChange={(value) => setCustomGoalType(value as GoalType)}
-                  disabled={dataLoading || isAssigningTemplates || isAssigningCustom}
-                >
-                  <SelectTrigger id="customGoalType">
-                    <SelectValue placeholder="Select goal type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.values(GOAL_TYPES).map(type => (
-                      <SelectItem key={type} value={type}>{type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="customGoalSmartText">SMART Goal Text</Label>
-                <Textarea
-                  id="customGoalSmartText"
-                  value={customGoalSmartText}
-                  onChange={(e) => setCustomGoalSmartText(e.target.value)}
-                  placeholder="Enter the full SMART goal description..."
-                  rows={3}
-                  disabled={dataLoading || isAssigningTemplates || isAssigningCustom}
-                />
-              </div>
-              <div>
-                <Label htmlFor="customGoalSessionTarget">Session Target Value (Optional)</Label>
-                 <div className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-muted-foreground" />
-                    <Input
-                        id="customGoalSessionTarget"
-                        type="number"
-                        value={customGoalSessionTarget ?? ''}
-                        onChange={(e) => setCustomGoalSessionTarget(e.target.value === '' ? undefined : Number(e.target.value))}
-                        placeholder="e.g., 80 (for 80%)"
-                        className="flex-grow"
-                        min="0"
-                        max="100"
-                        disabled={dataLoading || isAssigningTemplates || isAssigningCustom}
-                    />
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Target percentage (0-100) for accuracy/fluency, or a specific rating for qualitative goals.
-                </p>
-              </div>
+          <div className="space-y-3"> {/* Removed ScrollArea and flex-grow from here */}
+            <div>
+              <Label htmlFor="customGoalName">Goal Name</Label>
+              <Input
+                id="customGoalName"
+                value={customGoalName}
+                onChange={(e) => setCustomGoalName(e.target.value)}
+                placeholder="e.g., Follow 2-step directions"
+                disabled={dataLoading || isAssigningTemplates || isAssigningCustom}
+              />
             </div>
-          </ScrollArea>
-          <Button
-            onClick={handleAssignCustomGoal}
-            disabled={!customGoalName.trim() || !customGoalSmartText.trim() || dataLoading || isAssigningTemplates || isAssigningCustom}
-            className="mt-auto w-full"
-          >
-            {isAssigningCustom ? 'Assigning...' : 'Create & Assign Custom Goal'}
-            <PlusCircle className="ml-2 h-4 w-4" />
-          </Button>
+            <div>
+              <Label htmlFor="customGoalType">Goal Type</Label>
+              <Select
+                value={customGoalType}
+                onValueChange={(value) => setCustomGoalType(value as GoalType)}
+                disabled={dataLoading || isAssigningTemplates || isAssigningCustom}
+              >
+                <SelectTrigger id="customGoalType">
+                  <SelectValue placeholder="Select goal type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.values(GOAL_TYPES).map(type => (
+                    <SelectItem key={type} value={type}>{type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="customGoalSmartText">SMART Goal Text</Label>
+              <Textarea
+                id="customGoalSmartText"
+                value={customGoalSmartText}
+                onChange={(e) => setCustomGoalSmartText(e.target.value)}
+                placeholder="Enter the full SMART goal description..."
+                rows={3}
+                disabled={dataLoading || isAssigningTemplates || isAssigningCustom}
+              />
+            </div>
+            <div>
+              <Label htmlFor="customGoalSessionTarget">Session Target Value (Optional)</Label>
+               <div className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-muted-foreground" />
+                  <Input
+                      id="customGoalSessionTarget"
+                      type="number"
+                      value={customGoalSessionTarget ?? ''}
+                      onChange={(e) => setCustomGoalSessionTarget(e.target.value === '' ? undefined : Number(e.target.value))}
+                      placeholder="e.g., 80 (for 80%)"
+                      className="flex-grow"
+                      min="0"
+                      max="100"
+                      disabled={dataLoading || isAssigningTemplates || isAssigningCustom}
+                  />
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Target percentage (0-100) for accuracy/fluency, or a specific rating for qualitative goals.
+              </p>
+            </div>
+          </div>
+          <div className="flex justify-end pt-3"> {/* Button moved here and styled */}
+            <Button
+              onClick={handleAssignCustomGoal}
+              disabled={!customGoalName.trim() || !customGoalSmartText.trim() || dataLoading || isAssigningTemplates || isAssigningCustom}
+            >
+              {isAssigningCustom ? 'Assigning...' : 'Create &amp; Assign Custom Goal'}
+              <PlusCircle className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
