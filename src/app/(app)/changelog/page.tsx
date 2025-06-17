@@ -19,6 +19,34 @@ interface ChangelogEntry {
 const changelogEntries: ChangelogEntry[] = [
   {
     date: '2025-06-17',
+    title: 'Enhanced Mobile & Tablet Responsiveness',
+    description: 'Improved application layout and usability on smaller screens, including adjustments to dashboards, forms, tables, and modals for better mobile device support.',
+    type: 'improvement',
+    icon: Smartphone,
+  },
+  {
+    date: '2025-06-17',
+    title: 'Data Entry Hotkey Update: Student Slot Focus',
+    description: 'Changed the hotkey to focus on specific student slots (1-4) on the Data Entry page from "Alt + #" to just "#".',
+    type: 'hotkey',
+    icon: KeyboardIcon,
+  },
+  {
+    date: '2025-06-17',
+    title: 'Data Entry Student Icon Opens Edit Modal',
+    description: 'The student icon on each card in the Data Entry page now opens the "Edit Student" modal for quick goal management.',
+    type: 'improvement',
+    icon: Pencil,
+  },
+    {
+    date: '2025-06-17',
+    title: 'Scroll to Focused Goal in Data Entry',
+    description: 'The Data Entry page now automatically scrolls the currently focused goal into view for easier navigation.',
+    type: 'improvement',
+    icon: ArrowUpDown,
+  },
+  {
+    date: '2025-06-17',
     title: 'Student Deletion Feature',
     description: 'Added the ability to delete students and their associated session data, with a confirmation prompt. Accessible from the Student Profile page and sidebar.',
     type: 'feature',
@@ -44,20 +72,6 @@ const changelogEntries: ChangelogEntry[] = [
     description: 'Redesigned goal input cards on the Data Entry page to be more compact, allowing more goals to be visible per student.',
     type: 'improvement',
     icon: Minimize2,
-  },
-  {
-    date: '2025-06-17',
-    title: 'Enhanced Mobile & Tablet Responsiveness',
-    description: 'Improved application layout and usability on smaller screens, including adjustments to dashboards, forms, tables, and modals for better mobile device support.',
-    type: 'improvement',
-    icon: Smartphone,
-  },
-  {
-    date: '2025-06-17',
-    title: 'Data Entry Hotkey Update: Student Slot Focus',
-    description: 'Changed the hotkey to focus on specific student slots (1-4) on the Data Entry page from "Alt + #" to just "#".',
-    type: 'hotkey',
-    icon: KeyboardIcon,
   },
   {
     date: '2025-06-17', // Placeholder date
@@ -107,20 +121,6 @@ const changelogEntries: ChangelogEntry[] = [
     description: 'Added "A" and "Alt+A" hotkeys to cycle to the next/previous student slot on the Data Entry page.',
     type: 'hotkey',
     icon: KeyboardIcon,
-  },
-  {
-    date: '2025-06-17',
-    title: 'Data Entry Student Icon Opens Edit Modal',
-    description: 'The student icon on each card in the Data Entry page now opens the "Edit Student" modal for quick goal management.',
-    type: 'improvement',
-    icon: Pencil,
-  },
-    {
-    date: '2025-06-17',
-    title: 'Scroll to Focused Goal in Data Entry',
-    description: 'The Data Entry page now automatically scrolls the currently focused goal into view for easier navigation.',
-    type: 'improvement',
-    icon: ArrowUpDown,
   },
   {
     date: '2025-06-17',
@@ -190,3 +190,4 @@ export default function ChangelogPage() {
     </div>
   );
 }
+
