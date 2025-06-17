@@ -10,13 +10,14 @@ import { useAuth } from '@/hooks/use-auth';
 import { APP_NAME, APP_SUBTITLE } from '@/lib/constants';
 import { useStudentData } from '@/hooks/use-student-data';
 import AddStudentModal from '@/components/modals/add-student-modal';
+import EditStudentModal from '@/components/modals/edit-student-modal';
 import ErrorLogModal from '@/components/modals/error-log-modal';
 import AppNavigation from './app-navigation'; // For mobile drawer
 import { useRouter } from 'next/navigation';
 
 export default function AppHeader() {
   const { currentUser, signOut } = useAuth();
-  const { openAddStudentModal } = useStudentData();
+  const { openAddStudentModal, editingStudent } = useStudentData();
   const [isErrorLogModalOpen, setIsErrorLogModalOpen] = useState(false);
   const router = useRouter();
 
@@ -87,6 +88,7 @@ export default function AppHeader() {
         </div>
       </div>
       <AddStudentModal />
+      {editingStudent && <EditStudentModal studentToEdit={editingStudent} />}
       <ErrorLogModal isOpen={isErrorLogModalOpen} onClose={() => setIsErrorLogModalOpen(false)} />
     </header>
   );

@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Edit, Trash2, PlusCircle, Info, Target, Edit3, CheckSquare, TrendingUp } from 'lucide-react';
 import { formatDate, generateUUID } from '@/lib/helpers'; 
 import Link from 'next/link';
-import EditStudentModal from '@/components/modals/edit-student-modal';
+// EditStudentModal is now globally available from AppHeader
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import AssignGoalToStudentModal from '@/components/modals/assign-goal-to-student-modal';
@@ -19,19 +19,19 @@ import EditAssignedGoalModal from '@/components/modals/edit-assigned-goal-modal'
 
 
 export default function StudentProfilePage() {
-  const routeParams = useParams(); // Renamed from params to avoid confusion
+  const routeParams = useParams(); 
   const router = useRouter();
-  // const studentIdFromRoute = routeParams?.studentId as string; // Initial derivation if needed, but prefer in-effect
+  
 
   const {
     students,
-    loading, // This is studentData loading
+    loading, 
     error,
     isFirebaseDBAvailable,
     selectedStudent,
     setSelectedStudent,
-    openEditStudentModal,
-    editingStudent, // This comes from useStudentData, used to control EditStudentModal
+    openEditStudentModal, // This function from context will be used to trigger the global modal
+    // editingStudent, // No longer needed here for local modal control
     openDeleteStudentModal,
     removeGoalFromStudent,
     editingAssignedGoal, 
@@ -53,22 +53,15 @@ export default function StudentProfilePage() {
       const foundStudent = students.find(s => s.id === studentIdToProcess);
       if (foundStudent) {
         setCurrentStudent(foundStudent);
-        // Ensure the global selected student in context is updated if this page is directly navigated to
         if (!selectedStudent || selectedStudent.id !== foundStudent.id) {
           setSelectedStudent(foundStudent);
         }
       } else if (!loading && students.length > 0) {
-        // studentId is valid from URL, but student not found in loaded data
-        setCurrentStudent(null); // Explicitly set to null if not found
-        // Optionally, redirect or show a more specific "not found" message here
-        // For now, existing "Student Not Found" card will handle display
+        setCurrentStudent(null); 
       }
     } else if (routeParams === null && !loading) {
-      // useParams resolved to null, meaning route might not be a dynamic match or error in routing
       setCurrentStudent(null);
-      // router.push('/student-profile'); // Redirect to general student page
     }
-    // If routeParams is undefined (still loading), do nothing, let loading skeletons show
   }, [routeParams, students, loading, selectedStudent, setSelectedStudent, router]);
 
 
@@ -80,7 +73,6 @@ export default function StudentProfilePage() {
     return <div className="text-destructive p-4">Error loading student data: {error.message}</div>;
   }
 
-  // This condition handles cases where studentId might be invalid, or student not found after data loads
   if (!currentStudent && !loading) {
     const studentIdDisplay = typeof routeParams?.studentId === 'string' ? routeParams.studentId : 'unknown';
     return (
@@ -97,16 +89,13 @@ export default function StudentProfilePage() {
     );
   }
   
-  // If currentStudent is still null but loading is false, it means it was not found or id was invalid
-  // This check might be redundant if the above one catches all !currentStudent cases post-loading.
-  // However, it's a fallback.
   if (!currentStudent) {
-    return <StudentProfileSkeleton />; // Or a "Student not found" message if preferred
+    return <StudentProfileSkeleton />; 
   }
 
 
   const handleRemoveGoal = async (goalId: string) => {
-    if (currentStudent) { // Ensure currentStudent is not null
+    if (currentStudent) { 
         await removeGoalFromStudent(currentStudent.id, goalId);
     }
   };
@@ -120,14 +109,12 @@ export default function StudentProfilePage() {
 
   return (
     <div className="space-y-6">
-      {/* The `editingStudent` for EditStudentModal is managed by useStudentData context */}
-      {editingStudent && <EditStudentModal studentToEdit={editingStudent} />}
-      {/* `editingAssignedGoal` is also from context */}
+      {/* EditStudentModal is now rendered in AppHeader, triggered by openEditStudentModal from context */}
       {editingAssignedGoal && currentStudent && (
         <EditAssignedGoalModal
           isOpen={!!editingAssignedGoal}
           onClose={closeEditAssignedGoalModal}
-          studentId={editingAssignedGoal.studentId} // This should be currentStudent.id
+          studentId={editingAssignedGoal.studentId} 
           goalToEdit={editingAssignedGoal.goal}
         />
       )}
