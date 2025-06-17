@@ -2,7 +2,7 @@
 'use client';
 
 import React from 'react';
-import type { Goal, SessionGoalData, PromptType } from '@/lib/types';
+import type { Goal, SessionGoalData, PromptType, GoalType } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -41,6 +41,53 @@ export default function GoalDataInputComponent({
   const handleChange = (field: string, value: any) => {
     onChange(field, { ...data, [field]: value });
   };
+
+  const calculateAccuracy = (): string => {
+    let correct = 0;
+    let totalOpportunities = 0;
+    const type = goal.type;
+
+    switch (type) {
+      case 'ARTICULATION':
+        correct = Number(data.correct || 0);
+        totalOpportunities = correct + Number(data.incorrect || 0);
+        break;
+      case 'LANGUAGE_COMPREHENSION':
+        correct = Number(data.questionsCorrect || 0);
+        totalOpportunities = (data.questionsAttempted !== undefined && Number(data.questionsAttempted || 0) > 0)
+          ? Number(data.questionsAttempted || 0)
+          : (correct + Number(data.questionsIncorrect || 0));
+        if (data.questionsAttempted !== undefined && correct > totalOpportunities) correct = totalOpportunities;
+        break;
+      case 'LANGUAGE_EXPRESSION':
+        correct = Number(data.successfulResponses || 0);
+        totalOpportunities = (data.opportunities !== undefined && Number(data.opportunities || 0) > 0 && (Number(data.successfulResponses || 0) + Number(data.unsuccessfulResponses || 0) <= Number(data.opportunities || 0)))
+          ? Number(data.opportunities || 0)
+          : (correct + Number(data.unsuccessfulResponses || 0));
+        if (data.opportunities !== undefined && correct > totalOpportunities) correct = totalOpportunities;
+        break;
+      case 'PHONOLOGICAL_PROCESSES':
+        correct = Number(data.correctProductions || 0);
+        totalOpportunities = (data.opportunities !== undefined && Number(data.opportunities || 0) > 0 && (Number(data.correctProductions || 0) + Number(data.incorrectProductions || 0) <= Number(data.opportunities || 0)))
+          ? Number(data.opportunities || 0)
+          : (correct + Number(data.incorrectProductions || 0));
+        if (data.opportunities !== undefined && correct > totalOpportunities) correct = totalOpportunities;
+        break;
+      case 'FLUENCY_SYLLABLE_STUTTER':
+        const totalSyllables = Number(data.totalSyllables || 0);
+        const stutteredSyllables = Number(data.stutteredSyllables || 0);
+        correct = Math.max(0, totalSyllables - stutteredSyllables);
+        totalOpportunities = totalSyllables;
+        break;
+      default:
+        return 'N/A';
+    }
+
+    if (totalOpportunities === 0) return 'N/A (0%)';
+    const percentage = (correct / totalOpportunities) * 100;
+    return `${percentage.toFixed(1)}%`;
+  };
+
 
   const renderInputFields = () => {
     switch (goal.type) {
@@ -237,16 +284,6 @@ export default function GoalDataInputComponent({
                 />
               </FormItem>
             </div>
-            <FormItem>
-              <FormLabel>Opportunities (Optional)</FormLabel>
-              <Input
-                  type="number"
-                  min="0"
-                  value={data.opportunities ?? ((data.successfulResponses ?? 0) + (data.unsuccessfulResponses ?? 0))}
-                  onChange={(e) => handleChange('opportunities', parseInt(e.target.value) || 0)}
-                  className="h-8 text-sm"
-                />
-            </FormItem>
           </>
         );
       case 'PHONOLOGICAL_PROCESSES':
@@ -284,16 +321,6 @@ export default function GoalDataInputComponent({
                 />
               </FormItem>
             </div>
-            <FormItem>
-                <FormLabel>Opportunities (Optional)</FormLabel>
-                <Input
-                  type="number"
-                  min="0"
-                  value={data.opportunities ?? ((data.correctProductions ?? 0) + (data.incorrectProductions ?? 0))}
-                  onChange={(e) => handleChange('opportunities', parseInt(e.target.value) || 0)}
-                  className="h-8 text-sm"
-                />
-              </FormItem>
           </>
         );
       default:
@@ -302,6 +329,8 @@ export default function GoalDataInputComponent({
   };
 
   const showPromptCounters = goal.type !== 'QUALITATIVE_OBSERVATION' && goal.type !== 'FLUENCY_SYLLABLE_STUTTER';
+  const showAccuracyDisplay = goal.type !== 'QUALITATIVE_OBSERVATION';
+
 
   return (
     <Card
@@ -344,6 +373,16 @@ export default function GoalDataInputComponent({
       </CardHeader>
       <CardContent className="p-2 space-y-1.5">
         {renderInputFields()}
+
+        {showAccuracyDisplay && (
+          <div className="mt-1.5">
+            <FormLabel>Accuracy</FormLabel>
+            <p className="text-sm font-semibold text-primary h-8 flex items-center">
+              {calculateAccuracy()}
+            </p>
+          </div>
+        )}
+
         {showPromptCounters && (
           <FormItem>
             <FormLabel>Prompt Levels</FormLabel>
@@ -360,8 +399,6 @@ export default function GoalDataInputComponent({
                         style={{
                         borderColor: PROMPT_COLORS[pt],
                         color: PROMPT_COLORS[pt],
-                        // Optional: slight background if count > 0
-                        // backgroundColor: Number(data[pt] || 0) > 0 ? `${PROMPT_COLORS[pt]}1A` : 'transparent' 
                         }}
                         onClick={() => {
                         const currentCount = Number(data[pt] || 0);
