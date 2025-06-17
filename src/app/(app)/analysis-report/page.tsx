@@ -73,7 +73,8 @@ const transformSessionDataForChart = (sessions: SessionData[], selectedGoalId?: 
 export default function AnalysisReportPage() {
   const { students, sessions, loading: dataLoading } = useStudentData();
   const searchParams = useSearchParams();
-  const [selectedStudentId, setSelectedStudentId] = useState<string | undefined>(searchParams.get('studentId') || undefined);
+  const studentIdFromQuery = searchParams.get('studentId');
+  const [selectedStudentId, setSelectedStudentId] = useState<string | undefined>(studentIdFromQuery || undefined);
   const [selectedGoalId, setSelectedGoalId] = useState<string | undefined>(undefined);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [technicalSummary, setTechnicalSummary] = useState<string | null>(null);
@@ -84,13 +85,13 @@ export default function AnalysisReportPage() {
   const selectedStudent = useMemo(() => students.find(s => s.id === selectedStudentId), [students, selectedStudentId]);
 
   useEffect(() => {
-    const studentIdFromQuery = searchParams.get('studentId');
+    // studentIdFromQuery is already declared outside from searchParams
     if (studentIdFromQuery && students.find(s => s.id === studentIdFromQuery)) {
       setSelectedStudentId(studentIdFromQuery);
     } else if (!selectedStudentId && students.length > 0) {
       setSelectedStudentId(students[0].id);
     }
-  }, [searchParams, students, selectedStudentId]);
+  }, [studentIdFromQuery, students, selectedStudentId]);
 
 
   const studentSessions = useMemo(() => {
@@ -401,3 +402,4 @@ function AnalysisReportSkeleton() {
         </div>
     )
 }
+
