@@ -13,7 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Users, Save, PlusCircle, XCircle, Edit2, Info, ArrowUp, ArrowDown } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 import GoalDataInputComponent from '@/components/forms/goal-data-input';
-import { GOAL_TYPE_FIELDS, MAX_STUDENTS_DATA_ENTRY, PROMPT_HOTKEY_MAP } from '@/lib/constants';
+import { GOAL_TYPE_FIELDS, PROMPT_HOTKEY_MAP } from '@/lib/constants'; // MAX_STUDENTS_DATA_ENTRY is no longer used here for limiting
 import { generateUUID } from '@/lib/helpers';
 import { getActivitySuggestions } from '@/ai/flows/activity-suggestions';
 import { useToast } from '@/hooks/use-toast';
@@ -30,7 +30,7 @@ interface StudentSessionState {
   notes: string;
   goalData: Record<string, SessionGoalData['data']>;
   originalGoalHeaders: Goal[];
-  isCollapsed: boolean; 
+  // isCollapsed is no longer needed as content is always shown
 }
 
 export default function DataEntryPage() {
@@ -170,14 +170,27 @@ export default function DataEntryPage() {
   }, [sessionDate, selectedStudentIds, studentSessionStates, students, addSession, sessionTime, toast]);
 
 
-  useEffect(() => {
-    if (!studentsLoading && students.length > 0) {
-      const initialIds = studentFromContext
-        ? [studentFromContext.id, ...students.filter(s => s.id !== studentFromContext.id).map(s => s.id)]
-        : students.map(s => s.id);
-      setSelectedStudentIds(initialIds.slice(0, MAX_STUDENTS_DATA_ENTRY));
+ useEffect(() => {
+    // This effect manages the initial student slot based on context or if students list is available.
+    // It only runs if no student slots are currently selected.
+    if (!studentsLoading && selectedStudentIds.length === 0) {
+      let initialIdToSelect: string | undefined = undefined;
+      if (studentFromContext && students.find(s => s.id === studentFromContext.id)) {
+        initialIdToSelect = studentFromContext.id;
+      }
+      // else if (students.length > 0) { // Optionally, auto-select the first student if no context
+      //   initialIdToSelect = students[0].id;
+      // }
+
+      if (initialIdToSelect) {
+        setSelectedStudentIds([initialIdToSelect]);
+        setFocusedStudentSlotIndex(0);
+      } else {
+        setSelectedStudentIds([]); // Ensure it's empty if no conditions met
+      }
     }
-  }, [students, studentsLoading, studentFromContext]);
+  }, [studentsLoading, students, studentFromContext, selectedStudentIds.length, setFocusedStudentSlotIndex]);
+
 
   useEffect(() => {
     const newStates: Record<string, StudentSessionState> = {};
@@ -206,7 +219,7 @@ export default function DataEntryPage() {
           notes: existingState?.notes || '',
           goalData: initialGoalData,
           originalGoalHeaders: goalsToUse,
-          isCollapsed: idx !== focusedStudentSlotIndex, 
+          // isCollapsed: idx !== focusedStudentSlotIndex, // This is no longer used to hide content
         };
 
         if (newFocusedGoalIndexes[id] === undefined ) {
@@ -258,7 +271,7 @@ export default function DataEntryPage() {
 
       const focusedInfo = getCurrentFocusedGoalInfo();
 
-      if (!alt && key.match(/^[1-4]$/)) {
+      if (!alt && key.match(/^[1-4]$/)) { // Hotkey still works for first 4 slots
         event.preventDefault();
         const slotIndex = parseInt(key, 10) - 1;
         if (slotIndex < selectedStudentIds.length) {
@@ -355,36 +368,50 @@ export default function DataEntryPage() {
     setSelectedStudentIds(prev => {
       const newSelection = [...prev];
       newSelection[index] = studentId;
-      return Array.from(new Set(newSelection)).slice(0, MAX_STUDENTS_DATA_ENTRY);
+      // Ensure no duplicates if a student is moved to a slot they were already in via another slot's dropdown
+      const uniqueSelection = Array.from(new Set(newSelection));
+      return uniqueSelection;
     });
     setFocusedStudentSlotIndex(index);
   };
 
   const addStudentSlot = () => {
-    if (selectedStudentIds.length < MAX_STUDENTS_DATA_ENTRY) {
-      const availableStudent = students.find(s => !selectedStudentIds.includes(s.id));
-      if (availableStudent) {
-        setSelectedStudentIds(prev => [...prev, availableStudent.id]);
-      } else {
-        toast({ title: "Info", description: "No more available students to add.", variant: "default" });
-      }
+    // No longer limited by MAX_STUDENTS_DATA_ENTRY
+    const availableStudent = students.find(s => !selectedStudentIds.includes(s.id));
+    if (availableStudent) {
+      setSelectedStudentIds(prev => [...prev, availableStudent.id]);
+      // Focus the newly added slot
+      setFocusedStudentSlotIndex(selectedStudentIds.length); // length will be new length -1 after state update
+    } else {
+      toast({ title: "Info", description: "No more unique available students to add, or all students are already in slots.", variant: "default" });
     }
   };
 
-  const removeStudentSlot = (index: number) => {
-    const studentIdToRemove = selectedStudentIds[index];
-    setSelectedStudentIds(prev => prev.filter((_, i) => i !== index));
+  const removeStudentSlot = (indexToRemove: number) => {
+    const currentFocusedId = selectedStudentIds[focusedStudentSlotIndex];
+    const studentIdToRemove = selectedStudentIds[indexToRemove];
+
+    const newSelectedIds = selectedStudentIds.filter((_, i) => i !== indexToRemove);
+    setSelectedStudentIds(newSelectedIds);
+
     setStudentSessionStates(prevStates => {
       const newStates = {...prevStates};
       delete newStates[studentIdToRemove];
       return newStates;
     });
-    if (focusedStudentSlotIndex >= selectedStudentIds.length - 1 && selectedStudentIds.length > 1) {
-      setFocusedStudentSlotIndex(Math.max(0, selectedStudentIds.length - 2));
-    } else if (selectedStudentIds.length <=1){
+
+    if (newSelectedIds.length === 0) {
         setFocusedStudentSlotIndex(0);
+    } else {
+        let newFocusIndex = newSelectedIds.indexOf(currentFocusedId);
+        if (newFocusIndex === -1) { // focused student was the one removed or not in new list
+            newFocusIndex = Math.min(indexToRemove, newSelectedIds.length - 1);
+            newFocusIndex = Math.max(0, newFocusIndex); // Ensure it's not negative
+        }
+        setFocusedStudentSlotIndex(newFocusIndex);
     }
   };
+
 
   const handleInputChange = (studentId: string, field: 'activity' | 'notes', value: string) => {
     setStudentSessionStates(prev => ({
@@ -467,18 +494,21 @@ export default function DataEntryPage() {
     return students.filter(s => !selectedStudentIds.includes(s.id));
   }, [students, selectedStudentIds]);
 
-  if (studentsLoading) {
+  if (studentsLoading && students.length === 0) { // Added students.length === 0 to ensure skeleton only shows on initial full load
     return (
       <div className="space-y-6">
         <Card><CardHeader><Skeleton className="h-8 w-1/2" /></CardHeader><CardContent><Skeleton className="h-40 w-full" /></CardContent></Card>
-        <Card><CardHeader><Skeleton className="h-8 w-1/2" /></CardHeader><CardContent><Skeleton className="h-60 w-full" /></CardContent></Card>
+        <div className="flex flex-row gap-6 items-start overflow-x-auto py-4 px-1">
+            <Skeleton className="h-96 w-[350px] flex-shrink-0" />
+            <Skeleton className="h-96 w-[350px] flex-shrink-0" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <Card className="shadow-lg">
+    <div className="space-y-6 flex flex-col h-full">
+      <Card className="shadow-lg flex-shrink-0">
         <CardHeader>
           <CardTitle className="text-2xl font-bold flex items-center gap-2">
             <Edit2 className="h-7 w-7 text-primary"/> Data Entry
@@ -503,12 +533,12 @@ export default function DataEntryPage() {
             </div>
           </div>
            <p className="text-sm text-muted-foreground">
-            Hotkeys: [1-4] Focus Slot | A/Alt+A Cycle Students | S/Alt+S Cycle Goals | C/Alt+C Correct/Total | N/Alt+N Incorrect/Stuttered | V/G/P/F/I Prompts | Ctrl+Enter Save | Alt+E Edit Student.
+            Hotkeys: 1-4 Focus initial slots | A/Alt+A Cycle Students | S/Alt+S Cycle Goals | C/Alt+C Correct/Total | N/Alt+N Incorrect/Stuttered | V/G/P/F/I Prompts | Ctrl+Enter Save | Alt+E Edit Student.
           </p>
         </CardContent>
       </Card>
 
-      <div className="flex flex-col md:flex-row md:flex-wrap gap-4 items-stretch">
+      <div className="flex flex-row gap-6 items-start overflow-x-auto py-4 px-1 flex-grow min-h-0"> {/* Ensure this div can scroll and takes up space */}
         {selectedStudentIds.map((studentId, slotIndex) => {
           const student = students.find(s => s.id === studentId);
           const state = studentSessionStates[studentId];
@@ -521,8 +551,8 @@ export default function DataEntryPage() {
             <Card
               key={studentId}
               className={cn(
-                `flex flex-col transition-all duration-300 ease-in-out shadow-md w-full`,
-                isStudentFocused ? 'sm:flex-grow-[2] sm:basis-2/5' : 'sm:flex-grow-[1] sm:basis-1/5', 
+                `flex flex-col transition-all duration-300 ease-in-out shadow-md flex-shrink-0`,
+                isStudentFocused ? 'w-[450px]' : 'w-[350px]', 
                 isStudentFocused && 'ring-2 ring-primary ring-offset-2 shadow-xl'
               )}
               onClick={() => setFocusedStudentSlotIndex(slotIndex)}
@@ -568,7 +598,7 @@ export default function DataEntryPage() {
                   </div>
                 </div>
               </CardHeader>
-              <ScrollArea className={cn("flex-grow")}> 
+              <ScrollArea className="flex-grow h-[450px]"> {/* Added fixed height to scroll area */}
                 <CardContent className="p-3 space-y-3">
                   <div>
                     <Label htmlFor={`activity-${studentId}`}>Activity</Label>
@@ -639,19 +669,18 @@ export default function DataEntryPage() {
           );
         })}
 
-        {selectedStudentIds.length < MAX_STUDENTS_DATA_ENTRY && (
-          <Button
-            variant="outline"
-            onClick={addStudentSlot}
-            className="w-full md:w-auto md:flex-grow-[1] md:basis-1/5 py-8 border-dashed hover:border-primary hover:text-primary"
-          >
-            <PlusCircle className="mr-2 h-5 w-5" /> Add Student Slot ({selectedStudentIds.length}/{MAX_STUDENTS_DATA_ENTRY})
-          </Button>
-        )}
+        <Button
+          variant="outline"
+          onClick={addStudentSlot}
+          className="flex-shrink-0 w-[300px] min-h-[200px] flex items-center justify-center py-8 border-dashed hover:border-primary hover:text-primary"
+          title="Add another student data entry card"
+        >
+          <PlusCircle className="mr-2 h-5 w-5" /> Add Student Slot
+        </Button>
       </div>
 
       {selectedStudentIds.length > 0 && (
-        <div className="mt-6 flex justify-end">
+        <div className="mt-auto flex-shrink-0 flex justify-end py-4 border-t">
           <Button onClick={handleSaveSession} disabled={isSaving} size="lg">
             <Save className="mr-2 h-5 w-5" />
             {isSaving ? 'Saving Session(s)...' : 'Save Session(s)'}
@@ -659,11 +688,11 @@ export default function DataEntryPage() {
         </div>
       )}
        {selectedStudentIds.length === 0 && !studentsLoading && (
-          <Card className="mt-6">
+          <Card className="mt-6 flex-shrink-0">
             <CardContent className="p-8 text-center text-muted-foreground">
                 <Info className="h-10 w-10 mx-auto mb-3 text-primary"/>
                 <p className="text-lg">No students selected for data entry.</p>
-                <p>Click "Add Student Slot" or select students from the sidebar to begin.</p>
+                <p>Click "Add Student Slot" to begin.</p>
                  {students.length === 0 && <p className="mt-2">You don't have any students yet. Go to 'Student Profile' or use Alt+M to add one.</p>}
             </CardContent>
           </Card>
