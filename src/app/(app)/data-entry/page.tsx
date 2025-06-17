@@ -32,7 +32,14 @@ interface StudentSessionState {
 }
 
 export default function DataEntryPage() {
-  const { students, loading: studentsLoading, addSession, getSessionsForStudent, selectedStudent: studentFromContext } = useStudentData();
+  const { 
+    students, 
+    loading: studentsLoading, 
+    addSession, 
+    getSessionsForStudent, 
+    selectedStudent: studentFromContext,
+    openEditStudentModal // Added this
+  } = useStudentData();
   const [sessionDate, setSessionDate] = useState<Date | undefined>(new Date());
   const [sessionTime, setSessionTime] = useState<string>(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
@@ -426,7 +433,19 @@ export default function DataEntryPage() {
               <CardHeader className="bg-muted/50 p-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 w-full">
-                    <Users className="h-5 w-5 text-primary flex-shrink-0" />
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 p-0 flex-shrink-0"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            openEditStudentModal(student);
+                        }}
+                        title={`Manage ${student.name}'s goals and info`}
+                        aria-label={`Manage ${student.name}'s goals and info`}
+                    >
+                        <Users className="h-5 w-5 text-primary" />
+                    </Button>
                     <Select value={studentId} onValueChange={(newStudentId) => handleStudentSelect(newStudentId, slotIndex)}>
                       <SelectTrigger className="flex-grow truncate">
                         <SelectValue placeholder="Select Student" />
