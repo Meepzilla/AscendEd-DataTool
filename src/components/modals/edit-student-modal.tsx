@@ -374,21 +374,20 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
                 ) : (
                   <ul className="space-y-1">
                     {filteredGoalTemplates.map(template => (
-                      <li key={template.id} className="flex justify-between items-center p-1.5 hover:bg-muted/50 rounded-md text-sm">
-                        <div className="truncate pr-2">
-                          <span title={template.name}>{template.name}</span>
-                          <Badge variant="secondary" className="ml-2">{template.type}</Badge>
-                        </div>
+                      <li key={template.id} className="flex items-center p-1.5 hover:bg-muted/50 rounded-md text-sm gap-2">
                         <Button 
                           variant="ghost" 
                           size="icon" 
                           className="h-7 w-7 shrink-0" 
                           onClick={() => handleAssignTemplateGoal(template)}
-                          // The button is only shown if the template is not yet assigned due to filteredGoalTemplates logic
                           title={`Assign ${template.name}`}
                         >
-                          <PlusCircleIcon className="h-4.5 w-4.5 text-primary" />
+                          <PlusCircleIcon className="h-4 w-4 text-primary" />
                         </Button>
+                        <div className="truncate flex-grow min-w-0">
+                          <span title={template.name}>{template.name}</span>
+                          <Badge variant="secondary" className="ml-2">{template.type}</Badge>
+                        </div>
                       </li>
                     ))}
                   </ul>
