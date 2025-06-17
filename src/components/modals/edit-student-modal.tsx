@@ -10,10 +10,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useStudentData } from '@/hooks/use-student-data';
-import type { Student, Goal, GoalTemplate } from '@/lib/types';
+import type { Student, Goal, GoalTemplate, GoalType } from '@/lib/types';
 import { StudentSchema } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { XIcon, PlusCircleIcon, SearchIcon } from 'lucide-react';
+import { XIcon, PlusCircleIcon, SearchIcon, Sparkles, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Select,
@@ -23,11 +23,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { GOAL_TYPES } from '@/lib/constants';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { generateUUID } from '@/lib/helpers';
+import { generateSmartGoal } from '@/ai/flows/smart-goal-generation';
+import { useToast } from '@/hooks/use-toast';
+import { Separator } from '@/components/ui/separator';
+import { useErrorLog } from '@/hooks/use-error-log';
 
 type EditStudentFormData = z.infer<typeof StudentSchema>;
 
 interface EditStudentModalProps {
-  studentToEdit: Student | null; // Prop to control which student is being edited
+  studentToEdit: Student | null; 
 }
 
 export default function EditStudentModal({ studentToEdit } : EditStudentModalProps) {
@@ -40,36 +47,55 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
     assignGoalToStudent,
     removeGoalFromStudent,
   } = useStudentData();
+  const { toast } = useToast();
+  const { addErrorLog } = useErrorLog();
   
   const currentStudent = students.find(s => s.id === studentToEdit?.id) || null;
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmittingName, setIsSubmittingName] = useState(false);
   
   const form = useForm<EditStudentFormData>({
     resolver: zodResolver(StudentSchema),
     defaultValues: { name: '' },
   });
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [goalTypeFilter, setGoalTypeFilter] = useState<string>('ALL');
+  const [templateSearchTerm, setTemplateSearchTerm] = useState('');
+  const [templateGoalTypeFilter, setTemplateGoalTypeFilter] = useState<string>('ALL');
+
+  // State for AI Goal Generation
+  const [aiGoalName, setAiGoalName] = useState('');
+  const [aiGoalType, setAiGoalType] = useState<GoalType>(Object.values(GOAL_TYPES)[0] as GoalType);
+  const [aiGoalPrompt, setAiGoalPrompt] = useState('');
+  const [aiGeneratedSmartGoal, setAiGeneratedSmartGoal] = useState('');
+  const [aiGoalSessionTarget, setAiGoalSessionTarget] = useState<number | undefined>(undefined);
+  const [isAiGenerating, setIsAiGenerating] = useState(false);
+  const [isAssigningAiGoal, setIsAssigningAiGoal] = useState(false);
+
 
   useEffect(() => {
     if (currentStudent) {
       form.reset({ name: currentStudent.name });
+      // Reset AI form fields when modal opens or student changes
+      setAiGoalName('');
+      setAiGoalType(Object.values(GOAL_TYPES)[0] as GoalType);
+      setAiGoalPrompt('');
+      setAiGeneratedSmartGoal('');
+      setAiGoalSessionTarget(undefined);
     }
   }, [currentStudent, form]);
 
-  const onSubmit = async (data: EditStudentFormData) => {
+  const onSubmitName = async (data: EditStudentFormData) => {
     if (!currentStudent) return;
-    setIsSubmitting(true);
+    setIsSubmittingName(true);
     await updateStudent(currentStudent.id, { name: data.name });
-    setIsSubmitting(false);
+    setIsSubmittingName(false);
+    // Toast is handled in updateStudent
   };
 
-  const handleAssignGoal = (template: GoalTemplate) => {
+  const handleAssignTemplateGoal = (template: GoalTemplate) => {
     if (!currentStudent) return;
     const newGoal: Goal = {
-      id: '', 
+      id: generateUUID(), 
       name: template.name,
       type: template.type,
       smartGoal: template.generatedSmartGoal || `SMART goal for ${template.name}`, 
@@ -79,14 +105,74 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
   };
 
   const filteredGoalTemplates = goalTemplates.filter(template => {
-    const nameMatch = template.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const typeMatch = goalTypeFilter === 'ALL' || template.type === goalTypeFilter;
+    const nameMatch = template.name.toLowerCase().includes(templateSearchTerm.toLowerCase());
+    const typeMatch = templateGoalTypeFilter === 'ALL' || template.type === templateGoalTypeFilter;
     return nameMatch && typeMatch;
   });
 
   const isGoalAssigned = (templateId: string): boolean => {
     if (!currentStudent) return false;
-    return currentStudent.goals.some(g => g.name === goalTemplates.find(t=>t.id === templateId)?.name && g.type === goalTemplates.find(t=>t.id === templateId)?.type);
+    const template = goalTemplates.find(t => t.id === templateId);
+    if (!template) return false;
+    return currentStudent.goals.some(g => g.name === template.name && g.type === template.type);
+  };
+
+  const handleGenerateAiSmartGoal = async () => {
+    if (!aiGoalPrompt.trim()) {
+      toast({ title: "Info", description: "AI prompt cannot be empty.", variant: "default" });
+      return;
+    }
+    setIsAiGenerating(true);
+    setAiGeneratedSmartGoal('');
+    try {
+      const result = await generateSmartGoal({ goalPrompt: aiGoalPrompt });
+      if (result.smartGoal) {
+        setAiGeneratedSmartGoal(result.smartGoal);
+        toast({ title: "AI Success", description: "SMART goal text generated!" });
+      } else {
+        toast({ title: "AI Info", description: "AI did not return a goal. Try refining your prompt.", variant: "default" });
+      }
+    } catch (error: any) {
+      console.error("Error generating SMART goal via AI:", error);
+      addErrorLog({ message: 'Failed to generate SMART goal with AI in EditStudentModal.', source: 'EditStudentModal.handleGenerateAiSmartGoal', details: error.message, type: 'error' });
+      toast({ title: "AI Error", description: "Failed to generate SMART goal text.", variant: "destructive" });
+    } finally {
+      setIsAiGenerating(false);
+    }
+  };
+
+  const handleAssignAiGeneratedGoal = async () => {
+    if (!currentStudent || !aiGoalName.trim() || !aiGeneratedSmartGoal.trim()) {
+      toast({ title: "Validation Error", description: "Goal name and generated SMART goal text are required.", variant: "destructive" });
+      return;
+    }
+    if (aiGoalSessionTarget !== undefined && (aiGoalSessionTarget < 0 || aiGoalSessionTarget > 100)) {
+        toast({ title: "Validation Error", description: "Session target percentage must be between 0 and 100 if provided.", variant: "destructive" });
+        return;
+    }
+    setIsAssigningAiGoal(true);
+    const newGoal: Goal = {
+      id: generateUUID(),
+      name: aiGoalName,
+      type: aiGoalType,
+      smartGoal: aiGeneratedSmartGoal,
+      sessionTargetValue: aiGoalSessionTarget,
+    };
+    try {
+      await assignGoalToStudent(currentStudent.id, newGoal);
+      toast({ title: "Success", description: `AI Generated Goal "${aiGoalName}" assigned.` });
+      // Reset AI form fields after successful assignment
+      setAiGoalName('');
+      setAiGoalType(Object.values(GOAL_TYPES)[0] as GoalType);
+      setAiGoalPrompt('');
+      setAiGeneratedSmartGoal('');
+      setAiGoalSessionTarget(undefined);
+    } catch (error) {
+        console.error("Error assigning AI generated goal:", error);
+        toast({ title: "Error", description: "Could not assign AI generated goal.", variant: "destructive"});
+    } finally {
+      setIsAssigningAiGoal(false);
+    }
   };
 
 
@@ -99,120 +185,213 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
       title={`Edit Student: ${currentStudent.name}`}
       size="xl"
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium border-b pb-2">Student Information</h3>
-          <Form {...form}>
-            <form 
-              onSubmit={form.handleSubmit(onSubmit)} 
-              onKeyDown={(e) => {
-                if (e.ctrlKey && e.key === 'Enter') {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  form.handleSubmit(onSubmit)();
-                }
-              }}
-              className="space-y-4"
-            >
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel htmlFor="editStudentName">Student Name</FormLabel>
-                    <FormControl>
-                      <Input id="editStudentName" placeholder="e.g., Jane Doe" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="flex gap-2">
-                <Button type="submit" disabled={isSubmitting || dataLoading}>
-                  {isSubmitting || dataLoading ? 'Saving Name...' : 'Save Name Changes'}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </div>
-
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium border-b pb-2">Manage Assigned Goals</h3>
-          
-          <div className="space-y-2">
-            <h4 className="text-md font-medium">Current Goals ({currentStudent.goals.length})</h4>
-            {currentStudent.goals.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No goals assigned yet.</p>
-            ) : (
-              <ScrollArea className="h-32 border rounded-md p-2">
-                <ul className="space-y-1">
-                  {currentStudent.goals.map(goal => (
-                    <li key={goal.id} className="flex justify-between items-center p-1.5 bg-muted/50 rounded-md text-sm">
-                      <span className="truncate pr-2" title={goal.name}>{goal.name} <Badge variant="outline" className="ml-1">{goal.type}</Badge></span>
-                      <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => removeGoalFromStudent(currentStudent.id, goal.id)}>
-                        <XIcon className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              </ScrollArea>
-            )}
+      <ScrollArea className="max-h-[75vh] p-1">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-2">
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium border-b pb-2">Student Information</h3>
+            <Form {...form}>
+              <form 
+                onSubmit={form.handleSubmit(onSubmitName)} 
+                onKeyDown={(e) => {
+                  if (e.ctrlKey && e.key === 'Enter' && !e.nativeEvent.target?.closest('textarea')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    form.handleSubmit(onSubmitName)();
+                  }
+                }}
+                className="space-y-4"
+              >
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel htmlFor="editStudentName">Student Name</FormLabel>
+                      <FormControl>
+                        <Input id="editStudentName" placeholder="e.g., Jane Doe" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="flex gap-2">
+                  <Button type="submit" disabled={isSubmittingName || dataLoading}>
+                    {isSubmittingName || dataLoading ? 'Saving Name...' : 'Save Name Changes'}
+                  </Button>
+                </div>
+              </form>
+            </Form>
           </div>
 
-          <div className="space-y-2">
-            <h4 className="text-md font-medium">Available Goal Templates</h4>
-            <div className="flex gap-2 items-center">
-              <div className="relative flex-grow">
-                <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  placeholder="Search templates..." 
-                  value={searchTerm} 
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9"
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium border-b pb-2">Manage Assigned Goals</h3>
+            
+            <div className="space-y-2">
+              <h4 className="text-md font-medium">Current Goals ({currentStudent.goals.length})</h4>
+              {currentStudent.goals.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No goals assigned yet.</p>
+              ) : (
+                <ScrollArea className="h-24 border rounded-md p-2">
+                  <ul className="space-y-1">
+                    {currentStudent.goals.map(goal => (
+                      <li key={goal.id} className="flex justify-between items-center p-1.5 bg-muted/50 rounded-md text-sm">
+                        <span className="truncate pr-2" title={goal.name}>{goal.name} <Badge variant="outline" className="ml-1">{goal.type}</Badge></span>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => removeGoalFromStudent(currentStudent.id, goal.id)}>
+                          <XIcon className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </ScrollArea>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <h4 className="text-md font-medium">Available Goal Templates to Assign</h4>
+              <div className="flex gap-2 items-center">
+                <div className="relative flex-grow">
+                  <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    placeholder="Search templates..." 
+                    value={templateSearchTerm} 
+                    onChange={(e) => setTemplateSearchTerm(e.target.value)}
+                    className="pl-9 h-9"
+                  />
+                </div>
+                <Select value={templateGoalTypeFilter} onValueChange={setTemplateGoalTypeFilter}>
+                  <SelectTrigger className="w-[180px] h-9">
+                    <SelectValue placeholder="Filter by type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">All Types</SelectItem>
+                    {Object.values(GOAL_TYPES).map(type => (
+                      <SelectItem key={type} value={type}>{type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <ScrollArea className="h-32 border rounded-md p-2">
+                {filteredGoalTemplates.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">No matching templates found.</p>
+                ) : (
+                  <ul className="space-y-1">
+                    {filteredGoalTemplates.map(template => (
+                      <li key={template.id} className="flex justify-between items-center p-1.5 hover:bg-muted/50 rounded-md text-sm">
+                        <div className="truncate pr-2">
+                          <span title={template.name}>{template.name}</span>
+                          <Badge variant="secondary" className="ml-2">{template.type}</Badge>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-7 w-7 shrink-0" 
+                          onClick={() => handleAssignTemplateGoal(template)}
+                          disabled={isGoalAssigned(template.id)}
+                          title={isGoalAssigned(template.id) ? "Goal already assigned" : "Assign this goal"}
+                        >
+                          <PlusCircleIcon className={`h-4.5 w-4.5 ${isGoalAssigned(template.id) ? 'text-muted-foreground' : 'text-primary'}`} />
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </ScrollArea>
+            </div>
+            
+            <Separator className="my-4" />
+
+            <div className="space-y-3">
+              <h4 className="text-md font-medium text-primary">Create & Assign New Goal with AI</h4>
+              <div>
+                <Label htmlFor="aiGoalName" className="text-sm">New Goal Name / Topic</Label>
+                <Input
+                  id="aiGoalName"
+                  value={aiGoalName}
+                  onChange={(e) => setAiGoalName(e.target.value)}
+                  placeholder="e.g., Articulate /k/ in sentences"
+                  disabled={dataLoading || isAiGenerating || isAssigningAiGoal}
+                  className="h-9"
                 />
               </div>
-              <Select value={goalTypeFilter} onValueChange={setGoalTypeFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Filter by type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">All Types</SelectItem>
-                  {Object.values(GOAL_TYPES).map(type => (
-                    <SelectItem key={type} value={type}>{type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <ScrollArea className="h-48 border rounded-md p-2">
-              {filteredGoalTemplates.length === 0 ? (
-                 <p className="text-sm text-muted-foreground text-center py-4">No matching templates found.</p>
-              ) : (
-                <ul className="space-y-1">
-                  {filteredGoalTemplates.map(template => (
-                    <li key={template.id} className="flex justify-between items-center p-1.5 hover:bg-muted/50 rounded-md text-sm">
-                      <div className="truncate pr-2">
-                        <span title={template.name}>{template.name}</span>
-                        <Badge variant="secondary" className="ml-2">{template.type}</Badge>
-                      </div>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-7 w-7 shrink-0" 
-                        onClick={() => handleAssignGoal(template)}
-                        disabled={isGoalAssigned(template.id)}
-                        title={isGoalAssigned(template.id) ? "Goal already assigned" : "Assign this goal"}
-                      >
-                        <PlusCircleIcon className={`h-4.5 w-4.5 ${isGoalAssigned(template.id) ? 'text-muted-foreground' : 'text-primary'}`} />
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
+              <div>
+                <Label htmlFor="aiGoalTypeSelect" className="text-sm">Goal Type</Label>
+                <Select
+                  value={aiGoalType}
+                  onValueChange={(value) => setAiGoalType(value as GoalType)}
+                  disabled={dataLoading || isAiGenerating || isAssigningAiGoal}
+                >
+                  <SelectTrigger id="aiGoalTypeSelect" className="h-9">
+                    <SelectValue placeholder="Select goal type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.values(GOAL_TYPES).map(type => (
+                      <SelectItem key={type} value={type}>{type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="aiGoalPromptText" className="text-sm">Brief Description/Prompt for AI</Label>
+                <Textarea
+                  id="aiGoalPromptText"
+                  value={aiGoalPrompt}
+                  onChange={(e) => setAiGoalPrompt(e.target.value)}
+                  placeholder="E.g., Student will correctly use past tense -ed verbs in spontaneous sentences."
+                  rows={2}
+                  disabled={dataLoading || isAiGenerating || isAssigningAiGoal}
+                />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleGenerateAiSmartGoal}
+                disabled={isAiGenerating || !aiGoalPrompt.trim() || dataLoading || isAssigningAiGoal}
+                className="w-full sm:w-auto h-9"
+              >
+                {isAiGenerating ? <Loader2 className="animate-spin" /> : <Sparkles />}
+                Generate SMART Goal Text
+              </Button>
+              {aiGeneratedSmartGoal && (
+                <div>
+                  <Label htmlFor="aiGeneratedSmartGoalText" className="text-sm">Generated SMART Goal (Editable)</Label>
+                  <Textarea
+                    id="aiGeneratedSmartGoalText"
+                    value={aiGeneratedSmartGoal}
+                    onChange={(e) => setAiGeneratedSmartGoal(e.target.value)}
+                    rows={3}
+                    className="bg-muted/40"
+                    disabled={dataLoading || isAiGenerating || isAssigningAiGoal}
+                  />
+                </div>
               )}
-            </ScrollArea>
+              <div>
+                <Label htmlFor="aiGoalSessionTargetInput" className="text-sm">Session Target (Optional %)</Label>
+                <Input
+                  id="aiGoalSessionTargetInput"
+                  type="number"
+                  value={aiGoalSessionTarget ?? ''}
+                  onChange={(e) => setAiGoalSessionTarget(e.target.value === '' ? undefined : Number(e.target.value))}
+                  placeholder="e.g., 80"
+                  min="0" max="100"
+                  disabled={dataLoading || isAiGenerating || isAssigningAiGoal}
+                  className="h-9"
+                />
+              </div>
+              <Button
+                type="button"
+                onClick={handleAssignAiGeneratedGoal}
+                disabled={!aiGoalName.trim() || !aiGeneratedSmartGoal.trim() || dataLoading || isAiGenerating || isAssigningAiGoal}
+                className="w-full sm:w-auto h-9"
+              >
+                {isAssigningAiGoal ? <Loader2 className="animate-spin" /> : <PlusCircleIcon />}
+                Assign AI Generated Goal
+              </Button>
+            </div>
+
           </div>
         </div>
-      </div>
-      <div className="pt-6 flex justify-end">
+      </ScrollArea>
+      <div className="pt-4 flex justify-end border-t p-4">
         <Button type="button" variant="outline" onClick={closeEditStudentModal}>
           Done
         </Button>
@@ -220,3 +399,4 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
     </GenericModal>
   );
 }
+
