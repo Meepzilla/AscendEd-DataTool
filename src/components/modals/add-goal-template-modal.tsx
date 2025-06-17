@@ -17,6 +17,7 @@ import { GOAL_TYPES } from '@/lib/constants';
 import { generateSmartGoal } from '@/ai/flows/smart-goal-generation';
 import { Sparkles, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useErrorLog } from '@/hooks/use-error-log';
 
 type AddGoalTemplateFormData = z.infer<typeof GoalTemplateSchema>;
 
@@ -25,6 +26,7 @@ export default function AddGoalTemplateModal() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const { toast } = useToast();
+  const { addErrorLog } = useErrorLog();
 
   const form = useForm<AddGoalTemplateFormData>({
     resolver: zodResolver(GoalTemplateSchema),
@@ -64,8 +66,9 @@ export default function AddGoalTemplateModal() {
       } else {
         toast({ title: "AI Info", description: "AI did not return a goal. Please refine your prompt.", variant: "default" });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating SMART goal:", error);
+      addErrorLog({ message: 'Failed to generate SMART goal with AI.', source: 'AddGoalTemplateModal.handleGenerateSmartGoal', details: error.message, type: 'error' });
       toast({ title: "AI Error", description: "Failed to generate SMART goal. Check console for details.", variant: "destructive" });
       form.setValue('generatedSmartGoal', "Error generating goal. Please try again or write manually.");
     } finally {

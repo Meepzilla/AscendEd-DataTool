@@ -3,9 +3,10 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User as FirebaseUser, onAuthStateChanged, signInAnonymously, signOut as firebaseSignOut, IdTokenResult, signInWithCustomToken as firebaseSignInWithCustomToken } from 'firebase/auth';
-import { auth as authModule } from '@/lib/firebase/config'; // Renamed import
+import { auth as authModule } from '@/lib/firebase/config'; 
 import type { User } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useErrorLog } from './use-error-log'; // Import useErrorLog
 
 // Define a local guest user structure
 const LOCAL_GUEST_USER: User = {
@@ -18,7 +19,7 @@ const LOCAL_GUEST_USER: User = {
 interface AuthContextType {
   currentUser: User | null;
   loading: boolean;
-  error: Error | null; // Can indicate Firebase init error or regular auth errors
+  error: Error | null; 
   isFirebaseAvailable: boolean;
   signInWithCustomToken: (token: string) => Promise<void>;
   signInAsGuest: () => Promise<void>;
@@ -33,12 +34,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [isFirebaseAvailable, setIsFirebaseAvailable] = useState(!!authModule);
+  const { addErrorLog } = useErrorLog();
 
   useEffect(() => {
-    if (!authModule) { // Firebase Auth service not initialized
+    if (!authModule) { 
       setIsFirebaseAvailable(false);
-      setCurrentUser(LOCAL_GUEST_USER); // Set local guest user
-      setError(new Error("Firebase not configured. Operating in local mode. Some features like cloud sync will be unavailable."));
+      setCurrentUser(LOCAL_GUEST_USER); 
+      const configError = new Error("Firebase not configured. Operating in local mode. Some features like cloud sync will be unavailable.");
+      setError(configError);
+      addErrorLog({ message: configError.message, source: 'useAuth.init', type: 'warning', details: 'Firebase SDK (authModule) is null.' });
       setLoading(false);
       return;
     }
@@ -55,36 +59,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setCurrentUser(user);
         setError(null);
       } else {
-         // If no Firebase user and not already in local mode, attempt guest sign-in
         if (isFirebaseAvailable && !authModule.currentUser) {
              try {
                 await signInAnonymously(authModule);
-             } catch (e) {
+             } catch (e: any) {
                 console.error("Error signing in anonymously after initial null user:", e);
                 setError(e as Error);
+                addErrorLog({ message: 'Automatic anonymous sign-in failed.', source: 'useAuth.onAuthStateChanged', details: e.message, type: 'error' });
                 setCurrentUser(null);
              }
         } else if (!isFirebaseAvailable) {
-            setCurrentUser(LOCAL_GUEST_USER); // Revert to local guest if Firebase was available then signed out
+            setCurrentUser(LOCAL_GUEST_USER); 
         }
          else {
             setCurrentUser(null);
         }
       }
       setLoading(false);
-    }, (err) => {
+    }, (err: Error) => {
       console.error("Auth state error:", err);
       setError(err);
-      setCurrentUser(null); // Fallback to no user on error
+      addErrorLog({ message: 'Auth state listener error.', source: 'useAuth.onAuthStateChanged', details: err.message, type: 'error' });
+      setCurrentUser(null); 
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [isFirebaseAvailable]); // isFirebaseAvailable helps re-evaluate if config changes (though unlikely in SPA lifecycle)
+  }, [isFirebaseAvailable, addErrorLog]); 
 
   const signInWithCustomToken = useCallback(async (token: string) => {
     if (!authModule) {
-      setError(new Error("Firebase Auth is not initialized. Cannot sign in with custom token."));
+      const noAuthError = new Error("Firebase Auth is not initialized. Cannot sign in with custom token.");
+      setError(noAuthError);
+      addErrorLog({ message: noAuthError.message, source: 'useAuth.signInWithCustomToken', type: 'error' });
       setLoading(false);
       return;
     }
@@ -92,19 +99,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null);
     try {
       await firebaseSignInWithCustomToken(authModule, token);
-    } catch (e) {
+    } catch (e: any) {
       console.error("Error signing in with custom token:", e);
       setError(e as Error);
+      addErrorLog({ message: 'Custom token sign-in failed.', source: 'useAuth.signInWithCustomToken', details: e.message, type: 'error' });
       setCurrentUser(null);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [addErrorLog]);
   
   const signInAsGuest = useCallback(async () => {
     if (!authModule) {
       setCurrentUser(LOCAL_GUEST_USER);
-      setError(new Error("Firebase not configured. Operating in local mode."));
+      const noAuthError = new Error("Firebase not configured. Operating in local mode.");
+      setError(noAuthError);
+      addErrorLog({ message: noAuthError.message, source: 'useAuth.signInAsGuest', type: 'warning' });
       setLoading(false);
       return;
     }
@@ -112,18 +122,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null);
     try {
       await signInAnonymously(authModule);
-    } catch (e) {
+    } catch (e: any) {
       console.error("Error signing in anonymously:", e);
       setError(e as Error);
-      setCurrentUser(null); // If actual Firebase guest sign-in fails
+      addErrorLog({ message: 'Guest sign-in failed.', source: 'useAuth.signInAsGuest', details: e.message, type: 'error' });
+      setCurrentUser(null); 
       setLoading(false);
     }
-  }, []);
+  }, [addErrorLog]);
 
   const signOut = useCallback(async () => {
     if (!authModule) {
-      setCurrentUser(null); // Clear local guest user
-      setError(null); // Clear local mode error
+      setCurrentUser(null); 
+      setError(null); 
       setLoading(false);
       return;
     }
@@ -131,32 +142,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null);
     try {
       await firebaseSignOut(authModule);
-      // onAuthStateChanged will handle setting currentUser to null.
-      // If we want to immediately switch to local guest on sign out from Firebase:
-      // setCurrentUser(LOCAL_GUEST_USER); 
-      // setError(new Error("Signed out from Firebase. Operating in local mode."));
-    } catch (e) {
+    } catch (e: any) {
       console.error("Error signing out:", e);
       setError(e as Error);
+      addErrorLog({ message: 'Sign-out failed.', source: 'useAuth.signOut', details: e.message, type: 'error' });
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [addErrorLog]);
 
   const getTokenResult = useCallback(async (forceRefresh: boolean = false): Promise<IdTokenResult | null> => {
     if (!authModule || !authModule.currentUser) {
-      if (!isFirebaseAvailable) console.log("Firebase not available for getTokenResult.");
-      else console.log("No current Firebase user for getTokenResult.");
+      const message = !isFirebaseAvailable ? "Firebase not available for getTokenResult." : "No current Firebase user for getTokenResult.";
+      addErrorLog({ message: message, source: 'useAuth.getTokenResult', type: 'warning' });
       return null;
     }
     try {
       return await authModule.currentUser.getIdTokenResult(forceRefresh);
-    } catch (error) {
-      console.error("Error getting token result:", error);
-      setError(error as Error);
+    } catch (e: any) {
+      console.error("Error getting token result:", e);
+      setError(e as Error);
+      addErrorLog({ message: 'Failed to get ID token result.', source: 'useAuth.getTokenResult', details: e.message, type: 'error' });
       return null;
     }
-  }, [isFirebaseAvailable]);
+  }, [isFirebaseAvailable, addErrorLog]);
 
   if (loading && !currentUser && (!error || (error && error.message.includes("Firebase not configured")))) {
     return (

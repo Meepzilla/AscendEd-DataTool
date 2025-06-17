@@ -17,6 +17,7 @@ import { GOAL_TYPES } from '@/lib/constants';
 import { generateSmartGoal } from '@/ai/flows/smart-goal-generation';
 import { Sparkles, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useErrorLog } from '@/hooks/use-error-log';
 
 type EditGoalTemplateFormData = z.infer<typeof GoalTemplateSchema>;
 
@@ -34,6 +35,7 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const { toast } = useToast();
+  const { addErrorLog } = useErrorLog();
 
   const currentTemplate = goalTemplates.find(t => t.id === templateToEdit?.id) || null;
 
@@ -75,8 +77,9 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
       } else {
         toast({ title: "AI Info", description: "AI did not return a goal. Please refine your prompt.", variant: "default" });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating SMART goal:", error);
+      addErrorLog({ message: 'Failed to re-generate SMART goal with AI.', source: 'EditGoalTemplateModal.handleGenerateSmartGoal', details: error.message, type: 'error' });
       toast({ title: "AI Error", description: "Failed to generate SMART goal. Check console for details.", variant: "destructive" });
       form.setValue('generatedSmartGoal', "Error generating goal. Please try again or write manually.");
     } finally {
@@ -89,7 +92,7 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
     setIsSubmitting(true);
     await updateGoalTemplate(currentTemplate.id, data);
     setIsSubmitting(false);
-    closeEditGoalTemplateModal(); // Close modal after successful update
+    closeEditGoalTemplateModal(); 
   };
 
   if (!currentTemplate) return null;

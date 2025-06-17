@@ -21,6 +21,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { useErrorLog } from '@/hooks/use-error-log';
 
 interface StudentSessionState {
   studentId: string;
@@ -49,6 +50,7 @@ export default function DataEntryPage() {
   const [aiActivitySuggestions, setAiActivitySuggestions] = useState<Record<string, string[]>>({});
   const [isAiLoading, setIsAiLoading] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
+  const { addErrorLog } = useErrorLog();
 
   const [focusedStudentSlotIndex, setFocusedStudentSlotIndex] = useState<number>(0);
   const [focusedGoalIndexByStudentId, setFocusedGoalIndexByStudentId] = useState<Record<string, number>>({});
@@ -437,8 +439,9 @@ export default function DataEntryPage() {
       });
       setAiActivitySuggestions(prev => ({ ...prev, [studentId]: result.suggestions }));
       toast({ title: "AI Suggestions", description: `Found ${result.suggestions.length} activities. Reasoning: ${result.reasoning}` });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching AI activity suggestions:", error);
+      addErrorLog({ message: 'Failed to fetch AI activity suggestions.', source: 'DataEntryPage.fetchAiActivitySuggestions', details: error.message, type: 'error' });
       toast({ title: "AI Error", description: "Could not fetch activity suggestions.", variant: "destructive" });
     } finally {
       setIsAiLoading(prev => ({...prev, [studentId]: false}));
@@ -497,6 +500,8 @@ export default function DataEntryPage() {
           if (!student || !state) return null;
 
           const isStudentFocused = slotIndex === focusedStudentSlotIndex;
+
+          const goalsToDisplay = state.originalGoalHeaders; // Display all goals
 
           return (
             <Card 
@@ -565,11 +570,11 @@ export default function DataEntryPage() {
                     />
                   </div>
                   
-                  {state.originalGoalHeaders.length === 0 ? (
+                  {goalsToDisplay.length === 0 ? (
                      <p className="text-sm text-muted-foreground p-4 text-center border rounded-md">No goals assigned to this student. Assign goals in the Student Profile.</p>
                   ) : (
                     <>
-                      {state.originalGoalHeaders.map((goal, goalIdx) => {
+                      {goalsToDisplay.map((goal, goalIdx) => {
                         const isGoalFocused = isStudentFocused && (focusedGoalIndexByStudentId[studentId] ?? 0) === goalIdx;
                         return (
                           <GoalDataInputComponent
@@ -582,7 +587,7 @@ export default function DataEntryPage() {
                             onMoveUp={() => handleMoveGoal(studentId, goal.id, 'up')}
                             onMoveDown={() => handleMoveGoal(studentId, goal.id, 'down')}
                             canMoveUp={goalIdx > 0}
-                            canMoveDown={goalIdx < state.originalGoalHeaders.length - 1}
+                            canMoveDown={goalIdx < goalsToDisplay.length - 1}
                           />
                         );
                       })}
@@ -653,4 +658,3 @@ export default function DataEntryPage() {
     </div>
   );
 }
-

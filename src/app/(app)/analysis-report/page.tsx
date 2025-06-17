@@ -18,6 +18,7 @@ import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
 import type { DateRange } from "react-day-picker";
 import { useSearchParams } from 'next/navigation';
 import { formatDate } from '@/lib/helpers';
+import { useErrorLog } from '@/hooks/use-error-log';
 
 
 // Helper to transform session data for charts
@@ -78,6 +79,7 @@ export default function AnalysisReportPage() {
   const [technicalSummary, setTechnicalSummary] = useState<string | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const { toast } = useToast();
+  const { addErrorLog } = useErrorLog();
 
   const selectedStudent = useMemo(() => students.find(s => s.id === selectedStudentId), [students, selectedStudentId]);
 
@@ -141,8 +143,9 @@ export default function AnalysisReportPage() {
       });
       setTechnicalSummary(result.summary);
       toast({ title: "AI Summary Generated", description: result.progress });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating technical summary:", error);
+      addErrorLog({ message: 'Failed to generate AI technical summary.', source: 'AnalysisReportPage.handleGenerateSummary', details: error.message, type: 'error' });
       toast({ title: "AI Error", description: "Failed to generate summary.", variant: "destructive" });
     } finally {
       setIsAiLoading(false);
@@ -176,12 +179,12 @@ export default function AnalysisReportPage() {
   } as const;
 
   const responseCountsChartConfig = {
-    correct: { label: 'Correct', color: 'hsl(var(--chart-2))' }, // Greenish
-    incorrect: { label: 'Incorrect', color: 'hsl(var(--chart-5))' }, // Reddish
+    correct: { label: 'Correct', color: 'hsl(var(--chart-2))' }, 
+    incorrect: { label: 'Incorrect', color: 'hsl(var(--chart-5))' }, 
   } as const;
 
   const opportunitiesChartConfig = {
-    opportunities: { label: 'Opportunities', color: 'hsl(var(--chart-1))' }, // Bluish
+    opportunities: { label: 'Opportunities', color: 'hsl(var(--chart-1))' }, 
   } as const;
 
   const promptChartConfig = PROMPT_TYPES.reduce((config, pt) => {

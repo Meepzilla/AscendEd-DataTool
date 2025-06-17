@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react'; // Removed useState as modal state is now in context
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -9,6 +9,7 @@ import { Menu, FileText, UserCircle, UserPlus } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { APP_NAME, APP_SUBTITLE } from '@/lib/constants';
 import { useStudentData } from '@/hooks/use-student-data';
+import { useErrorLog } from '@/hooks/use-error-log'; // Import useErrorLog
 import AddStudentModal from '@/components/modals/add-student-modal';
 import EditStudentModal from '@/components/modals/edit-student-modal';
 import ErrorLogModal from '@/components/modals/error-log-modal';
@@ -18,7 +19,7 @@ import { useRouter } from 'next/navigation';
 export default function AppHeader() {
   const { currentUser, signOut } = useAuth();
   const { openAddStudentModal, editingStudent } = useStudentData();
-  const [isErrorLogModalOpen, setIsErrorLogModalOpen] = useState(false);
+  const { toggleErrorLogModal, isErrorLogModalOpen } = useErrorLog(); // Use context for modal state
   const router = useRouter();
 
   return (
@@ -63,7 +64,7 @@ export default function AppHeader() {
 
         <div className="flex items-center gap-1 sm:gap-2">
           {/* Help and Add Student buttons removed as they are now part of AppNavigation */}
-          <Button variant="ghost" size="icon" onClick={() => setIsErrorLogModalOpen(true)} title="Error Log (Alt+L)">
+          <Button variant="ghost" size="icon" onClick={toggleErrorLogModal} title="Error Log (Alt+L)">
             <FileText className="h-5 w-5" />
             <span className="sr-only">Error Log</span>
           </Button>
@@ -91,7 +92,8 @@ export default function AppHeader() {
       </div>
       <AddStudentModal />
       {editingStudent && <EditStudentModal studentToEdit={editingStudent} />}
-      <ErrorLogModal isOpen={isErrorLogModalOpen} onClose={() => setIsErrorLogModalOpen(false)} />
+      {/* ErrorLogModal is rendered here and its state is managed by ErrorLogProvider */}
+      <ErrorLogModal /> 
     </header>
   );
 }

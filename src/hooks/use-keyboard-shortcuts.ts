@@ -5,11 +5,13 @@ import { useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStudentData } from './use-student-data';
 import { useSidebar } from '@/components/ui/sidebar'; 
+import { useErrorLog } from './use-error-log'; // Import useErrorLog
 
 export function useKeyboardShortcuts() {
   const router = useRouter();
   const { openAddStudentModal } = useStudentData();
   const { toggleSidebar } = useSidebar(); 
+  const { toggleErrorLogModal } = useErrorLog(); // Get toggle function from context
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     const target = event.target as HTMLElement;
@@ -53,11 +55,7 @@ export function useKeyboardShortcuts() {
           break;
         case 'L': 
           event.preventDefault();
-          // This should ideally open the ErrorLogModal from AppHeader
-          // For now, direct modal control from here is complex.
-          // The user can click the icon or we can expose a context function for ErrorLogModal.
-          // For simplicity, this alert remains, or we rely on user clicking the header icon.
-          alert('Error Log (Alt+L) shortcut pressed. Use header icon to open Error Log.');
+          toggleErrorLogModal(); // Call the context function to toggle the modal
           break;
         case 'M': 
           event.preventDefault();
@@ -71,7 +69,7 @@ export function useKeyboardShortcuts() {
           break;
       }
     }
-  }, [router, openAddStudentModal, toggleSidebar]);
+  }, [router, openAddStudentModal, toggleSidebar, toggleErrorLogModal]); // Added toggleErrorLogModal dependency
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
