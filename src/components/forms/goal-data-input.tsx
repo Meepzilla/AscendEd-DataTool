@@ -7,25 +7,38 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-// Checkbox, RadioGroup, RadioGroupItem are removed as prompt selection changes
 import { Slider } from '@/components/ui/slider';
 import { PROMPT_TYPES, PROMPT_COLORS, PROMPT_ABBREVIATIONS } from '@/lib/constants';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { TrendingUp } from 'lucide-react';
+import { TrendingUp, ArrowUp, ArrowDown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface GoalDataInputComponentProps {
   goal: Goal;
-  data: SessionGoalData['data']; // Current data for this goal
-  onChange: (updatedFieldName: string, newData: SessionGoalData['data']) => void; // Updated signature
+  data: SessionGoalData['data']; 
+  onChange: (updatedFieldName: string, newData: SessionGoalData['data']) => void; 
   isFocused?: boolean;
   id: string;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  canMoveUp?: boolean;
+  canMoveDown?: boolean;
 }
 
-export default function GoalDataInputComponent({ goal, data, onChange, isFocused, id }: GoalDataInputComponentProps) {
+export default function GoalDataInputComponent({ 
+  goal, 
+  data, 
+  onChange, 
+  isFocused, 
+  id,
+  onMoveUp,
+  onMoveDown,
+  canMoveUp,
+  canMoveDown,
+}: GoalDataInputComponentProps) {
 
   const handleChange = (field: string, value: any) => {
-    // Pass the field name along with the new data object
     onChange(field, { ...data, [field]: value });
   };
 
@@ -116,7 +129,7 @@ export default function GoalDataInputComponent({ goal, data, onChange, isFocused
             <FormItem>
               <FormLabel>Observation Notes</FormLabel>
               <Textarea
-                value={data.notes || ''} // Ensure field name 'notes' matches constants
+                value={data.notes || ''} 
                 onChange={(e) => handleChange('notes', e.target.value)}
                 placeholder="Describe observed behaviors, participation, etc."
                 rows={3}
@@ -278,16 +291,34 @@ export default function GoalDataInputComponent({ goal, data, onChange, isFocused
         isFocused && "ring-2 ring-primary ring-offset-2 shadow-lg"
       )}>
       <CardHeader className="p-3 bg-muted/30 rounded-t-lg">
-        <CardTitle className="text-base font-semibold flex justify-between items-center">
-          <span className="truncate pr-2">{goal.name}</span>
-          <Badge variant="outline">{goal.type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}</Badge>
-        </CardTitle>
-        {goal.sessionTargetValue !== undefined && (
-          <div className="text-xs text-muted-foreground flex items-center gap-1 pt-0.5">
-            <TrendingUp className="h-3.5 w-3.5 text-green-600" />
-            Session Target: {goal.sessionTargetValue}
-          </div>
-        )}
+        <div className="flex justify-between items-start">
+            <div className="flex-grow">
+                <CardTitle className="text-base font-semibold flex items-center">
+                  <span className="truncate pr-2">{goal.name}</span>
+                  <Badge variant="outline" className="ml-auto mr-2 whitespace-nowrap">
+                    {goal.type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+                  </Badge>
+                </CardTitle>
+                {goal.sessionTargetValue !== undefined && (
+                <div className="text-xs text-muted-foreground flex items-center gap-1 pt-0.5">
+                    <TrendingUp className="h-3.5 w-3.5 text-green-600" />
+                    Session Target: {goal.sessionTargetValue}
+                </div>
+                )}
+            </div>
+            <div className="flex flex-col items-center space-y-0.5 shrink-0">
+                {onMoveUp && (
+                    <Button variant="ghost" size="icon" className="h-6 w-6 p-0" onClick={onMoveUp} disabled={!canMoveUp} title="Move goal up">
+                        <ArrowUp className="h-4 w-4" />
+                    </Button>
+                )}
+                {onMoveDown && (
+                     <Button variant="ghost" size="icon" className="h-6 w-6 p-0" onClick={onMoveDown} disabled={!canMoveDown} title="Move goal down">
+                        <ArrowDown className="h-4 w-4" />
+                    </Button>
+                )}
+            </div>
+        </div>
       </CardHeader>
       <CardContent className="p-3 space-y-3">
         {renderInputFields()}
@@ -308,7 +339,6 @@ export default function GoalDataInputComponent({ goal, data, onChange, isFocused
   );
 }
 
-// Simple wrapper for form items to reduce repetition
 const FormItem: React.FC<{children: React.ReactNode, className?: string}> = ({ children, className }) => (
   <div className={`space-y-1 ${className}`}>{children}</div>
 );

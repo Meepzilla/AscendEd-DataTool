@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Users, Save, PlusCircle, XCircle, Edit2, Info, ChevronDown, ChevronUp } from 'lucide-react';
+import { Users, Save, PlusCircle, XCircle, Edit2, Info, ChevronDown, ChevronUp, ArrowUp, ArrowDown } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 import GoalDataInputComponent from '@/components/forms/goal-data-input';
 import { GOAL_TYPE_FIELDS, MAX_STUDENTS_DATA_ENTRY, PROMPT_HOTKEY_MAP, PROMPT_TYPES } from '@/lib/constants';
@@ -96,7 +96,7 @@ export default function DataEntryPage() {
     },
     [] 
   );
-
+  
   const getCurrentFocusedGoalInfo = useCallback(() => {
     if (selectedStudentIds.length === 0 || focusedStudentSlotIndex >= selectedStudentIds.length) {
       return null;
@@ -187,16 +187,24 @@ export default function DataEntryPage() {
       if (student) {
         const existingState = studentSessionStates[id];
         const initialGoalData: Record<string, SessionGoalData['data']> = {};
-        student.goals.forEach(goal => {
-          initialGoalData[goal.id] = JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type]));
+        
+        // Use existingState.originalGoalHeaders if available and valid, otherwise use student.goals
+        const goalsToUse = existingState?.originalGoalHeaders && 
+                           existingState.originalGoalHeaders.length > 0 && 
+                           existingState.originalGoalHeaders.every(g => student.goals.some(sg => sg.id === g.id))
+                           ? existingState.originalGoalHeaders 
+                           : student.goals;
+
+        goalsToUse.forEach(goal => {
+          initialGoalData[goal.id] = existingState?.goalData?.[goal.id] || JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type]));
         });
         newStates[id] = {
           studentId: student.id,
           studentName: student.name,
           activity: existingState?.activity || '',
           notes: existingState?.notes || '',
-          goalData: existingState?.goalData || initialGoalData,
-          originalGoalHeaders: student.goals,
+          goalData: initialGoalData,
+          originalGoalHeaders: goalsToUse, // Persist reordered goals if valid
           isCollapsed: existingState?.isCollapsed || false,
         };
         newFocusedGoalIndexes[id] = focusedGoalIndexByStudentId[id] ?? 0;
@@ -207,21 +215,19 @@ export default function DataEntryPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedStudentIds, students]); 
 
-  // Hotkey Handler
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement;
 
-      // Ctrl+Enter for saving session (if not handled by a modal that stops propagation)
       if (event.ctrlKey && event.key === 'Enter') {
         if (selectedStudentIds.length > 0) {
           event.preventDefault();
           handleSaveSession();
         }
-        return; // Ctrl+Enter is handled, don't process other keys.
+        return; 
       }
       
-      // If focus is on an input/textarea/select, block other page-level hotkeys
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable) {
         return;
       }
@@ -231,7 +237,6 @@ export default function DataEntryPage() {
 
       const focusedInfo = getCurrentFocusedGoalInfo();
 
-      // Student Slot Focus Hotkeys (1-4, no Alt)
       if (!alt && key.match(/^[1-4]$/)) { 
         event.preventDefault();
         const slotIndex = parseInt(key, 10) - 1;
@@ -241,12 +246,11 @@ export default function DataEntryPage() {
         return;
       }
 
-      // Student Cycling Hotkeys (A/Alt+A)
       if (key === 'A' && selectedStudentIds.length > 0) {
         event.preventDefault();
-        if (alt) { // Previous student
+        if (alt) { 
           setFocusedStudentSlotIndex(prev => (prev - 1 + selectedStudentIds.length) % selectedStudentIds.length);
-        } else { // Next student
+        } else { 
           setFocusedStudentSlotIndex(prev => (prev + 1) % selectedStudentIds.length);
         }
         return;
@@ -256,7 +260,6 @@ export default function DataEntryPage() {
 
       const { studentId, studentState, goal, goalData, goalIndex } = focusedInfo;
 
-      // Goal Cycling Hotkeys (S/Alt+S)
       if (key === 'S') {
         event.preventDefault();
         const numGoals = studentState.originalGoalHeaders.length;
@@ -267,7 +270,6 @@ export default function DataEntryPage() {
         return;
       }
 
-      // Prompt Level Hotkeys (V, G, P, F, I) - now increments/decrements counts
       const promptToUpdate = PROMPT_HOTKEY_MAP[key];
       if (promptToUpdate && !alt && goal.type !== 'QUALITATIVE_OBSERVATION' && goal.type !== 'FLUENCY_SYLLABLE_STUTTER') {
         event.preventDefault();
@@ -284,19 +286,17 @@ export default function DataEntryPage() {
         return;
       }
 
-
-      // Correct/Incorrect/Syllable Counts 
       let fieldToUpdate: string | null = null;
       let increment = 0;
 
-      if (key === 'C') { // Correct / Total Syllables
+      if (key === 'C') { 
         increment = alt ? -1 : 1;
         if (goal.type === 'ARTICULATION') fieldToUpdate = 'correct';
         else if (goal.type === 'LANGUAGE_COMPREHENSION') fieldToUpdate = 'questionsCorrect';
         else if (goal.type === 'LANGUAGE_EXPRESSION') fieldToUpdate = 'successfulResponses';
         else if (goal.type === 'PHONOLOGICAL_PROCESSES') fieldToUpdate = 'correctProductions';
         else if (goal.type === 'FLUENCY_SYLLABLE_STUTTER') fieldToUpdate = 'totalSyllables';
-      } else if (key === 'N') { // Incorrect / Stuttered Syllables
+      } else if (key === 'N') { 
         increment = alt ? -1 : 1;
         if (goal.type === 'ARTICULATION') fieldToUpdate = 'incorrect';
         else if (goal.type === 'LANGUAGE_COMPREHENSION') fieldToUpdate = 'questionsIncorrect';
@@ -318,7 +318,6 @@ export default function DataEntryPage() {
   }, [selectedStudentIds, studentSessionStates, focusedStudentSlotIndex, focusedGoalIndexByStudentId, handleGoalDataChange, getCurrentFocusedGoalInfo, handleSaveSession]);
 
 
-  // Effect to scroll focused goal into view
   useEffect(() => {
     const focusedInfo = getCurrentFocusedGoalInfo();
     if (focusedInfo && focusedInfo.goal && focusedInfo.studentState && !focusedInfo.studentState.isCollapsed) {
@@ -330,7 +329,6 @@ export default function DataEntryPage() {
       }
     }
   }, [focusedStudentSlotIndex, focusedGoalIndexByStudentId, studentSessionStates, getCurrentFocusedGoalInfo]);
-
 
   const handleStudentSelect = (studentId: string, index: number) => {
     setSelectedStudentIds(prev => {
@@ -381,6 +379,47 @@ export default function DataEntryPage() {
     }));
   };
 
+  const handleMoveGoal = useCallback((studentId: string, goalId: string, direction: 'up' | 'down') => {
+    setStudentSessionStates(prevStates => {
+      const studentState = prevStates[studentId];
+      if (!studentState) return prevStates;
+
+      const goals = [...studentState.originalGoalHeaders];
+      const goalIndex = goals.findIndex(g => g.id === goalId);
+
+      if (goalIndex === -1) return prevStates;
+
+      const newIndex = direction === 'up' ? goalIndex - 1 : goalIndex + 1;
+
+      if (newIndex < 0 || newIndex >= goals.length) return prevStates;
+
+      const [movedGoal] = goals.splice(goalIndex, 1);
+      goals.splice(newIndex, 0, movedGoal);
+      
+      // Update focused goal index
+      setFocusedGoalIndexByStudentId(prevFocused => {
+        const currentFocusedIdx = prevFocused[studentId] ?? 0;
+        let newFocusedIdx = currentFocusedIdx;
+
+        if (currentFocusedIdx === goalIndex) { // If the moved goal was focused
+          newFocusedIdx = newIndex;
+        } else if (goalIndex < currentFocusedIdx && newIndex >= currentFocusedIdx) { // Item before focused moved to or after it
+          newFocusedIdx = currentFocusedIdx - 1;
+        } else if (goalIndex > currentFocusedIdx && newIndex <= currentFocusedIdx) { // Item after focused moved to or before it
+          newFocusedIdx = currentFocusedIdx + 1;
+        }
+        return { ...prevFocused, [studentId]: newFocusedIdx };
+      });
+
+      return {
+        ...prevStates,
+        [studentId]: {
+          ...studentState,
+          originalGoalHeaders: goals,
+        },
+      };
+    });
+  }, []);
 
   const fetchAiActivitySuggestions = async (studentId: string) => {
     const studentState = studentSessionStates[studentId];
@@ -543,6 +582,10 @@ export default function DataEntryPage() {
                           data={state.goalData[goal.id] || GOAL_TYPE_FIELDS[goal.type]}
                           onChange={(updatedField, newData) => handleGoalDataChange(studentId, goal.id, updatedField, newData)}
                           isFocused={isGoalFocused}
+                          onMoveUp={() => handleMoveGoal(studentId, goal.id, 'up')}
+                          onMoveDown={() => handleMoveGoal(studentId, goal.id, 'down')}
+                          canMoveUp={goalIdx > 0}
+                          canMoveDown={goalIdx < state.originalGoalHeaders.length - 1}
                         />
                       );
                     })
