@@ -39,6 +39,10 @@ export function useKeyboardShortcuts() {
           event.preventDefault();
           router.push('/analysis-report');
           break;
+        case '6': // Hotkey for Changelog
+          event.preventDefault();
+          router.push('/changelog');
+          break;
         case 'D': 
           event.preventDefault();
           router.push('/dashboard');

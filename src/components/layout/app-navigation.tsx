@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { UserCog, ListPlus, ClipboardList, ListChecks, BarChart2, LayoutDashboard, HelpCircle } from 'lucide-react';
+import { UserCog, ListPlus, ClipboardList, ListChecks, BarChart2, LayoutDashboard, HelpCircle, ScrollText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -26,6 +26,7 @@ const mainNavItems: NavItem[] = [
 
 const secondaryNavItems: NavItem[] = [
    { href: '/help', label: 'Help', icon: HelpCircle, hotkey: 'H' },
+   { href: '/changelog', label: 'Changelog', icon: ScrollText, hotkey: '6' },
 ];
 
 interface AppNavigationProps {

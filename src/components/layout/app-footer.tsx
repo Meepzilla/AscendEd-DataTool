@@ -11,6 +11,7 @@ export default function AppFooter() {
   const hotkeys = [
     { key: 'Alt+D', desc: 'Dashboard' },
     { key: 'Alt+1-5', desc: 'Navigate Views' },
+    { key: 'Alt+6', desc: 'Changelog' },
     { key: 'Alt+H', desc: 'Help Page' },
     { key: 'Alt+L', desc: 'Error Log (Icon)' },
     { key: 'Alt+M', desc: 'Add Student' },

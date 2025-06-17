@@ -1,0 +1,148 @@
+
+'use client';
+
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon } from 'lucide-react';
+import { APP_NAME } from '@/lib/constants';
+
+interface ChangelogEntry {
+  version?: string; // Optional version number
+  date: string;
+  title: string;
+  description: string;
+  type: 'feature' | 'fix' | 'improvement' | 'hotkey';
+  icon: React.ElementType;
+}
+
+const changelogEntries: ChangelogEntry[] = [
+  {
+    date: '2025-06-17', // Placeholder date
+    title: 'Changelog Page Added',
+    description: `Introduced this Changelog page to track application updates and new features. Accessible via sidebar and Alt+6.`,
+    type: 'feature',
+    icon: PlusCircle,
+  },
+  {
+    date: '2025-06-17',
+    title: 'Fluency Goal Logic Correction & Percentage-Based Targets',
+    description: 'Corrected "Total Syllables" and "Stuttered Syllables" interaction on the Data Entry page. Goal session target values now represent a percentage (0-100) for quantifiable goals, with UI and progress calculations updated accordingly.',
+    type: 'fix',
+    icon: Bug,
+  },
+  {
+    date: '2025-06-17',
+    title: 'Edit Assigned Student Goals',
+    description: 'Added the ability to edit goals directly assigned to students via a new modal accessible from the Student Profile page.',
+    type: 'feature',
+    icon: Pencil,
+  },
+  {
+    date: '2025-06-17',
+    title: 'Reorder Goals on Data Entry Page',
+    description: 'Users can now reorder the display of goals for each student directly on the Data Entry page using up/down arrow buttons.',
+    type: 'feature',
+    icon: ArrowUpDown,
+  },
+  {
+    date: '2025-06-17',
+    title: 'Ctrl+Enter Confirmation Hotkey',
+    description: 'Implemented Ctrl+Enter as a confirmation hotkey for saving sessions, submitting forms in modals, and confirming actions in dialogs.',
+    type: 'hotkey',
+    icon: KeyboardIcon,
+  },
+  {
+    date: '2025-06-17',
+    title: 'Enhanced Analysis Reports',
+    description: 'Added more metrics to the Analysis Report page, including "Response Counts" and "Total Opportunities" line charts.',
+    type: 'improvement',
+    icon: BarChartHorizontalBig,
+  },
+  {
+    date: '2025-06-17',
+    title: 'Student Cycling Hotkey (A/Alt+A) in Data Entry',
+    description: 'Added "A" and "Alt+A" hotkeys to cycle to the next/previous student slot on the Data Entry page.',
+    type: 'hotkey',
+    icon: KeyboardIcon,
+  },
+  {
+    date: '2025-06-17',
+    title: 'Data Entry Student Icon Opens Edit Modal',
+    description: 'The student icon on each card in the Data Entry page now opens the "Edit Student" modal for quick goal management.',
+    type: 'improvement',
+    icon: Pencil,
+  },
+    {
+    date: '2025-06-17',
+    title: 'Scroll to Focused Goal in Data Entry',
+    description: 'The Data Entry page now automatically scrolls the currently focused goal into view for easier navigation.',
+    type: 'improvement',
+    icon: ArrowUpDown,
+  },
+  {
+    date: '2025-06-17',
+    title: 'Help Page Added',
+    description: 'Introduced a comprehensive Help page with application guidance and a list of hotkeys. Accessible via header icon and Alt+H.',
+    type: 'feature',
+    icon: PlusCircle,
+  },
+];
+
+const getIconForType = (type: ChangelogEntry['type']): React.ElementType => {
+  switch (type) {
+    case 'feature': return Zap;
+    case 'fix': return Bug;
+    case 'improvement': return GitMerge;
+    case 'hotkey': return KeyboardIcon;
+    default: return GitMerge;
+  }
+};
+
+export default function ChangelogPage() {
+  return (
+    <div className="space-y-8">
+      <Card className="shadow-lg">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <ScrollText className="h-10 w-10 text-primary" />
+            <div>
+              <CardTitle className="text-3xl font-bold">Application Changelog</CardTitle>
+              <CardDescription>
+                Stay updated with the latest features, improvements, and fixes in {APP_NAME}.
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Updates</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {changelogEntries.length === 0 ? (
+            <p className="text-muted-foreground">No changelog entries yet. Check back soon!</p>
+          ) : (
+            <Accordion type="multiple" className="w-full" defaultValue={[changelogEntries[0]?.date + changelogEntries[0]?.title]}>
+              {changelogEntries.map((entry, index) => (
+                <AccordionItem value={entry.date + entry.title} key={index}>
+                  <AccordionTrigger>
+                    <div className="flex items-center gap-3">
+                      <entry.icon className="h-5 w-5 text-primary" />
+                      <span className="font-semibold text-lg">{entry.title}</span>
+                      <span className="text-sm text-muted-foreground ml-auto">{entry.date}</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="pl-8">
+                    <p className="text-muted-foreground">{entry.description}</p>
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
