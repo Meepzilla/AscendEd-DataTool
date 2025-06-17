@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useRef } from 'react';
@@ -57,7 +58,7 @@ export default function GenericModal({
     sm: 'sm:max-w-sm',
     md: 'sm:max-w-lg',
     lg: 'sm:max-w-xl',
-    xl: 'sm:max-w-3xl',
+    xl: 'sm:max-w-5xl', // Changed from sm:max-w-3xl
     full: 'sm:max-w-full h-full sm:h-auto',
   };
 
