@@ -38,7 +38,7 @@ export default function DataEntryPage() {
     addSession, 
     getSessionsForStudent, 
     selectedStudent: studentFromContext,
-    openEditStudentModal // Added this
+    openEditStudentModal
   } = useStudentData();
   const [sessionDate, setSessionDate] = useState<Date | undefined>(new Date());
   const [sessionTime, setSessionTime] = useState<string>(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
@@ -53,18 +53,49 @@ export default function DataEntryPage() {
   const [focusedGoalIndexByStudentId, setFocusedGoalIndexByStudentId] = useState<Record<string, number>>({});
 
 
-  const handleGoalDataChange = useCallback((studentId: string, goalId: string, data: SessionGoalData['data']) => {
-    setStudentSessionStates(prev => ({
-      ...prev,
-      [studentId]: {
-        ...prev[studentId],
-        goalData: {
-          ...prev[studentId]?.goalData,
-          [goalId]: data,
-        },
-      },
-    }));
-  }, []); 
+  const handleGoalDataChange = useCallback(
+    (studentId: string, goalId: string, updatedFieldName: string, newData: SessionGoalData['data']) => {
+      setStudentSessionStates(prevStates => {
+        const studentState = prevStates[studentId];
+        if (!studentState) return prevStates;
+
+        const goal = studentState.originalGoalHeaders.find(g => g.id === goalId);
+        if (!goal) return prevStates;
+
+        let processedData = { ...newData }; 
+
+        if (goal.type === 'FLUENCY_SYLLABLE_STUTTER') {
+          let newTotalSyllables = Math.max(0, Number(processedData.totalSyllables || 0));
+          let newStutteredSyllables = Math.max(0, Number(processedData.stutteredSyllables || 0));
+
+          if (updatedFieldName === 'stutteredSyllables') {
+            if (newStutteredSyllables > newTotalSyllables) {
+              newTotalSyllables = newStutteredSyllables;
+            }
+          } else if (updatedFieldName === 'totalSyllables') {
+            if (newTotalSyllables < newStutteredSyllables) {
+              newStutteredSyllables = newTotalSyllables;
+            }
+          }
+          
+          processedData.totalSyllables = newTotalSyllables;
+          processedData.stutteredSyllables = newStutteredSyllables;
+        }
+
+        return {
+          ...prevStates,
+          [studentId]: {
+            ...studentState,
+            goalData: {
+              ...studentState.goalData,
+              [goalId]: processedData,
+            },
+          },
+        };
+      });
+    },
+    [] 
+  );
 
   const getCurrentFocusedGoalInfo = useCallback(() => {
     if (selectedStudentIds.length === 0 || focusedStudentSlotIndex >= selectedStudentIds.length) {
@@ -177,14 +208,14 @@ export default function DataEntryPage() {
         event.preventDefault();
         const currentCount = Number(goalData[promptToUpdate] || 0);
         const newValue = currentCount + 1;
-        handleGoalDataChange(studentId, goal.id, { ...goalData, [promptToUpdate]: newValue });
+        handleGoalDataChange(studentId, goal.id, promptToUpdate, { ...goalData, [promptToUpdate]: newValue });
         return;
       }
       if (promptToUpdate && alt && goal.type !== 'QUALITATIVE_OBSERVATION' && goal.type !== 'FLUENCY_SYLLABLE_STUTTER') {
         event.preventDefault();
         const currentCount = Number(goalData[promptToUpdate] || 0);
         const newValue = Math.max(0, currentCount - 1);
-        handleGoalDataChange(studentId, goal.id, { ...goalData, [promptToUpdate]: newValue });
+        handleGoalDataChange(studentId, goal.id, promptToUpdate, { ...goalData, [promptToUpdate]: newValue });
         return;
       }
 
@@ -213,7 +244,7 @@ export default function DataEntryPage() {
         event.preventDefault();
         const currentValue = Number(goalData[fieldToUpdate] || 0);
         const newValue = Math.max(0, currentValue + increment); 
-        handleGoalDataChange(studentId, goal.id, { ...goalData, [fieldToUpdate]: newValue });
+        handleGoalDataChange(studentId, goal.id, fieldToUpdate, { ...goalData, [fieldToUpdate]: newValue });
       }
     };
 
@@ -498,7 +529,7 @@ export default function DataEntryPage() {
                           id={`goal-input-${studentId}-${goal.id}`}
                           goal={goal}
                           data={state.goalData[goal.id] || GOAL_TYPE_FIELDS[goal.type]}
-                          onChange={(newData) => handleGoalDataChange(studentId, goal.id, newData)}
+                          onChange={(updatedField, newData) => handleGoalDataChange(studentId, goal.id, updatedField, newData)}
                           isFocused={isGoalFocused}
                         />
                       );

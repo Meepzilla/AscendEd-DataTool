@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 interface GoalDataInputComponentProps {
   goal: Goal;
   data: SessionGoalData['data']; // Current data for this goal
-  onChange: (data: SessionGoalData['data']) => void;
+  onChange: (updatedFieldName: string, newData: SessionGoalData['data']) => void; // Updated signature
   isFocused?: boolean;
   id: string; 
 }
@@ -24,7 +24,8 @@ interface GoalDataInputComponentProps {
 export default function GoalDataInputComponent({ goal, data, onChange, isFocused, id }: GoalDataInputComponentProps) {
   
   const handleChange = (field: string, value: any) => {
-    onChange({ ...data, [field]: value });
+    // Pass the field name along with the new data object
+    onChange(field, { ...data, [field]: value });
   };
 
   const renderInputFields = () => {
