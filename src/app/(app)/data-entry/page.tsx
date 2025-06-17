@@ -20,6 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 interface StudentSessionState {
   studentId: string;
@@ -567,23 +568,40 @@ export default function DataEntryPage() {
                   {state.originalGoalHeaders.length === 0 ? (
                      <p className="text-sm text-muted-foreground p-4 text-center border rounded-md">No goals assigned to this student. Assign goals in the Student Profile.</p>
                   ) : (
-                    state.originalGoalHeaders.map((goal, goalIdx) => {
-                      const isGoalFocused = isStudentFocused && (focusedGoalIndexByStudentId[studentId] ?? 0) === goalIdx;
-                      return (
-                        <GoalDataInputComponent
-                          key={goal.id}
-                          id={`goal-input-${studentId}-${goal.id}`}
-                          goal={goal}
-                          data={state.goalData[goal.id] || GOAL_TYPE_FIELDS[goal.type]}
-                          onChange={(updatedField, newData) => handleGoalDataChange(studentId, goal.id, updatedField, newData)}
-                          isFocused={isGoalFocused}
-                          onMoveUp={() => handleMoveGoal(studentId, goal.id, 'up')}
-                          onMoveDown={() => handleMoveGoal(studentId, goal.id, 'down')}
-                          canMoveUp={goalIdx > 0}
-                          canMoveDown={goalIdx < state.originalGoalHeaders.length - 1}
-                        />
-                      );
-                    })
+                    <>
+                      {state.originalGoalHeaders.map((goal, goalIdx) => {
+                        const isGoalFocused = isStudentFocused && (focusedGoalIndexByStudentId[studentId] ?? 0) === goalIdx;
+                        if (goalIdx < 4 || isGoalFocused) { // Display first 4 or the focused goal
+                          return (
+                            <GoalDataInputComponent
+                              key={goal.id}
+                              id={`goal-input-${studentId}-${goal.id}`}
+                              goal={goal}
+                              data={state.goalData[goal.id] || GOAL_TYPE_FIELDS[goal.type]}
+                              onChange={(updatedField, newData) => handleGoalDataChange(studentId, goal.id, updatedField, newData)}
+                              isFocused={isGoalFocused}
+                              onMoveUp={() => handleMoveGoal(studentId, goal.id, 'up')}
+                              onMoveDown={() => handleMoveGoal(studentId, goal.id, 'down')}
+                              canMoveUp={goalIdx > 0}
+                              canMoveDown={goalIdx < state.originalGoalHeaders.length - 1}
+                            />
+                          );
+                        }
+                        return null;
+                      })}
+                      {state.originalGoalHeaders.length > 4 && (
+                        <p className="text-xs text-muted-foreground text-center mt-2 p-1 border-t border-dashed">
+                          Total goals: {state.originalGoalHeaders.length}.
+                          {(focusedGoalIndexByStudentId[studentId] ?? 0) >= 4
+                            ? ` Focused goal ${(focusedGoalIndexByStudentId[studentId] ?? 0) + 1} is also shown.`
+                            : ` Showing top goals.`}
+                          {' '}
+                          <Link href={`/student-profile/${studentId}`} className="text-primary hover:underline">
+                            View/manage all.
+                          </Link>
+                        </p>
+                      )}
+                    </>
                   )}
 
                   <div>
