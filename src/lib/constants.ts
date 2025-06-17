@@ -171,6 +171,70 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
     sessionTargetValue: 80,
   },
   {
+    name: 'Produce /m/ in initial word position',
+    type: GOAL_TYPES.ARTICULATION as GoalType,
+    smartGoalPrompt: 'Generate a SMART goal for a student to accurately produce the /m/ sound in the initial position of words.',
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 80,
+  },
+  {
+    name: 'Produce /s/ in final word position',
+    type: GOAL_TYPES.ARTICULATION as GoalType,
+    smartGoalPrompt: 'Generate a SMART goal for a student to accurately produce the /s/ sound in the final position of words.',
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 80,
+  },
+  {
+    name: 'Produce /l/ in medial word position',
+    type: GOAL_TYPES.ARTICULATION as GoalType,
+    smartGoalPrompt: 'Generate a SMART goal for a student to accurately produce the /l/ sound in the medial position of words.',
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 80,
+  },
+  {
+    name: 'Produce /r/ in medial word position',
+    type: GOAL_TYPES.ARTICULATION as GoalType,
+    smartGoalPrompt: 'Generate a SMART goal for a student to accurately produce the /r/ sound in the medial position of words.',
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 80,
+  },
+  {
+    name: 'Produce voiced "th" (ð) in initial word position',
+    type: GOAL_TYPES.ARTICULATION as GoalType,
+    smartGoalPrompt: 'Generate a SMART goal for a student to accurately produce the voiced "th" (ð) sound in the initial position of words.',
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 80,
+  },
+  {
+    name: 'Produce "sp" blend in initial word position',
+    type: GOAL_TYPES.ARTICULATION as GoalType,
+    smartGoalPrompt: 'Generate a SMART goal for a student to accurately produce the "sp" consonant blend in the initial position of words.',
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 80,
+  },
+  {
+    name: 'Produce /v/ in initial word position',
+    type: GOAL_TYPES.ARTICULATION as GoalType,
+    smartGoalPrompt: 'Generate a SMART goal for a student to accurately produce the /v/ sound in the initial position of words.',
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 80,
+  },
+  {
+    name: 'Produce /z/ in final word position',
+    type: GOAL_TYPES.ARTICULATION as GoalType,
+    smartGoalPrompt: 'Generate a SMART goal for a student to accurately produce the /z/ sound in the final position of words.',
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 80,
+  },
+  {
     name: 'Identify Objects by Function',
     type: GOAL_TYPES.LANGUAGE_COMPREHENSION as GoalType,
     smartGoalPrompt: 'Generate a SMART goal for a student to identify common objects by their function when named by the clinician.',
@@ -187,3 +251,5 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
 ];
 
 export const MAX_STUDENTS_DATA_ENTRY = 4;
+
+    
