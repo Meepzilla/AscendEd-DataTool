@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -49,10 +50,19 @@ export default function AddStudentModal() {
       onClose={closeAddStudentModal}
       title="Add New Student"
       description="Enter the student's name to add them to your records."
-      // onOpenAutoFocus={(e) => nameInputRef.current?.focus()} // ShadCN handles autofocus
     >
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form 
+          onSubmit={form.handleSubmit(onSubmit)} 
+          onKeyDown={(e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+              e.preventDefault();
+              e.stopPropagation();
+              form.handleSubmit(onSubmit)();
+            }
+          }}
+          className="space-y-6"
+        >
           <FormField
             control={form.control}
             name="name"

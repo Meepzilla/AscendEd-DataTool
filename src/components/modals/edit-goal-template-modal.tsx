@@ -26,7 +26,7 @@ interface EditGoalTemplateModalProps {
 
 export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTemplateModalProps) {
   const {
-    goalTemplates, // For checking if templateToEdit from prop still exists
+    goalTemplates, 
     closeEditGoalTemplateModal,
     updateGoalTemplate,
     loading: dataLoading
@@ -35,7 +35,6 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const { toast } = useToast();
 
-  // Find the template from the context's goalTemplates array to ensure it's the latest version
   const currentTemplate = goalTemplates.find(t => t.id === templateToEdit?.id) || null;
 
   const form = useForm<EditGoalTemplateFormData>({
@@ -90,8 +89,6 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
     setIsSubmitting(true);
     await updateGoalTemplate(currentTemplate.id, data);
     setIsSubmitting(false);
-    // Optional: close after successful save
-    // closeEditGoalTemplateModal();
   };
 
   if (!currentTemplate) return null;
@@ -104,7 +101,17 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
       size="lg"
     >
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <form 
+          onSubmit={form.handleSubmit(onSubmit)} 
+          onKeyDown={(e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+              e.preventDefault();
+              e.stopPropagation();
+              form.handleSubmit(onSubmit)();
+            }
+          }}
+          className="space-y-4"
+        >
           <FormField
             control={form.control}
             name="name"
@@ -201,7 +208,7 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
                     type="number"
                     placeholder="e.g., 10"
                     {...field}
-                    value={field.value ?? ''} // Ensure controlled component behavior for undefined
+                    value={field.value ?? ''} 
                     onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))}
                   />
                 </FormControl>

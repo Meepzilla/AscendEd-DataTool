@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -21,7 +22,7 @@ interface EditSessionModalProps {
 
 export default function EditSessionModal({ sessionToEdit }: EditSessionModalProps) {
   const { 
-    sessions, // For checking if sessionToEdit prop still exists
+    sessions, 
     closeEditSessionModal, 
     updateSession, 
     loading: dataLoading 
@@ -29,17 +30,15 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
-  // Find the session from the context's sessions array to ensure it's the latest version
   const currentSession = sessions.find(s => s.sessionId === sessionToEdit?.sessionId) || null;
   
-  // Local form state, initialized from currentSession
   const [formData, setFormData] = useState<Partial<SessionData>>({});
 
   useEffect(() => {
     if (currentSession) {
       setFormData({
         ...currentSession,
-        date: currentSession.date ? new Date(currentSession.date).toISOString().split('T')[0] : undefined, // Format for date input
+        date: currentSession.date ? new Date(currentSession.date).toISOString().split('T')[0] : undefined, 
       });
     }
   }, [currentSession]);
@@ -53,7 +52,7 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
     setFormData(prev => ({ ...prev, date: date ? date.toISOString().split('T')[0] : undefined }));
   };
 
-  const handleGoalDataChange = (goalId: string, goalData: SessionGoalData['data']) => {
+  const handleGoalDataChange = (goalId: string, updatedFieldName: string, goalData: SessionGoalData['data']) => {
     setFormData(prev => {
       const updatedGoals = prev.goals?.map(g => 
         g.goalId === goalId ? { ...g, data: goalData } : g
@@ -62,23 +61,21 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
     });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => { // Make e optional for programmatic call
+    e?.preventDefault();
     if (!currentSession || !formData.date) {
         toast({ title: "Error", description: "Session data or date is missing.", variant: "destructive" });
         return;
     }
     setIsSubmitting(true);
     
-    // Reconstruct the session data with the original date format if needed, or ensure Firestore handles it
     const dataToUpdate: Partial<SessionData> = {
         ...formData,
-        date: new Date(formData.date).toISOString(), // Ensure it's ISO string for consistency
+        date: new Date(formData.date).toISOString(), 
     };
 
     await updateSession(currentSession.sessionId, dataToUpdate);
     setIsSubmitting(false);
-    // Toast is handled by updateSession
     closeEditSessionModal();
   };
   
@@ -92,9 +89,19 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
       description={`Session on ${new Date(currentSession.date).toLocaleDateString()} at ${currentSession.time}`}
       size="xl"
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <ScrollArea className="max-h-[60vh] p-1"> {/* Add padding to ScrollArea content */}
-            <div className="space-y-4 p-3"> {/* Inner padding for content */}
+      <form 
+        onSubmit={handleSubmit} 
+        onKeyDown={(e) => {
+          if (e.ctrlKey && e.key === 'Enter') {
+            e.preventDefault();
+            e.stopPropagation();
+            handleSubmit(); // Call directly
+          }
+        }}
+        className="space-y-4"
+      >
+        <ScrollArea className="max-h-[60vh] p-1"> 
+            <div className="space-y-4 p-3"> 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <Label htmlFor="sessionDateEdit">Session Date</Label>
@@ -126,14 +133,15 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
 
                 {formData.goals && formData.goals.map((sessionGoal, index) => {
                     const originalGoal = currentSession.originalGoalHeaders.find(og => og.id === sessionGoal.goalId);
-                    if (!originalGoal) return null; // Should not happen
+                    if (!originalGoal) return null; 
 
                     return (
                         <GoalDataInputComponent
                         key={sessionGoal.goalId}
-                        goal={originalGoal} // Pass the original goal structure for type info
+                        id={`edit-session-goal-${sessionGoal.goalId}`}
+                        goal={originalGoal} 
                         data={sessionGoal.data || GOAL_TYPE_FIELDS[originalGoal.type]}
-                        onChange={(newData) => handleGoalDataChange(sessionGoal.goalId, newData)}
+                        onChange={(fieldName,newData) => handleGoalDataChange(sessionGoal.goalId, fieldName,newData)}
                         />
                     );
                 })}

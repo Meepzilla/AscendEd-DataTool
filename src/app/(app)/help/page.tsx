@@ -26,6 +26,7 @@ const hotkeys: Hotkey[] = [
   { key: 'Alt + L', description: 'Open Error Log Modal', category: 'Global Actions' },
   { key: 'Alt + M', description: 'Open Add Student Modal', category: 'Global Actions' },
   { key: 'Alt + B', description: 'Toggle Sidebar', category: 'Global Actions' },
+  { key: 'Ctrl + Enter', description: 'Confirm action / Save (contextual)', category: 'Global Actions'},
   // Data Entry Specific
   { key: '1, 2, 3, or 4', description: 'Focus on Student Slot 1-4', category: 'Data Entry' },
   { key: 'A', description: 'Cycle to Next Student Slot', category: 'Data Entry' },
@@ -79,7 +80,7 @@ export default function HelpPage() {
           <CardDescription>Speed up your workflow with these keyboard shortcuts.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Accordion type="multiple" className="w-full">
+          <Accordion type="multiple" className="w-full" defaultValue={["Global Actions", "Data Entry"]}>
             {Object.entries(categorizedHotkeys).map(([category, keys]) => (
               <AccordionItem value={category} key={category}>
                 <AccordionTrigger className="text-lg font-semibold">{category}</AccordionTrigger>
@@ -142,6 +143,7 @@ export default function HelpPage() {
             <p><strong className="text-foreground">Local Mode:</strong> If Firebase is not configured (e.g., missing API keys), the app runs in local mode. Data is stored in your browser and not synced to the cloud. You'll see indicators for this.</p>
             <p><strong className="text-foreground">Error Log:</strong> If you encounter issues, check the Error Log (Alt+L or header icon) for recent application-level errors. For more detailed debugging, use your browser's developer console.</p>
             <p><strong className="text-foreground">AI Features:</strong> Make use of AI for SMART goal generation (in Goal Templates) and activity suggestions (in Data Entry) to enhance your planning.</p>
+            <p><strong className="text-foreground">Ctrl+Enter:</strong> In many forms and on the Data Entry page, pressing Ctrl+Enter will act as a "confirm" or "save" action.</p>
         </CardContent>
       </Card>
     </div>

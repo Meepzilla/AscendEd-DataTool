@@ -76,14 +76,11 @@ export default function AddGoalTemplateModal() {
 
   const onSubmit = async (data: AddGoalTemplateFormData) => {
     setIsSubmitting(true);
-    // addGoalTemplate expects Omit<GoalTemplate, 'id' | 'createdAt' | 'userId' | 'isDefault'>
-    // The form data (AddGoalTemplateFormData) matches this, as 'isDefault' and 'userId' are handled by the hook.
     const newTemplate = await addGoalTemplate(data);
     setIsSubmitting(false);
     if (newTemplate) {
       closeAddGoalTemplateModal();
     }
-    // Error handling is done within addGoalTemplate via toast
   };
 
   return (
@@ -95,7 +92,17 @@ export default function AddGoalTemplateModal() {
       size="lg"
     >
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <form 
+          onSubmit={form.handleSubmit(onSubmit)} 
+          onKeyDown={(e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+              e.preventDefault();
+              e.stopPropagation();
+              form.handleSubmit(onSubmit)();
+            }
+          }}
+          className="space-y-4"
+        >
           <FormField
             control={form.control}
             name="name"

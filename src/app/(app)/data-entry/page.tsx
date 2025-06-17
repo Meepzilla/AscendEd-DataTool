@@ -26,7 +26,7 @@ interface StudentSessionState {
   studentName: string;
   activity: string;
   notes: string;
-  goalData: Record<string, SessionGoalData['data']>; // Prompt counts will be in here e.g. { Verbal: 1 }
+  goalData: Record<string, SessionGoalData['data']>; 
   originalGoalHeaders: Goal[];
   isCollapsed: boolean;
 }
@@ -115,6 +115,60 @@ export default function DataEntryPage() {
     return { studentId, studentState, goal, goalData, goalIndex };
   }, [selectedStudentIds, focusedStudentSlotIndex, studentSessionStates, focusedGoalIndexByStudentId]);
 
+  const handleSaveSession = useCallback(async () => {
+    if (!sessionDate || selectedStudentIds.length === 0) {
+      toast({ title: "Error", description: "Please select a date and at least one student.", variant: "destructive"});
+      return;
+    }
+    setIsSaving(true);
+    let sessionsSavedCount = 0;
+    for (const studentId of selectedStudentIds) {
+      const state = studentSessionStates[studentId];
+      if (state) {
+        const sessionGoals: SessionGoalData[] = state.originalGoalHeaders.map(goal => ({
+          goalId: goal.id,
+          goalName: goal.name,
+          goalType: goal.type,
+          data: state.goalData[goal.id] || JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type])),
+        }));
+
+        const session: Omit<SessionData, 'sessionId'> = {
+          studentId: state.studentId,
+          studentName: state.studentName,
+          date: sessionDate.toISOString(),
+          time: sessionTime,
+          activity: state.activity,
+          notes: state.notes,
+          goals: sessionGoals,
+          originalGoalHeaders: state.originalGoalHeaders,
+        };
+        await addSession(session); 
+        sessionsSavedCount++;
+      }
+    }
+    setIsSaving(false);
+    if (sessionsSavedCount > 0) {
+        toast({ title: "Success", description: `${sessionsSavedCount} session(s) saved.`});
+        const newStates = {...studentSessionStates};
+        selectedStudentIds.forEach(id => {
+            if(newStates[id]) {
+                newStates[id].activity = '';
+                newStates[id].notes = '';
+                const initialGoalData: Record<string, SessionGoalData['data']> = {};
+                const student = students.find(s => s.id === id);
+                student?.goals.forEach(goal => {
+                  initialGoalData[goal.id] = JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type]));
+                });
+                newStates[id].goalData = initialGoalData;
+            }
+        });
+        setStudentSessionStates(newStates);
+
+    } else {
+        toast({ title: "Info", description: "No sessions were saved. Ensure students have data.", variant: "default"});
+    }
+  }, [sessionDate, selectedStudentIds, studentSessionStates, students, addSession, sessionTime, toast]);
+
 
   useEffect(() => {
     if (!studentsLoading && students.length > 0) {
@@ -157,6 +211,17 @@ export default function DataEntryPage() {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement;
+
+      // Ctrl+Enter for saving session (if not handled by a modal that stops propagation)
+      if (event.ctrlKey && event.key === 'Enter') {
+        if (selectedStudentIds.length > 0) {
+          event.preventDefault();
+          handleSaveSession();
+        }
+        return; // Ctrl+Enter is handled, don't process other keys.
+      }
+      
+      // If focus is on an input/textarea/select, block other page-level hotkeys
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable) {
         return;
       }
@@ -250,7 +315,7 @@ export default function DataEntryPage() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedStudentIds, studentSessionStates, focusedStudentSlotIndex, focusedGoalIndexByStudentId, handleGoalDataChange, getCurrentFocusedGoalInfo]);
+  }, [selectedStudentIds, studentSessionStates, focusedStudentSlotIndex, focusedGoalIndexByStudentId, handleGoalDataChange, getCurrentFocusedGoalInfo, handleSaveSession]);
 
 
   // Effect to scroll focused goal into view
@@ -316,59 +381,6 @@ export default function DataEntryPage() {
     }));
   };
 
-  const handleSaveSession = async () => {
-    if (!sessionDate || selectedStudentIds.length === 0) {
-      toast({ title: "Error", description: "Please select a date and at least one student.", variant: "destructive"});
-      return;
-    }
-    setIsSaving(true);
-    let sessionsSavedCount = 0;
-    for (const studentId of selectedStudentIds) {
-      const state = studentSessionStates[studentId];
-      if (state) {
-        const sessionGoals: SessionGoalData[] = state.originalGoalHeaders.map(goal => ({
-          goalId: goal.id,
-          goalName: goal.name,
-          goalType: goal.type,
-          data: state.goalData[goal.id] || JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type])),
-        }));
-
-        const session: Omit<SessionData, 'sessionId'> = {
-          studentId: state.studentId,
-          studentName: state.studentName,
-          date: sessionDate.toISOString(),
-          time: sessionTime,
-          activity: state.activity,
-          notes: state.notes,
-          goals: sessionGoals,
-          originalGoalHeaders: state.originalGoalHeaders,
-        };
-        await addSession(session); 
-        sessionsSavedCount++;
-      }
-    }
-    setIsSaving(false);
-    if (sessionsSavedCount > 0) {
-        toast({ title: "Success", description: `${sessionsSavedCount} session(s) saved.`});
-        const newStates = {...studentSessionStates};
-        selectedStudentIds.forEach(id => {
-            if(newStates[id]) {
-                newStates[id].activity = '';
-                newStates[id].notes = '';
-                const initialGoalData: Record<string, SessionGoalData['data']> = {};
-                const student = students.find(s => s.id === id);
-                student?.goals.forEach(goal => {
-                  initialGoalData[goal.id] = JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type]));
-                });
-                newStates[id].goalData = initialGoalData;
-            }
-        });
-        setStudentSessionStates(newStates);
-
-    } else {
-        toast({ title: "Info", description: "No sessions were saved. Ensure students have data.", variant: "default"});
-    }
-  };
 
   const fetchAiActivitySuggestions = async (studentId: string) => {
     const studentState = studentSessionStates[studentId];
@@ -438,7 +450,7 @@ export default function DataEntryPage() {
             </div>
           </div>
            <p className="text-sm text-muted-foreground">
-            Hotkeys: [1-4] Focus Student | A/Alt+A Cycle Students | S/Alt+S Cycle Goals | C/Alt+C Correct/Total | N/Alt+N Incorrect/Stutter | V/G/P/F/I Prompts.
+            Hotkeys: [1-4] Focus Slot | A/Alt+A Cycle Students | S/Alt+S Cycle Goals | C/Alt+C Correct | N/Alt+N Incorrect | V/G/P/F/I Prompts | Ctrl+Enter Save Session.
           </p>
         </CardContent>
       </Card>

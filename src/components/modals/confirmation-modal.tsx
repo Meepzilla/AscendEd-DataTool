@@ -1,6 +1,7 @@
+
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,26 +12,26 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Button } from '@/components/ui/button'; // Keep for triggering if needed, though AlertDialogTrigger is typical
-import { useStudentData } from '@/hooks/use-student-data'; // Import useStudentData
+import { Button } from '@/components/ui/button';
+import { useStudentData } from '@/hooks/use-student-data';
 import type { Student, GoalTemplate, SessionData } from '@/lib/types';
 
 interface ConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void; // This onConfirm might now trigger context action
+  onConfirm?: () => void; 
   title: string;
   description: string;
   confirmText?: string;
   cancelText?: string;
-  itemToDelete?: Student | GoalTemplate | SessionData | null; // Item to be deleted
-  deleteActionType?: 'student' | 'goalTemplate' | 'session'; // Type of item to delete
+  itemToDelete?: Student | GoalTemplate | SessionData | null; 
+  deleteActionType?: 'student' | 'goalTemplate' | 'session'; 
 }
 
 export default function ConfirmationModal({
   isOpen,
   onClose,
-  onConfirm, // This prop might become redundant if context handles all logic
+  onConfirm, 
   title,
   description,
   confirmText = "Confirm",
@@ -45,10 +46,12 @@ export default function ConfirmationModal({
     loading: dataLoading,
   } = useStudentData();
   const [isDeleting, setIsDeleting] = useState(false);
+  const confirmButtonRef = useRef<HTMLButtonElement>(null);
 
-  const handleConfirm = async () => {
+  const handleConfirmAction = useCallback(async () => {
     if (!itemToDelete || !deleteActionType) {
-      onConfirm(); // Fallback to original onConfirm if item/type not provided
+      onConfirm?.(); 
+      if (!onConfirm) onClose(); // Close if no custom confirm and no item
       return;
     }
 
@@ -67,16 +70,29 @@ export default function ConfirmationModal({
         default:
           console.warn("Unknown delete action type");
       }
-      // The onSnapshot in useStudentData should update UI.
-      // Toast notifications are handled within context delete functions.
     } catch (error) {
       console.error(`Error deleting ${deleteActionType}:`, error);
-      // Toast for error might be good here if not handled in context
     } finally {
       setIsDeleting(false);
-      onClose(); // Close modal after action
+      onClose(); 
     }
-  };
+  }, [itemToDelete, deleteActionType, contextDeleteStudent, contextDeleteGoalTemplate, contextDeleteSession, onClose, onConfirm, dataLoading]);
+
+  useEffect(() => {
+    if (isOpen) {
+      const handleCtrlEnter = (event: KeyboardEvent) => {
+        if (event.ctrlKey && event.key === 'Enter') {
+          event.preventDefault();
+          event.stopPropagation();
+          confirmButtonRef.current?.click();
+        }
+      };
+      document.addEventListener('keydown', handleCtrlEnter);
+      return () => {
+        document.removeEventListener('keydown', handleCtrlEnter);
+      };
+    }
+  }, [isOpen, handleConfirmAction]);
 
   return (
     <AlertDialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -89,7 +105,7 @@ export default function ConfirmationModal({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={onClose} disabled={isDeleting || dataLoading}>{cancelText}</AlertDialogCancel>
-          <AlertDialogAction onClick={handleConfirm} disabled={isDeleting || dataLoading} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">
+          <AlertDialogAction ref={confirmButtonRef} onClick={handleConfirmAction} disabled={isDeleting || dataLoading} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">
             {isDeleting || dataLoading ? 'Deleting...' : confirmText}
           </AlertDialogAction>
         </AlertDialogFooter>
