@@ -7,8 +7,8 @@ import type { Student, SessionData, Goal, PromptType } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { BarChart2, Download, Info, RefreshCw, Lightbulb, MessageSquare } from 'lucide-react';
-import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart'; // ChartStyle removed as it's internal to ChartContainer
+import { BarChart2, Download, Info, RefreshCw, Lightbulb, MessageSquare, TrendingUp, AlertTriangle } from 'lucide-react';
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, LineChart, Line, Legend } from 'recharts';
 import { generateTechnicalSummary } from '@/ai/flows/technical-summary-generation'; 
 import { useToast } from '@/hooks/use-toast';
@@ -26,7 +26,6 @@ const transformSessionDataForChart = (sessions: SessionData[], selectedGoalId?: 
     let correct = 0;
     let incorrect = 0;
     let opportunities = 0;
-    // Initialize promptCounts for each session based on PROMPT_TYPES
     let promptCounts: Record<PromptType, number> = PROMPT_TYPES.reduce((acc, pt) => ({...acc, [pt]:0}), {} as Record<PromptType, number>);
 
     session.goals.forEach(goalData => {
@@ -42,8 +41,6 @@ const transformSessionDataForChart = (sessions: SessionData[], selectedGoalId?: 
         correct += successes;
         incorrect += (Number(goalData.data.opportunities) || 0) - successes;
       } else if (goalData.goalType === 'FLUENCY_SYLLABLE_STUTTER') {
-        // For fluency, 'correct' could represent non-stuttered, 'incorrect' stuttered
-        // Or we can define accuracy differently. For now, let's use total - stuttered for 'correct'
         const totalSyllables = Number(goalData.data.totalSyllables) || 0;
         const stutteredSyllables = Number(goalData.data.stutteredSyllables) || 0;
         opportunities += totalSyllables;
@@ -51,7 +48,6 @@ const transformSessionDataForChart = (sessions: SessionData[], selectedGoalId?: 
         incorrect += stutteredSyllables;
       }
       
-      // Sum up prompt counts from goalData.data
       PROMPT_TYPES.forEach(pt => {
         if (goalData.data[pt] && typeof goalData.data[pt] === 'number') {
           promptCounts[pt] = (promptCounts[pt] || 0) + (goalData.data[pt] as number);
@@ -67,7 +63,7 @@ const transformSessionDataForChart = (sessions: SessionData[], selectedGoalId?: 
       correct,
       incorrect,
       opportunities,
-      ...promptCounts, // Spread summed prompt counts for this session
+      ...promptCounts,
     };
   }).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()); 
 };
@@ -141,7 +137,7 @@ export default function AnalysisReportPage() {
       const result = await generateTechnicalSummary({
         studentName: selectedStudent.name,
         goalName: primaryGoal || "Multiple Goals",
-        progressData: `Recent sessions show the following trends:\n${progressDataPoints}\nChart data indicates accuracies like: ${chartData.slice(-3).map(d => `${d.accuracy}%`).join(', ')}.`,
+        progressData: `Recent sessions show the following trends:\n${progressDataPoints}\nChart data (last 3 sessions) accuracies: ${chartData.slice(-3).map(d => `${d.accuracy}%`).join(', ')}; opportunities: ${chartData.slice(-3).map(d => d.opportunities).join(', ')}; correct: ${chartData.slice(-3).map(d => d.correct).join(', ')}; incorrect: ${chartData.slice(-3).map(d => d.incorrect).join(', ')}.`,
       });
       setTechnicalSummary(result.summary);
       toast({ title: "AI Summary Generated", description: result.progress });
@@ -177,6 +173,15 @@ export default function AnalysisReportPage() {
 
   const accuracyChartConfig = {
     accuracy: { label: 'Accuracy (%)', color: 'hsl(var(--primary))' },
+  } as const;
+
+  const responseCountsChartConfig = {
+    correct: { label: 'Correct', color: 'hsl(var(--chart-2))' }, // Greenish
+    incorrect: { label: 'Incorrect', color: 'hsl(var(--chart-5))' }, // Reddish
+  } as const;
+
+  const opportunitiesChartConfig = {
+    opportunities: { label: 'Opportunities', color: 'hsl(var(--chart-1))' }, // Bluish
   } as const;
 
   const promptChartConfig = PROMPT_TYPES.reduce((config, pt) => {
@@ -245,52 +250,93 @@ export default function AnalysisReportPage() {
       ) : studentSessions.length === 0 && !dataLoading ? (
         <Card>
             <CardContent className="p-8 text-center text-muted-foreground">
-                <Info className="h-10 w-10 mx-auto mb-3 text-primary"/>
+                <AlertTriangle className="h-10 w-10 mx-auto mb-3 text-amber-500"/>
                 <p className="text-lg">No session data found for {selectedStudent?.name || 'the selected student'} within the selected date range.</p>
                 <p>Try adjusting the filters or record new session data.</p>
             </CardContent>
         </Card>
       ) : (
         <>
-          <Card>
-            <CardHeader>
-              <CardTitle>Progress Over Time {selectedGoalId && selectedStudent?.goals.find(g=>g.id === selectedGoalId) ? `(${selectedStudent?.goals.find(g=>g.id === selectedGoalId)?.name})` : '(Overall Accuracy)'}</CardTitle>
-              <CardDescription>Accuracy percentage across sessions.</CardDescription>
-            </CardHeader>
-            <CardContent className="h-[350px] w-full">
-              <ChartContainer config={accuracyChartConfig} className="h-full w-full">
-                <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} />
-                  <YAxis unit="%" domain={[0,100]} tickLine={false} axisLine={false} tickMargin={8}/>
-                  <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
-                  <Line type="monotone" dataKey="accuracy" stroke="var(--color-accuracy)" strokeWidth={2} dot={true} />
-                  <ChartLegend content={<ChartLegendContent />} />
-                </LineChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-
-          {promptUsageData.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
-                <CardHeader>
-                <CardTitle>Prompt Usage Distribution</CardTitle>
-                <CardDescription>Total count of each prompt level used across selected sessions.</CardDescription>
-                </CardHeader>
-                <CardContent className="h-[300px] w-full">
-                <ChartContainer config={promptChartConfig} className="h-full w-full">
-                    <BarChart data={promptUsageData} layout="vertical" margin={{ left: 10, right:10 }}>
-                    <CartesianGrid horizontal={false} />
-                    <XAxis type="number" hide/>
-                    <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} tickMargin={8} width={100} />
-                    <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-                    <Bar dataKey="value" radius={5} />
-                     <ChartLegend content={<ChartLegendContent />} />
-                    </BarChart>
+              <CardHeader>
+                <CardTitle>Progress Over Time {selectedGoalId && selectedStudent?.goals.find(g=>g.id === selectedGoalId) ? `(${selectedStudent?.goals.find(g=>g.id === selectedGoalId)?.name})` : '(Overall Accuracy)'}</CardTitle>
+                <CardDescription>Accuracy percentage across sessions.</CardDescription>
+              </CardHeader>
+              <CardContent className="h-[300px] w-full">
+                <ChartContainer config={accuracyChartConfig} className="h-full w-full">
+                  <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} />
+                    <YAxis unit="%" domain={[0,100]} tickLine={false} axisLine={false} tickMargin={8}/>
+                    <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
+                    <Line type="monotone" dataKey="accuracy" stroke="var(--color-accuracy)" strokeWidth={2} dot={true} />
+                    <ChartLegend content={<ChartLegendContent />} />
+                  </LineChart>
                 </ChartContainer>
-                </CardContent>
+              </CardContent>
             </Card>
-           )}
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Response Counts {selectedGoalId && selectedStudent?.goals.find(g=>g.id === selectedGoalId) ? `(${selectedStudent?.goals.find(g=>g.id === selectedGoalId)?.name})` : '(Overall)'}</CardTitle>
+                <CardDescription>Number of correct and incorrect responses per session.</CardDescription>
+              </CardHeader>
+              <CardContent className="h-[300px] w-full">
+                <ChartContainer config={responseCountsChartConfig} className="h-full w-full">
+                  <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} />
+                    <YAxis tickLine={false} axisLine={false} tickMargin={8} allowDecimals={false}/>
+                    <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
+                    <ChartLegend content={<ChartLegendContent />} />
+                    <Line type="monotone" dataKey="correct" stroke="var(--color-correct)" strokeWidth={2} dot={true} name="Correct" />
+                    <Line type="monotone" dataKey="incorrect" stroke="var(--color-incorrect)" strokeWidth={2} dot={true} name="Incorrect" />
+                  </LineChart>
+                </ChartContainer>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Total Opportunities {selectedGoalId && selectedStudent?.goals.find(g=>g.id === selectedGoalId) ? `(${selectedStudent?.goals.find(g=>g.id === selectedGoalId)?.name})` : '(Overall)'}</CardTitle>
+                <CardDescription>Total number of opportunities (e.g., trials) per session.</CardDescription>
+              </CardHeader>
+              <CardContent className="h-[300px] w-full">
+                <ChartContainer config={opportunitiesChartConfig} className="h-full w-full">
+                  <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} />
+                    <YAxis tickLine={false} axisLine={false} tickMargin={8} allowDecimals={false}/>
+                    <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
+                    <ChartLegend content={<ChartLegendContent />} />
+                    <Line type="monotone" dataKey="opportunities" stroke="var(--color-opportunities)" strokeWidth={2} dot={true} name="Opportunities" />
+                  </LineChart>
+                </ChartContainer>
+              </CardContent>
+            </Card>
+
+            {promptUsageData.length > 0 && (
+              <Card>
+                  <CardHeader>
+                  <CardTitle>Prompt Usage Distribution</CardTitle>
+                  <CardDescription>Total count of each prompt level used across selected sessions.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="h-[300px] w-full">
+                  <ChartContainer config={promptChartConfig} className="h-full w-full">
+                      <BarChart data={promptUsageData} layout="vertical" margin={{ left: 10, right:10 }}>
+                      <CartesianGrid horizontal={false} />
+                      <XAxis type="number" hide/>
+                      <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} tickMargin={8} width={100} />
+                      <ChartTooltip content={<ChartTooltipContent hideLabel />} />
+                      <Bar dataKey="value" radius={5} />
+                       <ChartLegend content={<ChartLegendContent />} />
+                      </BarChart>
+                  </ChartContainer>
+                  </CardContent>
+              </Card>
+             )}
+           </div>
            
           <Card>
             <CardHeader>
@@ -342,8 +388,16 @@ function AnalysisReportSkeleton() {
                     </div>
                 </CardContent>
             </Card>
-             <Card><CardHeader><Skeleton className="h-7 w-1/3 mb-1" /><Skeleton className="h-4 w-1/2" /></CardHeader><CardContent><Skeleton className="h-[350px] w-full" /></CardContent></Card>
-             <Card><CardHeader><Skeleton className="h-7 w-1/3 mb-1" /><Skeleton className="h-4 w-1/2" /></CardHeader><CardContent><Skeleton className="h-[200px] w-full" /></CardContent></Card>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card><CardHeader><Skeleton className="h-7 w-1/3 mb-1" /><Skeleton className="h-4 w-1/2" /></CardHeader><CardContent><Skeleton className="h-[300px] w-full" /></CardContent></Card>
+                <Card><CardHeader><Skeleton className="h-7 w-1/3 mb-1" /><Skeleton className="h-4 w-1/2" /></CardHeader><CardContent><Skeleton className="h-[300px] w-full" /></CardContent></Card>
+                <Card><CardHeader><Skeleton className="h-7 w-1/3 mb-1" /><Skeleton className="h-4 w-1/2" /></CardHeader><CardContent><Skeleton className="h-[300px] w-full" /></CardContent></Card>
+                <Card><CardHeader><Skeleton className="h-7 w-1/3 mb-1" /><Skeleton className="h-4 w-1/2" /></CardHeader><CardContent><Skeleton className="h-[300px] w-full" /></CardContent></Card>
+            </div>
+            <Card><CardHeader><Skeleton className="h-7 w-1/3 mb-1" /><Skeleton className="h-4 w-1/2" /></CardHeader><CardContent><Skeleton className="h-[200px] w-full" /></CardContent></Card>
         </div>
     )
 }
+
+
+    
