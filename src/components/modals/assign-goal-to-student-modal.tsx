@@ -33,7 +33,13 @@ interface AssignGoalToStudentModalProps {
 }
 
 export default function AssignGoalToStudentModal({ student, isOpen, onClose }: AssignGoalToStudentModalProps) {
-  const { goalTemplates, assignGoalToStudent, loading: dataLoading } = useStudentData();
+  const {
+    goalTemplates,
+    assignGoalToStudent, // Still used for single custom goal assignment
+    updateStudent,       // Used for multiple template assignment
+    students,            // Used to get the current student object for multiple assignment
+    loading: dataLoading
+  } = useStudentData();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTemplates, setSelectedTemplates] = useState<Set<string>>(new Set());
   const [goalTypeFilter, setGoalTypeFilter] = useState<string>('ALL');
@@ -68,22 +74,36 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
       const template = goalTemplates.find(t => t.id === templateId);
       if (template) {
         goalsToAssign.push({
-          id: generateUUID(),
+          id: generateUUID(), // Each assigned goal needs a unique ID
           name: template.name,
           type: template.type,
           smartGoal: template.generatedSmartGoal || `SMART goal for ${template.name}`,
-          sessionTargetValue: template.sessionTargetValue, 
+          sessionTargetValue: template.sessionTargetValue,
         });
       }
     });
 
+    // Get the current student object from the context's students array
+    const currentStudentObject = students.find(s => s.id === student.id);
+
+    if (!currentStudentObject) {
+      toast({ title: "Error", description: "Student data not found. Cannot assign goals.", variant: "destructive" });
+      setIsAssigningTemplates(false);
+      return;
+    }
+
+    // Combine existing goals with new goals
+    const updatedStudentGoals = [...currentStudentObject.goals, ...goalsToAssign];
+
     try {
-      await Promise.all(goalsToAssign.map(goal => assignGoalToStudent(student.id, goal)));
+      // Call updateStudent once with the complete list of goals
+      await updateStudent(student.id, { goals: updatedStudentGoals });
+
       toast({ title: "Success", description: `${goalsToAssign.length} goal(s) assigned from templates.`});
-      setSelectedTemplates(new Set());
+      setSelectedTemplates(new Set()); // Clear selection after successful assignment
     } catch (error) {
-        console.error("Error assigning goals from templates:", error);
-        toast({ title: "Error", description: "Could not assign goals from templates.", variant: "destructive"});
+        console.error("Error assigning multiple goals from templates:", error);
+        toast({ title: "Error", description: "Could not assign selected goals from templates.", variant: "destructive"});
     } finally {
         setIsAssigningTemplates(false);
     }
@@ -108,6 +128,7 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
     };
 
     try {
+        // assignGoalToStudent is fine here as it's for a single goal
         await assignGoalToStudent(student.id, newCustomGoal);
         toast({ title: "Success", description: `Custom goal "${newCustomGoal.name}" assigned.`});
         setCustomGoalName('');
@@ -125,7 +146,7 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
   const filteredGoalTemplates = goalTemplates.filter(template => {
     const nameMatch = template.name.toLowerCase().includes(searchTerm.toLowerCase());
     const typeMatch = goalTypeFilter === 'ALL' || template.type === goalTypeFilter;
-    const isAssigned = student.goals.some(g => g.name === template.name && g.type === template.type);
+    const isAssigned = student.goals.some(g => g.name === template.name && g.type === template.type); // Basic check to hide already assigned by name/type
     return nameMatch && typeMatch && !isAssigned;
   }).sort((a,b) => a.name.localeCompare(b.name));
 
@@ -297,3 +318,4 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
     </GenericModal>
   );
 }
+
