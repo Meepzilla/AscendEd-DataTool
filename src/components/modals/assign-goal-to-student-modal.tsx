@@ -23,7 +23,7 @@ import { Label } from '../ui/label';
 import { generateUUID } from '@/lib/helpers';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '../ui/separator';
-import { FormDescription } from '../ui/form'; // Added for consistency
+// Removed FormDescription import as it's no longer directly used here for the custom part
 import { cn } from '@/lib/utils';
 
 interface AssignGoalToStudentModalProps {
@@ -272,9 +272,9 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
                         disabled={dataLoading || isAssigningTemplates || isAssigningCustom}
                     />
                 </div>
-                <FormDescription className="text-xs mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Target percentage (0-100) for accuracy/fluency, or a specific rating for qualitative goals.
-                </FormDescription>
+                </p>
               </div>
             </div>
           </ScrollArea>
