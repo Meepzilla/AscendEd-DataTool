@@ -23,6 +23,7 @@ import { Label } from '../ui/label';
 import { generateUUID } from '@/lib/helpers';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '../ui/separator';
+import { FormDescription } from '../ui/form'; // Added for consistency
 
 interface AssignGoalToStudentModalProps {
   student: Student;
@@ -37,7 +38,6 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
   const [goalTypeFilter, setGoalTypeFilter] = useState<string>('ALL');
   const { toast } = useToast();
 
-  // State for custom goal creation
   const [customGoalName, setCustomGoalName] = useState('');
   const [customGoalType, setCustomGoalType] = useState<GoalType>(Object.values(GOAL_TYPES)[0] as GoalType);
   const [customGoalSmartText, setCustomGoalSmartText] = useState('');
@@ -71,7 +71,7 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
           name: template.name,
           type: template.type,
           smartGoal: template.generatedSmartGoal || `SMART goal for ${template.name}`,
-          sessionTargetValue: template.sessionTargetValue, // Carry over session target
+          sessionTargetValue: template.sessionTargetValue, 
         });
       }
     });
@@ -80,7 +80,6 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
       await Promise.all(goalsToAssign.map(goal => assignGoalToStudent(student.id, goal)));
       toast({ title: "Success", description: `${goalsToAssign.length} goal(s) assigned from templates.`});
       setSelectedTemplates(new Set());
-      // onClose(); // Optionally close, or allow assigning more
     } catch (error) {
         console.error("Error assigning goals from templates:", error);
         toast({ title: "Error", description: "Could not assign goals from templates.", variant: "destructive"});
@@ -94,8 +93,8 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
         toast({ title: "Validation Error", description: "Custom goal name and SMART goal text cannot be empty.", variant: "destructive" });
         return;
     }
-    if (customGoalSessionTarget !== undefined && customGoalSessionTarget <= 0) {
-        toast({ title: "Validation Error", description: "Session target must be a positive number if provided.", variant: "destructive" });
+    if (customGoalSessionTarget !== undefined && (customGoalSessionTarget < 0 || customGoalSessionTarget > 100)) {
+        toast({ title: "Validation Error", description: "Session target percentage must be between 0 and 100 if provided.", variant: "destructive" });
         return;
     }
     setIsAssigningCustom(true);
@@ -110,12 +109,10 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
     try {
         await assignGoalToStudent(student.id, newCustomGoal);
         toast({ title: "Success", description: `Custom goal "${newCustomGoal.name}" assigned.`});
-        // Reset custom goal fields
         setCustomGoalName('');
         setCustomGoalType(Object.values(GOAL_TYPES)[0] as GoalType);
         setCustomGoalSmartText('');
         setCustomGoalSessionTarget(undefined);
-        // onClose(); // Optionally close
     } catch (error) {
         console.error("Error assigning custom goal:", error);
         toast({ title: "Error", description: "Could not assign custom goal.", variant: "destructive"});
@@ -127,8 +124,6 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
   const filteredGoalTemplates = goalTemplates.filter(template => {
     const nameMatch = template.name.toLowerCase().includes(searchTerm.toLowerCase());
     const typeMatch = goalTypeFilter === 'ALL' || template.type === goalTypeFilter;
-    // More robust check based on template ID if assigned goals store a templateId reference.
-    // For now, using name and type for simplicity.
     const isAssigned = student.goals.some(g => g.name === template.name && g.type === template.type);
     return nameMatch && typeMatch && !isAssigned;
   }).sort((a,b) => a.name.localeCompare(b.name));
@@ -139,10 +134,9 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
       onClose={onClose}
       title={`Assign Goals to ${student.name}`}
       description="Select from existing templates or create a new custom goal to assign to the student."
-      size="xl" // Increased size to accommodate custom goal form
+      size="xl" 
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[70vh] overflow-y-hidden">
-        {/* Templates Section */}
         <div className="space-y-3 flex flex-col">
           <h3 className="text-lg font-medium text-foreground flex items-center gap-2">
             <Search className="h-5 w-5 text-primary" />
@@ -154,7 +148,7 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
                 placeholder="Search goal templates..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pr-8" // Make space for clear button if added
+                className="pr-8" 
               />
               <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             </div>
@@ -190,8 +184,8 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
                           <div className="flex-grow">
                               <p className="font-medium">{template.name}</p>
                               <Badge variant="secondary" className="mt-1">{template.type}</Badge>
-                              {template.sessionTargetValue && (
-                                <p className="text-xs text-muted-foreground mt-0.5">Target: {template.sessionTargetValue}</p>
+                              {template.sessionTargetValue !== undefined && (
+                                <p className="text-xs text-muted-foreground mt-0.5">Target: {template.sessionTargetValue}%</p>
                               )}
                           </div>
                           {selectedTemplates.has(template.id) && <Check className="h-5 w-5 ml-2 text-primary-foreground" />}
@@ -214,7 +208,6 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
 
         <Separator orientation="vertical" className="hidden md:block h-auto my-2" />
 
-        {/* Custom Goal Section */}
         <div className="space-y-3 flex flex-col">
           <h3 className="text-lg font-medium text-foreground flex items-center gap-2">
             <Edit3 className="h-5 w-5 text-primary" />
@@ -262,18 +255,23 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
               </div>
               <div>
                 <Label htmlFor="customGoalSessionTarget">Session Target Value (Optional)</Label>
-                <div className="flex items-center gap-2">
+                 <div className="flex items-center gap-2">
                     <TrendingUp className="h-5 w-5 text-muted-foreground" />
                     <Input
                         id="customGoalSessionTarget"
                         type="number"
                         value={customGoalSessionTarget ?? ''}
                         onChange={(e) => setCustomGoalSessionTarget(e.target.value === '' ? undefined : Number(e.target.value))}
-                        placeholder="e.g., 10 trials"
+                        placeholder="e.g., 80 (for 80%)"
                         className="flex-grow"
+                        min="0"
+                        max="100"
                         disabled={dataLoading || isAssigningTemplates || isAssigningCustom}
                     />
                 </div>
+                <FormDescription className="text-xs mt-1">
+                  Target percentage (0-100) for accuracy/fluency, or a specific rating for qualitative goals.
+                </FormDescription>
               </div>
             </div>
           </ScrollArea>

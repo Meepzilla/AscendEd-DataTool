@@ -67,15 +67,14 @@ export default function DataEntryPage() {
         if (goal.type === 'FLUENCY_SYLLABLE_STUTTER') {
           let newTotalSyllables = Math.max(0, Number(processedData.totalSyllables || 0));
           let newStutteredSyllables = Math.max(0, Number(processedData.stutteredSyllables || 0));
-
+          
+          // If the field being updated is stutteredSyllables, adjust totalSyllables if necessary
           if (updatedFieldName === 'stutteredSyllables') {
-            if (newStutteredSyllables > newTotalSyllables) {
-              newTotalSyllables = newStutteredSyllables;
-            }
-          } else if (updatedFieldName === 'totalSyllables') {
-            if (newTotalSyllables < newStutteredSyllables) {
-              newStutteredSyllables = newTotalSyllables;
-            }
+            newTotalSyllables = Math.max(newTotalSyllables, newStutteredSyllables);
+          } 
+          // If the field being updated is totalSyllables, adjust stutteredSyllables if necessary
+          else if (updatedFieldName === 'totalSyllables') {
+            newStutteredSyllables = Math.min(newStutteredSyllables, newTotalSyllables);
           }
           
           processedData.totalSyllables = newTotalSyllables;
@@ -188,7 +187,6 @@ export default function DataEntryPage() {
         const existingState = studentSessionStates[id];
         const initialGoalData: Record<string, SessionGoalData['data']> = {};
         
-        // Use existingState.originalGoalHeaders if available and valid, otherwise use student.goals
         const goalsToUse = existingState?.originalGoalHeaders && 
                            existingState.originalGoalHeaders.length > 0 && 
                            existingState.originalGoalHeaders.every(g => student.goals.some(sg => sg.id === g.id))
@@ -204,7 +202,7 @@ export default function DataEntryPage() {
           activity: existingState?.activity || '',
           notes: existingState?.notes || '',
           goalData: initialGoalData,
-          originalGoalHeaders: goalsToUse, // Persist reordered goals if valid
+          originalGoalHeaders: goalsToUse,
           isCollapsed: existingState?.isCollapsed || false,
         };
         newFocusedGoalIndexes[id] = focusedGoalIndexByStudentId[id] ?? 0;
@@ -396,16 +394,15 @@ export default function DataEntryPage() {
       const [movedGoal] = goals.splice(goalIndex, 1);
       goals.splice(newIndex, 0, movedGoal);
       
-      // Update focused goal index
       setFocusedGoalIndexByStudentId(prevFocused => {
         const currentFocusedIdx = prevFocused[studentId] ?? 0;
         let newFocusedIdx = currentFocusedIdx;
 
-        if (currentFocusedIdx === goalIndex) { // If the moved goal was focused
+        if (currentFocusedIdx === goalIndex) { 
           newFocusedIdx = newIndex;
-        } else if (goalIndex < currentFocusedIdx && newIndex >= currentFocusedIdx) { // Item before focused moved to or after it
+        } else if (goalIndex < currentFocusedIdx && newIndex >= currentFocusedIdx) { 
           newFocusedIdx = currentFocusedIdx - 1;
-        } else if (goalIndex > currentFocusedIdx && newIndex <= currentFocusedIdx) { // Item after focused moved to or before it
+        } else if (goalIndex > currentFocusedIdx && newIndex <= currentFocusedIdx) { 
           newFocusedIdx = currentFocusedIdx + 1;
         }
         return { ...prevFocused, [studentId]: newFocusedIdx };
@@ -489,7 +486,7 @@ export default function DataEntryPage() {
             </div>
           </div>
            <p className="text-sm text-muted-foreground">
-            Hotkeys: [1-4] Focus Slot | A/Alt+A Cycle Students | S/Alt+S Cycle Goals | C/Alt+C Correct | N/Alt+N Incorrect | V/G/P/F/I Prompts | Ctrl+Enter Save Session.
+            Hotkeys: [1-4] Focus Slot | A/Alt+A Cycle Students | S/Alt+S Cycle Goals | C/Alt+C Correct/Total | N/Alt+N Incorrect/Stuttered | V/G/P/F/I Prompts | Ctrl+Enter Save.
           </p>
         </CardContent>
       </Card>

@@ -302,7 +302,7 @@ export default function GoalDataInputComponent({
                 {goal.sessionTargetValue !== undefined && (
                 <div className="text-xs text-muted-foreground flex items-center gap-1 pt-0.5">
                     <TrendingUp className="h-3.5 w-3.5 text-green-600" />
-                    Session Target: {goal.sessionTargetValue}
+                    Session Target: {goal.sessionTargetValue}{goal.type !== 'QUALITATIVE_OBSERVATION' ? '%' : ''}
                 </div>
                 )}
             </div>

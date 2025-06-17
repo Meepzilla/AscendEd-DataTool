@@ -124,14 +124,16 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
                 <FormControl>
                   <Input
                     type="number"
-                    placeholder="e.g., 10"
+                    placeholder="e.g., 80 (for 80%)"
                     {...field}
                     value={field.value ?? ''}
                     onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))}
+                    min="0"
+                    max="100"
                   />
                 </FormControl>
                 <FormDescription>
-                  Numerical target for this goal within a single session.
+                  Target percentage (0-100) for accuracy/fluency goals, or a specific rating (e.g., 4 out of 5) for qualitative goals.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -151,4 +153,3 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
     </GenericModal>
   );
 }
-

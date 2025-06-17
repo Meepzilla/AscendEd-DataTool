@@ -89,6 +89,7 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
     setIsSubmitting(true);
     await updateGoalTemplate(currentTemplate.id, data);
     setIsSubmitting(false);
+    closeEditGoalTemplateModal(); // Close modal after successful update
   };
 
   if (!currentTemplate) return null;
@@ -206,14 +207,16 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
                 <FormControl>
                    <Input
                     type="number"
-                    placeholder="e.g., 10"
+                    placeholder="e.g., 80 (for 80% accuracy)"
                     {...field}
                     value={field.value ?? ''} 
                     onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))}
+                    min="0"
+                    max="100"
                   />
                 </FormControl>
                 <FormDescription>
-                  Update the numerical target for this goal within a single session.
+                  Target percentage (0-100) for accuracy/fluency goals, or a specific rating for qualitative goals (e.g. 4 out of 5).
                 </FormDescription>
                 <FormMessage />
               </FormItem>

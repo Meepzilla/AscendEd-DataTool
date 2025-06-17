@@ -16,7 +16,7 @@ export interface Goal {
   name: string;
   type: GoalType;
   smartGoal: string;
-  sessionTargetValue?: number; // Target value for a single session
+  sessionTargetValue?: number; // Target percentage (0-100) or specific count for some qualitative goals
   // Additional fields based on goal type might be present
   [key: string]: any;
 }
@@ -35,41 +35,37 @@ export interface GoalTemplate {
   type: GoalType;
   smartGoalPrompt: string;
   generatedSmartGoal: string;
-  sessionTargetValue?: number; // Target value for a single session
-  createdAt: Timestamp | Date; // Allow Date for local mode, Timestamp for Firebase
+  sessionTargetValue?: number; // Target percentage (0-100) or specific count
+  createdAt: Timestamp | Date; 
   isDefault: boolean;
   userId?: string;
 }
 
 export interface SessionData {
-  sessionId: string; // UUID
+  sessionId: string; 
   studentId: string;
   studentName: string;
-  date: string; // ISO string or formatted date string
-  time: string; // Formatted time string
+  date: string; 
+  time: string; 
   activity: string;
   notes: string;
   goals: SessionGoalData[];
-  originalGoalHeaders: Goal[]; // Snapshot of student's goals at time of session
-  userId?: string; // Added userId to SessionData
+  originalGoalHeaders: Goal[]; 
+  userId?: string; 
 }
 
 export interface SessionGoalData {
   goalId: string;
-  goalName: string; // For convenience
-  goalType: GoalType; // For convenience
-  // Data object can contain specific fields for the goal type
-  // AND/OR prompt counts like Verbal: 1, Gestural: 2, etc.
+  goalName: string; 
+  goalType: GoalType; 
   data: Record<string, any>;
 }
 
-// Example structures for what might be IN data, but prompt counts are dynamic
+
 export interface ArticulationData {
   targetSound: string;
-  // position: 'initial' | 'medial' | 'final' | 'all'; // Not currently used, but example
   correct: number;
   incorrect: number;
-  // promptLevel is no longer here, counts like Verbal: 1 are in data directly
 }
 
 export interface FluencySyllableStutterData {
@@ -79,7 +75,7 @@ export interface FluencySyllableStutterData {
 }
 
 export interface QualitativeObservationData {
-  notes: string; // Renamed from observationText for consistency
+  notes: string; 
   rating?: 1 | 2 | 3 | 4 | 5;
 }
 
@@ -112,7 +108,6 @@ export interface User {
   isAnonymous: boolean;
 }
 
-// For react-hook-form schemas
 import { z } from 'zod';
 
 export const StudentSchema = z.object({
@@ -121,14 +116,13 @@ export const StudentSchema = z.object({
 
 export const GoalTemplateSchema = z.object({
   name: z.string().min(3, "Template name is required."),
-  type: z.string(), // Should validate against GoalType values
+  type: z.string(), 
   smartGoalPrompt: z.string().min(10, "SMART goal prompt is required."),
   generatedSmartGoal: z.string().optional(),
   sessionTargetValue: z.preprocess(
     (val) => (val === "" || val === undefined || val === null ? undefined : Number(val)),
-    z.number().positive("Target must be a positive number if provided.").optional()
-  ),
-  // isDefault is handled internally, not part of the form for user creation/edit
+    z.number().min(0, "Target must be 0 or greater.").max(100, "Target percentage cannot exceed 100.").optional()
+  ).describe("Target percentage (0-100), or a specific rating for qualitative goals."),
 });
 
 export const AssignedGoalEditSchema = z.object({
@@ -136,12 +130,11 @@ export const AssignedGoalEditSchema = z.object({
   smartGoal: z.string().min(10, { message: "SMART goal text must be at least 10 characters." }),
   sessionTargetValue: z.preprocess(
     (val) => (val === "" || val === undefined || val === null ? undefined : Number(val)),
-    z.number().positive("Target must be a positive number if provided.").optional()
-  ),
+    z.number().min(0, "Target must be 0 or greater.").max(100, "Target percentage cannot exceed 100 for most goals.").optional()
+  ).describe("Target percentage (0-100), or a specific rating for qualitative goals."),
 });
 
 
-// For useToast hook
 type ToasterToast = ToastProps & {
   id: string
   title?: React.ReactNode

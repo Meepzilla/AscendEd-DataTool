@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Edit, Trash2, PlusCircle, Info, Target, Edit3, CheckSquare, TrendingUp } from 'lucide-react';
-import { formatDate, generateUUID } from '@/lib/helpers'; // Added generateUUID
+import { formatDate, generateUUID } from '@/lib/helpers'; 
 import Link from 'next/link';
 import EditStudentModal from '@/components/modals/edit-student-modal';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -34,9 +34,9 @@ export default function StudentProfilePage() {
     editingStudent,
     openDeleteStudentModal,
     removeGoalFromStudent,
-    editingAssignedGoal, // New state from context
-    openEditAssignedGoalModal, // New function from context
-    closeEditAssignedGoalModal, // New function from context
+    editingAssignedGoal, 
+    openEditAssignedGoalModal, 
+    closeEditAssignedGoalModal, 
   } = useStudentData();
 
   const [currentStudent, setCurrentStudent] = useState<Student | null>(null);
@@ -50,17 +50,16 @@ export default function StudentProfilePage() {
         setSelectedStudent(foundStudent);
       }
     } else if (!loading && students.length > 0 && studentId) {
-      // router.push('/student-profile'); // Avoid redirecting if studentId simply not found yet
+      // router.push('/student-profile'); 
     }
   }, [studentId, students, loading, selectedStudent, setSelectedStudent, router]);
 
 
-  if (loading && !currentStudent) { // Only show full skeleton if currentStudent isn't set yet due to loading
+  if (loading && !currentStudent) { 
     return <StudentProfileSkeleton />;
   }
 
   if (!isFirebaseDBAvailable && !loading && !currentStudent && students.length === 0) {
-      // Special case for local mode with no students yet, guide user.
       return (
           <Card className="mt-4">
             <CardHeader><CardTitle>No Students</CardTitle></CardHeader>
@@ -91,7 +90,6 @@ export default function StudentProfilePage() {
     );
   }
 
-  // This ensures we don't try to render with a null currentStudent if it's just loading
   if (!currentStudent) {
     return <StudentProfileSkeleton />;
   }
@@ -109,7 +107,6 @@ export default function StudentProfilePage() {
 
   return (
     <div className="space-y-6">
-      {/* EditStudentModal is for student's name, not their goals directly */}
       {editingStudent && <EditStudentModal studentToEdit={editingStudent} />}
       {editingAssignedGoal && currentStudent && (
         <EditAssignedGoalModal
@@ -168,7 +165,7 @@ export default function StudentProfilePage() {
                       {goal.sessionTargetValue !== undefined && (
                         <Badge variant="outline" className="mt-1 ml-2">
                           <TrendingUp className="mr-1.5 h-3.5 w-3.5 text-green-600" />
-                          Target: {goal.sessionTargetValue}
+                          Target: {goal.sessionTargetValue}{goal.type !== 'QUALITATIVE_OBSERVATION' ? '%' : ''}
                         </Badge>
                       )}
                       <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{goal.smartGoal}</p>
@@ -241,4 +238,3 @@ function StudentProfileSkeleton() {
     </div>
   );
 }
-

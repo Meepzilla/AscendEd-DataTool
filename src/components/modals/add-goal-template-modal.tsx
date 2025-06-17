@@ -18,7 +18,6 @@ import { generateSmartGoal } from '@/ai/flows/smart-goal-generation';
 import { Sparkles, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-// FormData matches the schema, but GoalTemplate might have 'id' and 'createdAt' from DB
 type AddGoalTemplateFormData = z.infer<typeof GoalTemplateSchema>;
 
 export default function AddGoalTemplateModal() {
@@ -31,7 +30,7 @@ export default function AddGoalTemplateModal() {
     resolver: zodResolver(GoalTemplateSchema),
     defaultValues: {
       name: '',
-      type: Object.keys(GOAL_TYPES)[0] as GoalType, // Default to first goal type
+      type: Object.keys(GOAL_TYPES)[0] as GoalType, 
       smartGoalPrompt: '',
       generatedSmartGoal: '',
       sessionTargetValue: undefined,
@@ -200,14 +199,16 @@ export default function AddGoalTemplateModal() {
                 <FormControl>
                   <Input 
                     type="number" 
-                    placeholder="e.g., 10 (for 10 correct responses)" 
+                    placeholder="e.g., 80 (for 80% accuracy)" 
                     {...field} 
                     value={field.value ?? ''}
                     onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))}
+                    min="0"
+                    max="100"
                   />
                 </FormControl>
                 <FormDescription>
-                  Set a numerical target for this goal within a single session (e.g., number of correct responses, syllables).
+                  Target percentage (0-100) for accuracy/fluency goals, or a specific rating for qualitative goals (e.g. 4 out of 5).
                 </FormDescription>
                 <FormMessage />
               </FormItem>
