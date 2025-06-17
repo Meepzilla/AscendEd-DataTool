@@ -10,10 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Users, Save, PlusCircle, XCircle, Edit2, Info, ArrowUp, ArrowDown } from 'lucide-react';
+import { Users, Save, PlusCircle, XCircle, Edit2, Info, ArrowUp, ArrowDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 import GoalDataInputComponent from '@/components/forms/goal-data-input';
-import { GOAL_TYPE_FIELDS, PROMPT_HOTKEY_MAP } from '@/lib/constants'; // MAX_STUDENTS_DATA_ENTRY is no longer used here for limiting
+import { GOAL_TYPE_FIELDS, PROMPT_HOTKEY_MAP } from '@/lib/constants';
 import { generateUUID } from '@/lib/helpers';
 import { getActivitySuggestions } from '@/ai/flows/activity-suggestions';
 import { useToast } from '@/hooks/use-toast';
@@ -30,7 +30,6 @@ interface StudentSessionState {
   notes: string;
   goalData: Record<string, SessionGoalData['data']>;
   originalGoalHeaders: Goal[];
-  // isCollapsed is no longer needed as content is always shown
 }
 
 export default function DataEntryPage() {
@@ -54,6 +53,7 @@ export default function DataEntryPage() {
 
   const [focusedStudentSlotIndex, setFocusedStudentSlotIndex] = useState<number>(0);
   const [focusedGoalIndexByStudentId, setFocusedGoalIndexByStudentId] = useState<Record<string, number>>({});
+  const [isHeaderCardCollapsed, setIsHeaderCardCollapsed] = useState(false);
 
 
   const handleGoalDataChange = useCallback(
@@ -171,22 +171,16 @@ export default function DataEntryPage() {
 
 
  useEffect(() => {
-    // This effect manages the initial student slot based on context or if students list is available.
-    // It only runs if no student slots are currently selected.
     if (!studentsLoading && selectedStudentIds.length === 0) {
       let initialIdToSelect: string | undefined = undefined;
       if (studentFromContext && students.find(s => s.id === studentFromContext.id)) {
         initialIdToSelect = studentFromContext.id;
       }
-      // else if (students.length > 0) { // Optionally, auto-select the first student if no context
-      //   initialIdToSelect = students[0].id;
-      // }
-
       if (initialIdToSelect) {
         setSelectedStudentIds([initialIdToSelect]);
         setFocusedStudentSlotIndex(0);
       } else {
-        setSelectedStudentIds([]); // Ensure it's empty if no conditions met
+        setSelectedStudentIds([]);
       }
     }
   }, [studentsLoading, students, studentFromContext, selectedStudentIds.length, setFocusedStudentSlotIndex]);
@@ -219,7 +213,6 @@ export default function DataEntryPage() {
           notes: existingState?.notes || '',
           goalData: initialGoalData,
           originalGoalHeaders: goalsToUse,
-          // isCollapsed: idx !== focusedStudentSlotIndex, // This is no longer used to hide content
         };
 
         if (newFocusedGoalIndexes[id] === undefined ) {
@@ -271,7 +264,7 @@ export default function DataEntryPage() {
 
       const focusedInfo = getCurrentFocusedGoalInfo();
 
-      if (!alt && key.match(/^[1-4]$/)) { // Hotkey still works for first 4 slots
+      if (!alt && key.match(/^[1-4]$/)) {
         event.preventDefault();
         const slotIndex = parseInt(key, 10) - 1;
         if (slotIndex < selectedStudentIds.length) {
@@ -353,7 +346,6 @@ export default function DataEntryPage() {
 
 
   useEffect(() => {
-    // Scroll the student card into view first
     if (selectedStudentIds.length > 0 && focusedStudentSlotIndex >= 0 && focusedStudentSlotIndex < selectedStudentIds.length) {
       const studentCardId = `student-card-slot-${focusedStudentSlotIndex}`;
       const studentCardElement = document.getElementById(studentCardId);
@@ -362,7 +354,6 @@ export default function DataEntryPage() {
       }
     }
 
-    // Then scroll the focused goal within the card into view
     const focusedInfo = getCurrentFocusedGoalInfo();
     if (focusedInfo && focusedInfo.goal && focusedInfo.studentState) {
       const { studentId: studentIdForGoal, goal } = focusedInfo;
@@ -370,7 +361,6 @@ export default function DataEntryPage() {
       const goalElement = document.getElementById(goalElementId);
 
       if (goalElement) {
-        // A small delay can help ensure the card scroll has initiated/completed visually
         setTimeout(() => {
           goalElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }, 50); 
@@ -383,7 +373,6 @@ export default function DataEntryPage() {
     setSelectedStudentIds(prev => {
       const newSelection = [...prev];
       newSelection[index] = studentId;
-      // Ensure no duplicates if a student is moved to a slot they were already in via another slot's dropdown
       const uniqueSelection = Array.from(new Set(newSelection));
       return uniqueSelection;
     });
@@ -391,12 +380,10 @@ export default function DataEntryPage() {
   };
 
   const addStudentSlot = () => {
-    // No longer limited by MAX_STUDENTS_DATA_ENTRY
     const availableStudent = students.find(s => !selectedStudentIds.includes(s.id));
     if (availableStudent) {
       setSelectedStudentIds(prev => [...prev, availableStudent.id]);
-      // Focus the newly added slot
-      setFocusedStudentSlotIndex(selectedStudentIds.length); // length will be new length -1 after state update
+      setFocusedStudentSlotIndex(selectedStudentIds.length); 
     } else {
       toast({ title: "Info", description: "No more unique available students to add, or all students are already in slots.", variant: "default" });
     }
@@ -419,9 +406,9 @@ export default function DataEntryPage() {
         setFocusedStudentSlotIndex(0);
     } else {
         let newFocusIndex = newSelectedIds.indexOf(currentFocusedId);
-        if (newFocusIndex === -1) { // focused student was the one removed or not in new list
+        if (newFocusIndex === -1) { 
             newFocusIndex = Math.min(indexToRemove, newSelectedIds.length - 1);
-            newFocusIndex = Math.max(0, newFocusIndex); // Ensure it's not negative
+            newFocusIndex = Math.max(0, newFocusIndex); 
         }
         setFocusedStudentSlotIndex(newFocusIndex);
     }
@@ -509,7 +496,7 @@ export default function DataEntryPage() {
     return students.filter(s => !selectedStudentIds.includes(s.id));
   }, [students, selectedStudentIds]);
 
-  if (studentsLoading && students.length === 0) { // Added students.length === 0 to ensure skeleton only shows on initial full load
+  if (studentsLoading && students.length === 0) {
     return (
       <div className="space-y-6">
         <Card><CardHeader><Skeleton className="h-8 w-1/2" /></CardHeader><CardContent><Skeleton className="h-40 w-full" /></CardContent></Card>
@@ -525,35 +512,46 @@ export default function DataEntryPage() {
     <div className="space-y-6 flex flex-col h-full">
       <Card className="shadow-lg flex-shrink-0">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold flex items-center gap-2">
-            <Edit2 className="h-7 w-7 text-primary"/> Data Entry
-          </CardTitle>
-          <CardDescription>Record session data for students. AI suggests activities. Use hotkeys for speed.</CardDescription>
+            <div className="flex justify-between items-center">
+                 <div className="flex items-center gap-2">
+                    <Edit2 className="h-7 w-7 text-primary"/>
+                    <CardTitle className="text-2xl font-bold">Data Entry</CardTitle>
+                </div>
+                <Button variant="ghost" size="icon" onClick={() => setIsHeaderCardCollapsed(!isHeaderCardCollapsed)} title={isHeaderCardCollapsed ? "Expand Header" : "Collapse Header"}>
+                    {isHeaderCardCollapsed ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
+                    <span className="sr-only">{isHeaderCardCollapsed ? "Expand Header" : "Collapse Header"}</span>
+                </Button>
+            </div>
+          {!isHeaderCardCollapsed && (
+            <CardDescription>Record session data for students. AI suggests activities. Use hotkeys for speed.</CardDescription>
+          )}
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-            <div className="w-full sm:w-auto">
-              <Label htmlFor="sessionDate" className="block text-sm font-medium mb-1">Session Date</Label>
-              <DatePicker date={sessionDate} setDate={setSessionDate} />
+        {!isHeaderCardCollapsed && (
+            <CardContent className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                <div className="w-full sm:w-auto">
+                <Label htmlFor="sessionDate" className="block text-sm font-medium mb-1">Session Date</Label>
+                <DatePicker date={sessionDate} setDate={setSessionDate} />
+                </div>
+                <div className="w-full sm:w-auto">
+                    <Label htmlFor="sessionTime" className="block text-sm font-medium mb-1">Session Time</Label>
+                    <Input
+                        id="sessionTime"
+                        type="time"
+                        value={sessionTime}
+                        onChange={(e) => setSessionTime(e.target.value)}
+                        className="w-full sm:w-[150px]"
+                    />
+                </div>
             </div>
-            <div className="w-full sm:w-auto">
-                <Label htmlFor="sessionTime" className="block text-sm font-medium mb-1">Session Time</Label>
-                <Input
-                    id="sessionTime"
-                    type="time"
-                    value={sessionTime}
-                    onChange={(e) => setSessionTime(e.target.value)}
-                    className="w-full sm:w-[150px]"
-                />
-            </div>
-          </div>
-           <p className="text-sm text-muted-foreground">
-            Hotkeys: 1-4 Focus initial slots | A/Alt+A Cycle Students | S/Alt+S Cycle Goals | C/Alt+C Correct/Total | N/Alt+N Incorrect/Stuttered | V/G/P/F/I Prompts | Ctrl+Enter Save | Alt+E Edit Student.
-          </p>
-        </CardContent>
+            <p className="text-sm text-muted-foreground">
+                Hotkeys: 1-4 Focus initial slots | A/Alt+A Cycle Students | S/Alt+S Cycle Goals | C/Alt+C Correct/Total | N/Alt+N Incorrect/Stuttered | V/G/P/F/I Prompts | Ctrl+Enter Save | Alt+E Edit Student.
+            </p>
+            </CardContent>
+        )}
       </Card>
 
-      <div className="flex flex-row gap-6 items-start overflow-x-auto py-4 px-1 flex-grow min-h-0"> {/* Ensure this div can scroll and takes up space */}
+      <div className="flex flex-row gap-6 items-start overflow-x-auto py-4 px-1 flex-grow min-h-0">
         {selectedStudentIds.map((studentId, slotIndex) => {
           const student = students.find(s => s.id === studentId);
           const state = studentSessionStates[studentId];
@@ -614,7 +612,7 @@ export default function DataEntryPage() {
                   </div>
                 </div>
               </CardHeader>
-              <ScrollArea className="flex-grow h-[450px]"> {/* Added fixed height to scroll area */}
+              <ScrollArea className="flex-grow h-[450px]"> 
                 <CardContent className="p-3 space-y-3">
                   <div>
                     <Label htmlFor={`activity-${studentId}`}>Activity</Label>
