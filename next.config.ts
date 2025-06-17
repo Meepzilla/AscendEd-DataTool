@@ -1,7 +1,6 @@
 import type {NextConfig} from 'next';
-import withPreact from 'next-plugin-preact';
 
-const nextConfig: NextConfig = withPreact({
+const nextConfig: NextConfig = {
   /* config options here */
   typescript: {
     ignoreBuildErrors: true,
@@ -20,6 +19,6 @@ const nextConfig: NextConfig = withPreact({
       },
     ],
   },
-});
+};
 
 export default nextConfig;
