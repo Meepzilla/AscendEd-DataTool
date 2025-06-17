@@ -1,6 +1,7 @@
 import type {NextConfig} from 'next';
+import withPreact from 'next-plugin-preact';
 
-const nextConfig: NextConfig = {
+const nextConfig: NextConfig = withPreact({
   /* config options here */
   typescript: {
     ignoreBuildErrors: true,
@@ -10,6 +11,7 @@ const nextConfig: NextConfig = {
   },
   images: {
     remotePatterns: [
+
       {
         protocol: 'https',
         hostname: 'placehold.co',
@@ -18,6 +20,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-};
+});
 
 export default nextConfig;

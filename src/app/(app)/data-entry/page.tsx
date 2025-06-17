@@ -137,6 +137,17 @@ export default function DataEntryPage() {
         }
         return;
       }
+
+      // Student Cycling Hotkeys (A/Alt+A)
+      if (key === 'A' && selectedStudentIds.length > 0) {
+        event.preventDefault();
+        if (alt) { // Previous student
+          setFocusedStudentSlotIndex(prev => (prev - 1 + selectedStudentIds.length) % selectedStudentIds.length);
+        } else { // Next student
+          setFocusedStudentSlotIndex(prev => (prev + 1) % selectedStudentIds.length);
+        }
+        return;
+      }
       
       if (!focusedInfo || !focusedInfo.goal || !focusedInfo.goalData) return; 
 
@@ -389,7 +400,7 @@ export default function DataEntryPage() {
             </div>
           </div>
            <p className="text-sm text-muted-foreground">
-            Hotkeys: [1-4] Focus Student | S/Alt+S Cycle Goals | C/Alt+C Correct/Total | N/Alt+N Incorrect/Stutter | V/G/P/F/I Prompts.
+            Hotkeys: [1-4] Focus Student | A/Alt+A Cycle Students | S/Alt+S Cycle Goals | C/Alt+C Correct/Total | N/Alt+N Incorrect/Stutter | V/G/P/F/I Prompts.
           </p>
         </CardContent>
       </Card>
