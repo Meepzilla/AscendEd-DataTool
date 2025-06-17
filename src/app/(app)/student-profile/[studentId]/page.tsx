@@ -11,22 +11,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Edit, Trash2, PlusCircle, Info, Target, Edit3, CheckSquare, TrendingUp } from 'lucide-react';
 import { formatDate, generateUUID } from '@/lib/helpers'; // Added generateUUID
 import Link from 'next/link';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import EditStudentModal from '@/components/modals/edit-student-modal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import AssignGoalToStudentModal from '@/components/modals/assign-goal-to-student-modal';
-// Removed EditGoalModal import as it's not directly used for editing *assigned* goals here.
-// If individual goal editing is needed, a new modal/flow would be created.
+import EditAssignedGoalModal from '@/components/modals/edit-assigned-goal-modal';
 
 
 export default function StudentProfilePage() {
@@ -45,7 +34,9 @@ export default function StudentProfilePage() {
     editingStudent,
     openDeleteStudentModal,
     removeGoalFromStudent,
-    updateStudentGoal,
+    editingAssignedGoal, // New state from context
+    openEditAssignedGoalModal, // New function from context
+    closeEditAssignedGoalModal, // New function from context
   } = useStudentData();
 
   const [currentStudent, setCurrentStudent] = useState<Student | null>(null);
@@ -109,18 +100,26 @@ export default function StudentProfilePage() {
     await removeGoalFromStudent(currentStudent.id, goalId);
   };
 
-  // Placeholder if direct editing of an assigned goal's details (like SMART text) is needed later.
-  // For now, goals are managed through templates or assignment modal.
-  const handleEditGoalDirectly = (goal: Goal) => {
-    // setEditingGoal(goal); // This would trigger a modal for editing goal.smartGoal, etc.
-    alert(`Direct editing of goal "${goal.name}"'s SMART text is not yet implemented. Manage via templates or re-assign.`);
-  }
+  const handleOpenEditAssignedGoalModal = (goal: Goal) => {
+    if (currentStudent) {
+      openEditAssignedGoalModal(currentStudent.id, goal);
+    }
+  };
 
 
   return (
     <div className="space-y-6">
       {/* EditStudentModal is for student's name, not their goals directly */}
       {editingStudent && <EditStudentModal studentToEdit={editingStudent} />}
+      {editingAssignedGoal && currentStudent && (
+        <EditAssignedGoalModal
+          isOpen={!!editingAssignedGoal}
+          onClose={closeEditAssignedGoalModal}
+          studentId={editingAssignedGoal.studentId}
+          goalToEdit={editingAssignedGoal.goal}
+        />
+      )}
+
 
       <Card className="shadow-lg">
         <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -175,9 +174,9 @@ export default function StudentProfilePage() {
                       <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{goal.smartGoal}</p>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-1 shrink-0 ml-2">
-                      {/* <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditGoalDirectly(goal)} title="Edit Goal SMART Text">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenEditAssignedGoalModal(goal)} title="Edit Assigned Goal">
                         <Edit className="h-4 w-4" />
-                      </Button> */}
+                      </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveGoal(goal.id)} title="Remove Goal Assignment">
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
@@ -242,3 +241,4 @@ function StudentProfileSkeleton() {
     </div>
   );
 }
+

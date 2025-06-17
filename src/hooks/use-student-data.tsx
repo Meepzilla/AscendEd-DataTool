@@ -72,6 +72,10 @@ interface StudentDataContextType {
   deletingSession: SessionData | null;
   openDeleteSessionModal: (session: SessionData | null) => void; // Allow null
   closeDeleteSessionModal: () => void;
+
+  editingAssignedGoal: { studentId: string; goal: Goal } | null;
+  openEditAssignedGoalModal: (studentId: string, goal: Goal) => void;
+  closeEditAssignedGoalModal: () => void;
 }
 
 const StudentDataContext = createContext<StudentDataContextType | undefined>(undefined);
@@ -99,6 +103,8 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [deletingGoalTemplate, setDeletingGoalTemplate] = useState<GoalTemplate | null>(null);
   const [editingSession, setEditingSession] = useState<SessionData | null>(null);
   const [deletingSession, setDeletingSession] = useState<SessionData | null>(null);
+  const [editingAssignedGoal, setEditingAssignedGoal] = useState<{ studentId: string; goal: Goal } | null>(null);
+
 
   const safeToast = useCallback((options: Omit<Toast, 'id'>) => {
     if (typeof window !== 'undefined') { // Check if running on the client
@@ -165,6 +171,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setDeletingGoalTemplate(null);
     setEditingSession(null);
     setDeletingSession(null);
+    setEditingAssignedGoal(null);
     setIsAddStudentModalOpen(false);
     setIsAddGoalTemplateModalOpen(false);
     // Potentially reset selectedStudent if it's tied to the previous user.
@@ -546,6 +553,9 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const closeEditSessionModal = useCallback(() => setEditingSession(null), []);
   const openDeleteSessionModal = useCallback((session: SessionData | null) => setDeletingSession(session), []);
   const closeDeleteSessionModal = useCallback(() => setDeletingSession(null), []);
+  const openEditAssignedGoalModal = useCallback((studentId: string, goal: Goal) => setEditingAssignedGoal({ studentId, goal }), []);
+  const closeEditAssignedGoalModal = useCallback(() => setEditingAssignedGoal(null), []);
+
 
   const contextValue = useMemo(() => ({
     students: studentsState,
@@ -565,6 +575,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     deletingGoalTemplate, openDeleteGoalTemplateModal, closeDeleteGoalTemplateModal,
     editingSession, openEditSessionModal, closeEditSessionModal,
     deletingSession, openDeleteSessionModal, closeDeleteSessionModal,
+    editingAssignedGoal, openEditAssignedGoalModal, closeEditAssignedGoalModal,
   }), [
     studentsState, goalTemplatesState, sessionsState, selectedStudent, setSelectedStudentCb, loading, error, isFirebaseDBAvailable,
     addStudent, updateStudent, deleteStudent, assignGoalToStudent, removeGoalFromStudent, updateStudentGoal,
@@ -578,6 +589,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     deletingGoalTemplate, openDeleteGoalTemplateModal, closeDeleteGoalTemplateModal,
     editingSession, openEditSessionModal, closeEditSessionModal,
     deletingSession, openDeleteSessionModal, closeDeleteSessionModal,
+    editingAssignedGoal, openEditAssignedGoalModal, closeEditAssignedGoalModal,
   ]);
 
   return (
@@ -594,3 +606,4 @@ export const useStudentData = (): StudentDataContextType => {
   }
   return context;
 };
+

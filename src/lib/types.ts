@@ -131,6 +131,16 @@ export const GoalTemplateSchema = z.object({
   // isDefault is handled internally, not part of the form for user creation/edit
 });
 
+export const AssignedGoalEditSchema = z.object({
+  name: z.string().min(3, { message: "Goal name must be at least 3 characters." }),
+  smartGoal: z.string().min(10, { message: "SMART goal text must be at least 10 characters." }),
+  sessionTargetValue: z.preprocess(
+    (val) => (val === "" || val === undefined || val === null ? undefined : Number(val)),
+    z.number().positive("Target must be a positive number if provided.").optional()
+  ),
+});
+
+
 // For useToast hook
 type ToasterToast = ToastProps & {
   id: string
@@ -139,3 +149,4 @@ type ToasterToast = ToastProps & {
   action?: ToastActionElement
 }
 export type Toast = Omit<ToasterToast, "id">;
+

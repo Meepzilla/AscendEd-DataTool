@@ -1,0 +1,154 @@
+
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import GenericModal from './generic-modal';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
+import { useStudentData } from '@/hooks/use-student-data';
+import type { Goal } from '@/lib/types';
+import { AssignedGoalEditSchema } from '@/lib/types';
+import { useToast } from '@/hooks/use-toast';
+
+type EditAssignedGoalFormData = z.infer<typeof AssignedGoalEditSchema>;
+
+interface EditAssignedGoalModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  studentId: string;
+  goalToEdit: Goal;
+}
+
+export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goalToEdit }: EditAssignedGoalModalProps) {
+  const { updateStudentGoal, loading: dataLoading } = useStudentData();
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const form = useForm<EditAssignedGoalFormData>({
+    resolver: zodResolver(AssignedGoalEditSchema),
+    defaultValues: {
+      name: '',
+      smartGoal: '',
+      sessionTargetValue: undefined,
+    },
+  });
+
+  useEffect(() => {
+    if (goalToEdit && isOpen) {
+      form.reset({
+        name: goalToEdit.name,
+        smartGoal: goalToEdit.smartGoal,
+        sessionTargetValue: goalToEdit.sessionTargetValue,
+      });
+    }
+  }, [goalToEdit, isOpen, form]);
+
+  const onSubmit = async (data: EditAssignedGoalFormData) => {
+    if (!goalToEdit) return;
+    setIsSubmitting(true);
+    try {
+      await updateStudentGoal(studentId, goalToEdit.id, data);
+      toast({ title: 'Success', description: 'Goal updated successfully.' });
+      onClose();
+    } catch (error) {
+      console.error('Error updating assigned goal:', error);
+      toast({ title: 'Error', description: 'Failed to update goal.', variant: 'destructive' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <GenericModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={`Edit Assigned Goal: ${goalToEdit?.name}`}
+      description="Modify the details of this goal for the student. This will not affect goal templates."
+      size="lg"
+    >
+      <Form {...form}>
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          onKeyDown={(e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+              e.preventDefault();
+              e.stopPropagation();
+              form.handleSubmit(onSubmit)();
+            }
+          }}
+          className="space-y-4"
+        >
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Goal Name</FormLabel>
+                <FormControl>
+                  <Input placeholder="Enter goal name" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="smartGoal"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>SMART Goal Text</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Describe the SMART goal..."
+                    {...field}
+                    rows={4}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="sessionTargetValue"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Session Target Value (Optional)</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    placeholder="e.g., 10"
+                    {...field}
+                    value={field.value ?? ''}
+                    onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Numerical target for this goal within a single session.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <div className="flex justify-end gap-2 pt-4">
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting || dataLoading}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isSubmitting || dataLoading}>
+              {isSubmitting || dataLoading ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
+        </form>
+      </Form>
+    </GenericModal>
+  );
+}
+
