@@ -4,7 +4,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, Trash2, LayoutGrid, Minimize2, UserX } from 'lucide-react';
+import { ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, Trash2, LayoutGrid, Minimize2, UserX, ArrowRightLeft, Lightbulb, Download } from 'lucide-react';
 import { APP_NAME } from '@/lib/constants';
 
 interface ChangelogEntry {
@@ -17,6 +17,48 @@ interface ChangelogEntry {
 }
 
 const changelogEntries: ChangelogEntry[] = [
+  {
+    date: '2025-06-17',
+    title: 'Data Entry Page Layout Enhancement',
+    description: 'Student cards on the Data Entry page now dynamically resize based on focus. The focused student\'s card widens to provide more space, while non-focused cards become narrower but remain visible.',
+    type: 'improvement',
+    icon: ArrowRightLeft,
+  },
+  {
+    date: '2025-06-17',
+    title: 'Assign Goal Modal UI Update',
+    description: 'The "Create & Assign Custom Goal" button in the Assign Goal modal has been repositioned to appear directly after the custom goal input fields, aligned to the right for a more intuitive workflow.',
+    type: 'improvement',
+    icon: Pencil,
+  },
+  {
+    date: '2025-06-17',
+    title: 'AI Technical Summary Prompt Enhancement',
+    description: 'Updated the prompt for AI-generated technical summaries on the Analysis Report page to guide the AI towards more insightful and concise observations based on student data.',
+    type: 'improvement',
+    icon: Lightbulb,
+  },
+  {
+    date: '2025-06-17',
+    title: 'Analysis Report Bug Fix',
+    description: 'Resolved a "params enumerated" warning on the Analysis Report page, improving stability when handling URL parameters.',
+    type: 'fix',
+    icon: Bug,
+  },
+  {
+    date: '2025-06-17',
+    title: 'Expanded Default Articulation Goals',
+    description: 'Significantly increased the number of pre-made default articulation goal templates, providing a richer set of starting points for educators.',
+    type: 'feature',
+    icon: ListPlus,
+  },
+  {
+    date: '2025-06-17',
+    title: 'Analysis Report CSV Export Improvement',
+    description: 'The CSV data export feature on the Analysis Report page now includes a "Goal" column, indicating whether the data pertains to a specific goal or all goals.',
+    type: 'improvement',
+    icon: Download,
+  },
   {
     date: '2025-06-17',
     title: 'Enhanced Mobile & Tablet Responsiveness',
