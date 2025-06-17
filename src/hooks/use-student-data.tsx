@@ -316,7 +316,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         else setSessionsState([]);
         
         const rawTemplates = JSON.parse(localStorage.getItem(LOCAL_STORAGE_GOAL_TEMPLATES_KEY) || 'null');
-        if (rawTemplates) {
+        if (rawTemplates && rawTemplates.length > 0) {
           setGoalTemplatesState(rawTemplates.map((t: any) => ({ ...t, createdAt: new Date(t.createdAt) })).sort((a:GoalTemplate,b:GoalTemplate) => a.name.localeCompare(b.name)));
         } else {
           seedLocalDefaultTemplates();
