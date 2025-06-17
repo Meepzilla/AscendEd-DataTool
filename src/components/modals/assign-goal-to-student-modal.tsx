@@ -151,7 +151,7 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
       onClose={onClose}
       title={`Assign Goals to ${student.name}`}
       description="Select from existing templates or create a new custom goal to assign to the student."
-      size="xl" 
+      size="2xl" 
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:max-h-[calc(70vh-120px)]"> {/* Adjusted max-h for content area */}
         <div className="space-y-3 flex flex-col">
