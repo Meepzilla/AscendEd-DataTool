@@ -90,6 +90,8 @@ interface StudentDataContextType {
   setDataEntryFocusedGoalIndexByStudentId: (indexes: Record<string, number>) => void;
   dataEntryAiActivitySuggestions: Record<string, string[]>;
   setDataEntryAiActivitySuggestions: (suggestions: Record<string, string[]>) => void;
+  dataEntryVisibleGoalCountByStudentId: Record<string, number>;
+  setDataEntryVisibleGoalCountByStudentId: (updater: (prev: Record<string, number>) => Record<string, number>) => void;
 }
 
 const StudentDataContext = createContext<StudentDataContextType | undefined>(undefined);
@@ -129,6 +131,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [dataEntryFocusedStudentSlotIndex, setDataEntryFocusedStudentSlotIndexState] = useState<number>(0);
   const [dataEntryFocusedGoalIndexByStudentId, setDataEntryFocusedGoalIndexByStudentIdState] = useState<Record<string, number>>({});
   const [dataEntryAiActivitySuggestions, setDataEntryAiActivitySuggestionsState] = useState<Record<string, string[]>>({});
+  const [dataEntryVisibleGoalCountByStudentId, setDataEntryVisibleGoalCountByStudentIdState] = useState<Record<string, number>>({});
 
 
   const safeToast = useCallback((options: Omit<Toast, 'id'>) => {
@@ -256,6 +259,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       setDataEntryFocusedStudentSlotIndexState(0);
       setDataEntryFocusedGoalIndexByStudentIdState({});
       setDataEntryAiActivitySuggestionsState({});
+      setDataEntryVisibleGoalCountByStudentIdState({});
       setLoading(false);
       setError(null);
       return;
@@ -366,6 +370,32 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       unsubscribeSessions();
     };
   }, [authLoading, currentUser, isFirebaseDBAvailable, firestoreDbModule, seedLocalDefaultTemplates, seedFirebaseDefaultTemplates, safeToast, APP_ID, addErrorLog]);
+
+  // Effect to manage dataEntryVisibleGoalCountByStudentId based on selected students
+  useEffect(() => {
+    setDataEntryVisibleGoalCountByStudentIdState(prevCounts => {
+      const newCounts = { ...prevCounts };
+      let changed = false;
+
+      // Add new students with default count if not already present
+      dataEntrySelectedStudentIds.forEach(id => {
+        if (!(id in newCounts)) {
+          newCounts[id] = 3; // Default to 3
+          changed = true;
+        }
+      });
+
+      // Remove students no longer selected
+      Object.keys(newCounts).forEach(id => {
+        if (!dataEntrySelectedStudentIds.includes(id)) {
+          delete newCounts[id];
+          changed = true;
+        }
+      });
+
+      return changed ? newCounts : prevCounts;
+    });
+  }, [dataEntrySelectedStudentIds]);
 
 
   const addStudent = useCallback(async (name: string): Promise<Student | null> => {
@@ -704,6 +734,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const setDataEntryFocusedStudentSlotIndex = useCallback((index: number) => setDataEntryFocusedStudentSlotIndexState(index), []);
   const setDataEntryFocusedGoalIndexByStudentId = useCallback((indexes: Record<string, number>) => setDataEntryFocusedGoalIndexByStudentIdState(indexes), []);
   const setDataEntryAiActivitySuggestions = useCallback((suggestions: Record<string, string[]>) => setDataEntryAiActivitySuggestionsState(suggestions), []);
+  const setDataEntryVisibleGoalCountByStudentId = useCallback((updater: (prev: Record<string, number>) => Record<string, number>) => setDataEntryVisibleGoalCountByStudentIdState(updater), []);
 
 
   const contextValue = useMemo(() => ({
@@ -733,6 +764,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     dataEntryFocusedStudentSlotIndex, setDataEntryFocusedStudentSlotIndex,
     dataEntryFocusedGoalIndexByStudentId, setDataEntryFocusedGoalIndexByStudentId,
     dataEntryAiActivitySuggestions, setDataEntryAiActivitySuggestions,
+    dataEntryVisibleGoalCountByStudentId, setDataEntryVisibleGoalCountByStudentId,
   }), [
     studentsState, goalTemplatesState, sessionsState, selectedStudent, setSelectedStudentCb, loading, error, isFirebaseDBAvailable,
     addStudent, updateStudent, deleteStudent, assignGoalToStudent, removeGoalFromStudent, updateStudentGoal,
@@ -754,6 +786,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     dataEntryFocusedStudentSlotIndex, setDataEntryFocusedStudentSlotIndex,
     dataEntryFocusedGoalIndexByStudentId, setDataEntryFocusedGoalIndexByStudentId,
     dataEntryAiActivitySuggestions, setDataEntryAiActivitySuggestions,
+    dataEntryVisibleGoalCountByStudentId, setDataEntryVisibleGoalCountByStudentId,
   ]);
 
   return (

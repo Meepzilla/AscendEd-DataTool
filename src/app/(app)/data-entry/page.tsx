@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Users, Save, PlusCircle, XCircle, Edit2, Info, ArrowUp, ArrowDown, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react';
+import { Users, Save, PlusCircle, XCircle, Edit2, Info, ArrowUp, ArrowDown, ChevronDown, ChevronUp, RotateCcw, Eye, EyeOff } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 import GoalDataInputComponent from '@/components/forms/goal-data-input';
 import { GOAL_TYPE_FIELDS, PROMPT_HOTKEY_MAP, PROMPT_TYPES } from '@/lib/constants';
@@ -31,9 +31,8 @@ export default function DataEntryPage() {
     loading: studentsLoading,
     addSession,
     getSessionsForStudent,
-    selectedStudent: studentFromContext, // Renamed to avoid conflict with local student var
+    selectedStudent: studentFromContext, 
     openEditStudentModal,
-    // Data Entry Persisted State from Context
     dataEntrySessionDate,
     setDataEntrySessionDate,
     dataEntrySessionTime,
@@ -48,17 +47,17 @@ export default function DataEntryPage() {
     setDataEntryFocusedGoalIndexByStudentId,
     dataEntryAiActivitySuggestions,
     setDataEntryAiActivitySuggestions,
+    dataEntryVisibleGoalCountByStudentId,
+    setDataEntryVisibleGoalCountByStudentId,
   } = useStudentData();
 
-  // Local states not persisted across navigation
   const [isSaving, setIsSaving] = useState(false);
-  const [isAiLoading, setIsAiLoading] = useState<Record<string, boolean>>({}); // Kept local, specific to this page instance
+  const [isAiLoading, setIsAiLoading] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
   const { addErrorLog } = useErrorLog();
   const [isHeaderCardCollapsed, setIsHeaderCardCollapsed] = useState(false);
   const [isResetConfirmationOpen, setIsResetConfirmationOpen] = useState(false);
 
-  // Initialize date and time from context or set if not already set
   useEffect(() => {
     if (dataEntrySessionDate === undefined) {
       setDataEntrySessionDate(new Date());
@@ -68,17 +67,12 @@ export default function DataEntryPage() {
     }
   }, [dataEntrySessionDate, dataEntrySessionTime, setDataEntrySessionDate, setDataEntrySessionTime]);
 
-  // Initialize selected student IDs from context or set if not already set
   useEffect(() => {
     if (!studentsLoading && dataEntrySelectedStudentIds.length === 0 && students.length > 0) {
       let initialIdToSelect: string | undefined = undefined;
       if (studentFromContext && students.find(s => s.id === studentFromContext.id)) {
         initialIdToSelect = studentFromContext.id;
       }
-      // Optionally select the first student if no context student is available
-      // else if (students.length > 0) { 
-      //   initialIdToSelect = students[0].id;
-      // }
       if (initialIdToSelect) {
         setDataEntrySelectedStudentIds([initialIdToSelect]);
         setDataEntryFocusedStudentSlotIndex(0);
@@ -87,12 +81,10 @@ export default function DataEntryPage() {
   }, [studentsLoading, students, studentFromContext, dataEntrySelectedStudentIds, setDataEntrySelectedStudentIds, setDataEntryFocusedStudentSlotIndex]);
 
 
-  // Effect to synchronize student session states based on selected students and their goals
   useEffect(() => {
     const newContextStudentStates: Record<string, StudentSessionState> = { ...dataEntryStudentSessionStates };
     let statesChanged = false;
 
-    // Add or update states for currently selected students
     dataEntrySelectedStudentIds.forEach((id) => {
       const student = students.find(s => s.id === id);
       if (student) {
@@ -101,14 +93,16 @@ export default function DataEntryPage() {
         const goalsHaveChanged = !existingState || !existingState.originalGoalHeaders ||
                                  existingState.originalGoalHeaders.length !== student.goals.length ||
                                  student.goals.some((goal, index) => 
-                                   !existingState.originalGoalHeaders[index] || goal.id !== existingState.originalGoalHeaders[index].id || goal.name !== existingState.originalGoalHeaders[index].name
+                                   !existingState.originalGoalHeaders[index] || 
+                                   goal.id !== existingState.originalGoalHeaders[index].id ||
+                                   goal.name !== existingState.originalGoalHeaders[index].name
                                  );
 
         if (!existingState || goalsHaveChanged) {
           const initialGoalData: Record<string, SessionGoalData['data']> = {};
           student.goals.forEach(goal => {
             initialGoalData[goal.id] = (existingState?.goalData?.[goal.id] && goalsHaveChanged && existingState.originalGoalHeaders.find(og => og.id === goal.id)) 
-                                        ? existingState.goalData[goal.id] // Preserve existing data if goal ID matches
+                                        ? existingState.goalData[goal.id] 
                                         : JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type]));
           });
 
@@ -125,7 +119,6 @@ export default function DataEntryPage() {
       }
     });
 
-    // Remove states for students no longer selected
     Object.keys(newContextStudentStates).forEach(studentId => {
       if (!dataEntrySelectedStudentIds.includes(studentId)) {
         delete newContextStudentStates[studentId];
@@ -137,7 +130,6 @@ export default function DataEntryPage() {
       setDataEntryStudentSessionStates(newContextStudentStates);
     }
     
-    // Manage focusedGoalIndexByStudentId based on new states
     const newFocusedGoalIndexes: Record<string, number> = { ...dataEntryFocusedGoalIndexByStudentId };
     let focusIndexesChanged = false;
     dataEntrySelectedStudentIds.forEach(id => {
@@ -186,26 +178,16 @@ export default function DataEntryPage() {
   
         let processedData = { ...newData }; 
   
-        // Sync "Independent" prompt with primary correct metric for specific goal types
-        if (updatedFieldName === 'Independent') {
+        if (PROMPT_TYPES.includes(updatedFieldName as PromptType) && updatedFieldName === 'Independent') {
           const independentCount = Number(processedData.Independent || 0);
           switch (goal.type) {
-            case 'ARTICULATION':
-              processedData.correct = independentCount;
-              break;
-            case 'LANGUAGE_COMPREHENSION':
-              processedData.questionsCorrect = independentCount;
-              break;
-            case 'LANGUAGE_EXPRESSION':
-              processedData.successfulResponses = independentCount;
-              break;
-            case 'PHONOLOGICAL_PROCESSES':
-              processedData.correctProductions = independentCount;
-              break;
+            case 'ARTICULATION': processedData.correct = independentCount; break;
+            case 'LANGUAGE_COMPREHENSION': processedData.questionsCorrect = independentCount; break;
+            case 'LANGUAGE_EXPRESSION': processedData.successfulResponses = independentCount; break;
+            case 'PHONOLOGICAL_PROCESSES': processedData.correctProductions = independentCount; break;
           }
         }
   
-        // Rule: For fluency goals, adjust total/stuttered syllables.
         if (goal.type === 'FLUENCY_SYLLABLE_STUTTER') {
           let newTotalSyllables = Math.max(0, Number(processedData.totalSyllables || 0));
           let newStutteredSyllables = Math.max(0, Number(processedData.stutteredSyllables || 0));
@@ -230,12 +212,9 @@ export default function DataEntryPage() {
         };
       });
   
-      // Update focus (triggers scroll)
       const studentSlotIndex = dataEntrySelectedStudentIds.indexOf(studentId);
       if (studentSlotIndex !== -1) {
         setDataEntryFocusedStudentSlotIndex(studentSlotIndex);
-        // Read current student state directly from context for goal index determination
-        // This avoids using stale closure data if studentSessionStates prop itself isn't updated yet for this render cycle
         const currentStudentState = dataEntryStudentSessionStates[studentId]; 
         if (currentStudentState?.originalGoalHeaders) {
           const goalIndex = currentStudentState.originalGoalHeaders.findIndex(g => g.id === goalId);
@@ -250,9 +229,9 @@ export default function DataEntryPage() {
     },
     [
       setDataEntryStudentSessionStates,
-      dataEntrySelectedStudentIds, // To find studentSlotIndex
+      dataEntrySelectedStudentIds, 
       setDataEntryFocusedStudentSlotIndex,
-      dataEntryStudentSessionStates, // Dependency to get current state for goalIndex calculation
+      dataEntryStudentSessionStates, 
       setDataEntryFocusedGoalIndexByStudentId,
     ]
   );
@@ -267,10 +246,9 @@ export default function DataEntryPage() {
       return { studentId, studentState: studentState || null, goal: null, goalData: null, goalIndex: -1 };
     }
     const goalIndex = dataEntryFocusedGoalIndexByStudentId[studentId] ?? 0;
-    // Ensure goalIndex is valid for the current number of goals
     const validGoalIndex = Math.min(Math.max(goalIndex, 0), studentState.originalGoalHeaders.length - 1);
 
-    if (studentState.originalGoalHeaders.length === 0 && validGoalIndex !== -1) { // Should be -1 if no goals
+    if (studentState.originalGoalHeaders.length === 0 && validGoalIndex !== -1) {
         return { studentId, studentState, goal: null, goalData: null, goalIndex: -1 };
     }
     if (validGoalIndex >= studentState.originalGoalHeaders.length || validGoalIndex < 0) {
@@ -317,15 +295,13 @@ export default function DataEntryPage() {
     setIsSaving(false);
     if (sessionsSavedCount > 0) {
         toast({ title: "Success", description: `${sessionsSavedCount} session(s) saved.`});
-        // Reset only activity, notes, and goalData for the saved students in context
         const newStates = {...dataEntryStudentSessionStates};
         dataEntrySelectedStudentIds.forEach(id => {
             if(newStates[id]) {
                 newStates[id].activity = '';
                 newStates[id].notes = '';
                 const initialGoalData: Record<string, SessionGoalData['data']> = {};
-                // const student = students.find(s => s.id === id); // Not strictly needed if originalGoalHeaders is from context
-                newStates[id].originalGoalHeaders.forEach(goal => { // Use originalGoalHeaders from context state
+                newStates[id].originalGoalHeaders.forEach(goal => { 
                   initialGoalData[goal.id] = JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type]));
                 });
                 newStates[id].goalData = initialGoalData;
@@ -413,7 +389,7 @@ export default function DataEntryPage() {
         const newValue = alt ? Math.max(0, currentCount - 1) : currentCount + 1;
         
         let updatedDataForField = { ...goalData, [promptToUpdate]: newValue };
-        // If "Independent" is updated, sync relevant primary metric
+        
         if (promptToUpdate === 'Independent') {
             switch(goal.type) {
                 case 'ARTICULATION': updatedDataForField.correct = newValue; break;
@@ -428,13 +404,13 @@ export default function DataEntryPage() {
       
 
       if (goal.type === 'QUALITATIVE_OBSERVATION' && !alt) {
-        if (key === 'C') { // Increment rating
+        if (key === 'C') { 
           event.preventDefault();
           const currentRating = Number(goalData.rating ?? 3);
           const newRating = Math.min(5, currentRating + 1);
           handleGoalDataChange(studentId, goal.id, 'rating', { ...goalData, rating: newRating });
           return;
-        } else if (key === 'N') { // Decrement rating
+        } else if (key === 'N') { 
           event.preventDefault();
           const currentRating = Number(goalData.rating ?? 3);
           const newRating = Math.max(1, currentRating - 1);
@@ -504,12 +480,12 @@ export default function DataEntryPage() {
       const goalElement = document.getElementById(goalElementId);
 
       if (goalElement) {
-        setTimeout(() => { // Delay slightly to ensure layout updates are complete
+        setTimeout(() => { 
           goalElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }, 50); 
       }
     }
-  }, [dataEntrySelectedStudentIds, dataEntryFocusedStudentSlotIndex, dataEntryFocusedGoalIndexByStudentId, getCurrentFocusedGoalInfo]); // getCurrentFocusedGoalInfo is stable due to useCallback
+  }, [dataEntrySelectedStudentIds, dataEntryFocusedStudentSlotIndex, dataEntryFocusedGoalIndexByStudentId, getCurrentFocusedGoalInfo]); 
 
 
   const handleStudentSelect = (studentId: string, index: number) => {
@@ -526,7 +502,7 @@ export default function DataEntryPage() {
     const availableStudent = students.find(s => !dataEntrySelectedStudentIds.includes(s.id));
     if (availableStudent) {
       setDataEntrySelectedStudentIds(prev => [...prev, availableStudent.id]);
-      setDataEntryFocusedStudentSlotIndex(dataEntrySelectedStudentIds.length); // Focus the new slot (index will be current length before adding)
+      setDataEntryFocusedStudentSlotIndex(dataEntrySelectedStudentIds.length); 
     } else {
       toast({ title: "Info", description: "No more unique available students to add, or all students are already in slots.", variant: "default" });
     }
@@ -539,20 +515,14 @@ export default function DataEntryPage() {
     const newSelectedIds = dataEntrySelectedStudentIds.filter((_, i) => i !== indexToRemove);
     setDataEntrySelectedStudentIds(newSelectedIds);
 
-    // StudentSessionState is now in context, this will trigger its update via useEffect
-    // setDataEntryStudentSessionStates(prevStates => {
-    //   const newStates = {...prevStates};
-    //   delete newStates[studentIdToRemove];
-    //   return newStates;
-    // });
 
     if (newSelectedIds.length === 0) {
-        setDataEntryFocusedStudentSlotIndex(0); // Or -1 if that's preferred for no selection
+        setDataEntryFocusedStudentSlotIndex(0); 
     } else {
         let newFocusIndex = newSelectedIds.indexOf(currentFocusedId);
-        if (newFocusIndex === -1) { // If the previously focused student was the one removed
+        if (newFocusIndex === -1) { 
             newFocusIndex = Math.min(indexToRemove, newSelectedIds.length - 1);
-            newFocusIndex = Math.max(0, newFocusIndex); // Ensure it's within bounds
+            newFocusIndex = Math.max(0, newFocusIndex); 
         }
         setDataEntryFocusedStudentSlotIndex(newFocusIndex);
     }
@@ -655,7 +625,6 @@ export default function DataEntryPage() {
       if (newStates[id]) {
         newStates[id].activity = '';
         newStates[id].notes = '';
-        // const student = students.find(s => s.id === id); // Not needed if originalGoalHeaders is from context
         if (newStates[id].originalGoalHeaders) {
           const initialGoalData: Record<string, SessionGoalData['data']> = {};
           newStates[id].originalGoalHeaders.forEach(goal => {
@@ -665,7 +634,7 @@ export default function DataEntryPage() {
         }
       }
     });
-    setDataEntryStudentSessionStates(newStates); // Update context
+    setDataEntryStudentSessionStates(newStates); 
     toast({ title: "Data Reset", description: "Current unsaved data for selected students has been reset." });
     setIsResetConfirmationOpen(false);
   };
@@ -743,7 +712,10 @@ export default function DataEntryPage() {
           if (!student || !state) return null;
 
           const isStudentFocused = slotIndex === dataEntryFocusedStudentSlotIndex;
-          const goalsToDisplay = state.originalGoalHeaders;
+          const allStudentGoals = state.originalGoalHeaders;
+          const visibleGoalCount = dataEntryVisibleGoalCountByStudentId[studentId] ?? 3;
+          const displayedGoals = allStudentGoals.slice(0, visibleGoalCount);
+
 
           return (
             <Card
@@ -809,12 +781,13 @@ export default function DataEntryPage() {
                     />
                   </div>
 
-                  {goalsToDisplay.length === 0 ? (
+                  {allStudentGoals.length === 0 ? (
                      <p className="text-sm text-muted-foreground p-4 text-center border rounded-md">No goals assigned to this student. Assign goals in the Student Profile.</p>
                   ) : (
                     <>
-                      {goalsToDisplay.map((goal, goalIdx) => {
-                        const isGoalFocused = isStudentFocused && (dataEntryFocusedGoalIndexByStudentId[studentId] ?? 0) === goalIdx;
+                      {displayedGoals.map((goal) => {
+                        const actualGoalIndex = allStudentGoals.findIndex(g => g.id === goal.id);
+                        const isGoalFocused = isStudentFocused && (dataEntryFocusedGoalIndexByStudentId[studentId] ?? 0) === actualGoalIndex;
                         return (
                           <GoalDataInputComponent
                             key={goal.id}
@@ -825,11 +798,36 @@ export default function DataEntryPage() {
                             isFocused={isGoalFocused}
                             onMoveUp={() => handleMoveGoal(studentId, goal.id, 'up')}
                             onMoveDown={() => handleMoveGoal(studentId, goal.id, 'down')}
-                            canMoveUp={goalIdx > 0}
-                            canMoveDown={goalIdx < goalsToDisplay.length - 1}
+                            canMoveUp={actualGoalIndex > 0}
+                            canMoveDown={actualGoalIndex < allStudentGoals.length - 1}
                           />
                         );
                       })}
+                       {allStudentGoals.length > 3 && (
+                        <div className="flex justify-center mt-2">
+                          {visibleGoalCount < allStudentGoals.length ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setDataEntryVisibleGoalCountByStudentId(prev => ({ ...prev, [studentId]: allStudentGoals.length }))}
+                              className="text-xs"
+                            >
+                              <Eye className="mr-1.5 h-3.5 w-3.5" />
+                              Show More ({allStudentGoals.length - visibleGoalCount} more)
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setDataEntryVisibleGoalCountByStudentId(prev => ({ ...prev, [studentId]: 3 }))}
+                              className="text-xs"
+                            >
+                              <EyeOff className="mr-1.5 h-3.5 w-3.5" />
+                              Show Less
+                            </Button>
+                          )}
+                        </div>
+                      )}
                     </>
                   )}
 
