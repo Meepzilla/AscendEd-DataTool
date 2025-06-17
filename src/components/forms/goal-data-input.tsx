@@ -16,8 +16,8 @@ import { Button } from '@/components/ui/button';
 
 interface GoalDataInputComponentProps {
   goal: Goal;
-  data: SessionGoalData['data']; 
-  onChange: (updatedFieldName: string, newData: SessionGoalData['data']) => void; 
+  data: SessionGoalData['data'];
+  onChange: (updatedFieldName: string, newData: SessionGoalData['data']) => void;
   isFocused?: boolean;
   id: string;
   onMoveUp?: () => void;
@@ -26,11 +26,11 @@ interface GoalDataInputComponentProps {
   canMoveDown?: boolean;
 }
 
-export default function GoalDataInputComponent({ 
-  goal, 
-  data, 
-  onChange, 
-  isFocused, 
+export default function GoalDataInputComponent({
+  goal,
+  data,
+  onChange,
+  isFocused,
   id,
   onMoveUp,
   onMoveDown,
@@ -47,7 +47,7 @@ export default function GoalDataInputComponent({
       case 'ARTICULATION':
         return (
           <>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-1">
               <FormItem>
                 <FormLabel>Target Sound/Word</FormLabel>
                 <Input
@@ -69,7 +69,7 @@ export default function GoalDataInputComponent({
                 />
               </FormItem>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-1">
               <FormItem>
                 <FormLabel>Correct</FormLabel>
                 <Input
@@ -96,7 +96,7 @@ export default function GoalDataInputComponent({
       case 'FLUENCY_SYLLABLE_STUTTER':
         return (
           <>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-1">
               <FormItem>
                 <FormLabel>Total Syllables</FormLabel>
                 <Input
@@ -124,7 +124,7 @@ export default function GoalDataInputComponent({
                 value={data.observationNotes || ''}
                 onChange={(e) => handleChange('observationNotes', e.target.value)}
                 placeholder="e.g., Repetitions on initial sounds..."
-                rows={2}
+                rows={1}
                 className="text-sm"
               />
             </FormItem>
@@ -136,10 +136,10 @@ export default function GoalDataInputComponent({
             <FormItem>
               <FormLabel>Observation Notes</FormLabel>
               <Textarea
-                value={data.notes || ''} 
+                value={data.notes || ''}
                 onChange={(e) => handleChange('notes', e.target.value)}
                 placeholder="Describe observed behaviors, participation, etc."
-                rows={2}
+                rows={1}
                 className="text-sm"
               />
             </FormItem>
@@ -168,7 +168,7 @@ export default function GoalDataInputComponent({
                 className="h-8 text-sm"
               />
             </FormItem>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-1">
               <FormItem>
                 <FormLabel>Questions Correct</FormLabel>
                 <Input
@@ -215,7 +215,7 @@ export default function GoalDataInputComponent({
                 className="h-8 text-sm"
               />
             </FormItem>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-1">
               <FormItem>
                 <FormLabel>Successful Responses</FormLabel>
                 <Input
@@ -262,7 +262,7 @@ export default function GoalDataInputComponent({
                 className="h-8 text-sm"
               />
             </FormItem>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-1">
               <FormItem>
                 <FormLabel>Correct Productions</FormLabel>
                 <Input
@@ -312,6 +312,18 @@ export default function GoalDataInputComponent({
       )}>
       <CardHeader className="p-2 bg-muted/30 rounded-t-lg">
         <div className="flex justify-between items-start">
+            <div className="flex flex-col items-center space-y-0.5 shrink-0 mr-1">
+                {onMoveUp && (
+                    <Button variant="ghost" size="icon" className="h-5 w-5 p-0" onClick={onMoveUp} disabled={!canMoveUp} title="Move goal up">
+                        <ArrowUp className="h-3.5 w-3.5" />
+                    </Button>
+                )}
+                {onMoveDown && (
+                     <Button variant="ghost" size="icon" className="h-5 w-5 p-0" onClick={onMoveDown} disabled={!canMoveDown} title="Move goal down">
+                        <ArrowDown className="h-3.5 w-3.5" />
+                    </Button>
+                )}
+            </div>
             <div className="flex-grow">
                 <CardTitle className="text-sm font-semibold flex items-center">
                   <span className="truncate pr-1">{goal.name}</span>
@@ -326,21 +338,9 @@ export default function GoalDataInputComponent({
                 </div>
                 )}
             </div>
-            <div className="flex flex-col items-center space-y-0.5 shrink-0 ml-1">
-                {onMoveUp && (
-                    <Button variant="ghost" size="icon" className="h-5 w-5 p-0" onClick={onMoveUp} disabled={!canMoveUp} title="Move goal up">
-                        <ArrowUp className="h-3.5 w-3.5" />
-                    </Button>
-                )}
-                {onMoveDown && (
-                     <Button variant="ghost" size="icon" className="h-5 w-5 p-0" onClick={onMoveDown} disabled={!canMoveDown} title="Move goal down">
-                        <ArrowDown className="h-3.5 w-3.5" />
-                    </Button>
-                )}
-            </div>
         </div>
       </CardHeader>
-      <CardContent className="p-2 space-y-2">
+      <CardContent className="p-2 space-y-1.5">
         {renderInputFields()}
         {showPromptCounters && (
           <FormItem>
