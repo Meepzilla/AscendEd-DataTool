@@ -12,9 +12,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button'; // Import buttonVariants
 import { useStudentData } from '@/hooks/use-student-data';
 import type { Student, GoalTemplate, SessionData } from '@/lib/types';
+import { cn } from '@/lib/utils'; // Import cn
 
 interface ConfirmationModalProps {
   isOpen: boolean;
@@ -45,38 +46,43 @@ export default function ConfirmationModal({
     deleteSession: contextDeleteSession,
     loading: dataLoading,
   } = useStudentData();
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false); // Renamed from isDeleting for clarity
   const confirmButtonRef = useRef<HTMLButtonElement>(null);
 
   const handleConfirmAction = useCallback(async () => {
-    if (!itemToDelete || !deleteActionType) {
-      onConfirm?.(); 
-      if (!onConfirm) onClose(); // Close if no custom confirm and no item
+    if (deleteActionType && !itemToDelete) { // If it's a delete action, itemToDelete must exist
+      onConfirm?.(); // Call generic confirm if provided
+      if (!onConfirm) onClose();
       return;
     }
-
-    setIsDeleting(true);
+    
+    setIsProcessing(true);
     try {
-      switch (deleteActionType) {
-        case 'student':
-          await contextDeleteStudent(itemToDelete.id); // itemToDelete.id should be studentId
-          break;
-        case 'goalTemplate':
-          await contextDeleteGoalTemplate(itemToDelete.id); // itemToDelete.id should be templateId
-          break;
-        case 'session':
-          await contextDeleteSession((itemToDelete as SessionData).sessionId);
-          break;
-        default:
-          console.warn("Unknown delete action type");
+      if (deleteActionType && itemToDelete) {
+        switch (deleteActionType) {
+          case 'student':
+            await contextDeleteStudent(itemToDelete.id);
+            break;
+          case 'goalTemplate':
+            await contextDeleteGoalTemplate(itemToDelete.id);
+            break;
+          case 'session':
+            await contextDeleteSession((itemToDelete as SessionData).sessionId);
+            break;
+          default:
+            console.warn("Unknown delete action type");
+        }
+      } else if (onConfirm) { // Handle generic confirm actions
+        await onConfirm();
       }
     } catch (error) {
-      console.error(`Error deleting ${deleteActionType}:`, error);
+      console.error(`Error performing action (${deleteActionType || 'confirm'}):`, error);
+      // Toast or error handling can be added here if needed
     } finally {
-      setIsDeleting(false);
+      setIsProcessing(false);
       onClose(); 
     }
-  }, [itemToDelete, deleteActionType, contextDeleteStudent, contextDeleteGoalTemplate, contextDeleteSession, onClose, onConfirm, dataLoading]);
+  }, [itemToDelete, deleteActionType, contextDeleteStudent, contextDeleteGoalTemplate, contextDeleteSession, onClose, onConfirm]);
 
   useEffect(() => {
     if (isOpen) {
@@ -104,9 +110,14 @@ export default function ConfirmationModal({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={onClose} disabled={isDeleting || dataLoading}>{cancelText}</AlertDialogCancel>
-          <AlertDialogAction ref={confirmButtonRef} onClick={handleConfirmAction} disabled={isDeleting || dataLoading} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">
-            {isDeleting || dataLoading ? 'Deleting...' : confirmText}
+          <AlertDialogCancel onClick={onClose} disabled={isProcessing || dataLoading}>{cancelText}</AlertDialogCancel>
+          <AlertDialogAction 
+            ref={confirmButtonRef} 
+            onClick={handleConfirmAction} 
+            disabled={isProcessing || dataLoading}
+            className={cn(buttonVariants({ variant: deleteActionType ? 'destructive' : 'default' }))}
+          >
+            {isProcessing || dataLoading ? (deleteActionType ? 'Deleting...' : 'Processing...') : confirmText}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

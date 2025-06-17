@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Users, Save, PlusCircle, XCircle, Edit2, Info, ArrowUp, ArrowDown, ChevronDown, ChevronUp } from 'lucide-react';
+import { Users, Save, PlusCircle, XCircle, Edit2, Info, ArrowUp, ArrowDown, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 import GoalDataInputComponent from '@/components/forms/goal-data-input';
 import { GOAL_TYPE_FIELDS, PROMPT_HOTKEY_MAP } from '@/lib/constants';
@@ -22,6 +22,8 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { useErrorLog } from '@/hooks/use-error-log';
+import ConfirmationModal from '@/components/modals/confirmation-modal';
+
 
 interface StudentSessionState {
   studentId: string;
@@ -54,6 +56,7 @@ export default function DataEntryPage() {
   const [focusedStudentSlotIndex, setFocusedStudentSlotIndex] = useState<number>(0);
   const [focusedGoalIndexByStudentId, setFocusedGoalIndexByStudentId] = useState<Record<string, number>>({});
   const [isHeaderCardCollapsed, setIsHeaderCardCollapsed] = useState(false);
+  const [isResetConfirmationOpen, setIsResetConfirmationOpen] = useState(false);
 
 
   const handleGoalDataChange = useCallback(
@@ -319,13 +322,13 @@ export default function DataEntryPage() {
       if (goal.type === 'QUALITATIVE_OBSERVATION' && !alt) {
         if (key === 'C') {
           event.preventDefault();
-          const currentRating = Number(goalData.rating || 3);
+          const currentRating = Number(goalData.rating ?? 3);
           const newRating = Math.min(5, currentRating + 1);
           handleGoalDataChange(studentId, goal.id, 'rating', { ...goalData, rating: newRating });
           return;
         } else if (key === 'N') {
           event.preventDefault();
-          const currentRating = Number(goalData.rating || 3);
+          const currentRating = Number(goalData.rating ?? 3);
           const newRating = Math.max(1, currentRating - 1);
           handleGoalDataChange(studentId, goal.id, 'rating', { ...goalData, rating: newRating });
           return;
@@ -513,6 +516,38 @@ export default function DataEntryPage() {
     return students.filter(s => !selectedStudentIds.includes(s.id));
   }, [students, selectedStudentIds]);
 
+
+  const handleOpenResetConfirmation = () => {
+    if (selectedStudentIds.length === 0) {
+      toast({ title: "Info", description: "No students selected to reset data for.", variant: "default" });
+      return;
+    }
+    setIsResetConfirmationOpen(true);
+  };
+
+  const handleConfirmResetSession = () => {
+    const newStates = { ...studentSessionStates };
+    selectedStudentIds.forEach(id => {
+      if (newStates[id]) {
+        newStates[id].activity = '';
+        newStates[id].notes = '';
+        const student = students.find(s => s.id === id);
+        if (student) {
+          const initialGoalData: Record<string, SessionGoalData['data']> = {};
+          // Use originalGoalHeaders from the current state for this student to reset accurately
+          newStates[id].originalGoalHeaders.forEach(goal => {
+            initialGoalData[goal.id] = JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type]));
+          });
+          newStates[id].goalData = initialGoalData;
+        }
+      }
+    });
+    setStudentSessionStates(newStates);
+    toast({ title: "Data Reset", description: "Current unsaved data for selected students has been reset." });
+    setIsResetConfirmationOpen(false);
+  };
+
+
   if (studentsLoading && students.length === 0) {
     return (
       <div className="space-y-6">
@@ -527,6 +562,16 @@ export default function DataEntryPage() {
 
   return (
     <div className="space-y-6 flex flex-col h-full">
+       {isResetConfirmationOpen && (
+        <ConfirmationModal
+          isOpen={isResetConfirmationOpen}
+          onClose={() => setIsResetConfirmationOpen(false)}
+          onConfirm={handleConfirmResetSession}
+          title="Reset Unsaved Data?"
+          description="Are you sure you want to clear all current unsaved activity, notes, and goal data for the selected students? This action cannot be undone."
+          confirmText="Yes, Reset Data"
+        />
+      )}
       <Card className="shadow-lg flex-shrink-0">
         <CardHeader>
             <div className="flex justify-between items-center">
@@ -711,7 +756,11 @@ export default function DataEntryPage() {
       </div>
 
       {selectedStudentIds.length > 0 && (
-        <div className="mt-auto flex-shrink-0 flex justify-end py-4 border-t">
+        <div className="mt-auto flex-shrink-0 flex justify-end items-center gap-2 py-4 border-t">
+           <Button variant="outline" onClick={handleOpenResetConfirmation} disabled={isSaving} size="lg">
+            <RotateCcw className="mr-2 h-5 w-5" />
+            Reset Current Data
+          </Button>
           <Button onClick={handleSaveSession} disabled={isSaving} size="lg">
             <Save className="mr-2 h-5 w-5" />
             {isSaving ? 'Saving Session(s)...' : 'Save Session(s)'}
