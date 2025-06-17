@@ -146,7 +146,7 @@ export default function GoalDataInputComponent({
             <FormItem>
               <FormLabel>Rating (1-5)</FormLabel>
               <Slider
-                defaultValue={[data.rating ?? 3]}
+                value={[data.rating ?? 3]}
                 min={1} max={5} step={1}
                 onValueChange={(value) => handleChange('rating', value[0])}
                 className="pt-2"
