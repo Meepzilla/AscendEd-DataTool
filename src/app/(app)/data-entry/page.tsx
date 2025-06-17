@@ -243,6 +243,19 @@ export default function DataEntryPage() {
       const key = event.key.toUpperCase();
       const alt = event.altKey;
 
+      if (alt && key === 'E') {
+        event.preventDefault();
+        if (selectedStudentIds.length > 0 && focusedStudentSlotIndex < selectedStudentIds.length) {
+          const focusedStudentId = selectedStudentIds[focusedStudentSlotIndex];
+          const studentToEdit = students.find(s => s.id === focusedStudentId);
+          if (studentToEdit) {
+            openEditStudentModal(studentToEdit);
+          }
+        }
+        return;
+      }
+
+
       const focusedInfo = getCurrentFocusedGoalInfo();
 
       if (!alt && key.match(/^[1-4]$/)) {
@@ -323,12 +336,12 @@ export default function DataEntryPage() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedStudentIds, studentSessionStates, focusedStudentSlotIndex, focusedGoalIndexByStudentId, handleGoalDataChange, getCurrentFocusedGoalInfo, handleSaveSession]);
+  }, [selectedStudentIds, studentSessionStates, focusedStudentSlotIndex, focusedGoalIndexByStudentId, handleGoalDataChange, getCurrentFocusedGoalInfo, handleSaveSession, students, openEditStudentModal]);
 
 
   useEffect(() => {
     const focusedInfo = getCurrentFocusedGoalInfo();
-    if (focusedInfo && focusedInfo.goal && focusedInfo.studentState ) { // Removed !focusedInfo.studentState.isCollapsed check
+    if (focusedInfo && focusedInfo.goal && focusedInfo.studentState ) { 
       const { studentId, goal } = focusedInfo;
       const elementId = `goal-input-${studentId}-${goal.id}`;
       const element = document.getElementById(elementId);
@@ -490,7 +503,7 @@ export default function DataEntryPage() {
             </div>
           </div>
            <p className="text-sm text-muted-foreground">
-            Hotkeys: [1-4] Focus Slot | A/Alt+A Cycle Students | S/Alt+S Cycle Goals | C/Alt+C Correct/Total | N/Alt+N Incorrect/Stuttered | V/G/P/F/I Prompts | Ctrl+Enter Save.
+            Hotkeys: [1-4] Focus Slot | A/Alt+A Cycle Students | S/Alt+S Cycle Goals | C/Alt+C Correct/Total | N/Alt+N Incorrect/Stuttered | V/G/P/F/I Prompts | Ctrl+Enter Save | Alt+E Edit Student.
           </p>
         </CardContent>
       </Card>
@@ -525,7 +538,7 @@ export default function DataEntryPage() {
                             e.stopPropagation();
                             openEditStudentModal(student);
                         }}
-                        title={`Manage ${student.name}'s goals and info`}
+                        title={`Manage ${student.name}'s goals and info (Alt+E)`}
                         aria-label={`Manage ${student.name}'s goals and info`}
                     >
                         <Users className="h-5 w-5 text-primary" />
@@ -555,7 +568,7 @@ export default function DataEntryPage() {
                   </div>
                 </div>
               </CardHeader>
-              <ScrollArea className={cn("flex-grow")}> {/* Removed conditional hidden class */}
+              <ScrollArea className={cn("flex-grow")}> 
                 <CardContent className="p-3 space-y-3">
                   <div>
                     <Label htmlFor={`activity-${studentId}`}>Activity</Label>
