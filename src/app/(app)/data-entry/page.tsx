@@ -353,16 +353,31 @@ export default function DataEntryPage() {
 
 
   useEffect(() => {
-    const focusedInfo = getCurrentFocusedGoalInfo();
-    if (focusedInfo && focusedInfo.goal && focusedInfo.studentState ) { 
-      const { studentId, goal } = focusedInfo;
-      const elementId = `goal-input-${studentId}-${goal.id}`;
-      const element = document.getElementById(elementId);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    // Scroll the student card into view first
+    if (selectedStudentIds.length > 0 && focusedStudentSlotIndex >= 0 && focusedStudentSlotIndex < selectedStudentIds.length) {
+      const studentCardId = `student-card-slot-${focusedStudentSlotIndex}`;
+      const studentCardElement = document.getElementById(studentCardId);
+      if (studentCardElement) {
+        studentCardElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
       }
     }
-  }, [focusedStudentSlotIndex, focusedGoalIndexByStudentId, studentSessionStates, getCurrentFocusedGoalInfo]);
+
+    // Then scroll the focused goal within the card into view
+    const focusedInfo = getCurrentFocusedGoalInfo();
+    if (focusedInfo && focusedInfo.goal && focusedInfo.studentState) {
+      const { studentId: studentIdForGoal, goal } = focusedInfo;
+      const goalElementId = `goal-input-${studentIdForGoal}-${goal.id}`;
+      const goalElement = document.getElementById(goalElementId);
+
+      if (goalElement) {
+        // A small delay can help ensure the card scroll has initiated/completed visually
+        setTimeout(() => {
+          goalElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 50); 
+      }
+    }
+  }, [selectedStudentIds, focusedStudentSlotIndex, focusedGoalIndexByStudentId, getCurrentFocusedGoalInfo]);
+
 
   const handleStudentSelect = (studentId: string, index: number) => {
     setSelectedStudentIds(prev => {
@@ -550,6 +565,7 @@ export default function DataEntryPage() {
           return (
             <Card
               key={studentId}
+              id={`student-card-slot-${slotIndex}`} 
               className={cn(
                 `flex flex-col transition-all duration-300 ease-in-out shadow-md flex-shrink-0`,
                 isStudentFocused ? 'w-[450px]' : 'w-[350px]', 
