@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/use-auth';
 import AppHeader from '@/components/layout/app-header';
 import AppFooter from '@/components/layout/app-footer';
 import StudentSidebar from '@/components/layout/student-sidebar';
-import AppNavigation from '@/components/layout/app-navigation';
+// AppNavigation is no longer imported here for desktop sidebar
 import { SidebarProvider, SidebarInset, SidebarTrigger, SidebarRail } from '@/components/ui/sidebar';
 import { useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts';
 import { Toaster } from '@/components/ui/toaster';
@@ -43,15 +43,10 @@ export default function AppLayout({
         <AppHeader />
         <div className="flex flex-1">
           <StudentSidebar />
-          <SidebarRail /> {/* Adds the draggable rail to resize/toggle */}
+          <SidebarRail /> {/* Adds the draggable rail to resize/toggle student sidebar */}
           <SidebarInset> {/* This will be the main content area */}
             <div className="flex flex-1">
-              <aside className="hidden md:block w-64 border-r bg-card p-0">
-                {/* Desktop Navigation Panel */}
-                <div className="sticky top-16 h-[calc(100vh-4rem)]"> {/* Adjust top based on header height */}
-                   <AppNavigation />
-                </div>
-              </aside>
+              {/* Desktop Navigation Panel (AppNavigation) has been removed from here */}
               <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
                 <div className="max-w-6xl mx-auto">
                  {children}

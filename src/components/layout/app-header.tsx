@@ -5,14 +5,14 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, HelpCircle, FileText, UserPlus, UserCircle } from 'lucide-react';
+import { Menu, FileText, UserCircle, UserPlus } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { APP_NAME, APP_SUBTITLE } from '@/lib/constants';
 import { useStudentData } from '@/hooks/use-student-data';
 import AddStudentModal from '@/components/modals/add-student-modal';
 import EditStudentModal from '@/components/modals/edit-student-modal';
 import ErrorLogModal from '@/components/modals/error-log-modal';
-import AppNavigation from './app-navigation'; // For mobile drawer
+import AppNavigation from './app-navigation'; 
 import { useRouter } from 'next/navigation';
 
 export default function AppHeader() {
@@ -21,12 +21,10 @@ export default function AppHeader() {
   const [isErrorLogModalOpen, setIsErrorLogModalOpen] = useState(false);
   const router = useRouter();
 
-  const handleHelp = () => router.push('/help');
-
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-card/80 backdrop-blur-md">
       <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="md:hidden">
@@ -57,27 +55,31 @@ export default function AppHeader() {
           </Link>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
-          <Button variant="ghost" size="icon" onClick={handleHelp} title="Help (Alt+H)">
-            <HelpCircle className="h-5 w-5" />
-            <span className="sr-only">Help</span>
-          </Button>
+        {/* Desktop Navigation Area */}
+        <div className="flex-1 flex justify-center items-center">
+           <AppNavigation isMobile={false} />
+        </div>
+
+
+        <div className="flex items-center gap-1 sm:gap-2">
+          {/* Help and Add Student buttons removed as they are now part of AppNavigation */}
           <Button variant="ghost" size="icon" onClick={() => setIsErrorLogModalOpen(true)} title="Error Log (Alt+L)">
             <FileText className="h-5 w-5" />
             <span className="sr-only">Error Log</span>
           </Button>
-          <Button variant="ghost" size="icon" onClick={openAddStudentModal} title="Add Student (Alt+M)">
+           <Button variant="ghost" size="icon" onClick={openAddStudentModal} title="Add Student (Alt+M)" className="hidden sm:flex">
             <UserPlus className="h-5 w-5" />
             <span className="sr-only">Add Student</span>
           </Button>
           
-          <div className="flex items-center gap-2 border-l border-border pl-2 sm:pl-3">
+          <div className="flex items-center gap-2 border-l border-border pl-1 sm:pl-2">
              {currentUser ? (
               <>
                 <UserCircle className="h-6 w-6 text-muted-foreground" />
                 <div className="text-xs hidden sm:block">
                   <p className="font-medium text-foreground truncate max-w-[100px]">{currentUser.displayName || currentUser.email || 'User'}</p>
-                  <p className="text-muted-foreground truncate max-w-[100px]">{currentUser.uid}</p>
+                  {/* UID display removed for brevity in header */}
+                  {/* <p className="text-muted-foreground truncate max-w-[100px]">{currentUser.uid}</p> */}
                 </div>
                 <Button variant="ghost" size="sm" onClick={signOut}>Sign Out</Button>
               </>
