@@ -181,8 +181,9 @@ export default function DataEntryPage() {
 
   useEffect(() => {
     const newStates: Record<string, StudentSessionState> = {};
-    const newFocusedGoalIndexes: Record<string, number> = {};
-    selectedStudentIds.forEach(id => {
+    const newFocusedGoalIndexes: Record<string, number> = { ...focusedGoalIndexByStudentId };
+
+    selectedStudentIds.forEach((id, idx) => {
       const student = students.find(s => s.id === id);
       if (student) {
         const existingState = studentSessionStates[id];
@@ -197,6 +198,7 @@ export default function DataEntryPage() {
         goalsToUse.forEach(goal => {
           initialGoalData[goal.id] = existingState?.goalData?.[goal.id] || JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type]));
         });
+
         newStates[id] = {
           studentId: student.id,
           studentName: student.name,
@@ -204,15 +206,22 @@ export default function DataEntryPage() {
           notes: existingState?.notes || '',
           goalData: initialGoalData,
           originalGoalHeaders: goalsToUse,
-          isCollapsed: existingState?.isCollapsed || false,
+          isCollapsed: idx !== focusedStudentSlotIndex, // Focused student expands, others collapse
         };
-        newFocusedGoalIndexes[id] = focusedGoalIndexByStudentId[id] ?? 0;
+        
+        if (newFocusedGoalIndexes[id] === undefined ) {
+            newFocusedGoalIndexes[id] = 0;
+        } else if (existingState && focusedGoalIndexByStudentId[id] !== undefined) {
+            newFocusedGoalIndexes[id] = focusedGoalIndexByStudentId[id];
+        } else {
+             newFocusedGoalIndexes[id] = 0;
+        }
       }
     });
     setStudentSessionStates(newStates);
-    setFocusedGoalIndexByStudentId(prev => ({ ...prev, ...newFocusedGoalIndexes }));
+    setFocusedGoalIndexByStudentId(newFocusedGoalIndexes);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedStudentIds, students]); 
+  }, [selectedStudentIds, students, focusedStudentSlotIndex]);
 
 
   useEffect(() => {
@@ -501,7 +510,7 @@ export default function DataEntryPage() {
 
           const isStudentFocused = slotIndex === focusedStudentSlotIndex;
 
-          const goalsToDisplay = state.originalGoalHeaders; // Display all goals
+          const goalsToDisplay = state.originalGoalHeaders;
 
           return (
             <Card 
@@ -658,3 +667,5 @@ export default function DataEntryPage() {
     </div>
   );
 }
+
+    
