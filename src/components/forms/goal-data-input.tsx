@@ -324,12 +324,14 @@ export default function GoalDataInputComponent({
                     </Button>
                 )}
             </div>
-            <div className="flex-grow">
-                <CardTitle className="text-sm font-semibold flex items-center">
-                  <span className="truncate pr-1">{goal.name}</span>
-                  <Badge variant="outline" className="ml-auto mr-1 whitespace-nowrap text-xs px-1.5 py-0.5">
-                    {goal.type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
-                  </Badge>
+            <div className="flex-grow min-w-0"> 
+                <CardTitle className="text-sm font-semibold">
+                    <div className="flex justify-between items-start">
+                        <span className="whitespace-normal break-words mr-1">{goal.name}</span>
+                        <Badge variant="outline" className="whitespace-nowrap text-xs px-1.5 py-0.5 shrink-0">
+                            {goal.type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+                        </Badge>
+                    </div>
                 </CardTitle>
                 {goal.sessionTargetValue !== undefined && (
                 <div className="text-xs text-muted-foreground flex items-center gap-0.5 pt-0.5">
