@@ -158,8 +158,30 @@ export default function AnalysisReportPage() {
         toast({title:"Info", description:"No data to export.", variant:"default"});
         return;
     }
-    const headers = Object.keys(chartData[0]).join(',');
-    const csvRows = chartData.map(row => Object.values(row).join(','));
+
+    const goalNameToExport = selectedGoalId && selectedStudent
+        ? selectedStudent.goals.find(g => g.id === selectedGoalId)?.name || 'Selected Goal (Name N/A)'
+        : 'All Goals';
+
+    const dataForCsv = chartData.map(row => ({
+        goal: goalNameToExport, 
+        ...row 
+    }));
+    
+    const headers = Object.keys(dataForCsv[0]).join(',');
+    const csvRows = dataForCsv.map(row =>
+        Object.values(row)
+            .map(value => {
+                const stringValue = String(value);
+                // Escape double quotes by doubling them, and wrap if it contains comma, double quote, or newline
+                if (stringValue.includes('"') || stringValue.includes(',') || stringValue.includes('\n') || stringValue.includes('\r')) {
+                    return `"${stringValue.replace(/"/g, '""')}"`;
+                }
+                return stringValue;
+            })
+            .join(',')
+    );
+
     const csvString = `${headers}\n${csvRows.join('\n')}`;
     const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
