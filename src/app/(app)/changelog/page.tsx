@@ -4,7 +4,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone } from 'lucide-react';
+import { ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, Trash2, LayoutGrid, Minimize2, UserX } from 'lucide-react';
 import { APP_NAME } from '@/lib/constants';
 
 interface ChangelogEntry {
@@ -19,10 +19,38 @@ interface ChangelogEntry {
 const changelogEntries: ChangelogEntry[] = [
   {
     date: '2025-06-17',
+    title: 'Student Deletion Feature',
+    description: 'Added the ability to delete students and their associated session data, with a confirmation prompt. Accessible from the Student Profile page and sidebar.',
+    type: 'feature',
+    icon: UserX,
+  },
+  {
+    date: '2025-06-17',
+    title: 'Top Ribbon Navigation',
+    description: 'Redesigned main application navigation to a top ribbon menu for desktop users, streamlining the interface. Mobile navigation remains in a slide-out drawer.',
+    type: 'improvement',
+    icon: LayoutGrid,
+  },
+  {
+    date: '2025-06-17',
+    title: 'Multi-Goal Assignment Fix',
+    description: 'Fixed an issue where assigning multiple goal templates to a student simultaneously would sometimes result in only one goal being added.',
+    type: 'fix',
+    icon: Bug,
+  },
+  {
+    date: '2025-06-17',
+    title: 'Compact Goal Inputs on Data Entry Page',
+    description: 'Redesigned goal input cards on the Data Entry page to be more compact, allowing more goals to be visible per student.',
+    type: 'improvement',
+    icon: Minimize2,
+  },
+  {
+    date: '2025-06-17',
     title: 'Enhanced Mobile & Tablet Responsiveness',
     description: 'Improved application layout and usability on smaller screens, including adjustments to dashboards, forms, tables, and modals for better mobile device support.',
     type: 'improvement',
-    icon: Smartphone, 
+    icon: Smartphone,
   },
   {
     date: '2025-06-17',
