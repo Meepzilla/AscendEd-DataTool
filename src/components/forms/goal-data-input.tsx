@@ -47,7 +47,7 @@ export default function GoalDataInputComponent({
       case 'ARTICULATION':
         return (
           <>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <FormItem>
                 <FormLabel>Target Sound/Word</FormLabel>
                 <Input
@@ -55,6 +55,7 @@ export default function GoalDataInputComponent({
                   value={data.targetSound || ''}
                   onChange={(e) => handleChange('targetSound', e.target.value)}
                   placeholder="e.g., /s/, 'sun'"
+                  className="h-8 text-sm"
                 />
               </FormItem>
               <FormItem>
@@ -64,10 +65,11 @@ export default function GoalDataInputComponent({
                   value={data.wordList || ''}
                   onChange={(e) => handleChange('wordList', e.target.value)}
                   placeholder="e.g., cat, car, cup"
+                  className="h-8 text-sm"
                 />
               </FormItem>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <FormItem>
                 <FormLabel>Correct</FormLabel>
                 <Input
@@ -75,6 +77,7 @@ export default function GoalDataInputComponent({
                   min="0"
                   value={data.correct ?? 0}
                   onChange={(e) => handleChange('correct', parseInt(e.target.value) || 0)}
+                  className="h-8 text-sm"
                 />
               </FormItem>
               <FormItem>
@@ -84,6 +87,7 @@ export default function GoalDataInputComponent({
                   min="0"
                   value={data.incorrect ?? 0}
                   onChange={(e) => handleChange('incorrect', parseInt(e.target.value) || 0)}
+                  className="h-8 text-sm"
                 />
               </FormItem>
             </div>
@@ -92,7 +96,7 @@ export default function GoalDataInputComponent({
       case 'FLUENCY_SYLLABLE_STUTTER':
         return (
           <>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <FormItem>
                 <FormLabel>Total Syllables</FormLabel>
                 <Input
@@ -100,6 +104,7 @@ export default function GoalDataInputComponent({
                   min="0"
                   value={data.totalSyllables ?? 0}
                   onChange={(e) => handleChange('totalSyllables', parseInt(e.target.value) || 0)}
+                  className="h-8 text-sm"
                 />
               </FormItem>
               <FormItem>
@@ -109,6 +114,7 @@ export default function GoalDataInputComponent({
                   min="0"
                   value={data.stutteredSyllables ?? 0}
                   onChange={(e) => handleChange('stutteredSyllables', parseInt(e.target.value) || 0)}
+                  className="h-8 text-sm"
                 />
               </FormItem>
             </div>
@@ -117,8 +123,9 @@ export default function GoalDataInputComponent({
               <Textarea
                 value={data.observationNotes || ''}
                 onChange={(e) => handleChange('observationNotes', e.target.value)}
-                placeholder="e.g., Repetitions on initial sounds, blocks during reading passage."
+                placeholder="e.g., Repetitions on initial sounds..."
                 rows={2}
+                className="text-sm"
               />
             </FormItem>
           </>
@@ -132,7 +139,8 @@ export default function GoalDataInputComponent({
                 value={data.notes || ''} 
                 onChange={(e) => handleChange('notes', e.target.value)}
                 placeholder="Describe observed behaviors, participation, etc."
-                rows={3}
+                rows={2}
+                className="text-sm"
               />
             </FormItem>
             <FormItem>
@@ -143,7 +151,7 @@ export default function GoalDataInputComponent({
                 onValueChange={(value) => handleChange('rating', value[0])}
                 className="pt-2"
               />
-              <div className="text-center text-sm font-medium mt-1">{data.rating ?? 3}</div>
+              <div className="text-center text-xs font-medium mt-1">{data.rating ?? 3}</div>
             </FormItem>
           </>
         );
@@ -157,9 +165,10 @@ export default function GoalDataInputComponent({
                 value={data.details || ''}
                 onChange={(e) => handleChange('details', e.target.value)}
                 placeholder={"e.g., WH-questions, 2-step directions"}
+                className="h-8 text-sm"
               />
             </FormItem>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <FormItem>
                 <FormLabel>Questions Correct</FormLabel>
                 <Input
@@ -167,6 +176,7 @@ export default function GoalDataInputComponent({
                   min="0"
                   value={data.questionsCorrect ?? 0}
                   onChange={(e) => handleChange('questionsCorrect', parseInt(e.target.value) || 0)}
+                  className="h-8 text-sm"
                 />
               </FormItem>
               <FormItem>
@@ -176,6 +186,7 @@ export default function GoalDataInputComponent({
                   min="0"
                   value={data.questionsIncorrect ?? 0}
                   onChange={(e) => handleChange('questionsIncorrect', parseInt(e.target.value) || 0)}
+                  className="h-8 text-sm"
                 />
               </FormItem>
             </div>
@@ -186,6 +197,7 @@ export default function GoalDataInputComponent({
                   min="0"
                   value={data.questionsAttempted ?? ((data.questionsCorrect ?? 0) + (data.questionsIncorrect ?? 0))}
                   onChange={(e) => handleChange('questionsAttempted', parseInt(e.target.value) || 0)}
+                  className="h-8 text-sm"
                 />
               </FormItem>
           </>
@@ -200,9 +212,10 @@ export default function GoalDataInputComponent({
                 value={data.details || ''}
                 onChange={(e) => handleChange('details', e.target.value)}
                 placeholder={"e.g., Past tense verbs, describing objects"}
+                className="h-8 text-sm"
               />
             </FormItem>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <FormItem>
                 <FormLabel>Successful Responses</FormLabel>
                 <Input
@@ -210,6 +223,7 @@ export default function GoalDataInputComponent({
                   min="0"
                   value={data.successfulResponses ?? 0}
                   onChange={(e) => handleChange('successfulResponses', parseInt(e.target.value) || 0)}
+                  className="h-8 text-sm"
                 />
               </FormItem>
               <FormItem>
@@ -219,6 +233,7 @@ export default function GoalDataInputComponent({
                   min="0"
                   value={data.unsuccessfulResponses ?? 0}
                   onChange={(e) => handleChange('unsuccessfulResponses', parseInt(e.target.value) || 0)}
+                  className="h-8 text-sm"
                 />
               </FormItem>
             </div>
@@ -229,6 +244,7 @@ export default function GoalDataInputComponent({
                   min="0"
                   value={data.opportunities ?? ((data.successfulResponses ?? 0) + (data.unsuccessfulResponses ?? 0))}
                   onChange={(e) => handleChange('opportunities', parseInt(e.target.value) || 0)}
+                  className="h-8 text-sm"
                 />
             </FormItem>
           </>
@@ -243,9 +259,10 @@ export default function GoalDataInputComponent({
                 value={data.targetProcess || ''}
                 onChange={(e) => handleChange('targetProcess', e.target.value)}
                 placeholder="e.g., Fronting, Stopping"
+                className="h-8 text-sm"
               />
             </FormItem>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <FormItem>
                 <FormLabel>Correct Productions</FormLabel>
                 <Input
@@ -253,6 +270,7 @@ export default function GoalDataInputComponent({
                   min="0"
                   value={data.correctProductions ?? 0}
                   onChange={(e) => handleChange('correctProductions', parseInt(e.target.value) || 0)}
+                  className="h-8 text-sm"
                 />
               </FormItem>
               <FormItem>
@@ -262,6 +280,7 @@ export default function GoalDataInputComponent({
                   min="0"
                   value={data.incorrectProductions ?? 0}
                   onChange={(e) => handleChange('incorrectProductions', parseInt(e.target.value) || 0)}
+                  className="h-8 text-sm"
                 />
               </FormItem>
             </div>
@@ -272,12 +291,13 @@ export default function GoalDataInputComponent({
                   min="0"
                   value={data.opportunities ?? ((data.correctProductions ?? 0) + (data.incorrectProductions ?? 0))}
                   onChange={(e) => handleChange('opportunities', parseInt(e.target.value) || 0)}
+                  className="h-8 text-sm"
                 />
               </FormItem>
           </>
         );
       default:
-        return <p className="text-muted-foreground">No specific data fields for this goal type.</p>;
+        return <p className="text-muted-foreground text-xs">No specific data fields for this goal type.</p>;
     }
   };
 
@@ -290,44 +310,44 @@ export default function GoalDataInputComponent({
         "border-border bg-card/50 transition-all duration-150 ease-in-out",
         isFocused && "ring-2 ring-primary ring-offset-2 shadow-lg"
       )}>
-      <CardHeader className="p-3 bg-muted/30 rounded-t-lg">
+      <CardHeader className="p-2 bg-muted/30 rounded-t-lg">
         <div className="flex justify-between items-start">
             <div className="flex-grow">
-                <CardTitle className="text-base font-semibold flex items-center">
-                  <span className="truncate pr-2">{goal.name}</span>
-                  <Badge variant="outline" className="ml-auto mr-2 whitespace-nowrap">
+                <CardTitle className="text-sm font-semibold flex items-center">
+                  <span className="truncate pr-1">{goal.name}</span>
+                  <Badge variant="outline" className="ml-auto mr-1 whitespace-nowrap text-xs px-1.5 py-0.5">
                     {goal.type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
                   </Badge>
                 </CardTitle>
                 {goal.sessionTargetValue !== undefined && (
-                <div className="text-xs text-muted-foreground flex items-center gap-1 pt-0.5">
-                    <TrendingUp className="h-3.5 w-3.5 text-green-600" />
-                    Session Target: {goal.sessionTargetValue}{goal.type !== 'QUALITATIVE_OBSERVATION' ? '%' : ''}
+                <div className="text-xs text-muted-foreground flex items-center gap-0.5 pt-0.5">
+                    <TrendingUp className="h-3 w-3 text-green-600" />
+                    Target: {goal.sessionTargetValue}{goal.type !== 'QUALITATIVE_OBSERVATION' ? '%' : ''}
                 </div>
                 )}
             </div>
-            <div className="flex flex-col items-center space-y-0.5 shrink-0">
+            <div className="flex flex-col items-center space-y-0.5 shrink-0 ml-1">
                 {onMoveUp && (
-                    <Button variant="ghost" size="icon" className="h-6 w-6 p-0" onClick={onMoveUp} disabled={!canMoveUp} title="Move goal up">
-                        <ArrowUp className="h-4 w-4" />
+                    <Button variant="ghost" size="icon" className="h-5 w-5 p-0" onClick={onMoveUp} disabled={!canMoveUp} title="Move goal up">
+                        <ArrowUp className="h-3.5 w-3.5" />
                     </Button>
                 )}
                 {onMoveDown && (
-                     <Button variant="ghost" size="icon" className="h-6 w-6 p-0" onClick={onMoveDown} disabled={!canMoveDown} title="Move goal down">
-                        <ArrowDown className="h-4 w-4" />
+                     <Button variant="ghost" size="icon" className="h-5 w-5 p-0" onClick={onMoveDown} disabled={!canMoveDown} title="Move goal down">
+                        <ArrowDown className="h-3.5 w-3.5" />
                     </Button>
                 )}
             </div>
         </div>
       </CardHeader>
-      <CardContent className="p-3 space-y-3">
+      <CardContent className="p-2 space-y-2">
         {renderInputFields()}
         {showPromptCounters && (
           <FormItem>
             <FormLabel>Prompt Counts</FormLabel>
-            <div className="flex flex-wrap gap-1.5 mt-1">
+            <div className="flex flex-wrap gap-1 mt-0.5">
               {PROMPT_TYPES.map(pt => (
-                <Badge key={pt} variant="outline" className="px-2 py-0.5 text-xs" style={{ borderColor: PROMPT_COLORS[pt], color: PROMPT_COLORS[pt] }}>
+                <Badge key={pt} variant="outline" className="px-1.5 py-0.5 text-xs" style={{ borderColor: PROMPT_COLORS[pt], color: PROMPT_COLORS[pt] }}>
                   {PROMPT_ABBREVIATIONS[pt]}: {Number(data[pt] || 0)}
                 </Badge>
               ))}
@@ -340,7 +360,7 @@ export default function GoalDataInputComponent({
 }
 
 const FormItem: React.FC<{children: React.ReactNode, className?: string}> = ({ children, className }) => (
-  <div className={`space-y-1 ${className}`}>{children}</div>
+  <div className={`space-y-0.5 ${className}`}>{children}</div>
 );
 const FormLabel: React.FC<{children: React.ReactNode, htmlFor?: string}> = ({ children, htmlFor }) => (
   <Label htmlFor={htmlFor} className="text-xs font-medium text-muted-foreground">{children}</Label>
