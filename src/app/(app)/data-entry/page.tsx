@@ -316,6 +316,23 @@ export default function DataEntryPage() {
       let fieldToUpdate: string | null = null;
       let increment = 0;
 
+      if (goal.type === 'QUALITATIVE_OBSERVATION' && !alt) {
+        if (key === 'C') {
+          event.preventDefault();
+          const currentRating = Number(goalData.rating || 3);
+          const newRating = Math.min(5, currentRating + 1);
+          handleGoalDataChange(studentId, goal.id, 'rating', { ...goalData, rating: newRating });
+          return;
+        } else if (key === 'N') {
+          event.preventDefault();
+          const currentRating = Number(goalData.rating || 3);
+          const newRating = Math.max(1, currentRating - 1);
+          handleGoalDataChange(studentId, goal.id, 'rating', { ...goalData, rating: newRating });
+          return;
+        }
+      }
+
+
       if (key === 'C') {
         increment = alt ? -1 : 1;
         if (goal.type === 'ARTICULATION') fieldToUpdate = 'correct';
@@ -545,7 +562,7 @@ export default function DataEntryPage() {
                 </div>
             </div>
             <p className="text-sm text-muted-foreground">
-                Hotkeys: 1-4 Focus initial slots | A/Alt+A Cycle Students | S/Alt+S Cycle Goals | C/Alt+C Correct/Total | N/Alt+N Incorrect/Stuttered | V/G/P/F/I Prompts | Ctrl+Enter Save | Alt+E Edit Student.
+                Hotkeys: 1-4 Focus initial slots | A/Alt+A Cycle Students | S/Alt+S Cycle Goals | C/Alt+C Correct/Total/Slider+ | N/Alt+N Incorrect/Stuttered/Slider- | V/G/P/F/I Prompts | Ctrl+Enter Save | Alt+E Edit Student.
             </p>
             </CardContent>
         )}
