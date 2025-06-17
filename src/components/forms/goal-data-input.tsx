@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
-import { PROMPT_TYPES, PROMPT_COLORS, PROMPT_ABBREVIATIONS } from '@/lib/constants';
+import { PROMPT_TYPES, PROMPT_COLORS, PROMPT_ABBREVIATIONS, PROMPT_HOTKEY_MAP } from '@/lib/constants';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { TrendingUp, ArrowUp, ArrowDown } from 'lucide-react';
@@ -346,13 +346,38 @@ export default function GoalDataInputComponent({
         {renderInputFields()}
         {showPromptCounters && (
           <FormItem>
-            <FormLabel>Prompt Counts</FormLabel>
-            <div className="flex flex-wrap gap-1 mt-0.5">
-              {PROMPT_TYPES.map(pt => (
-                <Badge key={pt} variant="outline" className="px-1.5 py-0.5 text-xs" style={{ borderColor: PROMPT_COLORS[pt], color: PROMPT_COLORS[pt] }}>
-                  {PROMPT_ABBREVIATIONS[pt]}: {Number(data[pt] || 0)}
-                </Badge>
-              ))}
+            <FormLabel>Prompt Levels</FormLabel>
+            <div className="flex flex-wrap gap-1.5 mt-0.5">
+              {PROMPT_TYPES.map(pt => {
+                const hotkey = Object.keys(PROMPT_HOTKEY_MAP).find(k => PROMPT_HOTKEY_MAP[k] === pt);
+                return (
+                    <Button
+                        key={pt}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="px-2 py-1 h-auto text-xs min-w-[60px] justify-center"
+                        style={{
+                        borderColor: PROMPT_COLORS[pt],
+                        color: PROMPT_COLORS[pt],
+                        // Optional: slight background if count > 0
+                        // backgroundColor: Number(data[pt] || 0) > 0 ? `${PROMPT_COLORS[pt]}1A` : 'transparent' 
+                        }}
+                        onClick={() => {
+                        const currentCount = Number(data[pt] || 0);
+                        handleChange(pt, currentCount + 1);
+                        }}
+                        onContextMenu={(e) => { 
+                            e.preventDefault();
+                            const currentCount = Number(data[pt] || 0);
+                            handleChange(pt, Math.max(0, currentCount - 1));
+                        }}
+                        title={`Click to increment ${pt}, Right-click to decrement. ${hotkey ? `Hotkeys: ${hotkey} / Alt+${hotkey}` : ''}`}
+                    >
+                        {PROMPT_ABBREVIATIONS[pt]}: {Number(data[pt] || 0)}
+                    </Button>
+                );
+            })}
             </div>
           </FormItem>
         )}
