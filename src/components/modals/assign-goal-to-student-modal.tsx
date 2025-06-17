@@ -315,3 +315,4 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
     </GenericModal>
   );
 }
+
