@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useStudentData } from '@/hooks/use-student-data';
-import type { Student, Goal, SessionData, SessionGoalData, PromptType } from '@/lib/types';
+import type { Student, Goal, SessionData, SessionGoalData, PromptType, StudentSessionState } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -25,43 +25,153 @@ import { useErrorLog } from '@/hooks/use-error-log';
 import ConfirmationModal from '@/components/modals/confirmation-modal';
 
 
-interface StudentSessionState {
-  studentId: string;
-  studentName: string;
-  activity: string;
-  notes: string;
-  goalData: Record<string, SessionGoalData['data']>;
-  originalGoalHeaders: Goal[];
-}
-
 export default function DataEntryPage() {
   const {
     students,
     loading: studentsLoading,
     addSession,
     getSessionsForStudent,
-    selectedStudent: studentFromContext,
-    openEditStudentModal
+    selectedStudent: studentFromContext, // Renamed to avoid conflict with local student var
+    openEditStudentModal,
+    // Data Entry Persisted State from Context
+    dataEntrySessionDate,
+    setDataEntrySessionDate,
+    dataEntrySessionTime,
+    setDataEntrySessionTime,
+    dataEntrySelectedStudentIds,
+    setDataEntrySelectedStudentIds,
+    dataEntryStudentSessionStates,
+    setDataEntryStudentSessionStates,
+    dataEntryFocusedStudentSlotIndex,
+    setDataEntryFocusedStudentSlotIndex,
+    dataEntryFocusedGoalIndexByStudentId,
+    setDataEntryFocusedGoalIndexByStudentId,
+    dataEntryAiActivitySuggestions,
+    setDataEntryAiActivitySuggestions,
   } = useStudentData();
-  const [sessionDate, setSessionDate] = useState<Date | undefined>(new Date());
-  const [sessionTime, setSessionTime] = useState<string>(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
-  const [studentSessionStates, setStudentSessionStates] = useState<Record<string, StudentSessionState>>({});
+
+  // Local states not persisted across navigation
   const [isSaving, setIsSaving] = useState(false);
-  const [aiActivitySuggestions, setAiActivitySuggestions] = useState<Record<string, string[]>>({});
-  const [isAiLoading, setIsAiLoading] = useState<Record<string, boolean>>({});
+  const [isAiLoading, setIsAiLoading] = useState<Record<string, boolean>>({}); // Kept local, specific to this page instance
   const { toast } = useToast();
   const { addErrorLog } = useErrorLog();
-
-  const [focusedStudentSlotIndex, setFocusedStudentSlotIndex] = useState<number>(0);
-  const [focusedGoalIndexByStudentId, setFocusedGoalIndexByStudentId] = useState<Record<string, number>>({});
   const [isHeaderCardCollapsed, setIsHeaderCardCollapsed] = useState(false);
   const [isResetConfirmationOpen, setIsResetConfirmationOpen] = useState(false);
+
+  // Initialize date and time from context or set if not already set
+  useEffect(() => {
+    if (dataEntrySessionDate === undefined) {
+      setDataEntrySessionDate(new Date());
+    }
+    if (dataEntrySessionTime === '') {
+      setDataEntrySessionTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+    }
+  }, [dataEntrySessionDate, dataEntrySessionTime, setDataEntrySessionDate, setDataEntrySessionTime]);
+
+  // Initialize selected student IDs from context or set if not already set
+  useEffect(() => {
+    if (!studentsLoading && dataEntrySelectedStudentIds.length === 0 && students.length > 0) {
+      let initialIdToSelect: string | undefined = undefined;
+      if (studentFromContext && students.find(s => s.id === studentFromContext.id)) {
+        initialIdToSelect = studentFromContext.id;
+      }
+      // Optionally select the first student if no context student is available
+      // else if (students.length > 0) { 
+      //   initialIdToSelect = students[0].id;
+      // }
+      if (initialIdToSelect) {
+        setDataEntrySelectedStudentIds([initialIdToSelect]);
+        setDataEntryFocusedStudentSlotIndex(0);
+      }
+    }
+  }, [studentsLoading, students, studentFromContext, dataEntrySelectedStudentIds, setDataEntrySelectedStudentIds, setDataEntryFocusedStudentSlotIndex]);
+
+
+  // Effect to synchronize student session states based on selected students and their goals
+  useEffect(() => {
+    const newContextStudentStates: Record<string, StudentSessionState> = { ...dataEntryStudentSessionStates };
+    let statesChanged = false;
+
+    // Add or update states for currently selected students
+    dataEntrySelectedStudentIds.forEach((id) => {
+      const student = students.find(s => s.id === id);
+      if (student) {
+        const existingState = newContextStudentStates[id];
+        // Check if state needs initialization or if student's goals have changed reference
+        if (!existingState || existingState.originalGoalHeaders !== student.goals) {
+          const initialGoalData: Record<string, SessionGoalData['data']> = {};
+          student.goals.forEach(goal => {
+            initialGoalData[goal.id] = existingState?.goalData?.[goal.id] || JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type]));
+          });
+
+          newContextStudentStates[id] = {
+            studentId: student.id,
+            studentName: student.name,
+            activity: existingState?.activity || '',
+            notes: existingState?.notes || '',
+            goalData: initialGoalData,
+            originalGoalHeaders: student.goals, // Use current goals
+          };
+          statesChanged = true;
+        }
+      }
+    });
+
+    // Remove states for students no longer selected
+    Object.keys(newContextStudentStates).forEach(studentId => {
+      if (!dataEntrySelectedStudentIds.includes(studentId)) {
+        delete newContextStudentStates[studentId];
+        statesChanged = true;
+      }
+    });
+
+    if (statesChanged) {
+      setDataEntryStudentSessionStates(newContextStudentStates);
+    }
+    
+    // Manage focusedGoalIndexByStudentId based on new states
+    const newFocusedGoalIndexes: Record<string, number> = { ...dataEntryFocusedGoalIndexByStudentId };
+    let focusIndexesChanged = false;
+    dataEntrySelectedStudentIds.forEach(id => {
+        const studentState = newContextStudentStates[id];
+        if (studentState) {
+            if (newFocusedGoalIndexes[id] === undefined && studentState.originalGoalHeaders.length > 0) {
+                newFocusedGoalIndexes[id] = 0;
+                focusIndexesChanged = true;
+            } else if (newFocusedGoalIndexes[id] !== undefined && newFocusedGoalIndexes[id] >= studentState.originalGoalHeaders.length) {
+                newFocusedGoalIndexes[id] = Math.max(0, studentState.originalGoalHeaders.length - 1);
+                focusIndexesChanged = true;
+            }
+        } else if (newFocusedGoalIndexes[id] !== undefined) { // student removed from selection
+            delete newFocusedGoalIndexes[id];
+            focusIndexesChanged = true;
+        }
+    });
+     Object.keys(newFocusedGoalIndexes).forEach(studentId => {
+        if (!dataEntrySelectedStudentIds.includes(studentId)) {
+            delete newFocusedGoalIndexes[studentId];
+            focusIndexesChanged = true;
+        }
+    });
+
+
+    if (focusIndexesChanged) {
+        setDataEntryFocusedGoalIndexByStudentId(newFocusedGoalIndexes);
+    }
+
+  }, [
+    dataEntrySelectedStudentIds, 
+    students, 
+    dataEntryStudentSessionStates, 
+    setDataEntryStudentSessionStates,
+    dataEntryFocusedGoalIndexByStudentId,
+    setDataEntryFocusedGoalIndexByStudentId
+  ]);
 
 
   const handleGoalDataChange = useCallback(
     (studentId: string, goalId: string, updatedFieldName: string, newData: SessionGoalData['data']) => {
-      setStudentSessionStates(prevStates => {
+      setDataEntryStudentSessionStates(prevStates => {
         const studentState = prevStates[studentId];
         if (!studentState) return prevStates;
 
@@ -76,11 +186,9 @@ export default function DataEntryPage() {
 
           if (updatedFieldName === 'stutteredSyllables') {
             newTotalSyllables = Math.max(newTotalSyllables, newStutteredSyllables);
-          }
-          else if (updatedFieldName === 'totalSyllables') {
+          } else if (updatedFieldName === 'totalSyllables') {
             newStutteredSyllables = Math.min(newStutteredSyllables, newTotalSyllables);
           }
-
           processedData.totalSyllables = newTotalSyllables;
           processedData.stutteredSyllables = newStutteredSyllables;
         }
@@ -97,36 +205,37 @@ export default function DataEntryPage() {
         };
       });
     },
-    []
+    [setDataEntryStudentSessionStates]
   );
 
   const getCurrentFocusedGoalInfo = useCallback(() => {
-    if (selectedStudentIds.length === 0 || focusedStudentSlotIndex >= selectedStudentIds.length) {
+    if (dataEntrySelectedStudentIds.length === 0 || dataEntryFocusedStudentSlotIndex >= dataEntrySelectedStudentIds.length) {
       return null;
     }
-    const studentId = selectedStudentIds[focusedStudentSlotIndex];
-    const studentState = studentSessionStates[studentId];
+    const studentId = dataEntrySelectedStudentIds[dataEntryFocusedStudentSlotIndex];
+    const studentState = dataEntryStudentSessionStates[studentId];
     if (!studentState || !studentState.originalGoalHeaders || studentState.originalGoalHeaders.length === 0) {
       return { studentId, studentState: studentState || null, goal: null, goalData: null, goalIndex: -1 };
     }
-    const goalIndex = focusedGoalIndexByStudentId[studentId] ?? 0;
+    const goalIndex = dataEntryFocusedGoalIndexByStudentId[studentId] ?? 0;
     if (goalIndex >= studentState.originalGoalHeaders.length) {
       return { studentId, studentState, goal: null, goalData: null, goalIndex: -1 };
     }
     const goal = studentState.originalGoalHeaders[goalIndex];
     const goalData = studentState.goalData[goal.id];
     return { studentId, studentState, goal, goalData, goalIndex };
-  }, [selectedStudentIds, focusedStudentSlotIndex, studentSessionStates, focusedGoalIndexByStudentId]);
+  }, [dataEntrySelectedStudentIds, dataEntryFocusedStudentSlotIndex, dataEntryStudentSessionStates, dataEntryFocusedGoalIndexByStudentId]);
+
 
   const handleSaveSession = useCallback(async () => {
-    if (!sessionDate || selectedStudentIds.length === 0) {
+    if (!dataEntrySessionDate || dataEntrySelectedStudentIds.length === 0) {
       toast({ title: "Error", description: "Please select a date and at least one student.", variant: "destructive"});
       return;
     }
     setIsSaving(true);
     let sessionsSavedCount = 0;
-    for (const studentId of selectedStudentIds) {
-      const state = studentSessionStates[studentId];
+    for (const studentId of dataEntrySelectedStudentIds) {
+      const state = dataEntryStudentSessionStates[studentId];
       if (state) {
         const sessionGoals: SessionGoalData[] = state.originalGoalHeaders.map(goal => ({
           goalId: goal.id,
@@ -138,8 +247,8 @@ export default function DataEntryPage() {
         const session: Omit<SessionData, 'sessionId'> = {
           studentId: state.studentId,
           studentName: state.studentName,
-          date: sessionDate.toISOString(),
-          time: sessionTime,
+          date: dataEntrySessionDate.toISOString(),
+          time: dataEntrySessionTime,
           activity: state.activity,
           notes: state.notes,
           goals: sessionGoals,
@@ -152,93 +261,34 @@ export default function DataEntryPage() {
     setIsSaving(false);
     if (sessionsSavedCount > 0) {
         toast({ title: "Success", description: `${sessionsSavedCount} session(s) saved.`});
-        const newStates = {...studentSessionStates};
-        selectedStudentIds.forEach(id => {
+        // Reset only activity, notes, and goalData for the saved students in context
+        const newStates = {...dataEntryStudentSessionStates};
+        dataEntrySelectedStudentIds.forEach(id => {
             if(newStates[id]) {
                 newStates[id].activity = '';
                 newStates[id].notes = '';
                 const initialGoalData: Record<string, SessionGoalData['data']> = {};
-                const student = students.find(s => s.id === id);
+                const student = students.find(s => s.id === id); // Use main students list for goal types
                 student?.goals.forEach(goal => {
                   initialGoalData[goal.id] = JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type]));
                 });
                 newStates[id].goalData = initialGoalData;
             }
         });
-        setStudentSessionStates(newStates);
+        setDataEntryStudentSessionStates(newStates);
 
     } else {
         toast({ title: "Info", description: "No sessions were saved. Ensure students have data.", variant: "default"});
     }
-  }, [sessionDate, selectedStudentIds, studentSessionStates, students, addSession, sessionTime, toast]);
+  }, [dataEntrySessionDate, dataEntrySelectedStudentIds, dataEntryStudentSessionStates, students, addSession, dataEntrySessionTime, toast, setDataEntryStudentSessionStates]);
 
 
  useEffect(() => {
-    if (!studentsLoading && selectedStudentIds.length === 0) {
-      let initialIdToSelect: string | undefined = undefined;
-      if (studentFromContext && students.find(s => s.id === studentFromContext.id)) {
-        initialIdToSelect = studentFromContext.id;
-      }
-      if (initialIdToSelect) {
-        setSelectedStudentIds([initialIdToSelect]);
-        setFocusedStudentSlotIndex(0);
-      } else {
-        setSelectedStudentIds([]);
-      }
-    }
-  }, [studentsLoading, students, studentFromContext, selectedStudentIds.length, setFocusedStudentSlotIndex]);
-
-
-  useEffect(() => {
-    const newStates: Record<string, StudentSessionState> = {};
-    const newFocusedGoalIndexes: Record<string, number> = { ...focusedGoalIndexByStudentId };
-
-    selectedStudentIds.forEach((id, idx) => {
-      const student = students.find(s => s.id === id);
-      if (student) {
-        const existingState = studentSessionStates[id];
-        const initialGoalData: Record<string, SessionGoalData['data']> = {};
-
-        const goalsToUse = existingState?.originalGoalHeaders &&
-                           existingState.originalGoalHeaders.length > 0 &&
-                           existingState.originalGoalHeaders.every(g => student.goals.some(sg => sg.id === g.id))
-                           ? existingState.originalGoalHeaders
-                           : student.goals;
-
-        goalsToUse.forEach(goal => {
-          initialGoalData[goal.id] = existingState?.goalData?.[goal.id] || JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type]));
-        });
-
-        newStates[id] = {
-          studentId: student.id,
-          studentName: student.name,
-          activity: existingState?.activity || '',
-          notes: existingState?.notes || '',
-          goalData: initialGoalData,
-          originalGoalHeaders: goalsToUse,
-        };
-
-        if (newFocusedGoalIndexes[id] === undefined ) {
-            newFocusedGoalIndexes[id] = 0;
-        } else if (existingState && focusedGoalIndexByStudentId[id] !== undefined) {
-            newFocusedGoalIndexes[id] = focusedGoalIndexByStudentId[id];
-        } else {
-             newFocusedGoalIndexes[id] = 0;
-        }
-      }
-    });
-    setStudentSessionStates(newStates);
-    setFocusedGoalIndexByStudentId(newFocusedGoalIndexes);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedStudentIds, students, focusedStudentSlotIndex]);
-
-
-  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement;
 
       if (event.ctrlKey && event.key === 'Enter') {
-        if (selectedStudentIds.length > 0) {
+        if (dataEntrySelectedStudentIds.length > 0) {
           event.preventDefault();
           handleSaveSession();
         }
@@ -254,8 +304,8 @@ export default function DataEntryPage() {
 
       if (alt && key === 'E') {
         event.preventDefault();
-        if (selectedStudentIds.length > 0 && focusedStudentSlotIndex < selectedStudentIds.length) {
-          const focusedStudentId = selectedStudentIds[focusedStudentSlotIndex];
+        if (dataEntrySelectedStudentIds.length > 0 && dataEntryFocusedStudentSlotIndex < dataEntrySelectedStudentIds.length) {
+          const focusedStudentId = dataEntrySelectedStudentIds[dataEntryFocusedStudentSlotIndex];
           const studentToEdit = students.find(s => s.id === focusedStudentId);
           if (studentToEdit) {
             openEditStudentModal(studentToEdit);
@@ -270,18 +320,18 @@ export default function DataEntryPage() {
       if (!alt && key.match(/^[1-4]$/)) {
         event.preventDefault();
         const slotIndex = parseInt(key, 10) - 1;
-        if (slotIndex < selectedStudentIds.length) {
-          setFocusedStudentSlotIndex(slotIndex);
+        if (slotIndex < dataEntrySelectedStudentIds.length) {
+          setDataEntryFocusedStudentSlotIndex(slotIndex);
         }
         return;
       }
 
-      if (key === 'A' && selectedStudentIds.length > 0) {
+      if (key === 'A' && dataEntrySelectedStudentIds.length > 0) {
         event.preventDefault();
         if (alt) {
-          setFocusedStudentSlotIndex(prev => (prev - 1 + selectedStudentIds.length) % selectedStudentIds.length);
+          setDataEntryFocusedStudentSlotIndex(prev => (prev - 1 + dataEntrySelectedStudentIds.length) % dataEntrySelectedStudentIds.length);
         } else {
-          setFocusedStudentSlotIndex(prev => (prev + 1) % selectedStudentIds.length);
+          setDataEntryFocusedStudentSlotIndex(prev => (prev + 1) % dataEntrySelectedStudentIds.length);
         }
         return;
       }
@@ -295,7 +345,7 @@ export default function DataEntryPage() {
         const numGoals = studentState.originalGoalHeaders.length;
         if (numGoals > 0) {
           const nextIndex = alt ? (goalIndex - 1 + numGoals) % numGoals : (goalIndex + 1) % numGoals;
-          setFocusedGoalIndexByStudentId(prev => ({ ...prev, [studentId]: nextIndex }));
+          setDataEntryFocusedGoalIndexByStudentId(prev => ({ ...prev, [studentId]: nextIndex }));
         }
         return;
       }
@@ -362,12 +412,24 @@ export default function DataEntryPage() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedStudentIds, studentSessionStates, focusedStudentSlotIndex, focusedGoalIndexByStudentId, handleGoalDataChange, getCurrentFocusedGoalInfo, handleSaveSession, students, openEditStudentModal]);
+  }, [
+    dataEntrySelectedStudentIds, 
+    dataEntryStudentSessionStates, 
+    dataEntryFocusedStudentSlotIndex, 
+    dataEntryFocusedGoalIndexByStudentId, 
+    handleGoalDataChange, 
+    getCurrentFocusedGoalInfo, 
+    handleSaveSession, 
+    students, 
+    openEditStudentModal,
+    setDataEntryFocusedStudentSlotIndex,
+    setDataEntryFocusedGoalIndexByStudentId
+  ]);
 
 
   useEffect(() => {
-    if (selectedStudentIds.length > 0 && focusedStudentSlotIndex >= 0 && focusedStudentSlotIndex < selectedStudentIds.length) {
-      const studentCardId = `student-card-slot-${focusedStudentSlotIndex}`;
+    if (dataEntrySelectedStudentIds.length > 0 && dataEntryFocusedStudentSlotIndex >= 0 && dataEntryFocusedStudentSlotIndex < dataEntrySelectedStudentIds.length) {
+      const studentCardId = `student-card-slot-${dataEntryFocusedStudentSlotIndex}`;
       const studentCardElement = document.getElementById(studentCardId);
       if (studentCardElement) {
         studentCardElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
@@ -386,64 +448,65 @@ export default function DataEntryPage() {
         }, 50); 
       }
     }
-  }, [selectedStudentIds, focusedStudentSlotIndex, focusedGoalIndexByStudentId, getCurrentFocusedGoalInfo]);
+  }, [dataEntrySelectedStudentIds, dataEntryFocusedStudentSlotIndex, dataEntryFocusedGoalIndexByStudentId, getCurrentFocusedGoalInfo]);
 
 
   const handleStudentSelect = (studentId: string, index: number) => {
-    setSelectedStudentIds(prev => {
+    setDataEntrySelectedStudentIds(prev => {
       const newSelection = [...prev];
       newSelection[index] = studentId;
       const uniqueSelection = Array.from(new Set(newSelection));
       return uniqueSelection;
     });
-    setFocusedStudentSlotIndex(index);
+    setDataEntryFocusedStudentSlotIndex(index);
   };
 
   const addStudentSlot = () => {
-    const availableStudent = students.find(s => !selectedStudentIds.includes(s.id));
+    const availableStudent = students.find(s => !dataEntrySelectedStudentIds.includes(s.id));
     if (availableStudent) {
-      setSelectedStudentIds(prev => [...prev, availableStudent.id]);
-      setFocusedStudentSlotIndex(selectedStudentIds.length); 
+      setDataEntrySelectedStudentIds(prev => [...prev, availableStudent.id]);
+      setDataEntryFocusedStudentSlotIndex(dataEntrySelectedStudentIds.length); 
     } else {
       toast({ title: "Info", description: "No more unique available students to add, or all students are already in slots.", variant: "default" });
     }
   };
 
   const removeStudentSlot = (indexToRemove: number) => {
-    const currentFocusedId = selectedStudentIds[focusedStudentSlotIndex];
-    const studentIdToRemove = selectedStudentIds[indexToRemove];
+    const currentFocusedId = dataEntrySelectedStudentIds[dataEntryFocusedStudentSlotIndex];
+    const studentIdToRemove = dataEntrySelectedStudentIds[indexToRemove];
 
-    const newSelectedIds = selectedStudentIds.filter((_, i) => i !== indexToRemove);
-    setSelectedStudentIds(newSelectedIds);
+    const newSelectedIds = dataEntrySelectedStudentIds.filter((_, i) => i !== indexToRemove);
+    setDataEntrySelectedStudentIds(newSelectedIds);
 
-    setStudentSessionStates(prevStates => {
-      const newStates = {...prevStates};
-      delete newStates[studentIdToRemove];
-      return newStates;
-    });
+    // StudentSessionState is now in context, this will trigger its update via useEffect
+    // setDataEntryStudentSessionStates(prevStates => {
+    //   const newStates = {...prevStates};
+    //   delete newStates[studentIdToRemove];
+    //   return newStates;
+    // });
 
     if (newSelectedIds.length === 0) {
-        setFocusedStudentSlotIndex(0);
+        setDataEntryFocusedStudentSlotIndex(0);
     } else {
         let newFocusIndex = newSelectedIds.indexOf(currentFocusedId);
         if (newFocusIndex === -1) { 
             newFocusIndex = Math.min(indexToRemove, newSelectedIds.length - 1);
             newFocusIndex = Math.max(0, newFocusIndex); 
         }
-        setFocusedStudentSlotIndex(newFocusIndex);
+        setDataEntryFocusedStudentSlotIndex(newFocusIndex);
     }
   };
 
 
   const handleInputChange = (studentId: string, field: 'activity' | 'notes', value: string) => {
-    setStudentSessionStates(prev => ({
+    setDataEntryStudentSessionStates(prev => ({
       ...prev,
       [studentId]: { ...prev[studentId], [field]: value },
     }));
   };
 
   const handleMoveGoal = useCallback((studentId: string, goalId: string, direction: 'up' | 'down') => {
-    setStudentSessionStates(prevStates => {
+    setDataEntryStudentSessionStates(prevStates => {
       const studentState = prevStates[studentId];
       if (!studentState) return prevStates;
 
@@ -459,7 +522,7 @@ export default function DataEntryPage() {
       const [movedGoal] = goals.splice(goalIndex, 1);
       goals.splice(newIndex, 0, movedGoal);
 
-      setFocusedGoalIndexByStudentId(prevFocused => {
+      setDataEntryFocusedGoalIndexByStudentId(prevFocused => {
         const currentFocusedIdx = prevFocused[studentId] ?? 0;
         let newFocusedIdx = currentFocusedIdx;
 
@@ -481,10 +544,10 @@ export default function DataEntryPage() {
         },
       };
     });
-  }, []);
+  }, [setDataEntryStudentSessionStates, setDataEntryFocusedGoalIndexByStudentId]);
 
   const fetchAiActivitySuggestions = async (studentId: string) => {
-    const studentState = studentSessionStates[studentId];
+    const studentState = dataEntryStudentSessionStates[studentId];
     if (!studentState || studentState.originalGoalHeaders.length === 0) {
       toast({ title: "Info", description: "Student has no goals assigned or data is missing.", variant: "default" });
       return;
@@ -501,7 +564,7 @@ export default function DataEntryPage() {
         studentProgress: studentProgressSummary,
         sessionHistory: sessionHistorySummary,
       });
-      setAiActivitySuggestions(prev => ({ ...prev, [studentId]: result.suggestions }));
+      setDataEntryAiActivitySuggestions(prev => ({ ...prev, [studentId]: result.suggestions }));
       toast({ title: "AI Suggestions", description: `Found ${result.suggestions.length} activities. Reasoning: ${result.reasoning}` });
     } catch (error: any) {
       console.error("Error fetching AI activity suggestions:", error);
@@ -513,12 +576,12 @@ export default function DataEntryPage() {
   };
 
   const availableStudentsForDropdown = useMemo(() => {
-    return students.filter(s => !selectedStudentIds.includes(s.id));
-  }, [students, selectedStudentIds]);
+    return students.filter(s => !dataEntrySelectedStudentIds.includes(s.id));
+  }, [students, dataEntrySelectedStudentIds]);
 
 
   const handleOpenResetConfirmation = () => {
-    if (selectedStudentIds.length === 0) {
+    if (dataEntrySelectedStudentIds.length === 0) {
       toast({ title: "Info", description: "No students selected to reset data for.", variant: "default" });
       return;
     }
@@ -526,15 +589,14 @@ export default function DataEntryPage() {
   };
 
   const handleConfirmResetSession = () => {
-    const newStates = { ...studentSessionStates };
-    selectedStudentIds.forEach(id => {
+    const newStates = { ...dataEntryStudentSessionStates };
+    dataEntrySelectedStudentIds.forEach(id => {
       if (newStates[id]) {
         newStates[id].activity = '';
         newStates[id].notes = '';
-        const student = students.find(s => s.id === id);
-        if (student) {
+        // const student = students.find(s => s.id === id); // Not needed if originalGoalHeaders is from context
+        if (newStates[id].originalGoalHeaders) {
           const initialGoalData: Record<string, SessionGoalData['data']> = {};
-          // Use originalGoalHeaders from the current state for this student to reset accurately
           newStates[id].originalGoalHeaders.forEach(goal => {
             initialGoalData[goal.id] = JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type]));
           });
@@ -542,7 +604,7 @@ export default function DataEntryPage() {
         }
       }
     });
-    setStudentSessionStates(newStates);
+    setDataEntryStudentSessionStates(newStates); // Update context
     toast({ title: "Data Reset", description: "Current unsaved data for selected students has been reset." });
     setIsResetConfirmationOpen(false);
   };
@@ -593,33 +655,33 @@ export default function DataEntryPage() {
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
                 <div className="w-full sm:w-auto">
                 <Label htmlFor="sessionDate" className="block text-sm font-medium mb-1">Session Date</Label>
-                <DatePicker date={sessionDate} setDate={setSessionDate} />
+                <DatePicker date={dataEntrySessionDate} setDate={setDataEntrySessionDate} />
                 </div>
                 <div className="w-full sm:w-auto">
                     <Label htmlFor="sessionTime" className="block text-sm font-medium mb-1">Session Time</Label>
                     <Input
                         id="sessionTime"
                         type="time"
-                        value={sessionTime}
-                        onChange={(e) => setSessionTime(e.target.value)}
+                        value={dataEntrySessionTime}
+                        onChange={(e) => setDataEntrySessionTime(e.target.value)}
                         className="w-full sm:w-[150px]"
                     />
                 </div>
             </div>
             <p className="text-sm text-muted-foreground">
-                Hotkeys: 1-4 Focus initial slots | A/Alt+A Cycle Students | S/Alt+S Cycle Goals | C/Alt+C Correct/Total/Slider+ | N/Alt+N Incorrect/Stuttered/Slider- | V/G/P/F/I Prompts | Ctrl+Enter Save | Alt+E Edit Student.
+                Hotkeys: 1-4 Focus initial slots | A/Alt+A Cycle Students | S/Alt+S Cycle Goals | C/Alt+C Correct/Total/Slider+ | N/Alt+N Incorrect/Stuttered/Slider- | V/G/P/F/I/D Prompts | Ctrl+Enter Save | Alt+E Edit Student.
             </p>
             </CardContent>
         )}
       </Card>
 
       <div className="flex flex-row gap-6 items-start overflow-x-auto py-4 px-1 flex-grow min-h-0">
-        {selectedStudentIds.map((studentId, slotIndex) => {
+        {dataEntrySelectedStudentIds.map((studentId, slotIndex) => {
           const student = students.find(s => s.id === studentId);
-          const state = studentSessionStates[studentId];
+          const state = dataEntryStudentSessionStates[studentId];
           if (!student || !state) return null;
 
-          const isStudentFocused = slotIndex === focusedStudentSlotIndex;
+          const isStudentFocused = slotIndex === dataEntryFocusedStudentSlotIndex;
           const goalsToDisplay = state.originalGoalHeaders;
 
           return (
@@ -631,7 +693,7 @@ export default function DataEntryPage() {
                 isStudentFocused ? 'w-[450px]' : 'w-[350px]', 
                 isStudentFocused && 'ring-2 ring-primary ring-offset-2 shadow-xl'
               )}
-              onClick={() => setFocusedStudentSlotIndex(slotIndex)}
+              onClick={() => setDataEntryFocusedStudentSlotIndex(slotIndex)}
             >
               <CardHeader className="bg-muted/50 p-3">
                 <div className="flex items-center justify-between">
@@ -654,7 +716,7 @@ export default function DataEntryPage() {
                         <SelectValue placeholder="Select Student" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value={student.id} key={student.id} disabled={selectedStudentIds.includes(student.id) && student.id !== studentId}>
+                        <SelectItem value={student.id} key={student.id} disabled={dataEntrySelectedStudentIds.includes(student.id) && student.id !== studentId}>
                           {student.name}
                         </SelectItem>
                         {availableStudentsForDropdown.map(s => (
@@ -666,7 +728,7 @@ export default function DataEntryPage() {
                     </Select>
                   </div>
                   <div className="flex items-center">
-                    {selectedStudentIds.length > 0 && (
+                    {dataEntrySelectedStudentIds.length > 0 && (
                        <Button variant="ghost" size="icon" onClick={(e) => {e.stopPropagation(); removeStudentSlot(slotIndex);}} className="h-8 w-8" title="Remove Student Slot">
                         <XCircle className="h-5 w-5 text-destructive" />
                       </Button>
@@ -691,7 +753,7 @@ export default function DataEntryPage() {
                   ) : (
                     <>
                       {goalsToDisplay.map((goal, goalIdx) => {
-                        const isGoalFocused = isStudentFocused && (focusedGoalIndexByStudentId[studentId] ?? 0) === goalIdx;
+                        const isGoalFocused = isStudentFocused && (dataEntryFocusedGoalIndexByStudentId[studentId] ?? 0) === goalIdx;
                         return (
                           <GoalDataInputComponent
                             key={goal.id}
@@ -730,11 +792,11 @@ export default function DataEntryPage() {
                     >
                       {isAiLoading[studentId] ? 'Getting Suggestions...' : 'Get AI Activity Suggestions'}
                     </Button>
-                    {aiActivitySuggestions[studentId] && aiActivitySuggestions[studentId].length > 0 && (
+                    {dataEntryAiActivitySuggestions[studentId] && dataEntryAiActivitySuggestions[studentId].length > 0 && (
                       <div className="p-2 border rounded-md bg-accent/30">
                         <h4 className="text-xs font-semibold mb-1">Suggested Activities:</h4>
                         <ul className="list-disc list-inside text-xs space-y-0.5">
-                          {aiActivitySuggestions[studentId].map((sugg, i) => <li key={i}>{sugg}</li>)}
+                          {dataEntryAiActivitySuggestions[studentId].map((sugg, i) => <li key={i}>{sugg}</li>)}
                         </ul>
                       </div>
                     )}
@@ -755,7 +817,7 @@ export default function DataEntryPage() {
         </Button>
       </div>
 
-      {selectedStudentIds.length > 0 && (
+      {dataEntrySelectedStudentIds.length > 0 && (
         <div className="mt-auto flex-shrink-0 flex justify-end items-center gap-2 py-4 border-t">
            <Button variant="outline" onClick={handleOpenResetConfirmation} disabled={isSaving} size="lg">
             <RotateCcw className="mr-2 h-5 w-5" />
@@ -767,7 +829,7 @@ export default function DataEntryPage() {
           </Button>
         </div>
       )}
-       {selectedStudentIds.length === 0 && !studentsLoading && (
+       {dataEntrySelectedStudentIds.length === 0 && !studentsLoading && (
           <Card className="mt-6 flex-shrink-0">
             <CardContent className="p-8 text-center text-muted-foreground">
                 <Info className="h-10 w-10 mx-auto mb-3 text-primary"/>

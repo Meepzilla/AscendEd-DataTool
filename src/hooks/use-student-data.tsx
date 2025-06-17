@@ -4,7 +4,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, onSnapshot, serverTimestamp, Timestamp, writeBatch } from 'firebase/firestore';
 import { db as firestoreDbModule } from '@/lib/firebase/config';
-import type { Student, Goal, GoalTemplate, SessionData, User, Toast } from '@/lib/types';
+import type { Student, Goal, GoalTemplate, SessionData, User, Toast, StudentSessionState } from '@/lib/types'; // Added StudentSessionState
 import { useAuth } from './use-auth';
 import { DEFAULT_GOAL_TEMPLATES } from '@/lib/constants';
 import { generateUUID } from '@/lib/helpers';
@@ -46,41 +46,50 @@ interface StudentDataContextType {
   deleteSession: (sessionId: string) => Promise<void>;
   getSessionsForStudent: (studentId: string) => SessionData[];
 
+  // Modal states
   isAddStudentModalOpen: boolean;
   openAddStudentModal: () => void;
   closeAddStudentModal: () => void;
-
   editingStudent: Student | null;
   openEditStudentModal: (student: Student) => void;
   closeEditStudentModal: () => void;
-
   deletingStudent: Student | null;
   openDeleteStudentModal: (student: Student | null) => void; 
   closeDeleteStudentModal: () => void;
-
   isAddGoalTemplateModalOpen: boolean;
   openAddGoalTemplateModal: () => void;
   closeAddGoalTemplateModal: () => void;
-
   editingGoalTemplate: GoalTemplate | null;
   openEditGoalTemplateModal: (template: GoalTemplate) => void;
   closeEditGoalTemplateModal: () => void;
-
   deletingGoalTemplate: GoalTemplate | null;
   openDeleteGoalTemplateModal: (template: GoalTemplate | null) => void; 
   closeDeleteGoalTemplateModal: () => void;
-
   editingSession: SessionData | null;
   openEditSessionModal: (session: SessionData) => void;
   closeEditSessionModal: () => void;
-
   deletingSession: SessionData | null;
   openDeleteSessionModal: (session: SessionData | null) => void; 
   closeDeleteSessionModal: () => void;
-
   editingAssignedGoal: { studentId: string; goal: Goal } | null;
   openEditAssignedGoalModal: (studentId: string, goal: Goal) => void;
   closeEditAssignedGoalModal: () => void;
+
+  // Data Entry Page Persisted State
+  dataEntrySessionDate: Date | undefined;
+  setDataEntrySessionDate: (date: Date | undefined) => void;
+  dataEntrySessionTime: string;
+  setDataEntrySessionTime: (time: string) => void;
+  dataEntrySelectedStudentIds: string[];
+  setDataEntrySelectedStudentIds: (ids: string[]) => void;
+  dataEntryStudentSessionStates: Record<string, StudentSessionState>;
+  setDataEntryStudentSessionStates: (states: Record<string, StudentSessionState>) => void;
+  dataEntryFocusedStudentSlotIndex: number;
+  setDataEntryFocusedStudentSlotIndex: (index: number) => void;
+  dataEntryFocusedGoalIndexByStudentId: Record<string, number>;
+  setDataEntryFocusedGoalIndexByStudentId: (indexes: Record<string, number>) => void;
+  dataEntryAiActivitySuggestions: Record<string, string[]>;
+  setDataEntryAiActivitySuggestions: (suggestions: Record<string, string[]>) => void;
 }
 
 const StudentDataContext = createContext<StudentDataContextType | undefined>(undefined);
@@ -101,6 +110,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const isFirebaseDBAvailable = isFirebaseAuthAvailable && !!firestoreDbModule;
   const APP_ID = 'default-app-id';
 
+  // Modal states
   const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [deletingStudent, setDeletingStudent] = useState<Student | null>(null);
@@ -110,6 +120,15 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [editingSession, setEditingSession] = useState<SessionData | null>(null);
   const [deletingSession, setDeletingSession] = useState<SessionData | null>(null);
   const [editingAssignedGoal, setEditingAssignedGoal] = useState<{ studentId: string; goal: Goal } | null>(null);
+
+  // Data Entry Page Persisted State
+  const [dataEntrySessionDate, setDataEntrySessionDateState] = useState<Date | undefined>(undefined);
+  const [dataEntrySessionTime, setDataEntrySessionTimeState] = useState<string>('');
+  const [dataEntrySelectedStudentIds, setDataEntrySelectedStudentIdsState] = useState<string[]>([]);
+  const [dataEntryStudentSessionStates, setDataEntryStudentSessionStatesState] = useState<Record<string, StudentSessionState>>({});
+  const [dataEntryFocusedStudentSlotIndex, setDataEntryFocusedStudentSlotIndexState] = useState<number>(0);
+  const [dataEntryFocusedGoalIndexByStudentId, setDataEntryFocusedGoalIndexByStudentIdState] = useState<Record<string, number>>({});
+  const [dataEntryAiActivitySuggestions, setDataEntryAiActivitySuggestionsState] = useState<Record<string, string[]>>({});
 
 
   const safeToast = useCallback((options: Omit<Toast, 'id'>) => {
@@ -123,7 +142,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       const localDefaultTemplates = DEFAULT_GOAL_TEMPLATES.map(t => ({
         ...t,
         id: generateUUID(),
-        createdAt: new Date(), // Store as Date object for local
+        createdAt: new Date(), 
         userId: currentUser?.uid || 'local-user',
       }));
       setGoalTemplatesState(localDefaultTemplates);
@@ -145,10 +164,9 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   useEffect(() => {
     if (!isFirebaseDBAvailable && !authLoading && currentUser) {
       try {
-        // Ensure createdAt is stored as ISO string for GoalTemplates in localStorage
         const storableTemplates = goalTemplatesState.map(t => ({
           ...t,
-          createdAt: t.createdAt instanceof Date ? t.createdAt.toISOString() : t.createdAt, // Timestamps won't exist in local-only
+          createdAt: t.createdAt instanceof Date ? t.createdAt.toISOString() : t.createdAt, 
         }));
         localStorage.setItem(LOCAL_STORAGE_GOAL_TEMPLATES_KEY, JSON.stringify(storableTemplates));
       } catch (e) {
@@ -213,6 +231,9 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setEditingAssignedGoal(null);
     setIsAddStudentModalOpen(false);
     setIsAddGoalTemplateModalOpen(false);
+    // Do NOT reset Data Entry page states here on currentUser change,
+    // as that would clear data if user logs out and back in during same browser session.
+    // Page itself can decide if it needs to clear based on new user if necessary.
   }, [currentUser]);
 
 
@@ -227,6 +248,14 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       setGoalTemplatesState([]);
       setSessionsState([]);
       setSelectedStudentState(null);
+      // Reset Data Entry states if user logs out completely
+      setDataEntrySessionDateState(undefined);
+      setDataEntrySessionTimeState('');
+      setDataEntrySelectedStudentIdsState([]);
+      setDataEntryStudentSessionStatesState({});
+      setDataEntryFocusedStudentSlotIndexState(0);
+      setDataEntryFocusedGoalIndexByStudentIdState({});
+      setDataEntryAiActivitySuggestionsState({});
       setLoading(false);
       setError(null);
       return;
@@ -270,7 +299,6 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       unsubscribeTemplates = onSnapshot(templateQuery, async (snapshot) => {
         const templateData = snapshot.docs.map(docSnap => {
             const data = docSnap.data();
-            // Convert Firestore Timestamp to Date for GoalTemplate.createdAt
             return { id: docSnap.id, ...data, createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(data.createdAt) } as GoalTemplate;
         });
         setGoalTemplatesState(templateData.sort((a,b) => a.name.localeCompare(b.name)));
@@ -327,7 +355,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
           addErrorLog({ message: 'Error loading data from localStorage.', source: 'useStudentData.initLocal', details: (e as Error).message, type: 'error' });
           setStudentsState([]);
           setSessionsState([]);
-          seedLocalDefaultTemplates(); // Seed defaults if localStorage parsing fails
+          seedLocalDefaultTemplates(); 
       }
       setLoading(false);
     }
@@ -479,13 +507,13 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       addErrorLog({ message: 'Attempted to add goal template without authenticated user.', source: 'useStudentData.addGoalTemplate', type: 'error' });
       return null;
     }
-    const fullTemplateDataFirebase = { // For Firebase, use serverTimestamp
+    const fullTemplateDataFirebase = { 
         ...templateData,
         userId: currentUser.uid,
         createdAt: serverTimestamp(), 
         isDefault: false,
     };
-    const fullTemplateDataLocal = { // For Local, use JS Date
+    const fullTemplateDataLocal = { 
         ...templateData,
         userId: currentUser.uid,
         createdAt: new Date(), 
@@ -521,12 +549,11 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     if (isFirebaseDBAvailable && firestoreDbModule) {
       try {
         const updateData: Partial<GoalTemplate> = {...data, userId: currentUser.uid};
-        // Ensure createdAt is not overwritten with local Date if it's a server timestamp
         if (data.createdAt && !(data.createdAt instanceof Timestamp)) {
             delete updateData.createdAt; 
         }
         if (data.sessionTargetValue === undefined || data.sessionTargetValue === null || String(data.sessionTargetValue).trim() === '') {
-          updateData.sessionTargetValue = undefined; // Or use delete if your Firestore rules allow
+          updateData.sessionTargetValue = undefined; 
         } else if (typeof data.sessionTargetValue === 'string') {
             updateData.sessionTargetValue = Number(data.sessionTargetValue);
         }
@@ -648,6 +675,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return sessionsState.filter(s => s.studentId === studentId);
   }, [sessionsState]);
 
+  // Modal action callbacks
   const setSelectedStudentCb = useCallback((student: Student | null) => setSelectedStudentState(student), []);
   const openAddStudentModal = useCallback(() => setIsAddStudentModalOpen(true), []);
   const closeAddStudentModal = useCallback(() => setIsAddStudentModalOpen(false), []);
@@ -667,6 +695,15 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const closeDeleteSessionModal = useCallback(() => setDeletingSession(null), []);
   const openEditAssignedGoalModal = useCallback((studentId: string, goal: Goal) => setEditingAssignedGoal({ studentId, goal }), []);
   const closeEditAssignedGoalModal = useCallback(() => setEditingAssignedGoal(null), []);
+  
+  // Data Entry context setters
+  const setDataEntrySessionDate = useCallback((date: Date | undefined) => setDataEntrySessionDateState(date), []);
+  const setDataEntrySessionTime = useCallback((time: string) => setDataEntrySessionTimeState(time), []);
+  const setDataEntrySelectedStudentIds = useCallback((ids: string[]) => setDataEntrySelectedStudentIdsState(ids), []);
+  const setDataEntryStudentSessionStates = useCallback((states: Record<string, StudentSessionState>) => setDataEntryStudentSessionStatesState(states), []);
+  const setDataEntryFocusedStudentSlotIndex = useCallback((index: number) => setDataEntryFocusedStudentSlotIndexState(index), []);
+  const setDataEntryFocusedGoalIndexByStudentId = useCallback((indexes: Record<string, number>) => setDataEntryFocusedGoalIndexByStudentIdState(indexes), []);
+  const setDataEntryAiActivitySuggestions = useCallback((suggestions: Record<string, string[]>) => setDataEntryAiActivitySuggestionsState(suggestions), []);
 
 
   const contextValue = useMemo(() => ({
@@ -688,6 +725,14 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     editingSession, openEditSessionModal, closeEditSessionModal,
     deletingSession, openDeleteSessionModal, closeDeleteSessionModal,
     editingAssignedGoal, openEditAssignedGoalModal, closeEditAssignedGoalModal,
+    // Data Entry page state
+    dataEntrySessionDate, setDataEntrySessionDate,
+    dataEntrySessionTime, setDataEntrySessionTime,
+    dataEntrySelectedStudentIds, setDataEntrySelectedStudentIds,
+    dataEntryStudentSessionStates, setDataEntryStudentSessionStates,
+    dataEntryFocusedStudentSlotIndex, setDataEntryFocusedStudentSlotIndex,
+    dataEntryFocusedGoalIndexByStudentId, setDataEntryFocusedGoalIndexByStudentId,
+    dataEntryAiActivitySuggestions, setDataEntryAiActivitySuggestions,
   }), [
     studentsState, goalTemplatesState, sessionsState, selectedStudent, setSelectedStudentCb, loading, error, isFirebaseDBAvailable,
     addStudent, updateStudent, deleteStudent, assignGoalToStudent, removeGoalFromStudent, updateStudentGoal,
@@ -702,6 +747,13 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     editingSession, openEditSessionModal, closeEditSessionModal,
     deletingSession, openDeleteSessionModal, closeDeleteSessionModal,
     editingAssignedGoal, openEditAssignedGoalModal, closeEditAssignedGoalModal,
+    dataEntrySessionDate, setDataEntrySessionDate,
+    dataEntrySessionTime, setDataEntrySessionTime,
+    dataEntrySelectedStudentIds, setDataEntrySelectedStudentIds,
+    dataEntryStudentSessionStates, setDataEntryStudentSessionStates,
+    dataEntryFocusedStudentSlotIndex, setDataEntryFocusedStudentSlotIndex,
+    dataEntryFocusedGoalIndexByStudentId, setDataEntryFocusedGoalIndexByStudentId,
+    dataEntryAiActivitySuggestions, setDataEntryAiActivitySuggestions,
   ]);
 
   return (

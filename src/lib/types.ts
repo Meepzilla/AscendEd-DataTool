@@ -12,7 +12,7 @@ export interface Student {
 }
 
 export interface Goal {
-  id: string;
+  id:string;
   name: string;
   type: GoalType;
   smartGoal: string;
@@ -107,6 +107,17 @@ export interface User {
   displayName?: string | null;
   isAnonymous: boolean;
 }
+
+// Moved from DataEntryPage for use in context
+export interface StudentSessionState {
+  studentId: string;
+  studentName: string;
+  activity: string;
+  notes: string;
+  goalData: Record<string, SessionGoalData['data']>;
+  originalGoalHeaders: Goal[];
+}
+
 
 import { z } from 'zod';
 
