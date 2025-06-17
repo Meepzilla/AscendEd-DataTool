@@ -12,17 +12,18 @@ import { Slider } from '@/components/ui/slider';
 import { PROMPT_TYPES, PROMPT_COLORS, PROMPT_ABBREVIATIONS } from '@/lib/constants';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { TrendingUp } from 'lucide-react';
 
 interface GoalDataInputComponentProps {
   goal: Goal;
   data: SessionGoalData['data']; // Current data for this goal
   onChange: (updatedFieldName: string, newData: SessionGoalData['data']) => void; // Updated signature
   isFocused?: boolean;
-  id: string; 
+  id: string;
 }
 
 export default function GoalDataInputComponent({ goal, data, onChange, isFocused, id }: GoalDataInputComponentProps) {
-  
+
   const handleChange = (field: string, value: any) => {
     // Pass the field name along with the new data object
     onChange(field, { ...data, [field]: value });
@@ -270,7 +271,7 @@ export default function GoalDataInputComponent({ goal, data, onChange, isFocused
   const showPromptCounters = goal.type !== 'QUALITATIVE_OBSERVATION' && goal.type !== 'FLUENCY_SYLLABLE_STUTTER';
 
   return (
-    <Card 
+    <Card
       id={id}
       className={cn(
         "border-border bg-card/50 transition-all duration-150 ease-in-out",
@@ -281,6 +282,12 @@ export default function GoalDataInputComponent({ goal, data, onChange, isFocused
           <span className="truncate pr-2">{goal.name}</span>
           <Badge variant="outline">{goal.type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}</Badge>
         </CardTitle>
+        {goal.sessionTargetValue !== undefined && (
+          <div className="text-xs text-muted-foreground flex items-center gap-1 pt-0.5">
+            <TrendingUp className="h-3.5 w-3.5 text-green-600" />
+            Session Target: {goal.sessionTargetValue}
+          </div>
+        )}
       </CardHeader>
       <CardContent className="p-3 space-y-3">
         {renderInputFields()}
@@ -308,4 +315,3 @@ const FormItem: React.FC<{children: React.ReactNode, className?: string}> = ({ c
 const FormLabel: React.FC<{children: React.ReactNode, htmlFor?: string}> = ({ children, htmlFor }) => (
   <Label htmlFor={htmlFor} className="text-xs font-medium text-muted-foreground">{children}</Label>
 );
-

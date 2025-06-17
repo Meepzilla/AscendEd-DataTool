@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -8,7 +9,7 @@ import GenericModal from './generic-modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useStudentData } from '@/hooks/use-student-data';
 import { GoalTemplateSchema, GoalType, type GoalTemplate } from '@/lib/types';
@@ -24,11 +25,11 @@ interface EditGoalTemplateModalProps {
 }
 
 export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTemplateModalProps) {
-  const { 
+  const {
     goalTemplates, // For checking if templateToEdit from prop still exists
-    closeEditGoalTemplateModal, 
-    updateGoalTemplate, 
-    loading: dataLoading 
+    closeEditGoalTemplateModal,
+    updateGoalTemplate,
+    loading: dataLoading
   } = useStudentData();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAiGenerating, setIsAiGenerating] = useState(false);
@@ -44,6 +45,7 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
       type: Object.keys(GOAL_TYPES)[0] as GoalType,
       smartGoalPrompt: '',
       generatedSmartGoal: '',
+      sessionTargetValue: undefined,
     },
   });
 
@@ -54,6 +56,7 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
         type: currentTemplate.type,
         smartGoalPrompt: currentTemplate.smartGoalPrompt,
         generatedSmartGoal: currentTemplate.generatedSmartGoal,
+        sessionTargetValue: currentTemplate.sessionTargetValue,
       });
     }
   }, [currentTemplate, form]);
@@ -88,7 +91,7 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
     await updateGoalTemplate(currentTemplate.id, data);
     setIsSubmitting(false);
     // Optional: close after successful save
-    // closeEditGoalTemplateModal(); 
+    // closeEditGoalTemplateModal();
   };
 
   if (!currentTemplate) return null;
@@ -158,7 +161,7 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
               </FormItem>
             )}
           />
-          
+
           <Button type="button" variant="outline" onClick={handleGenerateSmartGoal} disabled={isAiGenerating || dataLoading}>
             {isAiGenerating ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -182,6 +185,29 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
                     className="bg-muted/30"
                   />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="sessionTargetValue"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Session Target Value (Optional)</FormLabel>
+                <FormControl>
+                   <Input
+                    type="number"
+                    placeholder="e.g., 10"
+                    {...field}
+                    value={field.value ?? ''} // Ensure controlled component behavior for undefined
+                    onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Update the numerical target for this goal within a single session.
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}

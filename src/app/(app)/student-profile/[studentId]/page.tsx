@@ -8,7 +8,7 @@ import type { Student, Goal, GoalTemplate } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Edit, Trash2, PlusCircle, Info, Target, Edit3, CheckSquare } from 'lucide-react';
+import { Edit, Trash2, PlusCircle, Info, Target, Edit3, CheckSquare, TrendingUp } from 'lucide-react';
 import { formatDate, generateUUID } from '@/lib/helpers'; // Added generateUUID
 import Link from 'next/link';
 import {
@@ -42,7 +42,7 @@ export default function StudentProfilePage() {
     selectedStudent,
     setSelectedStudent,
     openEditStudentModal,
-    editingStudent, // Added editingStudent here
+    editingStudent,
     openDeleteStudentModal,
     removeGoalFromStudent,
     updateStudentGoal,
@@ -166,6 +166,12 @@ export default function StudentProfilePage() {
                     <div>
                       <h3 className="text-lg font-semibold text-primary">{goal.name}</h3>
                       <Badge variant="secondary" className="mt-1">{goal.type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}</Badge>
+                      {goal.sessionTargetValue !== undefined && (
+                        <Badge variant="outline" className="mt-1 ml-2">
+                          <TrendingUp className="mr-1.5 h-3.5 w-3.5 text-green-600" />
+                          Target: {goal.sessionTargetValue}
+                        </Badge>
+                      )}
                       <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{goal.smartGoal}</p>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-1 shrink-0 ml-2">

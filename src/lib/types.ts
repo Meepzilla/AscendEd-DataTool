@@ -16,11 +16,12 @@ export interface Goal {
   name: string;
   type: GoalType;
   smartGoal: string;
+  sessionTargetValue?: number; // Target value for a single session
   // Additional fields based on goal type might be present
-  [key: string]: any; 
+  [key: string]: any;
 }
 
-export type GoalType = 
+export type GoalType =
   | 'ARTICULATION'
   | 'FLUENCY_SYLLABLE_STUTTER'
   | 'QUALITATIVE_OBSERVATION'
@@ -34,9 +35,10 @@ export interface GoalTemplate {
   type: GoalType;
   smartGoalPrompt: string;
   generatedSmartGoal: string;
+  sessionTargetValue?: number; // Target value for a single session
   createdAt: Timestamp | Date; // Allow Date for local mode, Timestamp for Firebase
   isDefault: boolean;
-  userId?: string; 
+  userId?: string;
 }
 
 export interface SessionData {
@@ -58,7 +60,7 @@ export interface SessionGoalData {
   goalType: GoalType; // For convenience
   // Data object can contain specific fields for the goal type
   // AND/OR prompt counts like Verbal: 1, Gestural: 2, etc.
-  data: Record<string, any>; 
+  data: Record<string, any>;
 }
 
 // Example structures for what might be IN data, but prompt counts are dynamic
@@ -73,7 +75,7 @@ export interface ArticulationData {
 export interface FluencySyllableStutterData {
   totalSyllables: number;
   stutteredSyllables: number;
-  observationNotes: string; 
+  observationNotes: string;
 }
 
 export interface QualitativeObservationData {
@@ -122,6 +124,10 @@ export const GoalTemplateSchema = z.object({
   type: z.string(), // Should validate against GoalType values
   smartGoalPrompt: z.string().min(10, "SMART goal prompt is required."),
   generatedSmartGoal: z.string().optional(),
+  sessionTargetValue: z.preprocess(
+    (val) => (val === "" || val === undefined || val === null ? undefined : Number(val)),
+    z.number().positive("Target must be a positive number if provided.").optional()
+  ),
   // isDefault is handled internally, not part of the form for user creation/edit
 });
 
@@ -133,4 +139,3 @@ type ToasterToast = ToastProps & {
   action?: ToastActionElement
 }
 export type Toast = Omit<ToasterToast, "id">;
-

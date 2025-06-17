@@ -34,6 +34,7 @@ export default function AddGoalTemplateModal() {
       type: Object.keys(GOAL_TYPES)[0] as GoalType, // Default to first goal type
       smartGoalPrompt: '',
       generatedSmartGoal: '',
+      sessionTargetValue: undefined,
     },
   });
 
@@ -44,6 +45,7 @@ export default function AddGoalTemplateModal() {
         type: Object.keys(GOAL_TYPES)[0] as GoalType,
         smartGoalPrompt: '',
         generatedSmartGoal: '',
+        sessionTargetValue: undefined,
       });
     }
   }, [isAddGoalTemplateModalOpen, form]);
@@ -177,6 +179,29 @@ export default function AddGoalTemplateModal() {
                     className="bg-muted/30"
                   />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="sessionTargetValue"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Session Target Value (Optional)</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="number" 
+                    placeholder="e.g., 10 (for 10 correct responses)" 
+                    {...field} 
+                    value={field.value ?? ''}
+                    onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Set a numerical target for this goal within a single session (e.g., number of correct responses, syllables).
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}

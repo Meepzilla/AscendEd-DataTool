@@ -6,7 +6,7 @@ import GenericModal from './generic-modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { PlusCircle, Search, Check, Edit3 } from 'lucide-react';
+import { PlusCircle, Search, Check, Edit3, TrendingUp } from 'lucide-react';
 import { useStudentData } from '@/hooks/use-student-data';
 import type { Student, Goal, GoalTemplate, GoalType } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
@@ -41,6 +41,7 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
   const [customGoalName, setCustomGoalName] = useState('');
   const [customGoalType, setCustomGoalType] = useState<GoalType>(Object.values(GOAL_TYPES)[0] as GoalType);
   const [customGoalSmartText, setCustomGoalSmartText] = useState('');
+  const [customGoalSessionTarget, setCustomGoalSessionTarget] = useState<number | undefined>(undefined);
   const [isAssigningCustom, setIsAssigningCustom] = useState(false);
   const [isAssigningTemplates, setIsAssigningTemplates] = useState(false);
 
@@ -60,16 +61,17 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
   const handleAssignSelectedGoals = async () => {
     if (selectedTemplates.size === 0) return;
     setIsAssigningTemplates(true);
-    
+
     const goalsToAssign: Goal[] = [];
     selectedTemplates.forEach(templateId => {
       const template = goalTemplates.find(t => t.id === templateId);
       if (template) {
         goalsToAssign.push({
-          id: generateUUID(), 
+          id: generateUUID(),
           name: template.name,
           type: template.type,
           smartGoal: template.generatedSmartGoal || `SMART goal for ${template.name}`,
+          sessionTargetValue: template.sessionTargetValue, // Carry over session target
         });
       }
     });
@@ -77,7 +79,7 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
     try {
       await Promise.all(goalsToAssign.map(goal => assignGoalToStudent(student.id, goal)));
       toast({ title: "Success", description: `${goalsToAssign.length} goal(s) assigned from templates.`});
-      setSelectedTemplates(new Set()); 
+      setSelectedTemplates(new Set());
       // onClose(); // Optionally close, or allow assigning more
     } catch (error) {
         console.error("Error assigning goals from templates:", error);
@@ -92,12 +94,17 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
         toast({ title: "Validation Error", description: "Custom goal name and SMART goal text cannot be empty.", variant: "destructive" });
         return;
     }
+    if (customGoalSessionTarget !== undefined && customGoalSessionTarget <= 0) {
+        toast({ title: "Validation Error", description: "Session target must be a positive number if provided.", variant: "destructive" });
+        return;
+    }
     setIsAssigningCustom(true);
     const newCustomGoal: Goal = {
       id: generateUUID(),
       name: customGoalName,
       type: customGoalType,
       smartGoal: customGoalSmartText,
+      sessionTargetValue: customGoalSessionTarget,
     };
 
     try {
@@ -107,6 +114,7 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
         setCustomGoalName('');
         setCustomGoalType(Object.values(GOAL_TYPES)[0] as GoalType);
         setCustomGoalSmartText('');
+        setCustomGoalSessionTarget(undefined);
         // onClose(); // Optionally close
     } catch (error) {
         console.error("Error assigning custom goal:", error);
@@ -119,6 +127,8 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
   const filteredGoalTemplates = goalTemplates.filter(template => {
     const nameMatch = template.name.toLowerCase().includes(searchTerm.toLowerCase());
     const typeMatch = goalTypeFilter === 'ALL' || template.type === goalTypeFilter;
+    // More robust check based on template ID if assigned goals store a templateId reference.
+    // For now, using name and type for simplicity.
     const isAssigned = student.goals.some(g => g.name === template.name && g.type === template.type);
     return nameMatch && typeMatch && !isAssigned;
   }).sort((a,b) => a.name.localeCompare(b.name));
@@ -180,6 +190,9 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
                           <div className="flex-grow">
                               <p className="font-medium">{template.name}</p>
                               <Badge variant="secondary" className="mt-1">{template.type}</Badge>
+                              {template.sessionTargetValue && (
+                                <p className="text-xs text-muted-foreground mt-0.5">Target: {template.sessionTargetValue}</p>
+                              )}
                           </div>
                           {selectedTemplates.has(template.id) && <Check className="h-5 w-5 ml-2 text-primary-foreground" />}
                       </div>
@@ -198,57 +211,74 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
             <PlusCircle className="ml-2 h-4 w-4" />
           </Button>
         </div>
-        
+
         <Separator orientation="vertical" className="hidden md:block h-auto my-2" />
-        
+
         {/* Custom Goal Section */}
         <div className="space-y-3 flex flex-col">
           <h3 className="text-lg font-medium text-foreground flex items-center gap-2">
             <Edit3 className="h-5 w-5 text-primary" />
             Or Create & Assign Custom Goal
           </h3>
-          <div className="space-y-3 flex-grow">
-            <div>
-              <Label htmlFor="customGoalName">Goal Name</Label>
-              <Input 
-                id="customGoalName"
-                value={customGoalName} 
-                onChange={(e) => setCustomGoalName(e.target.value)}
-                placeholder="e.g., Follow 2-step directions"
-                disabled={dataLoading || isAssigningTemplates || isAssigningCustom}
-              />
+          <ScrollArea className="flex-grow pr-2">
+            <div className="space-y-3">
+              <div>
+                <Label htmlFor="customGoalName">Goal Name</Label>
+                <Input
+                  id="customGoalName"
+                  value={customGoalName}
+                  onChange={(e) => setCustomGoalName(e.target.value)}
+                  placeholder="e.g., Follow 2-step directions"
+                  disabled={dataLoading || isAssigningTemplates || isAssigningCustom}
+                />
+              </div>
+              <div>
+                <Label htmlFor="customGoalType">Goal Type</Label>
+                <Select
+                  value={customGoalType}
+                  onValueChange={(value) => setCustomGoalType(value as GoalType)}
+                  disabled={dataLoading || isAssigningTemplates || isAssigningCustom}
+                >
+                  <SelectTrigger id="customGoalType">
+                    <SelectValue placeholder="Select goal type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.values(GOAL_TYPES).map(type => (
+                      <SelectItem key={type} value={type}>{type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="customGoalSmartText">SMART Goal Text</Label>
+                <Textarea
+                  id="customGoalSmartText"
+                  value={customGoalSmartText}
+                  onChange={(e) => setCustomGoalSmartText(e.target.value)}
+                  placeholder="Enter the full SMART goal description..."
+                  rows={3}
+                  disabled={dataLoading || isAssigningTemplates || isAssigningCustom}
+                />
+              </div>
+              <div>
+                <Label htmlFor="customGoalSessionTarget">Session Target Value (Optional)</Label>
+                <div className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-muted-foreground" />
+                    <Input
+                        id="customGoalSessionTarget"
+                        type="number"
+                        value={customGoalSessionTarget ?? ''}
+                        onChange={(e) => setCustomGoalSessionTarget(e.target.value === '' ? undefined : Number(e.target.value))}
+                        placeholder="e.g., 10 trials"
+                        className="flex-grow"
+                        disabled={dataLoading || isAssigningTemplates || isAssigningCustom}
+                    />
+                </div>
+              </div>
             </div>
-            <div>
-              <Label htmlFor="customGoalType">Goal Type</Label>
-              <Select 
-                value={customGoalType} 
-                onValueChange={(value) => setCustomGoalType(value as GoalType)}
-                disabled={dataLoading || isAssigningTemplates || isAssigningCustom}
-              >
-                <SelectTrigger id="customGoalType">
-                  <SelectValue placeholder="Select goal type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.values(GOAL_TYPES).map(type => (
-                    <SelectItem key={type} value={type}>{type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="customGoalSmartText">SMART Goal Text</Label>
-              <Textarea 
-                id="customGoalSmartText"
-                value={customGoalSmartText}
-                onChange={(e) => setCustomGoalSmartText(e.target.value)}
-                placeholder="Enter the full SMART goal description..."
-                rows={4}
-                disabled={dataLoading || isAssigningTemplates || isAssigningCustom}
-              />
-            </div>
-          </div>
-          <Button 
-            onClick={handleAssignCustomGoal} 
+          </ScrollArea>
+          <Button
+            onClick={handleAssignCustomGoal}
             disabled={!customGoalName.trim() || !customGoalSmartText.trim() || dataLoading || isAssigningTemplates || isAssigningCustom}
             className="mt-auto"
           >
@@ -266,5 +296,3 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
     </GenericModal>
   );
 }
-
-        
