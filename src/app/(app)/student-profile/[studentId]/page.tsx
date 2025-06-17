@@ -21,6 +21,7 @@ import ConfirmationModal from '@/components/modals/confirmation-modal';
 
 export default function StudentProfilePage() {
   const routeParams = useParams(); 
+  const studentIdFromParams = typeof routeParams?.studentId === 'string' ? routeParams.studentId : undefined;
   const router = useRouter();
   
 
@@ -32,9 +33,9 @@ export default function StudentProfilePage() {
     selectedStudent,
     setSelectedStudent,
     openEditStudentModal, 
-    deletingStudent, // Get deletingStudent state from context
-    openDeleteStudentModal, // Get open function
-    closeDeleteStudentModal, // Get close function for ConfirmationModal
+    deletingStudent, 
+    openDeleteStudentModal, 
+    closeDeleteStudentModal, 
     removeGoalFromStudent,
     editingAssignedGoal, 
     openEditAssignedGoalModal, 
@@ -45,14 +46,8 @@ export default function StudentProfilePage() {
   const [isAssignGoalModalOpen, setIsAssignGoalModalOpen] = useState(false);
 
   useEffect(() => {
-    let studentIdToProcess: string | undefined = undefined;
-
-    if (routeParams && typeof routeParams.studentId === 'string') {
-      studentIdToProcess = routeParams.studentId;
-    }
-
-    if (studentIdToProcess) {
-      const foundStudent = students.find(s => s.id === studentIdToProcess);
+    if (studentIdFromParams) {
+      const foundStudent = students.find(s => s.id === studentIdFromParams);
       if (foundStudent) {
         setCurrentStudent(foundStudent);
         if (!selectedStudent || selectedStudent.id !== foundStudent.id) {
@@ -61,10 +56,10 @@ export default function StudentProfilePage() {
       } else if (!loading && students.length > 0) {
         setCurrentStudent(null); 
       }
-    } else if (routeParams === null && !loading) {
+    } else if (studentIdFromParams === undefined && !loading) { // Check if studentId is explicitly undefined
       setCurrentStudent(null);
     }
-  }, [routeParams, students, loading, selectedStudent, setSelectedStudent, router]);
+  }, [studentIdFromParams, students, loading, selectedStudent, setSelectedStudent, router]);
 
 
   if (loading && !currentStudent) { 
@@ -76,7 +71,7 @@ export default function StudentProfilePage() {
   }
 
   if (!currentStudent && !loading) {
-    const studentIdDisplay = typeof routeParams?.studentId === 'string' ? routeParams.studentId : 'unknown';
+    const studentIdDisplay = studentIdFromParams || 'unknown';
     return (
       <Card className="mt-4">
         <CardHeader>
@@ -111,7 +106,6 @@ export default function StudentProfilePage() {
 
   return (
     <div className="space-y-6">
-      {/* EditStudentModal is now rendered in AppHeader, triggered by openEditStudentModal from context */}
       {editingAssignedGoal && currentStudent && (
         <EditAssignedGoalModal
           isOpen={!!editingAssignedGoal}
