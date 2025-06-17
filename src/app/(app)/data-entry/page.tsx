@@ -30,7 +30,7 @@ interface StudentSessionState {
   notes: string;
   goalData: Record<string, SessionGoalData['data']>;
   originalGoalHeaders: Goal[];
-  isCollapsed: boolean; // This will mean content is hidden if true
+  isCollapsed: boolean; 
 }
 
 export default function DataEntryPage() {
@@ -206,7 +206,7 @@ export default function DataEntryPage() {
           notes: existingState?.notes || '',
           goalData: initialGoalData,
           originalGoalHeaders: goalsToUse,
-          isCollapsed: idx !== focusedStudentSlotIndex, // Content hidden if not focused
+          isCollapsed: idx !== focusedStudentSlotIndex, 
         };
 
         if (newFocusedGoalIndexes[id] === undefined ) {
@@ -328,7 +328,7 @@ export default function DataEntryPage() {
 
   useEffect(() => {
     const focusedInfo = getCurrentFocusedGoalInfo();
-    if (focusedInfo && focusedInfo.goal && focusedInfo.studentState && !focusedInfo.studentState.isCollapsed) {
+    if (focusedInfo && focusedInfo.goal && focusedInfo.studentState ) { // Removed !focusedInfo.studentState.isCollapsed check
       const { studentId, goal } = focusedInfo;
       const elementId = `goal-input-${studentId}-${goal.id}`;
       const element = document.getElementById(elementId);
@@ -342,7 +342,6 @@ export default function DataEntryPage() {
     setSelectedStudentIds(prev => {
       const newSelection = [...prev];
       newSelection[index] = studentId;
-      // Ensure unique students, capped by MAX_STUDENTS_DATA_ENTRY
       return Array.from(new Set(newSelection)).slice(0, MAX_STUDENTS_DATA_ENTRY);
     });
     setFocusedStudentSlotIndex(index);
@@ -510,7 +509,7 @@ export default function DataEntryPage() {
               key={studentId}
               className={cn(
                 `flex flex-col transition-all duration-300 ease-in-out shadow-md w-full`,
-                isStudentFocused ? 'sm:flex-grow-[2] sm:basis-2/5' : 'sm:flex-grow-[1] sm:basis-1/5', // Adjusted flex properties
+                isStudentFocused ? 'sm:flex-grow-[2] sm:basis-2/5' : 'sm:flex-grow-[1] sm:basis-1/5', 
                 isStudentFocused && 'ring-2 ring-primary ring-offset-2 shadow-xl'
               )}
               onClick={() => setFocusedStudentSlotIndex(slotIndex)}
@@ -556,7 +555,7 @@ export default function DataEntryPage() {
                   </div>
                 </div>
               </CardHeader>
-              <ScrollArea className={cn("flex-grow", state.isCollapsed ? 'hidden' : '')}>
+              <ScrollArea className={cn("flex-grow")}> {/* Removed conditional hidden class */}
                 <CardContent className="p-3 space-y-3">
                   <div>
                     <Label htmlFor={`activity-${studentId}`}>Activity</Label>
