@@ -39,7 +39,13 @@ export default function GoalDataInputComponent({
 }: GoalDataInputComponentProps) {
 
   const handleChange = (field: string, value: any) => {
-    onChange(field, { ...data, [field]: value });
+    // If 'value' is an object, it's assumed to be the complete new data state for this goal.
+    // Otherwise, it's a single field update.
+    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      onChange(field, value);
+    } else {
+      onChange(field, { ...data, [field]: value });
+    }
   };
 
   const calculateAccuracy = (): string => {
@@ -401,13 +407,23 @@ export default function GoalDataInputComponent({
                         color: PROMPT_COLORS[pt],
                         }}
                         onClick={() => {
-                        const currentCount = Number(data[pt] || 0);
-                        handleChange(pt, currentCount + 1);
+                            const currentCount = Number(data[pt] || 0);
+                            const newCount = currentCount + 1;
+                            let updatedDataForOnChange = { ...data, [pt]: newCount };
+                            if (pt === 'Independent' && goal.type === 'LANGUAGE_COMPREHENSION') {
+                                updatedDataForOnChange.questionsCorrect = newCount;
+                            }
+                            onChange(pt, updatedDataForOnChange);
                         }}
                         onContextMenu={(e) => { 
                             e.preventDefault();
                             const currentCount = Number(data[pt] || 0);
-                            handleChange(pt, Math.max(0, currentCount - 1));
+                            const newCount = Math.max(0, currentCount - 1);
+                            let updatedDataForOnChange = { ...data, [pt]: newCount };
+                            if (pt === 'Independent' && goal.type === 'LANGUAGE_COMPREHENSION') {
+                                updatedDataForOnChange.questionsCorrect = newCount;
+                            }
+                            onChange(pt, updatedDataForOnChange);
                         }}
                         title={`Click to increment ${pt}, Right-click to decrement. ${hotkey ? `Hotkeys: ${hotkey} / Alt+${hotkey}` : ''}`}
                     >

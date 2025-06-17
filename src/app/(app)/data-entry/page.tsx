@@ -165,7 +165,7 @@ export default function DataEntryPage() {
     dataEntryStudentSessionStates, 
     setDataEntryStudentSessionStates,
     dataEntryFocusedGoalIndexByStudentId,
-    setDataEntryFocusedGoalIndexByStudentId
+    setDataEntryFocusedGoalIndexByStudentId // Corrected: should be setDataEntryFocusedGoalIndexByStudentId
   ]);
 
 
@@ -351,32 +351,28 @@ export default function DataEntryPage() {
       }
 
       const promptToUpdate = PROMPT_HOTKEY_MAP[key];
-      if (promptToUpdate && !alt && goal.type !== 'QUALITATIVE_OBSERVATION' && goal.type !== 'FLUENCY_SYLLABLE_STUTTER') {
+      if (promptToUpdate && goal.type !== 'QUALITATIVE_OBSERVATION' && goal.type !== 'FLUENCY_SYLLABLE_STUTTER') {
         event.preventDefault();
         const currentCount = Number(goalData[promptToUpdate] || 0);
-        const newValue = currentCount + 1;
-        handleGoalDataChange(studentId, goal.id, promptToUpdate, { ...goalData, [promptToUpdate]: newValue });
+        const newValue = alt ? Math.max(0, currentCount - 1) : currentCount + 1;
+        
+        let updatedGoalDataWithPrompt = { ...goalData, [promptToUpdate]: newValue };
+        if (promptToUpdate === 'Independent' && goal.type === 'LANGUAGE_COMPREHENSION') {
+          updatedGoalDataWithPrompt.questionsCorrect = newValue;
+        }
+        handleGoalDataChange(studentId, goal.id, promptToUpdate, updatedGoalDataWithPrompt);
         return;
       }
-      if (promptToUpdate && alt && goal.type !== 'QUALITATIVE_OBSERVATION' && goal.type !== 'FLUENCY_SYLLABLE_STUTTER') {
-        event.preventDefault();
-        const currentCount = Number(goalData[promptToUpdate] || 0);
-        const newValue = Math.max(0, currentCount - 1);
-        handleGoalDataChange(studentId, goal.id, promptToUpdate, { ...goalData, [promptToUpdate]: newValue });
-        return;
-      }
-
-      let fieldToUpdate: string | null = null;
-      let increment = 0;
+      
 
       if (goal.type === 'QUALITATIVE_OBSERVATION' && !alt) {
-        if (key === 'C') {
+        if (key === 'C') { // Increment rating
           event.preventDefault();
           const currentRating = Number(goalData.rating ?? 3);
           const newRating = Math.min(5, currentRating + 1);
           handleGoalDataChange(studentId, goal.id, 'rating', { ...goalData, rating: newRating });
           return;
-        } else if (key === 'N') {
+        } else if (key === 'N') { // Decrement rating
           event.preventDefault();
           const currentRating = Number(goalData.rating ?? 3);
           const newRating = Math.max(1, currentRating - 1);
@@ -385,6 +381,9 @@ export default function DataEntryPage() {
         }
       }
 
+
+      let fieldToUpdate: string | null = null;
+      let increment = 0;
 
       if (key === 'C') {
         increment = alt ? -1 : 1;
