@@ -489,7 +489,7 @@ export default function DataEntryPage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-start">
         {selectedStudentIds.map((studentId, slotIndex) => {
           const student = students.find(s => s.id === studentId);
           const state = studentSessionStates[studentId];
@@ -553,7 +553,7 @@ export default function DataEntryPage() {
               </CardHeader>
               {!state.isCollapsed && (
                 <ScrollArea className="flex-grow">
-                <CardContent className="p-4 space-y-4">
+                <CardContent className="p-3 space-y-3">
                   <div>
                     <Label htmlFor={`activity-${studentId}`}>Activity</Label>
                     <Input
@@ -650,3 +650,4 @@ export default function DataEntryPage() {
     </div>
   );
 }
+
