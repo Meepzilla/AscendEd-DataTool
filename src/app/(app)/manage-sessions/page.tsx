@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -193,7 +194,7 @@ function SessionsPageSkeleton() {
          <div className="space-y-6">
             <Card>
                 <CardHeader>
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                         <div>
                             <Skeleton className="h-8 w-48 mb-1" />
                             <Skeleton className="h-4 w-72" />
@@ -202,10 +203,10 @@ function SessionsPageSkeleton() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <div className="flex gap-2 mb-4">
-                        <Skeleton className="h-10 w-[200px]" />
-                        <Skeleton className="h-10 flex-grow" />
-                        <Skeleton className="h-10 w-[240px]" />
+                    <div className="flex flex-col md:flex-row gap-2 mb-4">
+                        <Skeleton className="h-10 w-full md:w-[200px]" />
+                        <Skeleton className="h-10 w-full flex-grow" />
+                        <Skeleton className="h-10 w-full md:w-[240px]" />
                     </div>
                     <Skeleton className="h-[500px] w-full rounded-md border" />
                 </CardContent>
@@ -213,4 +214,3 @@ function SessionsPageSkeleton() {
         </div>
     )
 }
-

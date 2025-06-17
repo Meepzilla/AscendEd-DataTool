@@ -119,25 +119,25 @@ export default function StudentProfilePage() {
 
 
       <Card className="shadow-lg">
-        <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16">
+        <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 sm:p-6">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <Avatar className="h-14 w-14 sm:h-16 sm:w-16">
               <AvatarImage src={`https://avatar.vercel.sh/${currentStudent.id}.png?text=${currentStudent.name.substring(0,2).toUpperCase()}`} alt={currentStudent.name} data-ai-hint="abstract avatar"/>
               <AvatarFallback>{currentStudent.name.substring(0, 2).toUpperCase()}</AvatarFallback>
             </Avatar>
             <div>
-              <CardTitle className="text-3xl font-bold">{currentStudent.name}</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-2xl sm:text-3xl font-bold">{currentStudent.name}</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
                 Student ID: {currentStudent.id} | Joined: {formatDate(currentStudent.createdAt)}
                 {!isFirebaseDBAvailable && !loading && <span className="text-orange-500 font-semibold block">(Local Mode)</span>}
               </CardDescription>
             </div>
           </div>
-          <div className="flex gap-2 mt-2 sm:mt-0">
-            <Button variant="outline" size="sm" onClick={() => openEditStudentModal(currentStudent)}>
+          <div className="flex flex-wrap sm:flex-nowrap gap-2 mt-3 sm:mt-0 w-full sm:w-auto">
+            <Button variant="outline" size="sm" onClick={() => openEditStudentModal(currentStudent)} className="w-full sm:w-auto">
               <Edit3 className="mr-2 h-4 w-4" /> Edit Student Info
             </Button>
-            <Button variant="destructive"  size="sm" onClick={() => openDeleteStudentModal(currentStudent)}>
+            <Button variant="destructive"  size="sm" onClick={() => openDeleteStudentModal(currentStudent)} className="w-full sm:w-auto">
               <Trash2 className="mr-2 h-4 w-4" /> Delete Student
             </Button>
           </div>
@@ -145,9 +145,9 @@ export default function StudentProfilePage() {
       </Card>
 
       <Card>
-        <CardHeader className="flex flex-row justify-between items-center">
+        <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
           <CardTitle className="flex items-center gap-2"><Target className="text-primary" /> Assigned Goals ({currentStudent.goals.length})</CardTitle>
-          <Button size="sm" onClick={() => setIsAssignGoalModalOpen(true)}>
+          <Button size="sm" onClick={() => setIsAssignGoalModalOpen(true)} className="w-full sm:w-auto mt-2 sm:mt-0">
             <PlusCircle className="mr-2 h-4 w-4" /> Assign / Create Goal
           </Button>
         </CardHeader>
@@ -158,19 +158,19 @@ export default function StudentProfilePage() {
             <ul className="space-y-4">
               {currentStudent.goals.map((goal) => (
                 <li key={goal.id} className="p-4 border rounded-lg shadow-sm bg-card hover:shadow-md transition-shadow">
-                  <div className="flex justify-between items-start">
-                    <div>
+                  <div className="flex flex-col sm:flex-row justify-between items-start">
+                    <div className="flex-grow">
                       <h3 className="text-lg font-semibold text-primary">{goal.name}</h3>
                       <Badge variant="secondary" className="mt-1">{goal.type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}</Badge>
                       {goal.sessionTargetValue !== undefined && (
-                        <Badge variant="outline" className="mt-1 ml-2">
+                        <Badge variant="outline" className="mt-1 ml-0 sm:ml-2">
                           <TrendingUp className="mr-1.5 h-3.5 w-3.5 text-green-600" />
                           Target: {goal.sessionTargetValue}{goal.type !== 'QUALITATIVE_OBSERVATION' ? '%' : ''}
                         </Badge>
                       )}
                       <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{goal.smartGoal}</p>
                     </div>
-                    <div className="flex flex-col sm:flex-row gap-1 shrink-0 ml-2">
+                    <div className="flex gap-1 shrink-0 mt-2 sm:mt-0 sm:ml-2">
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenEditAssignedGoalModal(goal)} title="Edit Assigned Goal">
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -208,7 +208,7 @@ function StudentProfileSkeleton() {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 sm:p-6">
           <div className="flex items-center gap-4">
             <Skeleton className="h-16 w-16 rounded-full" />
             <div>
@@ -216,17 +216,17 @@ function StudentProfileSkeleton() {
               <Skeleton className="h-4 w-64" />
             </div>
           </div>
-          <div className="flex gap-2 mt-2 sm:mt-0">
-            <Skeleton className="h-9 w-28" />
-            <Skeleton className="h-9 w-32" />
+          <div className="flex flex-col sm:flex-row gap-2 mt-2 sm:mt-0 w-full sm:w-auto">
+            <Skeleton className="h-9 w-full sm:w-28" />
+            <Skeleton className="h-9 w-full sm:w-32" />
           </div>
         </CardHeader>
       </Card>
 
       <Card>
-        <CardHeader className="flex flex-row justify-between items-center">
+        <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
           <Skeleton className="h-7 w-40" />
-          <Skeleton className="h-9 w-36" />
+          <Skeleton className="h-9 w-full sm:w-36" />
         </CardHeader>
         <CardContent className="space-y-4">
            <div className="text-center py-6 text-muted-foreground">

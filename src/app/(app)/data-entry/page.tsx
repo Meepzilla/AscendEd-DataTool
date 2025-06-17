@@ -68,11 +68,9 @@ export default function DataEntryPage() {
           let newTotalSyllables = Math.max(0, Number(processedData.totalSyllables || 0));
           let newStutteredSyllables = Math.max(0, Number(processedData.stutteredSyllables || 0));
           
-          // If the field being updated is stutteredSyllables, adjust totalSyllables if necessary
           if (updatedFieldName === 'stutteredSyllables') {
             newTotalSyllables = Math.max(newTotalSyllables, newStutteredSyllables);
           } 
-          // If the field being updated is totalSyllables, adjust stutteredSyllables if necessary
           else if (updatedFieldName === 'totalSyllables') {
             newStutteredSyllables = Math.min(newStutteredSyllables, newTotalSyllables);
           }
@@ -469,7 +467,7 @@ export default function DataEntryPage() {
           <CardDescription>Record session data for students. AI suggests activities. Use hotkeys for speed.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4 items-center">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
             <div className="w-full sm:w-auto">
               <Label htmlFor="sessionDate" className="block text-sm font-medium mb-1">Session Date</Label>
               <DatePicker date={sessionDate} setDate={setSessionDate} />
@@ -652,4 +650,3 @@ export default function DataEntryPage() {
     </div>
   );
 }
-

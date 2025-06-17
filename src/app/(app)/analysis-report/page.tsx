@@ -340,7 +340,7 @@ export default function AnalysisReportPage() {
            
           <Card>
             <CardHeader>
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                 <CardTitle className="flex items-center gap-2"><MessageSquare className="h-6 w-6 text-primary"/>AI-Powered Technical Summary</CardTitle>
                 <Button onClick={handleGenerateSummary} disabled={isAiLoading} size="sm">
                   {isAiLoading ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Lightbulb className="mr-2 h-4 w-4" />}
@@ -372,7 +372,7 @@ function AnalysisReportSkeleton() {
          <div className="space-y-6">
             <Card>
                 <CardHeader>
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                         <div>
                             <Skeleton className="h-8 w-56 mb-1" />
                             <Skeleton className="h-4 w-80" />
@@ -381,10 +381,10 @@ function AnalysisReportSkeleton() {
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="flex gap-2">
-                        <Skeleton className="h-10 w-[250px]" />
-                        <Skeleton className="h-10 w-[250px]" />
-                        <Skeleton className="h-10 flex-grow" />
+                    <div className="flex flex-col md:flex-row gap-2">
+                        <Skeleton className="h-10 w-full md:w-[250px]" />
+                        <Skeleton className="h-10 w-full md:w-[250px]" />
+                        <Skeleton className="h-10 w-full md:flex-grow" />
                     </div>
                 </CardContent>
             </Card>
@@ -398,6 +398,3 @@ function AnalysisReportSkeleton() {
         </div>
     )
 }
-
-
-    

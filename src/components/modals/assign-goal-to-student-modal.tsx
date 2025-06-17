@@ -24,6 +24,7 @@ import { generateUUID } from '@/lib/helpers';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '../ui/separator';
 import { FormDescription } from '../ui/form'; // Added for consistency
+import { cn } from '@/lib/utils';
 
 interface AssignGoalToStudentModalProps {
   student: Student;
@@ -142,18 +143,18 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
             <Search className="h-5 w-5 text-primary" />
             Assign from Templates
           </h3>
-          <div className="flex gap-2 items-center">
-            <div className="relative flex-grow">
+          <div className="flex flex-col sm:flex-row gap-2 items-center">
+            <div className="relative flex-grow w-full sm:w-auto">
               <Input
                 placeholder="Search goal templates..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pr-8" 
+                className="pr-8 w-full" 
               />
               <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             </div>
             <Select value={goalTypeFilter} onValueChange={setGoalTypeFilter}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Filter by type" />
               </SelectTrigger>
               <SelectContent>
@@ -199,21 +200,23 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
            <Button
             onClick={handleAssignSelectedGoals}
             disabled={selectedTemplates.size === 0 || dataLoading || isAssigningTemplates || isAssigningCustom}
-            className="mt-auto"
+            className="mt-auto w-full"
           >
             {isAssigningTemplates ? 'Assigning...' : `Assign ${selectedTemplates.size} Template(s)`}
             <PlusCircle className="ml-2 h-4 w-4" />
           </Button>
         </div>
 
-        <Separator orientation="vertical" className="hidden md:block h-auto my-2" />
+        <Separator orientation="vertical" className={cn("my-2", "hidden md:block")} />
+        <Separator orientation="horizontal" className={cn("my-4 md:hidden")} />
+
 
         <div className="space-y-3 flex flex-col">
           <h3 className="text-lg font-medium text-foreground flex items-center gap-2">
             <Edit3 className="h-5 w-5 text-primary" />
             Or Create & Assign Custom Goal
           </h3>
-          <ScrollArea className="flex-grow pr-2">
+          <ScrollArea className="flex-grow pr-0 md:pr-2">
             <div className="space-y-3">
               <div>
                 <Label htmlFor="customGoalName">Goal Name</Label>
@@ -278,7 +281,7 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
           <Button
             onClick={handleAssignCustomGoal}
             disabled={!customGoalName.trim() || !customGoalSmartText.trim() || dataLoading || isAssigningTemplates || isAssigningCustom}
-            className="mt-auto"
+            className="mt-auto w-full"
           >
             {isAssigningCustom ? 'Assigning...' : 'Create & Assign Custom Goal'}
             <PlusCircle className="ml-2 h-4 w-4" />

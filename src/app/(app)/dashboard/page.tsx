@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -36,7 +37,7 @@ export default function DashboardPage() {
       {/* Summary Cards */}
       <section aria-labelledby="summary-title">
         <h2 id="summary-title" className="text-xl font-semibold mb-4 text-foreground">Overview</h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           {summaryData.map((item) => (
             <Card key={item.title} className="shadow-lg hover:shadow-xl transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -59,7 +60,7 @@ export default function DashboardPage() {
       {/* Quick Actions */}
       <section aria-labelledby="quick-actions-title">
         <h2 id="quick-actions-title" className="text-xl font-semibold mb-4 text-foreground">Quick Actions</h2>
-        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
           {quickActions.map((action) => (
             <Card key={action.label} className="hover:bg-muted/50 transition-colors">
               <CardContent className="p-6 flex flex-col items-center text-center">

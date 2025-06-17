@@ -116,7 +116,7 @@ export default function GoalTemplatesPage() {
           </div>
 
           {loading && (
-             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 {[1,2,3].map(i => <TemplateCardSkeleton key={i} />)}
             </div>
           )}
@@ -130,7 +130,7 @@ export default function GoalTemplatesPage() {
           )}
 
           {!loading && filteredTemplates.length > 0 && (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {filteredTemplates.map((template) => (
                 <Card key={template.id} className="flex flex-col justify-between hover:shadow-md transition-shadow">
                   <CardHeader className="pb-3">
@@ -149,6 +149,12 @@ export default function GoalTemplatesPage() {
                         <div>
                             <p className="font-medium text-muted-foreground flex items-center gap-1"><Sparkles className="h-4 w-4 text-yellow-500" />Generated SMART Goal:</p>
                             <p className="text-foreground line-clamp-3" title={template.generatedSmartGoal}>{template.generatedSmartGoal}</p>
+                        </div>
+                    )}
+                     {template.sessionTargetValue !== undefined && (
+                        <div>
+                            <p className="font-medium text-muted-foreground">Session Target:</p>
+                            <p className="text-foreground">{template.sessionTargetValue}%</p>
                         </div>
                     )}
                   </CardContent>
@@ -208,4 +214,3 @@ function TemplateCardSkeleton() {
         </Card>
     );
 }
-
