@@ -107,13 +107,15 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
   const filteredGoalTemplates = goalTemplates.filter(template => {
     const nameMatch = template.name.toLowerCase().includes(templateSearchTerm.toLowerCase());
     const typeMatch = templateGoalTypeFilter === 'ALL' || template.type === templateGoalTypeFilter;
-    return nameMatch && typeMatch;
-  });
+    // Check if this template (by name and type) is already effectively assigned to the student
+    const alreadyAssigned = currentStudent?.goals.some(g => g.name === template.name && g.type === template.type);
+    return nameMatch && typeMatch && !alreadyAssigned;
+  }).sort((a,b) => a.name.localeCompare(b.name));
 
-  const isGoalAssigned = (templateId: string): boolean => {
+
+  const isGoalEffectivelyAssigned = (template: GoalTemplate): boolean => {
     if (!currentStudent) return false;
-    const template = goalTemplates.find(t => t.id === templateId);
-    if (!template) return false;
+    // This check is by name and type, which is how we define if a template-derived goal is "taken"
     return currentStudent.goals.some(g => g.name === template.name && g.type === template.type);
   };
 
@@ -183,7 +185,7 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
       isOpen={!!currentStudent} 
       onClose={closeEditStudentModal}
       title={`Edit Student: ${currentStudent.name}`}
-      size="2xl" // Changed from "xl" to "2xl"
+      size="2xl" 
     >
       <ScrollArea className="max-h-[75vh] p-1">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-2">
@@ -368,7 +370,7 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
               </div>
               <ScrollArea className="h-32 border rounded-md p-2">
                 {filteredGoalTemplates.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">No matching templates found.</p>
+                  <p className="text-sm text-muted-foreground text-center py-4">No matching templates found or all assigned.</p>
                 ) : (
                   <ul className="space-y-1">
                     {filteredGoalTemplates.map(template => (
@@ -382,10 +384,10 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
                           size="icon" 
                           className="h-7 w-7 shrink-0" 
                           onClick={() => handleAssignTemplateGoal(template)}
-                          disabled={isGoalAssigned(template.id)}
-                          title={isGoalAssigned(template.id) ? "Goal already assigned" : "Assign this goal"}
+                          // The button is only shown if the template is not yet assigned due to filteredGoalTemplates logic
+                          title={`Assign ${template.name}`}
                         >
-                          <PlusCircleIcon className={`h-4.5 w-4.5 ${isGoalAssigned(template.id) ? 'text-muted-foreground' : 'text-primary'}`} />
+                          <PlusCircleIcon className="h-4.5 w-4.5 text-primary" />
                         </Button>
                       </li>
                     ))}
