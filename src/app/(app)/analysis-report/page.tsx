@@ -211,7 +211,7 @@ export default function AnalysisReportPage() {
   } as const;
 
   const promptChartConfig = PROMPT_TYPES.reduce((config, pt) => {
-    config[pt] = { label: pt, color: PROMPT_COLORS[pt] };
+    config[pt] = { label: pt.replace(/([A-Z])/g, ' $1').trim(), color: PROMPT_COLORS[pt] }; // Add spaces for multi-word prompt types
     return config;
   }, {} as Record<PromptType, { label: string; color: string }>);
 
@@ -353,7 +353,9 @@ export default function AnalysisReportPage() {
                       <BarChart data={promptUsageData} layout="vertical" margin={{ left: 10, right:10 }}>
                       <CartesianGrid horizontal={false} />
                       <XAxis type="number" hide/>
-                      <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} tickMargin={8} width={100} />
+                      <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} tickMargin={8} width={100} 
+                        tickFormatter={(value) => value.replace(/([A-Z])/g, ' $1').trim()} // Format Y-axis labels
+                      />
                       <ChartTooltip content={<ChartTooltipContent hideLabel />} />
                       <Bar dataKey="value" radius={5} />
                        <ChartLegend content={<ChartLegendContent />} />

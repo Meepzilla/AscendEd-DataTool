@@ -99,7 +99,7 @@ export interface PhonologicalProcessesData {
 }
 
 
-export type PromptType = "Verbal" | "Gestural" | "PartialPhysical" | "FullPhysical" | "Independent";
+export type PromptType = "Independent" | "Visual" | "Verbal" | "Gestural" | "PartialPhysical" | "FullPhysical";
 
 export interface User {
   uid: string;

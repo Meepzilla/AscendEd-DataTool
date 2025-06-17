@@ -4,9 +4,10 @@ import type { GoalTemplate, GoalType, PromptType } from './types';
 export const APP_NAME = "AscendEd";
 export const APP_SUBTITLE = "Student Goal Data Capture";
 
-export const PROMPT_TYPES: PromptType[] = ["Independent", "Verbal", "Gestural", "PartialPhysical", "FullPhysical"];
+export const PROMPT_TYPES: PromptType[] = ["Independent", "Visual", "Verbal", "Gestural", "PartialPhysical", "FullPhysical"];
 
 export const PROMPT_HOTKEY_MAP: Record<string, PromptType> = {
+  'D': 'Visual', // New hotkey for Visual
   'V': 'Verbal',
   'G': 'Gestural',
   'P': 'PartialPhysical',
@@ -66,19 +67,21 @@ export const GOAL_TYPE_FIELDS: Record<GoalType, Record<string, any>> = {
 };
 
 export const PROMPT_COLORS: Record<PromptType, string> = {
+  Independent: '#8B5CF6', // violet-500
+  Visual: '#2DD4BF', // teal-400 (New color)
   Verbal: '#3B82F6', // blue-500
   Gestural: '#10B981', // emerald-500
   PartialPhysical: '#F59E0B', // amber-500
   FullPhysical: '#EF4444', // red-500
-  Independent: '#8B5CF6', // violet-500
 };
 
 export const PROMPT_ABBREVIATIONS: Record<PromptType, string> = {
+  Independent: 'Ind',
+  Visual: 'Vis', // New abbreviation
   Verbal: 'V',
   Gestural: 'G',
   PartialPhysical: 'PP',
   FullPhysical: 'FP',
-  Independent: 'Ind',
 };
 
 export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'userId'>[] = [
