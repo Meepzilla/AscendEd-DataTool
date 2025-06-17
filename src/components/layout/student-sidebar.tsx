@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Sidebar, 
   SidebarHeader, 
@@ -35,7 +35,17 @@ import { cn } from '@/lib/utils';
 
 
 export default function StudentSidebar() {
-  const { students, loading, error, selectedStudent, setSelectedStudent, openAddStudentModal, openEditStudentModal, openDeleteStudentModal } = useStudentData();
+  const { 
+    students, 
+    sessions, // Get all sessions
+    loading, 
+    error, 
+    selectedStudent, 
+    setSelectedStudent, 
+    openAddStudentModal, 
+    openEditStudentModal, 
+    openDeleteStudentModal 
+  } = useStudentData();
   const [searchTerm, setSearchTerm] = useState('');
   const { state: sidebarState } = useSidebar(); // To adapt content based on collapsed/expanded
   const router = useRouter();
@@ -52,6 +62,11 @@ export default function StudentSidebar() {
   };
   
   const isStudentSelectedAndOnProfile = selectedStudent && pathname.includes(`/student-profile/${selectedStudent.id}`);
+
+  const studentSpecificSessions = useMemo(() => {
+    if (!selectedStudent) return [];
+    return sessions.filter(s => s.studentId === selectedStudent.id);
+  }, [selectedStudent, sessions]);
 
 
   return (
@@ -147,7 +162,7 @@ export default function StudentSidebar() {
                    {sidebarState !== 'collapsed' && <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200 accordion-chevron" />}
                 </AccordionTrigger>
                 <AccordionContent className={cn("pt-0", sidebarState === 'collapsed' && "hidden")}>
-                  <StudentProgressSidebar student={selectedStudent} />
+                  <StudentProgressSidebar student={selectedStudent} studentSessions={studentSpecificSessions} />
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
