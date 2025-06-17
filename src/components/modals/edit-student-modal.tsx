@@ -183,7 +183,7 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
       isOpen={!!currentStudent} 
       onClose={closeEditStudentModal}
       title={`Edit Student: ${currentStudent.name}`}
-      size="xl"
+      size="2xl" // Changed from "xl" to "2xl"
     >
       <ScrollArea className="max-h-[75vh] p-1">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-2">
