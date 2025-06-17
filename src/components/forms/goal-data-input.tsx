@@ -209,7 +209,7 @@ export default function GoalDataInputComponent({
                 type="text"
                 value={data.details || ''}
                 onChange={(e) => handleChange('details', e.target.value)}
-                placeholder={"e.g., WH-questions, 2-step directions"}
+                placeholder="e.g., WH-questions, 2-step directions"
                 className="h-8 text-sm"
               />
             </FormItem>
@@ -250,7 +250,7 @@ export default function GoalDataInputComponent({
                 type="text"
                 value={data.details || ''}
                 onChange={(e) => handleChange('details', e.target.value)}
-                placeholder={"e.g., Past tense verbs, describing objects"}
+                placeholder="e.g., Past tense verbs, describing objects"
                 className="h-8 text-sm"
               />
             </FormItem>
@@ -272,14 +272,7 @@ export default function GoalDataInputComponent({
                 </div>
               </FormItem>
             </div>
-            <FormItem>
-                <FormLabel>Opportunities (Optional)</FormLabel>
-                <div className="flex items-center gap-1">
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('opportunities', Math.max(0, (Number(data.opportunities ?? ((data.successfulResponses ?? 0) + (data.unsuccessfulResponses ?? 0)))) || 0) - 1))}><Minus className="h-3.5 w-3.5" /></Button>
-                  <Input type="number" min="0" value={data.opportunities ?? ((data.successfulResponses ?? 0) + (data.unsuccessfulResponses ?? 0))} onChange={(e) => handleChange('opportunities', parseInt(e.target.value) || 0)} className="h-8 text-sm text-center w-16" />
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('opportunities', (Number(data.opportunities ?? ((data.successfulResponses ?? 0) + (data.unsuccessfulResponses ?? 0))) || 0) + 1)}><Plus className="h-3.5 w-3.5" /></Button>
-                </div>
-              </FormItem>
+            {/* Accuracy display replaces opportunities input for this type */}
           </>
         );
       case 'PHONOLOGICAL_PROCESSES':
@@ -313,14 +306,7 @@ export default function GoalDataInputComponent({
                 </div>
               </FormItem>
             </div>
-            <FormItem>
-                <FormLabel>Opportunities (Optional)</FormLabel>
-                 <div className="flex items-center gap-1">
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('opportunities', Math.max(0, (Number(data.opportunities ?? ((data.correctProductions ?? 0) + (data.incorrectProductions ?? 0)))) || 0) - 1))}><Minus className="h-3.5 w-3.5" /></Button>
-                  <Input type="number" min="0" value={data.opportunities ?? ((data.correctProductions ?? 0) + (data.incorrectProductions ?? 0))} onChange={(e) => handleChange('opportunities', parseInt(e.target.value) || 0)} className="h-8 text-sm text-center w-16" />
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('opportunities', (Number(data.opportunities ?? ((data.correctProductions ?? 0) + (data.incorrectProductions ?? 0))) || 0) + 1)}><Plus className="h-3.5 w-3.5" /></Button>
-                </div>
-              </FormItem>
+            {/* Accuracy display replaces opportunities input for this type */}
           </>
         );
       default:
