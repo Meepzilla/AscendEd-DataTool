@@ -59,13 +59,10 @@ export default function AppHeader() {
           </Link>
         </div>
 
-        {/* Desktop Navigation Area */}
-        <div className="flex-1 flex justify-center items-center">
-           <AppNavigation isMobile={false} />
-        </div>
-
-
         <div className="flex items-center gap-1 sm:gap-2">
+          {/* Desktop Navigation - moved here */}
+          <AppNavigation isMobile={false} />
+
           <Button variant="ghost" size="icon" onClick={toggleErrorLogModal} title="Error Log (Alt+L)">
             <FileText className="h-5 w-5" />
             <span className="sr-only">Error Log</span>
