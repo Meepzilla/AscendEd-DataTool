@@ -275,9 +275,9 @@ export default function GoalDataInputComponent({
             <FormItem>
                 <FormLabel>Opportunities (Optional)</FormLabel>
                 <div className="flex items-center gap-1">
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('opportunities', Math.max(0, (Number(data.opportunities) || 0) - 1))}><Minus className="h-3.5 w-3.5" /></Button>
-                  <Input type="number" min="0" value={data.opportunities ?? 0} onChange={(e) => handleChange('opportunities', parseInt(e.target.value) || 0)} className="h-8 text-sm text-center w-16" />
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('opportunities', (Number(data.opportunities) || 0) + 1)}><Plus className="h-3.5 w-3.5" /></Button>
+                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('opportunities', Math.max(0, (Number(data.opportunities ?? ((data.successfulResponses ?? 0) + (data.unsuccessfulResponses ?? 0)))) || 0) - 1))}><Minus className="h-3.5 w-3.5" /></Button>
+                  <Input type="number" min="0" value={data.opportunities ?? ((data.successfulResponses ?? 0) + (data.unsuccessfulResponses ?? 0))} onChange={(e) => handleChange('opportunities', parseInt(e.target.value) || 0)} className="h-8 text-sm text-center w-16" />
+                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('opportunities', (Number(data.opportunities ?? ((data.successfulResponses ?? 0) + (data.unsuccessfulResponses ?? 0))) || 0) + 1)}><Plus className="h-3.5 w-3.5" /></Button>
                 </div>
               </FormItem>
           </>
@@ -316,9 +316,9 @@ export default function GoalDataInputComponent({
             <FormItem>
                 <FormLabel>Opportunities (Optional)</FormLabel>
                  <div className="flex items-center gap-1">
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('opportunities', Math.max(0, (Number(data.opportunities) || 0) - 1))}><Minus className="h-3.5 w-3.5" /></Button>
-                  <Input type="number" min="0" value={data.opportunities ?? 0} onChange={(e) => handleChange('opportunities', parseInt(e.target.value) || 0)} className="h-8 text-sm text-center w-16" />
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('opportunities', (Number(data.opportunities) || 0) + 1)}><Plus className="h-3.5 w-3.5" /></Button>
+                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('opportunities', Math.max(0, (Number(data.opportunities ?? ((data.correctProductions ?? 0) + (data.incorrectProductions ?? 0)))) || 0) - 1))}><Minus className="h-3.5 w-3.5" /></Button>
+                  <Input type="number" min="0" value={data.opportunities ?? ((data.correctProductions ?? 0) + (data.incorrectProductions ?? 0))} onChange={(e) => handleChange('opportunities', parseInt(e.target.value) || 0)} className="h-8 text-sm text-center w-16" />
+                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('opportunities', (Number(data.opportunities ?? ((data.correctProductions ?? 0) + (data.incorrectProductions ?? 0))) || 0) + 1)}><Plus className="h-3.5 w-3.5" /></Button>
                 </div>
               </FormItem>
           </>
@@ -353,7 +353,7 @@ export default function GoalDataInputComponent({
                     </Button>
                 )}
             </div>
-            <div className="flex-grow min-w-0"> 
+            <div className="flex-grow min-w-0">
                 <CardTitle className="text-sm font-semibold">
                     <div className="flex justify-between items-start">
                         <span className="whitespace-normal break-words mr-1">{goal.name}</span>
@@ -403,37 +403,13 @@ export default function GoalDataInputComponent({
                         onClick={() => {
                             const currentCount = Number(data[pt] || 0);
                             const newCount = currentCount + 1;
-                            let updatedDataForOnChange = { ...data, [pt]: newCount };
-                            if (pt === 'Independent') {
-                                if (goal.type === 'LANGUAGE_COMPREHENSION') {
-                                    updatedDataForOnChange.questionsCorrect = newCount;
-                                } else if (goal.type === 'ARTICULATION') {
-                                    updatedDataForOnChange.correct = newCount;
-                                } else if (goal.type === 'LANGUAGE_EXPRESSION') {
-                                    updatedDataForOnChange.successfulResponses = newCount;
-                                } else if (goal.type === 'PHONOLOGICAL_PROCESSES') {
-                                    updatedDataForOnChange.correctProductions = newCount;
-                                }
-                            }
-                            onChange(pt, updatedDataForOnChange);
+                            onChange(pt, { ...data, [pt]: newCount });
                         }}
-                        onContextMenu={(e) => { 
+                        onContextMenu={(e) => {
                             e.preventDefault();
                             const currentCount = Number(data[pt] || 0);
                             const newCount = Math.max(0, currentCount - 1);
-                            let updatedDataForOnChange = { ...data, [pt]: newCount };
-                             if (pt === 'Independent') {
-                                if (goal.type === 'LANGUAGE_COMPREHENSION') {
-                                    updatedDataForOnChange.questionsCorrect = newCount;
-                                } else if (goal.type === 'ARTICULATION') {
-                                    updatedDataForOnChange.correct = newCount;
-                                } else if (goal.type === 'LANGUAGE_EXPRESSION') {
-                                    updatedDataForOnChange.successfulResponses = newCount;
-                                } else if (goal.type === 'PHONOLOGICAL_PROCESSES') {
-                                    updatedDataForOnChange.correctProductions = newCount;
-                                }
-                            }
-                            onChange(pt, updatedDataForOnChange);
+                            onChange(pt, { ...data, [pt]: newCount });
                         }}
                         title={`Click to increment ${pt}, Right-click to decrement. ${hotkey ? `Hotkeys: ${hotkey} / Alt+${hotkey}` : ''}`}
                     >
