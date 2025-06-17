@@ -1,15 +1,15 @@
 
 'use client';
 
-import React from 'react'; // Removed useState as modal state is now in context
+import React from 'react'; 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet'; // Added SheetHeader, SheetTitle
 import { Menu, FileText, UserCircle, UserPlus } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { APP_NAME, APP_SUBTITLE } from '@/lib/constants';
 import { useStudentData } from '@/hooks/use-student-data';
-import { useErrorLog } from '@/hooks/use-error-log'; // Import useErrorLog
+import { useErrorLog } from '@/hooks/use-error-log';
 import AddStudentModal from '@/components/modals/add-student-modal';
 import EditStudentModal from '@/components/modals/edit-student-modal';
 import ErrorLogModal from '@/components/modals/error-log-modal';
@@ -19,7 +19,7 @@ import { useRouter } from 'next/navigation';
 export default function AppHeader() {
   const { currentUser, signOut } = useAuth();
   const { openAddStudentModal, editingStudent } = useStudentData();
-  const { toggleErrorLogModal, isErrorLogModalOpen } = useErrorLog(); // Use context for modal state
+  const { toggleErrorLogModal, isErrorLogModalOpen } = useErrorLog(); 
   const router = useRouter();
 
   return (
@@ -34,6 +34,9 @@ export default function AppHeader() {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-72 p-0">
+              <SheetHeader>
+                <SheetTitle className="sr-only">Main Menu</SheetTitle>
+              </SheetHeader>
               <div className="p-4 border-b">
                 <Link href="/dashboard" className="flex items-center gap-2">
                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-8 w-8 text-primary">
@@ -63,7 +66,6 @@ export default function AppHeader() {
 
 
         <div className="flex items-center gap-1 sm:gap-2">
-          {/* Help and Add Student buttons removed as they are now part of AppNavigation */}
           <Button variant="ghost" size="icon" onClick={toggleErrorLogModal} title="Error Log (Alt+L)">
             <FileText className="h-5 w-5" />
             <span className="sr-only">Error Log</span>
@@ -79,8 +81,6 @@ export default function AppHeader() {
                 <UserCircle className="h-6 w-6 text-muted-foreground" />
                 <div className="text-xs hidden sm:block">
                   <p className="font-medium text-foreground truncate max-w-[100px]">{currentUser.displayName || currentUser.email || 'User'}</p>
-                  {/* UID display removed for brevity in header */}
-                  {/* <p className="text-muted-foreground truncate max-w-[100px]">{currentUser.uid}</p> */}
                 </div>
                 <Button variant="ghost" size="sm" onClick={signOut}>Sign Out</Button>
               </>
@@ -92,7 +92,6 @@ export default function AppHeader() {
       </div>
       <AddStudentModal />
       {editingStudent && <EditStudentModal studentToEdit={editingStudent} />}
-      {/* ErrorLogModal is rendered here and its state is managed by ErrorLogProvider */}
       <ErrorLogModal /> 
     </header>
   );
