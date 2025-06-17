@@ -410,8 +410,16 @@ export default function GoalDataInputComponent({
                             const currentCount = Number(data[pt] || 0);
                             const newCount = currentCount + 1;
                             let updatedDataForOnChange = { ...data, [pt]: newCount };
-                            if (pt === 'Independent' && goal.type === 'LANGUAGE_COMPREHENSION') {
-                                updatedDataForOnChange.questionsCorrect = newCount;
+                            if (pt === 'Independent') {
+                                if (goal.type === 'LANGUAGE_COMPREHENSION') {
+                                    updatedDataForOnChange.questionsCorrect = newCount;
+                                } else if (goal.type === 'ARTICULATION') {
+                                    updatedDataForOnChange.correct = newCount;
+                                } else if (goal.type === 'LANGUAGE_EXPRESSION') {
+                                    updatedDataForOnChange.successfulResponses = newCount;
+                                } else if (goal.type === 'PHONOLOGICAL_PROCESSES') {
+                                    updatedDataForOnChange.correctProductions = newCount;
+                                }
                             }
                             onChange(pt, updatedDataForOnChange);
                         }}
@@ -420,8 +428,16 @@ export default function GoalDataInputComponent({
                             const currentCount = Number(data[pt] || 0);
                             const newCount = Math.max(0, currentCount - 1);
                             let updatedDataForOnChange = { ...data, [pt]: newCount };
-                            if (pt === 'Independent' && goal.type === 'LANGUAGE_COMPREHENSION') {
-                                updatedDataForOnChange.questionsCorrect = newCount;
+                             if (pt === 'Independent') {
+                                if (goal.type === 'LANGUAGE_COMPREHENSION') {
+                                    updatedDataForOnChange.questionsCorrect = newCount;
+                                } else if (goal.type === 'ARTICULATION') {
+                                    updatedDataForOnChange.correct = newCount;
+                                } else if (goal.type === 'LANGUAGE_EXPRESSION') {
+                                    updatedDataForOnChange.successfulResponses = newCount;
+                                } else if (goal.type === 'PHONOLOGICAL_PROCESSES') {
+                                    updatedDataForOnChange.correctProductions = newCount;
+                                }
                             }
                             onChange(pt, updatedDataForOnChange);
                         }}

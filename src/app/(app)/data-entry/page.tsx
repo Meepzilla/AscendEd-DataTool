@@ -357,8 +357,17 @@ export default function DataEntryPage() {
         const newValue = alt ? Math.max(0, currentCount - 1) : currentCount + 1;
         
         let updatedGoalDataWithPrompt = { ...goalData, [promptToUpdate]: newValue };
-        if (promptToUpdate === 'Independent' && goal.type === 'LANGUAGE_COMPREHENSION') {
-          updatedGoalDataWithPrompt.questionsCorrect = newValue;
+        
+        if (promptToUpdate === 'Independent') {
+          if (goal.type === 'LANGUAGE_COMPREHENSION') {
+            updatedGoalDataWithPrompt.questionsCorrect = newValue;
+          } else if (goal.type === 'ARTICULATION') {
+            updatedGoalDataWithPrompt.correct = newValue;
+          } else if (goal.type === 'LANGUAGE_EXPRESSION') {
+            updatedGoalDataWithPrompt.successfulResponses = newValue;
+          } else if (goal.type === 'PHONOLOGICAL_PROCESSES') {
+            updatedGoalDataWithPrompt.correctProductions = newValue;
+          }
         }
         handleGoalDataChange(studentId, goal.id, promptToUpdate, updatedGoalDataWithPrompt);
         return;
@@ -668,7 +677,7 @@ export default function DataEntryPage() {
                 </div>
             </div>
             <p className="text-sm text-muted-foreground">
-                Hotkeys: 1-4 Focus initial slots | A/Alt+A Cycle Students | S/Alt+S Cycle Goals | C/Alt+C Correct/Total/Slider+ | N/Alt+N Incorrect/Stuttered/Slider- | V/G/P/F/I/D Prompts | Ctrl+Enter Save | Alt+E Edit Student.
+                Hotkeys: 1-4 Focus initial slots | A/Alt+A Cycle Students | S/Alt+S Cycle Goals | C/Alt+C Correct/Total/Slider+ | N/Alt+N Incorrect/Stuttered/Slider- | D/V/G/P/F/I Prompts | Ctrl+Enter Save | Alt+E Edit Student.
             </p>
             </CardContent>
         )}
