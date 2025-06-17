@@ -1,17 +1,17 @@
+
 'use client';
 
 import { useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStudentData } from './use-student-data';
-import { useSidebar } from '@/components/ui/sidebar'; // Assuming useSidebar hook is available from ShadCN sidebar
+import { useSidebar } from '@/components/ui/sidebar'; 
 
 export function useKeyboardShortcuts() {
   const router = useRouter();
   const { openAddStudentModal } = useStudentData();
-  const { toggleSidebar } = useSidebar(); // From ShadCN sidebar context
+  const { toggleSidebar } = useSidebar(); 
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    // Prevent shortcuts if an input, textarea, or select is focused
     const target = event.target as HTMLElement;
     if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable) {
       return;
@@ -19,7 +19,6 @@ export function useKeyboardShortcuts() {
 
     if (event.altKey) {
       switch (event.key.toUpperCase()) {
-        // Navigation Hotkeys (Alt+1 to Alt+5)
         case '1':
           event.preventDefault();
           router.push('/student-profile');
@@ -40,27 +39,27 @@ export function useKeyboardShortcuts() {
           event.preventDefault();
           router.push('/analysis-report');
           break;
-        case 'D': // For Dashboard
+        case 'D': 
           event.preventDefault();
           router.push('/dashboard');
           break;
-
-        // Action Hotkeys
-        case 'H': // Help
+        case 'H': 
           event.preventDefault();
-          // TODO: Implement Help Modal Toggle
-          alert('Help (Alt+H) shortcut pressed. Implement help modal.');
+          router.push('/help');
           break;
-        case 'L': // Error Log
+        case 'L': 
           event.preventDefault();
-          // TODO: Implement Error Log Modal Toggle
-          alert('Error Log (Alt+L) shortcut pressed. Implement error log modal.');
+          // This should ideally open the ErrorLogModal from AppHeader
+          // For now, direct modal control from here is complex.
+          // The user can click the icon or we can expose a context function for ErrorLogModal.
+          // For simplicity, this alert remains, or we rely on user clicking the header icon.
+          alert('Error Log (Alt+L) shortcut pressed. Use header icon to open Error Log.');
           break;
-        case 'M': // Add Student Modal
+        case 'M': 
           event.preventDefault();
           openAddStudentModal();
           break;
-        case 'B': // Toggle Sidebar
+        case 'B': 
           event.preventDefault();
           if (toggleSidebar) toggleSidebar();
           break;

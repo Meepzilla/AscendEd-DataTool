@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -11,14 +12,15 @@ import { useStudentData } from '@/hooks/use-student-data';
 import AddStudentModal from '@/components/modals/add-student-modal';
 import ErrorLogModal from '@/components/modals/error-log-modal';
 import AppNavigation from './app-navigation'; // For mobile drawer
+import { useRouter } from 'next/navigation';
 
 export default function AppHeader() {
   const { currentUser, signOut } = useAuth();
   const { openAddStudentModal } = useStudentData();
   const [isErrorLogModalOpen, setIsErrorLogModalOpen] = useState(false);
+  const router = useRouter();
 
-  // TODO: Implement Help modal/functionality
-  const handleHelp = () => alert('Help (Alt+H) clicked. Implement help modal/page.');
+  const handleHelp = () => router.push('/help');
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-card/80 backdrop-blur-md">

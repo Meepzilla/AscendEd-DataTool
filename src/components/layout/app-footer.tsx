@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -6,12 +7,14 @@ import { APP_NAME } from '@/lib/constants';
 export default function AppFooter() {
   const currentYear = new Date().getFullYear();
 
+  // This list should be kept in sync with useKeyboardShortcuts.ts and help page.
   const hotkeys = [
-    { key: 'Alt+H', desc: 'Help' },
-    { key: 'Alt+L', desc: 'Error Log' },
+    { key: 'Alt+D', desc: 'Dashboard' },
+    { key: 'Alt+1-5', desc: 'Navigate Views' },
+    { key: 'Alt+H', desc: 'Help Page' },
+    { key: 'Alt+L', desc: 'Error Log (Icon)' },
     { key: 'Alt+M', desc: 'Add Student' },
     { key: 'Alt+B', desc: 'Toggle Sidebar' },
-    { key: 'Alt+1-5', desc: 'Navigate Views' },
   ];
 
   return (
@@ -20,7 +23,7 @@ export default function AppFooter() {
         <div className="flex flex-col md:flex-row justify-between items-center text-sm text-muted-foreground">
           <p>&copy; {currentYear} {APP_NAME}. All rights reserved.</p>
           <div className="mt-4 md:mt-0">
-            <h3 className="font-semibold mb-1 text-foreground">Hotkey Reminders:</h3>
+            <h3 className="font-semibold mb-1 text-foreground">Global Hotkeys:</h3>
             <ul className="flex flex-wrap gap-x-4 gap-y-1">
               {hotkeys.map(hk => (
                 <li key={hk.key}>
@@ -28,6 +31,7 @@ export default function AppFooter() {
                 </li>
               ))}
             </ul>
+             <p className="text-xs mt-1">See <a href="/help" className="underline hover:text-primary">Help Page</a> for Data Entry hotkeys.</p>
           </div>
         </div>
       </div>

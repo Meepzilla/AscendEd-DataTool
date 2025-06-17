@@ -1,8 +1,9 @@
+
 'use client';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { UserCog, ListPlus, ClipboardList, ListChecks, BarChart2, LayoutDashboard } from 'lucide-react';
+import { UserCog, ListPlus, ClipboardList, ListChecks, BarChart2, LayoutDashboard, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -11,10 +12,10 @@ interface NavItem {
   href: string;
   label: string;
   icon: React.ElementType;
-  hotkey?: string; // e.g., "1" for Alt+1
+  hotkey?: string; 
 }
 
-const navItems: NavItem[] = [
+const mainNavItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, hotkey: 'D' },
   { href: '/student-profile', label: 'Student Profile', icon: UserCog, hotkey: '1' },
   { href: '/goal-templates', label: 'Goals Templates', icon: ListPlus, hotkey: '2' },
@@ -23,8 +24,12 @@ const navItems: NavItem[] = [
   { href: '/analysis-report', label: 'Analysis Report', icon: BarChart2, hotkey: '5' },
 ];
 
+const secondaryNavItems: NavItem[] = [
+   { href: '/help', label: 'Help', icon: HelpCircle, hotkey: 'H' },
+];
+
 interface AppNavigationProps {
-  isMobile?: boolean; // For adapting styles in mobile drawer
+  isMobile?: boolean; 
 }
 
 export default function AppNavigation({ isMobile = false }: AppNavigationProps) {
@@ -34,7 +39,6 @@ export default function AppNavigation({ isMobile = false }: AppNavigationProps) 
   const activeItemClass = "bg-primary/10 text-primary";
   
   const navLinkClasses = (href: string) => {
-    // More robust active check for nested routes
     const isActive = pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
     return cn(
       baseItemClass,
@@ -45,7 +49,7 @@ export default function AppNavigation({ isMobile = false }: AppNavigationProps) 
 
   return (
     <nav className={cn("flex flex-col gap-1 p-2 sm:p-4", isMobile ? "h-full" : "w-full")}>
-      {navItems.map((item) => (
+      {mainNavItems.map((item) => (
         <Link
           key={item.label}
           href={item.href}
@@ -62,8 +66,24 @@ export default function AppNavigation({ isMobile = false }: AppNavigationProps) 
           )}
         </Link>
       ))}
-       {isMobile && <Separator className="my-4" />}
-       {/* Add settings or other links for mobile drawer if needed */}
+      {(isMobile || secondaryNavItems.length > 0) && <Separator className="my-2" />}
+      {secondaryNavItems.map((item) => (
+         <Link
+          key={item.label}
+          href={item.href}
+          className={navLinkClasses(item.href)}
+          title={`${item.label} ${item.hotkey ? `(Alt+${item.hotkey})` : ''}`}
+          aria-current={pathname === item.href ? "page" : undefined}
+        >
+          <item.icon className="h-5 w-5" />
+          <span>{item.label}</span>
+          {item.hotkey && !isMobile && (
+            <span className="ml-auto text-xs tracking-widest opacity-60">
+              Alt+{item.hotkey}
+            </span>
+          )}
+        </Link>
+      ))}
     </nav>
   );
 }
