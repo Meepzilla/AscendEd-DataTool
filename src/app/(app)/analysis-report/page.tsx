@@ -94,12 +94,20 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
     
     const accuracy = sessionOpportunities > 0 ? (sessionCorrect / sessionOpportunities) * 100 : 0;
     
+    const totalPrompts = PROMPT_TYPES.reduce((sum, pt) => {
+        if (pt !== 'Independent' && promptCounts[pt]) { // Exclude 'Independent' from total prompts sum
+            return sum + (promptCounts[pt] as number);
+        }
+        return sum;
+    }, 0);
+
     return {
       date: new Date(session.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
       accuracy: parseFloat(accuracy.toFixed(1)),
       correct: sessionCorrect,
       incorrect: sessionIncorrect,
       opportunities: sessionOpportunities,
+      totalPrompts: totalPrompts,
       ...promptCounts,
     };
   }); 
@@ -562,19 +570,18 @@ export default function AnalysisReportPage() {
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <Shuffle className="h-6 w-6 text-primary"/>Opportunities vs. Accuracy
+                        <Shuffle className="h-6 w-6 text-primary"/>Correct Responses vs. Total Prompts Used
                     </CardTitle>
-                    <CardDescription>Scatter plot of total opportunities per session against accuracy achieved. Each dot is a session.</CardDescription>
+                    <CardDescription>Scatter plot of total prompts used (excluding Independent) per session against total correct responses. Each dot is a session.</CardDescription>
                 </CardHeader>
                 <CardContent className="h-[300px] w-full">
                     <ChartContainer config={scatterPlotConfig} className="h-full w-full">
                         <ScatterChart margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
                             <CartesianGrid strokeDasharray="3 3"/>
-                            <XAxis type="number" dataKey="opportunities" name="Opportunities" unit="" tickLine={false} axisLine={false} tickMargin={8} />
-                            <YAxis type="number" dataKey="accuracy" name="Accuracy" unit="%" domain={[0, 100]} tickLine={false} axisLine={false} tickMargin={8}/>
+                            <XAxis type="number" dataKey="totalPrompts" name="Total Prompts Used" unit="" tickLine={false} axisLine={false} tickMargin={8} allowDecimals={false}/>
+                            <YAxis type="number" dataKey="correct" name="Correct Responses" unit="" tickLine={false} axisLine={false} tickMargin={8} allowDecimals={false}/>
                             <ChartTooltip content={<ChartTooltipContent hideIndicator cursor={false} />} />
                             <Scatter name="Session Performance" data={chartData} fill="hsl(var(--chart-3))" />
-                            {/* <ChartLegend content={<ChartLegendContent />} /> */}
                         </ScatterChart>
                     </ChartContainer>
                 </CardContent>
@@ -693,4 +700,5 @@ function AnalysisReportSkeleton() {
     )
 }
     
+
 
