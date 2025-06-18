@@ -23,10 +23,10 @@ import { useErrorLog } from '@/hooks/use-error-log';
 
 // Helper to transform session data for charts
 const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goal[], selectedGoalId?: string) => {
-  return sessions.map(session => { // Input 'sessions' should already be sorted
-    let correct = 0;
-    let incorrect = 0;
-    let opportunities = 0;
+  return sessions.map(session => {
+    let sessionCorrect = 0;
+    let sessionIncorrect = 0;
+    let sessionOpportunities = 0;
     let promptCounts: Record<PromptType, number> = Object.fromEntries(PROMPT_TYPES.map(pt => [pt, 0])) as Record<PromptType, number>;
 
     session.goals.forEach(goalData => {
@@ -35,41 +35,76 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
       
       if (selectedGoalId && goalData.goalId !== selectedGoalId) return;
       
-      if (goalData.data.correct !== undefined && goalData.data.incorrect !== undefined) {
-        correct += Number(goalData.data.correct) || 0;
-        incorrect += Number(goalData.data.incorrect) || 0;
-        opportunities += (Number(goalData.data.correct) || 0) + (Number(goalData.data.incorrect) || 0);
-      } else if (goalData.data.opportunities !== undefined && (goalData.data.successfulResponses !== undefined || goalData.data.correctProductions !== undefined)){
-        const successes = Number(goalData.data.successfulResponses ?? goalData.data.correctProductions) || 0;
-        opportunities += Number(goalData.data.opportunities) || 0;
-        correct += successes;
-        incorrect += (Number(goalData.data.opportunities) || 0) - successes;
-      } else if (goalData.goalType === 'FLUENCY_SYLLABLE_STUTTER') {
-        const totalSyllables = Number(goalData.data.totalSyllables) || 0;
-        const stutteredSyllables = Number(goalData.data.stutteredSyllables) || 0;
-        opportunities += totalSyllables;
-        correct += totalSyllables - stutteredSyllables;
-        incorrect += stutteredSyllables;
+      let currentGoalCorrect = 0;
+      let currentGoalIncorrect = 0;
+      let currentGoalOpportunities = 0;
+
+      switch (goalData.goalType) {
+        case 'ARTICULATION':
+          currentGoalCorrect = Number(goalData.data.correct) || 0;
+          currentGoalIncorrect = Number(goalData.data.incorrect) || 0;
+          currentGoalOpportunities = currentGoalCorrect + currentGoalIncorrect;
+          break;
+        case 'LANGUAGE_COMPREHENSION':
+          currentGoalCorrect = Number(goalData.data.questionsCorrect) || 0;
+          currentGoalIncorrect = Number(goalData.data.questionsIncorrect) || 0;
+          currentGoalOpportunities = currentGoalCorrect + currentGoalIncorrect;
+          break;
+        case 'LANGUAGE_EXPRESSION':
+          currentGoalCorrect = Number(goalData.data.successfulResponses) || 0;
+          // If opportunities field is present and is a number, it is the authoritative total
+          if (typeof goalData.data.opportunities === 'number') {
+            currentGoalOpportunities = goalData.data.opportunities;
+            currentGoalIncorrect = Math.max(0, currentGoalOpportunities - currentGoalCorrect); // Ensure incorrect is not negative
+          } else { // If opportunities is not set, sum successful and unsuccessful
+            currentGoalIncorrect = Number(goalData.data.unsuccessfulResponses) || 0;
+            currentGoalOpportunities = currentGoalCorrect + currentGoalIncorrect;
+          }
+          break;
+        case 'PHONOLOGICAL_PROCESSES':
+          currentGoalCorrect = Number(goalData.data.correctProductions) || 0;
+          if (typeof goalData.data.opportunities === 'number') {
+            currentGoalOpportunities = goalData.data.opportunities;
+            currentGoalIncorrect = Math.max(0, currentGoalOpportunities - currentGoalCorrect);
+          } else {
+            currentGoalIncorrect = Number(goalData.data.incorrectProductions) || 0;
+            currentGoalOpportunities = currentGoalCorrect + currentGoalIncorrect;
+          }
+          break;
+        case 'FLUENCY_SYLLABLE_STUTTER':
+          const totalSyllables = Number(goalData.data.totalSyllables) || 0;
+          const stutteredSyllables = Number(goalData.data.stutteredSyllables) || 0;
+          currentGoalOpportunities = totalSyllables;
+          currentGoalCorrect = Math.max(0, totalSyllables - stutteredSyllables);
+          currentGoalIncorrect = stutteredSyllables;
+          break;
+        default:
+          // For QUALITATIVE_OBSERVATION or other types, no quantitative data is added
+          break;
       }
+
+      sessionCorrect += currentGoalCorrect;
+      sessionIncorrect += currentGoalIncorrect;
+      sessionOpportunities += currentGoalOpportunities;
       
       PROMPT_TYPES.forEach(pt => {
         if (goalData.data[pt] && typeof goalData.data[pt] === 'number') {
-          promptCounts[pt] = (promptCounts[pt] || 0) + (goalData.data[pt] as number);
+          promptCounts[pt] = (promptCounts[pt] || 0) + (Number(goalData.data[pt]) || 0);
         }
       });
     });
     
-    const accuracy = opportunities > 0 ? (correct / opportunities) * 100 : 0;
+    const accuracy = sessionOpportunities > 0 ? (sessionCorrect / sessionOpportunities) * 100 : 0;
     
     return {
       date: new Date(session.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
       accuracy: parseFloat(accuracy.toFixed(1)),
-      correct,
-      incorrect,
-      opportunities,
+      correct: sessionCorrect,
+      incorrect: sessionIncorrect,
+      opportunities: sessionOpportunities,
       ...promptCounts,
     };
-  }); // Removed redundant sort, input 'sessions' is already sorted
+  }); 
 };
 
 
@@ -431,3 +466,5 @@ function AnalysisReportSkeleton() {
     )
 }
 
+
+    
