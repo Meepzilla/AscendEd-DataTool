@@ -380,7 +380,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       // Add new students with default count if not already present
       dataEntrySelectedStudentIds.forEach(id => {
         if (!(id in newCounts)) {
-          newCounts[id] = 5; // Default to 5
+          newCounts[id] = 10; // Default to 10
           changed = true;
         }
       });
