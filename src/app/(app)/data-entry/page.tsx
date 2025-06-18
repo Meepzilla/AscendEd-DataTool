@@ -214,7 +214,7 @@ export default function DataEntryPage() {
     dataEntryStudentSessionStates,
     setDataEntryStudentSessionStates,
     dataEntryFocusedGoalIndexByStudentId,
-    setDataEntryFocusedGoalIndexByStudentId,
+    setDataEntryFocusedGoalIndexByStudentId, // This was duplicated, remove one
     dataEntryShowArchivedByStudentId,
   ]);
 
@@ -225,19 +225,12 @@ export default function DataEntryPage() {
         const studentState = prevStates[studentId];
         if (!studentState) return prevStates;
         const goal = studentState.originalGoalHeaders.find(g => g.id === goalId);
-        if (!goal || goal.isArchived) return prevStates; 
+        // Prevent changes if archived and not shown, or if no goal found
+        if (!goal || (goal.isArchived && !(dataEntryShowArchivedByStudentId[studentId]))) return prevStates; 
 
-        let processedData = { ...newData };
+        let processedData = { ...newData }; // newData is already fully formed by the caller
 
-        if (PROMPT_TYPES.includes(updatedFieldName as PromptType) && updatedFieldName === 'Independent') {
-          switch (goal.type) {
-            case 'ARTICULATION': processedData.correct = newData.Independent; break;
-            case 'LANGUAGE_COMPREHENSION': processedData.questionsCorrect = newData.Independent; break;
-            case 'LANGUAGE_EXPRESSION': processedData.successfulResponses = newData.Independent; break;
-            case 'PHONOLOGICAL_PROCESSES': processedData.correctProductions = newData.Independent; break;
-          }
-        }
-
+        // Specific logic for fluency remains
         if (goal.type === 'FLUENCY_SYLLABLE_STUTTER') {
           let newTotalSyllables = Math.max(0, Number(processedData.totalSyllables || 0));
           let newStutteredSyllables = Math.max(0, Number(processedData.stutteredSyllables || 0));
@@ -256,7 +249,7 @@ export default function DataEntryPage() {
             ...studentState,
             goalData: {
               ...studentState.goalData,
-              [goalId]: processedData,
+              [goalId]: processedData, // Use the (potentially fluency-adjusted) processedData
             },
           },
         };
@@ -265,17 +258,13 @@ export default function DataEntryPage() {
       const studentSlotIndex = dataEntrySelectedStudentIds.indexOf(studentId);
       if (studentSlotIndex !== -1) {
         setDataEntryFocusedStudentSlotIndex(studentSlotIndex);
-        // The main useEffect will handle dataEntryFocusedGoalIndexByStudentId updates
-        // based on the new state of dataEntryStudentSessionStates and other factors.
       }
     },
     [
       setDataEntryStudentSessionStates,
       dataEntrySelectedStudentIds,
       setDataEntryFocusedStudentSlotIndex,
-      // dataEntryStudentSessionStates, // Removed to make callback more stable
-      // setDataEntryFocusedGoalIndexByStudentId, // Removed, main useEffect handles this
-      // dataEntryShowArchivedByStudentId, // Removed, not directly used here now
+      dataEntryShowArchivedByStudentId, 
     ]
   );
 
@@ -445,17 +434,31 @@ export default function DataEntryPage() {
       const promptToUpdate = PROMPT_HOTKEY_MAP[key];
       if (promptToUpdate && goal.type !== 'QUALITATIVE_OBSERVATION' && goal.type !== 'FLUENCY_SYLLABLE_STUTTER') {
         event.preventDefault();
-        const currentCount = Number(goalData[promptToUpdate] || 0);
-        const newValue = alt ? Math.max(0, currentCount - 1) : currentCount + 1;
+        const currentPromptCount = Number(goalData[promptToUpdate] || 0);
+        const newPromptValue = alt ? Math.max(0, currentPromptCount - 1) : currentPromptCount + 1;
 
-        let updatedDataForField = { ...goalData, [promptToUpdate]: newValue };
+        let updatedDataForField = { ...goalData, [promptToUpdate]: newPromptValue };
 
         if (promptToUpdate === 'Independent') {
-            switch(goal.type) {
-                case 'ARTICULATION': updatedDataForField.correct = newValue; break;
-                case 'LANGUAGE_COMPREHENSION': updatedDataForField.questionsCorrect = newValue; break;
-                case 'LANGUAGE_EXPRESSION': updatedDataForField.successfulResponses = newValue; break;
-                case 'PHONOLOGICAL_PROCESSES': updatedDataForField.correctProductions = newValue; break;
+            const isIncrementingPrompt = !alt;
+            const canDecrementCorrectField = alt && currentPromptCount > 0; 
+            
+            if (isIncrementingPrompt || canDecrementCorrectField) {
+                const incrementAmount = isIncrementingPrompt ? 1 : -1;
+                switch(goal.type) {
+                    case 'ARTICULATION':
+                        updatedDataForField.correct = Math.max(0, (Number(goalData.correct) || 0) + incrementAmount);
+                        break;
+                    case 'LANGUAGE_COMPREHENSION':
+                        updatedDataForField.questionsCorrect = Math.max(0, (Number(goalData.questionsCorrect) || 0) + incrementAmount);
+                        break;
+                    case 'LANGUAGE_EXPRESSION':
+                        updatedDataForField.successfulResponses = Math.max(0, (Number(goalData.successfulResponses) || 0) + incrementAmount);
+                        break;
+                    case 'PHONOLOGICAL_PROCESSES':
+                        updatedDataForField.correctProductions = Math.max(0, (Number(goalData.correctProductions) || 0) + incrementAmount);
+                        break;
+                }
             }
         }
         handleGoalDataChange(studentId, goal.id, promptToUpdate, updatedDataForField);
@@ -698,9 +701,9 @@ export default function DataEntryPage() {
 
   if (studentsLoading && students.length === 0) {
     return (
-      <div className="space-y-6">
+      <div class="space-y-6">
         <Card><CardHeader><Skeleton className="h-8 w-1/2" /></CardHeader><CardContent><Skeleton className="h-40 w-full" /></CardContent></Card>
-        <div className="flex flex-row gap-6 items-start overflow-x-auto py-4 px-1">
+        <div class="flex flex-row gap-6 items-start overflow-x-auto py-4 px-1">
             <Skeleton className="h-96 w-[350px] flex-shrink-0" />
             <Skeleton className="h-96 w-[350px] flex-shrink-0" />
         </div>
@@ -709,7 +712,7 @@ export default function DataEntryPage() {
   }
 
   return (
-    <div className="space-y-6 flex flex-col h-full">
+    <div class="space-y-6 flex flex-col h-full">
        {isResetConfirmationOpen && (
         <ConfirmationModal
           isOpen={isResetConfirmationOpen}
@@ -722,14 +725,14 @@ export default function DataEntryPage() {
       )}
       <Card className="shadow-lg flex-shrink-0">
         <CardHeader>
-            <div className="flex justify-between items-center">
-                 <div className="flex items-center gap-2">
+            <div class="flex justify-between items-center">
+                 <div class="flex items-center gap-2">
                     <Edit2 className="h-7 w-7 text-primary"/>
                     <CardTitle className="text-2xl font-bold">Data Entry</CardTitle>
                 </div>
                 <Button variant="ghost" size="icon" onClick={() => setIsHeaderCardCollapsed(!isHeaderCardCollapsed)} title={isHeaderCardCollapsed ? "Expand Header" : "Collapse Header"}>
                     {isHeaderCardCollapsed ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
-                    <span className="sr-only">{isHeaderCardCollapsed ? "Expand Header" : "Collapse Header"}</span>
+                    <span class="sr-only">{isHeaderCardCollapsed ? "Expand Header" : "Collapse Header"}</span>
                 </Button>
             </div>
           {!isHeaderCardCollapsed && (
@@ -738,12 +741,12 @@ export default function DataEntryPage() {
         </CardHeader>
         {!isHeaderCardCollapsed && (
             <CardContent className="space-y-4">
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                <div className="w-full sm:w-auto">
+            <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                <div class="w-full sm:w-auto">
                 <Label htmlFor="sessionDate" className="block text-sm font-medium mb-1">Session Date</Label>
                 <DatePicker date={dataEntrySessionDate} setDate={setDataEntrySessionDate} />
                 </div>
-                <div className="w-full sm:w-auto">
+                <div class="w-full sm:w-auto">
                     <Label htmlFor="sessionTime" className="block text-sm font-medium mb-1">Session Time</Label>
                     <Input
                         id="sessionTime"
@@ -761,7 +764,7 @@ export default function DataEntryPage() {
         )}
       </Card>
 
-      <div className="flex flex-row gap-6 items-start overflow-x-auto py-4 px-1 flex-grow min-h-0">
+      <div class="flex flex-row gap-6 items-start overflow-x-auto py-4 px-1 flex-grow min-h-0">
         {dataEntrySelectedStudentIds.map((studentId, slotIndex) => {
           const student = students.find(s => s.id === studentId);
           const state = dataEntryStudentSessionStates[studentId];
@@ -789,8 +792,8 @@ export default function DataEntryPage() {
               onClick={() => setDataEntryFocusedStudentSlotIndex(slotIndex)}
             >
               <CardHeader className="bg-muted/50 p-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 w-full">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2 w-full">
                     <Button
                         variant="ghost"
                         size="icon"
@@ -820,7 +823,7 @@ export default function DataEntryPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="flex items-center">
+                  <div class="flex items-center">
                     {dataEntrySelectedStudentIds.length > 0 && (
                        <Button variant="ghost" size="icon" onClick={(e) => {e.stopPropagation(); removeStudentSlot(slotIndex);}} className="h-8 w-8" title="Remove Student Slot">
                         <XCircle className="h-5 w-5 text-destructive" />
@@ -840,7 +843,7 @@ export default function DataEntryPage() {
                       onChange={(e) => handleInputChange(studentId, 'activity', e.target.value)}
                     />
                   </div>
-                  <div className="flex items-center space-x-2 mt-2">
+                  <div class="flex items-center space-x-2 mt-2">
                     <Switch
                         id={`show-archived-${studentId}`}
                         checked={dataEntryShowArchivedByStudentId[studentId] || false}
@@ -885,7 +888,7 @@ export default function DataEntryPage() {
                         );
                       })}
                        {filteredStudentGoals.length > 10 && (
-                        <div className="flex justify-center mt-2">
+                        <div class="flex justify-center mt-2">
                           {visibleGoalCount < filteredStudentGoals.length ? (
                             <Button
                               variant="outline"
@@ -922,7 +925,7 @@ export default function DataEntryPage() {
                       rows={3}
                     />
                   </div>
-                  <div className="border-t pt-3 space-y-2">
+                  <div class="border-t pt-3 space-y-2">
                     <Button
                         variant="outline"
                         size="sm"
@@ -933,9 +936,9 @@ export default function DataEntryPage() {
                       {isAiLoading[studentId] ? 'Getting Suggestions...' : 'Get AI Activity Suggestions'}
                     </Button>
                     {dataEntryAiActivitySuggestions[studentId] && dataEntryAiActivitySuggestions[studentId].length > 0 && (
-                      <div className="p-2 border rounded-md bg-accent/30">
-                        <h4 className="text-xs font-semibold mb-1">Suggested Activities:</h4>
-                        <ul className="list-disc list-inside text-xs space-y-0.5">
+                      <div class="p-2 border rounded-md bg-accent/30">
+                        <h4 class="text-xs font-semibold mb-1">Suggested Activities:</h4>
+                        <ul class="list-disc list-inside text-xs space-y-0.5">
                           {dataEntryAiActivitySuggestions[studentId].map((sugg, i) => <li key={i}>{sugg}</li>)}
                         </ul>
                       </div>
@@ -958,7 +961,7 @@ export default function DataEntryPage() {
       </div>
 
       {dataEntrySelectedStudentIds.length > 0 && (
-        <div className="mt-auto flex-shrink-0 flex justify-end items-center gap-2 py-4 border-t">
+        <div class="mt-auto flex-shrink-0 flex justify-end items-center gap-2 py-4 border-t">
            <Button variant="outline" onClick={handleOpenResetConfirmation} disabled={isSaving} size="lg">
             <RotateCcw className="mr-2 h-5 w-5" />
             Reset Current Data
@@ -986,6 +989,7 @@ export default function DataEntryPage() {
     
 
     
+
 
 
 
