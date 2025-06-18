@@ -7,9 +7,9 @@ import type { Student, SessionData, Goal, PromptType, GoalType } from '@/lib/typ
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { BarChart2, Download, Info, RefreshCw, Lightbulb, MessageSquare, TrendingUp, AlertTriangle, Workflow } from 'lucide-react';
+import { BarChart2, Download, Info, RefreshCw, Lightbulb, MessageSquare, TrendingUp, AlertTriangle, Workflow, Shuffle } from 'lucide-react';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, LineChart, Line, Legend, Sankey, Tooltip as RechartsTooltip } from 'recharts';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, LineChart, Line, Legend, Sankey, Tooltip as RechartsTooltip, ScatterChart, Scatter } from 'recharts';
 import { generateTechnicalSummary } from '@/ai/flows/technical-summary-generation';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -346,10 +346,6 @@ export default function AnalysisReportPage() {
     if (!selectedStudent || studentSessions.length === 0 || activeStudentGoals.length === 0) {
         return { nodes: [], links: [] };
     }
-    // If a specific goal is selected, Sankey might be less informative or need different logic.
-    // For now, let's make it always use all active goals of the student for its data source, regardless of selectedGoalId.
-    // Or, adapt transformDataForSankeyChart to filter by selectedGoalId if one is present.
-    // Current transformDataForSankeyChart uses studentActiveGoals, which respects selectedGoalId if present.
     const goalsForSankey = selectedGoalId ? activeStudentGoals.filter(g => g.id === selectedGoalId) : activeStudentGoals;
     return transformDataForSankeyChart(studentSessions, goalsForSankey);
   }, [studentSessions, activeStudentGoals, selectedStudent, selectedGoalId]);
@@ -431,6 +427,7 @@ export default function AnalysisReportPage() {
   const accuracyChartConfig = { accuracy: { label: 'Accuracy (%)', color: 'hsl(var(--primary))' } } as const;
   const responseCountsChartConfig = { correct: { label: 'Correct', color: 'hsl(var(--chart-2))' }, incorrect: { label: 'Incorrect', color: 'hsl(var(--chart-5))' } } as const;
   const opportunitiesChartConfig = { opportunities: { label: 'Opportunities', color: 'hsl(var(--chart-1))' } } as const;
+  const scatterPlotConfig = { session: { label: 'Session Performance', color: 'hsl(var(--chart-3))' } } as const;
   const promptChartConfig = PROMPT_TYPES.reduce((config, pt) => {
     config[pt] = { label: pt.replace(/([A-Z])/g, ' $1').trim(), color: PROMPT_COLORS[pt] };
     return config;
@@ -562,8 +559,29 @@ export default function AnalysisReportPage() {
               </CardContent>
             </Card>
 
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Shuffle className="h-6 w-6 text-primary"/>Opportunities vs. Accuracy
+                    </CardTitle>
+                    <CardDescription>Scatter plot of total opportunities per session against accuracy achieved. Each dot is a session.</CardDescription>
+                </CardHeader>
+                <CardContent className="h-[300px] w-full">
+                    <ChartContainer config={scatterPlotConfig} className="h-full w-full">
+                        <ScatterChart margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3"/>
+                            <XAxis type="number" dataKey="opportunities" name="Opportunities" unit="" tickLine={false} axisLine={false} tickMargin={8} />
+                            <YAxis type="number" dataKey="accuracy" name="Accuracy" unit="%" domain={[0, 100]} tickLine={false} axisLine={false} tickMargin={8}/>
+                            <ChartTooltip content={<ChartTooltipContent hideIndicator cursor={false} />} />
+                            <Scatter name="Session Performance" data={chartData} fill="hsl(var(--chart-3))" />
+                            {/* <ChartLegend content={<ChartLegendContent />} /> */}
+                        </ScatterChart>
+                    </ChartContainer>
+                </CardContent>
+            </Card>
+
             {promptUsageData.length > 0 && (
-              <Card>
+              <Card className="lg:col-span-2"> {/* Make prompt usage chart full width on large screens if it exists */}
                   <CardHeader>
                   <CardTitle>Prompt Usage Distribution (Active Goals)</CardTitle>
                   <CardDescription>Total count of each prompt level used across selected sessions for active goals.</CardDescription>
@@ -675,3 +693,4 @@ function AnalysisReportSkeleton() {
     )
 }
     
+
