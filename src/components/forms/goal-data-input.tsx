@@ -63,21 +63,21 @@ export default function GoalDataInputComponent({
         totalOpportunities = (data.questionsAttempted !== undefined && Number(data.questionsAttempted || 0) > 0)
           ? Number(data.questionsAttempted || 0)
           : (correct + Number(data.questionsIncorrect || 0));
-        if (data.questionsAttempted !== undefined && correct > totalOpportunities) correct = totalOpportunities;
+        if (data.questionsAttempted !== undefined && correct > totalOpportunities && totalOpportunities > 0) correct = totalOpportunities; // Ensure correct isn't more than attempted if attempted is specified
         break;
       case 'LANGUAGE_EXPRESSION':
         correct = Number(data.successfulResponses || 0);
         totalOpportunities = (data.opportunities !== undefined && Number(data.opportunities || 0) > 0 && (Number(data.successfulResponses || 0) + Number(data.unsuccessfulResponses || 0) <= Number(data.opportunities || 0)))
           ? Number(data.opportunities || 0)
           : (correct + Number(data.unsuccessfulResponses || 0));
-        if (data.opportunities !== undefined && correct > totalOpportunities) correct = totalOpportunities;
+        if (data.opportunities !== undefined && correct > totalOpportunities && totalOpportunities > 0) correct = totalOpportunities;
         break;
       case 'PHONOLOGICAL_PROCESSES':
         correct = Number(data.correctProductions || 0);
         totalOpportunities = (data.opportunities !== undefined && Number(data.opportunities || 0) > 0 && (Number(data.correctProductions || 0) + Number(data.incorrectProductions || 0) <= Number(data.opportunities || 0)))
           ? Number(data.opportunities || 0)
           : (correct + Number(data.incorrectProductions || 0));
-        if (data.opportunities !== undefined && correct > totalOpportunities) correct = totalOpportunities;
+        if (data.opportunities !== undefined && correct > totalOpportunities && totalOpportunities > 0) correct = totalOpportunities;
         break;
       case 'FLUENCY_SYLLABLE_STUTTER':
         const totalSyllables = Number(data.totalSyllables || 0);
@@ -231,7 +231,14 @@ export default function GoalDataInputComponent({
                 </div>
               </FormItem>
             </div>
-             <FormItem>
+            <div className="grid grid-cols-2 gap-1">
+              <FormItem>
+                <FormLabel>Accuracy</FormLabel>
+                <p className="text-sm font-semibold text-primary h-8 flex items-center pt-0.5">
+                  {calculateAccuracy()}
+                </p>
+              </FormItem>
+              <FormItem>
                 <FormLabel>Questions Attempted (Optional)</FormLabel>
                 <div className="flex items-center gap-1">
                   <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('questionsAttempted', Math.max(0, (Number(data.questionsAttempted ?? ((data.questionsCorrect ?? 0) + (data.questionsIncorrect ?? 0))) || 0) - 1))}><Minus className="h-3.5 w-3.5" /></Button>
@@ -239,6 +246,7 @@ export default function GoalDataInputComponent({
                   <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('questionsAttempted', (Number(data.questionsAttempted ?? ((data.questionsCorrect ?? 0) + (data.questionsIncorrect ?? 0))) || 0) + 1)}><Plus className="h-3.5 w-3.5" /></Button>
                 </div>
               </FormItem>
+            </div>
           </>
         );
       case 'LANGUAGE_EXPRESSION':
@@ -272,7 +280,6 @@ export default function GoalDataInputComponent({
                 </div>
               </FormItem>
             </div>
-            {/* Accuracy display replaces opportunities input for this type */}
           </>
         );
       case 'PHONOLOGICAL_PROCESSES':
@@ -306,7 +313,6 @@ export default function GoalDataInputComponent({
                 </div>
               </FormItem>
             </div>
-            {/* Accuracy display replaces opportunities input for this type */}
           </>
         );
       default:
@@ -360,7 +366,7 @@ export default function GoalDataInputComponent({
       <CardContent className="p-2 space-y-1.5">
         {renderInputFields()}
 
-        {showAccuracyDisplay && (
+        {showAccuracyDisplay && goal.type !== 'LANGUAGE_COMPREHENSION' && (
           <div className="mt-1.5">
             <FormLabel>Accuracy</FormLabel>
             <p className="text-sm font-semibold text-primary h-8 flex items-center">
@@ -389,13 +395,31 @@ export default function GoalDataInputComponent({
                         onClick={() => {
                             const currentCount = Number(data[pt] || 0);
                             const newCount = currentCount + 1;
-                            onChange(pt, { ...data, [pt]: newCount });
+                            let updatedData = { ...data, [pt]: newCount };
+                            if (pt === 'Independent') {
+                                switch(goal.type) {
+                                    case 'ARTICULATION': updatedData.correct = newCount; break;
+                                    case 'LANGUAGE_COMPREHENSION': updatedData.questionsCorrect = newCount; break;
+                                    case 'LANGUAGE_EXPRESSION': updatedData.successfulResponses = newCount; break;
+                                    case 'PHONOLOGICAL_PROCESSES': updatedData.correctProductions = newCount; break;
+                                }
+                            }
+                            onChange(pt, updatedData);
                         }}
                         onContextMenu={(e) => {
                             e.preventDefault();
                             const currentCount = Number(data[pt] || 0);
                             const newCount = Math.max(0, currentCount - 1);
-                            onChange(pt, { ...data, [pt]: newCount });
+                            let updatedData = { ...data, [pt]: newCount };
+                             if (pt === 'Independent') {
+                                switch(goal.type) {
+                                    case 'ARTICULATION': updatedData.correct = newCount; break;
+                                    case 'LANGUAGE_COMPREHENSION': updatedData.questionsCorrect = newCount; break;
+                                    case 'LANGUAGE_EXPRESSION': updatedData.successfulResponses = newCount; break;
+                                    case 'PHONOLOGICAL_PROCESSES': updatedData.correctProductions = newCount; break;
+                                }
+                            }
+                            onChange(pt, updatedData);
                         }}
                         title={`Click to increment ${pt}, Right-click to decrement. ${hotkey ? `Hotkeys: ${hotkey} / Alt+${hotkey}` : ''}`}
                     >
