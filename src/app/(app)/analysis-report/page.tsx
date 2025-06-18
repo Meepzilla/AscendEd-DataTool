@@ -3,13 +3,13 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { useStudentData } from '@/hooks/use-student-data';
-import type { Student, SessionData, Goal, PromptType } from '@/lib/types';
+import type { Student, SessionData, Goal, PromptType, GoalType } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { BarChart2, Download, Info, RefreshCw, Lightbulb, MessageSquare, TrendingUp, AlertTriangle } from 'lucide-react';
+import { BarChart2, Download, Info, RefreshCw, Lightbulb, MessageSquare, TrendingUp, AlertTriangle, Workflow } from 'lucide-react';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, LineChart, Line, Legend } from 'recharts';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, LineChart, Line, Legend, Sankey, Tooltip as RechartsTooltip } from 'recharts';
 import { generateTechnicalSummary } from '@/ai/flows/technical-summary-generation';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -27,11 +27,11 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
     let sessionCorrect = 0;
     let sessionIncorrect = 0;
     let sessionOpportunities = 0;
-    let promptCounts: Record<PromptType, number> = Object.fromEntries(PROMPT_TYPES.map(pt => [pt, 0])) as Record<PromptType, number>;
+    let promptCounts: Record<PromptType, number> = PROMPT_TYPES.reduce((acc, pt) => ({ ...acc, [pt]: 0 }), {} as Record<PromptType, number>);
 
     session.goals.forEach(goalData => {
       const currentGoal = studentGoals.find(g => g.id === goalData.goalId);
-      if (currentGoal?.isArchived) return; // Skip archived goals
+      if (currentGoal?.isArchived) return; 
       
       if (selectedGoalId && goalData.goalId !== selectedGoalId) return;
       
@@ -52,11 +52,10 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
           break;
         case 'LANGUAGE_EXPRESSION':
           currentGoalCorrect = Number(goalData.data.successfulResponses) || 0;
-          // If opportunities field is present and is a number, it is the authoritative total
           if (typeof goalData.data.opportunities === 'number') {
             currentGoalOpportunities = goalData.data.opportunities;
-            currentGoalIncorrect = Math.max(0, currentGoalOpportunities - currentGoalCorrect); // Ensure incorrect is not negative
-          } else { // If opportunities is not set, sum successful and unsuccessful
+            currentGoalIncorrect = Math.max(0, currentGoalOpportunities - currentGoalCorrect); 
+          } else { 
             currentGoalIncorrect = Number(goalData.data.unsuccessfulResponses) || 0;
             currentGoalOpportunities = currentGoalCorrect + currentGoalIncorrect;
           }
@@ -79,7 +78,6 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
           currentGoalIncorrect = stutteredSyllables;
           break;
         default:
-          // For QUALITATIVE_OBSERVATION or other types, no quantitative data is added
           break;
       }
 
@@ -107,6 +105,191 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
   }); 
 };
 
+// Sankey Diagram Data Interfaces
+interface SankeyNode {
+  name: string;
+  color?: string;
+}
+interface SankeyLink {
+  source: number;
+  target: number;
+  value: number;
+}
+interface SankeyData {
+  nodes: SankeyNode[];
+  links: SankeyLink[];
+}
+
+// Sankey Diagram Data Transformation
+const transformDataForSankeyChart = (
+  sessions: SessionData[],
+  studentActiveGoals: Goal[]
+): SankeyData => {
+  const rawNodes: SankeyNode[] = [];
+  const rawLinks: { source: string; target: string; value: number }[] = [];
+  const nodeMap: Record<string, number> = {};
+
+  const addRawNode = (name: string, color?: string): void => {
+    if (nodeMap[name] === undefined) {
+      nodeMap[name] = rawNodes.length;
+      rawNodes.push({ name, color });
+    } else if (color && !rawNodes[nodeMap[name]].color) {
+      // Update color if node exists but didn't have a color
+      rawNodes[nodeMap[name]].color = color;
+    }
+  };
+  
+  const aggregatedGoalStats: Record<string, {
+    opportunities: number;
+    correct: number;
+    incorrect: number;
+    name: string;
+    type: GoalType;
+  }> = {};
+
+  sessions.forEach(session => {
+    session.goals.forEach(goalDataEntry => {
+      const originalGoal = studentActiveGoals.find(g => g.id === goalDataEntry.goalId);
+      if (!originalGoal || originalGoal.isArchived) {
+        return;
+      }
+
+      if (!aggregatedGoalStats[originalGoal.id]) {
+        aggregatedGoalStats[originalGoal.id] = {
+          opportunities: 0,
+          correct: 0,
+          incorrect: 0,
+          name: originalGoal.name,
+          type: originalGoal.type,
+        };
+      }
+
+      let currentCorrect = 0;
+      let currentIncorrect = 0;
+      let currentOpportunities = 0;
+
+      switch (originalGoal.type) {
+        case 'ARTICULATION':
+          currentCorrect = Number(goalDataEntry.data.correct) || 0;
+          currentIncorrect = Number(goalDataEntry.data.incorrect) || 0;
+          currentOpportunities = currentCorrect + currentIncorrect;
+          break;
+        case 'LANGUAGE_COMPREHENSION':
+          currentCorrect = Number(goalDataEntry.data.questionsCorrect) || 0;
+          currentIncorrect = Number(goalDataEntry.data.questionsIncorrect) || 0;
+          currentOpportunities = currentCorrect + currentIncorrect;
+          break;
+        case 'LANGUAGE_EXPRESSION':
+          currentCorrect = Number(goalDataEntry.data.successfulResponses) || 0;
+          if (typeof goalDataEntry.data.opportunities === 'number') {
+            currentOpportunities = goalDataEntry.data.opportunities;
+            currentIncorrect = Math.max(0, currentOpportunities - currentCorrect);
+          } else {
+            currentIncorrect = Number(goalDataEntry.data.unsuccessfulResponses) || 0;
+            currentOpportunities = currentCorrect + currentIncorrect;
+          }
+          break;
+        case 'PHONOLOGICAL_PROCESSES':
+          currentCorrect = Number(goalDataEntry.data.correctProductions) || 0;
+          if (typeof goalDataEntry.data.opportunities === 'number') {
+            currentOpportunities = goalDataEntry.data.opportunities;
+            currentIncorrect = Math.max(0, currentOpportunities - currentCorrect);
+          } else {
+            currentIncorrect = Number(goalDataEntry.data.incorrectProductions) || 0;
+            currentOpportunities = currentCorrect + currentIncorrect;
+          }
+          break;
+        case 'FLUENCY_SYLLABLE_STUTTER':
+          const totalSyllables = Number(goalDataEntry.data.totalSyllables) || 0;
+          const stutteredSyllables = Number(goalDataEntry.data.stutteredSyllables) || 0;
+          currentOpportunities = totalSyllables;
+          currentCorrect = Math.max(0, totalSyllables - stutteredSyllables);
+          currentIncorrect = stutteredSyllables;
+          break;
+        default: return;
+      }
+      aggregatedGoalStats[originalGoal.id].opportunities += currentOpportunities;
+      aggregatedGoalStats[originalGoal.id].correct += currentCorrect;
+      aggregatedGoalStats[originalGoal.id].incorrect += currentIncorrect;
+    });
+  });
+
+  const correctOutcomeNodeName = "Correct Outcomes";
+  const incorrectOutcomeNodeName = "Incorrect Outcomes";
+  addRawNode(correctOutcomeNodeName, 'hsl(var(--chart-2))');
+  addRawNode(incorrectOutcomeNodeName, 'hsl(var(--chart-5))');
+
+  const goalTypeNodeNames: Set<string> = new Set();
+  Object.values(aggregatedGoalStats).forEach(stats => {
+    if (stats.opportunities > 0) {
+      goalTypeNodeNames.add(stats.type);
+      addRawNode(stats.name, 'hsl(var(--chart-4))');
+    }
+  });
+  goalTypeNodeNames.forEach(type => addRawNode(type, 'hsl(var(--chart-1))'));
+
+  Object.values(aggregatedGoalStats).forEach(stats => {
+    if (stats.opportunities <= 0) return;
+    rawLinks.push({ source: stats.type, target: stats.name, value: stats.opportunities });
+    if (stats.correct > 0) {
+      rawLinks.push({ source: stats.name, target: correctOutcomeNodeName, value: stats.correct });
+    }
+    if (stats.incorrect > 0) {
+      rawLinks.push({ source: stats.name, target: incorrectOutcomeNodeName, value: stats.incorrect });
+    }
+  });
+  
+  // Filter nodes that are part of any links
+  const linkedNodeNames = new Set<string>();
+  rawLinks.forEach(link => {
+    linkedNodeNames.add(link.source);
+    linkedNodeNames.add(link.target);
+  });
+
+  const finalNodes: SankeyNode[] = rawNodes.filter(node => linkedNodeNames.has(node.name));
+  const finalNodeMap: Record<string, number> = {};
+  finalNodes.forEach((node, index) => {
+    finalNodeMap[node.name] = index;
+  });
+
+  const finalLinks: SankeyLink[] = rawLinks
+    .filter(link => finalNodeMap[link.source] !== undefined && finalNodeMap[link.target] !== undefined)
+    .map(link => ({
+      source: finalNodeMap[link.source],
+      target: finalNodeMap[link.target],
+      value: link.value,
+    }));
+
+  return { nodes: finalNodes, links: finalLinks };
+};
+
+// Custom Sankey Node Component
+const CustomSankeyNode = ({ x, y, width, height, index, payload, containerWidth }: any) => {
+  if (!payload || typeof payload.name === 'undefined') return null;
+
+  const nodeName = String(payload.name);
+  const nodeValue = payload.value !== undefined ? ` (${payload.value.toLocaleString()})` : '';
+  const textX = payload.x < containerWidth / 2 ? width + 6 : -6;
+  const textAnchor = payload.x < containerWidth / 2 ? "start" : "end";
+  
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <rect height={height} width={width} fill={payload.color || "hsl(var(--muted))"} strokeWidth="0" rx="2" ry="2"/>
+      <text
+        x={textX}
+        y={height / 2}
+        textAnchor={textAnchor}
+        dominantBaseline="middle"
+        fill="hsl(var(--foreground))"
+        fontSize="12"
+      >
+        {nodeName}
+        {nodeValue}
+      </text>
+    </g>
+  );
+};
+
 
 export default function AnalysisReportPage() {
   const { students, sessions, loading: dataLoading } = useStudentData();
@@ -123,7 +306,6 @@ export default function AnalysisReportPage() {
   const selectedStudent = useMemo(() => students.find(s => s.id === selectedStudentId), [students, selectedStudentId]);
   const activeStudentGoals = useMemo(() => selectedStudent?.goals.filter(g => !g.isArchived) || [], [selectedStudent]);
 
-
   useEffect(() => {
     if (studentIdFromQuery && students.find(s => s.id === studentIdFromQuery)) {
       setSelectedStudentId(studentIdFromQuery);
@@ -131,7 +313,6 @@ export default function AnalysisReportPage() {
       setSelectedStudentId(students[0].id);
     }
   }, [studentIdFromQuery, students, selectedStudentId]);
-
 
   const studentSessions = useMemo(() => {
     if (!selectedStudentId) return [];
@@ -160,6 +341,18 @@ export default function AnalysisReportPage() {
       .map(([name, value]) => ({ name: name as PromptType, value, fill: PROMPT_COLORS[name as PromptType] }))
       .filter(item => item.value > 0); 
   }, [chartData]);
+
+  const sankeyData = useMemo(() => {
+    if (!selectedStudent || studentSessions.length === 0 || activeStudentGoals.length === 0) {
+        return { nodes: [], links: [] };
+    }
+    // If a specific goal is selected, Sankey might be less informative or need different logic.
+    // For now, let's make it always use all active goals of the student for its data source, regardless of selectedGoalId.
+    // Or, adapt transformDataForSankeyChart to filter by selectedGoalId if one is present.
+    // Current transformDataForSankeyChart uses studentActiveGoals, which respects selectedGoalId if present.
+    const goalsForSankey = selectedGoalId ? activeStudentGoals.filter(g => g.id === selectedGoalId) : activeStudentGoals;
+    return transformDataForSankeyChart(studentSessions, goalsForSankey);
+  }, [studentSessions, activeStudentGoals, selectedStudent, selectedGoalId]);
 
 
   const handleGenerateSummary = async () => {
@@ -212,7 +405,6 @@ export default function AnalysisReportPage() {
         Object.values(row)
             .map(value => {
                 const stringValue = String(value);
-                // Escape double quotes by doubling them, and wrap if it contains comma, double quote, or newline
                 if (stringValue.includes('"') || stringValue.includes(',') || stringValue.includes('\n') || stringValue.includes('\r')) {
                     return `"${stringValue.replace(/"/g, '""')}"`;
                 }
@@ -236,24 +428,13 @@ export default function AnalysisReportPage() {
     toast({title:"Exported", description:"Data exported as CSV."});
   };
 
-  const accuracyChartConfig = {
-    accuracy: { label: 'Accuracy (%)', color: 'hsl(var(--primary))' },
-  } as const;
-
-  const responseCountsChartConfig = {
-    correct: { label: 'Correct', color: 'hsl(var(--chart-2))' }, 
-    incorrect: { label: 'Incorrect', color: 'hsl(var(--chart-5))' }, 
-  } as const;
-
-  const opportunitiesChartConfig = {
-    opportunities: { label: 'Opportunities', color: 'hsl(var(--chart-1))' }, 
-  } as const;
-
+  const accuracyChartConfig = { accuracy: { label: 'Accuracy (%)', color: 'hsl(var(--primary))' } } as const;
+  const responseCountsChartConfig = { correct: { label: 'Correct', color: 'hsl(var(--chart-2))' }, incorrect: { label: 'Incorrect', color: 'hsl(var(--chart-5))' } } as const;
+  const opportunitiesChartConfig = { opportunities: { label: 'Opportunities', color: 'hsl(var(--chart-1))' } } as const;
   const promptChartConfig = PROMPT_TYPES.reduce((config, pt) => {
-    config[pt] = { label: pt.replace(/([A-Z])/g, ' $1').trim(), color: PROMPT_COLORS[pt] }; // Add spaces for multi-word prompt types
+    config[pt] = { label: pt.replace(/([A-Z])/g, ' $1').trim(), color: PROMPT_COLORS[pt] };
     return config;
   }, {} as Record<PromptType, { label: string; color: string }>);
-
 
   if (dataLoading && students.length === 0) {
     return <AnalysisReportSkeleton />;
@@ -393,7 +574,7 @@ export default function AnalysisReportPage() {
                       <CartesianGrid horizontal={false} />
                       <XAxis type="number" hide/>
                       <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} tickMargin={8} width={100} 
-                        tickFormatter={(value) => value.replace(/([A-Z])/g, ' $1').trim()} // Format Y-axis labels
+                        tickFormatter={(value) => value.replace(/([A-Z])/g, ' $1').trim()}
                       />
                       <ChartTooltip content={<ChartTooltipContent hideLabel />} />
                       <Bar dataKey="value" radius={5} />
@@ -405,6 +586,34 @@ export default function AnalysisReportPage() {
              )}
            </div>
            
+           {sankeyData.links.length > 0 && (
+            <Card className="col-span-1 lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Workflow className="h-6 w-6 text-primary"/>Goal Performance Flow
+                </CardTitle>
+                <CardDescription>
+                  Flow of opportunities from Goal Type to Specific Goal, then to Correct/Incorrect outcomes for {selectedGoalId ? `goal: ${activeStudentGoals.find(g=>g.id === selectedGoalId)?.name || 'selected goal'}` : 'all active goals'}.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="h-[400px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <Sankey
+                    data={sankeyData}
+                    node={<CustomSankeyNode />}
+                    nodePadding={20}
+                    margin={{ top: 5, right: 5, bottom: 5, left: 5 }}
+                    linkCurviness={0.5}
+                    iterations={32}
+                  >
+                    <RechartsTooltip formatter={(value:any, name:any) => [value.toLocaleString(), name.replace(/([A-Z])/g, ' $1').trim()]}/>
+                  </Sankey>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+           )}
+
+
           <Card>
             <CardHeader>
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
@@ -465,6 +674,4 @@ function AnalysisReportSkeleton() {
         </div>
     )
 }
-
-
     
