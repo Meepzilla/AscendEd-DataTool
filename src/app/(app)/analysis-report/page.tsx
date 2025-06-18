@@ -23,7 +23,7 @@ import { useErrorLog } from '@/hooks/use-error-log';
 
 // Helper to transform session data for charts
 const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goal[], selectedGoalId?: string) => {
-  return sessions.map(session => {
+  return sessions.map(session => { // Input 'sessions' should already be sorted
     let correct = 0;
     let incorrect = 0;
     let opportunities = 0;
@@ -69,7 +69,7 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
       opportunities,
       ...promptCounts,
     };
-  }).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()); 
+  }); // Removed redundant sort, input 'sessions' is already sorted
 };
 
 
@@ -297,7 +297,7 @@ export default function AnalysisReportPage() {
                 <ChartContainer config={accuracyChartConfig} className="h-full w-full">
                   <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} />
+                    <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} allowDuplicatedCategory={false} />
                     <YAxis unit="%" domain={[0,100]} tickLine={false} axisLine={false} tickMargin={8}/>
                     <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
                     <Line type="monotone" dataKey="accuracy" stroke="var(--color-accuracy)" strokeWidth={2} dot={true} />
@@ -316,7 +316,7 @@ export default function AnalysisReportPage() {
                 <ChartContainer config={responseCountsChartConfig} className="h-full w-full">
                   <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} />
+                    <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} allowDuplicatedCategory={false} />
                     <YAxis tickLine={false} axisLine={false} tickMargin={8} allowDecimals={false}/>
                     <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
                     <ChartLegend content={<ChartLegendContent />} />
@@ -336,7 +336,7 @@ export default function AnalysisReportPage() {
                 <ChartContainer config={opportunitiesChartConfig} className="h-full w-full">
                   <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} />
+                    <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} allowDuplicatedCategory={false} />
                     <YAxis tickLine={false} axisLine={false} tickMargin={8} allowDecimals={false}/>
                     <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
                     <ChartLegend content={<ChartLegendContent />} />
