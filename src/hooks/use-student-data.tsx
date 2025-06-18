@@ -92,6 +92,8 @@ interface StudentDataContextType {
   setDataEntryAiActivitySuggestions: (suggestions: Record<string, string[]>) => void;
   dataEntryVisibleGoalCountByStudentId: Record<string, number>;
   setDataEntryVisibleGoalCountByStudentId: (updater: (prev: Record<string, number>) => Record<string, number>) => void;
+  dataEntryShowArchivedByStudentId: Record<string, boolean>;
+  setDataEntryShowArchivedByStudentId: (updater: (prev: Record<string, boolean>) => Record<string, boolean>) => void;
 }
 
 const StudentDataContext = createContext<StudentDataContextType | undefined>(undefined);
@@ -132,6 +134,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [dataEntryFocusedGoalIndexByStudentId, setDataEntryFocusedGoalIndexByStudentIdState] = useState<Record<string, number>>({});
   const [dataEntryAiActivitySuggestions, setDataEntryAiActivitySuggestionsState] = useState<Record<string, string[]>>({});
   const [dataEntryVisibleGoalCountByStudentId, setDataEntryVisibleGoalCountByStudentIdState] = useState<Record<string, number>>({});
+  const [dataEntryShowArchivedByStudentId, setDataEntryShowArchivedByStudentIdState] = useState<Record<string, boolean>>({});
 
 
   const safeToast = useCallback((options: Omit<Toast, 'id'>) => {
@@ -260,6 +263,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       setDataEntryFocusedGoalIndexByStudentIdState({});
       setDataEntryAiActivitySuggestionsState({});
       setDataEntryVisibleGoalCountByStudentIdState({});
+      setDataEntryShowArchivedByStudentIdState({});
       setLoading(false);
       setError(null);
       return;
@@ -371,30 +375,44 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     };
   }, [authLoading, currentUser, isFirebaseDBAvailable, firestoreDbModule, seedLocalDefaultTemplates, seedFirebaseDefaultTemplates, safeToast, APP_ID, addErrorLog]);
 
-  // Effect to manage dataEntryVisibleGoalCountByStudentId based on selected students
+  // Effect to manage dataEntryVisibleGoalCountByStudentId & dataEntryShowArchivedByStudentId based on selected students
   useEffect(() => {
     setDataEntryVisibleGoalCountByStudentIdState(prevCounts => {
       const newCounts = { ...prevCounts };
       let changed = false;
-
-      // Add new students with default count if not already present
       dataEntrySelectedStudentIds.forEach(id => {
         if (!(id in newCounts)) {
           newCounts[id] = 10; // Default to 10
           changed = true;
         }
       });
-
-      // Remove students no longer selected
       Object.keys(newCounts).forEach(id => {
         if (!dataEntrySelectedStudentIds.includes(id)) {
           delete newCounts[id];
           changed = true;
         }
       });
-
       return changed ? newCounts : prevCounts;
     });
+
+    setDataEntryShowArchivedByStudentIdState(prevShowArchived => {
+        const newShowArchived = { ...prevShowArchived };
+        let changed = false;
+        dataEntrySelectedStudentIds.forEach(id => {
+            if (!(id in newShowArchived)) {
+                newShowArchived[id] = false; // Default to false
+                changed = true;
+            }
+        });
+        Object.keys(newShowArchived).forEach(id => {
+            if (!dataEntrySelectedStudentIds.includes(id)) {
+                delete newShowArchived[id];
+                changed = true;
+            }
+        });
+        return changed ? newShowArchived : prevShowArchived;
+    });
+
   }, [dataEntrySelectedStudentIds]);
 
 
@@ -498,7 +516,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       return; 
     }
 
-    const newGoal = { ...goal, id: goal.id || generateUUID() }; 
+    const newGoal = { ...goal, id: goal.id || generateUUID(), isArchived: goal.isArchived || false }; 
     const updatedGoals = [...student.goals, newGoal];
 
     await updateStudent(studentId, { goals: updatedGoals });
@@ -735,6 +753,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const setDataEntryFocusedGoalIndexByStudentId = useCallback((indexes: Record<string, number>) => setDataEntryFocusedGoalIndexByStudentIdState(indexes), []);
   const setDataEntryAiActivitySuggestions = useCallback((suggestions: Record<string, string[]>) => setDataEntryAiActivitySuggestionsState(suggestions), []);
   const setDataEntryVisibleGoalCountByStudentId = useCallback((updater: (prev: Record<string, number>) => Record<string, number>) => setDataEntryVisibleGoalCountByStudentIdState(updater), []);
+  const setDataEntryShowArchivedByStudentId = useCallback((updater: (prev: Record<string, boolean>) => Record<string, boolean>) => setDataEntryShowArchivedByStudentIdState(updater), []);
 
 
   const contextValue = useMemo(() => ({
@@ -765,6 +784,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     dataEntryFocusedGoalIndexByStudentId, setDataEntryFocusedGoalIndexByStudentId,
     dataEntryAiActivitySuggestions, setDataEntryAiActivitySuggestions,
     dataEntryVisibleGoalCountByStudentId, setDataEntryVisibleGoalCountByStudentId,
+    dataEntryShowArchivedByStudentId, setDataEntryShowArchivedByStudentId,
   }), [
     studentsState, goalTemplatesState, sessionsState, selectedStudent, setSelectedStudentCb, loading, error, isFirebaseDBAvailable,
     addStudent, updateStudent, deleteStudent, assignGoalToStudent, removeGoalFromStudent, updateStudentGoal,
@@ -787,6 +807,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     dataEntryFocusedGoalIndexByStudentId, setDataEntryFocusedGoalIndexByStudentId,
     dataEntryAiActivitySuggestions, setDataEntryAiActivitySuggestions,
     dataEntryVisibleGoalCountByStudentId, setDataEntryVisibleGoalCountByStudentId,
+    dataEntryShowArchivedByStudentId, setDataEntryShowArchivedByStudentId,
   ]);
 
   return (

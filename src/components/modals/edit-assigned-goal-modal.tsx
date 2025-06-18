@@ -14,6 +14,8 @@ import { useStudentData } from '@/hooks/use-student-data';
 import type { Goal } from '@/lib/types';
 import { AssignedGoalEditSchema } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { Switch } from '@/components/ui/switch'; // Import Switch
+import { Label } from '@/components/ui/label'; // Import Label
 
 type EditAssignedGoalFormData = z.infer<typeof AssignedGoalEditSchema>;
 
@@ -35,6 +37,7 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
       name: '',
       smartGoal: '',
       sessionTargetValue: undefined,
+      isArchived: false,
     },
   });
 
@@ -44,6 +47,7 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
         name: goalToEdit.name,
         smartGoal: goalToEdit.smartGoal,
         sessionTargetValue: goalToEdit.sessionTargetValue,
+        isArchived: goalToEdit.isArchived || false,
       });
     }
   }, [goalToEdit, isOpen, form]);
@@ -139,6 +143,28 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
               </FormItem>
             )}
           />
+
+          <FormField
+            control={form.control}
+            name="isArchived"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                <div className="space-y-0.5">
+                  <FormLabel>Archive Goal</FormLabel>
+                  <FormDescription>
+                    Archived goals are hidden from active lists but data is retained.
+                  </FormDescription>
+                </div>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+
 
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting || dataLoading}>

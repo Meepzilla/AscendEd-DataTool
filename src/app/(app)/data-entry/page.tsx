@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Users, Save, PlusCircle, XCircle, Edit2, Info, ArrowUp, ArrowDown, ChevronDown, ChevronUp, RotateCcw, Eye, EyeOff } from 'lucide-react';
+import { Users, Save, PlusCircle, XCircle, Edit2, Info, ArrowUp, ArrowDown, ChevronDown, ChevronUp, RotateCcw, Eye, EyeOff, Archive, ArchiveRestore } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 import GoalDataInputComponent from '@/components/forms/goal-data-input';
 import { GOAL_TYPE_FIELDS, PROMPT_HOTKEY_MAP, PROMPT_TYPES } from '@/lib/constants';
@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { useErrorLog } from '@/hooks/use-error-log';
 import ConfirmationModal from '@/components/modals/confirmation-modal';
+import { Switch } from '@/components/ui/switch';
 
 
 export default function DataEntryPage() {
@@ -49,6 +50,8 @@ export default function DataEntryPage() {
     setDataEntryAiActivitySuggestions,
     dataEntryVisibleGoalCountByStudentId,
     setDataEntryVisibleGoalCountByStudentId,
+    dataEntryShowArchivedByStudentId, 
+    setDataEntryShowArchivedByStudentId,
   } = useStudentData();
 
   const [isSaving, setIsSaving] = useState(false);
@@ -95,7 +98,8 @@ export default function DataEntryPage() {
                                  student.goals.some((goal, index) => 
                                    !existingState.originalGoalHeaders[index] || 
                                    goal.id !== existingState.originalGoalHeaders[index].id ||
-                                   goal.name !== existingState.originalGoalHeaders[index].name
+                                   goal.name !== existingState.originalGoalHeaders[index].name ||
+                                   goal.isArchived !== existingState.originalGoalHeaders[index].isArchived // Check archive status
                                  );
 
         if (!existingState || goalsHaveChanged) {
@@ -135,11 +139,11 @@ export default function DataEntryPage() {
     dataEntrySelectedStudentIds.forEach(id => {
         const studentState = newContextStudentStates[id]; 
         if (studentState) {
-            if (newFocusedGoalIndexes[id] === undefined && studentState.originalGoalHeaders.length > 0) {
-                newFocusedGoalIndexes[id] = 0;
+            if (newFocusedGoalIndexes[id] === undefined && studentState.originalGoalHeaders.filter(g => !g.isArchived || dataEntryShowArchivedByStudentId[id]).length > 0) {
+                newFocusedGoalIndexes[id] = 0; // Focus first visible goal
                 focusIndexesChanged = true;
-            } else if (newFocusedGoalIndexes[id] !== undefined && newFocusedGoalIndexes[id] >= studentState.originalGoalHeaders.length) {
-                newFocusedGoalIndexes[id] = Math.max(0, studentState.originalGoalHeaders.length - 1);
+            } else if (newFocusedGoalIndexes[id] !== undefined && newFocusedGoalIndexes[id] >= studentState.originalGoalHeaders.filter(g => !g.isArchived || dataEntryShowArchivedByStudentId[id]).length) {
+                newFocusedGoalIndexes[id] = Math.max(0, studentState.originalGoalHeaders.filter(g => !g.isArchived || dataEntryShowArchivedByStudentId[id]).length - 1);
                 focusIndexesChanged = true;
             }
         } else if (newFocusedGoalIndexes[id] !== undefined) { 
@@ -164,7 +168,8 @@ export default function DataEntryPage() {
     dataEntryStudentSessionStates, 
     setDataEntryStudentSessionStates,
     dataEntryFocusedGoalIndexByStudentId, 
-    setDataEntryFocusedGoalIndexByStudentId // Corrected typo, should be setter: setDataEntryFocusedGoalIndexByStudentId
+    setDataEntryFocusedGoalIndexByStudentId,
+    dataEntryShowArchivedByStudentId, // Added dependency
   ]);
 
 
@@ -174,7 +179,7 @@ export default function DataEntryPage() {
         const studentState = prevStates[studentId];
         if (!studentState) return prevStates;
         const goal = studentState.originalGoalHeaders.find(g => g.id === goalId);
-        if (!goal) return prevStates;
+        if (!goal || goal.isArchived) return prevStates; // Don't update archived goals
   
         let processedData = { ...newData }; 
   
@@ -215,12 +220,13 @@ export default function DataEntryPage() {
       if (studentSlotIndex !== -1) {
         setDataEntryFocusedStudentSlotIndex(studentSlotIndex);
         const currentStudentState = dataEntryStudentSessionStates[studentId]; 
+        const currentVisibleGoals = currentStudentState?.originalGoalHeaders.filter(g => !g.isArchived || dataEntryShowArchivedByStudentId[studentId]) || [];
         if (currentStudentState?.originalGoalHeaders) {
-          const goalIndex = currentStudentState.originalGoalHeaders.findIndex(g => g.id === goalId);
-          if (goalIndex !== -1) {
+          const goalIndexInVisibleList = currentVisibleGoals.findIndex(g => g.id === goalId);
+          if (goalIndexInVisibleList !== -1) {
             setDataEntryFocusedGoalIndexByStudentId(prevFocus => ({
               ...prevFocus,
-              [studentId]: goalIndex,
+              [studentId]: goalIndexInVisibleList,
             }));
           }
         }
@@ -230,8 +236,9 @@ export default function DataEntryPage() {
       setDataEntryStudentSessionStates,
       dataEntrySelectedStudentIds, 
       setDataEntryFocusedStudentSlotIndex,
-      dataEntryStudentSessionStates, // This dependency is okay as we are reading from it before setting focus.
+      dataEntryStudentSessionStates,
       setDataEntryFocusedGoalIndexByStudentId,
+      dataEntryShowArchivedByStudentId,
     ]
   );
 
@@ -241,23 +248,26 @@ export default function DataEntryPage() {
     }
     const studentId = dataEntrySelectedStudentIds[dataEntryFocusedStudentSlotIndex];
     const studentState = dataEntryStudentSessionStates[studentId];
-    if (!studentState || !studentState.originalGoalHeaders || studentState.originalGoalHeaders.length === 0) {
+     if (!studentState || !studentState.originalGoalHeaders) {
       return { studentId, studentState: studentState || null, goal: null, goalData: null, goalIndex: -1 };
     }
-    const goalIndex = dataEntryFocusedGoalIndexByStudentId[studentId] ?? 0;
-    const validGoalIndex = Math.min(Math.max(goalIndex, 0), studentState.originalGoalHeaders.length - 1);
 
-    if (studentState.originalGoalHeaders.length === 0 && validGoalIndex !== -1) {
-        return { studentId, studentState, goal: null, goalData: null, goalIndex: -1 };
-    }
-    if (validGoalIndex >= studentState.originalGoalHeaders.length || validGoalIndex < 0) {
+    const visibleGoals = studentState.originalGoalHeaders.filter(g => !g.isArchived || dataEntryShowArchivedByStudentId[studentId]);
+    if (visibleGoals.length === 0) {
         return { studentId, studentState, goal: null, goalData: null, goalIndex: -1 };
     }
 
-    const goal = studentState.originalGoalHeaders[validGoalIndex];
+    const goalIndexInVisibleList = dataEntryFocusedGoalIndexByStudentId[studentId] ?? 0;
+    const validGoalIndexInVisibleList = Math.min(Math.max(goalIndexInVisibleList, 0), visibleGoals.length - 1);
+
+    if (validGoalIndexInVisibleList >= visibleGoals.length || validGoalIndexInVisibleList < 0) {
+        return { studentId, studentState, goal: null, goalData: null, goalIndex: -1 };
+    }
+
+    const goal = visibleGoals[validGoalIndexInVisibleList];
     const goalData = studentState.goalData[goal.id];
-    return { studentId, studentState, goal, goalData, goalIndex: validGoalIndex };
-  }, [dataEntrySelectedStudentIds, dataEntryFocusedStudentSlotIndex, dataEntryStudentSessionStates, dataEntryFocusedGoalIndexByStudentId]);
+    return { studentId, studentState, goal, goalData, goalIndex: validGoalIndexInVisibleList };
+  }, [dataEntrySelectedStudentIds, dataEntryFocusedStudentSlotIndex, dataEntryStudentSessionStates, dataEntryFocusedGoalIndexByStudentId, dataEntryShowArchivedByStudentId]);
 
 
   const handleSaveSession = useCallback(async () => {
@@ -270,12 +280,19 @@ export default function DataEntryPage() {
     for (const studentId of dataEntrySelectedStudentIds) {
       const state = dataEntryStudentSessionStates[studentId];
       if (state) {
-        const sessionGoals: SessionGoalData[] = state.originalGoalHeaders.map(goal => ({
+        const sessionGoals: SessionGoalData[] = state.originalGoalHeaders
+        .filter(goal => !goal.isArchived) // Only save active goals
+        .map(goal => ({
           goalId: goal.id,
           goalName: goal.name,
           goalType: goal.type,
           data: state.goalData[goal.id] || JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type])),
         }));
+
+        if (sessionGoals.length === 0) { // Don't save session if no active goals had data
+            console.log(`Skipping save for ${state.studentName}, no active goals with data.`);
+            continue;
+        }
 
         const session: Omit<SessionData, 'sessionId'> = {
           studentId: state.studentId,
@@ -285,7 +302,7 @@ export default function DataEntryPage() {
           activity: state.activity,
           notes: state.notes,
           goals: sessionGoals,
-          originalGoalHeaders: state.originalGoalHeaders,
+          originalGoalHeaders: state.originalGoalHeaders, // Keep all original headers for reference
         };
         await addSession(session);
         sessionsSavedCount++;
@@ -309,7 +326,7 @@ export default function DataEntryPage() {
         setDataEntryStudentSessionStates(newStates);
 
     } else {
-        toast({ title: "Info", description: "No sessions were saved. Ensure students have data.", variant: "default"});
+        toast({ title: "Info", description: "No sessions were saved. Ensure students have active goals with data.", variant: "default"});
     }
   }, [dataEntrySessionDate, dataEntrySelectedStudentIds, dataEntryStudentSessionStates, addSession, dataEntrySessionTime, toast, setDataEntryStudentSessionStates]);
 
@@ -367,15 +384,17 @@ export default function DataEntryPage() {
         return;
       }
 
-      if (!focusedInfo || !focusedInfo.goal || !focusedInfo.goalData) return;
+      if (!focusedInfo || !focusedInfo.goal || !focusedInfo.goalData || focusedInfo.goal.isArchived) return; // Do not process hotkeys for archived goals
 
       const { studentId, studentState, goal, goalData, goalIndex } = focusedInfo;
+      const visibleGoals = studentState.originalGoalHeaders.filter(g => !g.isArchived || dataEntryShowArchivedByStudentId[studentId]);
+
 
       if (key === 'S') {
         event.preventDefault();
-        const numGoals = studentState.originalGoalHeaders.length;
-        if (numGoals > 0) {
-          const nextIndex = alt ? (goalIndex - 1 + numGoals) % numGoals : (goalIndex + 1) % numGoals;
+        const numVisibleGoals = visibleGoals.length;
+        if (numVisibleGoals > 0) {
+          const nextIndex = alt ? (goalIndex - 1 + numVisibleGoals) % numVisibleGoals : (goalIndex + 1) % numVisibleGoals;
           setDataEntryFocusedGoalIndexByStudentId(prev => ({ ...prev, [studentId]: nextIndex }));
         }
         return;
@@ -459,7 +478,8 @@ export default function DataEntryPage() {
     students, 
     openEditStudentModal,
     setDataEntryFocusedStudentSlotIndex,
-    setDataEntryFocusedGoalIndexByStudentId
+    setDataEntryFocusedGoalIndexByStudentId,
+    dataEntryShowArchivedByStudentId,
   ]);
 
 
@@ -539,52 +559,49 @@ export default function DataEntryPage() {
     setDataEntryStudentSessionStates(prevStates => {
       const studentState = prevStates[studentId];
       if (!studentState) return prevStates;
-
+  
+      // Operate on the full list of goals for reordering
       const goals = [...studentState.originalGoalHeaders];
       const goalIndex = goals.findIndex(g => g.id === goalId);
-
+  
       if (goalIndex === -1) return prevStates;
-
+  
       const newIndex = direction === 'up' ? goalIndex - 1 : goalIndex + 1;
-
+  
       if (newIndex < 0 || newIndex >= goals.length) return prevStates;
-
+  
       const [movedGoal] = goals.splice(goalIndex, 1);
       goals.splice(newIndex, 0, movedGoal);
-
+  
+      // After reordering, update the focused goal index based on its new position in the *currently visible* list
       setDataEntryFocusedGoalIndexByStudentId(prevFocused => {
-        const currentFocusedIdx = prevFocused[studentId] ?? 0;
-        let newFocusedIdx = currentFocusedIdx;
-
-        if (currentFocusedIdx === goalIndex) {
-          newFocusedIdx = newIndex;
-        } else if (goalIndex < currentFocusedIdx && newIndex >= currentFocusedIdx) {
-          newFocusedIdx = currentFocusedIdx - 1;
-        } else if (goalIndex > currentFocusedIdx && newIndex <= currentFocusedIdx) {
-          newFocusedIdx = currentFocusedIdx + 1;
-        }
-        return { ...prevFocused, [studentId]: newFocusedIdx };
+        const visibleGoals = goals.filter(g => !g.isArchived || dataEntryShowArchivedByStudentId[studentId]);
+        const newFocusedIndexInVisible = visibleGoals.findIndex(g => g.id === goalId); // Find moved goal in visible list
+        
+        return { ...prevFocused, [studentId]: newFocusedIndexInVisible !== -1 ? newFocusedIndexInVisible : 0 };
       });
-
+  
       return {
         ...prevStates,
         [studentId]: {
           ...studentState,
-          originalGoalHeaders: goals,
+          originalGoalHeaders: goals, // This contains the reordered full list
         },
       };
     });
-  }, [setDataEntryStudentSessionStates, setDataEntryFocusedGoalIndexByStudentId]);
+  }, [setDataEntryStudentSessionStates, setDataEntryFocusedGoalIndexByStudentId, dataEntryShowArchivedByStudentId]);
 
   const fetchAiActivitySuggestions = async (studentId: string) => {
     const studentState = dataEntryStudentSessionStates[studentId];
-    if (!studentState || studentState.originalGoalHeaders.length === 0) {
-      toast({ title: "Info", description: "Student has no goals assigned or data is missing.", variant: "default" });
+    const activeGoals = studentState?.originalGoalHeaders.filter(g => !g.isArchived);
+
+    if (!studentState || !activeGoals || activeGoals.length === 0) {
+      toast({ title: "Info", description: "Student has no active goals assigned or data is missing.", variant: "default" });
       return;
     }
     setIsAiLoading(prev => ({...prev, [studentId]: true}));
     try {
-      const goalDescriptions = studentState.originalGoalHeaders.map(g => `${g.name} (${g.type})`).join(', ');
+      const goalDescriptions = activeGoals.map(g => `${g.name} (${g.type})`).join(', ');
       const studentProgressSummary = `Currently working on: ${goalDescriptions}. Recent activity: ${studentState.activity}. Notes: ${studentState.notes}`;
       const studentSessions = getSessionsForStudent(studentId);
       const sessionHistorySummary = studentSessions.slice(0,3).map(s => `Date: ${s.date}, Activity: ${s.activity}`).join('\n');
@@ -711,9 +728,12 @@ export default function DataEntryPage() {
           if (!student || !state) return null;
 
           const isStudentFocused = slotIndex === dataEntryFocusedStudentSlotIndex;
-          const allStudentGoals = state.originalGoalHeaders;
+          
+          const showArchived = dataEntryShowArchivedByStudentId[studentId] || false;
+          const filteredStudentGoals = state.originalGoalHeaders.filter(g => !g.isArchived || showArchived);
+          
           const visibleGoalCount = dataEntryVisibleGoalCountByStudentId[studentId] ?? 10; 
-          const displayedGoals = allStudentGoals.slice(0, visibleGoalCount);
+          const displayedGoals = filteredStudentGoals.slice(0, visibleGoalCount);
 
 
           return (
@@ -779,14 +799,29 @@ export default function DataEntryPage() {
                       onChange={(e) => handleInputChange(studentId, 'activity', e.target.value)}
                     />
                   </div>
+                  <div className="flex items-center space-x-2 mt-2">
+                    <Switch
+                        id={`show-archived-${studentId}`}
+                        checked={dataEntryShowArchivedByStudentId[studentId] || false}
+                        onCheckedChange={(checked) => setDataEntryShowArchivedByStudentId(prev => ({...prev, [studentId]: checked}))}
+                    />
+                    <Label htmlFor={`show-archived-${studentId}`} className="text-xs text-muted-foreground">
+                        {dataEntryShowArchivedByStudentId[studentId] ? "Showing Archived Goals" : "Show Archived Goals"}
+                    </Label>
+                  </div>
 
-                  {allStudentGoals.length === 0 ? (
+
+                  {state.originalGoalHeaders.length === 0 ? (
                      <p className="text-sm text-muted-foreground p-4 text-center border rounded-md">No goals assigned to this student. Assign goals in the Student Profile.</p>
+                  ) : displayedGoals.length === 0 && !showArchived ? (
+                     <p className="text-sm text-muted-foreground p-4 text-center border rounded-md">No active goals. Toggle "Show Archived Goals" to view them.</p>
+                  ) : displayedGoals.length === 0 && showArchived ? (
+                     <p className="text-sm text-muted-foreground p-4 text-center border rounded-md">No goals (active or archived) for this student.</p>
                   ) : (
                     <>
                       {displayedGoals.map((goal) => {
-                        const actualGoalIndex = allStudentGoals.findIndex(g => g.id === goal.id);
-                        const isGoalFocused = isStudentFocused && (dataEntryFocusedGoalIndexByStudentId[studentId] ?? 0) === actualGoalIndex;
+                        const actualGoalIndexInOriginal = state.originalGoalHeaders.findIndex(g => g.id === goal.id);
+                        const isGoalFocused = isStudentFocused && (dataEntryFocusedGoalIndexByStudentId[studentId] ?? 0) === displayedGoals.findIndex(dg => dg.id === goal.id);
                         return (
                           <GoalDataInputComponent
                             key={goal.id}
@@ -797,22 +832,23 @@ export default function DataEntryPage() {
                             isFocused={isGoalFocused}
                             onMoveUp={() => handleMoveGoal(studentId, goal.id, 'up')}
                             onMoveDown={() => handleMoveGoal(studentId, goal.id, 'down')}
-                            canMoveUp={actualGoalIndex > 0}
-                            canMoveDown={actualGoalIndex < allStudentGoals.length - 1}
+                            canMoveUp={actualGoalIndexInOriginal > 0} // Based on original full list
+                            canMoveDown={actualGoalIndexInOriginal < state.originalGoalHeaders.length - 1} // Based on original full list
+                            isArchived={goal.isArchived}
                           />
                         );
                       })}
-                       {allStudentGoals.length > 10 && ( 
+                       {filteredStudentGoals.length > 10 && ( 
                         <div className="flex justify-center mt-2">
-                          {visibleGoalCount < allStudentGoals.length ? (
+                          {visibleGoalCount < filteredStudentGoals.length ? (
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => setDataEntryVisibleGoalCountByStudentId(prev => ({ ...prev, [studentId]: allStudentGoals.length }))}
+                              onClick={() => setDataEntryVisibleGoalCountByStudentId(prev => ({ ...prev, [studentId]: filteredStudentGoals.length }))}
                               className="text-xs"
                             >
                               <Eye className="mr-1.5 h-3.5 w-3.5" />
-                              Show More ({allStudentGoals.length - visibleGoalCount} more)
+                              Show More ({filteredStudentGoals.length - visibleGoalCount} more)
                             </Button>
                           ) : (
                             <Button
@@ -845,7 +881,7 @@ export default function DataEntryPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => fetchAiActivitySuggestions(studentId)}
-                        disabled={isAiLoading[studentId] || state.originalGoalHeaders.length === 0}
+                        disabled={isAiLoading[studentId] || state.originalGoalHeaders.filter(g => !g.isArchived).length === 0}
                         className="w-full"
                     >
                       {isAiLoading[studentId] ? 'Getting Suggestions...' : 'Get AI Activity Suggestions'}
@@ -904,6 +940,7 @@ export default function DataEntryPage() {
     
 
     
+
 
 
 

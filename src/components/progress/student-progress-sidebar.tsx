@@ -15,6 +15,8 @@ interface StudentProgressSidebarProps {
 }
 
 const getGoalProgress = (goal: Goal, studentSessions: SessionData[]): number => {
+  if (goal.isArchived) return 0; // Archived goals show 0 progress towards target here
+
   const latestSessionForGoal = studentSessions
     .filter(s => s.goals.some(sg => sg.goalId === goal.id))
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -64,18 +66,10 @@ const getGoalProgress = (goal: Goal, studentSessions: SessionData[]): number => 
       break;
     }
     case 'QUALITATIVE_OBSERVATION': {
-      // If sessionTargetValue is set (e.g. for rating target of 4 on a 1-5 scale)
       if (goal.sessionTargetValue !== undefined && goal.sessionTargetValue > 0 && goalSessionData.rating !== undefined) {
         const rating = Number(goalSessionData.rating) || 0;
-        // Assuming target is max score (e.g. 5 for a 1-5 scale, qualitative goal might not have a percent target)
-        // For a rating target like 4/5, the display is more complex.
-        // If sessionTargetValue for qualitative is THE target rating value itself (e.g. 4) on a scale of 5:
-        // Progress = (rating / targetRating) * 100, capped at 100.
-        // For simplicity, if target is present, we show raw rating / 5 * 100.
-        // Or if target means "target achieved if rating >= X", then this logic is different.
-        // Let's assume qualitative goal progress is simply if notes exist, or for rating based on a fixed scale of 5.
         if (goalSessionData.rating !== undefined) {
-           actualPerformancePct = (Number(goalSessionData.rating) / 5) * 100; // Assuming a 1-5 scale
+           actualPerformancePct = (Number(goalSessionData.rating) / 5) * 100; 
         } else {
            actualPerformancePct = (goalSessionData.notes && String(goalSessionData.notes).trim() !== '') ? 100 : 0;
         }
@@ -91,26 +85,26 @@ const getGoalProgress = (goal: Goal, studentSessions: SessionData[]): number => 
   actualPerformancePct = Math.min(Math.max(actualPerformancePct, 0), 100);
 
   if (goal.sessionTargetValue !== undefined && goal.sessionTargetValue > 0 && goal.type !== 'QUALITATIVE_OBSERVATION') {
-    // Calculate progress towards the target percentage
     const progressTowardsTarget = (actualPerformancePct / goal.sessionTargetValue) * 100;
-    return Math.min(Math.max(progressTowardsTarget, 0), 100); // Cap between 0 and 100
+    return Math.min(Math.max(progressTowardsTarget, 0), 100); 
   }
   
-  // If no percentage target, or it's qualitative, return the actual performance percentage
   return actualPerformancePct;
 };
 
 export default function StudentProgressSidebar({ student, studentSessions }: StudentProgressSidebarProps) {
   if (!student) return null;
 
-  const activeGoalsWithProgress = student.goals.map(goal => ({
+  const activeGoals = student.goals.filter(goal => !goal.isArchived);
+
+  const activeGoalsWithProgress = activeGoals.map(goal => ({
     ...goal,
     progress: getGoalProgress(goal, studentSessions),
   })).slice(0, 5); 
 
-  const overallProgressValues = student.goals
+  const overallProgressValues = activeGoals // Only consider active goals for overall progress
     .map(g => getGoalProgress(g, studentSessions))
-    .filter(p => p !== undefined); // Filter out undefined if any goal type doesn't yield progress
+    .filter(p => p !== undefined); 
   
   const averageOverallProgress = overallProgressValues.length > 0
     ? overallProgressValues.reduce((sum, p) => sum + p, 0) / overallProgressValues.length
@@ -121,7 +115,7 @@ export default function StudentProgressSidebar({ student, studentSessions }: Stu
       <Card className="bg-sidebar-accent border-sidebar-border">
         <CardHeader className="p-3">
           <CardTitle className="text-sm font-medium text-sidebar-accent-foreground">
-            Overall Progress Towards Targets
+            Overall Progress (Active Goals)
           </CardTitle>
         </CardHeader>
         <CardContent className="p-3 pt-0">
@@ -143,7 +137,7 @@ export default function StudentProgressSidebar({ student, studentSessions }: Stu
             const displayValue = goal.sessionTargetValue !== undefined && goal.type !== 'QUALITATIVE_OBSERVATION' 
               ? `${Math.round(goal.progress)}% (Target: ${goal.sessionTargetValue}%)`
               : goal.type === 'QUALITATIVE_OBSERVATION' 
-                ? (goal.progress === 100 ? 'Noted' : 'No Notes')
+                ? (goal.progress === 100 ? 'Noted' : 'No Notes') // Or actual rating
                 : `${Math.round(goal.progress)}% (Actual)`;
             return (
               <div key={goal.id} className="p-2 rounded-md hover:bg-sidebar-accent transition-colors">
@@ -160,15 +154,15 @@ export default function StudentProgressSidebar({ student, studentSessions }: Stu
         </div>
       )}
       
-      {student.goals.length > activeGoalsWithProgress.length && (
+      {activeGoals.length > activeGoalsWithProgress.length && (
          <p className="text-xs text-muted-foreground text-center px-1">
-            + {student.goals.length - activeGoalsWithProgress.length} more goals
+            + {activeGoals.length - activeGoalsWithProgress.length} more active goals
           </p>
       )}
 
-      {student.goals.length === 0 && (
+      {activeGoals.length === 0 && (
          <p className="text-xs text-muted-foreground text-center px-1 py-4">
-            No goals assigned yet.
+            No active goals assigned.
           </p>
       )}
 

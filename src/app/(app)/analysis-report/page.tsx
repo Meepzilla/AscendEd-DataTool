@@ -22,7 +22,7 @@ import { useErrorLog } from '@/hooks/use-error-log';
 
 
 // Helper to transform session data for charts
-const transformSessionDataForChart = (sessions: SessionData[], selectedGoalId?: string) => {
+const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goal[], selectedGoalId?: string) => {
   return sessions.map(session => {
     let correct = 0;
     let incorrect = 0;
@@ -30,6 +30,9 @@ const transformSessionDataForChart = (sessions: SessionData[], selectedGoalId?: 
     let promptCounts: Record<PromptType, number> = PROMPT_TYPES.reduce((acc, pt) => ({...acc, [pt]:0}), {} as Record<PromptType, number>);
 
     session.goals.forEach(goalData => {
+      const currentGoal = studentGoals.find(g => g.id === goalData.goalId);
+      if (currentGoal?.isArchived) return; // Skip archived goals
+      
       if (selectedGoalId && goalData.goalId !== selectedGoalId) return;
       
       if (goalData.data.correct !== undefined && goalData.data.incorrect !== undefined) {
@@ -83,9 +86,10 @@ export default function AnalysisReportPage() {
   const { addErrorLog } = useErrorLog();
 
   const selectedStudent = useMemo(() => students.find(s => s.id === selectedStudentId), [students, selectedStudentId]);
+  const activeStudentGoals = useMemo(() => selectedStudent?.goals.filter(g => !g.isArchived) || [], [selectedStudent]);
+
 
   useEffect(() => {
-    // studentIdFromQuery is already declared outside from searchParams
     if (studentIdFromQuery && students.find(s => s.id === studentIdFromQuery)) {
       setSelectedStudentId(studentIdFromQuery);
     } else if (!selectedStudentId && students.length > 0) {
@@ -108,7 +112,7 @@ export default function AnalysisReportPage() {
     return filtered.sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [sessions, selectedStudentId, dateRange]);
 
-  const chartData = useMemo(() => transformSessionDataForChart(studentSessions, selectedGoalId), [studentSessions, selectedGoalId]);
+  const chartData = useMemo(() => transformSessionDataForChart(studentSessions, selectedStudent?.goals || [], selectedGoalId), [studentSessions, selectedStudent?.goals, selectedGoalId]);
   
   const promptUsageData = useMemo(() => {
     const aggregatedPrompts: Record<PromptType, number> = PROMPT_TYPES.reduce((acc, pt) => ({...acc, [pt]:0}), {} as Record<PromptType, number>);
@@ -132,15 +136,15 @@ export default function AnalysisReportPage() {
     setTechnicalSummary(null);
     try {
       const progressDataPoints = studentSessions.slice(-5).map(s => 
-        `On ${formatDate(s.date)}: Activity "${s.activity}", Notes: "${s.notes}". Goals covered: ${s.goals.length}.`
+        `On ${formatDate(s.date)}: Activity "${s.activity}", Notes: "${s.notes}". Goals covered: ${s.goals.filter(sg => { const goal = activeStudentGoals.find(g => g.id === sg.goalId); return goal && !goal.isArchived;}).length}.`
       ).join('\n');
       
-      const primaryGoal = selectedGoalId ? selectedStudent.goals.find(g=>g.id === selectedGoalId)?.name : "overall progress";
+      const primaryGoal = selectedGoalId ? activeStudentGoals.find(g=>g.id === selectedGoalId)?.name : "overall progress on active goals";
 
       const result = await generateTechnicalSummary({
         studentName: selectedStudent.name,
-        goalName: primaryGoal || "Multiple Goals",
-        progressData: `Recent sessions show the following trends:\n${progressDataPoints}\nChart data (last 3 sessions) accuracies: ${chartData.slice(-3).map(d => `${d.accuracy}%`).join(', ')}; opportunities: ${chartData.slice(-3).map(d => d.opportunities).join(', ')}; correct: ${chartData.slice(-3).map(d => d.correct).join(', ')}; incorrect: ${chartData.slice(-3).map(d => d.incorrect).join(', ')}.`,
+        goalName: primaryGoal || "Multiple Active Goals",
+        progressData: `Recent sessions show the following trends (focus on active goals):\n${progressDataPoints}\nChart data (last 3 sessions) accuracies: ${chartData.slice(-3).map(d => `${d.accuracy}%`).join(', ')}; opportunities: ${chartData.slice(-3).map(d => d.opportunities).join(', ')}; correct: ${chartData.slice(-3).map(d => d.correct).join(', ')}; incorrect: ${chartData.slice(-3).map(d => d.incorrect).join(', ')}.`,
       });
       setTechnicalSummary(result.summary);
       toast({ title: "AI Summary Generated", description: result.progress });
@@ -160,8 +164,8 @@ export default function AnalysisReportPage() {
     }
 
     const goalNameToExport = selectedGoalId && selectedStudent
-        ? selectedStudent.goals.find(g => g.id === selectedGoalId)?.name || 'Selected Goal (Name N/A)'
-        : 'All Goals';
+        ? activeStudentGoals.find(g => g.id === selectedGoalId)?.name || 'Selected Active Goal (Name N/A)'
+        : 'All Active Goals';
 
     const dataForCsv = chartData.map(row => ({
         goal: goalNameToExport, 
@@ -229,7 +233,7 @@ export default function AnalysisReportPage() {
                 <CardTitle className="text-2xl font-bold flex items-center gap-2">
                     <BarChart2 className="h-7 w-7 text-primary"/>Analysis & Reports
                 </CardTitle>
-                <CardDescription>Visualize student progress, analyze trends, and generate summaries.</CardDescription>
+                <CardDescription>Visualize student progress, analyze trends, and generate summaries (for active goals).</CardDescription>
              </div>
              <Button onClick={handleExportData} size="sm" variant="outline" disabled={chartData.length === 0}>
                 <Download className="mr-2 h-4 w-4" /> Export Data
@@ -249,13 +253,13 @@ export default function AnalysisReportPage() {
               </SelectContent>
             </Select>
             {selectedStudent && (
-                <Select value={selectedGoalId} onValueChange={(value) => {setSelectedGoalId(value === 'ALL' ? undefined : value); setTechnicalSummary(null);}}>
+                <Select value={selectedGoalId} onValueChange={(value) => {setSelectedGoalId(value === 'ALL_ACTIVE' ? undefined : value); setTechnicalSummary(null);}}>
                     <SelectTrigger className="w-full md:w-[250px]">
-                        <SelectValue placeholder="Select Goal (Optional)" />
+                        <SelectValue placeholder="Select Active Goal (Optional)" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="ALL">All Goals</SelectItem>
-                        {selectedStudent.goals.map(goal => (
+                        <SelectItem value="ALL_ACTIVE">All Active Goals</SelectItem>
+                        {activeStudentGoals.map(goal => (
                         <SelectItem key={goal.id} value={goal.id}>{goal.name}</SelectItem>
                         ))}
                     </SelectContent>
@@ -286,8 +290,8 @@ export default function AnalysisReportPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
-                <CardTitle>Progress Over Time {selectedGoalId && selectedStudent?.goals.find(g=>g.id === selectedGoalId) ? `(${selectedStudent?.goals.find(g=>g.id === selectedGoalId)?.name})` : '(Overall Accuracy)'}</CardTitle>
-                <CardDescription>Accuracy percentage across sessions.</CardDescription>
+                <CardTitle>Progress Over Time {selectedGoalId && activeStudentGoals.find(g=>g.id === selectedGoalId) ? `(${activeStudentGoals.find(g=>g.id === selectedGoalId)?.name})` : '(Overall Accuracy - Active Goals)'}</CardTitle>
+                <CardDescription>Accuracy percentage across sessions for active goals.</CardDescription>
               </CardHeader>
               <CardContent className="h-[300px] w-full">
                 <ChartContainer config={accuracyChartConfig} className="h-full w-full">
@@ -305,8 +309,8 @@ export default function AnalysisReportPage() {
             
             <Card>
               <CardHeader>
-                <CardTitle>Response Counts {selectedGoalId && selectedStudent?.goals.find(g=>g.id === selectedGoalId) ? `(${selectedStudent?.goals.find(g=>g.id === selectedGoalId)?.name})` : '(Overall)'}</CardTitle>
-                <CardDescription>Number of correct and incorrect responses per session.</CardDescription>
+                <CardTitle>Response Counts {selectedGoalId && activeStudentGoals.find(g=>g.id === selectedGoalId) ? `(${activeStudentGoals.find(g=>g.id === selectedGoalId)?.name})` : '(Overall - Active Goals)'}</CardTitle>
+                <CardDescription>Number of correct and incorrect responses per session for active goals.</CardDescription>
               </CardHeader>
               <CardContent className="h-[300px] w-full">
                 <ChartContainer config={responseCountsChartConfig} className="h-full w-full">
@@ -325,8 +329,8 @@ export default function AnalysisReportPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Total Opportunities {selectedGoalId && selectedStudent?.goals.find(g=>g.id === selectedGoalId) ? `(${selectedStudent?.goals.find(g=>g.id === selectedGoalId)?.name})` : '(Overall)'}</CardTitle>
-                <CardDescription>Total number of opportunities (e.g., trials) per session.</CardDescription>
+                <CardTitle>Total Opportunities {selectedGoalId && activeStudentGoals.find(g=>g.id === selectedGoalId) ? `(${activeStudentGoals.find(g=>g.id === selectedGoalId)?.name})` : '(Overall - Active Goals)'}</CardTitle>
+                <CardDescription>Total number of opportunities (e.g., trials) per session for active goals.</CardDescription>
               </CardHeader>
               <CardContent className="h-[300px] w-full">
                 <ChartContainer config={opportunitiesChartConfig} className="h-full w-full">
@@ -345,8 +349,8 @@ export default function AnalysisReportPage() {
             {promptUsageData.length > 0 && (
               <Card>
                   <CardHeader>
-                  <CardTitle>Prompt Usage Distribution</CardTitle>
-                  <CardDescription>Total count of each prompt level used across selected sessions.</CardDescription>
+                  <CardTitle>Prompt Usage Distribution (Active Goals)</CardTitle>
+                  <CardDescription>Total count of each prompt level used across selected sessions for active goals.</CardDescription>
                   </CardHeader>
                   <CardContent className="h-[300px] w-full">
                   <ChartContainer config={promptChartConfig} className="h-full w-full">
@@ -375,7 +379,7 @@ export default function AnalysisReportPage() {
                   {technicalSummary ? 'Re-generate' : 'Generate Summary'}
                 </Button>
               </div>
-              <CardDescription>An AI-generated summary of the student's progress based on the selected data.</CardDescription>
+              <CardDescription>An AI-generated summary of the student's progress based on the selected data (active goals).</CardDescription>
             </CardHeader>
             <CardContent>
               {isAiLoading && <Skeleton className="h-24 w-full" />}

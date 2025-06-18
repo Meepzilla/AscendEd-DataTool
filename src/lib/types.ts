@@ -17,6 +17,7 @@ export interface Goal {
   type: GoalType;
   smartGoal: string;
   sessionTargetValue?: number; // Target percentage (0-100) or specific count for some qualitative goals
+  isArchived?: boolean; // New field for archiving
   // Additional fields based on goal type might be present
   [key: string]: any;
 }
@@ -144,6 +145,7 @@ export const AssignedGoalEditSchema = z.object({
     (val) => (val === "" || val === undefined || val === null ? undefined : Number(val)),
     z.number().min(0, "Target must be 0 or greater.").max(100, "Target percentage cannot exceed 100 for most goals.").optional()
   ).describe("Target percentage (0-100), or a specific rating for qualitative goals."),
+  isArchived: z.boolean().optional(),
 });
 
 

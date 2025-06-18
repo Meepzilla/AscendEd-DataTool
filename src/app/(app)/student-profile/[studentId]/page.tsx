@@ -8,7 +8,7 @@ import type { Student, Goal, GoalTemplate } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Edit, Trash2, PlusCircle, Info, Target, Edit3, CheckSquare, TrendingUp } from 'lucide-react';
+import { Edit, Trash2, PlusCircle, Info, Target, Edit3, CheckSquare, TrendingUp, Archive, ArchiveRestore } from 'lucide-react';
 import { formatDate, generateUUID } from '@/lib/helpers'; 
 import Link from 'next/link';
 // EditStudentModal is now globally available from AppHeader
@@ -40,6 +40,7 @@ export default function StudentProfilePage() {
     editingAssignedGoal, 
     openEditAssignedGoalModal, 
     closeEditAssignedGoalModal, 
+    updateStudentGoal, // Added for archiving
   } = useStudentData();
 
   const [currentStudent, setCurrentStudent] = useState<Student | null>(null);
@@ -103,6 +104,12 @@ export default function StudentProfilePage() {
     }
   };
 
+  const handleToggleArchiveGoal = async (goal: Goal) => {
+    if (currentStudent) {
+      await updateStudentGoal(currentStudent.id, goal.id, { isArchived: !goal.isArchived });
+    }
+  };
+
 
   return (
     <div className="space-y-6">
@@ -155,7 +162,7 @@ export default function StudentProfilePage() {
 
       <Card>
         <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-          <CardTitle className="flex items-center gap-2"><Target className="text-primary" /> Assigned Goals ({currentStudent.goals.length})</CardTitle>
+          <CardTitle className="flex items-center gap-2"><Target className="text-primary" /> Assigned Goals ({currentStudent.goals.filter(g => !g.isArchived).length} Active / {currentStudent.goals.length} Total)</CardTitle>
           <Button size="sm" onClick={() => setIsAssignGoalModalOpen(true)} className="w-full sm:w-auto mt-2 sm:mt-0">
             <PlusCircle className="mr-2 h-4 w-4" /> Assign / Create Goal
           </Button>
@@ -166,20 +173,26 @@ export default function StudentProfilePage() {
           ) : (
             <ul className="space-y-4">
               {currentStudent.goals.map((goal) => (
-                <li key={goal.id} className="p-4 border rounded-lg shadow-sm bg-card hover:shadow-md transition-shadow">
+                <li key={goal.id} className={`p-4 border rounded-lg shadow-sm bg-card hover:shadow-md transition-shadow ${goal.isArchived ? 'opacity-60 bg-muted/50' : ''}`}>
                   <div className="flex flex-col sm:flex-row justify-between items-start">
                     <div className="flex-grow">
                       <h3 className="text-lg font-semibold text-primary">{goal.name}</h3>
-                      <Badge variant="secondary" className="mt-1">{goal.type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}</Badge>
-                      {goal.sessionTargetValue !== undefined && (
-                        <Badge variant="outline" className="mt-1 ml-0 sm:ml-2">
-                          <TrendingUp className="mr-1.5 h-3.5 w-3.5 text-green-600" />
-                          Target: {goal.sessionTargetValue}{goal.type !== 'QUALITATIVE_OBSERVATION' ? '%' : ''}
-                        </Badge>
-                      )}
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                        <Badge variant="secondary">{goal.type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}</Badge>
+                        {goal.sessionTargetValue !== undefined && (
+                          <Badge variant="outline">
+                            <TrendingUp className="mr-1.5 h-3.5 w-3.5 text-green-600" />
+                            Target: {goal.sessionTargetValue}{goal.type !== 'QUALITATIVE_OBSERVATION' ? '%' : ''}
+                          </Badge>
+                        )}
+                        {goal.isArchived && <Badge variant="outline" className="border-orange-500 text-orange-600">Archived</Badge>}
+                      </div>
                       <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{goal.smartGoal}</p>
                     </div>
                     <div className="flex gap-1 shrink-0 mt-2 sm:mt-0 sm:ml-2">
+                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleToggleArchiveGoal(goal)} title={goal.isArchived ? "Unarchive Goal" : "Archive Goal"}>
+                        {goal.isArchived ? <ArchiveRestore className="h-4 w-4 text-green-600" /> : <Archive className="h-4 w-4 text-orange-600" />}
+                      </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenEditAssignedGoalModal(goal)} title="Edit Assigned Goal">
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -188,12 +201,14 @@ export default function StudentProfilePage() {
                       </Button>
                     </div>
                   </div>
-                  <div className="mt-3 pt-3 border-t">
-                     <Link href={`/data-entry?studentId=${currentStudent.id}&goalId=${goal.id}`}
-                           className="inline-flex items-center text-sm text-primary hover:underline">
-                        <CheckSquare className="mr-2 h-4 w-4" /> Enter/View Progress Data
-                     </Link>
-                  </div>
+                  {!goal.isArchived && (
+                    <div className="mt-3 pt-3 border-t">
+                       <Link href={`/data-entry?studentId=${currentStudent.id}&goalId=${goal.id}`}
+                             className="inline-flex items-center text-sm text-primary hover:underline">
+                          <CheckSquare className="mr-2 h-4 w-4" /> Enter/View Progress Data
+                       </Link>
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
