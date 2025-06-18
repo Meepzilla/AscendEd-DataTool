@@ -33,20 +33,21 @@ const hotkeys: Hotkey[] = [
   { key: 'Alt + A', description: 'Cycle to Previous Student Slot', category: 'Data Entry' },
   { key: 'S', description: 'Cycle to Next Goal (for focused student)', category: 'Data Entry' },
   { key: 'Alt + S', description: 'Cycle to Previous Goal (for focused student)', category: 'Data Entry' },
-  { key: 'C', description: 'Increment Correct / Total Syllables count', category: 'Data Entry' },
+  { key: 'C', description: 'Increment Correct / Total Syllables / Qualitative Slider Right', category: 'Data Entry' },
   { key: 'Alt + C', description: 'Decrement Correct / Total Syllables count', category: 'Data Entry' },
-  { key: 'N', description: 'Increment Incorrect / Stuttered Syllables count', category: 'Data Entry' },
+  { key: 'N', description: 'Increment Incorrect / Stuttered Syllables / Qualitative Slider Left', category: 'Data Entry' },
   { key: 'Alt + N', description: 'Decrement Incorrect / Stuttered Syllables count', category: 'Data Entry' },
-  { key: 'V', description: 'Increment Verbal Prompt count', category: 'Data Entry' },
-  { key: 'Alt + V', description: 'Decrement Verbal Prompt count', category: 'Data Entry' },
+  { key: 'V', description: 'Increment Visual Prompt count', category: 'Data Entry' }, // Changed D to V for visual
+  { key: 'Alt + V', description: 'Decrement Visual Prompt count', category: 'Data Entry' },
   { key: 'G', description: 'Increment Gestural Prompt count', category: 'Data Entry' },
   { key: 'Alt + G', description: 'Decrement Gestural Prompt count', category: 'Data Entry' },
   { key: 'P', description: 'Increment Partial Physical Prompt count', category: 'Data Entry' },
   { key: 'Alt + P', description: 'Decrement Partial Physical Prompt count', category: 'Data Entry' },
   { key: 'F', description: 'Increment Full Physical Prompt count', category: 'Data Entry' },
   { key: 'Alt + F', description: 'Decrement Full Physical Prompt count', category: 'Data Entry' },
-  { key: 'I', description: 'Increment Independent Prompt count', category: 'Data Entry' },
-  { key: 'Alt + I', description: 'Decrement Independent Prompt count', category: 'Data Entry' },
+  { key: 'I', description: 'Increment Independent Prompt count (also increments main Correct count)', category: 'Data Entry' },
+  { key: 'Alt + I', description: 'Decrement Independent Prompt count (also decrements main Correct count)', category: 'Data Entry' },
+  { key: 'Alt + E', description: 'Edit focused student\'s info/goals (from Data Entry page)', category: 'Data Entry' },
 ];
 
 const categorizedHotkeys = hotkeys.reduce((acc, hotkey) => {
@@ -114,7 +115,7 @@ export default function HelpPage() {
           </div>
           <div>
             <h3 className="font-semibold text-foreground text-lg mb-1">Student Profile</h3>
-            <p>Manage individual student details, assign goals from templates, or create custom goals for them. The sidebar shows a quick progress overview for the selected student.</p>
+            <p>Manage individual student details, assign goals from templates, or create custom goals for them. The sidebar shows a quick progress overview for the selected student. Use the "Edit Student Info" button, or the "Edit Student" modal (accessible from Data Entry via icon or Alt+E) for comprehensive goal management.</p>
           </div>
           <div>
             <h3 className="font-semibold text-foreground text-lg mb-1">Goal Templates</h3>
@@ -123,6 +124,7 @@ export default function HelpPage() {
           <div>
             <h3 className="font-semibold text-foreground text-lg mb-1">Data Entry</h3>
             <p>Record session data for one or more students. Select students, enter activity details, and log performance for each assigned goal. Use the hotkeys listed above for rapid data input. AI can also suggest activities based on goals and progress.</p>
+             <p className="mt-1"><strong className="text-foreground">Note:</strong> Clicking a student's icon on their card or pressing Alt+E (when a student card is focused) will open the "Edit Student" modal, where you can manage their goals directly, assign new templates, or create custom goals with AI assistance.</p>
           </div>
           <div>
             <h3 className="font-semibold text-foreground text-lg mb-1">Manage Sessions</h3>
@@ -130,7 +132,7 @@ export default function HelpPage() {
           </div>
           <div>
             <h3 className="font-semibold text-foreground text-lg mb-1">Analysis & Reports</h3>
-            <p>Visualize student progress over time with charts for accuracy and prompt usage. Generate AI-powered technical summaries of student performance.</p>
+            <p>Visualize student progress over time with charts for accuracy, response counts, opportunities, prompt usage, goal performance flow (Sankey), and correlations (Scatter Plot). Generate AI-powered technical summaries of student performance.</p>
           </div>
         </CardContent>
       </Card>
@@ -142,10 +144,12 @@ export default function HelpPage() {
         <CardContent className="space-y-3 text-muted-foreground">
             <p><strong className="text-foreground">Local Mode:</strong> If Firebase is not configured (e.g., missing API keys), the app runs in local mode. Data is stored in your browser and not synced to the cloud. You'll see indicators for this.</p>
             <p><strong className="text-foreground">Error Log:</strong> If you encounter issues, check the Error Log (Alt+L or header icon) for recent application-level errors. For more detailed debugging, use your browser's developer console.</p>
-            <p><strong className="text-foreground">AI Features:</strong> Make use of AI for SMART goal generation (in Goal Templates) and activity suggestions (in Data Entry) to enhance your planning.</p>
+            <p><strong className="text-foreground">AI Features:</strong> Make use of AI for SMART goal generation (in Goal Templates & Edit Student modal) and activity suggestions (in Data Entry) to enhance your planning.</p>
             <p><strong className="text-foreground">Ctrl+Enter:</strong> In many forms and on the Data Entry page, pressing Ctrl+Enter will act as a "confirm" or "save" action.</p>
+            <p><strong className="text-foreground">Data Entry Focus:</strong> On the Data Entry page, student cards widen when focused. Click on a student card or use number keys (1-4) to focus.</p>
         </CardContent>
       </Card>
     </div>
   );
 }
+

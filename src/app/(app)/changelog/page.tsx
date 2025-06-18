@@ -4,7 +4,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, Trash2, LayoutGrid, Minimize2, UserX, ArrowRightLeft, Lightbulb, Download, ListPlus } from 'lucide-react';
+import { ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, Trash2, LayoutGrid, Minimize2, UserX, ArrowRightLeft, Lightbulb, Download, ListPlus, Workflow, Shuffle, CheckSquare } from 'lucide-react';
 import { APP_NAME } from '@/lib/constants';
 
 interface ChangelogEntry {
@@ -17,6 +17,48 @@ interface ChangelogEntry {
 }
 
 const changelogEntries: ChangelogEntry[] = [
+  {
+    date: '2025-06-18',
+    title: 'Analysis Report: Goal Performance Flow (Sankey Diagram)',
+    description: 'Added a new Sankey diagram to the Analysis Report page. This chart visualizes the flow of opportunities from Goal Type to Specific Goal, and then to Correct/Incorrect outcomes, offering a new perspective on performance distribution.',
+    type: 'feature',
+    icon: Workflow,
+  },
+  {
+    date: '2025-06-18',
+    title: 'Analysis Report: Enhanced Scatter Plot',
+    description: "The scatter plot on the Analysis Report page now visualizes the relationship between 'Total Correct Responses' and 'Total Prompts Used (excluding Independent)' per session, providing insights into prompting effectiveness.",
+    type: 'improvement',
+    icon: Shuffle,
+  },
+  {
+    date: '2025-06-18',
+    title: "Data Entry: Streamlined 'Independent' Prompt",
+    description: "The 'Independent' prompt counter on the Data Entry page now automatically increments (and decrements) the main 'Correct' count for the relevant goal type. This simplifies logging of unprompted correct responses.",
+    type: 'improvement',
+    icon: CheckSquare,
+  },
+  {
+    date: '2025-06-18',
+    title: 'Data Entry: Simplified Language Comprehension Input',
+    description: "Removed the 'Questions Attempted' field for Language Comprehension goals on the Data Entry page to streamline input. Accuracy is now calculated based on Correct and Incorrect responses.",
+    type: 'improvement',
+    icon: Minimize2,
+  },
+  {
+    date: '2025-06-18',
+    title: 'Analysis Report: Graphing & Data Accuracy Fixes',
+    description: 'Resolved issues in the Analysis Report page where graphs might not update correctly and X-axis date labels could duplicate. Data aggregation and chart rendering are now more robust.',
+    type: 'fix',
+    icon: Bug,
+  },
+  {
+    date: '2025-06-18',
+    title: 'Edit Session Modal: DatePicker Visibility Fix',
+    description: 'Addressed an issue where the DatePicker calendar might not appear correctly within the Edit Session modal due to stacking order.',
+    type: 'fix',
+    icon: Bug,
+  },
   {
     date: '2025-06-17',
     title: 'Data Entry Page Layout Enhancement',
