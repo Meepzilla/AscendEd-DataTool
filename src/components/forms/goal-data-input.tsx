@@ -63,10 +63,7 @@ export default function GoalDataInputComponent({
         break;
       case 'LANGUAGE_COMPREHENSION':
         correct = Number(data.questionsCorrect || 0);
-        totalOpportunities = (data.questionsAttempted !== undefined && Number(data.questionsAttempted || 0) > 0)
-          ? Number(data.questionsAttempted || 0)
-          : (correct + Number(data.questionsIncorrect || 0));
-        if (data.questionsAttempted !== undefined && correct > totalOpportunities && totalOpportunities > 0) correct = totalOpportunities; // Ensure correct isn't more than attempted if attempted is specified
+        totalOpportunities = correct + Number(data.questionsIncorrect || 0);
         break;
       case 'LANGUAGE_EXPRESSION':
         correct = Number(data.successfulResponses || 0);
@@ -247,14 +244,7 @@ export default function GoalDataInputComponent({
                   {calculateAccuracy()}
                 </p>
               </FormItem>
-              <FormItem>
-                <FormLabel>Questions Attempted (Optional)</FormLabel>
-                <div className="flex items-center gap-1">
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('questionsAttempted', Math.max(0, (Number(data.questionsAttempted ?? ((data.questionsCorrect ?? 0) + (data.questionsIncorrect ?? 0))) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
-                  <Input type="number" min="0" value={data.questionsAttempted ?? ((data.questionsCorrect ?? 0) + (data.questionsIncorrect ?? 0))} onChange={(e) => handleChange('questionsAttempted', parseInt(e.target.value) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('questionsAttempted', (Number(data.questionsAttempted ?? ((data.questionsCorrect ?? 0) + (data.questionsIncorrect ?? 0))) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
-                </div>
-              </FormItem>
+              {/* Removed Questions Attempted Input */}
             </div>
           </>
         );
@@ -332,7 +322,7 @@ export default function GoalDataInputComponent({
   };
 
   const showPromptCounters = goal.type !== 'QUALITATIVE_OBSERVATION' && goal.type !== 'FLUENCY_SYLLABLE_STUTTER';
-  const showAccuracyDisplay = goal.type !== 'QUALITATIVE_OBSERVATION';
+  const showAccuracyDisplay = goal.type !== 'QUALITATIVE_OBSERVATION' && goal.type !== 'LANGUAGE_COMPREHENSION';
 
 
   return (
@@ -385,7 +375,7 @@ export default function GoalDataInputComponent({
       <CardContent className="p-2 space-y-1.5">
         {renderInputFields()}
 
-        {showAccuracyDisplay && goal.type !== 'LANGUAGE_COMPREHENSION' && (
+        {showAccuracyDisplay && ( // Consolidated accuracy display logic
           <div className="mt-1.5">
             <FormLabel>Accuracy</FormLabel>
             <p className="text-sm font-semibold text-primary h-8 flex items-center">

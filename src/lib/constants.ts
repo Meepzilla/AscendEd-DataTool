@@ -44,7 +44,6 @@ export const GOAL_TYPE_FIELDS: Record<GoalType, Record<string, any>> = {
     rating: 3,
   },
   [GOAL_TYPES.LANGUAGE_COMPREHENSION]: {
-    questionsAttempted: 0,
     questionsCorrect: 0,
     questionsIncorrect: 0,
     details: '',
