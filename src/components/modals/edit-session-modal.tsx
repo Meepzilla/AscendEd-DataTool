@@ -100,8 +100,8 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
         }}
         className="space-y-4"
       >
-        <ScrollArea className="max-h-[60vh] p-1"> 
-            <div className="space-y-4 p-3"> 
+        <ScrollArea className="max-h-[60vh]"> {/* Outer scroll for entire form, removed p-1 */}
+            <div className="space-y-4 p-4"> {/* Consolidated padding here */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <Label htmlFor="sessionDateEdit">Session Date</Label>
@@ -131,20 +131,27 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
                     />
                 </div>
 
-                {formData.goals && formData.goals.map((sessionGoal, index) => {
-                    const originalGoal = currentSession.originalGoalHeaders.find(og => og.id === sessionGoal.goalId);
-                    if (!originalGoal) return null; 
+                {formData.goals && formData.goals.length > 0 && (
+                    <ScrollArea className="max-h-[300px] border rounded-md p-2"> {/* Inner scroll for goals list */}
+                        <div className="space-y-3">
+                            {formData.goals.map((sessionGoal) => {
+                                const originalGoal = currentSession.originalGoalHeaders.find(og => og.id === sessionGoal.goalId);
+                                if (!originalGoal) return null; 
 
-                    return (
-                        <GoalDataInputComponent
-                        key={sessionGoal.goalId}
-                        id={`edit-session-goal-${sessionGoal.goalId}`}
-                        goal={originalGoal} 
-                        data={sessionGoal.data || GOAL_TYPE_FIELDS[originalGoal.type]}
-                        onChange={(fieldName,newData) => handleGoalDataChange(sessionGoal.goalId, fieldName,newData)}
-                        />
-                    );
-                })}
+                                return (
+                                    <GoalDataInputComponent
+                                    key={sessionGoal.goalId}
+                                    id={`edit-session-goal-${sessionGoal.goalId}`}
+                                    goal={originalGoal} 
+                                    data={sessionGoal.data || GOAL_TYPE_FIELDS[originalGoal.type]}
+                                    onChange={(fieldName,newData) => handleGoalDataChange(sessionGoal.goalId, fieldName,newData)}
+                                    isArchived={originalGoal.isArchived} // Pass isArchived status
+                                    />
+                                );
+                            })}
+                        </div>
+                    </ScrollArea>
+                )}
                 
                 <div>
                     <Label htmlFor="sessionNotesEdit">General Notes</Label>
@@ -171,3 +178,4 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
     </GenericModal>
   );
 }
+
