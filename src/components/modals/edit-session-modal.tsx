@@ -71,19 +71,27 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
     }
     setIsSubmitting(true);
 
-    // Reconstruct full ISO date string for submission, preserving original time if possible or defaulting.
-    // new Date("YYYY-MM-DD") parses as local midnight. toISOString() converts to UTC.
-    // The original time from currentSession.time should be combined with the new formData.date
-    let finalDateISO = new Date(formData.date).toISOString(); // This will be UTC midnight of selected date
+    // Reconstruct full ISO date string for submission.
+    // formData.date is 'YYYY-MM-DD'. new Date('YYYY-MM-DD') parses as local midnight.
+    // We need to combine this with formData.time correctly.
+    let finalDateISO = '';
+    const datePart = formData.date; // YYYY-MM-DD
 
     if (formData.time) {
         const [hours, minutes] = formData.time.split(':');
-        const datePart = formData.date; // YYYY-MM-DD
-        const combinedDateTime = new Date(`${datePart}T${hours}:${minutes}:00`);
-        // Check if combinedDateTime is valid, otherwise fall back to date only
-        if (!isNaN(combinedDateTime.getTime())) {
-            finalDateISO = combinedDateTime.toISOString();
+        // Create date object with local date and time, then convert to ISO string (which will be UTC)
+        const localDateTime = new Date(datePart);
+        localDateTime.setHours(Number(hours), Number(minutes), 0, 0);
+        
+        if (!isNaN(localDateTime.getTime())) {
+            finalDateISO = localDateTime.toISOString();
+        } else {
+            // Fallback if time parsing fails, just use date (midnight UTC)
+            finalDateISO = new Date(datePart).toISOString();
         }
+    } else {
+        // If no time, use date (midnight UTC)
+        finalDateISO = new Date(datePart).toISOString();
     }
 
 
