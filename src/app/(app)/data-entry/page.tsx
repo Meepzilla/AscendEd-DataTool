@@ -32,7 +32,7 @@ export default function DataEntryPage() {
     loading: studentsLoading,
     addSession,
     getSessionsForStudent,
-    selectedStudent: studentFromContext, 
+    selectedStudent: studentFromContext,
     openEditStudentModal,
     dataEntrySessionDate,
     setDataEntrySessionDate,
@@ -50,7 +50,7 @@ export default function DataEntryPage() {
     setDataEntryAiActivitySuggestions,
     dataEntryVisibleGoalCountByStudentId,
     setDataEntryVisibleGoalCountByStudentId,
-    dataEntryShowArchivedByStudentId, 
+    dataEntryShowArchivedByStudentId,
     setDataEntryShowArchivedByStudentId,
   } = useStudentData();
 
@@ -93,36 +93,75 @@ export default function DataEntryPage() {
       if (student) {
         const existingState = newContextStudentStates[id];
         
-        const goalsHaveChanged = !existingState || !existingState.originalGoalHeaders ||
-                                 existingState.originalGoalHeaders.length !== student.goals.length ||
-                                 student.goals.some((goal, index) => 
-                                   !existingState.originalGoalHeaders[index] || 
-                                   goal.id !== existingState.originalGoalHeaders[index].id ||
-                                   goal.name !== existingState.originalGoalHeaders[index].name ||
-                                   goal.isArchived !== existingState.originalGoalHeaders[index].isArchived // Check archive status
-                                 );
+        const goalsHaveChanged =
+          !existingState ||
+          !existingState.originalGoalHeaders ||
+          existingState.originalGoalHeaders.length !== student.goals.length ||
+          student.goals.some(
+            (goal, index) =>
+              !existingState.originalGoalHeaders[index] || // New goal added or one removed, lengths differ or new goal at end
+              goal.id !== existingState.originalGoalHeaders[index].id ||
+              goal.name !== existingState.originalGoalHeaders[index].name ||
+              goal.isArchived !== existingState.originalGoalHeaders[index].isArchived
+          );
 
-        if (!existingState || goalsHaveChanged) {
+        if (!existingState) { // Student newly selected
           const initialGoalData: Record<string, SessionGoalData['data']> = {};
           student.goals.forEach(goal => {
-            initialGoalData[goal.id] = (existingState?.goalData?.[goal.id] && goalsHaveChanged && existingState.originalGoalHeaders.find(og => og.id === goal.id)) 
-                                        ? existingState.goalData[goal.id] 
-                                        : JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type]));
+            initialGoalData[goal.id] = JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type]));
           });
-
           newContextStudentStates[id] = {
             studentId: student.id,
             studentName: student.name,
-            activity: existingState?.activity || '',
-            notes: existingState?.notes || '',
+            activity: '',
+            notes: '',
             goalData: initialGoalData,
-            originalGoalHeaders: student.goals, 
+            originalGoalHeaders: student.goals,
           };
           statesChanged = true;
+        } else { // Student was already in a slot
+          // Preserve activity and notes, update goals if they changed
+          if (goalsHaveChanged) {
+            const currentActivity = existingState.activity;
+            const currentNotes = existingState.notes;
+            const newGoalData: Record<string, SessionGoalData['data']> = {};
+
+            student.goals.forEach(goal => {
+              // Try to carry over data for existing goals, init for new ones
+              newGoalData[goal.id] = existingState.goalData?.[goal.id]
+                ? existingState.goalData[goal.id]
+                : JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type]));
+            });
+
+            newContextStudentStates[id] = {
+              studentId: student.id,
+              studentName: student.name,
+              activity: currentActivity,
+              notes: currentNotes,
+              goalData: newGoalData,
+              originalGoalHeaders: student.goals, // Update originalGoalHeaders
+            };
+            statesChanged = true;
+          } else {
+            // If goals haven't changed, ensure the reference to the student state is new if other minor parts changed,
+            // or simply ensure it's part of newContextStudentStates if no actual data change is needed.
+            // For simplicity, if no goal change, we assume the state from spread is fine.
+            // Potentially, check if student.name changed if that's relevant.
+            if (existingState.studentName !== student.name) {
+                 newContextStudentStates[id] = {
+                    ...existingState,
+                    studentName: student.name,
+                 };
+                 statesChanged = true;
+            } else {
+                 newContextStudentStates[id] = existingState; // Keep existing if no changes
+            }
+          }
         }
       }
     });
 
+    // Remove states for students no longer selected
     Object.keys(newContextStudentStates).forEach(studentId => {
       if (!dataEntrySelectedStudentIds.includes(studentId)) {
         delete newContextStudentStates[studentId];
@@ -133,24 +172,31 @@ export default function DataEntryPage() {
     if (statesChanged) {
       setDataEntryStudentSessionStates(newContextStudentStates);
     }
-    
+
     const newFocusedGoalIndexes: Record<string, number> = { ...dataEntryFocusedGoalIndexByStudentId };
     let focusIndexesChanged = false;
     dataEntrySelectedStudentIds.forEach(id => {
-        const studentState = newContextStudentStates[id]; 
-        if (studentState) {
-            if (newFocusedGoalIndexes[id] === undefined && studentState.originalGoalHeaders.filter(g => !g.isArchived || dataEntryShowArchivedByStudentId[id]).length > 0) {
+        const studentState = newContextStudentStates[id];
+        if (studentState) { // Student is currently selected
+            const visibleGoals = studentState.originalGoalHeaders.filter(g => !g.isArchived || dataEntryShowArchivedByStudentId[id]);
+            if (newFocusedGoalIndexes[id] === undefined && visibleGoals.length > 0) {
                 newFocusedGoalIndexes[id] = 0; // Focus first visible goal
                 focusIndexesChanged = true;
-            } else if (newFocusedGoalIndexes[id] !== undefined && newFocusedGoalIndexes[id] >= studentState.originalGoalHeaders.filter(g => !g.isArchived || dataEntryShowArchivedByStudentId[id]).length) {
-                newFocusedGoalIndexes[id] = Math.max(0, studentState.originalGoalHeaders.filter(g => !g.isArchived || dataEntryShowArchivedByStudentId[id]).length - 1);
+            } else if (newFocusedGoalIndexes[id] !== undefined && newFocusedGoalIndexes[id] >= visibleGoals.length) {
+                // If current focus index is out of bounds (e.g., goals were removed or archived status changed)
+                newFocusedGoalIndexes[id] = Math.max(0, visibleGoals.length - 1);
+                focusIndexesChanged = true;
+            } else if (visibleGoals.length === 0 && newFocusedGoalIndexes[id] !== undefined) {
+                 // If no visible goals, remove focus index or set to a non-index like -1 or undefined
+                delete newFocusedGoalIndexes[id]; // Or set to specific "no focus" value
                 focusIndexesChanged = true;
             }
-        } else if (newFocusedGoalIndexes[id] !== undefined) { 
+        } else if (newFocusedGoalIndexes[id] !== undefined) { // Student is no longer selected but has a focus index
             delete newFocusedGoalIndexes[id];
             focusIndexesChanged = true;
         }
     });
+     // Clean up focus indexes for students not in dataEntrySelectedStudentIds anymore
      Object.keys(newFocusedGoalIndexes).forEach(studentId => {
         if (!dataEntrySelectedStudentIds.includes(studentId)) {
             delete newFocusedGoalIndexes[studentId];
@@ -163,13 +209,13 @@ export default function DataEntryPage() {
     }
 
   }, [
-    dataEntrySelectedStudentIds, 
-    students, 
-    dataEntryStudentSessionStates, 
+    dataEntrySelectedStudentIds,
+    students,
+    dataEntryStudentSessionStates,
     setDataEntryStudentSessionStates,
-    dataEntryFocusedGoalIndexByStudentId, 
+    dataEntryFocusedGoalIndexByStudentId,
     setDataEntryFocusedGoalIndexByStudentId,
-    dataEntryShowArchivedByStudentId, // Added dependency
+    dataEntryShowArchivedByStudentId,
   ]);
 
 
@@ -179,10 +225,10 @@ export default function DataEntryPage() {
         const studentState = prevStates[studentId];
         if (!studentState) return prevStates;
         const goal = studentState.originalGoalHeaders.find(g => g.id === goalId);
-        if (!goal || goal.isArchived) return prevStates; // Don't update archived goals
-  
-        let processedData = { ...newData }; 
-  
+        if (!goal || goal.isArchived) return prevStates; 
+
+        let processedData = { ...newData };
+
         if (PROMPT_TYPES.includes(updatedFieldName as PromptType) && updatedFieldName === 'Independent') {
           switch (goal.type) {
             case 'ARTICULATION': processedData.correct = newData.Independent; break;
@@ -191,19 +237,19 @@ export default function DataEntryPage() {
             case 'PHONOLOGICAL_PROCESSES': processedData.correctProductions = newData.Independent; break;
           }
         }
-  
+
         if (goal.type === 'FLUENCY_SYLLABLE_STUTTER') {
           let newTotalSyllables = Math.max(0, Number(processedData.totalSyllables || 0));
           let newStutteredSyllables = Math.max(0, Number(processedData.stutteredSyllables || 0));
-          if (updatedFieldName === 'stutteredSyllables') { 
+          if (updatedFieldName === 'stutteredSyllables') {
             newTotalSyllables = Math.max(newTotalSyllables, newStutteredSyllables);
-          } else if (updatedFieldName === 'totalSyllables') { 
+          } else if (updatedFieldName === 'totalSyllables') {
             newStutteredSyllables = Math.min(newStutteredSyllables, newTotalSyllables);
           }
           processedData.totalSyllables = newTotalSyllables;
           processedData.stutteredSyllables = newStutteredSyllables;
         }
-  
+
         return {
           ...prevStates,
           [studentId]: {
@@ -215,30 +261,21 @@ export default function DataEntryPage() {
           },
         };
       });
-  
+
       const studentSlotIndex = dataEntrySelectedStudentIds.indexOf(studentId);
       if (studentSlotIndex !== -1) {
         setDataEntryFocusedStudentSlotIndex(studentSlotIndex);
-        const currentStudentState = dataEntryStudentSessionStates[studentId]; 
-        const currentVisibleGoals = currentStudentState?.originalGoalHeaders.filter(g => !g.isArchived || dataEntryShowArchivedByStudentId[studentId]) || [];
-        if (currentStudentState?.originalGoalHeaders) {
-          const goalIndexInVisibleList = currentVisibleGoals.findIndex(g => g.id === goalId);
-          if (goalIndexInVisibleList !== -1) {
-            setDataEntryFocusedGoalIndexByStudentId(prevFocus => ({
-              ...prevFocus,
-              [studentId]: goalIndexInVisibleList,
-            }));
-          }
-        }
+        // The main useEffect will handle dataEntryFocusedGoalIndexByStudentId updates
+        // based on the new state of dataEntryStudentSessionStates and other factors.
       }
     },
     [
       setDataEntryStudentSessionStates,
-      dataEntrySelectedStudentIds, 
+      dataEntrySelectedStudentIds,
       setDataEntryFocusedStudentSlotIndex,
-      dataEntryStudentSessionStates,
-      setDataEntryFocusedGoalIndexByStudentId,
-      dataEntryShowArchivedByStudentId,
+      // dataEntryStudentSessionStates, // Removed to make callback more stable
+      // setDataEntryFocusedGoalIndexByStudentId, // Removed, main useEffect handles this
+      // dataEntryShowArchivedByStudentId, // Removed, not directly used here now
     ]
   );
 
@@ -258,13 +295,18 @@ export default function DataEntryPage() {
     }
 
     const goalIndexInVisibleList = dataEntryFocusedGoalIndexByStudentId[studentId] ?? 0;
-    const validGoalIndexInVisibleList = Math.min(Math.max(goalIndexInVisibleList, 0), visibleGoals.length - 1);
+    // Ensure validGoalIndexInVisibleList is within bounds of the current visibleGoals array
+    const validGoalIndexInVisibleList = Math.min(Math.max(goalIndexInVisibleList, 0), visibleGoals.length > 0 ? visibleGoals.length - 1 : 0);
 
-    if (validGoalIndexInVisibleList >= visibleGoals.length || validGoalIndexInVisibleList < 0) {
+
+    if (visibleGoals.length === 0 || validGoalIndexInVisibleList < 0) { // Check if visibleGoals is empty
         return { studentId, studentState, goal: null, goalData: null, goalIndex: -1 };
     }
-
+    
     const goal = visibleGoals[validGoalIndexInVisibleList];
+    if (!goal) { // Extra check if goal itself is undefined after indexing
+        return { studentId, studentState, goal: null, goalData: null, goalIndex: -1 };
+    }
     const goalData = studentState.goalData[goal.id];
     return { studentId, studentState, goal, goalData, goalIndex: validGoalIndexInVisibleList };
   }, [dataEntrySelectedStudentIds, dataEntryFocusedStudentSlotIndex, dataEntryStudentSessionStates, dataEntryFocusedGoalIndexByStudentId, dataEntryShowArchivedByStudentId]);
@@ -281,7 +323,7 @@ export default function DataEntryPage() {
       const state = dataEntryStudentSessionStates[studentId];
       if (state) {
         const sessionGoals: SessionGoalData[] = state.originalGoalHeaders
-        .filter(goal => !goal.isArchived) // Only save active goals
+        .filter(goal => !goal.isArchived) 
         .map(goal => ({
           goalId: goal.id,
           goalName: goal.name,
@@ -289,7 +331,7 @@ export default function DataEntryPage() {
           data: state.goalData[goal.id] || JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type])),
         }));
 
-        if (sessionGoals.length === 0) { // Don't save session if no active goals had data
+        if (sessionGoals.length === 0) { 
             console.log(`Skipping save for ${state.studentName}, no active goals with data.`);
             continue;
         }
@@ -302,7 +344,7 @@ export default function DataEntryPage() {
           activity: state.activity,
           notes: state.notes,
           goals: sessionGoals,
-          originalGoalHeaders: state.originalGoalHeaders, // Keep all original headers for reference
+          originalGoalHeaders: state.originalGoalHeaders, 
         };
         await addSession(session);
         sessionsSavedCount++;
@@ -317,7 +359,7 @@ export default function DataEntryPage() {
                 newStates[id].activity = '';
                 newStates[id].notes = '';
                 const initialGoalData: Record<string, SessionGoalData['data']> = {};
-                newStates[id].originalGoalHeaders.forEach(goal => { 
+                newStates[id].originalGoalHeaders.forEach(goal => {
                   initialGoalData[goal.id] = JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type]));
                 });
                 newStates[id].goalData = initialGoalData;
@@ -384,7 +426,7 @@ export default function DataEntryPage() {
         return;
       }
 
-      if (!focusedInfo || !focusedInfo.goal || !focusedInfo.goalData || focusedInfo.goal.isArchived) return; // Do not process hotkeys for archived goals
+      if (!focusedInfo || !focusedInfo.goal || !focusedInfo.goalData || focusedInfo.goal.isArchived) return; 
 
       const { studentId, studentState, goal, goalData, goalIndex } = focusedInfo;
       const visibleGoals = studentState.originalGoalHeaders.filter(g => !g.isArchived || dataEntryShowArchivedByStudentId[studentId]);
@@ -405,9 +447,9 @@ export default function DataEntryPage() {
         event.preventDefault();
         const currentCount = Number(goalData[promptToUpdate] || 0);
         const newValue = alt ? Math.max(0, currentCount - 1) : currentCount + 1;
-        
+
         let updatedDataForField = { ...goalData, [promptToUpdate]: newValue };
-        
+
         if (promptToUpdate === 'Independent') {
             switch(goal.type) {
                 case 'ARTICULATION': updatedDataForField.correct = newValue; break;
@@ -419,16 +461,16 @@ export default function DataEntryPage() {
         handleGoalDataChange(studentId, goal.id, promptToUpdate, updatedDataForField);
         return;
       }
-      
+
 
       if (goal.type === 'QUALITATIVE_OBSERVATION' && !alt) {
-        if (key === 'C') { 
+        if (key === 'C') {
           event.preventDefault();
           const currentRating = Number(goalData.rating ?? 3);
           const newRating = Math.min(5, currentRating + 1);
           handleGoalDataChange(studentId, goal.id, 'rating', { ...goalData, rating: newRating });
           return;
-        } else if (key === 'N') { 
+        } else if (key === 'N') {
           event.preventDefault();
           const currentRating = Number(goalData.rating ?? 3);
           const newRating = Math.max(1, currentRating - 1);
@@ -468,14 +510,14 @@ export default function DataEntryPage() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [
-    dataEntrySelectedStudentIds, 
-    dataEntryStudentSessionStates, 
-    dataEntryFocusedStudentSlotIndex, 
-    dataEntryFocusedGoalIndexByStudentId, 
-    handleGoalDataChange, 
-    getCurrentFocusedGoalInfo, 
-    handleSaveSession, 
-    students, 
+    dataEntrySelectedStudentIds,
+    dataEntryStudentSessionStates,
+    dataEntryFocusedStudentSlotIndex,
+    dataEntryFocusedGoalIndexByStudentId,
+    handleGoalDataChange,
+    getCurrentFocusedGoalInfo,
+    handleSaveSession,
+    students,
     openEditStudentModal,
     setDataEntryFocusedStudentSlotIndex,
     setDataEntryFocusedGoalIndexByStudentId,
@@ -499,12 +541,12 @@ export default function DataEntryPage() {
       const goalElement = document.getElementById(goalElementId);
 
       if (goalElement) {
-        setTimeout(() => { 
+        setTimeout(() => {
           goalElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }, 50); 
+        }, 50);
       }
     }
-  }, [dataEntrySelectedStudentIds, dataEntryFocusedStudentSlotIndex, dataEntryFocusedGoalIndexByStudentId, getCurrentFocusedGoalInfo]); 
+  }, [dataEntrySelectedStudentIds, dataEntryFocusedStudentSlotIndex, dataEntryFocusedGoalIndexByStudentId, getCurrentFocusedGoalInfo]);
 
 
   const handleStudentSelect = (studentId: string, index: number) => {
@@ -521,7 +563,7 @@ export default function DataEntryPage() {
     const availableStudent = students.find(s => !dataEntrySelectedStudentIds.includes(s.id));
     if (availableStudent) {
       setDataEntrySelectedStudentIds(prev => [...prev, availableStudent.id]);
-      setDataEntryFocusedStudentSlotIndex(dataEntrySelectedStudentIds.length); 
+      setDataEntryFocusedStudentSlotIndex(dataEntrySelectedStudentIds.length);
     } else {
       toast({ title: "Info", description: "No more unique available students to add, or all students are already in slots.", variant: "default" });
     }
@@ -536,12 +578,12 @@ export default function DataEntryPage() {
 
 
     if (newSelectedIds.length === 0) {
-        setDataEntryFocusedStudentSlotIndex(0); 
+        setDataEntryFocusedStudentSlotIndex(0);
     } else {
         let newFocusIndex = newSelectedIds.indexOf(currentFocusedId);
-        if (newFocusIndex === -1) { 
+        if (newFocusIndex === -1) {
             newFocusIndex = Math.min(indexToRemove, newSelectedIds.length - 1);
-            newFocusIndex = Math.max(0, newFocusIndex); 
+            newFocusIndex = Math.max(0, newFocusIndex);
         }
         setDataEntryFocusedStudentSlotIndex(newFocusIndex);
     }
@@ -559,33 +601,31 @@ export default function DataEntryPage() {
     setDataEntryStudentSessionStates(prevStates => {
       const studentState = prevStates[studentId];
       if (!studentState) return prevStates;
-  
-      // Operate on the full list of goals for reordering
+
       const goals = [...studentState.originalGoalHeaders];
       const goalIndex = goals.findIndex(g => g.id === goalId);
-  
+
       if (goalIndex === -1) return prevStates;
-  
+
       const newIndex = direction === 'up' ? goalIndex - 1 : goalIndex + 1;
-  
+
       if (newIndex < 0 || newIndex >= goals.length) return prevStates;
-  
+
       const [movedGoal] = goals.splice(goalIndex, 1);
       goals.splice(newIndex, 0, movedGoal);
-  
-      // After reordering, update the focused goal index based on its new position in the *currently visible* list
+
       setDataEntryFocusedGoalIndexByStudentId(prevFocused => {
         const visibleGoals = goals.filter(g => !g.isArchived || dataEntryShowArchivedByStudentId[studentId]);
-        const newFocusedIndexInVisible = visibleGoals.findIndex(g => g.id === goalId); // Find moved goal in visible list
-        
+        const newFocusedIndexInVisible = visibleGoals.findIndex(g => g.id === goalId); 
+
         return { ...prevFocused, [studentId]: newFocusedIndexInVisible !== -1 ? newFocusedIndexInVisible : 0 };
       });
-  
+
       return {
         ...prevStates,
         [studentId]: {
           ...studentState,
-          originalGoalHeaders: goals, // This contains the reordered full list
+          originalGoalHeaders: goals,
         },
       };
     });
@@ -650,7 +690,7 @@ export default function DataEntryPage() {
         }
       }
     });
-    setDataEntryStudentSessionStates(newStates); 
+    setDataEntryStudentSessionStates(newStates);
     toast({ title: "Data Reset", description: "Current unsaved data for selected students has been reset." });
     setIsResetConfirmationOpen(false);
   };
@@ -728,21 +768,22 @@ export default function DataEntryPage() {
           if (!student || !state) return null;
 
           const isStudentFocused = slotIndex === dataEntryFocusedStudentSlotIndex;
-          
+
           const showArchived = dataEntryShowArchivedByStudentId[studentId] || false;
-          const filteredStudentGoals = state.originalGoalHeaders.filter(g => !g.isArchived || showArchived);
-          
-          const visibleGoalCount = dataEntryVisibleGoalCountByStudentId[studentId] ?? 10; 
+          const allStudentGoals = state.originalGoalHeaders;
+          const filteredStudentGoals = allStudentGoals.filter(g => !g.isArchived || showArchived);
+
+          const visibleGoalCount = dataEntryVisibleGoalCountByStudentId[studentId] ?? 10;
           const displayedGoals = filteredStudentGoals.slice(0, visibleGoalCount);
 
 
           return (
             <Card
               key={studentId}
-              id={`student-card-slot-${slotIndex}`} 
+              id={`student-card-slot-${slotIndex}`}
               className={cn(
                 `flex flex-col transition-all duration-300 ease-in-out shadow-md flex-shrink-0`,
-                isStudentFocused ? 'w-[450px]' : 'w-[350px]', 
+                isStudentFocused ? 'w-[450px]' : 'w-[350px]',
                 isStudentFocused && 'ring-2 ring-primary ring-offset-2 shadow-xl'
               )}
               onClick={() => setDataEntryFocusedStudentSlotIndex(slotIndex)}
@@ -788,7 +829,7 @@ export default function DataEntryPage() {
                   </div>
                 </div>
               </CardHeader>
-              <ScrollArea className="h-[450px]"> 
+              <ScrollArea className="h-[450px]">
                 <CardContent className="p-3 space-y-3">
                   <div>
                     <Label htmlFor={`activity-${studentId}`}>Activity</Label>
@@ -811,7 +852,7 @@ export default function DataEntryPage() {
                   </div>
 
 
-                  {state.originalGoalHeaders.length === 0 ? (
+                  {allStudentGoals.length === 0 ? (
                      <p className="text-sm text-muted-foreground p-4 text-center border rounded-md">No goals assigned to this student. Assign goals in the Student Profile.</p>
                   ) : displayedGoals.length === 0 && !showArchived ? (
                      <p className="text-sm text-muted-foreground p-4 text-center border rounded-md">No active goals. Toggle "Show Archived Goals" to view them.</p>
@@ -820,8 +861,13 @@ export default function DataEntryPage() {
                   ) : (
                     <>
                       {displayedGoals.map((goal) => {
-                        const actualGoalIndexInOriginal = state.originalGoalHeaders.findIndex(g => g.id === goal.id);
-                        const isGoalFocused = isStudentFocused && (dataEntryFocusedGoalIndexByStudentId[studentId] ?? 0) === displayedGoals.findIndex(dg => dg.id === goal.id);
+                        // Find the index of the goal in the currently *displayed* list for focus purposes
+                        const displayedGoalIndex = displayedGoals.findIndex(dg => dg.id === goal.id);
+                        const isGoalFocused = isStudentFocused && (dataEntryFocusedGoalIndexByStudentId[studentId] ?? 0) === displayedGoalIndex;
+
+                        // Find index in the original full list for move up/down logic
+                        const actualGoalIndexInOriginal = allStudentGoals.findIndex(g => g.id === goal.id);
+
                         return (
                           <GoalDataInputComponent
                             key={goal.id}
@@ -832,13 +878,13 @@ export default function DataEntryPage() {
                             isFocused={isGoalFocused}
                             onMoveUp={() => handleMoveGoal(studentId, goal.id, 'up')}
                             onMoveDown={() => handleMoveGoal(studentId, goal.id, 'down')}
-                            canMoveUp={actualGoalIndexInOriginal > 0} // Based on original full list
-                            canMoveDown={actualGoalIndexInOriginal < state.originalGoalHeaders.length - 1} // Based on original full list
+                            canMoveUp={actualGoalIndexInOriginal > 0}
+                            canMoveDown={actualGoalIndexInOriginal < allStudentGoals.length - 1}
                             isArchived={goal.isArchived}
                           />
                         );
                       })}
-                       {filteredStudentGoals.length > 10 && ( 
+                       {filteredStudentGoals.length > 10 && (
                         <div className="flex justify-center mt-2">
                           {visibleGoalCount < filteredStudentGoals.length ? (
                             <Button
@@ -854,7 +900,7 @@ export default function DataEntryPage() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => setDataEntryVisibleGoalCountByStudentId(prev => ({ ...prev, [studentId]: 10 }))} 
+                              onClick={() => setDataEntryVisibleGoalCountByStudentId(prev => ({ ...prev, [studentId]: 10 }))}
                               className="text-xs"
                             >
                               <EyeOff className="mr-1.5 h-3.5 w-3.5" />
@@ -881,7 +927,7 @@ export default function DataEntryPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => fetchAiActivitySuggestions(studentId)}
-                        disabled={isAiLoading[studentId] || state.originalGoalHeaders.filter(g => !g.isArchived).length === 0}
+                        disabled={isAiLoading[studentId] || allStudentGoals.filter(g => !g.isArchived).length === 0}
                         className="w-full"
                     >
                       {isAiLoading[studentId] ? 'Getting Suggestions...' : 'Get AI Activity Suggestions'}
@@ -940,6 +986,7 @@ export default function DataEntryPage() {
     
 
     
+
 
 
 
