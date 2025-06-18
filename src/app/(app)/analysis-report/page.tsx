@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { BarChart2, Download, Info, RefreshCw, Lightbulb, MessageSquare, TrendingUp, AlertTriangle } from 'lucide-react';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, LineChart, Line, Legend } from 'recharts';
-import { generateTechnicalSummary } from '@/ai/flows/technical-summary-generation'; 
+import { generateTechnicalSummary } from '@/ai/flows/technical-summary-generation';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PROMPT_COLORS, PROMPT_TYPES } from '@/lib/constants';
@@ -27,7 +27,7 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
     let correct = 0;
     let incorrect = 0;
     let opportunities = 0;
-    let promptCounts: Record<PromptType, number> = PROMPT_TYPES.reduce((acc, pt) => ({...acc, [pt]:0}), {} as Record<PromptType, number>);
+    let promptCounts: Record<PromptType, number> = Object.fromEntries(PROMPT_TYPES.map(pt => [pt, 0])) as Record<PromptType, number>;
 
     session.goals.forEach(goalData => {
       const currentGoal = studentGoals.find(g => g.id === goalData.goalId);
@@ -115,7 +115,7 @@ export default function AnalysisReportPage() {
   const chartData = useMemo(() => transformSessionDataForChart(studentSessions, selectedStudent?.goals || [], selectedGoalId), [studentSessions, selectedStudent?.goals, selectedGoalId]);
   
   const promptUsageData = useMemo(() => {
-    const aggregatedPrompts: Record<PromptType, number> = PROMPT_TYPES.reduce((acc, pt) => ({...acc, [pt]:0}), {} as Record<PromptType, number>);
+    const aggregatedPrompts: Record<PromptType, number> = Object.fromEntries(PROMPT_TYPES.map(pt => [pt, 0])) as Record<PromptType, number>;
     chartData.forEach(session => {
         PROMPT_TYPES.forEach(pt => {
             if(session[pt]) aggregatedPrompts[pt] += session[pt] as number;
@@ -231,7 +231,7 @@ export default function AnalysisReportPage() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
              <div>
                 <CardTitle className="text-2xl font-bold flex items-center gap-2">
-                    <BarChart2 className="h-7 w-7 text-primary"/>Analysis & Reports
+                    <BarChart2 className="h-7 w-7 text-primary"/>Analysis &amp; Reports
                 </CardTitle>
                 <CardDescription>Visualize student progress, analyze trends, and generate summaries (for active goals).</CardDescription>
              </div>
