@@ -712,7 +712,7 @@ export default function DataEntryPage() {
 
           const isStudentFocused = slotIndex === dataEntryFocusedStudentSlotIndex;
           const allStudentGoals = state.originalGoalHeaders;
-          const visibleGoalCount = dataEntryVisibleGoalCountByStudentId[studentId] ?? 3;
+          const visibleGoalCount = dataEntryVisibleGoalCountByStudentId[studentId] ?? 5; // Default visible count is 5
           const displayedGoals = allStudentGoals.slice(0, visibleGoalCount);
 
 
@@ -802,7 +802,7 @@ export default function DataEntryPage() {
                           />
                         );
                       })}
-                       {allStudentGoals.length > 3 && (
+                       {allStudentGoals.length > 5 && (
                         <div className="flex justify-center mt-2">
                           {visibleGoalCount < allStudentGoals.length ? (
                             <Button
@@ -818,7 +818,7 @@ export default function DataEntryPage() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => setDataEntryVisibleGoalCountByStudentId(prev => ({ ...prev, [studentId]: 3 }))}
+                              onClick={() => setDataEntryVisibleGoalCountByStudentId(prev => ({ ...prev, [studentId]: 5 }))}
                               className="text-xs"
                             >
                               <EyeOff className="mr-1.5 h-3.5 w-3.5" />
@@ -904,4 +904,5 @@ export default function DataEntryPage() {
     
 
     
+
 
