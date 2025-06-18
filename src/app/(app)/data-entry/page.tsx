@@ -179,12 +179,11 @@ export default function DataEntryPage() {
         let processedData = { ...newData }; 
   
         if (PROMPT_TYPES.includes(updatedFieldName as PromptType) && updatedFieldName === 'Independent') {
-          const independentCount = Number(processedData.Independent || 0);
           switch (goal.type) {
-            case 'ARTICULATION': processedData.correct = independentCount; break;
-            case 'LANGUAGE_COMPREHENSION': processedData.questionsCorrect = independentCount; break;
-            case 'LANGUAGE_EXPRESSION': processedData.successfulResponses = independentCount; break;
-            case 'PHONOLOGICAL_PROCESSES': processedData.correctProductions = independentCount; break;
+            case 'ARTICULATION': processedData.correct = newData.Independent; break;
+            case 'LANGUAGE_COMPREHENSION': processedData.questionsCorrect = newData.Independent; break;
+            case 'LANGUAGE_EXPRESSION': processedData.successfulResponses = newData.Independent; break;
+            case 'PHONOLOGICAL_PROCESSES': processedData.correctProductions = newData.Independent; break;
           }
         }
   
@@ -769,7 +768,7 @@ export default function DataEntryPage() {
                   </div>
                 </div>
               </CardHeader>
-              <ScrollArea className="flex-grow h-[450px]"> 
+              <ScrollArea className="h-[450px]"> 
                 <CardContent className="p-3 space-y-3">
                   <div>
                     <Label htmlFor={`activity-${studentId}`}>Activity</Label>
@@ -905,3 +904,4 @@ export default function DataEntryPage() {
     
 
     
+
