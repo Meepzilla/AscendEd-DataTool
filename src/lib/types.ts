@@ -106,6 +106,7 @@ export interface User {
   email?: string | null;
   displayName?: string | null;
   isAnonymous: boolean;
+  createdAt?: Timestamp | Date | string; // Added from Firestore user doc
 }
 
 // Moved from DataEntryPage for use in context
