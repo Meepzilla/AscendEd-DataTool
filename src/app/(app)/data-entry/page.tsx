@@ -163,7 +163,7 @@ export default function DataEntryPage() {
     students, 
     dataEntryStudentSessionStates, 
     setDataEntryStudentSessionStates,
-    dataEntryFocusedGoalIndexByStudentId,
+    dataEntryFocusedGoalIndexByStudentId, 
     setDataEntryFocusedGoalIndexByStudentId 
   ]);
 
@@ -230,7 +230,7 @@ export default function DataEntryPage() {
       setDataEntryStudentSessionStates,
       dataEntrySelectedStudentIds, 
       setDataEntryFocusedStudentSlotIndex,
-      dataEntryStudentSessionStates, 
+      dataEntryStudentSessionStates, // This dependency is okay as we are reading from it before setting focus.
       setDataEntryFocusedGoalIndexByStudentId,
     ]
   );
@@ -712,7 +712,7 @@ export default function DataEntryPage() {
 
           const isStudentFocused = slotIndex === dataEntryFocusedStudentSlotIndex;
           const allStudentGoals = state.originalGoalHeaders;
-          const visibleGoalCount = dataEntryVisibleGoalCountByStudentId[studentId] ?? 5; // Default visible count is 5
+          const visibleGoalCount = dataEntryVisibleGoalCountByStudentId[studentId] ?? 5; 
           const displayedGoals = allStudentGoals.slice(0, visibleGoalCount);
 
 
@@ -802,7 +802,7 @@ export default function DataEntryPage() {
                           />
                         );
                       })}
-                       {allStudentGoals.length > 5 && (
+                       {allStudentGoals.length > 5 && ( // Updated from 3 to 5
                         <div className="flex justify-center mt-2">
                           {visibleGoalCount < allStudentGoals.length ? (
                             <Button
@@ -818,7 +818,7 @@ export default function DataEntryPage() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => setDataEntryVisibleGoalCountByStudentId(prev => ({ ...prev, [studentId]: 5 }))}
+                              onClick={() => setDataEntryVisibleGoalCountByStudentId(prev => ({ ...prev, [studentId]: 5 }))} // Updated from 3 to 5
                               className="text-xs"
                             >
                               <EyeOff className="mr-1.5 h-3.5 w-3.5" />
@@ -904,5 +904,6 @@ export default function DataEntryPage() {
     
 
     
+
 
 
