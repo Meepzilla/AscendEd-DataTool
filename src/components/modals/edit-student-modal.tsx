@@ -187,216 +187,214 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
       title={`Edit Student: ${currentStudent.name}`}
       size="2xl" 
     >
-      <ScrollArea className="max-h-[75vh] p-1">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-2">
-          {/* Column 1: Student Info & AI Goal Creation */}
-          <div className="space-y-4">
-            {/* Student Information Section */}
-            <div>
-              <h3 className="text-lg font-medium border-b pb-2 mb-3">Student Information</h3>
-              <Form {...form}>
-                <form 
-                  onSubmit={form.handleSubmit(onSubmitName)} 
-                  onKeyDown={(e) => {
-                    if (e.ctrlKey && e.key === 'Enter' && !e.nativeEvent.target?.closest('textarea')) {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      form.handleSubmit(onSubmitName)();
-                    }
-                  }}
-                  className="space-y-4"
-                >
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel htmlFor="editStudentName">Student Name</FormLabel>
-                        <FormControl>
-                          <Input id="editStudentName" placeholder="e.g., Jane Doe" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <div className="flex gap-2">
-                    <Button type="submit" disabled={isSubmittingName || dataLoading}>
-                      {isSubmittingName || dataLoading ? 'Saving Name...' : 'Save Name Changes'}
-                    </Button>
-                  </div>
-                </form>
-              </Form>
-            </div>
-
-            <Separator className="my-6" />
-
-            {/* Create & Assign New Goal with AI Section */}
-            <div className="space-y-3">
-              <h3 className="text-lg font-medium border-b pb-2 mb-3 text-primary">Create & Assign New Goal with AI</h3>
-              <div>
-                <Label htmlFor="aiGoalName" className="text-sm">New Goal Name / Topic</Label>
-                <Input
-                  id="aiGoalName"
-                  value={aiGoalName}
-                  onChange={(e) => setAiGoalName(e.target.value)}
-                  placeholder="e.g., Articulate /k/ in sentences"
-                  disabled={dataLoading || isAiGenerating || isAssigningAiGoal}
-                  className="h-9"
-                />
-              </div>
-              <div>
-                <Label htmlFor="aiGoalTypeSelect" className="text-sm">Goal Type</Label>
-                <Select
-                  value={aiGoalType}
-                  onValueChange={(value) => setAiGoalType(value as GoalType)}
-                  disabled={dataLoading || isAiGenerating || isAssigningAiGoal}
-                >
-                  <SelectTrigger id="aiGoalTypeSelect" className="h-9">
-                    <SelectValue placeholder="Select goal type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.values(GOAL_TYPES).map(type => (
-                      <SelectItem key={type} value={type}>{type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="aiGoalPromptText" className="text-sm">Brief Description/Prompt for AI</Label>
-                <Textarea
-                  id="aiGoalPromptText"
-                  value={aiGoalPrompt}
-                  onChange={(e) => setAiGoalPrompt(e.target.value)}
-                  placeholder="E.g., Student will correctly use past tense -ed verbs in spontaneous sentences."
-                  rows={2}
-                  disabled={dataLoading || isAiGenerating || isAssigningAiGoal}
-                />
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleGenerateAiSmartGoal}
-                disabled={isAiGenerating || !aiGoalPrompt.trim() || dataLoading || isAssigningAiGoal}
-                className="w-full sm:w-auto h-9"
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Column 1: Student Info & AI Goal Creation */}
+        <div className="space-y-4">
+          {/* Student Information Section */}
+          <div>
+            <h3 className="text-lg font-medium border-b pb-2 mb-3">Student Information</h3>
+            <Form {...form}>
+              <form 
+                onSubmit={form.handleSubmit(onSubmitName)} 
+                onKeyDown={(e) => {
+                  if (e.ctrlKey && e.key === 'Enter' && !e.nativeEvent.target?.closest('textarea')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    form.handleSubmit(onSubmitName)();
+                  }
+                }}
+                className="space-y-4"
               >
-                {isAiGenerating ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
-                Generate SMART Goal Text
-              </Button>
-              {aiGeneratedSmartGoal && (
-                <div>
-                  <Label htmlFor="aiGeneratedSmartGoalText" className="text-sm">Generated SMART Goal (Editable)</Label>
-                  <Textarea
-                    id="aiGeneratedSmartGoalText"
-                    value={aiGeneratedSmartGoal}
-                    onChange={(e) => setAiGeneratedSmartGoal(e.target.value)}
-                    rows={3}
-                    className="bg-muted/40"
-                    disabled={dataLoading || isAiGenerating || isAssigningAiGoal}
-                  />
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel htmlFor="editStudentName">Student Name</FormLabel>
+                      <FormControl>
+                        <Input id="editStudentName" placeholder="e.g., Jane Doe" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="flex gap-2">
+                  <Button type="submit" disabled={isSubmittingName || dataLoading}>
+                    {isSubmittingName || dataLoading ? 'Saving Name...' : 'Save Name Changes'}
+                  </Button>
                 </div>
-              )}
-              <div>
-                <Label htmlFor="aiGoalSessionTargetInput" className="text-sm">Session Target (Optional %)</Label>
-                <Input
-                  id="aiGoalSessionTargetInput"
-                  type="number"
-                  value={aiGoalSessionTarget ?? ''}
-                  onChange={(e) => setAiGoalSessionTarget(e.target.value === '' ? undefined : Number(e.target.value))}
-                  placeholder="e.g., 80"
-                  min="0" max="100"
-                  disabled={dataLoading || isAiGenerating || isAssigningAiGoal}
-                  className="h-9"
-                />
-              </div>
-              <Button
-                type="button"
-                onClick={handleAssignAiGeneratedGoal}
-                disabled={!aiGoalName.trim() || !aiGeneratedSmartGoal.trim() || dataLoading || isAiGenerating || isAssigningAiGoal}
-                className="w-full sm:w-auto h-9"
-              >
-                {isAssigningAiGoal ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <PlusCircleIcon className="h-4 w-4 mr-2" />}
-                Assign AI Generated Goal
-              </Button>
-            </div>
+              </form>
+            </Form>
           </div>
 
-          {/* Column 2: Manage Assigned Goals (Templates & Current) */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium border-b pb-2 mb-3">Manage Assigned Goals</h3>
-            
-            <div className="space-y-2">
-              <h4 className="text-md font-medium">Current Goals ({currentStudent.goals.length})</h4>
-              {currentStudent.goals.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No goals assigned yet.</p>
-              ) : (
-                <ScrollArea className="h-24 border rounded-md p-2">
-                  <ul className="space-y-1">
-                    {currentStudent.goals.map(goal => (
-                      <li key={goal.id} className="flex justify-between items-center p-1.5 bg-muted/50 rounded-md text-sm">
-                        <span className="truncate pr-2" title={goal.name}>{goal.name} <Badge variant="outline" className="ml-1">{goal.type}</Badge></span>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => removeGoalFromStudent(currentStudent.id, goal.id)}>
-                          <XIcon className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </li>
-                    ))}
-                  </ul>
-                </ScrollArea>
-              )}
-            </div>
+          <Separator className="my-6" />
 
-            <div className="space-y-2">
-              <h4 className="text-md font-medium">Available Goal Templates to Assign</h4>
-              <div className="flex gap-2 items-center">
-                <div className="relative flex-grow">
-                  <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    placeholder="Search templates..." 
-                    value={templateSearchTerm} 
-                    onChange={(e) => setTemplateSearchTerm(e.target.value)}
-                    className="pl-9 h-9"
-                  />
-                </div>
-                <Select value={templateGoalTypeFilter} onValueChange={setTemplateGoalTypeFilter}>
-                  <SelectTrigger className="w-[180px] h-9">
-                    <SelectValue placeholder="Filter by type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ALL">All Types</SelectItem>
-                    {Object.values(GOAL_TYPES).map(type => (
-                      <SelectItem key={type} value={type}>{type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <ScrollArea className="h-32 border rounded-md p-2">
-                {filteredGoalTemplates.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">No matching templates found or all assigned.</p>
-                ) : (
-                  <ul className="space-y-1">
-                    {filteredGoalTemplates.map(template => (
-                      <li key={template.id} className="flex items-center p-1.5 hover:bg-muted/50 rounded-md text-sm gap-2">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-7 w-7 shrink-0" 
-                          onClick={() => handleAssignTemplateGoal(template)}
-                          title={`Assign ${template.name}`}
-                        >
-                          <PlusCircleIcon className="h-4 w-4 text-primary" />
-                        </Button>
-                        <div className="truncate flex-grow min-w-0">
-                          <span title={template.name}>{template.name}</span>
-                          <Badge variant="secondary" className="ml-2">{template.type}</Badge>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </ScrollArea>
+          {/* Create & Assign New Goal with AI Section */}
+          <div className="space-y-3">
+            <h3 className="text-lg font-medium border-b pb-2 mb-3 text-primary">Create & Assign New Goal with AI</h3>
+            <div>
+              <Label htmlFor="aiGoalName" className="text-sm">New Goal Name / Topic</Label>
+              <Input
+                id="aiGoalName"
+                value={aiGoalName}
+                onChange={(e) => setAiGoalName(e.target.value)}
+                placeholder="e.g., Articulate /k/ in sentences"
+                disabled={dataLoading || isAiGenerating || isAssigningAiGoal}
+                className="h-9"
+              />
             </div>
+            <div>
+              <Label htmlFor="aiGoalTypeSelect" className="text-sm">Goal Type</Label>
+              <Select
+                value={aiGoalType}
+                onValueChange={(value) => setAiGoalType(value as GoalType)}
+                disabled={dataLoading || isAiGenerating || isAssigningAiGoal}
+              >
+                <SelectTrigger id="aiGoalTypeSelect" className="h-9">
+                  <SelectValue placeholder="Select goal type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.values(GOAL_TYPES).map(type => (
+                    <SelectItem key={type} value={type}>{type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="aiGoalPromptText" className="text-sm">Brief Description/Prompt for AI</Label>
+              <Textarea
+                id="aiGoalPromptText"
+                value={aiGoalPrompt}
+                onChange={(e) => setAiGoalPrompt(e.target.value)}
+                placeholder="E.g., Student will correctly use past tense -ed verbs in spontaneous sentences."
+                rows={2}
+                disabled={dataLoading || isAiGenerating || isAssigningAiGoal}
+              />
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleGenerateAiSmartGoal}
+              disabled={isAiGenerating || !aiGoalPrompt.trim() || dataLoading || isAssigningAiGoal}
+              className="w-full sm:w-auto h-9"
+            >
+              {isAiGenerating ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
+              Generate SMART Goal Text
+            </Button>
+            {aiGeneratedSmartGoal && (
+              <div>
+                <Label htmlFor="aiGeneratedSmartGoalText" className="text-sm">Generated SMART Goal (Editable)</Label>
+                <Textarea
+                  id="aiGeneratedSmartGoalText"
+                  value={aiGeneratedSmartGoal}
+                  onChange={(e) => setAiGeneratedSmartGoal(e.target.value)}
+                  rows={3}
+                  className="bg-muted/40"
+                  disabled={dataLoading || isAiGenerating || isAssigningAiGoal}
+                />
+              </div>
+            )}
+            <div>
+              <Label htmlFor="aiGoalSessionTargetInput" className="text-sm">Session Target (Optional %)</Label>
+              <Input
+                id="aiGoalSessionTargetInput"
+                type="number"
+                value={aiGoalSessionTarget ?? ''}
+                onChange={(e) => setAiGoalSessionTarget(e.target.value === '' ? undefined : Number(e.target.value))}
+                placeholder="e.g., 80"
+                min="0" max="100"
+                disabled={dataLoading || isAiGenerating || isAssigningAiGoal}
+                className="h-9"
+              />
+            </div>
+            <Button
+              type="button"
+              onClick={handleAssignAiGeneratedGoal}
+              disabled={!aiGoalName.trim() || !aiGeneratedSmartGoal.trim() || dataLoading || isAiGenerating || isAssigningAiGoal}
+              className="w-full sm:w-auto h-9"
+            >
+              {isAssigningAiGoal ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <PlusCircleIcon className="h-4 w-4 mr-2" />}
+              Assign AI Generated Goal
+            </Button>
           </div>
         </div>
-      </ScrollArea>
+
+        {/* Column 2: Manage Assigned Goals (Templates & Current) */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium border-b pb-2 mb-3">Manage Assigned Goals</h3>
+          
+          <div className="space-y-2">
+            <h4 className="text-md font-medium">Current Goals ({currentStudent.goals.length})</h4>
+            {currentStudent.goals.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No goals assigned yet.</p>
+            ) : (
+              <ScrollArea className="h-24 border rounded-md p-2">
+                <ul className="space-y-1">
+                  {currentStudent.goals.map(goal => (
+                    <li key={goal.id} className="flex justify-between items-center p-1.5 bg-muted/50 rounded-md text-sm">
+                      <span className="truncate pr-2" title={goal.name}>{goal.name} <Badge variant="outline" className="ml-1">{goal.type}</Badge></span>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => removeGoalFromStudent(currentStudent.id, goal.id)}>
+                        <XIcon className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              </ScrollArea>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <h4 className="text-md font-medium">Available Goal Templates to Assign</h4>
+            <div className="flex gap-2 items-center">
+              <div className="relative flex-grow">
+                <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Search templates..." 
+                  value={templateSearchTerm} 
+                  onChange={(e) => setTemplateSearchTerm(e.target.value)}
+                  className="pl-9 h-9"
+                />
+              </div>
+              <Select value={templateGoalTypeFilter} onValueChange={setTemplateGoalTypeFilter}>
+                <SelectTrigger className="w-[180px] h-9">
+                  <SelectValue placeholder="Filter by type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">All Types</SelectItem>
+                  {Object.values(GOAL_TYPES).map(type => (
+                    <SelectItem key={type} value={type}>{type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <ScrollArea className="h-32 border rounded-md p-2">
+              {filteredGoalTemplates.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No matching templates found or all assigned.</p>
+              ) : (
+                <ul className="space-y-1">
+                  {filteredGoalTemplates.map(template => (
+                    <li key={template.id} className="flex items-center p-1.5 hover:bg-muted/50 rounded-md text-sm gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-7 w-7 shrink-0" 
+                        onClick={() => handleAssignTemplateGoal(template)}
+                        title={`Assign ${template.name}`}
+                      >
+                        <PlusCircleIcon className="h-4 w-4 text-primary" />
+                      </Button>
+                      <div className="truncate flex-grow min-w-0">
+                        <span title={template.name}>{template.name}</span>
+                        <Badge variant="secondary" className="ml-2">{template.type}</Badge>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </ScrollArea>
+          </div>
+        </div>
+      </div>
       <div className="pt-4 flex justify-end border-t p-4">
         <Button type="button" variant="outline" onClick={closeEditStudentModal}>
           Done
@@ -405,4 +403,3 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
     </GenericModal>
   );
 }
-
