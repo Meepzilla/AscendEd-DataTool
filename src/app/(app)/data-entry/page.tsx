@@ -214,7 +214,6 @@ export default function DataEntryPage() {
     dataEntryStudentSessionStates,
     setDataEntryStudentSessionStates,
     dataEntryFocusedGoalIndexByStudentId,
-    setDataEntryFocusedGoalIndexByStudentId, // This was duplicated, remove one
     dataEntryShowArchivedByStudentId,
   ]);
 
@@ -989,6 +988,7 @@ export default function DataEntryPage() {
     
 
     
+
 
 
 
