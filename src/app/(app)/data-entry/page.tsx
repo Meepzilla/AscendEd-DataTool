@@ -700,9 +700,9 @@ export default function DataEntryPage() {
 
   if (studentsLoading && students.length === 0) {
     return (
-      <div class="space-y-6">
+      <div className="space-y-6">
         <Card><CardHeader><Skeleton className="h-8 w-1/2" /></CardHeader><CardContent><Skeleton className="h-40 w-full" /></CardContent></Card>
-        <div class="flex flex-row gap-6 items-start overflow-x-auto py-4 px-1">
+        <div className="flex flex-row gap-6 items-start overflow-x-auto py-4 px-1">
             <Skeleton className="h-96 w-[350px] flex-shrink-0" />
             <Skeleton className="h-96 w-[350px] flex-shrink-0" />
         </div>
@@ -711,7 +711,7 @@ export default function DataEntryPage() {
   }
 
   return (
-    <div class="space-y-6 flex flex-col h-full">
+    <div className="space-y-6 flex flex-col h-full">
        {isResetConfirmationOpen && (
         <ConfirmationModal
           isOpen={isResetConfirmationOpen}
@@ -724,14 +724,14 @@ export default function DataEntryPage() {
       )}
       <Card className="shadow-lg flex-shrink-0">
         <CardHeader>
-            <div class="flex justify-between items-center">
-                 <div class="flex items-center gap-2">
+            <div className="flex justify-between items-center">
+                 <div className="flex items-center gap-2">
                     <Edit2 className="h-7 w-7 text-primary"/>
                     <CardTitle className="text-2xl font-bold">Data Entry</CardTitle>
                 </div>
                 <Button variant="ghost" size="icon" onClick={() => setIsHeaderCardCollapsed(!isHeaderCardCollapsed)} title={isHeaderCardCollapsed ? "Expand Header" : "Collapse Header"}>
                     {isHeaderCardCollapsed ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
-                    <span class="sr-only">{isHeaderCardCollapsed ? "Expand Header" : "Collapse Header"}</span>
+                    <span className="sr-only">{isHeaderCardCollapsed ? "Expand Header" : "Collapse Header"}</span>
                 </Button>
             </div>
           {!isHeaderCardCollapsed && (
@@ -740,12 +740,12 @@ export default function DataEntryPage() {
         </CardHeader>
         {!isHeaderCardCollapsed && (
             <CardContent className="space-y-4">
-            <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                <div class="w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                <div className="w-full sm:w-auto">
                 <Label htmlFor="sessionDate" className="block text-sm font-medium mb-1">Session Date</Label>
                 <DatePicker date={dataEntrySessionDate} setDate={setDataEntrySessionDate} />
                 </div>
-                <div class="w-full sm:w-auto">
+                <div className="w-full sm:w-auto">
                     <Label htmlFor="sessionTime" className="block text-sm font-medium mb-1">Session Time</Label>
                     <Input
                         id="sessionTime"
@@ -763,7 +763,7 @@ export default function DataEntryPage() {
         )}
       </Card>
 
-      <div class="flex flex-row gap-6 items-start overflow-x-auto py-4 px-1 flex-grow min-h-0">
+      <div className="flex flex-row gap-6 items-start overflow-x-auto py-4 px-1 flex-grow min-h-0">
         {dataEntrySelectedStudentIds.map((studentId, slotIndex) => {
           const student = students.find(s => s.id === studentId);
           const state = dataEntryStudentSessionStates[studentId];
@@ -791,8 +791,8 @@ export default function DataEntryPage() {
               onClick={() => setDataEntryFocusedStudentSlotIndex(slotIndex)}
             >
               <CardHeader className="bg-muted/50 p-3">
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center gap-2 w-full">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 w-full">
                     <Button
                         variant="ghost"
                         size="icon"
@@ -822,7 +822,7 @@ export default function DataEntryPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div class="flex items-center">
+                  <div className="flex items-center">
                     {dataEntrySelectedStudentIds.length > 0 && (
                        <Button variant="ghost" size="icon" onClick={(e) => {e.stopPropagation(); removeStudentSlot(slotIndex);}} className="h-8 w-8" title="Remove Student Slot">
                         <XCircle className="h-5 w-5 text-destructive" />
@@ -842,7 +842,7 @@ export default function DataEntryPage() {
                       onChange={(e) => handleInputChange(studentId, 'activity', e.target.value)}
                     />
                   </div>
-                  <div class="flex items-center space-x-2 mt-2">
+                  <div className="flex items-center space-x-2 mt-2">
                     <Switch
                         id={`show-archived-${studentId}`}
                         checked={dataEntryShowArchivedByStudentId[studentId] || false}
@@ -887,7 +887,7 @@ export default function DataEntryPage() {
                         );
                       })}
                        {filteredStudentGoals.length > 10 && (
-                        <div class="flex justify-center mt-2">
+                        <div className="flex justify-center mt-2">
                           {visibleGoalCount < filteredStudentGoals.length ? (
                             <Button
                               variant="outline"
@@ -924,7 +924,7 @@ export default function DataEntryPage() {
                       rows={3}
                     />
                   </div>
-                  <div class="border-t pt-3 space-y-2">
+                  <div className="border-t pt-3 space-y-2">
                     <Button
                         variant="outline"
                         size="sm"
@@ -935,9 +935,9 @@ export default function DataEntryPage() {
                       {isAiLoading[studentId] ? 'Getting Suggestions...' : 'Get AI Activity Suggestions'}
                     </Button>
                     {dataEntryAiActivitySuggestions[studentId] && dataEntryAiActivitySuggestions[studentId].length > 0 && (
-                      <div class="p-2 border rounded-md bg-accent/30">
-                        <h4 class="text-xs font-semibold mb-1">Suggested Activities:</h4>
-                        <ul class="list-disc list-inside text-xs space-y-0.5">
+                      <div className="p-2 border rounded-md bg-accent/30">
+                        <h4 className="text-xs font-semibold mb-1">Suggested Activities:</h4>
+                        <ul className="list-disc list-inside text-xs space-y-0.5">
                           {dataEntryAiActivitySuggestions[studentId].map((sugg, i) => <li key={i}>{sugg}</li>)}
                         </ul>
                       </div>
@@ -960,7 +960,7 @@ export default function DataEntryPage() {
       </div>
 
       {dataEntrySelectedStudentIds.length > 0 && (
-        <div class="mt-auto flex-shrink-0 flex justify-end items-center gap-2 py-4 border-t">
+        <div className="mt-auto flex-shrink-0 flex justify-end items-center gap-2 py-4 border-t">
            <Button variant="outline" onClick={handleOpenResetConfirmation} disabled={isSaving} size="lg">
             <RotateCcw className="mr-2 h-5 w-5" />
             Reset Current Data
@@ -988,6 +988,7 @@ export default function DataEntryPage() {
     
 
     
+
 
 
 
