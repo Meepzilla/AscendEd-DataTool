@@ -16,7 +16,6 @@ import {
 import { auth as authModule, db as firestoreDbModule } from '@/lib/firebase/config'; 
 import { doc, setDoc, getDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import type { User } from '@/lib/types';
-import { Skeleton } from '@/components/ui/skeleton';
 import { useErrorLog } from './use-error-log';
 
 const LOCAL_GUEST_USER: User = {
@@ -42,16 +41,16 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const isFirebaseAvailable = !!authModule;
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const [isFirebaseAvailable, setIsFirebaseAvailable] = useState(!!authModule);
   const { addErrorLog } = useErrorLog();
 
   useEffect(() => {
-    if (!authModule) { 
-      setIsFirebaseAvailable(false);
+    if (!isFirebaseAvailable) { 
       setCurrentUser(LOCAL_GUEST_USER); 
       const configError = new Error("Firebase not configured. Operating in local mode. Some features like cloud sync will be unavailable.");
       setError(configError);
@@ -60,7 +59,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    setIsFirebaseAvailable(true);
     const unsubscribe = onAuthStateChanged(authModule, async (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
         let userProfileData: Partial<User> = {};
@@ -85,9 +83,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
         
-        // If user is authenticated (not anonymous or email verified) but not in Firestore, create entry
-        // This handles cases where user was created before 'users' collection logic or if they verified email after anonymous sign-in.
-        // Ensure not to run this for every anonymous login, only if they become non-anonymous or if no profile exists.
         if (firestoreDbModule && !userExistsInFirestore && firebaseUser.email && !firebaseUser.isAnonymous) {
             console.log(`User document for UID ${firebaseUser.uid} not found in 'users' collection. Creating one.`);
             const newDisplayName = firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User';
@@ -133,7 +128,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     return () => unsubscribe();
-  }, [isFirebaseAvailable, addErrorLog]); // Removed firestoreDbModule from deps as it's stable or checked inside
+  }, [addErrorLog]);
 
   const signInWithCustomToken = useCallback(async (token: string) => {
     if (!authModule) {
@@ -167,7 +162,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null);
     try {
       await firebaseSignInWithEmailAndPassword(authModule, email, password);
-      // onAuthStateChanged will handle setting currentUser and fetching/creating Firestore profile
     } catch (e: any) {
       console.error("Error signing in with email:", e);
       setError(e as Error);
@@ -201,7 +195,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           createdAt: serverTimestamp(),
         });
       }
-      // onAuthStateChanged will handle setting currentUser from the new user state
     } catch (e: any) {
       console.error("Error signing up with email:", e);
       setError(e as Error);
@@ -225,21 +218,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const userCredential = await signInAnonymously(authModule);
       const firebaseUser = userCredential.user;
-      // Check if anonymous user profile needs to be created in Firestore
       if (firestoreDbModule) {
         const userDocRef = doc(firestoreDbModule, "users", firebaseUser.uid);
         const userDoc = await getDoc(userDocRef);
         if (!userDoc.exists()) {
           await setDoc(userDocRef, {
             uid: firebaseUser.uid,
-            email: null, // Anonymous users don't have email
+            email: null, 
             displayName: 'Guest',
             isAnonymous: true,
             createdAt: serverTimestamp(),
           });
         }
       }
-      // onAuthStateChanged will handle setting currentUser
     } catch (e: any) {
       console.error("Error signing in anonymously:", e);
       setError(e as Error);
@@ -260,7 +251,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null);
     try {
       await firebaseSignOut(authModule);
-      // onAuthStateChanged will set currentUser to null or LOCAL_GUEST_USER
     } catch (e: any) {
       console.error("Error signing out:", e);
       setError(e as Error);
@@ -284,7 +274,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       addErrorLog({ message: 'Failed to get ID token result.', source: 'useAuth.getTokenResult', details: e.message, type: 'error' });
       return null;
     }
-  }, [isFirebaseAvailable, addErrorLog]);
+  }, [addErrorLog]);
 
   return (
     <AuthContext.Provider value={{ currentUser, loading, error, isFirebaseAvailable, signInWithCustomToken, signInWithEmail, signUpWithEmail, signInAsGuest, signOut, getTokenResult }}>
