@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { UserPlus, ListPlus, ClipboardList, BarChart2, Users, Target, Activity, CheckSquare } from 'lucide-react';
 import { APP_NAME } from '@/lib/constants';
 
+import AppLoadingSkeleton from '@/components/layout/AppLoadingSkeleton';
 export default function DashboardPage() {
   const { students, goalTemplates, sessions, loading, sessionsLoading, openAddStudentModal } = useStudentData();
 
@@ -26,6 +27,10 @@ export default function DashboardPage() {
     { label: 'Start Data Entry', icon: ClipboardList, href: '/data-entry' },
     { label: 'View Reports', icon: BarChart2, href: '/analysis-report' },
   ];
+
+  if (loading) {
+    return <AppLoadingSkeleton />;
+  }
 
   return (
     <div className="space-y-8">

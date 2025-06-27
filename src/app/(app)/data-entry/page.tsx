@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils';
 import { useErrorLog } from '@/hooks/use-error-log';
 import { Switch } from '@/components/ui/switch';
 
+const AppLoadingSkeleton = lazy(() => import('@/components/layout/AppLoadingSkeleton'));
 const GoalDataInputComponent = lazy(() => import('@/components/forms/goal-data-input'));
 const ConfirmationModal = lazy(() => import('@/components/modals/confirmation-modal'));
 
@@ -163,15 +164,18 @@ export default function DataEntryPage() {
   }, [dataEntrySelectedStudentIds, dataEntryFocusedStudentSlotIndex, dataEntryFocusedGoalIndexByStudentId, getCurrentFocusedGoalInfo]);
 
 
-  const handleStudentSelect = (studentId: string, index: number) => {
-    setDataEntrySelectedStudentIds(prev => {
+ // Handles the selection of a student for a specific slot.
+ // Updates the selected student IDs array and sets the focus to the slot of the newly selected student.
+  const handleStudentSelect = useCallback((studentId: string, index: number) => {
+    setDataEntrySelectedStudentIds((prev: string[]) => {
       const newSelection = [...prev];
+      // Update the student ID at the specified index
       newSelection[index] = studentId;
-      const uniqueSelection = Array.from(new Set(newSelection));
-      return uniqueSelection;
+      return newSelection;
     });
+    // Set the focused student slot index to the current index
     setDataEntryFocusedStudentSlotIndex(index);
-  };
+  }, [setDataEntrySelectedStudentIds, setDataEntryFocusedStudentSlotIndex]);
 
   const addStudentSlot = () => {
     const availableStudent = students.find(s => !dataEntrySelectedStudentIds.includes(s.id));
@@ -249,15 +253,9 @@ export default function DataEntryPage() {
   };
 
 
-  if (studentsLoading && students.length === 0) {
+  if (studentsLoading) {
     return (
-      <div className="space-y-6">
-        <Card><CardHeader><Skeleton className="h-8 w-1/2" /></CardHeader><CardContent><Skeleton className="h-40 w-full" /></CardContent></Card>
-        <div className="flex flex-row gap-6 items-start overflow-x-auto py-4 px-1">
-            <Skeleton className="h-96 w-[350px] flex-shrink-0" />
-            <Skeleton className="h-96 w-[350px] flex-shrink-0" />
-        </div>
-      </div>
+      <AppLoadingSkeleton />
     );
   }
 
@@ -540,5 +538,3 @@ export default function DataEntryPage() {
     </div>
   );
 }
-
-    
