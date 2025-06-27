@@ -23,7 +23,8 @@ export default function ManageSessionsPage() {
   const { 
     sessions, 
     students,
-    loading: dataLoading, 
+    loading: studentsLoading,
+    sessionsLoading, 
     openEditSessionModal,
     openDeleteSessionModal,
     editingSession, // For EditSessionModal
@@ -60,7 +61,7 @@ export default function ManageSessionsPage() {
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime() || b.time.localeCompare(a.time)); // Sort by date then time
   }, [sessions, selectedStudentId, searchTerm, dateRange]);
 
-  if (dataLoading && students.length === 0) { // Only show global skeleton if students are also loading
+  if (studentsLoading && students.length === 0) { // Only show global skeleton if students are also loading
     return <SessionsPageSkeleton />;
   }
   
@@ -137,8 +138,8 @@ export default function ManageSessionsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {dataLoading && filteredSessions.length === 0 ? (
-                    [...Array(5)].map((_, i) => (
+                {sessionsLoading ? (
+                    [...Array(10)].map((_, i) => (
                         <TableRow key={`skel-${i}`}>
                             <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                             <TableCell><Skeleton className="h-5 w-20" /></TableCell>

@@ -310,7 +310,7 @@ const CustomSankeyNode = ({ x, y, width, height, index, payload, containerWidth 
 
 
 export default function AnalysisReportPage() {
-  const { students, sessions, loading: dataLoading } = useStudentData();
+  const { students, sessions, loading: studentsLoading, sessionsLoading } = useStudentData();
   const searchParams = useSearchParams();
   const studentIdFromQuery = searchParams.get('studentId');
   const [selectedStudentId, setSelectedStudentId] = useState<string | undefined>(studentIdFromQuery || undefined);
@@ -451,64 +451,24 @@ export default function AnalysisReportPage() {
     return config;
   }, {} as Record<PromptType, { label: string; color: string }>);
 
-  if (dataLoading && students.length === 0) {
+  if (studentsLoading && students.length === 0) {
     return <AnalysisReportSkeleton />;
   }
 
-  return (
-    <div className="space-y-6">
-      <Card className="shadow-lg">
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-             <div>
-                <CardTitle className="text-2xl font-bold flex items-center gap-2">
-                    <BarChart2 className="h-7 w-7 text-primary"/>Analysis &amp; Reports
-                </CardTitle>
-                <CardDescription>Visualize student progress, analyze trends, and generate summaries (for active goals).</CardDescription>
-             </div>
-             <Button onClick={handleExportData} size="sm" variant="outline" disabled={chartData.length === 0}>
-                <Download className="mr-2 h-4 w-4" /> Export Data
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-col md:flex-row gap-2">
-            <Select value={selectedStudentId} onValueChange={(value) => {setSelectedStudentId(value); setSelectedGoalId(undefined); setTechnicalSummary(null);}}>
-              <SelectTrigger className="w-full md:w-[250px]">
-                <SelectValue placeholder="Select Student" />
-              </SelectTrigger>
-              <SelectContent>
-                {students.map(student => (
-                  <SelectItem key={student.id} value={student.id}>{student.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {selectedStudent && (
-                <Select value={selectedGoalId} onValueChange={(value) => {setSelectedGoalId(value === 'ALL_ACTIVE' ? undefined : value); setTechnicalSummary(null);}}>
-                    <SelectTrigger className="w-full md:w-[250px]">
-                        <SelectValue placeholder="Select Active Goal (Optional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="ALL_ACTIVE">All Active Goals</SelectItem>
-                        {activeStudentGoals.map(goal => (
-                        <SelectItem key={goal.id} value={goal.id}>{goal.name}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            )}
-            <DatePickerWithRange date={dateRange} setDate={setDateRange} className="w-full md:w-auto"/>
-          </div>
-        </CardContent>
-      </Card>
+  const renderContent = () => {
+    if (sessionsLoading) {
+      return (
+         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card><CardHeader><Skeleton className="h-7 w-1/3 mb-1" /><Skeleton className="h-4 w-1/2" /></CardHeader><CardContent><Skeleton className="h-[300px] w-full" /></CardContent></Card>
+            <Card><CardHeader><Skeleton className="h-7 w-1/3 mb-1" /><Skeleton className="h-4 w-1/2" /></CardHeader><CardContent><Skeleton className="h-[300px] w-full" /></CardContent></Card>
+            <Card><CardHeader><Skeleton className="h-7 w-1/3 mb-1" /><Skeleton className="h-4 w-1/2" /></CardHeader><CardContent><Skeleton className="h-[300px] w-full" /></CardContent></Card>
+            <Card><CardHeader><Skeleton className="h-7 w-1/3 mb-1" /><Skeleton className="h-4 w-1/2" /></CardHeader><CardContent><Skeleton className="h-[300px] w-full" /></CardContent></Card>
+        </div>
+      );
+    }
 
-      {!selectedStudentId ? (
-        <Card>
-            <CardContent className="p-8 text-center text-muted-foreground">
-                <Info className="h-10 w-10 mx-auto mb-3 text-primary"/>
-                <p className="text-lg">Please select a student to view their analysis report.</p>
-            </CardContent>
-        </Card>
-      ) : studentSessions.length === 0 && !dataLoading ? (
+    if (studentSessions.length === 0) {
+      return (
         <Card>
             <CardContent className="p-8 text-center text-muted-foreground">
                 <AlertTriangle className="h-10 w-10 mx-auto mb-3 text-amber-500"/>
@@ -516,7 +476,10 @@ export default function AnalysisReportPage() {
                 <p>Try adjusting the filters or record new session data.</p>
             </CardContent>
         </Card>
-      ) : (
+      );
+    }
+    
+    return (
         <>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
@@ -673,6 +636,64 @@ export default function AnalysisReportPage() {
             </CardContent>
           </Card>
         </>
+      );
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card className="shadow-lg">
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+             <div>
+                <CardTitle className="text-2xl font-bold flex items-center gap-2">
+                    <BarChart2 className="h-7 w-7 text-primary"/>Analysis &amp; Reports
+                </CardTitle>
+                <CardDescription>Visualize student progress, analyze trends, and generate summaries (for active goals).</CardDescription>
+             </div>
+             <Button onClick={handleExportData} size="sm" variant="outline" disabled={chartData.length === 0}>
+                <Download className="mr-2 h-4 w-4" /> Export Data
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col md:flex-row gap-2">
+            <Select value={selectedStudentId} onValueChange={(value) => {setSelectedStudentId(value); setSelectedGoalId(undefined); setTechnicalSummary(null);}}>
+              <SelectTrigger className="w-full md:w-[250px]">
+                <SelectValue placeholder="Select Student" />
+              </SelectTrigger>
+              <SelectContent>
+                {students.map(student => (
+                  <SelectItem key={student.id} value={student.id}>{student.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedStudent && (
+                <Select value={selectedGoalId} onValueChange={(value) => {setSelectedGoalId(value === 'ALL_ACTIVE' ? undefined : value); setTechnicalSummary(null);}}>
+                    <SelectTrigger className="w-full md:w-[250px]">
+                        <SelectValue placeholder="Select Active Goal (Optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="ALL_ACTIVE">All Active Goals</SelectItem>
+                        {activeStudentGoals.map(goal => (
+                        <SelectItem key={goal.id} value={goal.id}>{goal.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            )}
+            <DatePickerWithRange date={dateRange} setDate={setDateRange} className="w-full md:w-auto"/>
+          </div>
+        </CardContent>
+      </Card>
+
+      {!selectedStudentId ? (
+        <Card>
+            <CardContent className="p-8 text-center text-muted-foreground">
+                <Info className="h-10 w-10 mx-auto mb-3 text-primary"/>
+                <p className="text-lg">Please select a student to view their analysis report.</p>
+            </CardContent>
+        </Card>
+      ) : (
+        renderContent()
       )}
     </div>
   );
