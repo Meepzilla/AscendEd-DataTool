@@ -145,7 +145,6 @@ export default function DataEntryPage() {
           } else {
             // If goals haven't changed, ensure the reference to the student state is new if other minor parts changed,
             // or simply ensure it's part of newContextStudentStates if no actual data change is needed.
-            // For simplicity, if no goal change, we assume the state from spread is fine.
             // Potentially, check if student.name changed if that's relevant.
             if (existingState.studentName !== student.name) {
                  newContextStudentStates[id] = {
@@ -211,9 +210,9 @@ export default function DataEntryPage() {
   }, [
     dataEntrySelectedStudentIds,
     students,
-    dataEntryStudentSessionStates,
-    dataEntryFocusedGoalIndexByStudentId,
     dataEntryShowArchivedByStudentId,
+    setDataEntryStudentSessionStates,
+    setDataEntryFocusedGoalIndexByStudentId,
   ]);
 
 
@@ -989,6 +988,7 @@ export default function DataEntryPage() {
     
 
     
+
 
 
 
