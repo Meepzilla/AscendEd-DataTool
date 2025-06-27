@@ -27,6 +27,7 @@ interface StudentDataContextType {
   selectedStudent: Student | null;
   setSelectedStudent: (student: Student | null) => void;
   loading: boolean;
+  sessionsLoading: boolean;
   error: Error | null;
   isFirebaseDBAvailable: boolean;
 
@@ -109,6 +110,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const [selectedStudent, setSelectedStudentState] = useState<Student | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sessionsLoading, setSessionsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   const isFirebaseDBAvailable = isFirebaseAuthAvailable && !!firestoreDbModule;
@@ -265,11 +267,13 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       setDataEntryVisibleGoalCountByStudentIdState({});
       setDataEntryShowArchivedByStudentIdState({});
       setLoading(false);
+      setSessionsLoading(false);
       setError(null);
       return;
     }
 
     setLoading(true);
+    setSessionsLoading(true);
     let unsubscribeStudents = () => {};
     let unsubscribeTemplates = () => {};
     let unsubscribeSessions = () => {};
@@ -283,11 +287,10 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
       let studentsLoaded = false;
       let templatesLoaded = false;
-      let sessionsLoaded = false;
-      const checkAllFirebaseLoaded = () => {
-        if (studentsLoaded && templatesLoaded && sessionsLoaded) {
+      const checkEssentialFirebaseLoaded = () => {
+        if (studentsLoaded && templatesLoaded) {
           setLoading(false);
-          console.log("StudentData: All Firebase data loaded.");
+          console.log("StudentData: Essential Firebase data loaded.");
         }
       };
 
@@ -295,13 +298,13 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         const studentData = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as Student));
         setStudentsState(studentData.sort((a,b) => a.name.localeCompare(b.name)));
         studentsLoaded = true;
-        checkAllFirebaseLoaded();
+        checkEssentialFirebaseLoaded();
       }, (err: Error) => {
         console.error("Error fetching students from Firebase:", err);
         setError(err); 
         addErrorLog({ message: 'Failed to load students from Firebase.', source: 'useStudentData.studentsSnapshot', details: err.message, type: 'error' });
         safeToast({ title: "Firebase Error", description: `Could not load students: ${err.message}`, variant: "destructive" });
-        studentsLoaded = true; checkAllFirebaseLoaded();
+        studentsLoaded = true; checkEssentialFirebaseLoaded();
       });
 
       unsubscribeTemplates = onSnapshot(templateQuery, async (snapshot) => {
@@ -316,26 +319,25 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
          await seedFirebaseDefaultTemplates(currentUser, firestoreDbModule);
         }
         templatesLoaded = true;
-        checkAllFirebaseLoaded();
+        checkEssentialFirebaseLoaded();
       }, (err: Error) => {
         console.error("Error fetching goal templates from Firebase:", err);
         setError(err); 
         addErrorLog({ message: 'Failed to load goal templates from Firebase.', source: 'useStudentData.templatesSnapshot', details: err.message, type: 'error' });
         safeToast({ title: "Firebase Error", description: `Could not load goal templates: ${err.message}`, variant: "destructive" });
-        templatesLoaded = true; checkAllFirebaseLoaded();
+        templatesLoaded = true; checkEssentialFirebaseLoaded();
       });
 
       unsubscribeSessions = onSnapshot(sessionQuery, (snapshot) => {
         const sessionData = snapshot.docs.map(docSnap => ({ sessionId: docSnap.id, ...docSnap.data() } as SessionData));
         setSessionsState(sessionData.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-        sessionsLoaded = true;
-        checkAllFirebaseLoaded();
+        setSessionsLoading(false);
       }, (err: Error) => {
         console.error("Error fetching sessions from Firebase:", err);
         setError(err); 
         addErrorLog({ message: 'Failed to load sessions from Firebase.', source: 'useStudentData.sessionsSnapshot', details: err.message, type: 'error' });
         safeToast({ title: "Firebase Error", description: `Could not load sessions: ${err.message}`, variant: "destructive" });
-        sessionsLoaded = true; checkAllFirebaseLoaded();
+        setSessionsLoading(false);
       });
 
 
@@ -366,6 +368,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
           seedLocalDefaultTemplates(); 
       }
       setLoading(false);
+      setSessionsLoading(false);
     }
 
     return () => {
@@ -762,7 +765,10 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     sessions: sessionsState,
     selectedStudent,
     setSelectedStudent: setSelectedStudentCb,
-    loading, error, isFirebaseDBAvailable,
+    loading,
+    sessionsLoading,
+    error,
+    isFirebaseDBAvailable,
     addStudent, updateStudent, deleteStudent, assignGoalToStudent, removeGoalFromStudent, updateStudentGoal,
     addGoalTemplate, updateGoalTemplate, deleteGoalTemplate,
     addSession, updateSession, deleteSession, getSessionsForStudent,
@@ -786,7 +792,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     dataEntryVisibleGoalCountByStudentId, setDataEntryVisibleGoalCountByStudentId,
     dataEntryShowArchivedByStudentId, setDataEntryShowArchivedByStudentId,
   }), [
-    studentsState, goalTemplatesState, sessionsState, selectedStudent, setSelectedStudentCb, loading, error, isFirebaseDBAvailable,
+    studentsState, goalTemplatesState, sessionsState, selectedStudent, setSelectedStudentCb, loading, sessionsLoading, error, isFirebaseDBAvailable,
     addStudent, updateStudent, deleteStudent, assignGoalToStudent, removeGoalFromStudent, updateStudentGoal,
     addGoalTemplate, updateGoalTemplate, deleteGoalTemplate,
     addSession, updateSession, deleteSession, getSessionsForStudent,
@@ -824,4 +830,5 @@ export const useStudentData = (): StudentDataContextType => {
   }
   return context;
 };
+
 

@@ -10,14 +10,14 @@ import { UserPlus, ListPlus, ClipboardList, BarChart2, Users, Target, Activity, 
 import { APP_NAME } from '@/lib/constants';
 
 export default function DashboardPage() {
-  const { students, goalTemplates, sessions, loading, openAddStudentModal } = useStudentData();
+  const { students, goalTemplates, sessions, loading, sessionsLoading, openAddStudentModal } = useStudentData();
 
   // Placeholder data for summary cards
   const summaryData = [
     { title: 'Total Students', value: loading ? '...' : students.length, icon: Users, href: '/student-profile', buttonLabel: 'Manage Students' },
     { title: 'Goal Templates', value: loading ? '...' : goalTemplates.length, icon: Target, href: '/goal-templates', buttonLabel: 'View Templates' },
     { title: 'Active Goals', value: loading ? '...' : students.reduce((acc, s) => acc + s.goals.length, 0), icon: CheckSquare, href: '/data-entry', buttonLabel: 'Enter Data' },
-    { title: 'Total Sessions', value: loading ? '...' : sessions.length, icon: Activity, href: '/manage-sessions', buttonLabel: 'View Sessions' },
+    { title: 'Total Sessions', value: sessionsLoading ? '...' : sessions.length, icon: Activity, href: '/manage-sessions', buttonLabel: 'View Sessions' },
   ];
 
   const quickActions = [
