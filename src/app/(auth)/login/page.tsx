@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -22,7 +21,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (currentUser && !loading) { 
-      router.push('/dashboard'); 
+      router.replace('/dashboard');
     }
   }, [currentUser, loading, router]);
 
@@ -100,7 +99,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required 
-                disabled={loading || (!isFirebaseAvailable && email !== LOCAL_GUEST_USER.email)} 
+                disabled={loading || !isFirebaseAvailable} 
               />
             </div>
             <div>
@@ -112,7 +111,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required 
-                disabled={loading || (!isFirebaseAvailable && email !== LOCAL_GUEST_USER.email)}
+                disabled={loading || !isFirebaseAvailable}
               />
             </div>
             <div className="flex flex-col sm:flex-row gap-2">
