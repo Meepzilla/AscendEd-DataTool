@@ -68,7 +68,7 @@ export default function DataEntryPage() {
     if (dataEntrySessionTime === '') {
       setDataEntrySessionTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
     }
-  }, [dataEntrySessionDate, dataEntrySessionTime]);
+  }, [dataEntrySessionDate, dataEntrySessionTime, setDataEntrySessionDate, setDataEntrySessionTime]);
 
   useEffect(() => {
     if (!studentsLoading && dataEntrySelectedStudentIds.length === 0 && students.length > 0) {
@@ -81,7 +81,7 @@ export default function DataEntryPage() {
         setDataEntryFocusedStudentSlotIndex(0);
       }
     }
-  }, [studentsLoading, students, studentFromContext, dataEntrySelectedStudentIds]);
+  }, [studentsLoading, students, studentFromContext, dataEntrySelectedStudentIds, setDataEntrySelectedStudentIds, setDataEntryFocusedStudentSlotIndex]);
 
 
   useEffect(() => {
@@ -212,10 +212,8 @@ export default function DataEntryPage() {
     dataEntrySelectedStudentIds,
     students,
     dataEntryStudentSessionStates,
-    setDataEntryStudentSessionStates,
     dataEntryFocusedGoalIndexByStudentId,
-    setDataEntryShowArchivedByStudentId,
-    setDataEntryFocusedGoalIndexByStudentId,
+    dataEntryShowArchivedByStudentId,
   ]);
 
 
@@ -522,9 +520,9 @@ export default function DataEntryPage() {
     handleSaveSession,
     students,
     openEditStudentModal,
+    dataEntryShowArchivedByStudentId,
     setDataEntryFocusedStudentSlotIndex,
     setDataEntryFocusedGoalIndexByStudentId,
-    dataEntryShowArchivedByStudentId,
   ]);
 
 
@@ -989,6 +987,7 @@ export default function DataEntryPage() {
     
 
     
+
 
 
 
