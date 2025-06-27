@@ -4,12 +4,14 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, onSnapshot, serverTimestamp, Timestamp, writeBatch } from 'firebase/firestore';
 import { db as firestoreDbModule } from '@/lib/firebase/config';
-import type { Student, Goal, GoalTemplate, SessionData, User, Toast, StudentSessionState } from '@/lib/types'; // Added StudentSessionState
+import type { Student, Goal, GoalTemplate, SessionData, User, Toast, StudentSessionState, SessionGoalData } from '@/lib/types';
 import { useAuth } from './use-auth';
-import { DEFAULT_GOAL_TEMPLATES } from '@/lib/constants';
+import { DEFAULT_GOAL_TEMPLATES, GOAL_TYPE_FIELDS, PROMPT_HOTKEY_MAP } from '@/lib/constants';
 import { generateUUID } from '@/lib/helpers';
 import { useToast as useShadcnToast } from "@/hooks/use-toast"; 
 import { useErrorLog } from './use-error-log';
+import { getActivitySuggestions } from '@/ai/flows/activity-suggestions';
+
 
 const getStudentsCollectionPath = (appId: string) => `artifacts/${appId}/public/data/students`;
 const getGoalTemplatesCollectionPath = (appId: string) => `artifacts/${appId}/public/data/goal_templates`;
@@ -76,7 +78,7 @@ interface StudentDataContextType {
   openEditAssignedGoalModal: (studentId: string, goal: Goal) => void;
   closeEditAssignedGoalModal: () => void;
 
-  // Data Entry Page Persisted State
+  // Data Entry Page Persisted State and Actions
   dataEntrySessionDate: Date | undefined;
   setDataEntrySessionDate: (date: Date | undefined) => void;
   dataEntrySessionTime: string;
@@ -84,17 +86,32 @@ interface StudentDataContextType {
   dataEntrySelectedStudentIds: string[];
   setDataEntrySelectedStudentIds: (ids: string[]) => void;
   dataEntryStudentSessionStates: Record<string, StudentSessionState>;
-  setDataEntryStudentSessionStates: (states: Record<string, StudentSessionState>) => void;
+  setDataEntryStudentSessionStates: React.Dispatch<React.SetStateAction<Record<string, StudentSessionState>>>;
   dataEntryFocusedStudentSlotIndex: number;
   setDataEntryFocusedStudentSlotIndex: (index: number) => void;
   dataEntryFocusedGoalIndexByStudentId: Record<string, number>;
-  setDataEntryFocusedGoalIndexByStudentId: (indexes: Record<string, number>) => void;
+  setDataEntryFocusedGoalIndexByStudentId: React.Dispatch<React.SetStateAction<Record<string, number>>>;
   dataEntryAiActivitySuggestions: Record<string, string[]>;
   setDataEntryAiActivitySuggestions: (suggestions: Record<string, string[]>) => void;
   dataEntryVisibleGoalCountByStudentId: Record<string, number>;
   setDataEntryVisibleGoalCountByStudentId: (updater: (prev: Record<string, number>) => Record<string, number>) => void;
   dataEntryShowArchivedByStudentId: Record<string, boolean>;
   setDataEntryShowArchivedByStudentId: (updater: (prev: Record<string, boolean>) => Record<string, boolean>) => void;
+  
+  // Data Entry Actions
+  fetchAiActivitySuggestions: (studentId: string) => Promise<void>;
+  saveDataEntrySession: () => Promise<void>;
+  resetDataEntrySession: () => void;
+  handleGoalDataChange: (studentId: string, goalId: string, updatedFieldName: string, newData: SessionGoalData['data']) => void;
+  handleMoveGoal: (studentId: string, goalId: string, direction: 'up' | 'down') => void;
+  
+  // Keyboard Shortcut Handlers
+  focusStudentSlot: (slotIndex: number) => void;
+  cycleFocusedStudent: (direction: 'next' | 'prev') => void;
+  cycleFocusedGoal: (direction: 'next' | 'prev') => void;
+  handleDataEntryHotkey: (key: string, alt: boolean) => void;
+  triggerEditFocusedStudent: () => void;
+  getCurrentFocusedGoalInfo: () => { studentId: string; studentState: StudentSessionState; goal: Goal; goalData: any; goalIndex: number; } | null;
 }
 
 const StudentDataContext = createContext<StudentDataContextType | undefined>(undefined);
@@ -239,9 +256,6 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setEditingAssignedGoal(null);
     setIsAddStudentModalOpen(false);
     setIsAddGoalTemplateModalOpen(false);
-    // Do NOT reset Data Entry page states here on currentUser change,
-    // as that would clear data if user logs out and back in during same browser session.
-    // Page itself can decide if it needs to clear based on new user if necessary.
   }, [currentUser]);
 
 
@@ -256,7 +270,6 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       setGoalTemplatesState([]);
       setSessionsState([]);
       setSelectedStudentState(null);
-      // Reset Data Entry states if user logs out completely
       setDataEntrySessionDateState(undefined);
       setDataEntrySessionTimeState('');
       setDataEntrySelectedStudentIdsState([]);
@@ -378,14 +391,13 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     };
   }, [authLoading, currentUser, isFirebaseDBAvailable, firestoreDbModule, seedLocalDefaultTemplates, seedFirebaseDefaultTemplates, safeToast, APP_ID, addErrorLog]);
 
-  // Effect to manage dataEntryVisibleGoalCountByStudentId & dataEntryShowArchivedByStudentId based on selected students
   useEffect(() => {
     setDataEntryVisibleGoalCountByStudentIdState(prevCounts => {
       const newCounts = { ...prevCounts };
       let changed = false;
       dataEntrySelectedStudentIds.forEach(id => {
         if (!(id in newCounts)) {
-          newCounts[id] = 10; // Default to 10
+          newCounts[id] = 10;
           changed = true;
         }
       });
@@ -403,7 +415,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         let changed = false;
         dataEntrySelectedStudentIds.forEach(id => {
             if (!(id in newShowArchived)) {
-                newShowArchived[id] = false; // Default to false
+                newShowArchived[id] = false;
                 changed = true;
             }
         });
@@ -417,6 +429,41 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     });
 
   }, [dataEntrySelectedStudentIds]);
+
+  useEffect(() => {
+    setDataEntryFocusedGoalIndexByStudentIdState(prevIndexes => {
+        let focusIndexesChanged = false;
+        const newFocusedGoalIndexes: Record<string, number> = { ...prevIndexes };
+
+        dataEntrySelectedStudentIds.forEach(id => {
+            const studentState = dataEntryStudentSessionStates[id];
+            if (studentState) {
+                const visibleGoals = studentState.originalGoalHeaders.filter(g => !g.isArchived || dataEntryShowArchivedByStudentId[id]);
+                const currentFocus = newFocusedGoalIndexes[id];
+
+                if (currentFocus === undefined && visibleGoals.length > 0) {
+                    newFocusedGoalIndexes[id] = 0;
+                    focusIndexesChanged = true;
+                } else if (currentFocus !== undefined && currentFocus >= visibleGoals.length) {
+                    newFocusedGoalIndexes[id] = Math.max(0, visibleGoals.length - 1);
+                    focusIndexesChanged = true;
+                } else if (visibleGoals.length === 0 && currentFocus !== undefined) {
+                    delete newFocusedGoalIndexes[id];
+                    focusIndexesChanged = true;
+                }
+            }
+        });
+
+        Object.keys(newFocusedGoalIndexes).forEach(studentId => {
+            if (!dataEntrySelectedStudentIds.includes(studentId)) {
+                delete newFocusedGoalIndexes[studentId];
+                focusIndexesChanged = true;
+            }
+        });
+
+        return focusIndexesChanged ? newFocusedGoalIndexes : prevIndexes;
+    });
+  }, [dataEntryStudentSessionStates, dataEntrySelectedStudentIds, dataEntryShowArchivedByStudentId]);
 
 
   const addStudent = useCallback(async (name: string): Promise<Student | null> => {
@@ -726,8 +773,330 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return sessionsState.filter(s => s.studentId === studentId);
   }, [sessionsState]);
 
-  // Modal action callbacks
-  const setSelectedStudentCb = useCallback((student: Student | null) => setSelectedStudentState(student), []);
+  // #region Data Entry Actions and Handlers
+  const fetchAiActivitySuggestions = useCallback(async (studentId: string) => {
+    const studentState = dataEntryStudentSessionStates[studentId];
+    const activeGoals = studentState?.originalGoalHeaders.filter(g => !g.isArchived);
+
+    if (!studentState || !activeGoals || activeGoals.length === 0) {
+      safeToast({ title: "Info", description: "Student has no active goals assigned or data is missing.", variant: "default" });
+      return;
+    }
+    try {
+      const goalDescriptions = activeGoals.map(g => `${g.name} (${g.type})`).join(', ');
+      const studentProgressSummary = `Currently working on: ${goalDescriptions}. Recent activity: ${studentState.activity}. Notes: ${studentState.notes}`;
+      const studentSessions = getSessionsForStudent(studentId);
+      const sessionHistorySummary = studentSessions.slice(0,3).map(s => `Date: ${s.date}, Activity: ${s.activity}`).join('\n');
+
+      const result = await getActivitySuggestions({
+        goal: goalDescriptions,
+        studentProgress: studentProgressSummary,
+        sessionHistory: sessionHistorySummary,
+      });
+      setDataEntryAiActivitySuggestionsState(prev => ({ ...prev, [studentId]: result.suggestions }));
+      safeToast({ title: "AI Suggestions", description: `Found ${result.suggestions.length} activities. Reasoning: ${result.reasoning}` });
+    } catch (error: any) {
+      console.error("Error fetching AI activity suggestions:", error);
+      addErrorLog({ message: 'Failed to fetch AI activity suggestions.', source: 'DataEntryPage.fetchAiActivitySuggestions', details: error.message, type: 'error' });
+      safeToast({ title: "AI Error", description: "Could not fetch activity suggestions.", variant: "destructive" });
+    }
+  }, [dataEntryStudentSessionStates, getSessionsForStudent, addErrorLog, safeToast]);
+
+  const saveDataEntrySession = useCallback(async () => {
+    if (!dataEntrySessionDate || dataEntrySelectedStudentIds.length === 0) {
+      safeToast({ title: "Error", description: "Please select a date and at least one student.", variant: "destructive"});
+      return;
+    }
+    let sessionsSavedCount = 0;
+    for (const studentId of dataEntrySelectedStudentIds) {
+      const state = dataEntryStudentSessionStates[studentId];
+      if (state) {
+        const sessionGoals: SessionGoalData[] = state.originalGoalHeaders
+        .filter(goal => !goal.isArchived) 
+        .map(goal => ({
+          goalId: goal.id,
+          goalName: goal.name,
+          goalType: goal.type,
+          data: state.goalData[goal.id] || JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type])),
+        }));
+
+        if (sessionGoals.length === 0) { 
+            console.log(`Skipping save for ${state.studentName}, no active goals with data.`);
+            continue;
+        }
+
+        const session: Omit<SessionData, 'sessionId'> = {
+          studentId: state.studentId,
+          studentName: state.studentName,
+          date: dataEntrySessionDate.toISOString(),
+          time: dataEntrySessionTime,
+          activity: state.activity,
+          notes: state.notes,
+          goals: sessionGoals,
+          originalGoalHeaders: state.originalGoalHeaders, 
+        };
+        await addSession(session);
+        sessionsSavedCount++;
+      }
+    }
+    if (sessionsSavedCount > 0) {
+        safeToast({ title: "Success", description: `${sessionsSavedCount} session(s) saved.`});
+        const newStates = {...dataEntryStudentSessionStates};
+        dataEntrySelectedStudentIds.forEach(id => {
+            if(newStates[id]) {
+                newStates[id].activity = '';
+                newStates[id].notes = '';
+                const initialGoalData: Record<string, SessionGoalData['data']> = {};
+                newStates[id].originalGoalHeaders.forEach(goal => {
+                  initialGoalData[goal.id] = JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type]));
+                });
+                newStates[id].goalData = initialGoalData;
+            }
+        });
+        setDataEntryStudentSessionStatesState(newStates);
+    } else {
+        safeToast({ title: "Info", description: "No sessions were saved. Ensure students have active goals with data.", variant: "default"});
+    }
+  }, [dataEntrySessionDate, dataEntrySelectedStudentIds, dataEntryStudentSessionStates, addSession, dataEntrySessionTime, safeToast]);
+
+  const resetDataEntrySession = useCallback(() => {
+    const newStates = { ...dataEntryStudentSessionStates };
+    dataEntrySelectedStudentIds.forEach(id => {
+      if (newStates[id]) {
+        newStates[id].activity = '';
+        newStates[id].notes = '';
+        if (newStates[id].originalGoalHeaders) {
+          const initialGoalData: Record<string, SessionGoalData['data']> = {};
+          newStates[id].originalGoalHeaders.forEach(goal => {
+            initialGoalData[goal.id] = JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type]));
+          });
+          newStates[id].goalData = initialGoalData;
+        }
+      }
+    });
+    setDataEntryStudentSessionStatesState(newStates);
+    safeToast({ title: "Data Reset", description: "Current unsaved data for selected students has been reset." });
+  }, [dataEntrySelectedStudentIds, dataEntryStudentSessionStates, safeToast]);
+
+  const handleGoalDataChange = useCallback((studentId: string, goalId: string, updatedFieldName: string, newData: SessionGoalData['data']) => {
+    setDataEntryStudentSessionStatesState(prevStates => {
+      const studentState = prevStates[studentId];
+      if (!studentState) return prevStates;
+      const goal = studentState.originalGoalHeaders.find(g => g.id === goalId);
+      if (!goal || (goal.isArchived && !(dataEntryShowArchivedByStudentId[studentId]))) return prevStates; 
+
+      let processedData = { ...newData };
+
+      if (goal.type === 'FLUENCY_SYLLABLE_STUTTER') {
+        let newTotalSyllables = Math.max(0, Number(processedData.totalSyllables || 0));
+        let newStutteredSyllables = Math.max(0, Number(processedData.stutteredSyllables || 0));
+        if (updatedFieldName === 'stutteredSyllables') {
+          newTotalSyllables = Math.max(newTotalSyllables, newStutteredSyllables);
+        } else if (updatedFieldName === 'totalSyllables') {
+          newStutteredSyllables = Math.min(newStutteredSyllables, newTotalSyllables);
+        }
+        processedData.totalSyllables = newTotalSyllables;
+        processedData.stutteredSyllables = newStutteredSyllables;
+      }
+
+      return {
+        ...prevStates,
+        [studentId]: {
+          ...studentState,
+          goalData: {
+            ...studentState.goalData,
+            [goalId]: processedData,
+          },
+        },
+      };
+    });
+
+    const studentSlotIndex = dataEntrySelectedStudentIds.indexOf(studentId);
+    if (studentSlotIndex !== -1) {
+      setDataEntryFocusedStudentSlotIndexState(studentSlotIndex);
+    }
+  }, [dataEntrySelectedStudentIds, dataEntryShowArchivedByStudentId]);
+  
+  const handleMoveGoal = useCallback((studentId: string, goalId: string, direction: 'up' | 'down') => {
+    setDataEntryStudentSessionStatesState(prevStates => {
+      const studentState = prevStates[studentId];
+      if (!studentState) return prevStates;
+
+      const goals = [...studentState.originalGoalHeaders];
+      const goalIndex = goals.findIndex(g => g.id === goalId);
+
+      if (goalIndex === -1) return prevStates;
+
+      const newIndex = direction === 'up' ? goalIndex - 1 : goalIndex + 1;
+
+      if (newIndex < 0 || newIndex >= goals.length) return prevStates;
+
+      const [movedGoal] = goals.splice(goalIndex, 1);
+      goals.splice(newIndex, 0, movedGoal);
+
+      setDataEntryFocusedGoalIndexByStudentIdState(prevFocused => {
+        const visibleGoals = goals.filter(g => !g.isArchived || dataEntryShowArchivedByStudentId[studentId]);
+        const newFocusedIndexInVisible = visibleGoals.findIndex(g => g.id === goalId); 
+
+        return { ...prevFocused, [studentId]: newFocusedIndexInVisible !== -1 ? newFocusedIndexInVisible : 0 };
+      });
+
+      return {
+        ...prevStates,
+        [studentId]: {
+          ...studentState,
+          originalGoalHeaders: goals,
+        },
+      };
+    });
+  }, [dataEntryShowArchivedByStudentId]);
+
+  // #endregion
+
+  // #region Keyboard Shortcut Handlers
+  const getCurrentFocusedGoalInfo = useCallback(() => {
+    if (dataEntrySelectedStudentIds.length === 0 || dataEntryFocusedStudentSlotIndex >= dataEntrySelectedStudentIds.length) {
+      return null;
+    }
+    const studentId = dataEntrySelectedStudentIds[dataEntryFocusedStudentSlotIndex];
+    const studentState = dataEntryStudentSessionStates[studentId];
+     if (!studentState || !studentState.originalGoalHeaders) {
+      return { studentId, studentState: studentState || null, goal: null, goalData: null, goalIndex: -1 };
+    }
+
+    const visibleGoals = studentState.originalGoalHeaders.filter(g => !g.isArchived || dataEntryShowArchivedByStudentId[studentId]);
+    if (visibleGoals.length === 0) {
+        return { studentId, studentState, goal: null, goalData: null, goalIndex: -1 };
+    }
+
+    const goalIndexInVisibleList = dataEntryFocusedGoalIndexByStudentId[studentId] ?? 0;
+    const validGoalIndexInVisibleList = Math.min(Math.max(goalIndexInVisibleList, 0), visibleGoals.length > 0 ? visibleGoals.length - 1 : 0);
+
+
+    if (visibleGoals.length === 0 || validGoalIndexInVisibleList < 0) {
+        return { studentId, studentState, goal: null, goalData: null, goalIndex: -1 };
+    }
+    
+    const goal = visibleGoals[validGoalIndexInVisibleList];
+    if (!goal) {
+        return { studentId, studentState, goal: null, goalData: null, goalIndex: -1 };
+    }
+    const goalData = studentState.goalData[goal.id];
+    return { studentId, studentState, goal, goalData, goalIndex: validGoalIndexInVisibleList };
+  }, [dataEntrySelectedStudentIds, dataEntryFocusedStudentSlotIndex, dataEntryStudentSessionStates, dataEntryFocusedGoalIndexByStudentId, dataEntryShowArchivedByStudentId]);
+  
+  const focusStudentSlot = useCallback((slotIndex: number) => {
+    if (slotIndex < dataEntrySelectedStudentIds.length) {
+      setDataEntryFocusedStudentSlotIndexState(slotIndex);
+    }
+  }, [dataEntrySelectedStudentIds.length]);
+
+  const cycleFocusedStudent = useCallback((direction: 'next' | 'prev') => {
+    if (dataEntrySelectedStudentIds.length > 0) {
+      if (direction === 'prev') {
+        setDataEntryFocusedStudentSlotIndexState(prev => (prev - 1 + dataEntrySelectedStudentIds.length) % dataEntrySelectedStudentIds.length);
+      } else {
+        setDataEntryFocusedStudentSlotIndexState(prev => (prev + 1) % dataEntrySelectedStudentIds.length);
+      }
+    }
+  }, [dataEntrySelectedStudentIds.length]);
+
+  const cycleFocusedGoal = useCallback((direction: 'next' | 'prev') => {
+    const focusedInfo = getCurrentFocusedGoalInfo();
+    if (!focusedInfo || !focusedInfo.studentId) return;
+
+    const { studentId, studentState, goalIndex } = focusedInfo;
+    const visibleGoals = studentState.originalGoalHeaders.filter(g => !g.isArchived || dataEntryShowArchivedByStudentId[studentId]);
+
+    const numVisibleGoals = visibleGoals.length;
+    if (numVisibleGoals > 0) {
+      const nextIndex = direction === 'prev' ? (goalIndex - 1 + numVisibleGoals) % numVisibleGoals : (goalIndex + 1) % numVisibleGoals;
+      setDataEntryFocusedGoalIndexByStudentIdState(prev => ({ ...prev, [studentId]: nextIndex }));
+    }
+  }, [getCurrentFocusedGoalInfo, dataEntryShowArchivedByStudentId]);
+  
+  const triggerEditFocusedStudent = useCallback(() => {
+    if (dataEntrySelectedStudentIds.length > 0 && dataEntryFocusedStudentSlotIndex < dataEntrySelectedStudentIds.length) {
+      const focusedStudentId = dataEntrySelectedStudentIds[dataEntryFocusedStudentSlotIndex];
+      const studentToEdit = studentsState.find(s => s.id === focusedStudentId);
+      if (studentToEdit) {
+        openEditStudentModal(studentToEdit);
+      }
+    }
+  }, [dataEntrySelectedStudentIds, dataEntryFocusedStudentSlotIndex, studentsState]);
+
+  const handleDataEntryHotkey = useCallback((key: string, alt: boolean) => {
+    const focusedInfo = getCurrentFocusedGoalInfo();
+    if (!focusedInfo || !focusedInfo.goal || !focusedInfo.goalData || focusedInfo.goal.isArchived) return; 
+
+    const { studentId, goal, goalData } = focusedInfo;
+
+    const promptToUpdate = PROMPT_HOTKEY_MAP[key];
+    if (promptToUpdate && goal.type !== 'QUALITATIVE_OBSERVATION' && goal.type !== 'FLUENCY_SYLLABLE_STUTTER' && goal.type !== 'FEEDING_SWALLOWING') {
+      const currentPromptCount = Number(goalData[promptToUpdate] || 0);
+      const newPromptValue = alt ? Math.max(0, currentPromptCount - 1) : currentPromptCount + 1;
+
+      let updatedDataForField = { ...goalData, [promptToUpdate]: newPromptValue };
+
+      if (promptToUpdate === 'Independent') {
+          const isIncrementingPrompt = !alt;
+          const canDecrementCorrectField = alt && currentPromptCount > 0; 
+          
+          if (isIncrementingPrompt || canDecrementCorrectField) {
+              const incrementAmount = isIncrementingPrompt ? 1 : -1;
+              switch(goal.type) {
+                  case 'ARTICULATION': updatedDataForField.correct = Math.max(0, (Number(goalData.correct) || 0) + incrementAmount); break;
+                  case 'LANGUAGE_COMPREHENSION': updatedDataForField.questionsCorrect = Math.max(0, (Number(goalData.questionsCorrect) || 0) + incrementAmount); break;
+                  case 'LANGUAGE_EXPRESSION': updatedDataForField.successfulResponses = Math.max(0, (Number(goalData.successfulResponses) || 0) + incrementAmount); break;
+                  case 'PHONOLOGICAL_PROCESSES': updatedDataForField.correctProductions = Math.max(0, (Number(goalData.correctProductions) || 0) + incrementAmount); break;
+              }
+          }
+      }
+      handleGoalDataChange(studentId, goal.id, promptToUpdate, updatedDataForField);
+      return;
+    }
+
+    if (goal.type === 'QUALITATIVE_OBSERVATION' && !alt) {
+      if (key === 'C') {
+        const currentRating = Number(goalData.rating ?? 3);
+        const newRating = Math.min(5, currentRating + 1);
+        handleGoalDataChange(studentId, goal.id, 'rating', { ...goalData, rating: newRating });
+        return;
+      } else if (key === 'N') {
+        const currentRating = Number(goalData.rating ?? 3);
+        const newRating = Math.max(1, currentRating - 1);
+        handleGoalDataChange(studentId, goal.id, 'rating', { ...goalData, rating: newRating });
+        return;
+      }
+    }
+
+    let fieldToUpdate: string | null = null;
+    let increment = alt ? -1 : 1;
+
+    if (key === 'C') {
+      if (goal.type === 'ARTICULATION') fieldToUpdate = 'correct';
+      else if (goal.type === 'LANGUAGE_COMPREHENSION') fieldToUpdate = 'questionsCorrect';
+      else if (goal.type === 'LANGUAGE_EXPRESSION') fieldToUpdate = 'successfulResponses';
+      else if (goal.type === 'PHONOLOGICAL_PROCESSES') fieldToUpdate = 'correctProductions';
+      else if (goal.type === 'FLUENCY_SYLLABLE_STUTTER') fieldToUpdate = 'totalSyllables';
+      else if (goal.type === 'FEEDING_SWALLOWING') fieldToUpdate = 'trialsAccepted';
+    } else if (key === 'N') {
+      if (goal.type === 'ARTICULATION') fieldToUpdate = 'incorrect';
+      else if (goal.type === 'LANGUAGE_COMPREHENSION') fieldToUpdate = 'questionsIncorrect';
+      else if (goal.type === 'LANGUAGE_EXPRESSION') fieldToUpdate = 'unsuccessfulResponses';
+      else if (goal.type === 'PHONOLOGICAL_PROCESSES') fieldToUpdate = 'incorrectProductions';
+      else if (goal.type === 'FLUENCY_SYLLABLE_STUTTER') fieldToUpdate = 'stutteredSyllables';
+      else if (goal.type === 'FEEDING_SWALLOWING') fieldToUpdate = 'trialsRefused';
+    }
+
+    if (fieldToUpdate) {
+      const currentValue = Number(goalData[fieldToUpdate] || 0);
+      const newValue = Math.max(0, currentValue + increment);
+      handleGoalDataChange(studentId, goal.id, fieldToUpdate, { ...goalData, [fieldToUpdate]: newValue });
+    }
+  }, [getCurrentFocusedGoalInfo, handleGoalDataChange]);
+  // #endregion
+
   const openAddStudentModal = useCallback(() => setIsAddStudentModalOpen(true), []);
   const closeAddStudentModal = useCallback(() => setIsAddStudentModalOpen(false), []);
   const openEditStudentModal = useCallback((student: Student) => setEditingStudent(student), []);
@@ -747,13 +1116,10 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const openEditAssignedGoalModal = useCallback((studentId: string, goal: Goal) => setEditingAssignedGoal({ studentId, goal }), []);
   const closeEditAssignedGoalModal = useCallback(() => setEditingAssignedGoal(null), []);
   
-  // Data Entry context setters
   const setDataEntrySessionDate = useCallback((date: Date | undefined) => setDataEntrySessionDateState(date), []);
   const setDataEntrySessionTime = useCallback((time: string) => setDataEntrySessionTimeState(time), []);
   const setDataEntrySelectedStudentIds = useCallback((ids: string[]) => setDataEntrySelectedStudentIdsState(ids), []);
-  const setDataEntryStudentSessionStates = useCallback((states: Record<string, StudentSessionState>) => setDataEntryStudentSessionStatesState(states), []);
   const setDataEntryFocusedStudentSlotIndex = useCallback((index: number) => setDataEntryFocusedStudentSlotIndexState(index), []);
-  const setDataEntryFocusedGoalIndexByStudentId = useCallback((indexes: Record<string, number>) => setDataEntryFocusedGoalIndexByStudentIdState(indexes), []);
   const setDataEntryAiActivitySuggestions = useCallback((suggestions: Record<string, string[]>) => setDataEntryAiActivitySuggestionsState(suggestions), []);
   const setDataEntryVisibleGoalCountByStudentId = useCallback((updater: (prev: Record<string, number>) => Record<string, number>) => setDataEntryVisibleGoalCountByStudentIdState(updater), []);
   const setDataEntryShowArchivedByStudentId = useCallback((updater: (prev: Record<string, boolean>) => Record<string, boolean>) => setDataEntryShowArchivedByStudentIdState(updater), []);
@@ -764,7 +1130,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     goalTemplates: goalTemplatesState,
     sessions: sessionsState,
     selectedStudent,
-    setSelectedStudent: setSelectedStudentCb,
+    setSelectedStudent: setSelectedStudentState,
     loading,
     sessionsLoading,
     error,
@@ -781,18 +1147,19 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     editingSession, openEditSessionModal, closeEditSessionModal,
     deletingSession, openDeleteSessionModal, closeDeleteSessionModal,
     editingAssignedGoal, openEditAssignedGoalModal, closeEditAssignedGoalModal,
-    // Data Entry page state
     dataEntrySessionDate, setDataEntrySessionDate,
     dataEntrySessionTime, setDataEntrySessionTime,
     dataEntrySelectedStudentIds, setDataEntrySelectedStudentIds,
-    dataEntryStudentSessionStates, setDataEntryStudentSessionStates,
+    dataEntryStudentSessionStates, setDataEntryStudentSessionStates: setDataEntryStudentSessionStatesState,
     dataEntryFocusedStudentSlotIndex, setDataEntryFocusedStudentSlotIndex,
-    dataEntryFocusedGoalIndexByStudentId, setDataEntryFocusedGoalIndexByStudentId,
+    dataEntryFocusedGoalIndexByStudentId, setDataEntryFocusedGoalIndexByStudentId: setDataEntryFocusedGoalIndexByStudentIdState,
     dataEntryAiActivitySuggestions, setDataEntryAiActivitySuggestions,
     dataEntryVisibleGoalCountByStudentId, setDataEntryVisibleGoalCountByStudentId,
     dataEntryShowArchivedByStudentId, setDataEntryShowArchivedByStudentId,
+    fetchAiActivitySuggestions, saveDataEntrySession, resetDataEntrySession, handleGoalDataChange, handleMoveGoal,
+    focusStudentSlot, cycleFocusedStudent, cycleFocusedGoal, handleDataEntryHotkey, triggerEditFocusedStudent, getCurrentFocusedGoalInfo
   }), [
-    studentsState, goalTemplatesState, sessionsState, selectedStudent, setSelectedStudentCb, loading, sessionsLoading, error, isFirebaseDBAvailable,
+    studentsState, goalTemplatesState, sessionsState, selectedStudent, loading, sessionsLoading, error, isFirebaseDBAvailable,
     addStudent, updateStudent, deleteStudent, assignGoalToStudent, removeGoalFromStudent, updateStudentGoal,
     addGoalTemplate, updateGoalTemplate, deleteGoalTemplate,
     addSession, updateSession, deleteSession, getSessionsForStudent,
@@ -808,12 +1175,14 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     dataEntrySessionDate, setDataEntrySessionDate,
     dataEntrySessionTime, setDataEntrySessionTime,
     dataEntrySelectedStudentIds, setDataEntrySelectedStudentIds,
-    dataEntryStudentSessionStates, setDataEntryStudentSessionStates,
+    dataEntryStudentSessionStates,
     dataEntryFocusedStudentSlotIndex, setDataEntryFocusedStudentSlotIndex,
-    dataEntryFocusedGoalIndexByStudentId, setDataEntryFocusedGoalIndexByStudentId,
+    dataEntryFocusedGoalIndexByStudentId,
     dataEntryAiActivitySuggestions, setDataEntryAiActivitySuggestions,
     dataEntryVisibleGoalCountByStudentId, setDataEntryVisibleGoalCountByStudentId,
     dataEntryShowArchivedByStudentId, setDataEntryShowArchivedByStudentId,
+    fetchAiActivitySuggestions, saveDataEntrySession, resetDataEntrySession, handleGoalDataChange, handleMoveGoal,
+    focusStudentSlot, cycleFocusedStudent, cycleFocusedGoal, handleDataEntryHotkey, triggerEditFocusedStudent, getCurrentFocusedGoalInfo
   ]);
 
   return (
@@ -830,5 +1199,3 @@ export const useStudentData = (): StudentDataContextType => {
   }
   return context;
 };
-
-
