@@ -1,28 +1,22 @@
 
 'use client';
 
-import React from 'react';
-import type { Student, Goal, SessionData, SessionGoalData } from '@/lib/types';
+import React, { useMemo } from 'react';
+import type { Student, Goal, SessionData } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { TrendingUp, CheckCircle2, ListChecks, BarChart2 } from 'lucide-react';
 
-interface StudentProgressSidebarProps {
-  student: Student;
-  studentSessions: SessionData[];
-}
-
-const getGoalProgress = (goal: Goal, studentSessions: SessionData[]): number => {
-  if (goal.isArchived) return 0; // Archived goals show 0 progress towards target here
-
-  const latestSessionForGoal = studentSessions
-    .filter(s => s.goals.some(sg => sg.goalId === goal.id))
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    [0];
-
-  if (!latestSessionForGoal) return 0;
+/**
+ * Calculates the progress percentage for a single goal based on its latest session data.
+ * @param goal The goal to calculate progress for.
+ * @param latestSessionForGoal The single latest session that contains data for this goal.
+ * @returns A progress percentage (0-100).
+ */
+const calculateProgressForGoal = (goal: Goal, latestSessionForGoal: SessionData | undefined): number => {
+  if (goal.isArchived || !latestSessionForGoal) return 0;
 
   const goalSessionData = latestSessionForGoal.goals.find(g => g.goalId === goal.id)?.data;
   if (!goalSessionData) return 0;
@@ -40,21 +34,21 @@ const getGoalProgress = (goal: Goal, studentSessions: SessionData[]): number => 
     case 'LANGUAGE_COMPREHENSION': {
       const correct = Number(goalSessionData.questionsCorrect) || 0;
       const incorrect = Number(goalSessionData.questionsIncorrect) || 0;
-      const total = correct + incorrect; // Or use questionsAttempted if more reliable
+      const total = correct + incorrect;
       actualPerformancePct = total > 0 ? (correct / total) * 100 : 0;
       break;
     }
     case 'LANGUAGE_EXPRESSION': {
       const successful = Number(goalSessionData.successfulResponses) || 0;
       const unsuccessful = Number(goalSessionData.unsuccessfulResponses) || 0;
-      const total = successful + unsuccessful; // Or use opportunities if more reliable
+      const total = successful + unsuccessful;
       actualPerformancePct = total > 0 ? (successful / total) * 100 : 0;
       break;
     }
     case 'PHONOLOGICAL_PROCESSES': {
       const correct = Number(goalSessionData.correctProductions) || 0;
       const incorrect = Number(goalSessionData.incorrectProductions) || 0;
-      const total = correct + incorrect; // Or use opportunities if more reliable
+      const total = correct + incorrect;
       actualPerformancePct = total > 0 ? (correct / total) * 100 : 0;
       break;
     }
@@ -65,13 +59,19 @@ const getGoalProgress = (goal: Goal, studentSessions: SessionData[]): number => 
       actualPerformancePct = totalSyllables > 0 ? (fluentSyllables / totalSyllables) * 100 : 0;
       break;
     }
+    case 'FEEDING_SWALLOWING': {
+      const accepted = Number(goalSessionData.trialsAccepted || 0);
+      const refused = Number(goalSessionData.trialsRefused || 0);
+      const total = accepted + refused;
+      actualPerformancePct = total > 0 ? (accepted / total) * 100 : 0;
+      break;
+    }
     case 'QUALITATIVE_OBSERVATION': {
       if (goal.sessionTargetValue !== undefined && goal.sessionTargetValue > 0 && goalSessionData.rating !== undefined) {
-        const rating = Number(goalSessionData.rating) || 0;
         if (goalSessionData.rating !== undefined) {
-           actualPerformancePct = (Number(goalSessionData.rating) / 5) * 100; 
+          actualPerformancePct = (Number(goalSessionData.rating) / 5) * 100;
         } else {
-           actualPerformancePct = (goalSessionData.notes && String(goalSessionData.notes).trim() !== '') ? 100 : 0;
+          actualPerformancePct = (goalSessionData.notes && String(goalSessionData.notes).trim() !== '') ? 100 : 0;
         }
       } else {
         actualPerformancePct = (goalSessionData.notes && String(goalSessionData.notes).trim() !== '') ? 100 : 0;
@@ -81,31 +81,60 @@ const getGoalProgress = (goal: Goal, studentSessions: SessionData[]): number => 
     default:
       return 0;
   }
-  
+
   actualPerformancePct = Math.min(Math.max(actualPerformancePct, 0), 100);
 
   if (goal.sessionTargetValue !== undefined && goal.sessionTargetValue > 0 && goal.type !== 'QUALITATIVE_OBSERVATION') {
     const progressTowardsTarget = (actualPerformancePct / goal.sessionTargetValue) * 100;
-    return Math.min(Math.max(progressTowardsTarget, 0), 100); 
+    return Math.min(Math.max(progressTowardsTarget, 0), 100);
   }
-  
+
   return actualPerformancePct;
 };
+
 
 export default function StudentProgressSidebar({ student, studentSessions }: StudentProgressSidebarProps) {
   if (!student) return null;
 
   const activeGoals = student.goals.filter(goal => !goal.isArchived);
 
-  const activeGoalsWithProgress = activeGoals.map(goal => ({
-    ...goal,
-    progress: getGoalProgress(goal, studentSessions),
-  })).slice(0, 5); 
+  // Memoize the expensive calculation to run only when student or sessions change.
+  const goalsWithProgress = useMemo(() => {
+    if (!studentSessions || studentSessions.length === 0) {
+      return activeGoals.map(goal => ({ ...goal, progress: 0 }));
+    }
 
-  const overallProgressValues = activeGoals // Only consider active goals for overall progress
-    .map(g => getGoalProgress(g, studentSessions))
-    .filter(p => p !== undefined); 
-  
+    // Create a map to store the latest session for each goal
+    const latestSessionByGoalId = new Map<string, SessionData>();
+
+    // Sort sessions once by date, descending. A copy is made to avoid mutating props.
+    const sortedSessions = [...studentSessions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    // Iterate through sorted sessions to find the latest one for each goal
+    for (const session of sortedSessions) {
+      for (const goalData of session.goals) {
+        // Since sessions are sorted, the first time we see a goalId, it's from the latest session for that goal.
+        if (!latestSessionByGoalId.has(goalData.goalId)) {
+          latestSessionByGoalId.set(goalData.goalId, session);
+        }
+      }
+    }
+
+    // Now calculate progress for each active goal using its latest session
+    return activeGoals.map(goal => {
+      const latestSession = latestSessionByGoalId.get(goal.id);
+      const progress = calculateProgressForGoal(goal, latestSession);
+      return { ...goal, progress };
+    });
+  }, [activeGoals, studentSessions]);
+
+
+  const activeGoalsWithProgressSliced = goalsWithProgress.slice(0, 5);
+
+  const overallProgressValues = goalsWithProgress
+    .map(g => g.progress)
+    .filter(p => p !== undefined);
+
   const averageOverallProgress = overallProgressValues.length > 0
     ? overallProgressValues.reduce((sum, p) => sum + p, 0) / overallProgressValues.length
     : 0;
@@ -130,13 +159,13 @@ export default function StudentProgressSidebar({ student, studentSessions }: Stu
         </CardContent>
       </Card>
 
-      {activeGoalsWithProgress.length > 0 && (
+      {activeGoalsWithProgressSliced.length > 0 && (
         <div className="space-y-2">
           <h4 className="text-xs font-semibold uppercase text-muted-foreground px-1">Active Goals Overview</h4>
-          {activeGoalsWithProgress.map(goal => {
-            const displayValue = goal.sessionTargetValue !== undefined && goal.type !== 'QUALITATIVE_OBSERVATION' 
+          {activeGoalsWithProgressSliced.map(goal => {
+            const displayValue = goal.sessionTargetValue !== undefined && goal.type !== 'QUALITATIVE_OBSERVATION'
               ? `${Math.round(goal.progress)}% (Target: ${goal.sessionTargetValue}%)`
-              : goal.type === 'QUALITATIVE_OBSERVATION' 
+              : goal.type === 'QUALITATIVE_OBSERVATION'
                 ? (goal.progress === 100 ? 'Noted' : 'No Notes') // Or actual rating
                 : `${Math.round(goal.progress)}% (Actual)`;
             return (
@@ -153,10 +182,10 @@ export default function StudentProgressSidebar({ student, studentSessions }: Stu
           })}
         </div>
       )}
-      
-      {activeGoals.length > activeGoalsWithProgress.length && (
+
+      {activeGoals.length > activeGoalsWithProgressSliced.length && (
          <p className="text-xs text-muted-foreground text-center px-1">
-            + {activeGoals.length - activeGoalsWithProgress.length} more active goals
+            + {activeGoals.length - activeGoalsWithProgressSliced.length} more active goals
           </p>
       )}
 
