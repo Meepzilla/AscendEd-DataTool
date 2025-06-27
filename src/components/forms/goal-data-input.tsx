@@ -55,15 +55,18 @@ export default function GoalDataInputComponent({
     let correct = 0;
     let totalOpportunities = 0;
     const type = goal.type;
+    let actualPerformancePct = 0;
 
     switch (type) {
       case 'ARTICULATION':
         correct = Number(data.correct || 0);
         totalOpportunities = correct + Number(data.incorrect || 0);
+        actualPerformancePct = totalOpportunities > 0 ? (correct / totalOpportunities) * 100 : 0;
         break;
       case 'LANGUAGE_COMPREHENSION':
         correct = Number(data.questionsCorrect || 0);
         totalOpportunities = correct + Number(data.questionsIncorrect || 0);
+        actualPerformancePct = totalOpportunities > 0 ? (correct / totalOpportunities) * 100 : 0;
         break;
       case 'LANGUAGE_EXPRESSION':
         correct = Number(data.successfulResponses || 0);
@@ -71,6 +74,7 @@ export default function GoalDataInputComponent({
           ? Number(data.opportunities || 0)
           : (correct + Number(data.unsuccessfulResponses || 0));
         if (data.opportunities !== undefined && correct > totalOpportunities && totalOpportunities > 0) correct = totalOpportunities;
+        actualPerformancePct = totalOpportunities > 0 ? (correct / totalOpportunities) * 100 : 0;
         break;
       case 'PHONOLOGICAL_PROCESSES':
         correct = Number(data.correctProductions || 0);
@@ -78,20 +82,27 @@ export default function GoalDataInputComponent({
           ? Number(data.opportunities || 0)
           : (correct + Number(data.incorrectProductions || 0));
         if (data.opportunities !== undefined && correct > totalOpportunities && totalOpportunities > 0) correct = totalOpportunities;
+        actualPerformancePct = totalOpportunities > 0 ? (correct / totalOpportunities) * 100 : 0;
         break;
       case 'FLUENCY_SYLLABLE_STUTTER':
         const totalSyllables = Number(data.totalSyllables || 0);
         const stutteredSyllables = Number(data.stutteredSyllables || 0);
         correct = Math.max(0, totalSyllables - stutteredSyllables);
         totalOpportunities = totalSyllables;
+        actualPerformancePct = totalOpportunities > 0 ? (correct / totalOpportunities) * 100 : 0;
+        break;
+      case 'FEEDING_SWALLOWING':
+        const accepted = Number(data.trialsAccepted || 0);
+        const refused = Number(data.trialsRefused || 0);
+        totalOpportunities = accepted + refused;
+        actualPerformancePct = totalOpportunities > 0 ? (accepted / totalOpportunities) * 100 : 0;
         break;
       default:
         return 'N/A';
     }
 
     if (totalOpportunities === 0) return 'N/A (0%)';
-    const percentage = (correct / totalOpportunities) * 100;
-    return `${percentage.toFixed(1)}%`;
+    return `${actualPerformancePct.toFixed(1)}%`;
   };
 
 
@@ -100,7 +111,7 @@ export default function GoalDataInputComponent({
       case 'ARTICULATION':
         return (
           <>
-            <div class="grid grid-cols-2 gap-1">
+            <div className="grid grid-cols-2 gap-1">
               <FormItem>
                 <FormLabel>Target Sound/Word</FormLabel>
                 <Input
@@ -124,10 +135,10 @@ export default function GoalDataInputComponent({
                 />
               </FormItem>
             </div>
-            <div class="grid grid-cols-2 gap-1">
+            <div className="grid grid-cols-2 gap-1">
               <FormItem>
                 <FormLabel>Correct</FormLabel>
-                <div class="flex items-center gap-1">
+                <div className="flex items-center gap-1">
                   <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('correct', Math.max(0, (Number(data.correct) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
                   <Input type="number" min="0" value={data.correct ?? 0} onChange={(e) => handleChange('correct', parseInt(e.target.value) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
                   <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('correct', (Number(data.correct) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
@@ -135,7 +146,7 @@ export default function GoalDataInputComponent({
               </FormItem>
               <FormItem>
                 <FormLabel>Incorrect</FormLabel>
-                <div class="flex items-center gap-1">
+                <div className="flex items-center gap-1">
                   <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('incorrect', Math.max(0, (Number(data.incorrect) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
                   <Input type="number" min="0" value={data.incorrect ?? 0} onChange={(e) => handleChange('incorrect', parseInt(e.target.value) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
                   <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('incorrect', (Number(data.incorrect) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
@@ -144,13 +155,71 @@ export default function GoalDataInputComponent({
             </div>
           </>
         );
+      case 'FEEDING_SWALLOWING':
+        return (
+          <>
+            <div className="grid grid-cols-2 gap-1">
+              <FormItem>
+                <FormLabel>Food/Liquid Name</FormLabel>
+                <Input
+                  type="text"
+                  value={data.foodOrLiquidName || ''}
+                  onChange={(e) => handleChange('foodOrLiquidName', e.target.value)}
+                  placeholder="e.g., Apple sauce"
+                  className="h-8 text-sm"
+                  disabled={isArchived}
+                />
+              </FormItem>
+              <FormItem>
+                <FormLabel>Texture/Consistency</FormLabel>
+                <Input
+                  type="text"
+                  value={data.textureOrConsistency || ''}
+                  onChange={(e) => handleChange('textureOrConsistency', e.target.value)}
+                  placeholder="e.g., Pureed"
+                  className="h-8 text-sm"
+                  disabled={isArchived}
+                />
+              </FormItem>
+            </div>
+            <div className="grid grid-cols-2 gap-1">
+              <FormItem>
+                <FormLabel>Trials Accepted</FormLabel>
+                <div className="flex items-center gap-1">
+                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('trialsAccepted', Math.max(0, (Number(data.trialsAccepted) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
+                  <Input type="number" min="0" value={data.trialsAccepted ?? 0} onChange={(e) => handleChange('trialsAccepted', parseInt(e.target.value) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
+                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('trialsAccepted', (Number(data.trialsAccepted) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
+                </div>
+              </FormItem>
+              <FormItem>
+                <FormLabel>Trials Refused</FormLabel>
+                <div className="flex items-center gap-1">
+                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('trialsRefused', Math.max(0, (Number(data.trialsRefused) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
+                  <Input type="number" min="0" value={data.trialsRefused ?? 0} onChange={(e) => handleChange('trialsRefused', parseInt(e.target.value) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
+                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('trialsRefused', (Number(data.trialsRefused) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
+                </div>
+              </FormItem>
+            </div>
+             <FormItem>
+              <FormLabel>Observation Notes</FormLabel>
+              <Textarea
+                value={data.notes || ''}
+                onChange={(e) => handleChange('notes', e.target.value)}
+                placeholder="e.g., Coughing, pocketing, time to swallow"
+                rows={1}
+                className="text-sm"
+                disabled={isArchived}
+              />
+            </FormItem>
+          </>
+        );
       case 'FLUENCY_SYLLABLE_STUTTER':
         return (
           <>
-            <div class="grid grid-cols-2 gap-1">
+            <div className="grid grid-cols-2 gap-1">
               <FormItem>
                 <FormLabel>Total Syllables</FormLabel>
-                 <div class="flex items-center gap-1">
+                 <div className="flex items-center gap-1">
                   <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('totalSyllables', Math.max(0, (Number(data.totalSyllables) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
                   <Input type="number" min="0" value={data.totalSyllables ?? 0} onChange={(e) => handleChange('totalSyllables', parseInt(e.target.value) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
                   <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('totalSyllables', (Number(data.totalSyllables) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
@@ -158,7 +227,7 @@ export default function GoalDataInputComponent({
               </FormItem>
               <FormItem>
                 <FormLabel>Stuttered Syllables</FormLabel>
-                <div class="flex items-center gap-1">
+                <div className="flex items-center gap-1">
                   <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('stutteredSyllables', Math.max(0, (Number(data.stutteredSyllables) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
                   <Input type="number" min="0" value={data.stutteredSyllables ?? 0} onChange={(e) => handleChange('stutteredSyllables', parseInt(e.target.value) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
                   <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('stutteredSyllables', (Number(data.stutteredSyllables) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
@@ -201,7 +270,7 @@ export default function GoalDataInputComponent({
                 className="pt-2"
                 disabled={isArchived}
               />
-              <div class="text-center text-xs font-medium mt-1">{data.rating ?? 3}</div>
+              <div className="text-center text-xs font-medium mt-1">{data.rating ?? 3}</div>
             </FormItem>
           </>
         );
@@ -219,10 +288,10 @@ export default function GoalDataInputComponent({
                 disabled={isArchived}
               />
             </FormItem>
-            <div class="grid grid-cols-2 gap-1">
+            <div className="grid grid-cols-2 gap-1">
               <FormItem>
                 <FormLabel>Questions Correct</FormLabel>
-                <div class="flex items-center gap-1">
+                <div className="flex items-center gap-1">
                   <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('questionsCorrect', Math.max(0, (Number(data.questionsCorrect) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
                   <Input type="number" min="0" value={data.questionsCorrect ?? 0} onChange={(e) => handleChange('questionsCorrect', parseInt(e.target.value) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
                   <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('questionsCorrect', (Number(data.questionsCorrect) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
@@ -230,14 +299,14 @@ export default function GoalDataInputComponent({
               </FormItem>
               <FormItem>
                 <FormLabel>Questions Incorrect</FormLabel>
-                 <div class="flex items-center gap-1">
+                 <div className="flex items-center gap-1">
                   <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('questionsIncorrect', Math.max(0, (Number(data.questionsIncorrect) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
                   <Input type="number" min="0" value={data.questionsIncorrect ?? 0} onChange={(e) => handleChange('questionsIncorrect', parseInt(e.target.value) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
                   <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('questionsIncorrect', (Number(data.questionsIncorrect) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
                 </div>
               </FormItem>
             </div>
-            <div class="grid grid-cols-2 gap-1">
+            <div className="grid grid-cols-2 gap-1">
               <FormItem>
                 <FormLabel>Accuracy</FormLabel>
                 <p className="text-sm font-semibold text-primary h-8 flex items-center pt-0.5">
@@ -261,10 +330,10 @@ export default function GoalDataInputComponent({
                 disabled={isArchived}
               />
             </FormItem>
-            <div class="grid grid-cols-2 gap-1">
+            <div className="grid grid-cols-2 gap-1">
               <FormItem>
                 <FormLabel>Successful Responses</FormLabel>
-                <div class="flex items-center gap-1">
+                <div className="flex items-center gap-1">
                   <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('successfulResponses', Math.max(0, (Number(data.successfulResponses) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
                   <Input type="number" min="0" value={data.successfulResponses ?? 0} onChange={(e) => handleChange('successfulResponses', parseInt(e.target.value) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
                   <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('successfulResponses', (Number(data.successfulResponses) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
@@ -272,7 +341,7 @@ export default function GoalDataInputComponent({
               </FormItem>
               <FormItem>
                 <FormLabel>Unsuccessful Responses</FormLabel>
-                <div class="flex items-center gap-1">
+                <div className="flex items-center gap-1">
                   <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('unsuccessfulResponses', Math.max(0, (Number(data.unsuccessfulResponses) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
                   <Input type="number" min="0" value={data.unsuccessfulResponses ?? 0} onChange={(e) => handleChange('unsuccessfulResponses', parseInt(e.target.value) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
                   <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('unsuccessfulResponses', (Number(data.unsuccessfulResponses) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
@@ -295,10 +364,10 @@ export default function GoalDataInputComponent({
                 disabled={isArchived}
               />
             </FormItem>
-            <div class="grid grid-cols-2 gap-1">
+            <div className="grid grid-cols-2 gap-1">
               <FormItem>
                 <FormLabel>Correct Productions</FormLabel>
-                 <div class="flex items-center gap-1">
+                 <div className="flex items-center gap-1">
                   <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('correctProductions', Math.max(0, (Number(data.correctProductions) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
                   <Input type="number" min="0" value={data.correctProductions ?? 0} onChange={(e) => handleChange('correctProductions', parseInt(e.target.value) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
                   <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('correctProductions', (Number(data.correctProductions) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
@@ -306,7 +375,7 @@ export default function GoalDataInputComponent({
               </FormItem>
               <FormItem>
                 <FormLabel>Incorrect Productions</FormLabel>
-                <div class="flex items-center gap-1">
+                <div className="flex items-center gap-1">
                   <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('incorrectProductions', Math.max(0, (Number(data.incorrectProductions) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
                   <Input type="number" min="0" value={data.incorrectProductions ?? 0} onChange={(e) => handleChange('incorrectProductions', parseInt(e.target.value) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
                   <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('incorrectProductions', (Number(data.incorrectProductions) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
@@ -320,7 +389,7 @@ export default function GoalDataInputComponent({
     }
   };
 
-  const showPromptCounters = goal.type !== 'QUALITATIVE_OBSERVATION' && goal.type !== 'FLUENCY_SYLLABLE_STUTTER';
+  const showPromptCounters = goal.type !== 'QUALITATIVE_OBSERVATION' && goal.type !== 'FLUENCY_SYLLABLE_STUTTER' && goal.type !== 'FEEDING_SWALLOWING';
   const showAccuracyDisplay = goal.type !== 'QUALITATIVE_OBSERVATION' && goal.type !== 'LANGUAGE_COMPREHENSION';
 
 
@@ -333,15 +402,15 @@ export default function GoalDataInputComponent({
         isArchived && "opacity-60"
       )}>
        {isArchived && (
-         <div class="absolute inset-0 bg-slate-500/10 dark:bg-slate-800/10 z-10 flex items-center justify-center rounded-lg pointer-events-none">
+         <div className="absolute inset-0 bg-slate-500/10 dark:bg-slate-800/10 z-10 flex items-center justify-center rounded-lg pointer-events-none">
             <Badge variant="outline" className="bg-background text-orange-600 border-orange-500 p-1 px-2 text-xs rotate-[-15deg] shadow-md">
                 <ArchiveIcon className="h-3 w-3 mr-1"/>Archived
             </Badge>
          </div>
        )}
       <CardHeader className="p-2 bg-muted/30 rounded-t-lg">
-        <div class="flex justify-between items-start">
-            <div class="flex flex-col items-center space-y-0.5 shrink-0 mr-1">
+        <div className="flex justify-between items-start">
+            <div className="flex flex-col items-center space-y-0.5 shrink-0 mr-1">
                 {onMoveUp && (
                     <Button variant="ghost" size="icon" className="h-5 w-5 p-0" onClick={onMoveUp} disabled={!canMoveUp || isArchived} title="Move goal up">
                         <ArrowUp className="h-3.5 w-3.5" />
@@ -353,9 +422,9 @@ export default function GoalDataInputComponent({
                     </Button>
                 )}
             </div>
-            <div class="flex-grow min-w-0">
+            <div className="flex-grow min-w-0">
                 <CardTitle className="text-sm font-semibold">
-                    <div class="flex justify-between items-start">
+                    <div className="flex justify-between items-start">
                         <span className="whitespace-normal break-words mr-1">{goal.name}</span>
                         <Badge variant="outline" className="whitespace-nowrap text-xs px-1.5 py-0.5 shrink-0">
                             {goal.type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
@@ -363,7 +432,7 @@ export default function GoalDataInputComponent({
                     </div>
                 </CardTitle>
                 {goal.sessionTargetValue !== undefined && (
-                <div class="text-xs text-muted-foreground flex items-center gap-0.5 pt-0.5">
+                <div className="text-xs text-muted-foreground flex items-center gap-0.5 pt-0.5">
                     <TrendingUp className="h-3 w-3 text-green-600" />
                     Target: {goal.sessionTargetValue}{goal.type !== 'QUALITATIVE_OBSERVATION' ? '%' : ''}
                 </div>
@@ -375,7 +444,7 @@ export default function GoalDataInputComponent({
         {renderInputFields()}
 
         {showAccuracyDisplay && ( // Consolidated accuracy display logic
-          <div class="mt-1.5">
+          <div className="mt-1.5">
             <FormLabel>Accuracy</FormLabel>
             <p className="text-sm font-semibold text-primary h-8 flex items-center">
               {calculateAccuracy()}
@@ -386,7 +455,7 @@ export default function GoalDataInputComponent({
         {showPromptCounters && (
           <FormItem>
             <FormLabel>Prompt Levels</FormLabel>
-            <div class="flex flex-wrap gap-1.5 mt-0.5">
+            <div className="flex flex-wrap gap-1.5 mt-0.5">
               {PROMPT_TYPES.map(pt => {
                 const hotkey = Object.keys(PROMPT_HOTKEY_MAP).find(k => PROMPT_HOTKEY_MAP[k] === pt);
                 return (
@@ -467,9 +536,8 @@ export default function GoalDataInputComponent({
 }
 
 const FormItem: React.FC<{children: React.ReactNode, className?: string}> = ({ children, className }) => (
-  <div class={`space-y-0.5 ${className}`}>{children}</div>
+  <div className={`space-y-0.5 ${className}`}>{children}</div>
 );
 const FormLabel: React.FC<{children: React.ReactNode, htmlFor?: string}> = ({ children, htmlFor }) => (
   <Label htmlFor={htmlFor} className="text-xs font-medium text-muted-foreground">{children}</Label>
 );
-

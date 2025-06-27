@@ -28,7 +28,8 @@ export type GoalType =
   | 'QUALITATIVE_OBSERVATION'
   | 'LANGUAGE_COMPREHENSION'
   | 'LANGUAGE_EXPRESSION'
-  | 'PHONOLOGICAL_PROCESSES';
+  | 'PHONOLOGICAL_PROCESSES'
+  | 'FEEDING_SWALLOWING';
 
 export interface GoalTemplate {
   id: string;
@@ -99,6 +100,14 @@ export interface PhonologicalProcessesData {
   incorrectProductions: number;
 }
 
+export interface FeedingSwallowingData {
+  foodOrLiquidName: string;
+  textureOrConsistency: string;
+  trialsAccepted: number;
+  trialsRefused: number;
+  notes: string;
+}
+
 
 export type PromptType = "Independent" | "Visual" | "Verbal" | "Gestural" | "PartialPhysical" | "FullPhysical";
 
@@ -156,4 +165,3 @@ type ToasterToast = ToastProps & {
   action?: ToastActionElement
 }
 export type Toast = Omit<ToasterToast, "id">;
-

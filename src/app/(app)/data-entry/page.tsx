@@ -430,7 +430,7 @@ export default function DataEntryPage() {
       }
 
       const promptToUpdate = PROMPT_HOTKEY_MAP[key];
-      if (promptToUpdate && goal.type !== 'QUALITATIVE_OBSERVATION' && goal.type !== 'FLUENCY_SYLLABLE_STUTTER') {
+      if (promptToUpdate && goal.type !== 'QUALITATIVE_OBSERVATION' && goal.type !== 'FLUENCY_SYLLABLE_STUTTER' && goal.type !== 'FEEDING_SWALLOWING') {
         event.preventDefault();
         const currentPromptCount = Number(goalData[promptToUpdate] || 0);
         const newPromptValue = alt ? Math.max(0, currentPromptCount - 1) : currentPromptCount + 1;
@@ -491,6 +491,7 @@ export default function DataEntryPage() {
         else if (goal.type === 'LANGUAGE_EXPRESSION') fieldToUpdate = 'successfulResponses';
         else if (goal.type === 'PHONOLOGICAL_PROCESSES') fieldToUpdate = 'correctProductions';
         else if (goal.type === 'FLUENCY_SYLLABLE_STUTTER') fieldToUpdate = 'totalSyllables';
+        else if (goal.type === 'FEEDING_SWALLOWING') fieldToUpdate = 'trialsAccepted';
       } else if (key === 'N') {
         increment = alt ? -1 : 1;
         if (goal.type === 'ARTICULATION') fieldToUpdate = 'incorrect';
@@ -498,6 +499,7 @@ export default function DataEntryPage() {
         else if (goal.type === 'LANGUAGE_EXPRESSION') fieldToUpdate = 'unsuccessfulResponses';
         else if (goal.type === 'PHONOLOGICAL_PROCESSES') fieldToUpdate = 'incorrectProductions';
         else if (goal.type === 'FLUENCY_SYLLABLE_STUTTER') fieldToUpdate = 'stutteredSyllables';
+        else if (goal.type === 'FEEDING_SWALLOWING') fieldToUpdate = 'trialsRefused';
       }
 
       if (fieldToUpdate && increment !== 0) {
@@ -987,6 +989,7 @@ export default function DataEntryPage() {
     
 
     
+
 
 
 

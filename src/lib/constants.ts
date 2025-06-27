@@ -22,6 +22,7 @@ export const GOAL_TYPES: Record<string, GoalType> = {
   LANGUAGE_COMPREHENSION: 'LANGUAGE_COMPREHENSION',
   LANGUAGE_EXPRESSION: 'LANGUAGE_EXPRESSION',
   PHONOLOGICAL_PROCESSES: 'PHONOLOGICAL_PROCESSES',
+  FEEDING_SWALLOWING: 'FEEDING_SWALLOWING',
 };
 
 // Defines the default data structure for each goal type during session entry
@@ -62,6 +63,13 @@ export const GOAL_TYPE_FIELDS: Record<GoalType, Record<string, any>> = {
     correctProductions: 0,
     incorrectProductions: 0,
     // Prompt counts are added dynamically
+  },
+  [GOAL_TYPES.FEEDING_SWALLOWING]: {
+    foodOrLiquidName: '',
+    textureOrConsistency: '',
+    trialsAccepted: 0,
+    trialsRefused: 0,
+    notes: ''
   },
 };
 
@@ -538,6 +546,31 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
     generatedSmartGoal: '',
     isDefault: true,
     sessionTargetValue: 4, // Rating: 1-5, target of 4 for loudness
+  },
+  // Feeding and Swallowing Goals
+  {
+    name: 'Increase Acceptance of New Food Textures',
+    type: GOAL_TYPES.FEEDING_SWALLOWING as GoalType,
+    smartGoalPrompt: 'Generate a SMART goal for a student to increase acceptance of new food textures, starting with purees and moving to soft solids.',
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 75,
+  },
+  {
+    name: 'Safely Manage Thin Liquids',
+    type: GOAL_TYPES.FEEDING_SWALLOWING as GoalType,
+    smartGoalPrompt: 'Generate a SMART goal for a student to safely manage thin liquids without signs of aspiration, using compensatory strategies as needed.',
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 95,
+  },
+  {
+    name: 'Demonstrate Proper Chewing for Soft Solids',
+    type: GOAL_TYPES.FEEDING_SWALLOWING as GoalType,
+    smartGoalPrompt: 'Generate a SMART goal for a student to demonstrate a rotary chewing pattern for soft solid foods across 10 trials.',
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 80,
   },
 ];
 

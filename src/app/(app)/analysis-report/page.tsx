@@ -77,6 +77,11 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
           currentGoalCorrect = Math.max(0, totalSyllables - stutteredSyllables);
           currentGoalIncorrect = stutteredSyllables;
           break;
+        case 'FEEDING_SWALLOWING':
+          currentGoalCorrect = Number(goalData.data.trialsAccepted) || 0;
+          currentGoalIncorrect = Number(goalData.data.trialsRefused) || 0;
+          currentGoalOpportunities = currentGoalCorrect + currentGoalIncorrect;
+          break;
         default:
           break;
       }
@@ -213,6 +218,11 @@ const transformDataForSankeyChart = (
           currentOpportunities = totalSyllables;
           currentCorrect = Math.max(0, totalSyllables - stutteredSyllables);
           currentIncorrect = stutteredSyllables;
+          break;
+        case 'FEEDING_SWALLOWING':
+          currentCorrect = Number(goalDataEntry.data.trialsAccepted) || 0;
+          currentIncorrect = Number(goalDataEntry.data.trialsRefused) || 0;
+          currentOpportunities = currentCorrect + currentIncorrect;
           break;
         default: return;
       }
@@ -700,5 +710,3 @@ function AnalysisReportSkeleton() {
     )
 }
     
-
-
