@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, lazy, Suspense } from 'react';
 import { useStudentData } from '@/hooks/use-student-data';
 import type { SessionData, Student } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -12,11 +12,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Edit, Trash2, Search, Info, Eye, FileText } from 'lucide-react';
 import { formatDate, formatTime } from '@/lib/helpers';
-import React, { lazy, Suspense } from 'react';
 
 import { Skeleton } from '@/components/ui/skeleton';
-import ViewSessionDetailsModal from '@/components/modals/view-session-details-modal'; // To be created
-import { DatePickerWithRange } from '@/components/ui/date-picker-with-range'; // Assuming this component exists
+import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
 import type { DateRange } from "react-day-picker";
 
 export default function ManageSessionsPage() {
@@ -193,7 +191,7 @@ export default function ManageSessionsPage() {
         </CardContent>
       </Card>
       </div>
-    </div>
+    </Suspense>
   );
 }
 

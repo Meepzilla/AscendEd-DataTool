@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
 import { useStudentData } from '@/hooks/use-student-data';
 import type { Student, Goal, SessionData, SessionGoalData, PromptType, StudentSessionState } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -20,8 +20,8 @@ import { cn } from '@/lib/utils';
 import { useErrorLog } from '@/hooks/use-error-log';
 import { Switch } from '@/components/ui/switch';
 
-const GoalDataInputComponent = React.lazy(() => import('@/components/forms/goal-data-input'));
-const ConfirmationModal = React.lazy(() => import('@/components/modals/confirmation-modal'));
+const GoalDataInputComponent = lazy(() => import('@/components/forms/goal-data-input'));
+const ConfirmationModal = lazy(() => import('@/components/modals/confirmation-modal'));
 
 export default function DataEntryPage() {
   const {
@@ -40,7 +40,7 @@ export default function DataEntryPage() {
     dataEntryFocusedStudentSlotIndex,
     setDataEntryFocusedStudentSlotIndex,
     dataEntryFocusedGoalIndexByStudentId,
-    dataEntryShowArchivedByStudentId,
+    setDataEntryShowArchivedByStudentId,
     setDataEntryShowArchivedByStudentId,
     dataEntryVisibleGoalCountByStudentId,
     setDataEntryVisibleGoalCountByStudentId,
@@ -263,7 +263,7 @@ export default function DataEntryPage() {
 
   return (
     <div className="space-y-6 flex flex-col h-full">
-       <React.Suspense fallback={null}>
+       <Suspense fallback={null}>
         {isResetConfirmationOpen && (
           <ConfirmationModal
             isOpen={isResetConfirmationOpen}
@@ -274,7 +274,7 @@ export default function DataEntryPage() {
             confirmText="Yes, Reset Data"
           />
         )}
-      </React.Suspense>
+      </Suspense>
       <Card className="shadow-lg flex-shrink-0">
         <CardHeader>
             <div className="flex justify-between items-center">
@@ -415,7 +415,7 @@ export default function DataEntryPage() {
                   ) : displayedGoals.length === 0 && showArchived ? (
                      <p className="text-sm text-muted-foreground p-4 text-center border rounded-md">No goals (active or archived) for this student.</p>
                   ) : (
-                    <React.Suspense fallback={<Skeleton className="h-40 w-full" />}>
+                    <Suspense fallback={<Skeleton className="h-40 w-full" />}>
                       <>
                         {displayedGoals.map((goal) => {
                           // Find the index of the goal in the currently *displayed* list for focus purposes
@@ -467,7 +467,7 @@ export default function DataEntryPage() {
                           </div>
                         )}
                       </>
-                    </React.Suspense>
+                    </Suspense>
                   )}
 
                   <div>
