@@ -12,7 +12,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Users, Save, PlusCircle, XCircle, Edit2, Info, ChevronDown, ChevronUp, RotateCcw, Eye, EyeOff } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
-import GoalDataInputComponent from '@/components/forms/goal-data-input';
 import { GOAL_TYPE_FIELDS, PROMPT_HOTKEY_MAP, PROMPT_TYPES } from '@/lib/constants';
 import { generateUUID } from '@/lib/helpers';
 import { getActivitySuggestions } from '@/ai/flows/activity-suggestions';
@@ -22,10 +21,10 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { useErrorLog } from '@/hooks/use-error-log';
-import ConfirmationModal from '@/components/modals/confirmation-modal';
 import { Switch } from '@/components/ui/switch';
 
 const GoalDataInputComponent = React.lazy(() => import('@/components/forms/goal-data-input'));
+const ConfirmationModal = React.lazy(() => import('@/components/modals/confirmation-modal'));
 
 export default function DataEntryPage() {
   const {
@@ -54,7 +53,6 @@ export default function DataEntryPage() {
     dataEntryShowArchivedByStudentId,
     setDataEntryShowArchivedByStudentId,
   } = useStudentData();
-  const ConfirmationModal = React.lazy(() => import('@/components/modals/confirmation-modal'));
 
   const [isSaving, setIsSaving] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState<Record<string, boolean>>({});
@@ -70,7 +68,7 @@ export default function DataEntryPage() {
     if (dataEntrySessionTime === '') {
       setDataEntrySessionTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
     }
-  }, [dataEntrySessionDate, dataEntrySessionTime]);
+  }, [dataEntrySessionDate, dataEntrySessionTime, setDataEntrySessionDate, setDataEntrySessionTime]);
 
   useEffect(() => {
     if (!studentsLoading && dataEntrySelectedStudentIds.length === 0 && students.length > 0) {
@@ -83,7 +81,7 @@ export default function DataEntryPage() {
         setDataEntryFocusedStudentSlotIndex(0);
       }
     }
-  }, [studentsLoading, students, studentFromContext, dataEntrySelectedStudentIds]);
+  }, [studentsLoading, students, studentFromContext, dataEntrySelectedStudentIds, setDataEntrySelectedStudentIds, setDataEntryFocusedStudentSlotIndex]);
 
 
   // Effect to synchronize student session states when selection or student list changes
@@ -139,7 +137,7 @@ export default function DataEntryPage() {
 
         return statesChanged ? newContextStudentStates : prevStates;
     });
-  }, [dataEntrySelectedStudentIds, students, setDataEntryStudentSessionStates]);
+  }, [dataEntrySelectedStudentIds, students]);
 
 
   // Effect to synchronize focused goal index based on changes to session states
@@ -176,7 +174,7 @@ export default function DataEntryPage() {
 
         return focusIndexesChanged ? newFocusedGoalIndexes : prevIndexes;
     });
-  }, [dataEntryStudentSessionStates, dataEntrySelectedStudentIds, dataEntryShowArchivedByStudentId, setDataEntryFocusedGoalIndexByStudentId]);
+  }, [dataEntryStudentSessionStates, dataEntrySelectedStudentIds, dataEntryShowArchivedByStudentId]);
 
 
   const handleGoalDataChange = useCallback(
@@ -827,57 +825,59 @@ export default function DataEntryPage() {
                   ) : displayedGoals.length === 0 && showArchived ? (
                      <p className="text-sm text-muted-foreground p-4 text-center border rounded-md">No goals (active or archived) for this student.</p>
                   ) : (
-                    <>
-                      {displayedGoals.map((goal) => {
-                        // Find the index of the goal in the currently *displayed* list for focus purposes
-                        const displayedGoalIndex = displayedGoals.findIndex(dg => dg.id === goal.id);
-                        const isGoalFocused = isStudentFocused && (dataEntryFocusedGoalIndexByStudentId[studentId] ?? 0) === displayedGoalIndex;
+                    <React.Suspense fallback={<Skeleton className="h-40 w-full" />}>
+                      <>
+                        {displayedGoals.map((goal) => {
+                          // Find the index of the goal in the currently *displayed* list for focus purposes
+                          const displayedGoalIndex = displayedGoals.findIndex(dg => dg.id === goal.id);
+                          const isGoalFocused = isStudentFocused && (dataEntryFocusedGoalIndexByStudentId[studentId] ?? 0) === displayedGoalIndex;
 
-                        // Find index in the original full list for move up/down logic
-                        const actualGoalIndexInOriginal = allStudentGoals.findIndex(g => g.id === goal.id);
+                          // Find index in the original full list for move up/down logic
+                          const actualGoalIndexInOriginal = allStudentGoals.findIndex(g => g.id === goal.id);
 
-                        return (
-                          <GoalDataInputComponent
-                            key={goal.id}
-                            id={`goal-input-${studentId}-${goal.id}`}
-                            goal={goal}
-                            data={state.goalData[goal.id] || GOAL_TYPE_FIELDS[goal.type]}
-                            onChange={(updatedField, newData) => handleGoalDataChange(studentId, goal.id, updatedField, newData)}
-                            isFocused={isGoalFocused}
-                            onMoveUp={() => handleMoveGoal(studentId, goal.id, 'up')}
-                            onMoveDown={() => handleMoveGoal(studentId, goal.id, 'down')}
-                            canMoveUp={actualGoalIndexInOriginal > 0}
-                            canMoveDown={actualGoalIndexInOriginal < allStudentGoals.length - 1}
-                            isArchived={goal.isArchived}
-                          />
-                        );
-                      })}
-                       {filteredStudentGoals.length > 10 && (
-                        <div className="flex justify-center mt-2">
-                          {visibleGoalCount < filteredStudentGoals.length ? (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setDataEntryVisibleGoalCountByStudentId(prev => ({ ...prev, [studentId]: filteredStudentGoals.length }))}
-                              className="text-xs"
-                            >
-                              <Eye className="mr-1.5 h-3.5 w-3.5" />
-                              Show More ({filteredStudentGoals.length - visibleGoalCount} more)
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setDataEntryVisibleGoalCountByStudentId(prev => ({ ...prev, [studentId]: 10 }))}
-                              className="text-xs"
-                            >
-                              <EyeOff className="mr-1.5 h-3.5 w-3.5" />
-                              Show Less
-                            </Button>
-                          )}
-                        </div>
-                      )}
-                    </>
+                          return (
+                            <GoalDataInputComponent
+                              key={goal.id}
+                              id={`goal-input-${studentId}-${goal.id}`}
+                              goal={goal}
+                              data={state.goalData[goal.id] || GOAL_TYPE_FIELDS[goal.type]}
+                              onChange={(updatedField, newData) => handleGoalDataChange(studentId, goal.id, updatedField, newData)}
+                              isFocused={isGoalFocused}
+                              onMoveUp={() => handleMoveGoal(studentId, goal.id, 'up')}
+                              onMoveDown={() => handleMoveGoal(studentId, goal.id, 'down')}
+                              canMoveUp={actualGoalIndexInOriginal > 0}
+                              canMoveDown={actualGoalIndexInOriginal < allStudentGoals.length - 1}
+                              isArchived={goal.isArchived}
+                            />
+                          );
+                        })}
+                         {filteredStudentGoals.length > 10 && (
+                          <div className="flex justify-center mt-2">
+                            {visibleGoalCount < filteredStudentGoals.length ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setDataEntryVisibleGoalCountByStudentId(prev => ({ ...prev, [studentId]: filteredStudentGoals.length }))}
+                                className="text-xs"
+                              >
+                                <Eye className="mr-1.5 h-3.5 w-3.5" />
+                                Show More ({filteredStudentGoals.length - visibleGoalCount} more)
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setDataEntryVisibleGoalCountByStudentId(prev => ({ ...prev, [studentId]: 10 }))}
+                                className="text-xs"
+                              >
+                                <EyeOff className="mr-1.5 h-3.5 w-3.5" />
+                                Show Less
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    </React.Suspense>
                   )}
 
                   <div>
