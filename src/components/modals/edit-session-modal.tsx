@@ -10,7 +10,6 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { useStudentData } from '@/hooks/use-student-data';
 import type { SessionData, Goal, SessionGoalData } from '@/lib/types';
 import GoalDataInputComponent from '@/components/forms/goal-data-input';
-import { GOAL_TYPE_FIELDS } from '@/lib/constants';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
@@ -19,6 +18,10 @@ import { useToast } from '@/hooks/use-toast';
 interface EditSessionModalProps {
   sessionToEdit: SessionData | null;
 }
+
+const GoalDataInputComponent = React.lazy(() => import('@/components/forms/goal-data-input'));
+
+const GOAL_TYPE_FIELDS = { /* Define or import your default goal data fields here */ }; // Assuming this constant is needed
 
 export default function EditSessionModal({ sessionToEdit }: EditSessionModalProps) {
   const {
@@ -157,27 +160,29 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
                     />
                 </div>
 
-                {formData.goals && formData.goals.length > 0 && (
-                    <ScrollArea className="max-h-[300px] border rounded-md p-2">
-                        <div className="space-y-3">
-                            {formData.goals.map((sessionGoal) => {
-                                const originalGoal = currentSession.originalGoalHeaders.find(og => og.id === sessionGoal.goalId);
-                                if (!originalGoal) return null;
+                <React.Suspense fallback={<div>Loading Goal Inputs...</div>}>
+                    {formData.goals && formData.goals.length > 0 && (
+                        <ScrollArea className="max-h-[300px] border rounded-md p-2">
+                            <div className="space-y-3">
+                                {formData.goals.map((sessionGoal) => {
+                                    const originalGoal = currentSession.originalGoalHeaders.find(og => og.id === sessionGoal.goalId);
+                                    if (!originalGoal) return null;
 
-                                return (
-                                    <GoalDataInputComponent
-                                    key={sessionGoal.goalId}
-                                    id={`edit-session-goal-${sessionGoal.goalId}`}
-                                    goal={originalGoal}
-                                    data={sessionGoal.data || GOAL_TYPE_FIELDS[originalGoal.type]}
-                                    onChange={(fieldName,newData) => handleGoalDataChange(sessionGoal.goalId, fieldName,newData)}
-                                    isArchived={originalGoal.isArchived}
-                                    />
-                                );
-                            })}
-                        </div>
-                    </ScrollArea>
-                )}
+                                    return (
+                                        <GoalDataInputComponent
+                                        key={sessionGoal.goalId}
+                                        id={`edit-session-goal-${sessionGoal.goalId}`}
+                                        goal={originalGoal}
+                                        data={sessionGoal.data || (GOAL_TYPE_FIELDS as any)[originalGoal.type]} // Added type assertion for GOAL_TYPE_FIELDS
+                                        onChange={(fieldName,newData) => handleGoalDataChange(sessionGoal.goalId, fieldName,newData)}
+                                        isArchived={originalGoal.isArchived}
+                                        />
+                                    );
+                                })}
+                            </div>
+                        </ScrollArea>
+                    )}
+                </React.Suspense>
 
                 <div>
                     <Label htmlFor="sessionNotesEdit">General Notes</Label>

@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Users, Save, PlusCircle, XCircle, Edit2, Info, ArrowUp, ArrowDown, ChevronDown, ChevronUp, RotateCcw, Eye, EyeOff, Archive, ArchiveRestore } from 'lucide-react';
+import { Users, Save, PlusCircle, XCircle, Edit2, Info, ChevronDown, ChevronUp, RotateCcw, Eye, EyeOff } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 import GoalDataInputComponent from '@/components/forms/goal-data-input';
 import { GOAL_TYPE_FIELDS, PROMPT_HOTKEY_MAP, PROMPT_TYPES } from '@/lib/constants';
@@ -25,6 +25,7 @@ import { useErrorLog } from '@/hooks/use-error-log';
 import ConfirmationModal from '@/components/modals/confirmation-modal';
 import { Switch } from '@/components/ui/switch';
 
+const GoalDataInputComponent = React.lazy(() => import('@/components/forms/goal-data-input'));
 
 export default function DataEntryPage() {
   const {
@@ -53,6 +54,7 @@ export default function DataEntryPage() {
     dataEntryShowArchivedByStudentId,
     setDataEntryShowArchivedByStudentId,
   } = useStudentData();
+  const ConfirmationModal = React.lazy(() => import('@/components/modals/confirmation-modal'));
 
   const [isSaving, setIsSaving] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState<Record<string, boolean>>({});
@@ -68,7 +70,7 @@ export default function DataEntryPage() {
     if (dataEntrySessionTime === '') {
       setDataEntrySessionTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
     }
-  }, [dataEntrySessionDate, dataEntrySessionTime, setDataEntrySessionDate, setDataEntrySessionTime]);
+  }, [dataEntrySessionDate, dataEntrySessionTime]);
 
   useEffect(() => {
     if (!studentsLoading && dataEntrySelectedStudentIds.length === 0 && students.length > 0) {
@@ -81,139 +83,100 @@ export default function DataEntryPage() {
         setDataEntryFocusedStudentSlotIndex(0);
       }
     }
-  }, [studentsLoading, students, studentFromContext, dataEntrySelectedStudentIds, setDataEntrySelectedStudentIds, setDataEntryFocusedStudentSlotIndex]);
+  }, [studentsLoading, students, studentFromContext, dataEntrySelectedStudentIds]);
 
 
+  // Effect to synchronize student session states when selection or student list changes
   useEffect(() => {
-    const newContextStudentStates: Record<string, StudentSessionState> = { ...dataEntryStudentSessionStates };
-    let statesChanged = false;
+    setDataEntryStudentSessionStates(prevStates => {
+        const newContextStudentStates: Record<string, StudentSessionState> = { ...prevStates };
+        let statesChanged = false;
 
-    dataEntrySelectedStudentIds.forEach((id) => {
-      const student = students.find(s => s.id === id);
-      if (student) {
-        const existingState = newContextStudentStates[id];
-        
-        const goalsHaveChanged =
-          !existingState ||
-          !existingState.originalGoalHeaders ||
-          existingState.originalGoalHeaders.length !== student.goals.length ||
-          student.goals.some(
-            (goal, index) =>
-              !existingState.originalGoalHeaders[index] || // New goal added or one removed, lengths differ or new goal at end
-              goal.id !== existingState.originalGoalHeaders[index].id ||
-              goal.name !== existingState.originalGoalHeaders[index].name ||
-              goal.isArchived !== existingState.originalGoalHeaders[index].isArchived
-          );
+        dataEntrySelectedStudentIds.forEach((id) => {
+            const student = students.find(s => s.id === id);
+            if (student) {
+                const existingState = newContextStudentStates[id];
+                const goalsHaveChanged = !existingState || !existingState.originalGoalHeaders || existingState.originalGoalHeaders.length !== student.goals.length ||
+                    student.goals.some((goal, index) => 
+                        !existingState.originalGoalHeaders[index] || 
+                        goal.id !== existingState.originalGoalHeaders[index].id || 
+                        goal.name !== existingState.originalGoalHeaders[index].name ||
+                        goal.isArchived !== existingState.originalGoalHeaders[index].isArchived
+                    );
 
-        if (!existingState) { // Student newly selected
-          const initialGoalData: Record<string, SessionGoalData['data']> = {};
-          student.goals.forEach(goal => {
-            initialGoalData[goal.id] = JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type]));
-          });
-          newContextStudentStates[id] = {
-            studentId: student.id,
-            studentName: student.name,
-            activity: '',
-            notes: '',
-            goalData: initialGoalData,
-            originalGoalHeaders: student.goals,
-          };
-          statesChanged = true;
-        } else { // Student was already in a slot
-          // Preserve activity and notes, update goals if they changed
-          if (goalsHaveChanged) {
-            const currentActivity = existingState.activity;
-            const currentNotes = existingState.notes;
-            const newGoalData: Record<string, SessionGoalData['data']> = {};
-
-            student.goals.forEach(goal => {
-              // Try to carry over data for existing goals, init for new ones
-              newGoalData[goal.id] = existingState.goalData?.[goal.id]
-                ? existingState.goalData[goal.id]
-                : JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type]));
-            });
-
-            newContextStudentStates[id] = {
-              studentId: student.id,
-              studentName: student.name,
-              activity: currentActivity,
-              notes: currentNotes,
-              goalData: newGoalData,
-              originalGoalHeaders: student.goals, // Update originalGoalHeaders
-            };
-            statesChanged = true;
-          } else {
-            // If goals haven't changed, ensure the reference to the student state is new if other minor parts changed,
-            // or simply ensure it's part of newContextStudentStates if no actual data change is needed.
-            // Potentially, check if student.name changed if that's relevant.
-            if (existingState.studentName !== student.name) {
-                 newContextStudentStates[id] = {
-                    ...existingState,
-                    studentName: student.name,
-                 };
-                 statesChanged = true;
-            } else {
-                 newContextStudentStates[id] = existingState; // Keep existing if no changes
+                if (!existingState) {
+                    const initialGoalData: Record<string, SessionGoalData['data']> = {};
+                    student.goals.forEach(goal => {
+                        initialGoalData[goal.id] = JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type]));
+                    });
+                    newContextStudentStates[id] = {
+                        studentId: student.id, studentName: student.name, activity: '', notes: '',
+                        goalData: initialGoalData, originalGoalHeaders: student.goals,
+                    };
+                    statesChanged = true;
+                } else if (goalsHaveChanged || existingState.studentName !== student.name) {
+                    const newGoalData: Record<string, SessionGoalData['data']> = {};
+                    student.goals.forEach(goal => {
+                        newGoalData[goal.id] = existingState.goalData?.[goal.id] ? existingState.goalData[goal.id] : JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type]));
+                    });
+                    newContextStudentStates[id] = {
+                        ...existingState,
+                        studentName: student.name,
+                        goalData: newGoalData,
+                        originalGoalHeaders: student.goals,
+                    };
+                    statesChanged = true;
+                }
             }
-          }
-        }
-      }
+        });
+
+        Object.keys(newContextStudentStates).forEach(studentId => {
+            if (!dataEntrySelectedStudentIds.includes(studentId)) {
+                delete newContextStudentStates[studentId];
+                statesChanged = true;
+            }
+        });
+
+        return statesChanged ? newContextStudentStates : prevStates;
     });
+  }, [dataEntrySelectedStudentIds, students, setDataEntryStudentSessionStates]);
 
-    // Remove states for students no longer selected
-    Object.keys(newContextStudentStates).forEach(studentId => {
-      if (!dataEntrySelectedStudentIds.includes(studentId)) {
-        delete newContextStudentStates[studentId];
-        statesChanged = true;
-      }
-    });
 
-    if (statesChanged) {
-      setDataEntryStudentSessionStates(newContextStudentStates);
-    }
+  // Effect to synchronize focused goal index based on changes to session states
+  useEffect(() => {
+    setDataEntryFocusedGoalIndexByStudentId(prevIndexes => {
+        let focusIndexesChanged = false;
+        const newFocusedGoalIndexes: Record<string, number> = { ...prevIndexes };
 
-    const newFocusedGoalIndexes: Record<string, number> = { ...dataEntryFocusedGoalIndexByStudentId };
-    let focusIndexesChanged = false;
-    dataEntrySelectedStudentIds.forEach(id => {
-        const studentState = newContextStudentStates[id];
-        if (studentState) { // Student is currently selected
-            const visibleGoals = studentState.originalGoalHeaders.filter(g => !g.isArchived || dataEntryShowArchivedByStudentId[id]);
-            if (newFocusedGoalIndexes[id] === undefined && visibleGoals.length > 0) {
-                newFocusedGoalIndexes[id] = 0; // Focus first visible goal
-                focusIndexesChanged = true;
-            } else if (newFocusedGoalIndexes[id] !== undefined && newFocusedGoalIndexes[id] >= visibleGoals.length) {
-                // If current focus index is out of bounds (e.g., goals were removed or archived status changed)
-                newFocusedGoalIndexes[id] = Math.max(0, visibleGoals.length - 1);
-                focusIndexesChanged = true;
-            } else if (visibleGoals.length === 0 && newFocusedGoalIndexes[id] !== undefined) {
-                 // If no visible goals, remove focus index or set to a non-index like -1 or undefined
-                delete newFocusedGoalIndexes[id]; // Or set to specific "no focus" value
+        dataEntrySelectedStudentIds.forEach(id => {
+            const studentState = dataEntryStudentSessionStates[id];
+            if (studentState) {
+                const visibleGoals = studentState.originalGoalHeaders.filter(g => !g.isArchived || dataEntryShowArchivedByStudentId[id]);
+                const currentFocus = newFocusedGoalIndexes[id];
+
+                if (currentFocus === undefined && visibleGoals.length > 0) {
+                    newFocusedGoalIndexes[id] = 0;
+                    focusIndexesChanged = true;
+                } else if (currentFocus !== undefined && currentFocus >= visibleGoals.length) {
+                    newFocusedGoalIndexes[id] = Math.max(0, visibleGoals.length - 1);
+                    focusIndexesChanged = true;
+                } else if (visibleGoals.length === 0 && currentFocus !== undefined) {
+                    delete newFocusedGoalIndexes[id];
+                    focusIndexesChanged = true;
+                }
+            }
+        });
+
+        Object.keys(newFocusedGoalIndexes).forEach(studentId => {
+            if (!dataEntrySelectedStudentIds.includes(studentId)) {
+                delete newFocusedGoalIndexes[studentId];
                 focusIndexesChanged = true;
             }
-        } else if (newFocusedGoalIndexes[id] !== undefined) { // Student is no longer selected but has a focus index
-            delete newFocusedGoalIndexes[id];
-            focusIndexesChanged = true;
-        }
-    });
-     // Clean up focus indexes for students not in dataEntrySelectedStudentIds anymore
-     Object.keys(newFocusedGoalIndexes).forEach(studentId => {
-        if (!dataEntrySelectedStudentIds.includes(studentId)) {
-            delete newFocusedGoalIndexes[studentId];
-            focusIndexesChanged = true;
-        }
-    });
+        });
 
-    if (focusIndexesChanged) {
-        setDataEntryFocusedGoalIndexByStudentId(newFocusedGoalIndexes);
-    }
-
-  }, [
-    dataEntrySelectedStudentIds,
-    students,
-    dataEntryShowArchivedByStudentId,
-    setDataEntryStudentSessionStates,
-    setDataEntryFocusedGoalIndexByStudentId,
-  ]);
+        return focusIndexesChanged ? newFocusedGoalIndexes : prevIndexes;
+    });
+  }, [dataEntryStudentSessionStates, dataEntrySelectedStudentIds, dataEntryShowArchivedByStudentId, setDataEntryFocusedGoalIndexByStudentId]);
 
 
   const handleGoalDataChange = useCallback(
@@ -258,10 +221,10 @@ export default function DataEntryPage() {
       }
     },
     [
-      setDataEntryStudentSessionStates,
       dataEntrySelectedStudentIds,
-      setDataEntryFocusedStudentSlotIndex,
       dataEntryShowArchivedByStudentId, 
+      setDataEntryStudentSessionStates,
+      setDataEntryFocusedStudentSlotIndex
     ]
   );
 
@@ -712,16 +675,18 @@ export default function DataEntryPage() {
 
   return (
     <div className="space-y-6 flex flex-col h-full">
-       {isResetConfirmationOpen && (
-        <ConfirmationModal
-          isOpen={isResetConfirmationOpen}
-          onClose={() => setIsResetConfirmationOpen(false)}
-          onConfirm={handleConfirmResetSession}
-          title="Reset Unsaved Data?"
-          description="Are you sure you want to clear all current unsaved activity, notes, and goal data for the selected students? This action cannot be undone."
-          confirmText="Yes, Reset Data"
-        />
-      )}
+       <React.Suspense fallback={null}>
+        {isResetConfirmationOpen && (
+          <ConfirmationModal
+            isOpen={isResetConfirmationOpen}
+            onClose={() => setIsResetConfirmationOpen(false)}
+            onConfirm={handleConfirmResetSession}
+            title="Reset Unsaved Data?"
+            description="Are you sure you want to clear all current unsaved activity, notes, and goal data for the selected students? This action cannot be undone."
+            confirmText="Yes, Reset Data"
+          />
+        )}
+      </React.Suspense>
       <Card className="shadow-lg flex-shrink-0">
         <CardHeader>
             <div className="flex justify-between items-center">
@@ -801,6 +766,7 @@ export default function DataEntryPage() {
                             e.stopPropagation();
                             openEditStudentModal(student);
                         }}
+                        
                         title={`Manage ${student.name}'s goals and info (Alt+E)`}
                         aria-label={`Manage ${student.name}'s goals and info`}
                     >
@@ -1001,3 +967,6 @@ export default function DataEntryPage() {
 
 
 
+
+
+    

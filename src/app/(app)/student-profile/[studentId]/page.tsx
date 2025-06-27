@@ -10,11 +10,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Edit, Trash2, PlusCircle, Info, Target, Edit3, CheckSquare, TrendingUp, Archive, ArchiveRestore } from 'lucide-react';
 import { formatDate, generateUUID } from '@/lib/helpers'; 
-import Link from 'next/link';
-// EditStudentModal is now globally available from AppHeader
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import AssignGoalToStudentModal from '@/components/modals/assign-goal-to-student-modal';
+import Link from 'next/link';
+import dynamic from 'next/dynamic';
+
 import EditAssignedGoalModal from '@/components/modals/edit-assigned-goal-modal';
 import ConfirmationModal from '@/components/modals/confirmation-modal';
 
@@ -24,6 +24,19 @@ export default function StudentProfilePage() {
   const studentIdFromParams = typeof routeParams?.studentId === 'string' ? routeParams.studentId : undefined;
   const router = useRouter();
   
+  // Dynamic imports for modals
+const AssignGoalToStudentModal = dynamic(() => import('@/components/modals/assign-goal-to-student-modal'), {
+  loading: () => null, // Or a loading skeleton/spinner
+  ssr: false,
+});
+const EditAssignedGoalModal = dynamic(() => import('@/components/modals/edit-assigned-goal-modal'), {
+  loading: () => null, // Or a loading skeleton/spinner
+  ssr: false,
+});
+const ConfirmationModal = dynamic(() => import('@/components/modals/confirmation-modal'), {
+  loading: () => null, // Or a loading skeleton/spinner
+  ssr: false,
+});
 
   const {
     students,

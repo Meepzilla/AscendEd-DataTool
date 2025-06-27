@@ -10,10 +10,10 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Edit, Trash2, Search, ListFilter, Info, Eye, FileText } from 'lucide-react';
+import { Edit, Trash2, Search, Info, Eye, FileText } from 'lucide-react';
 import { formatDate, formatTime } from '@/lib/helpers';
-import EditSessionModal from '@/components/modals/edit-session-modal'; // To be created
-import ConfirmationModal from '@/components/modals/confirmation-modal';
+import React, { lazy, Suspense } from 'react';
+
 import { Skeleton } from '@/components/ui/skeleton';
 import ViewSessionDetailsModal from '@/components/modals/view-session-details-modal'; // To be created
 import { DatePickerWithRange } from '@/components/ui/date-picker-with-range'; // Assuming this component exists
@@ -35,6 +35,11 @@ export default function ManageSessionsPage() {
   const [searchTerm, setSearchTerm] = useState(''); // Search by activity or notes
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [viewingSessionDetails, setViewingSessionDetails] = useState<SessionData | null>(null);
+
+  // Dynamically imported modals
+  const EditSessionModal = lazy(() => import('@/components/modals/edit-session-modal'));
+  const ConfirmationModal = lazy(() => import('@/components/modals/confirmation-modal'));
+  const ViewSessionDetailsModal = lazy(() => import('@/components/modals/view-session-details-modal'));
 
 
   const filteredSessions = useMemo(() => {
@@ -66,25 +71,27 @@ export default function ManageSessionsPage() {
   }
   
   return (
-    <div className="space-y-6">
-      {editingSession && <EditSessionModal sessionToEdit={editingSession} />}
-      {deletingSession && (
-        <ConfirmationModal
-          isOpen={!!deletingSession}
-          onClose={() => openDeleteSessionModal(null)}
-          title={`Delete Session for ${deletingSession.studentName}`}
-          description={`Are you sure you want to delete this session from ${formatDate(deletingSession.date)} at ${deletingSession.time}? This action cannot be undone.`}
-          itemToDelete={deletingSession}
-          deleteActionType="session"
-        />
-      )}
-      {viewingSessionDetails && (
-        <ViewSessionDetailsModal
-            session={viewingSessionDetails}
-            isOpen={!!viewingSessionDetails}
-            onClose={() => setViewingSessionDetails(null)}
-        />
-      )}
+    <Suspense fallback={<SessionsPageSkeleton />}>
+      <div className="space-y-6">
+        {editingSession && <EditSessionModal sessionToEdit={editingSession} />}
+        {deletingSession && (
+          <ConfirmationModal
+            isOpen={!!deletingSession}
+            onClose={() => openDeleteSessionModal(null)}
+            title={`Delete Session for ${deletingSession.studentName}`}
+            description={`Are you sure you want to delete this session from ${formatDate(deletingSession.date)} at ${deletingSession.time}? This action cannot be undone.`}
+            itemToDelete={deletingSession}
+            deleteActionType="session"
+          />
+        )}
+        {viewingSessionDetails && (
+          <ViewSessionDetailsModal
+              session={viewingSessionDetails}
+              isOpen={!!viewingSessionDetails}
+              onClose={() => setViewingSessionDetails(null)}
+          />
+        )}
+
 
 
       <Card className="shadow-lg">
@@ -185,6 +192,7 @@ export default function ManageSessionsPage() {
           </ScrollArea>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

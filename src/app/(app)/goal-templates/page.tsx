@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, Suspense, lazy } from 'react';
 import { useStudentData } from '@/hooks/use-student-data';
 import type { GoalTemplate } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -9,9 +9,6 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { PlusCircle, Edit, Trash2, Search, ListFilter, Sparkles, Info, ListPlus } from 'lucide-react';
 import { formatDate } from '@/lib/helpers';
-import AddGoalTemplateModal from '@/components/modals/add-goal-template-modal';
-import EditGoalTemplateModal from '@/components/modals/edit-goal-template-modal';
-import ConfirmationModal from '@/components/modals/confirmation-modal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -22,6 +19,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { GOAL_TYPES } from '@/lib/constants';
+
+// Lazy load modals
+const AddGoalTemplateModal = lazy(() => import('@/components/modals/add-goal-template-modal'));
+const EditGoalTemplateModal = lazy(() => import('@/components/modals/edit-goal-template-modal'));
+const ConfirmationModal = lazy(() => import('@/components/modals/confirmation-modal'));
 
 
 export default function GoalTemplatesPage() {
@@ -59,20 +61,22 @@ export default function GoalTemplatesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <AddGoalTemplateModal />
-      {editingGoalTemplate && <EditGoalTemplateModal templateToEdit={editingGoalTemplate} />}
-      {deletingGoalTemplate && (
-        <ConfirmationModal
-          isOpen={!!deletingGoalTemplate}
-          onClose={() => openDeleteGoalTemplateModal(null)} 
-          onConfirm={() => { /* Context handles delete */ }}
-          title={`Delete Template: ${deletingGoalTemplate.name}`}
-          description="Are you sure you want to delete this goal template? This action cannot be undone."
-          itemToDelete={deletingGoalTemplate} 
-          deleteActionType="goalTemplate" 
-        />
-      )}
+    <Suspense fallback={null}> {/* Add Suspense boundary */}
+      <div className="space-y-6">
+        <AddGoalTemplateModal />
+        {editingGoalTemplate && <EditGoalTemplateModal templateToEdit={editingGoalTemplate} />}
+        {deletingGoalTemplate && (
+          <ConfirmationModal
+            isOpen={!!deletingGoalTemplate}
+            onClose={() => openDeleteGoalTemplateModal(null)}
+            onConfirm={() => { /* Context handles delete */ }}
+            title={`Delete Template: ${deletingGoalTemplate.name}`}
+            description="Are you sure you want to delete this goal template? This action cannot be undone."
+            itemToDelete={deletingGoalTemplate}
+            deleteActionType="goalTemplate"
+          />
+        )}
+
 
       <Card className="shadow-lg">
         <CardHeader>
@@ -179,6 +183,7 @@ export default function GoalTemplatesPage() {
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

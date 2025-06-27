@@ -286,19 +286,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [isFirebaseAvailable, addErrorLog]);
 
-  if (loading && !currentUser && (!error || (error && error.message.includes("Firebase not configured")))) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="space-y-4 p-8 rounded-lg shadow-xl bg-card w-full max-w-md text-center">
-            <Skeleton className="h-12 w-12 rounded-full mx-auto bg-primary/20" />
-            <Skeleton className="h-6 w-3/4 mx-auto" />
-            <Skeleton className="h-4 w-1/2 mx-auto" />
-            <Skeleton className="h-10 w-full mt-4" />
-        </div>
-      </div>
-    );
-  }
-
   return (
     <AuthContext.Provider value={{ currentUser, loading, error, isFirebaseAvailable, signInWithCustomToken, signInWithEmail, signUpWithEmail, signInAsGuest, signOut, getTokenResult }}>
       {children}

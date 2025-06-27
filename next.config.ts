@@ -2,6 +2,10 @@ import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
   /* config options here */
+};
+
+const nextConfigWithAnalyzer: NextConfig = {
+  /* config options here */
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -21,4 +25,10 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+});
+
+// Wrap the original nextConfig with the bundle analyzer
+// This ensures the analyzer is only active when the ANALYZE environment variable is set to 'true'
+export default withBundleAnalyzer(nextConfigWithAnalyzer);
