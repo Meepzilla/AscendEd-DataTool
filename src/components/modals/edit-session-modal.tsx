@@ -9,10 +9,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { DatePicker } from '@/components/ui/date-picker';
 import { useStudentData } from '@/hooks/use-student-data';
 import type { SessionData, Goal, SessionGoalData } from '@/lib/types';
-import GoalDataInputComponent from '@/components/forms/goal-data-input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { GOAL_TYPE_FIELDS } from '@/lib/constants';
 
 
 interface EditSessionModalProps {
@@ -20,8 +20,6 @@ interface EditSessionModalProps {
 }
 
 const GoalDataInputComponent = React.lazy(() => import('@/components/forms/goal-data-input'));
-
-const GOAL_TYPE_FIELDS = { /* Define or import your default goal data fields here */ }; // Assuming this constant is needed
 
 export default function EditSessionModal({ sessionToEdit }: EditSessionModalProps) {
   const {
@@ -173,7 +171,7 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
                                         key={sessionGoal.goalId}
                                         id={`edit-session-goal-${sessionGoal.goalId}`}
                                         goal={originalGoal}
-                                        data={sessionGoal.data || (GOAL_TYPE_FIELDS as any)[originalGoal.type]} // Added type assertion for GOAL_TYPE_FIELDS
+                                        data={sessionGoal.data || GOAL_TYPE_FIELDS[originalGoal.type]}
                                         onChange={(fieldName,newData) => handleGoalDataChange(sessionGoal.goalId, fieldName,newData)}
                                         isArchived={originalGoal.isArchived}
                                         />
@@ -209,4 +207,3 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
     </GenericModal>
   );
 }
-
