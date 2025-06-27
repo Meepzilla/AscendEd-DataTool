@@ -73,7 +73,7 @@ const ConfirmationModal = dynamic(() => import('@/components/modals/confirmation
     } else if (studentIdFromParams === undefined && !loading) { // Check if studentId is explicitly undefined
       setCurrentStudent(null);
     }
-  }, [studentIdFromParams, students, loading, selectedStudent, router, setSelectedStudent]);
+  }, [studentIdFromParams, students, loading, selectedStudent, setSelectedStudent]);
 
 
   if (loading && !currentStudent) { 
@@ -276,3 +276,4 @@ function StudentProfileSkeleton() {
   );
 }
 
+    

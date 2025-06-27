@@ -68,7 +68,7 @@ export default function DataEntryPage() {
     if (dataEntrySessionTime === '') {
       setDataEntrySessionTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
     }
-  }, [dataEntrySessionDate, dataEntrySessionTime, setDataEntrySessionDate, setDataEntrySessionTime]);
+  }, [setDataEntrySessionDate, setDataEntrySessionTime, dataEntrySessionDate, dataEntrySessionTime]);
 
   useEffect(() => {
     if (!studentsLoading && dataEntrySelectedStudentIds.length === 0 && students.length > 0) {
@@ -540,3 +540,5 @@ export default function DataEntryPage() {
     </div>
   );
 }
+
+    

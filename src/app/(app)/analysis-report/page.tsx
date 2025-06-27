@@ -330,7 +330,7 @@ export default function AnalysisReportPage() {
       if (selectedStudentId !== studentIdFromQuery) { // Check if update is needed
         setSelectedStudentId(studentIdFromQuery);
       }
-    } else if (!selectedStudentId && students.length > 0) {
+    } else if (!studentIdFromQuery && !selectedStudentId && students.length > 0) {
       setSelectedStudentId(students[0].id);
     }
   }, [studentIdFromQuery, students, selectedStudentId]);
@@ -736,4 +736,6 @@ function AnalysisReportSkeleton() {
         </div>
     )
 }
+    
+
     
