@@ -383,10 +383,13 @@ export default function AnalysisReportPage() {
       
       const primaryGoal = selectedGoalId ? activeStudentGoals.find(g=>g.id === selectedGoalId)?.name : "overall progress on active goals";
 
+      const chartDataSummary = chartData.slice(-3);
+      const summaryText = `Recent sessions show the following trends (focus on active goals):\n${progressDataPoints}\nChart data (last ${chartDataSummary.length} sessions) accuracies: ${chartDataSummary.map(d => `${d.accuracy}%`).join(', ')}; opportunities: ${chartDataSummary.map(d => d.opportunities).join(', ')}; correct responses: ${chartDataSummary.map(d => d.correct).join(', ')}; incorrect responses: ${chartDataSummary.map(d => d.incorrect).join(', ')}; total prompts used (excluding independent): ${chartDataSummary.map(d => d.totalPrompts).join(', ')}.`;
+
       const result = await generateTechnicalSummary({
         studentName: selectedStudent.name,
         goalName: primaryGoal || "Multiple Active Goals",
-        progressData: `Recent sessions show the following trends (focus on active goals):\n${progressDataPoints}\nChart data (last 3 sessions) accuracies: ${chartData.slice(-3).map(d => `${d.accuracy}%`).join(', ')}; opportunities: ${chartData.slice(-3).map(d => d.opportunities).join(', ')}; correct: ${chartData.slice(-3).map(d => d.correct).join(', ')}; incorrect: ${chartData.slice(-3).map(d => d.incorrect).join(', ')}.`,
+        progressData: summaryText,
       });
       setTechnicalSummary(result.summary);
       toast({ title: "AI Summary Generated", description: result.progress });
