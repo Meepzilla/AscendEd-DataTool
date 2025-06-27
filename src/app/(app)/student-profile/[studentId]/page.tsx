@@ -73,7 +73,7 @@ const ConfirmationModal = dynamic(() => import('@/components/modals/confirmation
     } else if (studentIdFromParams === undefined && !loading) { // Check if studentId is explicitly undefined
       setCurrentStudent(null);
     }
-  }, [studentIdFromParams, students, loading, selectedStudent, setSelectedStudent, router]);
+  }, [studentIdFromParams, students, loading, selectedStudent, router, setSelectedStudent]);
 
 
   if (loading && !currentStudent) { 

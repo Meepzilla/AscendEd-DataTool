@@ -325,8 +325,11 @@ export default function AnalysisReportPage() {
   const activeStudentGoals = useMemo(() => selectedStudent?.goals.filter(g => !g.isArchived) || [], [selectedStudent]);
 
   useEffect(() => {
+    // This effect synchronizes the selected student with the URL query parameter or defaults to the first student.
     if (studentIdFromQuery && students.find(s => s.id === studentIdFromQuery)) {
-      setSelectedStudentId(studentIdFromQuery);
+      if (selectedStudentId !== studentIdFromQuery) { // Check if update is needed
+        setSelectedStudentId(studentIdFromQuery);
+      }
     } else if (!selectedStudentId && students.length > 0) {
       setSelectedStudentId(students[0].id);
     }
