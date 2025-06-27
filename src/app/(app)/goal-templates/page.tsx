@@ -61,8 +61,8 @@ export default function GoalTemplatesPage() {
   }
 
   return (
-    <Suspense fallback={null}> {/* Add Suspense boundary */}
-      <div className="space-y-6">
+    <div className="space-y-6">
+      <Suspense fallback={null}>
         <AddGoalTemplateModal />
         {editingGoalTemplate && <EditGoalTemplateModal templateToEdit={editingGoalTemplate} />}
         {deletingGoalTemplate && (
@@ -76,7 +76,7 @@ export default function GoalTemplatesPage() {
             deleteActionType="goalTemplate"
           />
         )}
-
+      </Suspense>
 
       <Card className="shadow-lg">
         <CardHeader>
@@ -184,7 +184,6 @@ export default function GoalTemplatesPage() {
         </CardContent>
       </Card>
       </div>
-    </div>
   );
 }
 
