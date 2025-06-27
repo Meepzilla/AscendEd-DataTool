@@ -40,7 +40,7 @@ export default function DataEntryPage() {
     dataEntryFocusedStudentSlotIndex,
     setDataEntryFocusedStudentSlotIndex,
     dataEntryFocusedGoalIndexByStudentId,
-    setDataEntryShowArchivedByStudentId,
+    dataEntryShowArchivedByStudentId,
     setDataEntryShowArchivedByStudentId,
     dataEntryVisibleGoalCountByStudentId,
     setDataEntryVisibleGoalCountByStudentId,
@@ -52,7 +52,7 @@ export default function DataEntryPage() {
     resetDataEntrySession,
     handleGoalDataChange,
     handleMoveGoal,
-    getCurrentFocusedGoalInfo, // for scroll-to-view logic
+    getCurrentFocusedGoalInfo,
   } = useStudentData();
 
   const [isSaving, setIsSaving] = useState(false);
@@ -68,7 +68,7 @@ export default function DataEntryPage() {
     if (dataEntrySessionTime === '') {
       setDataEntrySessionTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
     }
-  }, []);
+  }, [dataEntrySessionDate, dataEntrySessionTime, setDataEntrySessionDate, setDataEntrySessionTime]);
 
   useEffect(() => {
     if (!studentsLoading && dataEntrySelectedStudentIds.length === 0 && students.length > 0) {
@@ -81,7 +81,7 @@ export default function DataEntryPage() {
         setDataEntryFocusedStudentSlotIndex(0);
       }
     }
-  }, [studentsLoading, students, studentFromContext]);
+  }, [studentsLoading, students, studentFromContext, dataEntrySelectedStudentIds, setDataEntrySelectedStudentIds, setDataEntryFocusedStudentSlotIndex]);
 
 
   // Effect to synchronize student session states when selection or student list changes
@@ -176,7 +176,7 @@ export default function DataEntryPage() {
   const addStudentSlot = () => {
     const availableStudent = students.find(s => !dataEntrySelectedStudentIds.includes(s.id));
     if (availableStudent) {
-      setDataEntrySelectedStudentIds(prev => [...prev, availableStudent.id]);
+      setDataEntrySelectedStudentIds([...dataEntrySelectedStudentIds, availableStudent.id]);
       setDataEntryFocusedStudentSlotIndex(dataEntrySelectedStudentIds.length);
     } else {
       toast({ title: "Info", description: "No more unique available students to add, or all students are already in slots.", variant: "default" });
