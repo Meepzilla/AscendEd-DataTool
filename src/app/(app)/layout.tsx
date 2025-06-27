@@ -31,6 +31,35 @@ export default function AppLayout({
     }
   }, [currentUser, loading, router]);
 
+  // Prefetch all main pages in the background after initial load
+  useEffect(() => {
+    if (currentUser) { // Only prefetch if user is logged in
+      const pagesToPrefetch = [
+        '/dashboard',
+        '/student-profile',
+        '/data-entry',
+        '/analysis-report',
+        '/manage-sessions',
+        '/goal-templates',
+        '/help',
+        '/changelog',
+      ];
+      
+      // Use requestIdleCallback to prefetch without impacting the main thread
+      if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+        window.requestIdleCallback(() => {
+          pagesToPrefetch.forEach(page => router.prefetch(page));
+        });
+      } else {
+        // Fallback for older browsers
+        setTimeout(() => {
+          pagesToPrefetch.forEach(page => router.prefetch(page));
+        }, 1000);
+      }
+    }
+  }, [router, currentUser]);
+
+
   if (loading || !currentUser) {
     // TODO: Replace with a more sophisticated global loading skeleton for the entire app layout
     return <div className="flex items-center justify-center min-h-screen bg-background text-foreground">Loading application data...</div>;
@@ -61,4 +90,3 @@ export default function AppLayout({
     </SidebarProvider>
   );
 }
-
