@@ -18,6 +18,34 @@ interface ChangelogEntry {
 
 const changelogEntries: ChangelogEntry[] = [
   {
+    date: '2025-06-28',
+    title: 'Added Feeding/Swallowing Goal Type',
+    description: 'Introduced a new "Feeding/Swallowing" goal type to track food textures, consistencies, and trials accepted/refused. This includes new data entry fields, hotkey support, and integration into analysis reports.',
+    type: 'feature',
+    icon: PlusCircle,
+  },
+  {
+    date: '2025-06-28',
+    title: 'Improved Application Load Performance',
+    description: 'Significantly improved initial page load and navigation speed by optimizing the data loading strategy. Essential data (students, templates) is now prioritized, while larger session histories load in the background, making the app interactive much faster.',
+    type: 'improvement',
+    icon: Zap,
+  },
+  {
+    date: '2025-06-28',
+    title: 'Server Stability and UI Fixes',
+    description: 'Resolved several issues causing server instability and restart loops due to rendering errors. Fixed a bug where the "Edit Student" modal content would not scroll correctly. Corrected invalid "class" props to "className" in JSX to prevent console errors.',
+    type: 'fix',
+    icon: Bug,
+  },
+  {
+    date: '2025-06-28',
+    title: 'Data Entry Hotkey Updates',
+    description: 'Updated data entry hotkeys for prompt levels. "D" now increments Visual prompts, and "V" increments Verbal prompts, to align with the latest UI and provide more consistent shortcuts.',
+    type: 'hotkey',
+    icon: KeyboardIcon,
+  },
+  {
     date: '2025-06-18',
     title: 'Analysis Report: Goal Performance Flow (Sankey Diagram)',
     description: 'Added a new Sankey diagram to the Analysis Report page. This chart visualizes the flow of opportunities from Goal Type to Specific Goal, and then to Correct/Incorrect outcomes, offering a new perspective on performance distribution.',
@@ -274,4 +302,3 @@ export default function ChangelogPage() {
     </div>
   );
 }
-
