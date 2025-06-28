@@ -8,16 +8,17 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
+import Link from 'next/link';
 import { APP_NAME } from '@/lib/constants';
-import { LogIn, AlertCircle, WifiOff, UserPlus } from "lucide-react"; // Added UserPlus
+import { LogIn, AlertCircle, WifiOff } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function LoginPage() {
-  const { currentUser, signInAsGuest, signInWithEmail, signUpWithEmail, loading, error: authError, isFirebaseAvailable } = useAuth();
+  const { currentUser, signInAsGuest, signInWithEmail, loading, error: authError, isFirebaseAvailable } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [pageError, setPageError] = useState<string | null>(null); // For local errors or to echo authError
+  const [pageError, setPageError] = useState<string | null>(null);
 
   useEffect(() => {
     if (currentUser && !loading) { 
@@ -36,7 +37,6 @@ export default function LoginPage() {
   const handleGuestLogin = async () => {
     setPageError(null);
     await signInAsGuest();
-    // Redirection handled by useEffect
   };
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
@@ -47,21 +47,7 @@ export default function LoginPage() {
     }
     setPageError(null);
     await signInWithEmail(email, password);
-    // Redirection handled by useEffect or error displayed via authError
   };
-
-  const handleEmailSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-     if (!isFirebaseAvailable) {
-      setPageError("Email/Password sign-up is not available in local mode. Please use Guest Sign In.");
-      return;
-    }
-    setPageError(null);
-    // For simplicity, display name will be derived from email in useAuth
-    await signUpWithEmail(email, password); 
-    // Redirection handled by useEffect or error displayed via authError
-  };
-
 
   if (loading && !currentUser && !pageError && !authError) { 
     return <div className="flex items-center justify-center min-h-screen">Loading authentication...</div>;
@@ -73,7 +59,7 @@ export default function LoginPage() {
         <CardHeader className="text-center">
           <LogIn className="mx-auto h-12 w-12 text-primary mb-4" />
           <CardTitle className="text-3xl font-bold">{APP_NAME}</CardTitle>
-          <CardDescription>Sign in or create an account to manage student goals</CardDescription>
+          <CardDescription>Sign in to manage student goals</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {pageError && (
@@ -83,7 +69,7 @@ export default function LoginPage() {
               <AlertTitle>{pageError.includes("Firebase not configured") || pageError.includes("local mode") ? "Local Mode Active / Info" : "Authentication Error"}</AlertTitle>
               <AlertDescription>
                 {pageError}
-                {!pageError.includes("Firebase not configured") && !pageError.includes("local mode") && isFirebaseAvailable && (
+                {pageError.includes("Firebase not configured") || pageError.includes("local mode") ? null : (
                   <>
                     <br/>
                     {" Please check your credentials or ensure your Firebase environment is correctly set up."}
@@ -92,7 +78,7 @@ export default function LoginPage() {
               </AlertDescription>
             </Alert>
           )}
-          <form className="space-y-4">
+          <form onSubmit={handleEmailSignIn} className="space-y-4">
             <div>
               <Label htmlFor="email">Email</Label>
               <Input 
@@ -117,17 +103,18 @@ export default function LoginPage() {
                 disabled={loading || !isFirebaseAvailable}
               />
             </div>
-            <div className="flex flex-col sm:flex-row gap-2">
-                <Button type="submit" onClick={handleEmailSignIn} className="flex-1" disabled={loading || !isFirebaseAvailable}>
-                  <LogIn className="mr-2 h-4 w-4" />
-                  {loading && isFirebaseAvailable ? 'Signing In...' : 'Sign In'}
-                </Button>
-                <Button type="submit" onClick={handleEmailSignUp} variant="secondary" className="flex-1" disabled={loading || !isFirebaseAvailable}>
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  {loading && isFirebaseAvailable ? 'Signing Up...' : 'Sign Up'}
-                </Button>
-            </div>
+            <Button type="submit" className="w-full" disabled={loading || !isFirebaseAvailable}>
+              <LogIn className="mr-2 h-4 w-4" />
+              {loading && isFirebaseAvailable ? 'Signing In...' : 'Sign In'}
+            </Button>
           </form>
+
+          <div className="mt-4 text-center text-sm">
+            <Link href="/signup" className="text-muted-foreground hover:text-primary underline">
+              Don't have an account? Sign Up
+            </Link>
+          </div>
+
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t" />
