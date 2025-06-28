@@ -84,8 +84,8 @@ export default function AppLayout({
             </div>
           </SidebarInset>
         </div>
-        <AppFooter />
         <TouchControls />
+        <AppFooter />
       </div>
       <Toaster />
     </SidebarProvider>
