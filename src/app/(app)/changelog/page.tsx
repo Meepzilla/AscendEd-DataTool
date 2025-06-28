@@ -18,6 +18,34 @@ interface ChangelogEntry {
 
 const changelogEntries: ChangelogEntry[] = [
   {
+    date: '2025-06-29',
+    title: 'Dashboard Activity Feed is Now Live',
+    description: "The 'Recent Activity' feed on the Dashboard is now fully dynamic. It automatically updates in real-time to show the 5 most recent actions, such as adding students, creating goal templates, and saving sessions.",
+    type: 'feature',
+    icon: Zap,
+  },
+  {
+    date: '2025-06-29',
+    title: 'Improved Data Entry Workflow and Persistence',
+    description: "Data Entry is now more intuitive and reliable. Saving a session now correctly saves only the focused student. The student cycling hotkey ('A') now only cycles through active student slots. Additionally, all in-progress data on this page is automatically saved to your browser and restored on your next visit, preventing data loss.",
+    type: 'improvement',
+    icon: GitMerge,
+  },
+    {
+    date: '2025-06-29',
+    title: 'Hotkey Support for Sequenced Trials',
+    description: "Added hotkey support to the 'Sequenced Trials' goal type for faster data input. You can now use 'C' to increment successful attempts and 'N' to increment failed attempts.",
+    type: 'hotkey',
+    icon: KeyboardIcon,
+  },
+  {
+    date: '2025-06-29',
+    title: 'Bug Fixes for Stability and UI',
+    description: "Resolved several issues: fixed a server startup conflict between Webpack and Turbopack; corrected a scrolling bug in the 'View Session Details' modal; and fixed an issue where deleted students could cause issues with the student cycling hotkey on the Data Entry page.",
+    type: 'fix',
+    icon: Bug,
+  },
+  {
     date: '2025-06-28',
     title: 'Enhanced Qualitative Observation Goals',
     description: 'The "Qualitative Observation" goal type has been enhanced to include prompt level tracking. You can now record prompt counts directly on qualitative goals, alongside notes and ratings, making it a more versatile data collection tool.',
