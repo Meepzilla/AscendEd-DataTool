@@ -266,8 +266,8 @@ export default function DataEntryPage() {
             isOpen={isResetConfirmationOpen}
             onClose={() => setIsResetConfirmationOpen(false)}
             onConfirm={handleReset}
-            title="Reset Unsaved Data?"
-            description="Are you sure you want to clear all current unsaved activity, notes, and goal data for the selected students? This action cannot be undone."
+            title="Reset Focused Student Data?"
+            description="Are you sure you want to clear all current unsaved activity, notes, and goal data for the selected student? This action cannot be undone."
             confirmText="Yes, Reset Data"
           />
         )}
@@ -518,11 +518,11 @@ export default function DataEntryPage() {
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={handleOpenResetConfirmation} disabled={isSaving} size="lg">
               <RotateCcw className="mr-2 h-5 w-5" />
-              Reset Current Data
+              Reset Focused Student
             </Button>
             <Button onClick={handleSave} disabled={isSaving} size="lg">
               <Save className="mr-2 h-5 w-5" />
-              {isSaving ? 'Saving Session(s)...' : 'Save Session(s)'}
+              {isSaving ? 'Saving Session...' : 'Save Focused Session'}
             </Button>
           </div>
         </div>

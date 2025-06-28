@@ -848,96 +848,115 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   }, [dataEntryStudentSessionStates, getSessionsForStudent, addErrorLog, safeToast]);
 
   const saveDataEntrySession = useCallback(async () => {
-    if (!dataEntrySessionDate || dataEntrySelectedStudentIds.length === 0) {
-      safeToast({ title: "Error", description: "Please select a date and at least one student.", variant: "destructive"});
-      return;
+    if (!dataEntrySessionDate) {
+        safeToast({ title: "Error", description: "Please select a date.", variant: "destructive"});
+        return;
     }
-    let sessionsSavedCount = 0;
-    for (const studentId of dataEntrySelectedStudentIds) {
-      const state = dataEntryStudentSessionStates[studentId];
-      if (state) {
-        const sessionGoals: SessionGoalData[] = state.originalGoalHeaders
-        .filter(goal => !goal.isArchived) 
-        .map(goal => ({
-          goalId: goal.id,
-          goalName: goal.name,
-          goalType: goal.type,
-          data: state.goalData[goal.id] || JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type])),
-        }));
 
-        if (sessionGoals.length === 0) { 
-            console.log(`Skipping save for ${state.studentName}, no active goals with data.`);
-            continue;
-        }
-
-        const session: Omit<SessionData, 'sessionId'> = {
-          studentId: state.studentId,
-          studentName: state.studentName,
-          date: dataEntrySessionDate.toISOString(),
-          time: dataEntrySessionTime,
-          activity: state.activity,
-          notes: state.notes,
-          goals: sessionGoals,
-          originalGoalHeaders: state.originalGoalHeaders, 
-        };
-        await addSession(session);
-        sessionsSavedCount++;
-      }
+    if (dataEntrySelectedStudentIds.length === 0 || dataEntryFocusedStudentSlotIndex >= dataEntrySelectedStudentIds.length) {
+        safeToast({ title: "Error", description: "Please select a student to save a session for.", variant: "destructive"});
+        return;
     }
-    if (sessionsSavedCount > 0) {
-        safeToast({ title: "Success", description: `${sessionsSavedCount} session(s) saved.`});
-        const newStates = {...dataEntryStudentSessionStates};
-        dataEntrySelectedStudentIds.forEach(id => {
-            if(newStates[id]) {
-                newStates[id].activity = '';
-                newStates[id].notes = '';
+
+    const focusedStudentId = dataEntrySelectedStudentIds[dataEntryFocusedStudentSlotIndex];
+    if (!focusedStudentId) {
+        safeToast({ title: "Error", description: "No student is currently focused.", variant: "destructive"});
+        return;
+    }
+
+    const state = dataEntryStudentSessionStates[focusedStudentId];
+    if (!state) {
+        safeToast({ title: "Error", description: "Session data for the focused student is missing.", variant: "destructive"});
+        addErrorLog({ message: 'Session state missing for focused student on save.', source: 'useStudentData.saveDataEntrySession', details: `Student ID: ${focusedStudentId}`, type: 'error' });
+        return;
+    }
+    
+    const sessionGoals: SessionGoalData[] = state.originalGoalHeaders
+    .filter(goal => !goal.isArchived) 
+    .map(goal => ({
+        goalId: goal.id,
+        goalName: goal.name,
+        goalType: goal.type,
+        data: state.goalData[goal.id] || JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type])),
+    }));
+
+    if (sessionGoals.length === 0) { 
+        safeToast({ title: "Info", description: `Cannot save for ${state.studentName}, no active goals with data.`, variant: "default" });
+        return;
+    }
+
+    const session: Omit<SessionData, 'sessionId'> = {
+        studentId: state.studentId,
+        studentName: state.studentName,
+        date: dataEntrySessionDate.toISOString(),
+        time: dataEntrySessionTime,
+        activity: state.activity,
+        notes: state.notes,
+        goals: sessionGoals,
+        originalGoalHeaders: state.originalGoalHeaders, 
+    };
+
+    const savedSession = await addSession(session);
+    
+    if (savedSession) {
+        safeToast({ title: "Success", description: `Session for ${state.studentName} saved.`});
+        // Reset state for the saved student
+        setDataEntryStudentSessionStatesState(prevStates => {
+            const newStates = { ...prevStates };
+            if (newStates[focusedStudentId]) {
+                const studentState = newStates[focusedStudentId];
+                studentState.activity = '';
+                studentState.notes = '';
                 const initialGoalData: Record<string, SessionGoalData['data']> = {};
-                newStates[id].originalGoalHeaders.forEach(goal => {
-                  initialGoalData[goal.id] = JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type]));
+                studentState.originalGoalHeaders.forEach(goal => {
+                    initialGoalData[goal.id] = JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type]));
                 });
-                newStates[id].goalData = initialGoalData;
+                studentState.goalData = initialGoalData;
             }
+            return newStates;
         });
-        setDataEntryStudentSessionStatesState(newStates);
-    } else {
-        safeToast({ title: "Info", description: "No sessions were saved. Ensure students have active goals with data.", variant: "default"});
     }
-  }, [dataEntrySessionDate, dataEntrySelectedStudentIds, dataEntryStudentSessionStates, addSession, dataEntrySessionTime, safeToast]);
+  }, [
+      dataEntrySessionDate, 
+      dataEntrySessionTime, 
+      dataEntrySelectedStudentIds, 
+      dataEntryFocusedStudentSlotIndex, 
+      dataEntryStudentSessionStates, 
+      addSession, 
+      safeToast, 
+      addErrorLog
+  ]);
 
   const resetDataEntrySession = useCallback(() => {
-    const newStates = { ...dataEntryStudentSessionStates };
-    dataEntrySelectedStudentIds.forEach(id => {
-      if (newStates[id]) {
-        newStates[id].activity = '';
-        newStates[id].notes = '';
-        if (newStates[id].originalGoalHeaders) {
-          const initialGoalData: Record<string, SessionGoalData['data']> = {};
-          newStates[id].originalGoalHeaders.forEach(goal => {
-            initialGoalData[goal.id] = JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type]));
-          });
-          newStates[id].goalData = initialGoalData;
-        }
-      }
-    });
-    setDataEntryStudentSessionStatesState(newStates);
-    
-    // Also clear persisted session storage
-    if (typeof window !== 'undefined') {
-        Object.values(DATA_ENTRY_KEYS).forEach(key => window.sessionStorage.removeItem(key));
-        // Manually reset state since the page won't reload
-        setDataEntrySessionDateState(new Date());
-        setDataEntrySessionTimeState(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-        // selected IDs might be kept, or reset:
-        // setDataEntrySelectedStudentIdsState([]); 
-        setDataEntryStudentSessionStatesState({});
-        setDataEntryFocusedStudentSlotIndexState(0);
-        setDataEntryFocusedGoalIndexByStudentIdState({});
-        setDataEntryVisibleGoalCountByStudentIdState({});
-        setDataEntryShowArchivedByStudentIdState({});
+    if (dataEntrySelectedStudentIds.length === 0 || dataEntryFocusedStudentSlotIndex >= dataEntrySelectedStudentIds.length) {
+        safeToast({ title: "Info", description: "No student is focused to reset data for.", variant: "default" });
+        return;
     }
+    const focusedStudentId = dataEntrySelectedStudentIds[dataEntryFocusedStudentSlotIndex];
     
-    safeToast({ title: "Data Reset", description: "Current unsaved data for selected students has been reset." });
-  }, [dataEntrySelectedStudentIds, dataEntryStudentSessionStates, safeToast]);
+    setDataEntryStudentSessionStatesState(prevStates => {
+        const newStates = { ...prevStates };
+        if (newStates[focusedStudentId]) {
+            const studentState = newStates[focusedStudentId];
+            studentState.activity = '';
+            studentState.notes = '';
+            if (studentState.originalGoalHeaders) {
+                const initialGoalData: Record<string, SessionGoalData['data']> = {};
+                studentState.originalGoalHeaders.forEach(goal => {
+                    initialGoalData[goal.id] = JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type]));
+                });
+                studentState.goalData = initialGoalData;
+            }
+        }
+        return newStates;
+    });
+    
+    safeToast({ title: "Data Reset", description: `Current unsaved data for the focused student has been reset.` });
+  }, [
+      dataEntrySelectedStudentIds, 
+      dataEntryFocusedStudentSlotIndex, 
+      safeToast
+  ]);
 
   const handleGoalDataChange = useCallback((studentId: string, goalId: string, updatedFieldName: string, newData: SessionGoalData['data']) => {
     setDataEntryStudentSessionStatesState(prevStates => {
