@@ -1,7 +1,7 @@
 
 'use client';
 
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useStudentData } from '@/hooks/use-student-data';
@@ -11,7 +11,7 @@ import { APP_NAME } from '@/lib/constants';
 import { formatDate } from '@/lib/helpers';
 import { Skeleton } from '@/components/ui/skeleton';
 
-import AppLoadingSkeleton from '@/components/layout/AppLoadingSkeleton';
+const AppLoadingSkeleton = lazy(() => import('@/components/layout/AppLoadingSkeleton'));
 export default function DashboardPage() {
   const { students, goalTemplates, sessions, loading, sessionsLoading, openAddStudentModal } = useStudentData();
 
@@ -74,7 +74,9 @@ export default function DashboardPage() {
 
 
   if (loading) {
-    return <AppLoadingSkeleton />;
+    return (
+      <Suspense fallback={<div>Loading skeleton...</div>}><AppLoadingSkeleton /></Suspense>
+    );
   }
 
   return (

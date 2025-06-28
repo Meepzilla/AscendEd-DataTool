@@ -1,10 +1,11 @@
 'use client';
-import React, { useEffect } from 'react';
+import React, { useEffect, lazy, Suspense } from 'react';
 import { useStudentData } from '@/hooks/use-student-data';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { UserSearch } from 'lucide-react';
-import AppLoadingSkeleton from '@/components/layout/AppLoadingSkeleton';
+
+const AppLoadingSkeleton = lazy(() => import('@/components/layout/AppLoadingSkeleton'));
 
 export default function StudentProfileLandingPage() {
   const { students, selectedStudent, loading } = useStudentData();
@@ -23,7 +24,11 @@ export default function StudentProfileLandingPage() {
   }, [selectedStudent, students, loading, router]);
 
   if (loading) {
- return <AppLoadingSkeleton />;
+    return (
+      <Suspense fallback={<div>Loading...</div>}>
+        <AppLoadingSkeleton />
+      </Suspense>
+    );
   }
   
   if (selectedStudent) {
