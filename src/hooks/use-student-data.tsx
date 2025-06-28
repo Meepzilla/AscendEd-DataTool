@@ -1099,7 +1099,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         setDataEntryFocusedStudentSlotIndexState(prev => (prev + 1) % dataEntrySelectedStudentIds.length);
       }
     }
-  }, [dataEntrySelectedStudentIds.length]);
+  }, [dataEntrySelectedStudentIds]);
 
   const cycleFocusedGoal = useCallback((direction: 'next' | 'prev') => {
     const focusedInfo = getCurrentFocusedGoalInfo();
@@ -1305,3 +1305,4 @@ export const useStudentData = (): StudentDataContextType => {
     
 
     
+
