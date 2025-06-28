@@ -82,7 +82,7 @@ export default function TouchControls() {
             aria-label="Select Student"
           >
             <Users className="mr-2 h-5 w-5" />
-            Select Student
+            <span className="hidden sm:inline">Select Student</span>
           </Button>
 
           {/* Goal Controls */}
@@ -95,7 +95,7 @@ export default function TouchControls() {
             aria-label="Select Goal"
           >
             <Target className="mr-2 h-5 w-5" />
-            Select Goal
+            <span className="hidden sm:inline">Select Goal</span>
           </Button>
       </div>
       
