@@ -11,8 +11,7 @@ export default function TouchControls() {
   const [modalType, setModalType] = useState<'student' | 'goal' | null>(null);
 
   const {
-    students,
-    dataEntrySelectedStudentIds,
+    dataEntryActiveStudentsInSlots,
     dataEntryStudentSessionStates,
     dataEntryFocusedStudentSlotIndex,
     setDataEntryFocusedStudentSlotIndex,
@@ -22,11 +21,11 @@ export default function TouchControls() {
   } = useStudentData();
 
   const focusedStudentId = useMemo(() => {
-    if (dataEntryFocusedStudentSlotIndex >= 0 && dataEntryFocusedStudentSlotIndex < dataEntrySelectedStudentIds.length) {
-      return dataEntrySelectedStudentIds[dataEntryFocusedStudentSlotIndex];
+    if (dataEntryFocusedStudentSlotIndex >= 0 && dataEntryFocusedStudentSlotIndex < dataEntryActiveStudentsInSlots.length) {
+      return dataEntryActiveStudentsInSlots[dataEntryFocusedStudentSlotIndex]?.id;
     }
     return null;
-  }, [dataEntryFocusedStudentSlotIndex, dataEntrySelectedStudentIds]);
+  }, [dataEntryFocusedStudentSlotIndex, dataEntryActiveStudentsInSlots]);
 
   const focusedStudentState = useMemo(() => {
     return focusedStudentId ? dataEntryStudentSessionStates[focusedStudentId] : null;
@@ -39,11 +38,11 @@ export default function TouchControls() {
   }, [focusedStudentState, focusedStudentId, dataEntryShowArchivedByStudentId]);
 
   const studentSlots = useMemo(() => {
-    return dataEntrySelectedStudentIds.map((id, index) => {
-        const student = students.find(s => s.id === id);
-        return { id: index.toString(), name: student ? student.name : `Slot ${index + 1}: Empty` };
-    }).filter(s => s.name.indexOf('Empty') === -1);
-  }, [dataEntrySelectedStudentIds, students]);
+    return dataEntryActiveStudentsInSlots.map((student, index) => ({
+      id: index.toString(),
+      name: student.name,
+    }));
+  }, [dataEntryActiveStudentsInSlots]);
 
 
   const handleStudentSelect = (indexStr: string) => {
@@ -123,4 +122,3 @@ export default function TouchControls() {
     </>
   );
 }
-

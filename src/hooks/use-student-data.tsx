@@ -113,6 +113,7 @@ interface StudentDataContextType {
   setDataEntrySessionTime: (time: string) => void;
   dataEntrySelectedStudentIds: string[];
   setDataEntrySelectedStudentIds: (ids: string[]) => void;
+  dataEntryActiveStudentsInSlots: Student[];
   dataEntryStudentSessionStates: Record<string, StudentSessionState>;
   setDataEntryStudentSessionStates: React.Dispatch<React.SetStateAction<Record<string, StudentSessionState>>>;
   dataEntryFocusedStudentSlotIndex: number;
@@ -186,6 +187,12 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [dataEntryVisibleGoalCountByStudentId, setDataEntryVisibleGoalCountByStudentIdState] = useState<Record<string, number>>(() => getFromSessionStorage(DATA_ENTRY_KEYS.VISIBLE_COUNTS, {}));
   const [dataEntryShowArchivedByStudentId, setDataEntryShowArchivedByStudentIdState] = useState<Record<string, boolean>>(() => getFromSessionStorage(DATA_ENTRY_KEYS.SHOW_ARCHIVED, {}));
 
+  // Derived state for students in active slots
+  const dataEntryActiveStudentsInSlots = useMemo(() => {
+    return dataEntrySelectedStudentIds
+      .map(id => studentsState.find(s => s.id === id))
+      .filter((s): s is Student => !!s);
+  }, [dataEntrySelectedStudentIds, studentsState]);
 
   const safeToast = useCallback((options: Omit<Toast, 'id'>) => {
     if (typeof window !== 'undefined') { 
@@ -1243,6 +1250,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     dataEntrySessionDate, setDataEntrySessionDate,
     dataEntrySessionTime, setDataEntrySessionTime,
     dataEntrySelectedStudentIds, setDataEntrySelectedStudentIds,
+    dataEntryActiveStudentsInSlots,
     dataEntryStudentSessionStates, setDataEntryStudentSessionStates: setDataEntryStudentSessionStatesState,
     dataEntryFocusedStudentSlotIndex, setDataEntryFocusedStudentSlotIndex,
     dataEntryFocusedGoalIndexByStudentId, setDataEntryFocusedGoalIndexByStudentId: setDataEntryFocusedGoalIndexByStudentIdState,
@@ -1268,6 +1276,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     dataEntrySessionDate, setDataEntrySessionDate,
     dataEntrySessionTime, setDataEntrySessionTime,
     dataEntrySelectedStudentIds, setDataEntrySelectedStudentIds,
+    dataEntryActiveStudentsInSlots,
     dataEntryStudentSessionStates,
     dataEntryFocusedStudentSlotIndex, setDataEntryFocusedStudentSlotIndex,
     dataEntryFocusedGoalIndexByStudentId,
