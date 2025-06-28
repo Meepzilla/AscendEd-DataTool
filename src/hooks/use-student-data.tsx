@@ -17,9 +17,14 @@ const getStudentsCollectionPath = (appId: string) => `artifacts/${appId}/public/
 const getGoalTemplatesCollectionPath = (appId: string) => `artifacts/${appId}/public/data/goal_templates`;
 const getSessionsCollectionPath = (appId: string) => `artifacts/${appId}/public/data/sessions`;
 
-const LOCAL_STORAGE_STUDENTS_KEY = 'ascended_students_v2';
-const LOCAL_STORAGE_GOAL_TEMPLATES_KEY = 'ascended_goal_templates_v2';
-const LOCAL_STORAGE_SESSIONS_KEY = 'ascended_sessions_v2';
+const LOCAL_STORAGE_STUDENTS_BASE_KEY = 'ascended_students_v2';
+const LOCAL_STORAGE_GOAL_TEMPLATES_BASE_KEY = 'ascended_goal_templates_v2';
+const LOCAL_STORAGE_SESSIONS_BASE_KEY = 'ascended_sessions_v2';
+
+const getLocalStorageKey = (base: string, uid: string | undefined): string | null => {
+  if (!uid) return null;
+  return `${base}_${uid}`;
+};
 
 const getFromSessionStorage = (key: string, defaultValue: any) => {
     if (typeof window === 'undefined') return defaultValue;
@@ -204,7 +209,10 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   useEffect(() => {
     if (!isFirebaseDBAvailable && !authLoading && currentUser) {
       try {
-        localStorage.setItem(LOCAL_STORAGE_STUDENTS_KEY, JSON.stringify(studentsState));
+        const key = getLocalStorageKey(LOCAL_STORAGE_STUDENTS_BASE_KEY, currentUser.uid);
+        if (key) {
+            localStorage.setItem(key, JSON.stringify(studentsState));
+        }
       } catch (e) {
         console.error("Error saving students to localStorage:", e);
         addErrorLog({ message: 'Error saving students to localStorage.', source: 'useStudentData.saveStudents', details: (e as Error).message, type: 'error' });
@@ -219,7 +227,10 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
           ...t,
           createdAt: t.createdAt instanceof Date ? t.createdAt.toISOString() : t.createdAt, 
         }));
-        localStorage.setItem(LOCAL_STORAGE_GOAL_TEMPLATES_KEY, JSON.stringify(storableTemplates));
+        const key = getLocalStorageKey(LOCAL_STORAGE_GOAL_TEMPLATES_BASE_KEY, currentUser.uid);
+        if (key) {
+            localStorage.setItem(key, JSON.stringify(storableTemplates));
+        }
       } catch (e) {
         console.error("Error saving goal templates to localStorage:", e);
         addErrorLog({ message: 'Error saving goal templates to localStorage.', source: 'useStudentData.saveGoalTemplates', details: (e as Error).message, type: 'error' });
@@ -230,7 +241,10 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   useEffect(() => {
     if (!isFirebaseDBAvailable && !authLoading && currentUser) {
       try {
-        localStorage.setItem(LOCAL_STORAGE_SESSIONS_KEY, JSON.stringify(sessionsState));
+        const key = getLocalStorageKey(LOCAL_STORAGE_SESSIONS_BASE_KEY, currentUser.uid);
+        if (key) {
+            localStorage.setItem(key, JSON.stringify(sessionsState));
+        }
       } catch (e) {
         console.error("Error saving sessions to localStorage:", e);
         addErrorLog({ message: 'Error saving sessions to localStorage.', source: 'useStudentData.saveSessions', details: (e as Error).message, type: 'error' });
@@ -290,19 +304,6 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       safeToast({ title: "Error", description: "Could not seed Firebase default templates.", variant: "destructive" });
     }
   }, [safeToast, APP_ID, addErrorLog]);
-
-  useEffect(() => {
-    setEditingStudent(null);
-    setDeletingStudent(null);
-    setEditingGoalTemplate(null);
-    setDeletingGoalTemplate(null);
-    setEditingSession(null);
-    setDeletingSession(null);
-    setEditingAssignedGoal(null);
-    setIsAddStudentModalOpen(false);
-    setIsAddGoalTemplateModalOpen(false);
-  }, [currentUser]);
-
 
   useEffect(() => {
     if (authLoading) {
@@ -403,15 +404,16 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       console.log("StudentData: Operating in local data mode.");
       addErrorLog({ message: 'Operating in local data mode. Firestore DB not available.', source: 'useStudentData.init', type: 'warning' });
       try {
-        const localStudents = JSON.parse(localStorage.getItem(LOCAL_STORAGE_STUDENTS_KEY) || 'null');
-        if (localStudents) setStudentsState(localStudents.sort((a:Student,b:Student) => a.name.localeCompare(b.name)));
-        else setStudentsState([]);
-
-        const localSessions = JSON.parse(localStorage.getItem(LOCAL_STORAGE_SESSIONS_KEY) || 'null');
-        if (localSessions) setSessionsState(localSessions.sort((a:SessionData,b:SessionData) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-        else setSessionsState([]);
+        const studentsKey = getLocalStorageKey(LOCAL_STORAGE_STUDENTS_BASE_KEY, currentUser.uid);
+        const localStudents = studentsKey ? JSON.parse(localStorage.getItem(studentsKey) || 'null') : null;
+        setStudentsState(localStudents ? localStudents.sort((a:Student,b:Student) => a.name.localeCompare(b.name)) : []);
         
-        const rawTemplates = JSON.parse(localStorage.getItem(LOCAL_STORAGE_GOAL_TEMPLATES_KEY) || 'null');
+        const sessionsKey = getLocalStorageKey(LOCAL_STORAGE_SESSIONS_BASE_KEY, currentUser.uid);
+        const localSessions = sessionsKey ? JSON.parse(localStorage.getItem(sessionsKey) || 'null') : null;
+        setSessionsState(localSessions ? localSessions.sort((a:SessionData,b:SessionData) => new Date(b.date).getTime() - new Date(a.date).getTime()) : []);
+
+        const templatesKey = getLocalStorageKey(LOCAL_STORAGE_GOAL_TEMPLATES_BASE_KEY, currentUser.uid);
+        const rawTemplates = templatesKey ? JSON.parse(localStorage.getItem(templatesKey) || 'null') : null;
         if (rawTemplates && rawTemplates.length > 0) {
           setGoalTemplatesState(rawTemplates.map((t: any) => ({ ...t, createdAt: new Date(t.createdAt) })).sort((a:GoalTemplate,b:GoalTemplate) => a.name.localeCompare(b.name)));
         } else {
@@ -1290,5 +1292,7 @@ export const useStudentData = (): StudentDataContextType => {
   }
   return context;
 };
+
+    
 
     
