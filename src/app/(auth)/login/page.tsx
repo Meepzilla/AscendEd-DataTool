@@ -83,9 +83,12 @@ export default function LoginPage() {
               <AlertTitle>{pageError.includes("Firebase not configured") || pageError.includes("local mode") ? "Local Mode Active / Info" : "Authentication Error"}</AlertTitle>
               <AlertDescription>
                 {pageError}
-                 {!pageError.includes("Firebase not configured") && !pageError.includes("local mode") && isFirebaseAvailable &&
-                 <br/> Please check your credentials or ensure your Firebase environment is correctly set up.
-                }
+                {!pageError.includes("Firebase not configured") && !pageError.includes("local mode") && isFirebaseAvailable && (
+                  <>
+                    <br/>
+                    {" Please check your credentials or ensure your Firebase environment is correctly set up."}
+                  </>
+                )}
               </AlertDescription>
             </Alert>
           )}
