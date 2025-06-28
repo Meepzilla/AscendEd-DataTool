@@ -1,106 +1,134 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Users, Target } from 'lucide-react';
+import { Users, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useStudentData } from '@/hooks/use-student-data';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { cn } from '@/lib/utils';
+import SelectionModal from '@/components/modals/selection-modal';
 
 export default function TouchControls() {
   const pathname = usePathname();
   const isMobile = useIsMobile();
+  const [modalType, setModalType] = useState<'student' | 'goal' | null>(null);
+
   const {
-    cycleFocusedStudent,
-    cycleFocusedGoal,
+    students,
     dataEntrySelectedStudentIds,
-    getCurrentFocusedGoalInfo,
+    dataEntryStudentSessionStates,
+    dataEntryFocusedStudentSlotIndex,
+    setDataEntryFocusedStudentSlotIndex,
+    dataEntryFocusedGoalIndexByStudentId,
+    setDataEntryFocusedGoalIndexByStudentId,
     dataEntryShowArchivedByStudentId,
   } = useStudentData();
 
-  const focusedInfo = getCurrentFocusedGoalInfo();
-  
-  const visibleGoalsCount = useMemo(() => {
-    if (!focusedInfo?.studentState?.originalGoalHeaders || !focusedInfo?.studentId) return 0;
-    const showArchived = dataEntryShowArchivedByStudentId[focusedInfo.studentId] || false;
-    return focusedInfo.studentState.originalGoalHeaders.filter(g => !g.isArchived || showArchived).length;
-  }, [focusedInfo, dataEntryShowArchivedByStudentId]);
-
-
   const showControls = isMobile && pathname.startsWith('/data-entry') && dataEntrySelectedStudentIds.length > 0;
+
+  const focusedStudentId = useMemo(() => {
+    if (dataEntryFocusedStudentSlotIndex >= 0 && dataEntryFocusedStudentSlotIndex < dataEntrySelectedStudentIds.length) {
+      return dataEntrySelectedStudentIds[dataEntryFocusedStudentSlotIndex];
+    }
+    return null;
+  }, [dataEntryFocusedStudentSlotIndex, dataEntrySelectedStudentIds]);
+
+  const focusedStudentState = useMemo(() => {
+    return focusedStudentId ? dataEntryStudentSessionStates[focusedStudentId] : null;
+  }, [focusedStudentId, dataEntryStudentSessionStates]);
+
+  const visibleGoals = useMemo(() => {
+    if (!focusedStudentState?.originalGoalHeaders || !focusedStudentId) return [];
+    const showArchived = dataEntryShowArchivedByStudentId[focusedStudentId] || false;
+    return focusedStudentState.originalGoalHeaders.filter(g => !g.isArchived || showArchived);
+  }, [focusedStudentState, focusedStudentId, dataEntryShowArchivedByStudentId]);
+
+  const studentSlots = useMemo(() => {
+    return dataEntrySelectedStudentIds.map((id, index) => {
+        const student = students.find(s => s.id === id);
+        return { id: index.toString(), name: student ? student.name : `Slot ${index + 1}: Empty` };
+    }).filter(s => s.name.indexOf('Empty') === -1);
+  }, [dataEntrySelectedStudentIds, students]);
+
+
+  const handleStudentSelect = (indexStr: string) => {
+    setDataEntryFocusedStudentSlotIndex(parseInt(indexStr, 10));
+    setModalType(null);
+  };
+
+  const handleGoalSelect = (goalId: string) => {
+    if (!focusedStudentId) return;
+    const goalIndex = visibleGoals.findIndex(g => g.id === goalId);
+    if (goalIndex !== -1) {
+      setDataEntryFocusedGoalIndexByStudentId(prev => ({ ...prev, [focusedStudentId]: goalIndex }));
+    }
+    setModalType(null);
+  };
+  
+  const selectedGoalId = useMemo(() => {
+    if (focusedStudentId && visibleGoals.length > 0) {
+      const focusedIndex = dataEntryFocusedGoalIndexByStudentId[focusedStudentId] ?? 0;
+      if (focusedIndex < visibleGoals.length) {
+         return visibleGoals[focusedIndex]?.id;
+      }
+    }
+    return undefined;
+  }, [focusedStudentId, visibleGoals, dataEntryFocusedGoalIndexByStudentId]);
 
   if (!showControls) {
     return null;
   }
 
-  const handlePrevStudent = () => cycleFocusedStudent('prev');
-  const handleNextStudent = () => cycleFocusedStudent('next');
-  const handlePrevGoal = () => cycleFocusedGoal('prev');
-  const handleNextGoal = () => cycleFocusedGoal('next');
-
-  const canCycleStudents = dataEntrySelectedStudentIds.length > 1;
-  const canCycleGoals = visibleGoalsCount > 1;
-
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 p-2 bg-background/80 backdrop-blur-sm border-t md:hidden">
-      <div className="container mx-auto flex justify-around items-center gap-2">
-        {/* Student Controls */}
-        <div className="flex items-center gap-1 p-1 bg-muted rounded-lg shadow-md">
-           <Button
-            variant="ghost"
-            size="icon"
-            onClick={handlePrevStudent}
-            disabled={!canCycleStudents}
-            className="h-10 w-10"
-            aria-label="Previous Student"
+    <>
+      <div className="fixed bottom-0 left-0 right-0 z-50 p-2 bg-background/80 backdrop-blur-sm border-t md:hidden">
+        <div className="container mx-auto flex justify-around items-center gap-2">
+          {/* Student Controls */}
+          <Button
+            variant="outline"
+            onClick={() => setModalType('student')}
+            disabled={studentSlots.length <= 1}
+            className="flex-1 flex flex-col items-center h-auto py-2 gap-1"
+            aria-label="Select Student"
           >
-            <ArrowLeft className="h-6 w-6" />
-          </Button>
-          <div className="flex flex-col items-center">
             <Users className="h-5 w-5 text-primary" />
             <span className="text-xs font-medium">Student</span>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleNextStudent}
-            disabled={!canCycleStudents}
-            className="h-10 w-10"
-            aria-label="Next Student"
-          >
-            <ArrowRight className="h-6 w-6" />
           </Button>
-        </div>
 
-        {/* Goal Controls */}
-        <div className="flex items-center gap-1 p-1 bg-muted rounded-lg shadow-md">
+          {/* Goal Controls */}
           <Button
-            variant="ghost"
-            size="icon"
-            onClick={handlePrevGoal}
-            disabled={!canCycleGoals}
-            className="h-10 w-10"
-            aria-label="Previous Goal"
+            variant="outline"
+            onClick={() => setModalType('goal')}
+            disabled={visibleGoals.length <= 1}
+            className="flex-1 flex flex-col items-center h-auto py-2 gap-1"
+            aria-label="Select Goal"
           >
-            <ArrowUp className="h-6 w-6" />
-          </Button>
-          <div className="flex flex-col items-center">
-             <Target className="h-5 w-5 text-primary" />
+            <Target className="h-5 w-5 text-primary" />
             <span className="text-xs font-medium">Goal</span>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleNextGoal}
-            disabled={!canCycleGoals}
-            className="h-10 w-10"
-            aria-label="Next Goal"
-          >
-            <ArrowDown className="h-6 w-6" />
           </Button>
         </div>
       </div>
-    </div>
+      
+      <SelectionModal
+        isOpen={modalType !== null}
+        onClose={() => setModalType(null)}
+        title={modalType === 'student' ? 'Select Student' : 'Select Goal'}
+        items={
+          modalType === 'student'
+            ? studentSlots
+            : visibleGoals.map(g => ({ id: g.id, name: g.name }))
+        }
+        onSelect={
+          modalType === 'student'
+            ? handleStudentSelect
+            : handleGoalSelect
+        }
+        selectedId={
+            modalType === 'student'
+            ? dataEntryFocusedStudentSlotIndex.toString()
+            : selectedGoalId
+        }
+      />
+    </>
   );
 }
