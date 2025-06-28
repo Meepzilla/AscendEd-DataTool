@@ -5,7 +5,6 @@ import GenericModal from './generic-modal';
 import { Button } from '@/components/ui/button';
 import type { SessionData, Goal } from '@/lib/types';
 import { formatDate, formatTime } from '@/lib/helpers';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Activity, CalendarDays, Clock, FileText, Target, CheckSquare, Info } from 'lucide-react';
@@ -24,11 +23,12 @@ export default function ViewSessionDetailsModal({ session, isOpen, onClose }: Vi
       isOpen={isOpen}
       onClose={onClose}
       title={`Session Details: ${session.studentName}`}
-      description={`Review the recorded data for the session on ${formatDate(session.date)} at ${formatTime(session.date)}. `} // Assuming time is part of date object or handled by formatTime
+      description={`Review the recorded data for the session on ${formatDate(session.date)} at ${formatTime(session.date)}. `}
       size="xl"
     >
-      <ScrollArea className="max-h-[70vh] p-1">
-        <div className="space-y-6 p-4">
+      <div>
+        {/* The outer ScrollArea was removed. The GenericModal itself provides scrolling for its content. */}
+        <div className="space-y-6">
           <Card className="bg-muted/30">
             <CardHeader>
               <CardTitle className="text-xl flex items-center gap-2"><Activity className="h-6 w-6 text-primary"/>Session Overview</CardTitle>
@@ -94,9 +94,9 @@ export default function ViewSessionDetailsModal({ session, isOpen, onClose }: Vi
             )}
           </div>
         </div>
-      </ScrollArea>
-      <div className="flex justify-end gap-2 pt-4 mt-4 border-t p-4">
-        <Button onClick={onClose}>Close</Button>
+        <div className="flex justify-end gap-2 pt-4 mt-4 border-t">
+          <Button onClick={onClose}>Close</Button>
+        </div>
       </div>
     </GenericModal>
   );
