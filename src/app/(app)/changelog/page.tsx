@@ -4,7 +4,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, Trash2, LayoutGrid, Minimize2, UserX, ArrowRightLeft, Lightbulb, Download, ListPlus, Workflow, Shuffle, CheckSquare } from 'lucide-react';
+import { ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, Trash2, LayoutGrid, Minimize2, UserX, ArrowRightLeft, Lightbulb, Download, ListPlus, Workflow, Shuffle, CheckSquare, ListChecks } from 'lucide-react';
 import { APP_NAME } from '@/lib/constants';
 
 interface ChangelogEntry {
@@ -17,6 +17,13 @@ interface ChangelogEntry {
 }
 
 const changelogEntries: ChangelogEntry[] = [
+  {
+    date: '2025-06-28',
+    title: 'Data Entry Selection Buttons',
+    description: 'Added dedicated buttons on the Data Entry page to open a selection modal for focused students and goals. This feature is available on both desktop and mobile for easier navigation without relying on hotkeys.',
+    type: 'improvement',
+    icon: ListChecks,
+  },
   {
     date: '2025-06-28',
     title: 'Added Feeding/Swallowing Goal Type',
