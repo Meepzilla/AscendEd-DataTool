@@ -26,27 +26,35 @@ const getLocalStorageKey = (base: string, uid: string | undefined): string | nul
   return `${base}_${uid}`;
 };
 
-const getFromSessionStorage = (key: string, defaultValue: any) => {
+const getFromLocalStorage = (key: string, defaultValue: any) => {
     if (typeof window === 'undefined') return defaultValue;
     try {
-        const item = window.sessionStorage.getItem(key);
+        const item = window.localStorage.getItem(key);
         return item ? JSON.parse(item) : defaultValue;
     } catch (error) {
-        console.warn(`Error reading from sessionStorage key "${key}":`, error);
+        console.warn(`Error reading from localStorage key "${key}":`, error);
         return defaultValue;
     }
 };
 
-const SESSION_STORAGE_PREFIX = 'ascended_de_';
-const DATA_ENTRY_KEYS = {
-    DATE: `${SESSION_STORAGE_PREFIX}date`,
-    TIME: `${SESSION_STORAGE_PREFIX}time`,
-    SELECTED_IDS: `${SESSION_STORAGE_PREFIX}selected_ids`,
-    SESSION_STATES: `${SESSION_STORAGE_PREFIX}session_states`,
-    FOCUSED_SLOT: `${SESSION_STORAGE_PREFIX}focused_slot`,
-    FOCUSED_GOALS: `${SESSION_STORAGE_PREFIX}focused_goals`,
-    VISIBLE_COUNTS: `${SESSION_STORAGE_PREFIX}visible_counts`,
-    SHOW_ARCHIVED: `${SESSION_STORAGE_PREFIX}show_archived`,
+const getDataEntryStorageKeys = (uid: string | undefined): Record<string, string | null> => {
+    if (!uid) {
+        return {
+            DATE: null, TIME: null, SELECTED_IDS: null, SESSION_STATES: null,
+            FOCUSED_SLOT: null, FOCUSED_GOALS: null, VISIBLE_COUNTS: null, SHOW_ARCHIVED: null,
+        };
+    }
+    const prefix = `ascended_de_v2_${uid}_`;
+    return {
+        DATE: `${prefix}date`,
+        TIME: `${prefix}time`,
+        SELECTED_IDS: `${prefix}selected_ids`,
+        SESSION_STATES: `${prefix}session_states`,
+        FOCUSED_SLOT: `${prefix}focused_slot`,
+        FOCUSED_GOALS: `${prefix}focused_goals`,
+        VISIBLE_COUNTS: `${prefix}visible_counts`,
+        SHOW_ARCHIVED: `${prefix}show_archived`,
+    };
 };
 
 
@@ -173,19 +181,17 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [deletingSession, setDeletingSession] = useState<SessionData | null>(null);
   const [editingAssignedGoal, setEditingAssignedGoal] = useState<{ studentId: string; goal: Goal } | null>(null);
 
-  // Data Entry Page Persisted State
-  const [dataEntrySessionDate, setDataEntrySessionDateState] = useState<Date | undefined>(() => {
-    const storedDate = getFromSessionStorage(DATA_ENTRY_KEYS.DATE, null);
-    return storedDate ? new Date(storedDate) : undefined;
-  });
-  const [dataEntrySessionTime, setDataEntrySessionTimeState] = useState<string>(() => getFromSessionStorage(DATA_ENTRY_KEYS.TIME, ''));
-  const [dataEntrySelectedStudentIds, setDataEntrySelectedStudentIdsState] = useState<string[]>(() => getFromSessionStorage(DATA_ENTRY_KEYS.SELECTED_IDS, []));
-  const [dataEntryStudentSessionStates, setDataEntryStudentSessionStatesState] = useState<Record<string, StudentSessionState>>(() => getFromSessionStorage(DATA_ENTRY_KEYS.SESSION_STATES, {}));
-  const [dataEntryFocusedStudentSlotIndex, setDataEntryFocusedStudentSlotIndexState] = useState<number>(() => getFromSessionStorage(DATA_ENTRY_KEYS.FOCUSED_SLOT, 0));
-  const [dataEntryFocusedGoalIndexByStudentId, setDataEntryFocusedGoalIndexByStudentIdState] = useState<Record<string, number>>(() => getFromSessionStorage(DATA_ENTRY_KEYS.FOCUSED_GOALS, {}));
+  // Data Entry Page Persisted State (initialized with defaults)
+  const [dataEntrySessionDate, setDataEntrySessionDateState] = useState<Date | undefined>(undefined);
+  const [dataEntrySessionTime, setDataEntrySessionTimeState] = useState<string>('');
+  const [dataEntrySelectedStudentIds, setDataEntrySelectedStudentIdsState] = useState<string[]>([]);
+  const [dataEntryStudentSessionStates, setDataEntryStudentSessionStatesState] = useState<Record<string, StudentSessionState>>({});
+  const [dataEntryFocusedStudentSlotIndex, setDataEntryFocusedStudentSlotIndexState] = useState<number>(0);
+  const [dataEntryFocusedGoalIndexByStudentId, setDataEntryFocusedGoalIndexByStudentIdState] = useState<Record<string, number>>({});
   const [dataEntryAiActivitySuggestions, setDataEntryAiActivitySuggestionsState] = useState<Record<string, string[]>>({}); // Not persisted
-  const [dataEntryVisibleGoalCountByStudentId, setDataEntryVisibleGoalCountByStudentIdState] = useState<Record<string, number>>(() => getFromSessionStorage(DATA_ENTRY_KEYS.VISIBLE_COUNTS, {}));
-  const [dataEntryShowArchivedByStudentId, setDataEntryShowArchivedByStudentIdState] = useState<Record<string, boolean>>(() => getFromSessionStorage(DATA_ENTRY_KEYS.SHOW_ARCHIVED, {}));
+  const [dataEntryVisibleGoalCountByStudentId, setDataEntryVisibleGoalCountByStudentIdState] = useState<Record<string, number>>({});
+  const [dataEntryShowArchivedByStudentId, setDataEntryShowArchivedByStudentIdState] = useState<Record<string, boolean>>({});
+
 
   // Derived state for students in active slots
   const dataEntryActiveStudentsInSlots = useMemo(() => {
@@ -259,24 +265,47 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   }, [sessionsState, isFirebaseDBAvailable, authLoading, currentUser, addErrorLog]);
   
-  // Persist Data Entry state to sessionStorage
+  // Persist Data Entry state to localStorage
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem(DATA_ENTRY_KEYS.DATE, JSON.stringify(dataEntrySessionDate ? dataEntrySessionDate.toISOString() : null));
-      sessionStorage.setItem(DATA_ENTRY_KEYS.TIME, JSON.stringify(dataEntrySessionTime));
-      sessionStorage.setItem(DATA_ENTRY_KEYS.SELECTED_IDS, JSON.stringify(dataEntrySelectedStudentIds));
-      sessionStorage.setItem(DATA_ENTRY_KEYS.SESSION_STATES, JSON.stringify(dataEntryStudentSessionStates));
-      sessionStorage.setItem(DATA_ENTRY_KEYS.FOCUSED_SLOT, JSON.stringify(dataEntryFocusedStudentSlotIndex));
-      sessionStorage.setItem(DATA_ENTRY_KEYS.FOCUSED_GOALS, JSON.stringify(dataEntryFocusedGoalIndexByStudentId));
-      sessionStorage.setItem(DATA_ENTRY_KEYS.VISIBLE_COUNTS, JSON.stringify(dataEntryVisibleGoalCountByStudentId));
-      sessionStorage.setItem(DATA_ENTRY_KEYS.SHOW_ARCHIVED, JSON.stringify(dataEntryShowArchivedByStudentId));
+    if (typeof window !== 'undefined' && currentUser?.uid) {
+        const keys = getDataEntryStorageKeys(currentUser.uid);
+
+        if (keys.DATE) localStorage.setItem(keys.DATE, JSON.stringify(dataEntrySessionDate ? dataEntrySessionDate.toISOString() : null));
+        if (keys.TIME) localStorage.setItem(keys.TIME, JSON.stringify(dataEntrySessionTime));
+        if (keys.SELECTED_IDS) localStorage.setItem(keys.SELECTED_IDS, JSON.stringify(dataEntrySelectedStudentIds));
+        if (keys.SESSION_STATES) localStorage.setItem(keys.SESSION_STATES, JSON.stringify(dataEntryStudentSessionStates));
+        if (keys.FOCUSED_SLOT) localStorage.setItem(keys.FOCUSED_SLOT, JSON.stringify(dataEntryFocusedStudentSlotIndex));
+        if (keys.FOCUSED_GOALS) localStorage.setItem(keys.FOCUSED_GOALS, JSON.stringify(dataEntryFocusedGoalIndexByStudentId));
+        if (keys.VISIBLE_COUNTS) localStorage.setItem(keys.VISIBLE_COUNTS, JSON.stringify(dataEntryVisibleGoalCountByStudentId));
+        if (keys.SHOW_ARCHIVED) localStorage.setItem(keys.SHOW_ARCHIVED, JSON.stringify(dataEntryShowArchivedByStudentId));
     }
   }, [
+    currentUser?.uid,
     dataEntrySessionDate, dataEntrySessionTime, dataEntrySelectedStudentIds,
     dataEntryStudentSessionStates, dataEntryFocusedStudentSlotIndex,
     dataEntryFocusedGoalIndexByStudentId, dataEntryVisibleGoalCountByStudentId,
     dataEntryShowArchivedByStudentId
   ]);
+
+  // Load persisted data entry state from localStorage when user is available
+  useEffect(() => {
+    if (currentUser?.uid) {
+      const keys = getDataEntryStorageKeys(currentUser.uid);
+
+      const storedDate = keys.DATE ? getFromLocalStorage(keys.DATE, null) : null;
+      setDataEntrySessionDateState(storedDate ? new Date(storedDate) : undefined);
+
+      const storedTime = keys.TIME ? getFromLocalStorage(keys.TIME, '') : '';
+      setDataEntrySessionTimeState(storedTime);
+
+      if (keys.SELECTED_IDS) setDataEntrySelectedStudentIdsState(getFromLocalStorage(keys.SELECTED_IDS, []));
+      if (keys.SESSION_STATES) setDataEntryStudentSessionStatesState(getFromLocalStorage(keys.SESSION_STATES, {}));
+      if (keys.FOCUSED_SLOT) setDataEntryFocusedStudentSlotIndexState(getFromLocalStorage(keys.FOCUSED_SLOT, 0));
+      if (keys.FOCUSED_GOALS) setDataEntryFocusedGoalIndexByStudentIdState(getFromLocalStorage(keys.FOCUSED_GOALS, {}));
+      if (keys.VISIBLE_COUNTS) setDataEntryVisibleGoalCountByStudentIdState(getFromLocalStorage(keys.VISIBLE_COUNTS, {}));
+      if (keys.SHOW_ARCHIVED) setDataEntryShowArchivedByStudentIdState(getFromLocalStorage(keys.SHOW_ARCHIVED, {}));
+    }
+  }, [currentUser?.uid]);
 
 
   const seedFirebaseDefaultTemplates = useCallback(async (user: User, dbInstance: typeof firestoreDbModule) => {
@@ -1092,15 +1121,15 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   }, [dataEntrySelectedStudentIds.length]);
 
   const cycleFocusedStudent = useCallback((direction: 'next' | 'prev') => {
-    if (dataEntrySelectedStudentIds.length > 0) {
-      const numSlots = dataEntrySelectedStudentIds.length;
+    const numSlots = dataEntryActiveStudentsInSlots.length;
+    if (numSlots > 0) {
       if (direction === 'prev') {
         setDataEntryFocusedStudentSlotIndexState(prev => (prev - 1 + numSlots) % numSlots);
       } else {
         setDataEntryFocusedStudentSlotIndexState(prev => (prev + 1) % numSlots);
       }
     }
-  }, [dataEntrySelectedStudentIds]);
+  }, [dataEntryActiveStudentsInSlots]);
 
   const cycleFocusedGoal = useCallback((direction: 'next' | 'prev') => {
     const focusedInfo = getCurrentFocusedGoalInfo();
@@ -1308,3 +1337,6 @@ export const useStudentData = (): StudentDataContextType => {
     
 
 
+
+
+    
