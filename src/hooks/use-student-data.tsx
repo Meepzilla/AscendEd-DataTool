@@ -1093,10 +1093,11 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const cycleFocusedStudent = useCallback((direction: 'next' | 'prev') => {
     if (dataEntrySelectedStudentIds.length > 0) {
+      const numSlots = dataEntrySelectedStudentIds.length;
       if (direction === 'prev') {
-        setDataEntryFocusedStudentSlotIndexState(prev => (prev - 1 + dataEntrySelectedStudentIds.length) % dataEntrySelectedStudentIds.length);
+        setDataEntryFocusedStudentSlotIndexState(prev => (prev - 1 + numSlots) % numSlots);
       } else {
-        setDataEntryFocusedStudentSlotIndexState(prev => (prev + 1) % dataEntrySelectedStudentIds.length);
+        setDataEntryFocusedStudentSlotIndexState(prev => (prev + 1) % numSlots);
       }
     }
   }, [dataEntrySelectedStudentIds]);
@@ -1305,4 +1306,5 @@ export const useStudentData = (): StudentDataContextType => {
     
 
     
+
 
