@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { usePathname } from 'next/navigation';
 import { Users, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useStudentData } from '@/hooks/use-student-data';
@@ -9,7 +8,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import SelectionModal from '@/components/modals/selection-modal';
 
 export default function TouchControls() {
-  const pathname = usePathname();
   const isMobile = useIsMobile();
   const [modalType, setModalType] = useState<'student' | 'goal' | null>(null);
 
@@ -24,7 +22,7 @@ export default function TouchControls() {
     dataEntryShowArchivedByStudentId,
   } = useStudentData();
 
-  const showControls = isMobile && pathname.startsWith('/data-entry') && dataEntrySelectedStudentIds.length > 0;
+  const showControls = isMobile;
 
   const focusedStudentId = useMemo(() => {
     if (dataEntryFocusedStudentSlotIndex >= 0 && dataEntryFocusedStudentSlotIndex < dataEntrySelectedStudentIds.length) {
@@ -81,14 +79,13 @@ export default function TouchControls() {
 
   return (
     <>
-      <div className="fixed bottom-0 left-0 right-0 z-50 p-2 bg-background/80 backdrop-blur-sm border-t md:hidden">
-        <div className="container mx-auto flex justify-around items-center gap-2">
+      <div className="flex justify-start items-center gap-2">
           {/* Student Controls */}
           <Button
             variant="outline"
             onClick={() => setModalType('student')}
             disabled={studentSlots.length <= 1}
-            className="flex-1 flex flex-col items-center h-auto py-2 gap-1"
+            className="flex flex-col items-center h-auto py-2 gap-1 px-3"
             aria-label="Select Student"
           >
             <Users className="h-5 w-5 text-primary" />
@@ -100,13 +97,12 @@ export default function TouchControls() {
             variant="outline"
             onClick={() => setModalType('goal')}
             disabled={visibleGoals.length <= 1}
-            className="flex-1 flex flex-col items-center h-auto py-2 gap-1"
+            className="flex flex-col items-center h-auto py-2 gap-1 px-3"
             aria-label="Select Goal"
           >
             <Target className="h-5 w-5 text-primary" />
             <span className="text-xs font-medium">Goal</span>
           </Button>
-        </div>
       </div>
       
       <SelectionModal

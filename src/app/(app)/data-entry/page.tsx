@@ -19,6 +19,7 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useErrorLog } from '@/hooks/use-error-log';
 import { Switch } from '@/components/ui/switch';
+import TouchControls from '@/components/forms/touch-controls';
 
 const AppLoadingSkeleton = lazy(() => import('@/components/layout/AppLoadingSkeleton'));
 const GoalDataInputComponent = lazy(() => import('@/components/forms/goal-data-input'));
@@ -46,8 +47,6 @@ export default function DataEntryPage() {
     dataEntryVisibleGoalCountByStudentId,
     setDataEntryVisibleGoalCountByStudentId,
     dataEntryAiActivitySuggestions,
-    setDataEntryAiActivitySuggestions,
-    getSessionsForStudent,
     fetchAiActivitySuggestions,
     saveDataEntrySession,
     resetDataEntrySession,
@@ -514,15 +513,18 @@ export default function DataEntryPage() {
       </div>
 
       {dataEntrySelectedStudentIds.length > 0 && (
-        <div className="mt-auto flex-shrink-0 flex justify-end items-center gap-2 py-4 border-t">
-           <Button variant="outline" onClick={handleOpenResetConfirmation} disabled={isSaving} size="lg">
-            <RotateCcw className="mr-2 h-5 w-5" />
-            Reset Current Data
-          </Button>
-          <Button onClick={handleSave} disabled={isSaving} size="lg">
-            <Save className="mr-2 h-5 w-5" />
-            {isSaving ? 'Saving Session(s)...' : 'Save Session(s)'}
-          </Button>
+        <div className="mt-auto flex-shrink-0 flex justify-between items-center gap-2 py-4 border-t">
+          <TouchControls />
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleOpenResetConfirmation} disabled={isSaving} size="lg">
+              <RotateCcw className="mr-2 h-5 w-5" />
+              Reset Current Data
+            </Button>
+            <Button onClick={handleSave} disabled={isSaving} size="lg">
+              <Save className="mr-2 h-5 w-5" />
+              {isSaving ? 'Saving Session(s)...' : 'Save Session(s)'}
+            </Button>
+          </div>
         </div>
       )}
        {dataEntrySelectedStudentIds.length === 0 && !studentsLoading && (
