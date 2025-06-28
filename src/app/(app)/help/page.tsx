@@ -125,7 +125,7 @@ export default function HelpPage() {
           </div>
           <div>
             <h3 className="font-semibold text-foreground text-lg mb-1">Data Entry</h3>
-            <p>Record session data for one or more students. Select students, enter activity details, and log performance for each assigned goal. A new 'Feeding/Swallowing' goal type is available for tracking trials. Use the hotkeys listed above for rapid data input. AI can also suggest activities based on goals and progress.</p>
+            <p>Record session data for one or more students. Select students, enter activity details, and log performance for each assigned goal. The 'Qualitative Observation' goal type has been enhanced to include prompt level tracking, making it a flexible tool for various data collection scenarios. A new 'Feeding/Swallowing' goal type is also available for tracking trials. Use the hotkeys listed above for rapid data input. AI can also suggest activities based on goals and progress.</p>
              <p className="mt-1"><strong className="text-foreground">Note:</strong> Clicking a student's icon on their card or pressing Alt+E (when a student card is focused) will open the "Edit Student" modal, where you can manage their goals directly, assign new templates, or create custom goals with AI assistance.</p>
           </div>
           <div>

@@ -430,7 +430,7 @@ export default function GoalDataInputComponent({
     }
   };
 
-  const showPromptCounters = goal.type !== 'QUALITATIVE_OBSERVATION' && goal.type !== 'FLUENCY_SYLLABLE_STUTTER' && goal.type !== 'FEEDING_SWALLOWING';
+  const showPromptCounters = goal.type !== 'FLUENCY_SYLLABLE_STUTTER' && goal.type !== 'FEEDING_SWALLOWING';
   const showAccuracyDisplay = goal.type !== 'QUALITATIVE_OBSERVATION' && goal.type !== 'LANGUAGE_COMPREHENSION';
 
 

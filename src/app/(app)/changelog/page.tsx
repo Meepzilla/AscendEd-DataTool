@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const changelogEntries: ChangelogEntry[] = [
   {
     date: '2025-06-28',
+    title: 'Enhanced Qualitative Observation Goals',
+    description: 'The "Qualitative Observation" goal type has been enhanced to include prompt level tracking. You can now record prompt counts directly on qualitative goals, alongside notes and ratings, making it a more versatile data collection tool.',
+    type: 'improvement',
+    icon: ListChecks,
+  },
+  {
+    date: '2025-06-28',
     title: 'Data Entry Selection Buttons',
     description: 'Added dedicated buttons on the Data Entry page to open a selection modal for focused students and goals. This feature is available on both desktop and mobile for easier navigation without relying on hotkeys.',
     type: 'improvement',
