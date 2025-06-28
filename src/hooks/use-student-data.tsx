@@ -206,6 +206,37 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   }, [shadcnToast]);
 
+  const saveToLocal = useCallback((key: string | null, data: any) => {
+    if (typeof window === 'undefined' || !key) return;
+    try {
+      const storableData = JSON.stringify(data);
+      window.localStorage.setItem(key, storableData);
+    } catch (e) {
+      console.error(`Error saving to localStorage key "${key}":`, e);
+      addErrorLog({
+        message: `Error saving to localStorage.`,
+        source: 'useStudentData.saveToLocal',
+        details: (e as Error).message,
+        type: 'error',
+      });
+    }
+  }, [addErrorLog]);
+
+  const saveStudentsToLocal = useCallback((students: Student[], uid: string | undefined) => {
+    saveToLocal(getLocalStorageKey(LOCAL_STORAGE_STUDENTS_BASE_KEY, uid), students);
+  }, [saveToLocal]);
+
+  const saveTemplatesToLocal = useCallback((templates: GoalTemplate[], uid: string | undefined) => {
+    const storableTemplates = templates.map(t => ({
+      ...t,
+      createdAt: t.createdAt instanceof Date ? t.createdAt.toISOString() : t.createdAt,
+    }));
+    saveToLocal(getLocalStorageKey(LOCAL_STORAGE_GOAL_TEMPLATES_BASE_KEY, uid), storableTemplates);
+  }, [saveToLocal]);
+  
+  const saveSessionsToLocal = useCallback((sessions: SessionData[], uid: string | undefined) => {
+    saveToLocal(getLocalStorageKey(LOCAL_STORAGE_SESSIONS_BASE_KEY, uid), sessions);
+  }, [saveToLocal]);
 
   const seedLocalDefaultTemplates = useCallback(() => {
       const localDefaultTemplates = DEFAULT_GOAL_TEMPLATES.map(t => ({
@@ -215,55 +246,11 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         userId: currentUser?.uid || 'local-user',
       }));
       setGoalTemplatesState(localDefaultTemplates);
+      if (currentUser?.uid) {
+        saveTemplatesToLocal(localDefaultTemplates, currentUser.uid);
+      }
       safeToast({ title: "Info", description: "Loaded default local goal templates."});
-  }, [currentUser?.uid, safeToast]);
-
-
-  useEffect(() => {
-    if (!isFirebaseDBAvailable && !authLoading && currentUser) {
-      try {
-        const key = getLocalStorageKey(LOCAL_STORAGE_STUDENTS_BASE_KEY, currentUser.uid);
-        if (key) {
-            localStorage.setItem(key, JSON.stringify(studentsState));
-        }
-      } catch (e) {
-        console.error("Error saving students to localStorage:", e);
-        addErrorLog({ message: 'Error saving students to localStorage.', source: 'useStudentData.saveStudents', details: (e as Error).message, type: 'error' });
-      }
-    }
-  }, [studentsState, isFirebaseDBAvailable, authLoading, currentUser, addErrorLog]);
-
-  useEffect(() => {
-    if (!isFirebaseDBAvailable && !authLoading && currentUser) {
-      try {
-        const storableTemplates = goalTemplatesState.map(t => ({
-          ...t,
-          createdAt: t.createdAt instanceof Date ? t.createdAt.toISOString() : t.createdAt, 
-        }));
-        const key = getLocalStorageKey(LOCAL_STORAGE_GOAL_TEMPLATES_BASE_KEY, currentUser.uid);
-        if (key) {
-            localStorage.setItem(key, JSON.stringify(storableTemplates));
-        }
-      } catch (e) {
-        console.error("Error saving goal templates to localStorage:", e);
-        addErrorLog({ message: 'Error saving goal templates to localStorage.', source: 'useStudentData.saveGoalTemplates', details: (e as Error).message, type: 'error' });
-      }
-    }
-  }, [goalTemplatesState, isFirebaseDBAvailable, authLoading, currentUser, addErrorLog]);
-
-  useEffect(() => {
-    if (!isFirebaseDBAvailable && !authLoading && currentUser) {
-      try {
-        const key = getLocalStorageKey(LOCAL_STORAGE_SESSIONS_BASE_KEY, currentUser.uid);
-        if (key) {
-            localStorage.setItem(key, JSON.stringify(sessionsState));
-        }
-      } catch (e) {
-        console.error("Error saving sessions to localStorage:", e);
-        addErrorLog({ message: 'Error saving sessions to localStorage.', source: 'useStudentData.saveSessions', details: (e as Error).message, type: 'error' });
-      }
-    }
-  }, [sessionsState, isFirebaseDBAvailable, authLoading, currentUser, addErrorLog]);
+  }, [currentUser?.uid, safeToast, saveTemplatesToLocal]);
   
   // Persist Data Entry state to localStorage
   useEffect(() => {
@@ -572,12 +559,14 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }
     } else {
       const newStudent: Student = { id: generateUUID(), ...studentDataOmitId };
-      setStudentsState(prev => [...prev, newStudent].sort((a,b) => a.name.localeCompare(b.name)));
+      const newStudents = [...studentsState, newStudent].sort((a,b) => a.name.localeCompare(b.name));
+      setStudentsState(newStudents);
+      saveStudentsToLocal(newStudents, currentUser.uid);
       setSelectedStudentState(newStudent);
       safeToast({ title: "Success", description: `Student "${name}" added locally.` });
       return newStudent;
     }
-  }, [currentUser, isFirebaseDBAvailable, safeToast, APP_ID, addErrorLog]);
+  }, [currentUser, isFirebaseDBAvailable, safeToast, APP_ID, addErrorLog, studentsState, saveStudentsToLocal]);
 
   const updateStudent = useCallback(async (studentId: string, data: Partial<Omit<Student, 'id'>>) => {
      if (!currentUser) {
@@ -595,13 +584,16 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         safeToast({ title: "Error", description: "Could not update student.", variant: "destructive" });
       }
     } else {
-      setStudentsState(prev => prev.map(s => s.id === studentId ? { ...s, ...data, id:s.id } as Student : s).sort((a,b) => a.name.localeCompare(b.name)));
+      const newStudents = studentsState.map(s => s.id === studentId ? { ...s, ...data, id:s.id } as Student : s).sort((a,b) => a.name.localeCompare(b.name));
+      setStudentsState(newStudents);
+      saveStudentsToLocal(newStudents, currentUser.uid);
+
       if (selectedStudent?.id === studentId) {
         setSelectedStudentState(prev => prev ? ({ ...prev, ...data } as Student) : null);
       }
       safeToast({ title: "Success", description: "Student updated locally." });
     }
-  }, [isFirebaseDBAvailable, safeToast, APP_ID, selectedStudent, currentUser, addErrorLog]);
+  }, [isFirebaseDBAvailable, safeToast, APP_ID, selectedStudent, currentUser, addErrorLog, studentsState, saveStudentsToLocal]);
 
  const deleteStudent = useCallback(async (studentId: string) => {
     if (!currentUser) {
@@ -644,13 +636,19 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         safeToast({ title: "Error", description: "Could not delete student and/or their sessions.", variant: "destructive" });
       }
     } else {
-      setStudentsState(prev => prev.filter(s => s.id !== studentId));
-      setSessionsState(prev => prev.filter(s => s.studentId !== studentId));
+      const newStudents = studentsState.filter(s => s.id !== studentId);
+      setStudentsState(newStudents);
+      saveStudentsToLocal(newStudents, currentUser.uid);
+
+      const newSessions = sessionsState.filter(s => s.studentId !== studentId);
+      setSessionsState(newSessions);
+      saveSessionsToLocal(newSessions, currentUser.uid);
+
       safeToast({ title: "Success", description: "Student and their sessions deleted locally." });
     }
     if (selectedStudent?.id === studentId) setSelectedStudentState(null);
     setDeletingStudent(null); 
-  }, [isFirebaseDBAvailable, firestoreDbModule, currentUser, selectedStudent, safeToast, APP_ID, addErrorLog]);
+  }, [isFirebaseDBAvailable, firestoreDbModule, currentUser, selectedStudent, safeToast, APP_ID, addErrorLog, studentsState, sessionsState, saveStudentsToLocal, saveSessionsToLocal]);
 
   const assignGoalToStudent = useCallback(async (studentId: string, goal: Goal) => {
     const student = studentsState.find(s => s.id === studentId);
@@ -727,11 +725,13 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }
     } else {
       const newTemplate: GoalTemplate = { id: generateUUID(), ...fullTemplateDataLocal };
-      setGoalTemplatesState(prev => [...prev, newTemplate].sort((a,b) => a.name.localeCompare(b.name)));
+      const newTemplates = [...goalTemplatesState, newTemplate].sort((a,b) => a.name.localeCompare(b.name));
+      setGoalTemplatesState(newTemplates);
+      saveTemplatesToLocal(newTemplates, currentUser.uid);
       safeToast({ title: "Success", description: `Template "${templateData.name}" added locally.` });
       return newTemplate;
     }
-  }, [currentUser, isFirebaseDBAvailable, safeToast, APP_ID, addErrorLog]);
+  }, [currentUser, isFirebaseDBAvailable, safeToast, APP_ID, addErrorLog, goalTemplatesState, saveTemplatesToLocal]);
 
   const updateGoalTemplate = useCallback(async (templateId: string, data: Partial<GoalTemplate>) => {
     if (!currentUser) {
@@ -760,10 +760,12 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         safeToast({ title: "Error", description: "Could not update goal template.", variant: "destructive" });
       }
     } else {
-      setGoalTemplatesState(prev => prev.map(t => t.id === templateId ? { ...t, ...data, createdAt: t.createdAt } as GoalTemplate : t).sort((a,b) => a.name.localeCompare(b.name)));
+      const newTemplates = goalTemplatesState.map(t => t.id === templateId ? { ...t, ...data, createdAt: t.createdAt } as GoalTemplate : t).sort((a,b) => a.name.localeCompare(b.name));
+      setGoalTemplatesState(newTemplates);
+      saveTemplatesToLocal(newTemplates, currentUser.uid);
       safeToast({ title: "Success", description: "Goal template updated locally." });
     }
-  }, [isFirebaseDBAvailable, safeToast, APP_ID, currentUser, addErrorLog]);
+  }, [isFirebaseDBAvailable, safeToast, APP_ID, currentUser, addErrorLog, goalTemplatesState, saveTemplatesToLocal]);
 
   const deleteGoalTemplate = useCallback(async (templateId: string) => {
     const templateToDelete = goalTemplatesState.find(t => t.id === templateId);
@@ -786,11 +788,13 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         safeToast({ title: "Error", description: "Could not delete goal template.", variant: "destructive" });
       }
     } else {
-      setGoalTemplatesState(prev => prev.filter(t => t.id !== templateId));
+      const newTemplates = goalTemplatesState.filter(t => t.id !== templateId);
+      setGoalTemplatesState(newTemplates);
+      saveTemplatesToLocal(newTemplates, currentUser.uid);
       safeToast({ title: "Success", description: "Goal template deleted locally." });
     }
      setDeletingGoalTemplate(null); 
-  }, [isFirebaseDBAvailable, goalTemplatesState, safeToast, APP_ID, currentUser, addErrorLog]);
+  }, [isFirebaseDBAvailable, goalTemplatesState, safeToast, APP_ID, currentUser, addErrorLog, saveTemplatesToLocal]);
 
   const addSession = useCallback(async (sessionDataOmitId: Omit<SessionData, 'sessionId'>): Promise<SessionData | null> => {
      if (!currentUser) {
@@ -814,11 +818,13 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }
     } else {
       const newSession: SessionData = { ...sessionDataWithUser, sessionId: generateUUID() };
-      setSessionsState(prev => [newSession, ...prev].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+      const newSessions = [newSession, ...sessionsState].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      setSessionsState(newSessions);
+      saveSessionsToLocal(newSessions, currentUser.uid);
       safeToast({ title: "Success", description: "Session saved locally." });
       return newSession;
     }
-  }, [currentUser, isFirebaseDBAvailable, safeToast, APP_ID, addErrorLog]);
+  }, [currentUser, isFirebaseDBAvailable, safeToast, APP_ID, addErrorLog, sessionsState, saveSessionsToLocal]);
 
   const updateSession = useCallback(async (sessionId: string, data: Partial<SessionData>) => {
     if (!currentUser) {
@@ -836,10 +842,12 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         safeToast({ title: "Error", description: "Could not update session in Firebase.", variant: "destructive" });
       }
     } else {
-      setSessionsState(prev => prev.map(s => s.sessionId === sessionId ? { ...s, ...data } : s).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+      const newSessions = sessionsState.map(s => s.sessionId === sessionId ? { ...s, ...data } : s).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      setSessionsState(newSessions);
+      saveSessionsToLocal(newSessions, currentUser.uid);
       safeToast({ title: "Success", description: "Session updated locally." });
     }
-  }, [isFirebaseDBAvailable, safeToast, APP_ID, currentUser, addErrorLog]);
+  }, [isFirebaseDBAvailable, safeToast, APP_ID, currentUser, addErrorLog, sessionsState, saveSessionsToLocal]);
 
   const deleteSession = useCallback(async (sessionId: string) => {
     if (!currentUser) {
@@ -857,11 +865,13 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         safeToast({ title: "Error", description: "Could not delete session from Firebase.", variant: "destructive" });
       }
     } else {
-      setSessionsState(prev => prev.filter(s => s.sessionId !== sessionId));
+      const newSessions = sessionsState.filter(s => s.sessionId !== sessionId);
+      setSessionsState(newSessions);
+      saveSessionsToLocal(newSessions, currentUser.uid);
       safeToast({ title: "Success", description: "Session deleted locally." });
     }
     setDeletingSession(null); 
-  }, [isFirebaseDBAvailable, safeToast, APP_ID, currentUser, addErrorLog]);
+  }, [isFirebaseDBAvailable, safeToast, APP_ID, currentUser, addErrorLog, sessionsState, saveSessionsToLocal]);
 
   const getSessionsForStudent = useCallback((studentId: string) => {
     return sessionsState.filter(s => s.studentId === studentId);
