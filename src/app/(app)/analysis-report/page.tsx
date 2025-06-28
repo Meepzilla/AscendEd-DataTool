@@ -82,6 +82,11 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
           currentGoalIncorrect = Number(goalData.data.trialsRefused) || 0;
           currentGoalOpportunities = currentGoalCorrect + currentGoalIncorrect;
           break;
+        case 'SEQUENCED_TRIALS':
+          currentGoalCorrect = Number(goalData.data.successfulAttempts) || 0;
+          currentGoalIncorrect = Number(goalData.data.failedAttempts) || 0;
+          currentGoalOpportunities = currentGoalCorrect + currentGoalIncorrect;
+          break;
         default:
           break;
       }
@@ -222,6 +227,11 @@ const transformDataForSankeyChart = (
         case 'FEEDING_SWALLOWING':
           currentCorrect = Number(goalDataEntry.data.trialsAccepted) || 0;
           currentIncorrect = Number(goalDataEntry.data.trialsRefused) || 0;
+          currentOpportunities = currentCorrect + currentIncorrect;
+          break;
+        case 'SEQUENCED_TRIALS':
+          currentCorrect = Number(goalDataEntry.data.successfulAttempts) || 0;
+          currentIncorrect = Number(goalDataEntry.data.failedAttempts) || 0;
           currentOpportunities = currentCorrect + currentIncorrect;
           break;
         default: return;

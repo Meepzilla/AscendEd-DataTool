@@ -29,7 +29,8 @@ export type GoalType =
   | 'LANGUAGE_COMPREHENSION'
   | 'LANGUAGE_EXPRESSION'
   | 'PHONOLOGICAL_PROCESSES'
-  | 'FEEDING_SWALLOWING';
+  | 'FEEDING_SWALLOWING'
+  | 'SEQUENCED_TRIALS';
 
 export interface GoalTemplate {
   id: string;
@@ -106,6 +107,12 @@ export interface FeedingSwallowingData {
   trialsAccepted: number;
   trialsRefused: number;
   notes: string;
+}
+
+export interface SequencedTrialsData {
+  trialsPerAttempt: number;
+  successfulAttempts: number;
+  failedAttempts: number;
 }
 
 

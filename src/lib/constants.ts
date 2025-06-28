@@ -23,6 +23,7 @@ export const GOAL_TYPES: Record<string, GoalType> = {
   LANGUAGE_EXPRESSION: 'LANGUAGE_EXPRESSION',
   PHONOLOGICAL_PROCESSES: 'PHONOLOGICAL_PROCESSES',
   FEEDING_SWALLOWING: 'FEEDING_SWALLOWING',
+  SEQUENCED_TRIALS: 'SEQUENCED_TRIALS',
 };
 
 // Defines the default data structure for each goal type during session entry
@@ -70,6 +71,11 @@ export const GOAL_TYPE_FIELDS: Record<GoalType, Record<string, any>> = {
     trialsAccepted: 0,
     trialsRefused: 0,
     notes: ''
+  },
+  [GOAL_TYPES.SEQUENCED_TRIALS]: {
+    trialsPerAttempt: 5,
+    successfulAttempts: 0,
+    failedAttempts: 0,
   },
 };
 
@@ -568,6 +574,15 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
     name: 'Demonstrate Proper Chewing for Soft Solids',
     type: GOAL_TYPES.FEEDING_SWALLOWING as GoalType,
     smartGoalPrompt: 'Generate a SMART goal for a student to demonstrate a rotary chewing pattern for soft solid foods across 10 trials.',
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 80,
+  },
+  // New Sequenced Trials Goal
+  {
+    name: 'Complete 3-step sequences',
+    type: GOAL_TYPES.SEQUENCED_TRIALS as GoalType,
+    smartGoalPrompt: 'Generate a SMART goal for a student to complete 3-step sequences or tasks across multiple attempts.',
     generatedSmartGoal: '',
     isDefault: true,
     sessionTargetValue: 80,
