@@ -571,6 +571,17 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       addErrorLog({ message: 'Attempted to delete student without authenticated user.', source: 'useStudentData.deleteStudent', type: 'error' });
       return;
     }
+    
+    // Clean up data entry state before deleting the student record
+    setDataEntrySelectedStudentIdsState(prevIds => prevIds.filter(id => id !== studentId));
+    setDataEntryStudentSessionStatesState(prevStates => {
+      const newStates = { ...prevStates };
+      if (newStates[studentId]) {
+        delete newStates[studentId];
+      }
+      return newStates;
+    });
+
     if (isFirebaseDBAvailable && firestoreDbModule) {
       try {
         const batchOp = writeBatch(firestoreDbModule); 
