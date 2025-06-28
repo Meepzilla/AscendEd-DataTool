@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -10,6 +9,7 @@ import StudentSidebar from '@/components/layout/student-sidebar';
 import { SidebarProvider, SidebarInset, SidebarTrigger, SidebarRail } from '@/components/ui/sidebar';
 import { useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts';
 import { Toaster } from '@/components/ui/toaster';
+import TouchControls from '@/components/forms/touch-controls';
 
 // New component to initialize keyboard shortcuts within the SidebarProvider context
 function KeyboardShortcutInitializer() {
@@ -85,6 +85,7 @@ export default function AppLayout({
           </SidebarInset>
         </div>
         <AppFooter />
+        <TouchControls />
       </div>
       <Toaster />
     </SidebarProvider>
