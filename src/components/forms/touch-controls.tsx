@@ -1,14 +1,13 @@
+
 'use client';
 
 import React, { useMemo, useState } from 'react';
 import { Users, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useStudentData } from '@/hooks/use-student-data';
-import { useIsMobile } from '@/hooks/use-mobile';
 import SelectionModal from '@/components/modals/selection-modal';
 
 export default function TouchControls() {
-  const isMobile = useIsMobile();
   const [modalType, setModalType] = useState<'student' | 'goal' | null>(null);
 
   const {
@@ -21,8 +20,6 @@ export default function TouchControls() {
     setDataEntryFocusedGoalIndexByStudentId,
     dataEntryShowArchivedByStudentId,
   } = useStudentData();
-
-  const showControls = isMobile;
 
   const focusedStudentId = useMemo(() => {
     if (dataEntryFocusedStudentSlotIndex >= 0 && dataEntryFocusedStudentSlotIndex < dataEntrySelectedStudentIds.length) {
@@ -73,35 +70,33 @@ export default function TouchControls() {
     return undefined;
   }, [focusedStudentId, visibleGoals, dataEntryFocusedGoalIndexByStudentId]);
 
-  if (!showControls) {
-    return null;
-  }
-
   return (
     <>
       <div className="flex justify-start items-center gap-2">
           {/* Student Controls */}
           <Button
+            type="button"
             variant="outline"
             onClick={() => setModalType('student')}
             disabled={studentSlots.length <= 1}
-            className="flex flex-col items-center h-auto py-2 gap-1 px-3"
+            size="lg"
             aria-label="Select Student"
           >
-            <Users className="h-5 w-5 text-primary" />
-            <span className="text-xs font-medium">Student</span>
+            <Users className="mr-2 h-5 w-5" />
+            Select Student
           </Button>
 
           {/* Goal Controls */}
           <Button
+            type="button"
             variant="outline"
             onClick={() => setModalType('goal')}
             disabled={visibleGoals.length <= 1}
-            className="flex flex-col items-center h-auto py-2 gap-1 px-3"
+            size="lg"
             aria-label="Select Goal"
           >
-            <Target className="h-5 w-5 text-primary" />
-            <span className="text-xs font-medium">Goal</span>
+            <Target className="mr-2 h-5 w-5" />
+            Select Goal
           </Button>
       </div>
       
@@ -128,3 +123,4 @@ export default function TouchControls() {
     </>
   );
 }
+
