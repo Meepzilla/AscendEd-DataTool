@@ -1172,7 +1172,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const { studentId, goal, goalData } = focusedInfo;
 
     const promptToUpdate = PROMPT_HOTKEY_MAP[key];
-    if (promptToUpdate && goal.type !== 'QUALITATIVE_OBSERVATION' && goal.type !== 'FLUENCY_SYLLABLE_STUTTER' && goal.type !== 'FEEDING_SWALLOWING') {
+    if (promptToUpdate && goal.type !== 'QUALITATIVE_OBSERVATION' && goal.type !== 'FLUENCY_SYLLABLE_STUTTER' && goal.type !== 'FEEDING_SWALLOWING' && goal.type !== 'SEQUENCED_TRIALS') {
       const currentPromptCount = Number(goalData[promptToUpdate] || 0);
       const newPromptValue = alt ? Math.max(0, currentPromptCount - 1) : currentPromptCount + 1;
 
@@ -1220,6 +1220,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       else if (goal.type === 'PHONOLOGICAL_PROCESSES') fieldToUpdate = 'correctProductions';
       else if (goal.type === 'FLUENCY_SYLLABLE_STUTTER') fieldToUpdate = 'totalSyllables';
       else if (goal.type === 'FEEDING_SWALLOWING') fieldToUpdate = 'trialsAccepted';
+      else if (goal.type === 'SEQUENCED_TRIALS') fieldToUpdate = 'successfulAttempts';
     } else if (key === 'N') {
       if (goal.type === 'ARTICULATION') fieldToUpdate = 'incorrect';
       else if (goal.type === 'LANGUAGE_COMPREHENSION') fieldToUpdate = 'questionsIncorrect';
@@ -1227,6 +1228,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       else if (goal.type === 'PHONOLOGICAL_PROCESSES') fieldToUpdate = 'incorrectProductions';
       else if (goal.type === 'FLUENCY_SYLLABLE_STUTTER') fieldToUpdate = 'stutteredSyllables';
       else if (goal.type === 'FEEDING_SWALLOWING') fieldToUpdate = 'trialsRefused';
+      else if (goal.type === 'SEQUENCED_TRIALS') fieldToUpdate = 'failedAttempts';
     }
 
     if (fieldToUpdate) {
@@ -1350,3 +1352,4 @@ export const useStudentData = (): StudentDataContextType => {
 
 
     
+
