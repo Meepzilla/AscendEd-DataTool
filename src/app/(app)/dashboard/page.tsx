@@ -8,6 +8,8 @@ import { useStudentData } from '@/hooks/use-student-data';
 import Link from 'next/link';
 import { UserPlus, ListPlus, ClipboardList, BarChart2, Users, Target, Activity, CheckSquare } from 'lucide-react';
 import { APP_NAME } from '@/lib/constants';
+import { formatDate } from '@/lib/helpers';
+import { Skeleton } from '@/components/ui/skeleton';
 
 import AppLoadingSkeleton from '@/components/layout/AppLoadingSkeleton';
 export default function DashboardPage() {
@@ -17,7 +19,7 @@ export default function DashboardPage() {
   const summaryData = [
     { title: 'Total Students', value: loading ? '...' : students.length, icon: Users, href: '/student-profile', buttonLabel: 'Manage Students' },
     { title: 'Goal Templates', value: loading ? '...' : goalTemplates.length, icon: Target, href: '/goal-templates', buttonLabel: 'View Templates' },
-    { title: 'Active Goals', value: loading ? '...' : students.reduce((acc, s) => acc + s.goals.length, 0), icon: CheckSquare, href: '/data-entry', buttonLabel: 'Enter Data' },
+    { title: 'Active Goals', value: loading ? '...' : students.reduce((acc, s) => acc + s.goals.filter(g => !g.isArchived).length, 0), icon: CheckSquare, href: '/data-entry', buttonLabel: 'Enter Data' },
     { title: 'Total Sessions', value: sessionsLoading ? '...' : sessions.length, icon: Activity, href: '/manage-sessions', buttonLabel: 'View Sessions' },
   ];
 
@@ -27,6 +29,49 @@ export default function DashboardPage() {
     { label: 'Start Data Entry', icon: ClipboardList, href: '/data-entry' },
     { label: 'View Reports', icon: BarChart2, href: '/analysis-report' },
   ];
+  
+  const recentActivities = React.useMemo(() => {
+    if (loading || sessionsLoading) {
+        return [];
+    }
+
+    const studentActivities = [...students]
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 5)
+        .map(student => ({
+            id: `student-${student.id}`,
+            type: 'student' as const,
+            timestamp: new Date(student.createdAt),
+            text: <>New student <strong>{student.name}</strong> added.</>
+        }));
+        
+    const templateActivities = [...goalTemplates]
+         .filter(t => !t.isDefault) // Don't show default templates as "new"
+        .sort((a, b) => (b.createdAt instanceof Date ? b.createdAt.getTime() : b.createdAt.toDate().getTime()) - (a.createdAt instanceof Date ? a.createdAt.getTime() : a.createdAt.toDate().getTime()))
+        .slice(0, 5)
+        .map(template => ({
+            id: `template-${template.id}`,
+            type: 'template' as const,
+            timestamp: template.createdAt instanceof Date ? template.createdAt : template.createdAt.toDate(),
+            text: <>New template "<strong>{template.name}</strong>" created.</>
+        }));
+
+    const sessionActivities = [...sessions]
+        // sessions are already sorted by date descending from the hook
+        .slice(0, 5)
+        .map(session => ({
+            id: `session-${session.sessionId}`,
+            type: 'session' as const,
+            timestamp: new Date(session.date),
+            text: <>Session data entered for <strong>{session.studentName}</strong>.</>
+        }));
+    
+    return [...studentActivities, ...templateActivities, ...sessionActivities]
+        .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+        .slice(0, 5); // Take the 5 most recent activities overall
+
+  }, [students, goalTemplates, sessions, loading, sessionsLoading]);
+
 
   if (loading) {
     return <AppLoadingSkeleton />;
@@ -84,24 +129,32 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* Placeholder for Recent Activity or Important Notifications */}
+      {/* Recent Activity */}
       <section aria-labelledby="recent-activity-title">
         <h2 id="recent-activity-title" className="text-xl font-semibold mb-4 text-foreground">Recent Activity</h2>
         <Card>
           <CardContent className="p-6">
-            <p className="text-muted-foreground">Recent activity feed or important notifications will be displayed here.</p>
-            {/* Example: List of recent sessions, newly added students, etc. */}
-            <ul className="mt-4 space-y-2">
-              <li className="flex items-center gap-2 text-sm">
-                <ClipboardList className="h-4 w-4 text-primary"/> Session data entered for <strong>Student A</strong>.
-              </li>
-              <li className="flex items-center gap-2 text-sm">
-                <UserPlus className="h-4 w-4 text-primary"/> New student <strong>Student B</strong> added.
-              </li>
-               <li className="flex items-center gap-2 text-sm">
-                <ListPlus className="h-4 w-4 text-primary"/> New goal template "Reading Fluency" created.
-              </li>
-            </ul>
+            {loading || sessionsLoading ? (
+              <div className="space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-3"><Skeleton className="h-5 w-5 rounded-full" /><Skeleton className="h-4 w-4/5" /></div>
+                ))}
+              </div>
+            ) : recentActivities.length === 0 ? (
+              <p className="text-muted-foreground">No recent activity to display. Add a student or record a session to get started.</p>
+            ) : (
+              <ul className="space-y-3">
+                {recentActivities.map(activity => (
+                  <li key={activity.id} className="flex items-center gap-3 text-sm">
+                    {activity.type === 'session' && <ClipboardList className="h-4 w-4 text-primary"/>}
+                    {activity.type === 'student' && <UserPlus className="h-4 w-4 text-primary"/>}
+                    {activity.type === 'template' && <ListPlus className="h-4 w-4 text-primary"/>}
+                    <span className="text-muted-foreground">{activity.text}</span>
+                    <span className="ml-auto text-xs text-muted-foreground/80 whitespace-nowrap">{formatDate(activity.timestamp)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </CardContent>
         </Card>
       </section>
