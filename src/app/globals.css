@@ -1,40 +1,46 @@
+/* Base Tailwind CSS imports */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* Apply Inter font to the body element */
 body {
   font-family: var(--font-inter), sans-serif;
 }
 
+/* Define CSS variables for theming, primarily using HSL color format */
 @layer base {
-  :root {
-    --background: 210 20% 98%; /* Light mode background (e.g., white) */
-    --foreground: 210 20% 25%; /* Light mode text (e.g., dark gray/blue) */
-    --card: 210 20% 98%;
-    --card-foreground: 210 20% 25%;
-    --popover: 210 20% 98%;
-    --popover-foreground: 210 20% 25%;
-    --primary: 210 67% 46%; /* #2563eb - Blue */
-    --primary-foreground: 210 20% 98%; /* White/light text on primary */
-    --secondary: 210 20% 90%;
-    --secondary-foreground: 210 20% 25%;
-    --muted: 210 20% 90%;
-    --muted-foreground: 210 20% 45%;
-    --accent: 180 55% 50%; /* #4DD0E1 - Cyan */
-    --accent-foreground: 210 20% 15%; /* Dark text on accent */
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 210 20% 80%;
-    --input: 210 20% 80%;
-    --ring: 210 67% 46%;
+  :root { /* Light mode color variables */
+    --background: 210 20% 98%; /* Light mode main background color */
+    --foreground: 210 20% 25%; /* Light mode main text color */
+    --card: 210 20% 98%; /* Card background color */
+    --card-foreground: 210 20% 25%; /* Text color on cards */
+    --popover: 210 20% 98%; /* Popover background color */
+    --popover-foreground: 210 20% 25%; /* Text color on popovers */
+    --primary: 210 67% 46%; /* Primary accent color (Blue: #2563eb) */
+    --primary-foreground: 210 20% 98%; /* Text color on primary background */
+    --secondary: 210 20% 90%; /* Secondary background color */
+    --secondary-foreground: 210 20% 25%; /* Text color on secondary background */
+    --muted: 210 20% 90%; /* Muted background color */
+    --muted-foreground: 210 20% 45%; /* Muted text color */
+    --accent: 180 55% 50%; /* Accent color (Cyan: #4DD0E1) */
+    --accent-foreground: 210 20% 15%; /* Text color on accent background */
+    --destructive: 0 84.2% 60.2%; /* Destructive action color (Red) */
+    --destructive-foreground: 0 0% 98%; /* Text color on destructive background */
+    --border: 210 20% 80%; /* Border color */
+    --input: 210 20% 80%; /* Input field background color */
+    --ring: 210 67% 46%; /* Ring color for focus states */
+    
+    /* Chart specific colors for light mode */
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
+    
+    --radius: 0.5rem; /* Default border radius */
 
-    /* Sidebar specific colors for light theme, adapt if needed */
+    /* Sidebar specific colors for light theme */
     --sidebar-background: 210 20% 95%;
     --sidebar-foreground: 210 20% 25%;
     --sidebar-primary: 210 67% 46%;
@@ -45,33 +51,36 @@ body {
     --sidebar-ring: 210 67% 46%;
   }
 
-  .dark {
-    --background: 210 20% 15%; /* bg-slate-900 like */
-    --foreground: 210 20% 85%; /* text-slate-200 like */
-    --card: 210 20% 20%; /* bg-slate-800 like */
-    --card-foreground: 210 20% 85%;
-    --popover: 210 20% 20%;
-    --popover-foreground: 210 20% 85%;
-    --primary: 210 67% 46%; /* #2563eb - Blue */
-    --primary-foreground: 210 20% 98%; /* White/light text on primary */
-    --secondary: 210 20% 30%; /* bg-slate-700 like */
-    --secondary-foreground: 210 20% 85%;
-    --muted: 210 20% 30%;
-    --muted-foreground: 210 20% 65%; /* text-slate-400 like */
-    --accent: 180 55% 50%; /* #4DD0E1 - Cyan */
+  .dark { /* Dark mode color variables */
+    --background: 210 20% 15%; /* Dark mode main background color (like bg-slate-900) */
+    --foreground: 210 20% 85%; /* Dark mode main text color (like text-slate-200) */
+    --card: 210 20% 20%; /* Card background color (like bg-slate-800) */
+    --card-foreground: 210 20% 85%; /* Text color on cards */
+    --popover: 210 20% 20%; /* Popover background color */
+    --popover-foreground: 210 20% 85%; /* Text color on popovers */
+    --primary: 210 67% 46%; /* Primary accent color (Blue: #2563eb) */
+    --primary-foreground: 210 20% 98%; /* Text color on primary background */
+    --secondary: 210 20% 30%; /* Secondary background color (like bg-slate-700) */
+    --secondary-foreground: 210 20% 85%; /* Text color on secondary background */
+    --muted: 210 20% 30%; /* Muted background color */
+    --muted-foreground: 210 20% 65%; /* Muted text color (like text-slate-400) */
+    --accent: 180 55% 50%; /* Accent color (Cyan: #4DD0E1) */
     --accent-foreground: 210 20% 10%; /* Darker text on accent for contrast */
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 210 20% 35%; /* border-slate-700 like */
-    --input: 210 20% 35%;
-    --ring: 210 67% 46%;
+    --destructive: 0 62.8% 30.6%; /* Destructive action color (Dark Red) */
+    --destructive-foreground: 0 0% 98%; /* Text color on destructive background */
+    --border: 210 20% 35%; /* Border color (like border-slate-700) */
+    --input: 210 20% 35%; /* Input field background color */
+    --ring: 210 67% 46%; /* Ring color for focus states */
+
+    /* Chart specific colors for dark mode */
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
 
-    --sidebar-background: 210 20% 18%; /* Slightly different from main card for distinction */
+    /* Sidebar specific colors for dark theme */
+    --sidebar-background: 210 20% 18%; /* Slightly different from main card background for distinction */
     --sidebar-foreground: 210 20% 80%;
     --sidebar-primary: 210 67% 46%;
     --sidebar-primary-foreground: 210 20% 98%;
@@ -83,25 +92,31 @@ body {
 }
 
 @layer base {
+  /* Apply border-border utility class to all elements */
   * {
     @apply border-border;
   }
+  /* Apply background and text colors to the body, and custom scrollbar styles */
   body {
     @apply bg-background text-foreground;
-    /* Custom scrollbar */
+    /* Custom scrollbar for Firefox */
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--muted)) hsl(var(--background));
   }
+  /* Webkit scrollbar styles (for Chrome, Safari, Edge) */
   ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
+  /* Webkit scrollbar track styles */
   ::-webkit-scrollbar-track {
     @apply bg-background;
   }
+  /* Webkit scrollbar thumb (draggable part) styles */
   ::-webkit-scrollbar-thumb {
     @apply bg-muted rounded-md;
   }
+  /* Webkit scrollbar thumb hover styles */
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-secondary;
   }

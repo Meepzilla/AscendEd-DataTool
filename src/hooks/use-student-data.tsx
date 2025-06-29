@@ -38,6 +38,14 @@ const getFromLocalStorage = (key: string, defaultValue: any) => {
 };
 
 const getDataEntryStorageKeys = (uid: string | undefined): Record<string, string | null> => {
+    /**
+     * Generates unique keys for storing Data Entry page state in localStorage based on the user ID.
+     * This ensures that different users have their own saved state and prevents conflicts.
+     *
+     * @param uid - The unique ID of the current user, or undefined if not logged in.
+     * @returns A record mapping state names (like DATE, TIME, etc.) to their corresponding localStorage keys (strings)
+     *          or null if the user ID is undefined (indicating no keys can be generated).
+     */
     if (!uid) {
         return {
             DATE: null, TIME: null, SELECTED_IDS: null, SESSION_STATES: null,

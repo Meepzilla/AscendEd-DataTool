@@ -7,96 +7,122 @@ import { useStudentData } from './use-student-data';
 import { useSidebar } from '@/components/ui/sidebar'; 
 import { useErrorLog } from './use-error-log';
 
+/**
+ * Custom hook for managing global and page-specific keyboard shortcuts (hotkeys).
+ * This hook attaches a global keydown listener and dispatches actions based on pressed keys
+ * and modifier keys (Alt, Ctrl) within different parts of the application.
+ */
 export function useKeyboardShortcuts() {
+  // Initialize Next.js router for programmatic navigation.
   const router = useRouter();
+  // Get the current pathname to apply hotkeys contextually.
   const pathname = usePathname();
+
+  // Destructure relevant functions and states from custom data and UI hooks.
   const { 
-    openAddStudentModal,
-    focusStudentSlot,
-    cycleFocusedStudent,
-    cycleFocusedGoal,
-    handleDataEntryHotkey,
-    saveDataEntrySession,
-    triggerEditFocusedStudent,
+    openAddStudentModal, // Function to open the add student modal
+    focusStudentSlot,    // Function to focus a specific student slot in data entry
+    cycleFocusedStudent, // Function to cycle through student slots
+    cycleFocusedGoal,    // Function to cycle through goals for a focused student
+    handleDataEntryHotkey, // Function to handle specific data entry hotkeys (e.g., for counts)
+    saveDataEntrySession,  // Function to save session data in data entry
+    triggerEditFocusedStudent, // Function to open edit modal for the focused student
   } = useStudentData();
+  // Access sidebar toggle function from the sidebar hook.
   const { toggleSidebar } = useSidebar(); 
+  // Access error log modal toggle function from the error log hook.
   const { toggleErrorLogModal } = useErrorLog();
 
+  /**
+   * Callback function to handle keydown events.
+   * It prevents default browser actions for hotkeys and dispatches specific actions
+   * based on the key, modifier keys (Alt, Ctrl), and current page context.
+   */
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     const target = event.target as HTMLElement;
+    // Ignore hotkeys if the user is typing in an input field, textarea, select, or contenteditable element,
+    // unless it's a Ctrl+Enter combination (which is typically for form submission).
     if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable) {
       if (event.ctrlKey && event.key === 'Enter') {
-         // Allow Ctrl+Enter to bubble up for forms/modals
+         // Allow Ctrl+Enter to bubble up for forms/modals to handle their own submission.
+         // This specific case is not prevented, allowing default form submission if applicable.
       } else {
-        return;
+        return; // Do not process other hotkeys if the user is actively typing.
       }
     }
     
-    // Global and Page-Specific Hotkeys
+    // Extract key and modifier states for easier access.
     const key = event.key.toUpperCase();
     const alt = event.altKey;
     const ctrl = event.ctrlKey;
 
+    // -- Ctrl+Enter Hotkey (Global for form submission / Data Entry save) --
     if (ctrl && key === 'ENTER') {
       if (pathname.startsWith('/data-entry')) {
-        event.preventDefault();
-        saveDataEntrySession();
+        event.preventDefault(); // Prevent default browser form submission behavior (e.g., new line in textarea).
+        saveDataEntrySession(); // Trigger the save action for data entry sessions.
       }
-      return; // Assuming modals will handle their own Ctrl+Enter
+      return; // Stop further processing after handling Ctrl+Enter.
     }
 
+    // -- Alt-Modifier Hotkeys (Global Navigation & Actions, some Data Entry actions) --
     if (alt) {
-      event.preventDefault(); // Prevent browser menu activation
+      event.preventDefault(); // Prevent browser's default Alt key behavior (e.g., opening file menu).
       switch (key) {
-        // Global Navigation
-        case 'D': router.push('/dashboard'); break;
-        case '1': router.push('/student-profile'); break;
-        case '2': router.push('/goal-templates'); break;
-        case '3': router.push('/data-entry'); break;
-        case '4': router.push('/manage-sessions'); break;
-        case '5': router.push('/analysis-report'); break;
-        case '6': router.push('/changelog'); break;
-        case 'H': router.push('/help'); break;
-        // Global Actions
-        case 'L': toggleErrorLogModal(); break;
-        case 'M': openAddStudentModal(); break;
-        case 'B': if (toggleSidebar) toggleSidebar(); break;
+        // Global Navigation Hotkeys: Navigate to different pages
+        case 'D': router.push('/dashboard'); break; // Alt+D to Dashboard
+        case '1': router.push('/student-profile'); break; // Alt+1 to Student Profile
+        case '2': router.push('/goal-templates'); break; // Alt+2 to Goal Templates
+        case '3': router.push('/data-entry'); break; // Alt+3 to Data Entry
+        case '4': router.push('/manage-sessions'); break; // Alt+4 to Manage Sessions
+        case '5': router.push('/analysis-report'); break; // Alt+5 to Analysis & Reports
+        case '6': router.push('/changelog'); break; // Alt+6 to Changelog
+        case 'H': router.push('/help'); break; // Alt+H to Help Page
+
+        // Global Action Hotkeys: Trigger application-wide actions
+        case 'L': toggleErrorLogModal(); break; // Alt+L to toggle Error Log Modal visibility
+        case 'M': openAddStudentModal(); break; // Alt+M to open the Add Student Modal
+        case 'B': if (toggleSidebar) toggleSidebar(); break; // Alt+B to toggle Sidebar visibility (check if toggleSidebar exists)
         
-        // Data Entry Page Actions
-        case 'A': if (pathname.startsWith('/data-entry')) cycleFocusedStudent('prev'); break;
-        case 'S': if (pathname.startsWith('/data-entry')) cycleFocusedGoal('prev'); break;
-        case 'E': if (pathname.startsWith('/data-entry')) triggerEditFocusedStudent(); break;
-        case 'C':
-        case 'N':
-        case 'V': // Hotkey for Verbal prompt
-        case 'G':
-        case 'P':
-        case 'F':
-        case 'I':
+        // Data Entry Page Specific Actions (with Alt modifier): Decrement counts or trigger edit modal
+        case 'A': if (pathname.startsWith('/data-entry')) cycleFocusedStudent('prev'); break; // Alt+A to cycle to the previous student slot
+        case 'S': if (pathname.startsWith('/data-entry')) cycleFocusedGoal('prev'); break; // Alt+S to cycle to the previous goal for the focused student
+        case 'E': if (pathname.startsWith('/data-entry')) triggerEditFocusedStudent(); break; // Alt+E to open edit modal for the focused student
+        
+        // Data Entry Hotkeys for decrementing prompt counts (Alt + key combination)
+        case 'C': // Decrement Correct / Total Syllables / Trials Accepted / Slider Left
+        case 'N': // Decrement Incorrect / Stuttered Syllables / Trials Refused / Slider Right
+        case 'V': // Decrement Verbal Prompt count
+        case 'G': // Decrement Gestural Prompt count
+        case 'P': // Decrement Partial Physical Prompt count
+        case 'F': // Decrement Full Physical Prompt count
+        case 'I': // Decrement Independent count
+        case 'D': // Decrement Visual Prompt count
            if (pathname.startsWith('/data-entry')) handleDataEntryHotkey(key, alt); 
            break;
-        case 'D': // Visual prompt hotkey (Alt+D)
-            if (pathname.startsWith('/data-entry')) handleDataEntryHotkey(key, alt);
-            break;
         default: break;
       }
-    } else if (!alt && !ctrl) { // Simple key presses (no modifier)
+    } else if (!alt && !ctrl) { // -- Simple Key Presses (no Alt or Ctrl modifiers) --
+        // Data Entry Page Specific Actions (without Alt/Ctrl modifier): Focus slots or increment counts
         if (pathname.startsWith('/data-entry')) {
             switch (key) {
+                // Hotkeys to directly focus student slots (1, 2, 3, 4)
                 case '1': case '2': case '3': case '4':
-                    focusStudentSlot(parseInt(key, 10) - 1);
+                    focusStudentSlot(parseInt(key, 10) - 1); // Convert key ('1' to 0, '2' to 1, etc.) and focus the corresponding slot.
                     break;
-                case 'A': cycleFocusedStudent('next'); break;
-                case 'S': cycleFocusedGoal('next'); break;
-                case 'C':
-                case 'N':
-                case 'D': // Visual Prompt
-                case 'V': // Verbal Prompt
-                case 'G':
-                case 'P':
-                case 'F':
-                case 'I':
-                    handleDataEntryHotkey(key, alt);
+                case 'A': cycleFocusedStudent('next'); break; // 'A' to cycle to the next student slot
+                case 'S': cycleFocusedGoal('next'); break; // 'S' to cycle to the next goal for the focused student
+                
+                // Data Entry Hotkeys for incrementing prompt counts (No Alt/Ctrl modifier)
+                case 'C': // Increment Correct / Total Syllables / Trials Accepted / Slider Right
+                case 'N': // Increment Incorrect / Stuttered Syllables / Trials Refused / Slider Left
+                case 'D': // Increment Visual Prompt count
+                case 'V': // Increment Verbal Prompt count
+                case 'G': // Increment Gestural Prompt count
+                case 'P': // Increment Partial Physical Prompt count
+                case 'F': // Increment Full Physical Prompt count
+                case 'I': // Increment Independent count
+                    handleDataEntryHotkey(key, alt); // Pass the key and `false` for `alt` (no alt pressed).
                     break;
                 default: break;
             }
@@ -117,10 +143,14 @@ export function useKeyboardShortcuts() {
     triggerEditFocusedStudent
   ]);
 
+  // Effect hook to attach and clean up the global keydown event listener.
   useEffect(() => {
+    // Add the event listener when the component mounts.
     window.addEventListener('keydown', handleKeyDown);
+    // Return a cleanup function to remove the event listener when the component unmounts.
+    // This prevents memory leaks and ensures event listeners are properly managed.
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [handleKeyDown]);
+  }, [handleKeyDown]); // Dependency array: ensures the listener is re-attached only if the `handleKeyDown` function itself changes.
 }

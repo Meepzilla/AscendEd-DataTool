@@ -1,13 +1,17 @@
 
 import type { GoalTemplate, GoalType, PromptType } from './types';
 
+// -- Application Core Constants --
 export const APP_NAME = "AscendEd";
 export const APP_SUBTITLE = "Student Goal Data Capture";
 
+// -- Prompting Constants --
+// Defines the ordered list of prompt types used in the application.
 export const PROMPT_TYPES: PromptType[] = ["Independent", "Visual", "Verbal", "Gestural", "PartialPhysical", "FullPhysical"];
 
+// Maps keyboard hotkeys to their corresponding prompt types for data entry.
 export const PROMPT_HOTKEY_MAP: Record<string, PromptType> = {
-  'D': 'Visual', // New hotkey for Visual
+  'D': 'Visual', // New hotkey for Visual prompt
   'V': 'Verbal',
   'G': 'Gestural',
   'P': 'PartialPhysical',
@@ -15,6 +19,8 @@ export const PROMPT_HOTKEY_MAP: Record<string, PromptType> = {
   'I': 'Independent',
 };
 
+// Defines the various types of goals supported by the application.
+// Each key and value are identical for easy lookup.
 export const GOAL_TYPES: Record<string, GoalType> = {
   ARTICULATION: 'ARTICULATION',
   FLUENCY_SYLLABLE_STUTTER: 'FLUENCY_SYLLABLE_STUTTER',
@@ -27,8 +33,8 @@ export const GOAL_TYPES: Record<string, GoalType> = {
   PROMPTING: 'PROMPTING',
 };
 
-// Defines the default data structure for each goal type during session entry
-// Prompt counts are included for relevant goal types.
+// Defines the default data structure (fields and initial values) for each goal type
+// when a new session entry is initiated. Prompt counts are included where relevant.
 export const GOAL_TYPE_FIELDS: Record<GoalType, Record<string, any>> = {
   [GOAL_TYPES.ARTICULATION]: {
     correct: 0,
@@ -88,6 +94,7 @@ export const GOAL_TYPE_FIELDS: Record<GoalType, Record<string, any>> = {
   },
 };
 
+// Defines a color palette for different prompt types, used in charts or UI for visual distinction.
 export const PROMPT_COLORS: Record<PromptType, string> = {
   Independent: '#8B5CF6', // violet-500
   Visual: '#2DD4BF', // teal-400 (New color)
@@ -97,6 +104,7 @@ export const PROMPT_COLORS: Record<PromptType, string> = {
   FullPhysical: '#EF4444', // red-500
 };
 
+// Defines short abbreviations for prompt types, useful for compact UI displays.
 export const PROMPT_ABBREVIATIONS: Record<PromptType, string> = {
   Independent: 'Ind',
   Visual: 'Vis', // New abbreviation
@@ -106,6 +114,8 @@ export const PROMPT_ABBREVIATIONS: Record<PromptType, string> = {
   FullPhysical: 'FP',
 };
 
+// Defines an array of default goal templates that are pre-loaded into the application.
+// These serve as starting points for users to assign or modify.
 export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'userId'>[] = [
   // Existing Articulation Goals
   {
@@ -309,7 +319,7 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
     sessionTargetValue: 80,
   },
 
-  // New Articulation Goals
+  // New Articulation Goals (continued)
   {
     name: 'Produce /s/ in sentences',
     type: GOAL_TYPES.ARTICULATION as GoalType,
@@ -477,7 +487,7 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
     sessionTargetValue: 90, // This is more of a count/completion, but we use target for consistency if it's about success rate across opportunities.
   },
   {
-    name: 'Use possessive /s/ correctly (e.g., "Mommy\'s shoe")',
+    name: 'Use possessive /s/ correctly (e.g., "Mommy's shoe")',
     type: GOAL_TYPES.LANGUAGE_EXPRESSION as GoalType,
     smartGoalPrompt: "Generate a SMART goal for a student to use possessive /'s/ correctly in phrases or sentences.",
     generatedSmartGoal: '',
@@ -606,4 +616,5 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
   },
 ];
 
-export const MAX_STUDENTS_DATA_ENTRY = 4;
+// Defines the maximum number of student slots allowed on the data entry page.
+export const MAX_STUDENTS_DATA_ENTRY = 5;
