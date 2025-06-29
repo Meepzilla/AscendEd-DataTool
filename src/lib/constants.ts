@@ -318,8 +318,6 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
     isDefault: true,
     sessionTargetValue: 80,
   },
-
-  // New Articulation Goals (continued)
   {
     name: 'Produce /s/ in sentences',
     type: GOAL_TYPES.ARTICULATION as GoalType,
@@ -484,7 +482,7 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
     smartGoalPrompt: 'Generate a SMART goal for a student to name at least 5 items when given a common category.',
     generatedSmartGoal: '',
     isDefault: true,
-    sessionTargetValue: 90, // This is more of a count/completion, but we use target for consistency if it's about success rate across opportunities.
+    sessionTargetValue: 90,
   },
   {
     name: 'Use possessive /s/ correctly (e.g., "Mommy's shoe")',
@@ -500,7 +498,7 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
     smartGoalPrompt: "Generate a SMART goal for a student to retell a familiar short story including at least 3 key story grammar elements (character, setting, problem, action, resolution).",
     generatedSmartGoal: '',
     isDefault: true,
-    sessionTargetValue: 75, // Success rate of including elements
+    sessionTargetValue: 75,
   },
 
   // Fluency Goals
@@ -510,11 +508,11 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
     smartGoalPrompt: 'Generate a SMART goal for a student to reduce instances of syllable repetitions while reading a short passage aloud.',
     generatedSmartGoal: '',
     isDefault: true,
-    sessionTargetValue: 90, // Percentage of fluent syllables
+    sessionTargetValue: 90,
   },
   {
     name: 'Use easy onsets for initiating speech in structured tasks',
-    type: GOAL_TYPES.FLUENCY_SYLLABLE_STUTTER as GoalType, // Using this type for general fluency, target is fluency percentage
+    type: GOAL_TYPES.FLUENCY_SYLLABLE_STUTTER as GoalType,
     smartGoalPrompt: 'Generate a SMART goal for a student to use easy onset strategy to initiate speech in structured tasks (e.g., sentence repetition, picture description) with 90% success over 10 trials.',
     generatedSmartGoal: '',
     isDefault: true,
@@ -526,7 +524,7 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
     smartGoalPrompt: 'Generate a SMART goal for a student to maintain fluent speech (less than 3% disfluencies) during a 2-minute monologue on a familiar topic.',
     generatedSmartGoal: '',
     isDefault: true,
-    sessionTargetValue: 97, // e.g. target of 97% fluent syllables
+    sessionTargetValue: 97,
   },
 
   // Pragmatics/Social Language Goals (Qualitative Observation)
@@ -536,7 +534,7 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
     smartGoalPrompt: 'Generate a SMART goal for a student to maintain the topic of conversation for at least 3 conversational turns with a peer, with minimal redirection.',
     generatedSmartGoal: '',
     isDefault: true,
-    sessionTargetValue: 4, // Rating: 1-5, target of 4
+    sessionTargetValue: 4,
   },
   {
     name: 'Initiate greetings and farewells appropriately',
@@ -544,7 +542,7 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
     smartGoalPrompt: 'Generate a SMART goal for a student to independently initiate appropriate greetings and farewells in structured social settings.',
     generatedSmartGoal: '',
     isDefault: true,
-    sessionTargetValue: 4, // Rating: 1-5, target of 4
+    sessionTargetValue: 4,
   },
   {
     name: 'Make appropriate eye contact during conversation',
@@ -552,7 +550,7 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
     smartGoalPrompt: 'Generate a SMART goal for a student to make appropriate eye contact during conversational exchanges.',
     generatedSmartGoal: '',
     isDefault: true,
-    sessionTargetValue: 3, // Rating: 1-5, target of 3 (often a starting point)
+    sessionTargetValue: 3,
   },
   {
     name: 'Ask relevant follow-up questions in conversation',
@@ -560,17 +558,15 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
     smartGoalPrompt: 'Generate a SMART goal for a student to ask at least one relevant follow-up question during a conversation to show engagement.',
     generatedSmartGoal: '',
     isDefault: true,
-    sessionTargetValue: 4, // Rating: 1-5, target of 4
+    sessionTargetValue: 4,
   },
-
-  // Voice Goal (Qualitative Observation)
   {
     name: 'Use appropriate vocal loudness in classroom setting',
     type: GOAL_TYPES.QUALITATIVE_OBSERVATION as GoalType,
     smartGoalPrompt: 'Generate a SMART goal for a student to use appropriate vocal loudness (not too loud, not too soft) during classroom discussions, as rated by the clinician.',
     generatedSmartGoal: '',
     isDefault: true,
-    sessionTargetValue: 4, // Rating: 1-5, target of 4 for loudness
+    sessionTargetValue: 4,
   },
   // Feeding and Swallowing Goals
   {
@@ -618,3 +614,5 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
 
 // Defines the maximum number of student slots allowed on the data entry page.
 export const MAX_STUDENTS_DATA_ENTRY = 5;
+
+    
