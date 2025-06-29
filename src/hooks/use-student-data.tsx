@@ -1352,16 +1352,3 @@ export const useStudentData = (): StudentDataContextType => {
   }
   return context;
 };
-
-    
-
-    
-
-
-
-
-    
-
-
-
-
