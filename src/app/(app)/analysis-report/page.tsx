@@ -20,9 +20,8 @@ export default function AnalysisReportPage() {
   const { students, sessions, loading: studentsLoading, sessionsLoading } = useStudentData();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const studentIdFromQuery = searchParams.get('studentId');
   
-  const [selectedStudentId, setSelectedStudentId] = useState<string | undefined>(studentIdFromQuery || undefined);
+  const [selectedStudentId, setSelectedStudentId] = useState<string | undefined>(undefined);
   const [selectedGoalId, setSelectedGoalId] = useState<string | undefined>(undefined);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
@@ -30,18 +29,24 @@ export default function AnalysisReportPage() {
   const activeStudentGoals = useMemo(() => selectedStudent?.goals.filter(g => !g.isArchived) || [], [selectedStudent]);
 
   useEffect(() => {
-    if (!studentsLoading && studentIdFromQuery && students.find(s => s.id === studentIdFromQuery)) {
-        if (selectedStudentId !== studentIdFromQuery) {
-            setSelectedStudentId(studentIdFromQuery);
-        }
-    } else if (!studentsLoading && !studentIdFromQuery && !selectedStudentId && students.length > 0) {
-        // Default to first student if no query param and none selected
-        const firstStudentId = students[0].id;
-        setSelectedStudentId(firstStudentId);
-        // Optional: Update URL to reflect the default selection
-        router.replace(`/analysis-report?studentId=${firstStudentId}`, { scroll: false });
+    const studentIdFromQuery = searchParams.get('studentId');
+
+    // Case 1: URL has a student ID.
+    if (studentIdFromQuery) {
+      // If the state is not in sync with the URL, update it.
+      if (selectedStudentId !== studentIdFromQuery) {
+        setSelectedStudentId(studentIdFromQuery);
+      }
+    } 
+    // Case 2: URL has no student ID, we're not loading, students exist, and no student is selected yet.
+    // This is the default case on first load.
+    else if (!studentsLoading && students.length > 0 && !selectedStudentId) {
+      const firstStudentId = students[0].id;
+      setSelectedStudentId(firstStudentId);
+      // Update the URL to reflect this default selection.
+      router.replace(`/analysis-report?studentId=${firstStudentId}`, { scroll: false });
     }
-  }, [studentIdFromQuery, students, studentsLoading, selectedStudentId, router]);
+  }, [searchParams, students, studentsLoading, selectedStudentId, router]);
   
   const studentSessions = useMemo(() => {
     if (!selectedStudentId) return [];
