@@ -446,7 +446,8 @@ export default function GoalDataInputComponent({
     }
   };
 
-  const showPromptCounters = goal.type !== 'FLUENCY_SYLLABLE_STUTTER' && goal.type !== 'FEEDING_SWALLOWING';
+  const goalTypesWithoutPrompts: GoalType[] = ['FLUENCY_SYLLABLE_STUTTER', 'FEEDING_SWALLOWING', 'SEQUENCED_TRIALS'];
+  const showPromptCounters = !goalTypesWithoutPrompts.includes(goal.type);
   const showAccuracyDisplay = goal.type !== 'QUALITATIVE_OBSERVATION' && goal.type !== 'LANGUAGE_COMPREHENSION' && goal.type !== 'PROMPTING';
 
 

@@ -4,7 +4,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, onSnapshot, serverTimestamp, Timestamp, writeBatch } from 'firebase/firestore';
 import { db as firestoreDbModule } from '@/lib/firebase/config';
-import type { Student, Goal, GoalTemplate, SessionData, User, Toast, StudentSessionState, SessionGoalData } from '@/lib/types';
+import type { Student, Goal, GoalTemplate, SessionData, User, Toast, StudentSessionState, SessionGoalData, GoalType } from '@/lib/types';
 import { useAuth } from './use-auth';
 import { DEFAULT_GOAL_TEMPLATES, GOAL_TYPE_FIELDS, PROMPT_HOTKEY_MAP } from '@/lib/constants';
 import { generateUUID } from '@/lib/helpers';
@@ -877,6 +877,25 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return sessionsState.filter(s => s.studentId === studentId);
   }, [sessionsState]);
 
+  const openAddStudentModal = useCallback(() => setIsAddStudentModalOpen(true), []);
+  const closeAddStudentModal = useCallback(() => setIsAddStudentModalOpen(false), []);
+  const openEditStudentModal = useCallback((student: Student) => setEditingStudent(student), []);
+  const closeEditStudentModal = useCallback(() => setEditingStudent(null), []);
+  const openDeleteStudentModal = useCallback((student: Student | null) => setDeletingStudent(student), []);
+  const closeDeleteStudentModal = useCallback(() => setDeletingStudent(null), []);
+  const openAddGoalTemplateModal = useCallback(() => setIsAddGoalTemplateModalOpen(true), []);
+  const closeAddGoalTemplateModal = useCallback(() => setIsAddGoalTemplateModalOpen(false), []);
+  const openEditGoalTemplateModal = useCallback((template: GoalTemplate) => setEditingGoalTemplate(template), []);
+  const closeEditGoalTemplateModal = useCallback(() => setEditingGoalTemplate(null), []);
+  const openDeleteGoalTemplateModal = useCallback((template: GoalTemplate | null) => setDeletingGoalTemplate(template), []);
+  const closeDeleteGoalTemplateModal = useCallback(() => setDeletingGoalTemplate(null), []);
+  const openEditSessionModal = useCallback((session: SessionData) => setEditingSession(session), []);
+  const closeEditSessionModal = useCallback(() => setEditingSession(null), []);
+  const openDeleteSessionModal = useCallback((session: SessionData | null) => setDeletingSession(session), []);
+  const closeDeleteSessionModal = useCallback(() => setDeletingSession(null), []);
+  const openEditAssignedGoalModal = useCallback((studentId: string, goal: Goal) => setEditingAssignedGoal({ studentId, goal }), []);
+  const closeEditAssignedGoalModal = useCallback(() => setEditingAssignedGoal(null), []);
+
   // #region Data Entry Actions and Handlers
   const fetchAiActivitySuggestions = useCallback(async (studentId: string) => {
     const studentState = dataEntryStudentSessionStates[studentId];
@@ -1163,7 +1182,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         openEditStudentModal(studentToEdit);
       }
     }
-  }, [dataEntrySelectedStudentIds, dataEntryFocusedStudentSlotIndex, studentsState]);
+  }, [dataEntrySelectedStudentIds, dataEntryFocusedStudentSlotIndex, studentsState, openEditStudentModal]);
 
   const handleDataEntryHotkey = useCallback((key: string, alt: boolean) => {
     const focusedInfo = getCurrentFocusedGoalInfo();
@@ -1172,7 +1191,9 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const { studentId, goal, goalData } = focusedInfo;
 
     const promptToUpdate = PROMPT_HOTKEY_MAP[key];
-    if (promptToUpdate && goal.type !== 'QUALITATIVE_OBSERVATION' && goal.type !== 'FLUENCY_SYLLABLE_STUTTER' && goal.type !== 'FEEDING_SWALLOWING' && goal.type !== 'SEQUENCED_TRIALS') {
+    const goalTypesWithoutPrompts: GoalType[] = ['FLUENCY_SYLLABLE_STUTTER', 'FEEDING_SWALLOWING', 'SEQUENCED_TRIALS'];
+
+    if (promptToUpdate && !goalTypesWithoutPrompts.includes(goal.type)) {
       const currentPromptCount = Number(goalData[promptToUpdate] || 0);
       const newPromptValue = alt ? Math.max(0, currentPromptCount - 1) : currentPromptCount + 1;
 
@@ -1239,25 +1260,6 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   }, [getCurrentFocusedGoalInfo, handleGoalDataChange]);
   // #endregion
 
-  const openAddStudentModal = useCallback(() => setIsAddStudentModalOpen(true), []);
-  const closeAddStudentModal = useCallback(() => setIsAddStudentModalOpen(false), []);
-  const openEditStudentModal = useCallback((student: Student) => setEditingStudent(student), []);
-  const closeEditStudentModal = useCallback(() => setEditingStudent(null), []);
-  const openDeleteStudentModal = useCallback((student: Student | null) => setDeletingStudent(student), []);
-  const closeDeleteStudentModal = useCallback(() => setDeletingStudent(null), []);
-  const openAddGoalTemplateModal = useCallback(() => setIsAddGoalTemplateModalOpen(true), []);
-  const closeAddGoalTemplateModal = useCallback(() => setIsAddGoalTemplateModalOpen(false), []);
-  const openEditGoalTemplateModal = useCallback((template: GoalTemplate) => setEditingGoalTemplate(template), []);
-  const closeEditGoalTemplateModal = useCallback(() => setEditingGoalTemplate(null), []);
-  const openDeleteGoalTemplateModal = useCallback((template: GoalTemplate | null) => setDeletingGoalTemplate(template), []);
-  const closeDeleteGoalTemplateModal = useCallback(() => setDeletingGoalTemplate(null), []);
-  const openEditSessionModal = useCallback((session: SessionData) => setEditingSession(session), []);
-  const closeEditSessionModal = useCallback(() => setEditingSession(null), []);
-  const openDeleteSessionModal = useCallback((session: SessionData | null) => setDeletingSession(session), []);
-  const closeDeleteSessionModal = useCallback(() => setDeletingSession(null), []);
-  const openEditAssignedGoalModal = useCallback((studentId: string, goal: Goal) => setEditingAssignedGoal({ studentId, goal }), []);
-  const closeEditAssignedGoalModal = useCallback(() => setEditingAssignedGoal(null), []);
-  
   const setDataEntrySessionDate = useCallback((date: Date | undefined) => setDataEntrySessionDateState(date), []);
   const setDataEntrySessionTime = useCallback((time: string) => setDataEntrySessionTimeState(time), []);
   const setDataEntrySelectedStudentIds = useCallback((ids: string[]) => setDataEntrySelectedStudentIdsState(ids), []);
@@ -1352,4 +1354,6 @@ export const useStudentData = (): StudentDataContextType => {
 
 
     
+
+
 
