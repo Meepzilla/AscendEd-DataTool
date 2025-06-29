@@ -1,60 +1,28 @@
 
 {
-  // TypeScript compiler options.
   "compilerOptions": {
-    // Specifies the JavaScript language version for emitted JavaScript code.
-    // "ES2017" is a common choice for modern applications.
     "target": "ES2017",
-    // List of libraries to be included in the compilation.
-    // "dom" for browser APIs, "dom.iterable" for iterable DOM types, "esnext" for latest ECMAScript features.
     "lib": ["dom", "dom.iterable", "esnext"],
-    // Allows JavaScript files to be compiled.
     "allowJs": true,
-    // Skips type checking of declaration files (.d.ts).
-    // This can speed up compilation but should be used carefully.
     "skipLibCheck": true,
-    // Enables a broad range of type checking validations.
-    // Recommended for new projects for better code quality.
     "strict": true,
-    // Do not emit outputs (like JavaScript files) from the compiler.
-    // Useful when Babel or another transpiler handles JavaScript emission.
     "noEmit": true,
-    // Enables a compatibility layer for non-ES modules imports.
-    // Essential when importing CommonJS modules into an ES module context.
     "esModuleInterop": true,
-    // Specifies the module code generation.
-    // "esnext" uses the latest ECMAScript module syntax.
     "module": "esnext",
-    // Specifies how modules are resolved.
-    // "bundler" is optimized for bundlers like Webpack or Rollup.
     "moduleResolution": "bundler",
-    // Allows importing .json files as modules.
     "resolveJsonModule": true,
-    // Ensures that each file can be compiled independently.
-    // Necessary for environments like Next.js where files are processed in isolation.
     "isolatedModules": true,
-    // Specifies JSX emit mode.
-    // "preserve" keeps JSX as is, for Babel or other JSX transformers to handle.
     "jsx": "preserve",
-    // Enables incremental compilation, which can speed up rebuilds.
     "incremental": true,
-    // Configuration for TypeScript language service plugins.
     "plugins": [
       {
-        // Integrates with Next.js specific TypeScript features.
         "name": "next"
       }
     ],
-    // Maps a series of aliases to directories.
-    // Allows using '@/' to refer to the './src/' directory, simplifying import paths.
     "paths": {
       "@/*": ["./src/*"]
     }
   },
-  // Specifies an array of filenames or patterns to include in the compilation.
-  // This includes standard Next.js declaration files and all .ts/.tsx files.
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  // Specifies an array of filenames or patterns to exclude from the compilation.
-  // Typically, this includes 'node_modules' to avoid type-checking third-party libraries.
   "exclude": ["node_modules"]
 }
