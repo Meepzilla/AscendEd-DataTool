@@ -485,7 +485,7 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
     sessionTargetValue: 90,
   },
   {
-    name: 'Use possessive /s/ correctly (e.g., "Mommy's shoe")',
+    name: 'Use possessive /s/ correctly (e.g., "Mommy\'s shoe")',
     type: GOAL_TYPES.LANGUAGE_EXPRESSION as GoalType,
     smartGoalPrompt: "Generate a SMART goal for a student to use possessive /'s/ correctly in phrases or sentences.",
     generatedSmartGoal: '',
