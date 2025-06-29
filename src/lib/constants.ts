@@ -41,6 +41,7 @@ export const GOAL_TYPE_FIELDS: Record<GoalType, Record<string, any>> = {
     totalSyllables: 0,
     stutteredSyllables: 0,
     observationNotes: '',
+    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, FullPhysical: 0,
   },
   [GOAL_TYPES.QUALITATIVE_OBSERVATION]: {
     notes: '',
@@ -72,12 +73,14 @@ export const GOAL_TYPE_FIELDS: Record<GoalType, Record<string, any>> = {
     textureOrConsistency: '',
     trialsAccepted: 0,
     trialsRefused: 0,
-    notes: ''
+    notes: '',
+    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, FullPhysical: 0,
   },
   [GOAL_TYPES.SEQUENCED_TRIALS]: {
     trialsPerAttempt: 5,
     successfulAttempts: 0,
     failedAttempts: 0,
+    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, FullPhysical: 0,
   },
   [GOAL_TYPES.PROMPTING]: {
     notes: '',

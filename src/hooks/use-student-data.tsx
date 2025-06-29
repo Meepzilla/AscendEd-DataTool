@@ -1191,9 +1191,8 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const { studentId, goal, goalData } = focusedInfo;
 
     const promptToUpdate = PROMPT_HOTKEY_MAP[key];
-    const goalTypesWithoutPrompts: GoalType[] = ['FLUENCY_SYLLABLE_STUTTER', 'FEEDING_SWALLOWING', 'SEQUENCED_TRIALS'];
 
-    if (promptToUpdate && !goalTypesWithoutPrompts.includes(goal.type)) {
+    if (promptToUpdate) {
       const currentPromptCount = Number(goalData[promptToUpdate] || 0);
       const newPromptValue = alt ? Math.max(0, currentPromptCount - 1) : currentPromptCount + 1;
 
@@ -1354,6 +1353,7 @@ export const useStudentData = (): StudentDataContextType => {
 
 
     
+
 
 
 
