@@ -1,24 +1,35 @@
 'use client';
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle }
-  from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import Link from 'next/link';
 import { APP_NAME } from '@/lib/constants';
 import { LogIn, AlertCircle, WifiOff } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { SignInSchema } from "@/lib/types";
+
+type SignInFormData = z.infer<typeof SignInSchema>;
 
 export default function LoginPage() {
   const { currentUser, signInAsGuest, signInWithEmail, loading, error: authError, isFirebaseAvailable } = useAuth();
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [pageError, setPageError] = useState<string | null>(null);
+
+  const form = useForm<SignInFormData>({
+    resolver: zodResolver(SignInSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
 
   useEffect(() => {
     if (currentUser && !loading) { 
@@ -39,14 +50,13 @@ export default function LoginPage() {
     await signInAsGuest();
   };
 
-  const handleEmailSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onEmailSignIn = async (data: SignInFormData) => {
     if (!isFirebaseAvailable) {
       setPageError("Email/Password login is not available in local mode. Please use Guest Sign In.");
       return;
     }
     setPageError(null);
-    await signInWithEmail(email, password);
+    await signInWithEmail(data.email, data.password);
   };
 
   if (loading && !currentUser && !pageError && !authError) { 
@@ -67,47 +77,43 @@ export default function LoginPage() {
                    className={pageError.includes("Firebase not configured") || pageError.includes("local mode") ? "border-yellow-500 bg-yellow-50/50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-700" : ""}>
               {pageError.includes("Firebase not configured") || pageError.includes("local mode") ? <WifiOff className="h-4 w-4 text-yellow-600 dark:text-yellow-500" /> : <AlertCircle className="h-4 w-4" />}
               <AlertTitle>{pageError.includes("Firebase not configured") || pageError.includes("local mode") ? "Local Mode Active / Info" : "Authentication Error"}</AlertTitle>
-              <AlertDescription>
-                {pageError}
-                {pageError.includes("Firebase not configured") || pageError.includes("local mode") ? null : (
-                  <>
-                    <br/>
-                    {" Please check your credentials or ensure your Firebase environment is correctly set up."}
-                  </>
-                )}
-              </AlertDescription>
+              <AlertDescription>{pageError}</AlertDescription>
             </Alert>
           )}
-          <form onSubmit={handleEmailSignIn} className="space-y-4">
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input 
-                id="email" 
-                type="email" 
-                placeholder="m@example.com" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required 
-                disabled={loading || !isFirebaseAvailable} 
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onEmailSignIn)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="m@example.com" {...field} disabled={loading || !isFirebaseAvailable} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div>
-              <Label htmlFor="password">Password</Label>
-              <Input 
-                id="password" 
-                type="password" 
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required 
-                disabled={loading || !isFirebaseAvailable}
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="••••••••" {...field} disabled={loading || !isFirebaseAvailable} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            <Button type="submit" className="w-full" disabled={loading || !isFirebaseAvailable}>
-              <LogIn className="mr-2 h-4 w-4" />
-              {loading && isFirebaseAvailable ? 'Signing In...' : 'Sign In'}
-            </Button>
-          </form>
+              <Button type="submit" className="w-full" disabled={loading || !isFirebaseAvailable}>
+                <LogIn className="mr-2 h-4 w-4" />
+                {loading && isFirebaseAvailable ? 'Signing In...' : 'Sign In'}
+              </Button>
+            </form>
+          </Form>
 
           <div className="mt-4 text-center text-sm">
             <Link href="/signup" className="text-muted-foreground hover:text-primary underline">

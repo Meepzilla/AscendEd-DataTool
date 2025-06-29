@@ -144,6 +144,22 @@ export const StudentSchema = z.object({
   name: z.string().min(2, { message: "Student name must be at least 2 characters." }),
 });
 
+export const SignInSchema = z.object({
+  email: z.string().email({ message: "Please enter a valid email address." }),
+  password: z.string().min(1, { message: "Password is required." }),
+});
+
+export const SignUpSchema = z.object({
+  displayName: z.string().min(2, { message: "Display name must be at least 2 characters." }),
+  email: z.string().email({ message: "Please enter a valid email address." }),
+  password: z.string().min(6, { message: "Password must be at least 6 characters." }),
+  confirmPassword: z.string().min(6, { message: "Password must be at least 6 characters." }),
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Passwords do not match.",
+  path: ["confirmPassword"],
+});
+
+
 export const GoalTemplateSchema = z.object({
   name: z.string().min(3, "Template name is required."),
   type: z.string(), 

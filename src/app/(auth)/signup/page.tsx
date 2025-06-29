@@ -3,23 +3,35 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { APP_NAME } from '@/lib/constants';
 import { UserPlus, AlertCircle, LogIn } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from "next/link";
+import { SignUpSchema } from "@/lib/types";
+
+type SignUpFormData = z.infer<typeof SignUpSchema>;
 
 export default function SignUpPage() {
   const { currentUser, signUpWithEmail, loading, error: authError, isFirebaseAvailable } = useAuth();
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
   const [pageError, setPageError] = useState<string | null>(null);
+
+  const form = useForm<SignUpFormData>({
+    resolver: zodResolver(SignUpSchema),
+    defaultValues: {
+      displayName: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+    },
+  });
 
   useEffect(() => {
     if (currentUser && !loading) { 
@@ -35,20 +47,14 @@ export default function SignUpPage() {
     }
   }, [authError]);
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: SignUpFormData) => {
     setPageError(null);
-
-    if (password !== confirmPassword) {
-      setPageError("Passwords do not match.");
-      return;
-    }
     if (!isFirebaseAvailable) {
       setPageError("Sign-up is not available in local mode.");
       return;
     }
 
-    await signUpWithEmail(email, password, displayName);
+    await signUpWithEmail(data.email, data.password, data.displayName);
     // Redirection is handled by the useEffect above
   };
 
@@ -68,60 +74,66 @@ export default function SignUpPage() {
               <AlertDescription>{pageError}</AlertDescription>
             </Alert>
           )}
-          <form onSubmit={handleSignUp} className="space-y-4">
-            <div>
-              <Label htmlFor="displayName">Display Name</Label>
-              <Input 
-                id="displayName" 
-                type="text" 
-                placeholder="e.g., Jane Doe" 
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                required 
-                disabled={loading || !isFirebaseAvailable}
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="displayName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Display Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., Jane Doe" {...field} disabled={loading || !isFirebaseAvailable} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input 
-                id="email" 
-                type="email" 
-                placeholder="m@example.com" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required 
-                disabled={loading || !isFirebaseAvailable}
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="m@example.com" {...field} disabled={loading || !isFirebaseAvailable} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div>
-              <Label htmlFor="password">Password</Label>
-              <Input 
-                id="password" 
-                type="password" 
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required 
-                disabled={loading || !isFirebaseAvailable}
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="••••••••" {...field} disabled={loading || !isFirebaseAvailable} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-             <div>
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <Input 
-                id="confirmPassword" 
-                type="password" 
-                placeholder="••••••••"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required 
-                disabled={loading || !isFirebaseAvailable}
+              <FormField
+                control={form.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirm Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="••••••••" {...field} disabled={loading || !isFirebaseAvailable} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            <Button type="submit" className="w-full" disabled={loading || !isFirebaseAvailable}>
-              <UserPlus className="mr-2 h-4 w-4" />
-              {loading ? 'Creating Account...' : 'Sign Up'}
-            </Button>
-          </form>
+              <Button type="submit" className="w-full" disabled={loading || !isFirebaseAvailable}>
+                <UserPlus className="mr-2 h-4 w-4" />
+                {loading ? 'Creating Account...' : 'Sign Up'}
+              </Button>
+            </form>
+          </Form>
           <div className="mt-4 text-center text-sm text-muted-foreground">
             Already have an account?{' '}
             <Link href="/login" className="underline hover:text-primary">
