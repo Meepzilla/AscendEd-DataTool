@@ -1,10 +1,9 @@
-
 'use client';
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, Trash2, LayoutGrid, Minimize2, UserX, ArrowRightLeft, Lightbulb, Download, ListPlus, Workflow, Shuffle, CheckSquare, ListChecks } from 'lucide-react';
+import { ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, Trash2, LayoutGrid, Minimize2, UserX, UserPlus, ArrowRightLeft, Lightbulb, Download, ListPlus, Workflow, Shuffle, CheckSquare, ListChecks } from 'lucide-react';
 import { APP_NAME } from '@/lib/constants';
 
 interface ChangelogEntry {
@@ -17,6 +16,27 @@ interface ChangelogEntry {
 }
 
 const changelogEntries: ChangelogEntry[] = [
+    {
+    date: '2025-06-30',
+    title: 'New User Sign-Up Flow',
+    description: "Added a dedicated sign-up page, allowing new users to create an account with a display name, email, and password. The login page has been updated to link to the new sign-up flow for a smoother onboarding experience.",
+    type: 'feature',
+    icon: UserPlus,
+  },
+  {
+    date: '2025-06-30',
+    title: 'New "Prompting" Goal Type for Focused Tracking',
+    description: `Introduced a new "Prompting" goal type designed specifically to track the level of assistance a student needs for a task. This goal type simplifies data entry by focusing only on prompt counters and notes, helping to better measure a student's growing independence.`,
+    type: 'feature',
+    icon: PlusCircle,
+  },
+  {
+    date: '2025-06-30',
+    title: 'Build Stability and Minor Fixes',
+    description: "Addressed several build-time errors, including an unterminated string constant in the analysis charts and a JSX parsing issue on the login page, enhancing overall application stability.",
+    type: 'fix',
+    icon: Bug,
+  },
   {
     date: '2025-06-29',
     title: 'Dashboard Activity Feed is Now Live',
