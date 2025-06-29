@@ -20,8 +20,7 @@ import ConfirmationModal from '@/components/modals/confirmation-modal';
 
 
 export default function StudentProfilePage() {
-  const routeParams = useParams(); 
-  const studentIdFromParams = typeof routeParams?.studentId === 'string' ? routeParams.studentId : undefined;
+  const { studentId: studentIdFromParams } = useParams() as { studentId?: string };
   const router = useRouter();
   
   // Dynamic imports for modals
@@ -275,5 +274,6 @@ function StudentProfileSkeleton() {
     </div>
   );
 }
+    
 
     
