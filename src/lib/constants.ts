@@ -28,14 +28,14 @@ export const GOAL_TYPES: Record<string, GoalType> = {
 };
 
 // Defines the default data structure for each goal type during session entry
-// Prompt counts (e.g., Verbal: 0) will be added dynamically if not present.
+// Prompt counts are included for relevant goal types.
 export const GOAL_TYPE_FIELDS: Record<GoalType, Record<string, any>> = {
   [GOAL_TYPES.ARTICULATION]: {
     correct: 0,
     incorrect: 0,
     targetSound: '',
-    wordList: ''
-    // Prompt counts are added dynamically
+    wordList: '',
+    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, FullPhysical: 0,
   },
   [GOAL_TYPES.FLUENCY_SYLLABLE_STUTTER]: {
     totalSyllables: 0,
@@ -43,28 +43,29 @@ export const GOAL_TYPE_FIELDS: Record<GoalType, Record<string, any>> = {
     observationNotes: '',
   },
   [GOAL_TYPES.QUALITATIVE_OBSERVATION]: {
-    notes: '', // Renamed from observationText
+    notes: '',
     rating: 3,
+    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, FullPhysical: 0,
   },
   [GOAL_TYPES.LANGUAGE_COMPREHENSION]: {
     questionsCorrect: 0,
     questionsIncorrect: 0,
     details: '',
-    // Prompt counts are added dynamically
+    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, FullPhysical: 0,
   },
   [GOAL_TYPES.LANGUAGE_EXPRESSION]: {
     opportunities: 0,
     successfulResponses: 0,
     unsuccessfulResponses: 0,
     details: '',
-    // Prompt counts are added dynamically
+    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, FullPhysical: 0,
   },
   [GOAL_TYPES.PHONOLOGICAL_PROCESSES]: {
     targetProcess: '',
     opportunities: 0,
     correctProductions: 0,
     incorrectProductions: 0,
-    // Prompt counts are added dynamically
+    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, FullPhysical: 0,
   },
   [GOAL_TYPES.FEEDING_SWALLOWING]: {
     foodOrLiquidName: '',
@@ -79,7 +80,8 @@ export const GOAL_TYPE_FIELDS: Record<GoalType, Record<string, any>> = {
     failedAttempts: 0,
   },
   [GOAL_TYPES.PROMPTING]: {
-    notes: '', // A field for notes/context
+    notes: '',
+    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, FullPhysical: 0,
   },
 };
 
