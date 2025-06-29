@@ -21,7 +21,6 @@ type SignInFormData = z.infer<typeof SignInSchema>;
 export default function LoginPage() {
   const { currentUser, signInAsGuest, signInWithEmail, loading, error: authError, isFirebaseAvailable } = useAuth();
   const router = useRouter();
-  const [pageError, setPageError] = useState<string | null>(null);
 
   const form = useForm<SignInFormData>({
     resolver: zodResolver(SignInSchema),
@@ -37,29 +36,11 @@ export default function LoginPage() {
     }
   }, [currentUser, loading, router]);
 
-  useEffect(() => {
-    if (authError) {
-      setPageError(authError.message);
-    } else {
-      setPageError(null);
-    }
-  }, [authError]);
-
-  const handleGuestLogin = async () => {
-    setPageError(null);
-    await signInAsGuest();
-  };
-
   const onEmailSignIn = async (data: SignInFormData) => {
-    if (!isFirebaseAvailable) {
-      setPageError("Email/Password login is not available in local mode. Please use Guest Sign In.");
-      return;
-    }
-    setPageError(null);
     await signInWithEmail(data.email, data.password);
   };
-
-  if (loading && !currentUser && !pageError && !authError) { 
+  
+  if (loading && !currentUser) { 
     return <div className="flex items-center justify-center min-h-screen">Loading authentication...</div>;
   }
   
@@ -72,14 +53,28 @@ export default function LoginPage() {
           <CardDescription>Sign in to manage student goals</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {pageError && (
-            <Alert variant={pageError.includes("Firebase not configured") || pageError.includes("local mode") ? "default" : "destructive"} 
-                   className={pageError.includes("Firebase not configured") || pageError.includes("local mode") ? "border-yellow-500 bg-yellow-50/50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-700" : ""}>
-              {pageError.includes("Firebase not configured") || pageError.includes("local mode") ? <WifiOff className="h-4 w-4 text-yellow-600 dark:text-yellow-500" /> : <AlertCircle className="h-4 w-4" />}
-              <AlertTitle>{pageError.includes("Firebase not configured") || pageError.includes("local mode") ? "Local Mode Active / Info" : "Authentication Error"}</AlertTitle>
-              <AlertDescription>{pageError}</AlertDescription>
+          {authError && (
+             <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Authentication Error</AlertTitle>
+              <AlertDescription>
+                {authError.message.includes('auth/invalid-credential') 
+                    ? 'Invalid email or password. Please check your credentials and try again.' 
+                    : 'An unexpected error occurred. Please try again later.'}
+              </AlertDescription>
             </Alert>
           )}
+
+          {!isFirebaseAvailable && (
+             <Alert variant="default" className="border-yellow-500 bg-yellow-50/50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-700">
+              <WifiOff className="h-4 w-4 text-yellow-600 dark:text-yellow-500" />
+              <AlertTitle>Local Mode Active</AlertTitle>
+              <AlertDescription>
+                Email login is unavailable. Please use Guest Sign In.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onEmailSignIn)} className="space-y-4">
               <FormField
@@ -131,7 +126,7 @@ export default function LoginPage() {
               </span>
             </div>
           </div>
-          <Button variant="outline" className="w-full" onClick={handleGuestLogin} disabled={loading && isFirebaseAvailable}>
+          <Button variant="outline" className="w-full" onClick={signInAsGuest} disabled={loading && isFirebaseAvailable}>
             {loading && isFirebaseAvailable ? 'Processing...' : 'Continue as Guest'}
             {!isFirebaseAvailable && " (Local Mode)"}
           </Button>
