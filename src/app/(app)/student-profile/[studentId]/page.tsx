@@ -13,8 +13,8 @@ import { formatDate, generateUUID } from '@/lib/helpers';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
 
+import AssignGoalToStudentModal from '@/components/modals/assign-goal-to-student-modal';
 import EditAssignedGoalModal from '@/components/modals/edit-assigned-goal-modal';
 import ConfirmationModal from '@/components/modals/confirmation-modal';
 
@@ -23,20 +23,6 @@ export default function StudentProfilePage() {
   const { studentId: studentIdFromParams } = useParams() as { studentId?: string };
   const router = useRouter();
   
-  // Dynamic imports for modals
-const AssignGoalToStudentModal = dynamic(() => import('@/components/modals/assign-goal-to-student-modal'), {
-  loading: () => null, // Or a loading skeleton/spinner
-  ssr: false,
-});
-const EditAssignedGoalModal = dynamic(() => import('@/components/modals/edit-assigned-goal-modal'), {
-  loading: () => null, // Or a loading skeleton/spinner
-  ssr: false,
-});
-const ConfirmationModal = dynamic(() => import('@/components/modals/confirmation-modal'), {
-  loading: () => null, // Or a loading skeleton/spinner
-  ssr: false,
-});
-
   const {
     students,
     loading, 
@@ -52,7 +38,7 @@ const ConfirmationModal = dynamic(() => import('@/components/modals/confirmation
     editingAssignedGoal, 
     openEditAssignedGoalModal, 
     closeEditAssignedGoalModal, 
-    updateStudentGoal, // Added for archiving
+    updateStudentGoal,
   } = useStudentData();
 
   const [currentStudent, setCurrentStudent] = useState<Student | null>(null);
@@ -69,7 +55,7 @@ const ConfirmationModal = dynamic(() => import('@/components/modals/confirmation
       } else if (!loading && students.length > 0) {
         setCurrentStudent(null); 
       }
-    } else if (studentIdFromParams === undefined && !loading) { // Check if studentId is explicitly undefined
+    } else if (studentIdFromParams === undefined && !loading) {
       setCurrentStudent(null);
     }
   }, [studentIdFromParams, students, loading, selectedStudent, setSelectedStudent]);
