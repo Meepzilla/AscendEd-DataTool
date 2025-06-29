@@ -193,12 +193,21 @@ const transformDataForSankeyChart = (sessions: SessionData[], studentActiveGoals
   return { nodes: finalNodes, links: finalLinks };
 };
 
-const CustomSankeyNode = ({ x, y, width, height, index, payload, containerWidth }: any) => {
+const CustomSankeyNode = ({ x, y, width, height, index, payload }: any) => {
   if (!payload || typeof payload.name === 'undefined') return null;
+  const isRight = x > 100; // Simplified check for node position
   const nodeName = String(payload.name), nodeValue = payload.value !== undefined ? ` (${payload.value.toLocaleString()})` : '';
-  const textX = payload.x < containerWidth / 2 ? width + 6 : -6;
-  const textAnchor = payload.x < containerWidth / 2 ? "start" : "end";
-  return <g transform={`translate(${x},${y})`}><rect height={height} width={width} fill={payload.color || "hsl(var(--muted))"} strokeWidth="0" rx="2" ry="2"/><text x={textX} y={height / 2} textAnchor={textAnchor} dominantBaseline="middle" fill="hsl(var(--foreground))" fontSize="12">{nodeName}{nodeValue}</text></g>;
+  const textX = isRight ? -6 : width + 6;
+  const textAnchor = isRight ? "end" : "start";
+
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <rect height={height} width={width} fill={payload.color || "hsl(var(--muted))"} strokeWidth="0" rx="2" ry="2"/>
+      <text x={textX} y={height / 2} textAnchor={textAnchor} dominantBaseline="middle" fill="hsl(var(--foreground))" fontSize="12">
+        {nodeName}{nodeValue}
+      </text>
+    </g>
+  );
 };
 
 export interface AnalysisChartsProps {
