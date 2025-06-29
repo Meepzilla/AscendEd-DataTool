@@ -104,6 +104,8 @@ export default function GoalDataInputComponent({
         actualPerformancePct = totalOpportunities > 0 ? (successful / totalOpportunities) * 100 : 0;
         break;
       }
+      case 'PROMPTING':
+        return 'N/A';
       default:
         return 'N/A';
     }
@@ -315,6 +317,20 @@ export default function GoalDataInputComponent({
             </FormItem>
           </>
         );
+      case 'PROMPTING':
+        return (
+          <FormItem>
+            <FormLabel>Context/Observation Notes</FormLabel>
+            <Textarea
+              value={data.notes || ''}
+              onChange={(e) => handleChange('notes', e.target.value)}
+              placeholder="Describe the task or context for the prompting"
+              rows={2}
+              className="text-sm"
+              disabled={isArchived}
+            />
+          </FormItem>
+        );
       case 'LANGUAGE_COMPREHENSION':
         return (
           <>
@@ -431,7 +447,7 @@ export default function GoalDataInputComponent({
   };
 
   const showPromptCounters = goal.type !== 'FLUENCY_SYLLABLE_STUTTER' && goal.type !== 'FEEDING_SWALLOWING';
-  const showAccuracyDisplay = goal.type !== 'QUALITATIVE_OBSERVATION' && goal.type !== 'LANGUAGE_COMPREHENSION';
+  const showAccuracyDisplay = goal.type !== 'QUALITATIVE_OBSERVATION' && goal.type !== 'LANGUAGE_COMPREHENSION' && goal.type !== 'PROMPTING';
 
 
   return (

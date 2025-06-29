@@ -30,7 +30,8 @@ export type GoalType =
   | 'LANGUAGE_EXPRESSION'
   | 'PHONOLOGICAL_PROCESSES'
   | 'FEEDING_SWALLOWING'
-  | 'SEQUENCED_TRIALS';
+  | 'SEQUENCED_TRIALS'
+  | 'PROMPTING';
 
 export interface GoalTemplate {
   id: string;

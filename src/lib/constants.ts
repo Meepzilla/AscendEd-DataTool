@@ -24,6 +24,7 @@ export const GOAL_TYPES: Record<string, GoalType> = {
   PHONOLOGICAL_PROCESSES: 'PHONOLOGICAL_PROCESSES',
   FEEDING_SWALLOWING: 'FEEDING_SWALLOWING',
   SEQUENCED_TRIALS: 'SEQUENCED_TRIALS',
+  PROMPTING: 'PROMPTING',
 };
 
 // Defines the default data structure for each goal type during session entry
@@ -76,6 +77,9 @@ export const GOAL_TYPE_FIELDS: Record<GoalType, Record<string, any>> = {
     trialsPerAttempt: 5,
     successfulAttempts: 0,
     failedAttempts: 0,
+  },
+  [GOAL_TYPES.PROMPTING]: {
+    notes: '', // A field for notes/context
   },
 };
 
@@ -586,6 +590,14 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
     generatedSmartGoal: '',
     isDefault: true,
     sessionTargetValue: 80,
+  },
+  // New Prompting Goal
+  {
+    name: 'Reduce Total Prompts for Task Completion',
+    type: GOAL_TYPES.PROMPTING as GoalType,
+    smartGoalPrompt: 'Generate a SMART goal for a student to complete a familiar task (e.g., writing their name) while requiring fewer than 5 total prompts.',
+    generatedSmartGoal: '',
+    isDefault: true,
   },
 ];
 
