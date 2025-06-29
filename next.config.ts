@@ -1,11 +1,6 @@
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
-  /* config options here */
-};
-
-const nextConfigWithAnalyzer: NextConfig = {
-  /* config options here */
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -14,10 +9,15 @@ const nextConfigWithAnalyzer: NextConfig = {
   },
   images: {
     remotePatterns: [
-
       {
         protocol: 'https',
         hostname: 'placehold.co',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'avatar.vercel.sh',
         port: '',
         pathname: '/**',
       },
@@ -25,10 +25,4 @@ const nextConfigWithAnalyzer: NextConfig = {
   },
 };
 
-const withBundleAnalyzer = require('@next/bundle-analyzer')({
-  enabled: process.env.ANALYZE === 'true',
-});
-
-// Wrap the original nextConfig with the bundle analyzer
-// This ensures the analyzer is only active when the ANALYZE environment variable is set to 'true'
-export default withBundleAnalyzer(nextConfigWithAnalyzer);
+export default nextConfig;
