@@ -610,6 +610,48 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
     generatedSmartGoal: '',
     isDefault: true,
   },
+
+  // Caregiver Education / Training Goals
+  {
+    name: "Caregiver demonstrates use of core vocabulary on AAC device",
+    type: GOAL_TYPES.QUALITATIVE_OBSERVATION as GoalType,
+    smartGoalPrompt: "Generate a SMART goal for a caregiver to demonstrate use of core vocabulary words on their child's AAC device during a play-based activity.",
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 4,
+  },
+  {
+    name: "Caregiver implements shared reading strategies",
+    type: GOAL_TYPES.QUALITATIVE_OBSERVATION as GoalType,
+    smartGoalPrompt: "Generate a SMART goal for a caregiver to implement two shared reading strategies (e.g., CROWD, PEER) during a book reading session.",
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 4,
+  },
+  {
+    name: "Caregiver provides specific praise for communication attempts",
+    type: GOAL_TYPES.QUALITATIVE_OBSERVATION as GoalType,
+    smartGoalPrompt: "Generate a SMART goal for a caregiver to provide specific verbal praise for their child's communication attempts (verbal or AAC) during daily routines.",
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 4,
+  },
+  {
+    name: "Caregiver sets up communication opportunities during playtime",
+    type: GOAL_TYPES.QUALITATIVE_OBSERVATION as GoalType,
+    smartGoalPrompt: "Generate a SMART goal for a caregiver to set up at least three communication opportunities using communication temptation strategies during a 15-minute playtime.",
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 4,
+  },
+  {
+    name: "Caregiver will accurately report on child's food intake for 3 meals",
+    type: GOAL_TYPES.QUALITATIVE_OBSERVATION as GoalType,
+    smartGoalPrompt: "Generate a SMART goal for a caregiver to accurately track and report on their child's food and liquid intake for three consecutive meals using a provided log.",
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 5,
+  },
 ];
 
 // Defines the maximum number of student slots allowed on the data entry page.
