@@ -339,6 +339,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   useEffect(() => {
     if (authLoading) {
       setLoading(true);
+      setSessionsLoading(true);
       return;
     }
 
@@ -362,65 +363,78 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       return;
     }
 
+    // --- Phase 1: Initial load from local storage ---
     setLoading(true);
     setSessionsLoading(true);
+    try {
+        const studentsKey = getLocalStorageKey(LOCAL_STORAGE_STUDENTS_BASE_KEY, currentUser.uid);
+        const localStudents = studentsKey ? getFromLocalStorage(studentsKey, []) : [];
+        setStudentsState(localStudents.sort((a: Student, b: Student) => a.name.localeCompare(b.name)));
+
+        const templatesKey = getLocalStorageKey(LOCAL_STORAGE_GOAL_TEMPLATES_BASE_KEY, currentUser.uid);
+        const rawTemplates = templatesKey ? getFromLocalStorage(templatesKey, []) : [];
+        if (rawTemplates && rawTemplates.length > 0) {
+          setGoalTemplatesState(rawTemplates.map((t: any) => ({ ...t, createdAt: new Date(t.createdAt) })).sort((a:GoalTemplate,b:GoalTemplate) => a.name.localeCompare(b.name)));
+        }
+
+        const sessionsKey = getLocalStorageKey(LOCAL_STORAGE_SESSIONS_BASE_KEY, currentUser.uid);
+        const localSessions = sessionsKey ? getFromLocalStorage(sessionsKey, []) : [];
+        setSessionsState(localSessions.sort((a:SessionData,b:SessionData) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    } catch (e) {
+        console.error("Error loading initial data from localStorage:", e);
+        addErrorLog({ message: 'Error loading initial data from localStorage.', source: 'useStudentData.init', details: (e as Error).message, type: 'error' });
+    } finally {
+        setLoading(false); // Essential data (students/templates) is "loaded", app is responsive.
+    }
+
+    // --- Phase 2: Firebase Listeners (if available) ---
     let unsubscribeStudents = () => {};
     let unsubscribeTemplates = () => {};
     let unsubscribeSessions = () => {};
 
     if (isFirebaseDBAvailable && firestoreDbModule) {
-      console.log("StudentData: Operating in Firebase mode for user:", currentUser.uid);
+      console.log("StudentData: Firebase available. Syncing with real-time data for user:", currentUser.uid);
 
       const studentQuery = query(collection(firestoreDbModule, getStudentsCollectionPath(APP_ID)), where("userId", "==", currentUser.uid));
-      const templateQuery = query(collection(firestoreDbModule, getGoalTemplatesCollectionPath(APP_ID)), where("userId", "==", currentUser.uid));
-      const sessionQuery = query(collection(firestoreDbModule, getSessionsCollectionPath(APP_ID)), where("userId", "==", currentUser.uid));
-
-      let studentsLoaded = false;
-      let templatesLoaded = false;
-      const checkEssentialFirebaseLoaded = () => {
-        if (studentsLoaded && templatesLoaded) {
-          setLoading(false);
-          console.log("StudentData: Essential Firebase data loaded.");
-        }
-      };
-
       unsubscribeStudents = onSnapshot(studentQuery, (snapshot) => {
         const studentData = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as Student));
-        setStudentsState(studentData.sort((a,b) => a.name.localeCompare(b.name)));
-        studentsLoaded = true;
-        checkEssentialFirebaseLoaded();
+        const sortedStudents = studentData.sort((a,b) => a.name.localeCompare(b.name));
+        setStudentsState(sortedStudents);
+        saveStudentsToLocal(sortedStudents, currentUser.uid);
       }, (err: Error) => {
         console.error("Error fetching students from Firebase:", err);
         setError(err); 
         addErrorLog({ message: 'Failed to load students from Firebase.', source: 'useStudentData.studentsSnapshot', details: err.message, type: 'error' });
         safeToast({ title: "Firebase Error", description: `Could not load students: ${err.message}`, variant: "destructive" });
-        studentsLoaded = true; checkEssentialFirebaseLoaded();
       });
 
+      const templateQuery = query(collection(firestoreDbModule, getGoalTemplatesCollectionPath(APP_ID)), where("userId", "==", currentUser.uid));
       unsubscribeTemplates = onSnapshot(templateQuery, async (snapshot) => {
         const templateData = snapshot.docs.map(docSnap => {
             const data = docSnap.data();
             return { id: docSnap.id, ...data, createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(data.createdAt) } as GoalTemplate;
         });
-        setGoalTemplatesState(templateData.sort((a,b) => a.name.localeCompare(b.name)));
+        const sortedTemplates = templateData.sort((a,b) => a.name.localeCompare(b.name));
+        setGoalTemplatesState(sortedTemplates);
+        saveTemplatesToLocal(sortedTemplates, currentUser.uid);
 
         const defaultTemplatesInDb = templateData.filter(t => t.isDefault && t.userId === currentUser.uid);
         if (defaultTemplatesInDb.length < DEFAULT_GOAL_TEMPLATES.length && currentUser && firestoreDbModule) {
          await seedFirebaseDefaultTemplates(currentUser, firestoreDbModule);
         }
-        templatesLoaded = true;
-        checkEssentialFirebaseLoaded();
       }, (err: Error) => {
         console.error("Error fetching goal templates from Firebase:", err);
         setError(err); 
         addErrorLog({ message: 'Failed to load goal templates from Firebase.', source: 'useStudentData.templatesSnapshot', details: err.message, type: 'error' });
         safeToast({ title: "Firebase Error", description: `Could not load goal templates: ${err.message}`, variant: "destructive" });
-        templatesLoaded = true; checkEssentialFirebaseLoaded();
       });
 
+      const sessionQuery = query(collection(firestoreDbModule, getSessionsCollectionPath(APP_ID)), where("userId", "==", currentUser.uid));
       unsubscribeSessions = onSnapshot(sessionQuery, (snapshot) => {
         const sessionData = snapshot.docs.map(docSnap => ({ sessionId: docSnap.id, ...docSnap.data() } as SessionData));
-        setSessionsState(sessionData.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        const sortedSessions = sessionData.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        setSessionsState(sortedSessions);
+        saveSessionsToLocal(sortedSessions, currentUser.uid);
         setSessionsLoading(false);
       }, (err: Error) => {
         console.error("Error fetching sessions from Firebase:", err);
@@ -430,36 +444,13 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         setSessionsLoading(false);
       });
 
-
     } else {
-      console.log("StudentData: Operating in local data mode.");
-      addErrorLog({ message: 'Operating in local data mode. Firestore DB not available.', source: 'useStudentData.init', type: 'warning' });
-      try {
-        const studentsKey = getLocalStorageKey(LOCAL_STORAGE_STUDENTS_BASE_KEY, currentUser.uid);
-        const localStudents = studentsKey ? JSON.parse(localStorage.getItem(studentsKey) || 'null') : null;
-        setStudentsState(localStudents ? localStudents.sort((a:Student,b:Student) => a.name.localeCompare(b.name)) : []);
-        
-        const sessionsKey = getLocalStorageKey(LOCAL_STORAGE_SESSIONS_BASE_KEY, currentUser.uid);
-        const localSessions = sessionsKey ? JSON.parse(localStorage.getItem(sessionsKey) || 'null') : null;
-        setSessionsState(localSessions ? localSessions.sort((a:SessionData,b:SessionData) => new Date(b.date).getTime() - new Date(a.date).getTime()) : []);
-
-        const templatesKey = getLocalStorageKey(LOCAL_STORAGE_GOAL_TEMPLATES_BASE_KEY, currentUser.uid);
-        const rawTemplates = templatesKey ? JSON.parse(localStorage.getItem(templatesKey) || 'null') : null;
-        if (rawTemplates && rawTemplates.length > 0) {
-          setGoalTemplatesState(rawTemplates.map((t: any) => ({ ...t, createdAt: new Date(t.createdAt) })).sort((a:GoalTemplate,b:GoalTemplate) => a.name.localeCompare(b.name)));
-        } else {
-          seedLocalDefaultTemplates();
-        }
-
-      } catch (e) {
-          console.error("Error loading data from localStorage:", e);
-          addErrorLog({ message: 'Error loading data from localStorage.', source: 'useStudentData.initLocal', details: (e as Error).message, type: 'error' });
-          setStudentsState([]);
-          setSessionsState([]);
-          seedLocalDefaultTemplates(); 
+      console.log("StudentData: Firebase not available. Using local data only.");
+      const templatesKey = getLocalStorageKey(LOCAL_STORAGE_GOAL_TEMPLATES_BASE_KEY, currentUser.uid);
+      if (!templatesKey || !localStorage.getItem(templatesKey)) {
+        seedLocalDefaultTemplates();
       }
-      setLoading(false);
-      setSessionsLoading(false);
+      setSessionsLoading(false); // No firebase, so sessions "loading" is done.
     }
 
     return () => {
@@ -467,7 +458,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       unsubscribeTemplates();
       unsubscribeSessions();
     };
-  }, [authLoading, currentUser, isFirebaseDBAvailable, firestoreDbModule, seedLocalDefaultTemplates, seedFirebaseDefaultTemplates, safeToast, APP_ID, addErrorLog]);
+  }, [authLoading, currentUser, isFirebaseDBAvailable, firestoreDbModule, seedLocalDefaultTemplates, seedFirebaseDefaultTemplates, safeToast, APP_ID, addErrorLog, saveStudentsToLocal, saveTemplatesToLocal, saveSessionsToLocal]);
 
   useEffect(() => {
     setDataEntryVisibleGoalCountByStudentIdState(prevCounts => {
