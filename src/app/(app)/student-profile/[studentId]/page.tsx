@@ -20,7 +20,7 @@ import ConfirmationModal from '@/components/modals/confirmation-modal';
 
 
 export default function StudentProfilePage({ params }: { params: { studentId?: string } }) {
-  const { studentId: studentIdFromParams } = params;
+  const studentIdFromParams = params.studentId;
   const router = useRouter();
   
   const {
