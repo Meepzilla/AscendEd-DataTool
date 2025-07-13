@@ -142,7 +142,7 @@ export default function GoalTemplatesPage() {
                       <CardTitle className="text-lg font-semibold leading-tight">{template.name}</CardTitle>
                       {template.isDefault && <Badge variant="outline">Default</Badge>}
                     </div>
-                    <Badge variant="secondary" className="mt-1 w-fit">{template.type}</Badge>
+                    <Badge variant="secondary" className="mt-1 w-fit">{template.type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}</Badge>
                   </CardHeader>
                   <CardContent className="flex-grow space-y-2 text-sm">
                     <div>
@@ -158,7 +158,7 @@ export default function GoalTemplatesPage() {
                      {template.sessionTargetValue !== undefined && (
                         <div>
                             <p className="font-medium text-muted-foreground">Session Target:</p>
-                            <p className="text-foreground">{template.sessionTargetValue}%</p>
+                            <p className="text-foreground">{template.sessionTargetValue}{template.type.startsWith('QUALITATIVE') ? '' : '%'}</p>
                         </div>
                     )}
                   </CardContent>
