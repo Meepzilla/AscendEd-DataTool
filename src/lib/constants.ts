@@ -366,6 +366,22 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
     isDefault: true,
     sessionTargetValue: 90,
   },
+  {
+    name: 'Produce "gr" blend in initial word position',
+    type: GOAL_TYPES.ARTICULATION as GoalType,
+    smartGoalPrompt: 'Generate a SMART goal for a student to accurately produce the "gr" consonant blend in the initial position of words across 10 trials.',
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 80,
+  },
+  {
+    name: 'Produce /d/ in medial word position',
+    type: GOAL_TYPES.ARTICULATION as GoalType,
+    smartGoalPrompt: 'Generate a SMART goal for a student to accurately produce the /d/ sound in the medial position of words.',
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 80,
+  },
 
   // Phonological Processes Goals
   {
@@ -407,6 +423,22 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
     generatedSmartGoal: '',
     isDefault: true,
     sessionTargetValue: 75,
+  },
+  {
+    name: 'Reduce Deaffrication (e.g., "sh" for "ch")',
+    type: GOAL_TYPES.PHONOLOGICAL_PROCESSES as GoalType,
+    smartGoalPrompt: 'Generate a SMART goal for a student to reduce deaffrication, correctly producing affricate sounds like "ch" and "j".',
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 75,
+  },
+  {
+    name: 'Reduce Weak Syllable Deletion in 3-syllable words',
+    type: GOAL_TYPES.PHONOLOGICAL_PROCESSES as GoalType,
+    smartGoalPrompt: 'Generate a SMART goal for a student to reduce weak syllable deletion by correctly producing all syllables in 3-syllable words.',
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 80,
   },
 
   // Language Comprehension Goals
@@ -552,6 +584,14 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
     sessionTargetValue: 5,
   },
   {
+    name: 'GLP: Model language by acknowledging and adding to gestalts',
+    type: GOAL_TYPES.QUALITATIVE_OBSERVATION as GoalType,
+    smartGoalPrompt: "Generate a SMART goal for the clinician/caregiver to acknowledge the student's gestalt and re-cast it with a slightly varied, relevant model (NLA Stage 1).",
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 4,
+  },
+  {
     name: 'GLP: Mitigate scripts into smaller chunks',
     type: GOAL_TYPES.LANGUAGE_EXPRESSION as GoalType,
     smartGoalPrompt: "Generate a SMART goal for a student to break down larger gestalts into smaller, more flexible chunks (e.g., 'let's go outside' becomes 'go outside' or just 'go') (NLA Stage 2).",
@@ -574,6 +614,14 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
     generatedSmartGoal: '',
     isDefault: true,
     sessionTargetValue: 80,
+  },
+  {
+    name: 'GLP: Use more complex and flexible grammar',
+    type: GOAL_TYPES.LANGUAGE_EXPRESSION as GoalType,
+    smartGoalPrompt: "Generate a SMART goal for a student to begin using more complex grammatical structures, including different verb tenses, plurals, and prepositions (NLA Stage 5-6).",
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 70,
   },
 
   // Fluency Goals
