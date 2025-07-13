@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useStudentData } from '@/hooks/use-student-data';
 import type { Student, Goal, GoalTemplate } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -19,8 +19,8 @@ import EditAssignedGoalModal from '@/components/modals/edit-assigned-goal-modal'
 import ConfirmationModal from '@/components/modals/confirmation-modal';
 
 
-export default function StudentProfilePage() {
-  const { studentId: studentIdFromParams } = useParams() as { studentId?: string };
+export default function StudentProfilePage({ params }: { params: { studentId?: string } }) {
+  const { studentId: studentIdFromParams } = params;
   const router = useRouter();
   
   const {
