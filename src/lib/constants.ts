@@ -37,6 +37,7 @@ export const GOAL_TYPES: Record<string, GoalType> = {
 // when a new session entry is initiated. Prompt counts are included where relevant.
 export const GOAL_TYPE_FIELDS: Record<GoalType, Record<string, any>> = {
   [GOAL_TYPES.ARTICULATION]: {
+    opportunities: 0,
     correct: 0,
     incorrect: 0,
     targetSound: '',
@@ -55,6 +56,7 @@ export const GOAL_TYPE_FIELDS: Record<GoalType, Record<string, any>> = {
     Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, FullPhysical: 0,
   },
   [GOAL_TYPES.LANGUAGE_COMPREHENSION]: {
+    opportunities: 0,
     questionsCorrect: 0,
     questionsIncorrect: 0,
     details: '',
@@ -780,5 +782,3 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
 // Defines the maximum number of student slots allowed on the data entry page.
 export const MAX_STUDENTS_DATA_ENTRY = 5;
 
-    
-    

@@ -67,6 +67,7 @@ export interface SessionGoalData {
 
 
 export interface ArticulationData {
+  opportunities: number;
   targetSound: string;
   correct: number;
   incorrect: number;
@@ -85,7 +86,7 @@ export interface QualitativeObservationData {
 
 export interface LanguageComprehensionData {
   details: string;
-  questionsAttempted: number;
+  opportunities: number;
   questionsCorrect: number;
   questionsIncorrect: number;
 }

@@ -1044,6 +1044,36 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
       let processedData = { ...newData };
 
+      // Handle correct/incorrect sync for opportunities field
+      if (['ARTICULATION', 'LANGUAGE_COMPREHENSION', 'LANGUAGE_EXPRESSION', 'PHONOLOGICAL_PROCESSES'].includes(goal.type)) {
+          let correctField: 'correct' | 'questionsCorrect' | 'successfulResponses' | 'correctProductions' | null = null;
+          let incorrectField: 'incorrect' | 'questionsIncorrect' | 'unsuccessfulResponses' | 'incorrectProductions' | null = null;
+          
+          switch(goal.type) {
+              case 'ARTICULATION': correctField = 'correct'; incorrectField = 'incorrect'; break;
+              case 'LANGUAGE_COMPREHENSION': correctField = 'questionsCorrect'; incorrectField = 'questionsIncorrect'; break;
+              case 'LANGUAGE_EXPRESSION': correctField = 'successfulResponses'; incorrectField = 'unsuccessfulResponses'; break;
+              case 'PHONOLOGICAL_PROCESSES': correctField = 'correctProductions'; incorrectField = 'incorrectProductions'; break;
+          }
+
+          if (correctField && incorrectField) {
+            let opportunities = Number(processedData.opportunities || 0);
+            let correct = Number(processedData[correctField] || 0);
+
+            if (updatedFieldName === 'opportunities') {
+                opportunities = Math.max(0, opportunities);
+                correct = Math.min(correct, opportunities);
+                processedData[correctField] = correct;
+            } else if (updatedFieldName === correctField) {
+                correct = Math.max(0, correct);
+                opportunities = Math.max(correct, opportunities);
+                processedData.opportunities = opportunities;
+            }
+            
+            processedData[incorrectField] = opportunities - correct;
+          }
+      }
+
       if (goal.type === 'FLUENCY_SYLLABLE_STUTTER') {
         let newTotalSyllables = Math.max(0, Number(processedData.totalSyllables || 0));
         let newStutteredSyllables = Math.max(0, Number(processedData.stutteredSyllables || 0));
@@ -1241,10 +1271,10 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       else if (goal.type === 'FEEDING_SWALLOWING') fieldToUpdate = 'trialsAccepted';
       else if (goal.type === 'SEQUENCED_TRIALS') fieldToUpdate = 'successfulAttempts';
     } else if (key === 'N') {
-      if (goal.type === 'ARTICULATION') fieldToUpdate = 'incorrect';
-      else if (goal.type === 'LANGUAGE_COMPREHENSION') fieldToUpdate = 'questionsIncorrect';
-      else if (goal.type === 'LANGUAGE_EXPRESSION') fieldToUpdate = 'unsuccessfulResponses';
-      else if (goal.type === 'PHONOLOGICAL_PROCESSES') fieldToUpdate = 'incorrectProductions';
+      if (goal.type === 'ARTICULATION') fieldToUpdate = 'opportunities';
+      else if (goal.type === 'LANGUAGE_COMPREHENSION') fieldToUpdate = 'opportunities';
+      else if (goal.type === 'LANGUAGE_EXPRESSION') fieldToUpdate = 'opportunities';
+      else if (goal.type === 'PHONOLOGICAL_PROCESSES') fieldToUpdate = 'opportunities';
       else if (goal.type === 'FLUENCY_SYLLABLE_STUTTER') fieldToUpdate = 'stutteredSyllables';
       else if (goal.type === 'FEEDING_SWALLOWING') fieldToUpdate = 'trialsRefused';
       else if (goal.type === 'SEQUENCED_TRIALS') fieldToUpdate = 'failedAttempts';
