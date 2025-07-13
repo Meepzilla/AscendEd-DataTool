@@ -22,36 +22,27 @@ const calculateProgressForGoal = (goal: Goal, latestSessionForGoal: SessionData 
   if (!goalSessionData) return 0;
 
   let actualPerformancePct = 0;
+  let correct = 0;
+  let total = 0;
 
   switch (goal.type) {
-    case 'ARTICULATION': {
-      const correct = Number(goalSessionData.correct) || 0;
-      const incorrect = Number(goalSessionData.incorrect) || 0;
-      const total = correct + incorrect;
+    case 'ARTICULATION':
+    case 'LANGUAGE_COMPREHENSION':
+    case 'LANGUAGE_EXPRESSION':
+    case 'PHONOLOGICAL_PROCESSES':
+      correct = Number(goalSessionData.correct || goalSessionData.questionsCorrect || goalSessionData.successfulResponses || goalSessionData.correctProductions) || 0;
+      total = Number(goalSessionData.opportunities) || 0;
       actualPerformancePct = total > 0 ? (correct / total) * 100 : 0;
       break;
-    }
-    case 'LANGUAGE_COMPREHENSION': {
-      const correct = Number(goalSessionData.questionsCorrect) || 0;
-      const incorrect = Number(goalSessionData.questionsIncorrect) || 0;
-      const total = correct + incorrect;
-      actualPerformancePct = total > 0 ? (correct / total) * 100 : 0;
-      break;
-    }
-    case 'LANGUAGE_EXPRESSION': {
-      const successful = Number(goalSessionData.successfulResponses) || 0;
-      const unsuccessful = Number(goalSessionData.unsuccessfulResponses) || 0;
-      const total = successful + unsuccessful;
+    
+    case 'SEQUENCED_TRIALS': {
+      const successful = Number(goalSessionData.successfulAttempts || 0);
+      const failed = Number(goalSessionData.failedAttempts || 0);
+      total = successful + failed;
       actualPerformancePct = total > 0 ? (successful / total) * 100 : 0;
       break;
     }
-    case 'PHONOLOGICAL_PROCESSES': {
-      const correct = Number(goalSessionData.correctProductions) || 0;
-      const incorrect = Number(goalSessionData.incorrectProductions) || 0;
-      const total = correct + incorrect;
-      actualPerformancePct = total > 0 ? (correct / total) * 100 : 0;
-      break;
-    }
+
     case 'FLUENCY_SYLLABLE_STUTTER': {
       const totalSyllables = Number(goalSessionData.totalSyllables) || 0;
       const stutteredSyllables = Number(goalSessionData.stutteredSyllables) || 0;
@@ -62,7 +53,7 @@ const calculateProgressForGoal = (goal: Goal, latestSessionForGoal: SessionData 
     case 'FEEDING_SWALLOWING': {
       const accepted = Number(goalSessionData.trialsAccepted || 0);
       const refused = Number(goalSessionData.trialsRefused || 0);
-      const total = accepted + refused;
+      total = accepted + refused;
       actualPerformancePct = total > 0 ? (accepted / total) * 100 : 0;
       break;
     }
@@ -93,7 +84,7 @@ const calculateProgressForGoal = (goal: Goal, latestSessionForGoal: SessionData 
 };
 
 
-export default function StudentProgressSidebar({ student, studentSessions }: StudentProgressSidebarProps) {
+export default function StudentProgressSidebar({ student, studentSessions }: {student: Student, studentSessions: SessionData[]}) {
   if (!student) return null;
 
   const activeGoals = student.goals.filter(goal => !goal.isArchived);

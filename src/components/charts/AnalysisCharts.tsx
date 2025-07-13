@@ -36,33 +36,23 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
       switch (goalData.goalType) {
         case 'ARTICULATION':
           currentGoalCorrect = Number(goalData.data.correct) || 0;
-          currentGoalIncorrect = Number(goalData.data.incorrect) || 0;
-          currentGoalOpportunities = currentGoalCorrect + currentGoalIncorrect;
+          currentGoalOpportunities = Number(goalData.data.opportunities) || 0;
+          currentGoalIncorrect = Math.max(0, currentGoalOpportunities - currentGoalCorrect);
           break;
         case 'LANGUAGE_COMPREHENSION':
           currentGoalCorrect = Number(goalData.data.questionsCorrect) || 0;
-          currentGoalIncorrect = Number(goalData.data.questionsIncorrect) || 0;
-          currentGoalOpportunities = currentGoalCorrect + currentGoalIncorrect;
+          currentGoalOpportunities = Number(goalData.data.opportunities) || 0;
+          currentGoalIncorrect = Math.max(0, currentGoalOpportunities - currentGoalCorrect);
           break;
         case 'LANGUAGE_EXPRESSION':
           currentGoalCorrect = Number(goalData.data.successfulResponses) || 0;
-          if (typeof goalData.data.opportunities === 'number') {
-            currentGoalOpportunities = goalData.data.opportunities;
-            currentGoalIncorrect = Math.max(0, currentGoalOpportunities - currentGoalCorrect); 
-          } else { 
-            currentGoalIncorrect = Number(goalData.data.unsuccessfulResponses) || 0;
-            currentGoalOpportunities = currentGoalCorrect + currentGoalIncorrect;
-          }
+          currentGoalOpportunities = Number(goalData.data.opportunities) || 0;
+          currentGoalIncorrect = Math.max(0, currentGoalOpportunities - currentGoalCorrect);
           break;
         case 'PHONOLOGICAL_PROCESSES':
           currentGoalCorrect = Number(goalData.data.correctProductions) || 0;
-          if (typeof goalData.data.opportunities === 'number') {
-            currentGoalOpportunities = goalData.data.opportunities;
-            currentGoalIncorrect = Math.max(0, currentGoalOpportunities - currentGoalCorrect);
-          } else {
-            currentGoalIncorrect = Number(goalData.data.incorrectProductions) || 0;
-            currentGoalOpportunities = currentGoalCorrect + currentGoalIncorrect;
-          }
+          currentGoalOpportunities = Number(goalData.data.opportunities) || 0;
+          currentGoalIncorrect = Math.max(0, currentGoalOpportunities - currentGoalCorrect);
           break;
         case 'FLUENCY_SYLLABLE_STUTTER':
           const totalSyllables = Number(goalData.data.totalSyllables) || 0;
@@ -148,10 +138,10 @@ const transformDataForSankeyChart = (sessions: SessionData[], studentActiveGoals
 
       let currentCorrect = 0, currentIncorrect = 0, currentOpportunities = 0;
       switch (originalGoal.type) {
-        case 'ARTICULATION': currentCorrect = Number(goalDataEntry.data.correct) || 0; currentIncorrect = Number(goalDataEntry.data.incorrect) || 0; currentOpportunities = currentCorrect + currentIncorrect; break;
-        case 'LANGUAGE_COMPREHENSION': currentCorrect = Number(goalDataEntry.data.questionsCorrect) || 0; currentIncorrect = Number(goalDataEntry.data.questionsIncorrect) || 0; currentOpportunities = currentCorrect + currentIncorrect; break;
-        case 'LANGUAGE_EXPRESSION': currentCorrect = Number(goalDataEntry.data.successfulResponses) || 0; if (typeof goalDataEntry.data.opportunities === 'number') { currentOpportunities = goalDataEntry.data.opportunities; currentIncorrect = Math.max(0, currentOpportunities - currentCorrect); } else { currentIncorrect = Number(goalDataEntry.data.unsuccessfulResponses) || 0; currentOpportunities = currentCorrect + currentIncorrect; } break;
-        case 'PHONOLOGICAL_PROCESSES': currentCorrect = Number(goalDataEntry.data.correctProductions) || 0; if (typeof goalDataEntry.data.opportunities === 'number') { currentOpportunities = goalDataEntry.data.opportunities; currentIncorrect = Math.max(0, currentOpportunities - currentCorrect); } else { currentIncorrect = Number(goalDataEntry.data.incorrectProductions) || 0; currentOpportunities = currentCorrect + currentIncorrect; } break;
+        case 'ARTICULATION': currentCorrect = Number(goalDataEntry.data.correct) || 0; currentOpportunities = Number(goalDataEntry.data.opportunities) || 0; currentIncorrect = Math.max(0, currentOpportunities - currentCorrect); break;
+        case 'LANGUAGE_COMPREHENSION': currentCorrect = Number(goalDataEntry.data.questionsCorrect) || 0; currentOpportunities = Number(goalDataEntry.data.opportunities) || 0; currentIncorrect = Math.max(0, currentOpportunities - currentCorrect); break;
+        case 'LANGUAGE_EXPRESSION': currentCorrect = Number(goalDataEntry.data.successfulResponses) || 0; currentOpportunities = Number(goalDataEntry.data.opportunities) || 0; currentIncorrect = Math.max(0, currentOpportunities - currentCorrect); break;
+        case 'PHONOLOGICAL_PROCESSES': currentCorrect = Number(goalDataEntry.data.correctProductions) || 0; currentOpportunities = Number(goalDataEntry.data.opportunities) || 0; currentIncorrect = Math.max(0, currentOpportunities - currentCorrect); break;
         case 'FLUENCY_SYLLABLE_STUTTER': const totalSyllables = Number(goalDataEntry.data.totalSyllables) || 0; const stutteredSyllables = Number(goalDataEntry.data.stutteredSyllables) || 0; currentOpportunities = totalSyllables; currentCorrect = Math.max(0, totalSyllables - stutteredSyllables); currentIncorrect = stutteredSyllables; break;
         case 'FEEDING_SWALLOWING': currentCorrect = Number(goalDataEntry.data.trialsAccepted) || 0; currentIncorrect = Number(goalDataEntry.data.trialsRefused) || 0; currentOpportunities = currentCorrect + currentIncorrect; break;
         case 'SEQUENCED_TRIALS': currentCorrect = Number(goalDataEntry.data.successfulAttempts) || 0; currentIncorrect = Number(goalDataEntry.data.failedAttempts) || 0; currentOpportunities = currentCorrect + currentIncorrect; break;

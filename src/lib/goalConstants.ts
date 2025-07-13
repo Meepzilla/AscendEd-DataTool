@@ -1,23 +1,4 @@
-
-import type { GoalTemplate, GoalType, PromptType } from './types';
-
-// -- Application Core Constants --
-export const APP_NAME = "AscendEd";
-export const APP_SUBTITLE = "Student Goal Data Capture";
-
-// -- Prompting Constants --
-// Defines the ordered list of prompt types used in the application.
-export const PROMPT_TYPES: PromptType[] = ["Independent", "Visual", "Verbal", "Gestural", "PartialPhysical", "FullPhysical"];
-
-// Maps keyboard hotkeys to their corresponding prompt types for data entry.
-export const PROMPT_HOTKEY_MAP: Record<string, PromptType> = {
-  'D': 'Visual', // New hotkey for Visual prompt
-  'V': 'Verbal',
-  'G': 'Gestural',
-  'P': 'PartialPhysical',
-  'F': 'FullPhysical',
-  'I': 'Independent',
-};
+import type { GoalTemplate, GoalType } from './types';
 
 // Defines the various types of goals supported by the application.
 // Each key and value are identical for easy lookup.
@@ -94,26 +75,6 @@ export const GOAL_TYPE_FIELDS: Record<GoalType, Record<string, any>> = {
     notes: '',
     Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, FullPhysical: 0,
   },
-};
-
-// Defines a color palette for different prompt types, used in charts or UI for visual distinction.
-export const PROMPT_COLORS: Record<PromptType, string> = {
-  Independent: '#8B5CF6', // violet-500
-  Visual: '#2DD4BF', // teal-400 (New color)
-  Verbal: '#3B82F6', // blue-500
-  Gestural: '#10B981', // emerald-500
-  PartialPhysical: '#F59E0B', // amber-500
-  FullPhysical: '#EF4444', // red-500
-};
-
-// Defines short abbreviations for prompt types, useful for compact UI displays.
-export const PROMPT_ABBREVIATIONS: Record<PromptType, string> = {
-  Independent: 'Ind',
-  Visual: 'Vis', // New abbreviation
-  Verbal: 'V',
-  Gestural: 'G',
-  PartialPhysical: 'PP',
-  FullPhysical: 'FP',
 };
 
 // Defines an array of default goal templates that are pre-loaded into the application.
@@ -575,7 +536,7 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
     isDefault: true,
     sessionTargetValue: 4,
   },
-  
+
   // New Gestalt Language Processor (GLP) Goals
   {
     name: 'GLP: Identify and document new scripts/gestalts',
@@ -596,7 +557,7 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
   {
     name: 'GLP: Mitigate scripts into smaller chunks',
     type: GOAL_TYPES.LANGUAGE_EXPRESSION as GoalType,
-    smartGoalPrompt: "Generate a SMART goal for a student to break down larger gestalts into smaller, more flexible chunks (e.g., 'let's go outside' becomes 'go outside' or just 'go') (NLA Stage 2).",
+    smartGoalPrompt: "Generate a SMART goal for a student to break down larger gestalts into smaller, more flexible chunks (e.g., 'let\'s go outside' becomes 'go outside' or just 'go') (NLA Stage 2).",
     generatedSmartGoal: '',
     isDefault: true,
     sessionTargetValue: 70,
@@ -723,53 +684,4 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
   {
     name: 'Reduce Total Prompts for Task Completion',
     type: GOAL_TYPES.PROMPTING as GoalType,
-    smartGoalPrompt: 'Generate a SMART goal for a student to complete a familiar task (e.g., writing their name) while requiring fewer than 5 total prompts.',
-    generatedSmartGoal: '',
-    isDefault: true,
-  },
-
-  // Caregiver Education / Training Goals
-  {
-    name: "Caregiver demonstrates use of core vocabulary on AAC device",
-    type: GOAL_TYPES.QUALITATIVE_OBSERVATION as GoalType,
-    smartGoalPrompt: "Generate a SMART goal for a caregiver to demonstrate use of core vocabulary words on their child's AAC device during a play-based activity.",
-    generatedSmartGoal: '',
-    isDefault: true,
-    sessionTargetValue: 4,
-  },
-  {
-    name: "Caregiver implements shared reading strategies",
-    type: GOAL_TYPES.QUALITATIVE_OBSERVATION as GoalType,
-    smartGoalPrompt: "Generate a SMART goal for a caregiver to implement two shared reading strategies (e.g., CROWD, PEER) during a book reading session.",
-    generatedSmartGoal: '',
-    isDefault: true,
-    sessionTargetValue: 4,
-  },
-  {
-    name: "Caregiver provides specific praise for communication attempts",
-    type: GOAL_TYPES.QUALITATIVE_OBSERVATION as GoalType,
-    smartGoalPrompt: "Generate a SMART goal for a caregiver to provide specific verbal praise for their child's communication attempts (verbal or AAC) during daily routines.",
-    generatedSmartGoal: '',
-    isDefault: true,
-    sessionTargetValue: 4,
-  },
-  {
-    name: "Caregiver sets up communication opportunities during playtime",
-    type: GOAL_TYPES.QUALITATIVE_OBSERVATION as GoalType,
-    smartGoalPrompt: "Generate a SMART goal for a caregiver to set up at least three communication opportunities using communication temptation strategies during a 15-minute playtime.",
-    generatedSmartGoal: '',
-    isDefault: true,
-    sessionTargetValue: 4,
-  },
-  {
-    name: "Caregiver will accurately report on child's food intake for 3 meals",
-    type: GOAL_TYPES.QUALITATIVE_OBSERVATION as GoalType,
-    smartGoalPrompt: "Generate a SMART goal for a caregiver to accurately track and report on their child's food and liquid intake for three consecutive meals using a provided log.",
-    generatedSmartGoal: '',
-    isDefault: true,
-    sessionTargetValue: 5,
-  },
-];
-
-// Defines the maximum number of student slots allowed on the data entry page.
-export const MAX_STUDENTS_DATA_ENTRY = 5;
+    smartGoalPrompt: 'Generate a SMART goal for a student to complete a familiar task (e.g., writing their name) while requiring fewer than
