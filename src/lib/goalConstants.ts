@@ -1,3 +1,4 @@
+
 import type { GoalTemplate, GoalType } from './types';
 
 // Defines the various types of goals supported by the application.
@@ -684,4 +685,66 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
   {
     name: 'Reduce Total Prompts for Task Completion',
     type: GOAL_TYPES.PROMPTING as GoalType,
-    smartGoalPrompt: 'Generate a SMART goal for a student to complete a familiar task (e.g., writing their name) while requiring fewer than
+    smartGoalPrompt: 'Generate a SMART goal for a student to complete a familiar task (e.g., writing their name) while requiring fewer than 3 prompts in a session.',
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 0, 
+  },
+  // Caregiver Education Goals
+  {
+    name: 'Caregiver: Implement Visual Schedule',
+    type: GOAL_TYPES.QUALITATIVE_OBSERVATION as GoalType,
+    smartGoalPrompt: 'Generate a SMART goal for a caregiver to consistently implement a visual schedule for daily routines.',
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 5,
+  },
+  {
+    name: 'Caregiver: Use "First-Then" Strategy',
+    type: GOAL_TYPES.QUALITATIVE_OBSERVATION as GoalType,
+    smartGoalPrompt: 'Generate a SMART goal for a caregiver to use a "First-Then" visual or verbal strategy to support transitions.',
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 4,
+  },
+  {
+    name: 'Caregiver: Model Target Language/Sounds',
+    type: GOAL_TYPES.QUALITATIVE_OBSERVATION as GoalType,
+    smartGoalPrompt: 'Generate a SMART goal for a caregiver to model specific target language or articulation sounds during daily activities, as observed by the clinician.',
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 4,
+  },
+  {
+    name: 'Caregiver: Acknowledge Communication Attempts',
+    type: GOAL_TYPES.QUALITATIVE_OBSERVATION as GoalType,
+    smartGoalPrompt: 'Generate a SMART goal for a caregiver to consistently acknowledge all forms of the student\'s communication attempts (verbal, non-verbal, AAC) before responding.',
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 5,
+  },
+  {
+    name: 'Caregiver: Reduce Question-Asking',
+    type: GOAL_TYPES.QUALITATIVE_OBSERVATION as GoalType,
+    smartGoalPrompt: 'Generate a SMART goal for a caregiver to reduce the number of direct questions asked and increase the use of comments and observations to encourage spontaneous language.',
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 4,
+  },
+  {
+    name: 'Caregiver: Create Communication Opportunities',
+    type: GOAL_TYPES.QUALITATIVE_OBSERVATION as GoalType,
+    smartGoalPrompt: 'Generate a SMART goal for a caregiver to create at least three new communication opportunities per day by placing desired items in sight but out of reach.',
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 5,
+  },
+  {
+    name: 'Caregiver: Use Pausing and Wait Time',
+    type: GOAL_TYPES.QUALITATIVE_OBSERVATION as GoalType,
+    smartGoalPrompt: 'Generate a SMART goal for a caregiver to use pausing and expectant waiting (5-10 seconds) to encourage the student to initiate communication.',
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 4,
+  },
+];
