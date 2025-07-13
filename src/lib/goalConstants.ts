@@ -19,7 +19,6 @@ export const GOAL_TYPES: Record<string, GoalType> = {
 // when a new session entry is initiated. Prompt counts are included where relevant.
 export const GOAL_TYPE_FIELDS: Record<GoalType, Record<string, any>> = {
   [GOAL_TYPES.ARTICULATION]: {
-    opportunities: 0,
     correct: 0,
     incorrect: 0,
     targetSound: '',
@@ -38,14 +37,12 @@ export const GOAL_TYPE_FIELDS: Record<GoalType, Record<string, any>> = {
     Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, FullPhysical: 0,
   },
   [GOAL_TYPES.LANGUAGE_COMPREHENSION]: {
-    opportunities: 0,
     questionsCorrect: 0,
     questionsIncorrect: 0,
     details: '',
     Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, FullPhysical: 0,
   },
   [GOAL_TYPES.LANGUAGE_EXPRESSION]: {
-    opportunities: 0,
     successfulResponses: 0,
     unsuccessfulResponses: 0,
     details: '',
@@ -53,7 +50,6 @@ export const GOAL_TYPE_FIELDS: Record<GoalType, Record<string, any>> = {
   },
   [GOAL_TYPES.PHONOLOGICAL_PROCESSES]: {
     targetProcess: '',
-    opportunities: 0,
     correctProductions: 0,
     incorrectProductions: 0,
     Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, FullPhysical: 0,

@@ -1045,36 +1045,6 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
       let processedData = { ...newData };
 
-      // Handle correct/incorrect sync for opportunities field
-      if (['ARTICULATION', 'LANGUAGE_COMPREHENSION', 'LANGUAGE_EXPRESSION', 'PHONOLOGICAL_PROCESSES'].includes(goal.type)) {
-          let correctField: 'correct' | 'questionsCorrect' | 'successfulResponses' | 'correctProductions' | null = null;
-          let incorrectField: 'incorrect' | 'questionsIncorrect' | 'unsuccessfulResponses' | 'incorrectProductions' | null = null;
-          
-          switch(goal.type) {
-              case 'ARTICULATION': correctField = 'correct'; incorrectField = 'incorrect'; break;
-              case 'LANGUAGE_COMPREHENSION': correctField = 'questionsCorrect'; incorrectField = 'questionsIncorrect'; break;
-              case 'LANGUAGE_EXPRESSION': correctField = 'successfulResponses'; incorrectField = 'unsuccessfulResponses'; break;
-              case 'PHONOLOGICAL_PROCESSES': correctField = 'correctProductions'; incorrectField = 'incorrectProductions'; break;
-          }
-
-          if (correctField && incorrectField) {
-            let opportunities = Number(processedData.opportunities || 0);
-            let correct = Number(processedData[correctField] || 0);
-
-            if (updatedFieldName === 'opportunities') {
-                opportunities = Math.max(0, opportunities);
-                correct = Math.min(correct, opportunities);
-                processedData[correctField] = correct;
-            } else if (updatedFieldName === correctField) {
-                correct = Math.max(0, correct);
-                opportunities = Math.max(correct, opportunities);
-                processedData.opportunities = opportunities;
-            }
-            
-            processedData[incorrectField] = opportunities - correct;
-          }
-      }
-
       if (goal.type === 'FLUENCY_SYLLABLE_STUTTER') {
         let newTotalSyllables = Math.max(0, Number(processedData.totalSyllables || 0));
         let newStutteredSyllables = Math.max(0, Number(processedData.stutteredSyllables || 0));
@@ -1263,26 +1233,22 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     let fieldToUpdate: string | null = null;
     let increment = alt ? -1 : 1;
 
-    if (key === 'C') {
+    if (key === 'C') { // Correct / Accept
         switch (goal.type) {
-            case 'ARTICULATION':
-            case 'LANGUAGE_COMPREHENSION':
-            case 'LANGUAGE_EXPRESSION':
-            case 'PHONOLOGICAL_PROCESSES':
-                fieldToUpdate = 'correct'; // A representative field
-                break;
+            case 'ARTICULATION': fieldToUpdate = 'correct'; break;
+            case 'LANGUAGE_COMPREHENSION': fieldToUpdate = 'questionsCorrect'; break;
+            case 'LANGUAGE_EXPRESSION': fieldToUpdate = 'successfulResponses'; break;
+            case 'PHONOLOGICAL_PROCESSES': fieldToUpdate = 'correctProductions'; break;
             case 'FLUENCY_SYLLABLE_STUTTER': fieldToUpdate = 'totalSyllables'; break;
             case 'FEEDING_SWALLOWING': fieldToUpdate = 'trialsAccepted'; break;
             case 'SEQUENCED_TRIALS': fieldToUpdate = 'successfulAttempts'; break;
         }
-    } else if (key === 'N') {
+    } else if (key === 'N') { // Incorrect / Refuse
         switch (goal.type) {
-            case 'ARTICULATION':
-            case 'LANGUAGE_COMPREHENSION':
-            case 'LANGUAGE_EXPRESSION':
-            case 'PHONOLOGICAL_PROCESSES':
-                fieldToUpdate = 'opportunities';
-                break;
+            case 'ARTICULATION': fieldToUpdate = 'incorrect'; break;
+            case 'LANGUAGE_COMPREHENSION': fieldToUpdate = 'questionsIncorrect'; break;
+            case 'LANGUAGE_EXPRESSION': fieldToUpdate = 'unsuccessfulResponses'; break;
+            case 'PHONOLOGICAL_PROCESSES': fieldToUpdate = 'incorrectProductions'; break;
             case 'FLUENCY_SYLLABLE_STUTTER': fieldToUpdate = 'stutteredSyllables'; break;
             case 'FEEDING_SWALLOWING': fieldToUpdate = 'trialsRefused'; break;
             case 'SEQUENCED_TRIALS': fieldToUpdate = 'failedAttempts'; break;
