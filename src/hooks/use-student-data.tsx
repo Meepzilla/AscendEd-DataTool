@@ -246,60 +246,40 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const saveSessionsToLocal = useCallback((sessions: SessionData[], uid: string | undefined) => {
     saveToLocal(getLocalStorageKey(LOCAL_STORAGE_SESSIONS_BASE_KEY, uid), sessions);
   }, [saveToLocal]);
-
-  const seedLocalDefaultTemplates = useCallback(() => {
-      const localDefaultTemplates = DEFAULT_GOAL_TEMPLATES.map(t => ({
-        ...t,
-        id: generateUUID(),
-        createdAt: new Date(), 
-        userId: currentUser?.uid || 'local-user',
-      }));
-      setGoalTemplatesState(localDefaultTemplates);
-      if (currentUser?.uid) {
-        saveTemplatesToLocal(localDefaultTemplates, currentUser.uid);
-      }
-      safeToast({ title: "Info", description: "Loaded default local goal templates."});
-  }, [currentUser?.uid, safeToast, saveTemplatesToLocal]);
   
-  const fetchDashboardSummaryData = useCallback(async (uid: string, dbInstance: typeof firestoreDbModule | null) => {
-    if (!uid) {
-        console.error("fetchDashboardSummaryData: UID is required.");
-        return { studentCount: 0, goalTemplateCount: 0, sessionCount: 0, activeGoalCount: 0, recentSessions: [] };
+  const seedFirebaseDefaultTemplates = useCallback(async (user: User, dbInstance: typeof firestoreDbModule) => {
+    if (!user || !dbInstance) return null;
+    const q = query(collection(dbInstance, getGoalTemplatesCollectionPath(APP_ID)), where("userId", "==", user.uid), where("isDefault", "==", true));
+    
+    try {
+      const existingDefaultsSnapshot = await getDocs(q);
+      const existingDefaultNames = new Set(existingDefaultsSnapshot.docs.map(doc => doc.data().name));
+      const templatesToSeed = DEFAULT_GOAL_TEMPLATES.filter(
+        defaultTemplate => !existingDefaultNames.has(defaultTemplate.name)
+      );
+
+      if (templatesToSeed.length === 0) return;
+
+      console.log(`StudentData: Seeding ${templatesToSeed.length} missing Firebase default templates.`);
+      const batch = writeBatch(dbInstance);
+      for (const template of templatesToSeed) {
+          const newTemplateRef = doc(collection(dbInstance, getGoalTemplatesCollectionPath(APP_ID)));
+          const newTemplateData = {
+            ...template,
+            userId: user.uid,
+            createdAt: serverTimestamp(),
+            id: newTemplateRef.id, 
+          };
+          batch.set(newTemplateRef, newTemplateData);
+      }
+      await batch.commit();
+      safeToast({ title: "Success", description: `${templatesToSeed.length} default Firebase goal templates seeded.` });
+    } catch (e: any) {
+      console.error("Error seeding Firebase default templates:", e);
+      addErrorLog({ message: 'Error seeding Firebase default templates.', source: 'useStudentData.seedFirebaseDefaultTemplates', details: e.message, type: 'error' });
+      safeToast({ title: "Error", description: "Could not seed Firebase default templates.", variant: "destructive" });
     }
-
-    let studentCount = 0;
-    let goalTemplateCount = 0;
-    let sessionCount = 0;
-    let activeGoalCount = 0;
-    let recentSessions: SessionData[] = [];
-
-    if (dbInstance) {
-        try {
-            const studentsQuery = query(collection(dbInstance, getStudentsCollectionPath(APP_ID)), where("userId", "==", uid));
-            const studentsSnapshot = await getDocs(studentsQuery);
-            studentCount = studentsSnapshot.size;
-            const studentData = studentsSnapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as Student));
-            activeGoalCount = studentData.reduce((count, student) => count + (student.goals?.filter(g => !g.isArchived).length || 0), 0);
-
-            const templatesQuery = query(collection(dbInstance, getGoalTemplatesCollectionPath(APP_ID)), where("userId", "==", uid));
-            const templatesSnapshot = await getDocs(templatesQuery);
-            goalTemplateCount = templatesSnapshot.size;
-
-            const sessionsQuery = query(collection(dbInstance, getSessionsCollectionPath(APP_ID)), where("userId", "==", uid));
-            const sessionsSnapshot = await getDocs(sessionsQuery); // Note: This gets all sessions, consider limiting if needed.
-            sessionCount = sessionsSnapshot.size;
-            // Limit recent sessions for dashboard
-            recentSessions = sessionsSnapshot.docs.map(docSnap => ({ sessionId: docSnap.id, ...docSnap.data() } as SessionData))
-                .sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                .slice(0, 5); // Limit to latest 5 sessions
-
-        } catch (e: any) {
-            console.error("Error fetching dashboard summary data from Firebase:", e);
-        }
-    } // Add local data fetching logic if needed for non-Firebase mode
-
-    return { studentCount, goalTemplateCount, sessionCount, activeGoalCount, recentSessions };
-  }, [APP_ID]);
+  }, [safeToast, APP_ID, addErrorLog]);
 
   // Persist Data Entry state to localStorage
   useEffect(() => {
@@ -343,40 +323,6 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   }, [currentUser?.uid]);
 
-
-  const seedFirebaseDefaultTemplates = useCallback(async (user: User, dbInstance: typeof firestoreDbModule) => {
-    if (!user || !dbInstance) return null;
-    const q = query(collection(dbInstance, getGoalTemplatesCollectionPath(APP_ID)), where("userId", "==", user.uid), where("isDefault", "==", true));
-    
-    try {
-      const existingDefaultsSnapshot = await getDocs(q);
-      const existingDefaultNames = new Set(existingDefaultsSnapshot.docs.map(doc => doc.data().name));
-      const templatesToSeed = DEFAULT_GOAL_TEMPLATES.filter(
-        defaultTemplate => !existingDefaultNames.has(defaultTemplate.name)
-      );
-
-      if (templatesToSeed.length === 0) return;
-
-      console.log(`StudentData: Seeding ${templatesToSeed.length} missing Firebase default templates.`);
-      const batch = writeBatch(dbInstance);
-      for (const template of templatesToSeed) {
-          const newTemplateRef = doc(collection(dbInstance, getGoalTemplatesCollectionPath(APP_ID)));
-          const newTemplateData = {
-            ...template,
-            userId: user.uid,
-            createdAt: serverTimestamp(),
-            id: newTemplateRef.id, 
-          };
-          batch.set(newTemplateRef, newTemplateData);
-      }
-      await batch.commit();
-      safeToast({ title: "Success", description: `${templatesToSeed.length} default Firebase goal templates seeded.` });
-    } catch (e: any) {
-      console.error("Error seeding Firebase default templates:", e);
-      addErrorLog({ message: 'Error seeding Firebase default templates.', source: 'useStudentData.seedFirebaseDefaultTemplates', details: e.message, type: 'error' });
-      safeToast({ title: "Error", description: "Could not seed Firebase default templates.", variant: "destructive" });
-    }
-  }, [safeToast, APP_ID, addErrorLog]);
 
   useEffect(() => {
     if (authLoading) {
@@ -488,9 +434,24 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     } else {
       console.log("StudentData: Firebase not available. Using local data only.");
       const templatesKey = getLocalStorageKey(LOCAL_STORAGE_GOAL_TEMPLATES_BASE_KEY, currentUser.uid);
-      if (!templatesKey || !localStorage.getItem(templatesKey)) {
-        seedLocalDefaultTemplates();
+      const localTemplates = templatesKey ? getFromLocalStorage(templatesKey, []) : [];
+      const existingDefaultNames = new Set(localTemplates.filter((t: GoalTemplate) => t.isDefault).map((t: GoalTemplate) => t.name));
+      const missingDefaultTemplates = DEFAULT_GOAL_TEMPLATES.filter(
+        defaultTemplate => !existingDefaultNames.has(defaultTemplate.name)
+      ).map(t => ({
+          ...t,
+          id: generateUUID(),
+          createdAt: new Date(), 
+          userId: currentUser?.uid || 'local-user',
+      }));
+
+      if(missingDefaultTemplates.length > 0) {
+          const updatedTemplates = [...localTemplates, ...missingDefaultTemplates];
+          setGoalTemplatesState(updatedTemplates.sort((a:GoalTemplate, b:GoalTemplate) => a.name.localeCompare(b.name)));
+          saveTemplatesToLocal(updatedTemplates, currentUser.uid);
+          safeToast({ title: "Info", description: `Added ${missingDefaultTemplates.length} new default templates to local storage.`});
       }
+      
       setSessionsLoading(false); // No firebase, so sessions "loading" is done.
     }
 
@@ -499,7 +460,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       unsubscribeTemplates();
       unsubscribeSessions();
     };
-  }, [authLoading, currentUser, isFirebaseDBAvailable, firestoreDbModule, seedLocalDefaultTemplates, seedFirebaseDefaultTemplates, safeToast, APP_ID, addErrorLog, saveStudentsToLocal, saveTemplatesToLocal, saveSessionsToLocal]);
+  }, [authLoading, currentUser, isFirebaseDBAvailable, firestoreDbModule, seedFirebaseDefaultTemplates, safeToast, APP_ID, addErrorLog, saveStudentsToLocal, saveTemplatesToLocal, saveSessionsToLocal]);
 
   useEffect(() => {
     setDataEntryVisibleGoalCountByStudentIdState(prevCounts => {
@@ -1249,6 +1210,8 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
                   case 'LANGUAGE_COMPREHENSION': updatedDataForField.questionsCorrect = Math.max(0, (Number(goalData.questionsCorrect) || 0) + incrementAmount); break;
                   case 'LANGUAGE_EXPRESSION': updatedDataForField.successfulResponses = Math.max(0, (Number(goalData.successfulResponses) || 0) + incrementAmount); break;
                   case 'PHONOLOGICAL_PROCESSES': updatedDataForField.correctProductions = Math.max(0, (Number(goalData.correctProductions) || 0) + incrementAmount); break;
+                  case 'FEEDING_SWALLOWING': updatedDataForField.trialsAccepted = Math.max(0, (Number(goalData.trialsAccepted) || 0) + incrementAmount); break;
+                  case 'SEQUENCED_TRIALS': updatedDataForField.successfulAttempts = Math.max(0, (Number(goalData.successfulAttempts) || 0) + incrementAmount); break;
               }
           }
       }
