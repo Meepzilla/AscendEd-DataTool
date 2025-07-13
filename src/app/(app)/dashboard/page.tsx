@@ -46,14 +46,13 @@ export default function DashboardPage() {
         }));
         
     const templateActivities = [...goalTemplates]
-         .filter(t => !t.isDefault) // Don't show default templates as "new"
         .sort((a, b) => (b.createdAt instanceof Date ? b.createdAt.getTime() : b.createdAt.toDate().getTime()) - (a.createdAt instanceof Date ? a.createdAt.getTime() : a.createdAt.toDate().getTime()))
         .slice(0, 5)
         .map(template => ({
             id: `template-${template.id}`,
             type: 'template' as const,
             timestamp: template.createdAt instanceof Date ? template.createdAt : template.createdAt.toDate(),
-            text: <>New template "<strong>{template.name}</strong>" created.</>
+            text: <>{template.isDefault ? 'New default template' : 'New template'} "<strong>{template.name}</strong>" created.</>
         }));
 
     const sessionActivities = [...sessions]
