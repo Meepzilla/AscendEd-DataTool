@@ -1264,21 +1264,29 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     let increment = alt ? -1 : 1;
 
     if (key === 'C') {
-      if (goal.type === 'ARTICULATION') fieldToUpdate = 'correct';
-      else if (goal.type === 'LANGUAGE_COMPREHENSION') fieldToUpdate = 'questionsCorrect';
-      else if (goal.type === 'LANGUAGE_EXPRESSION') fieldToUpdate = 'successfulResponses';
-      else if (goal.type === 'PHONOLOGICAL_PROCESSES') fieldToUpdate = 'correctProductions';
-      else if (goal.type === 'FLUENCY_SYLLABLE_STUTTER') fieldToUpdate = 'totalSyllables';
-      else if (goal.type === 'FEEDING_SWALLOWING') fieldToUpdate = 'trialsAccepted';
-      else if (goal.type === 'SEQUENCED_TRIALS') fieldToUpdate = 'successfulAttempts';
+        switch (goal.type) {
+            case 'ARTICULATION':
+            case 'LANGUAGE_COMPREHENSION':
+            case 'LANGUAGE_EXPRESSION':
+            case 'PHONOLOGICAL_PROCESSES':
+                fieldToUpdate = 'correct'; // A representative field
+                break;
+            case 'FLUENCY_SYLLABLE_STUTTER': fieldToUpdate = 'totalSyllables'; break;
+            case 'FEEDING_SWALLOWING': fieldToUpdate = 'trialsAccepted'; break;
+            case 'SEQUENCED_TRIALS': fieldToUpdate = 'successfulAttempts'; break;
+        }
     } else if (key === 'N') {
-      if (goal.type === 'ARTICULATION') fieldToUpdate = 'opportunities';
-      else if (goal.type === 'LANGUAGE_COMPREHENSION') fieldToUpdate = 'opportunities';
-      else if (goal.type === 'LANGUAGE_EXPRESSION') fieldToUpdate = 'opportunities';
-      else if (goal.type === 'PHONOLOGICAL_PROCESSES') fieldToUpdate = 'opportunities';
-      else if (goal.type === 'FLUENCY_SYLLABLE_STUTTER') fieldToUpdate = 'stutteredSyllables';
-      else if (goal.type === 'FEEDING_SWALLOWING') fieldToUpdate = 'trialsRefused';
-      else if (goal.type === 'SEQUENCED_TRIALS') fieldToUpdate = 'failedAttempts';
+        switch (goal.type) {
+            case 'ARTICULATION':
+            case 'LANGUAGE_COMPREHENSION':
+            case 'LANGUAGE_EXPRESSION':
+            case 'PHONOLOGICAL_PROCESSES':
+                fieldToUpdate = 'opportunities';
+                break;
+            case 'FLUENCY_SYLLABLE_STUTTER': fieldToUpdate = 'stutteredSyllables'; break;
+            case 'FEEDING_SWALLOWING': fieldToUpdate = 'trialsRefused'; break;
+            case 'SEQUENCED_TRIALS': fieldToUpdate = 'failedAttempts'; break;
+        }
     }
 
     if (fieldToUpdate) {
