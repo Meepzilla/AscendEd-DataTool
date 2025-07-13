@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet'; // Added SheetHeader, SheetTitle
 import { Menu, FileText, UserCircle, UserPlus } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
-import { APP_NAME, APP_SUBTITLE } from '@/lib/constants';
+import { APP_NAME, APP_SUBTITLE } from '@/lib/appConstants';
 import { useStudentData } from '@/hooks/use-student-data';
 import { useErrorLog } from '@/hooks/use-error-log';
 import AddStudentModal from '@/components/modals/add-student-modal';

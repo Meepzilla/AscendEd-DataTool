@@ -5,7 +5,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { HelpCircle, Keyboard, BookOpen, Lightbulb } from 'lucide-react';
-import { APP_NAME } from '@/lib/constants';
+import { APP_NAME } from '@/lib/appConstants';
 
 interface Hotkey {
   key: string;

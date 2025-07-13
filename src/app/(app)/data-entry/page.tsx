@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Save, PlusCircle, Edit2, Info, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
-import { GOAL_TYPE_FIELDS } from '@/lib/constants';
+import { GOAL_TYPE_FIELDS } from '@/lib/goalConstants';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { useErrorLog } from '@/hooks/use-error-log';

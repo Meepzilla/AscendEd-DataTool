@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Skeleton } from '@/components/ui/skeleton';
-import { APP_NAME } from '@/lib/constants';
+import { APP_NAME } from '@/lib/appConstants';
 
 /**
  * HomePage component.

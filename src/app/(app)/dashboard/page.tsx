@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useStudentData } from '@/hooks/use-student-data';
 import Link from 'next/link';
 import { UserPlus, ListPlus, ClipboardList, BarChart2, Users, Target, Activity, CheckSquare } from 'lucide-react';
-import { APP_NAME } from '@/lib/constants';
+import { APP_NAME } from '@/lib/appConstants';
 import { formatDate } from '@/lib/helpers';
 import { Skeleton } from '@/components/ui/skeleton';
 

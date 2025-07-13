@@ -11,7 +11,7 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, LineCh
 import { generateTechnicalSummary } from '@/ai/flows/technical-summary-generation';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PROMPT_COLORS, PROMPT_TYPES } from '@/lib/constants';
+import { PROMPT_COLORS, PROMPT_TYPES } from '@/lib/promptConstants';
 import { formatDate } from '@/lib/helpers';
 import { useErrorLog } from '@/hooks/use-error-log';
 

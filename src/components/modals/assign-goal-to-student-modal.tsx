@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { GOAL_TYPES } from '@/lib/constants';
+import { GOAL_TYPES } from '@/lib/goalConstants';
 import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
 import { generateUUID } from '@/lib/helpers';
@@ -315,4 +315,3 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
     </GenericModal>
   );
 }
-

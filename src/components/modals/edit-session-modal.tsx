@@ -12,7 +12,7 @@ import type { SessionData, Goal, SessionGoalData } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { GOAL_TYPE_FIELDS } from '@/lib/constants';
+import { GOAL_TYPE_FIELDS } from '@/lib/goalConstants';
 
 
 interface EditSessionModalProps {

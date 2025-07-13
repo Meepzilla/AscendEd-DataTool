@@ -6,7 +6,8 @@ import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, o
 import { db as firestoreDbModule } from '@/lib/firebase/config';
 import type { Student, Goal, GoalTemplate, SessionData, User, Toast, StudentSessionState, SessionGoalData, GoalType } from '@/lib/types';
 import { useAuth } from './use-auth';
-import { DEFAULT_GOAL_TEMPLATES, GOAL_TYPE_FIELDS, PROMPT_HOTKEY_MAP } from '@/lib/constants';
+import { DEFAULT_GOAL_TEMPLATES, GOAL_TYPE_FIELDS } from '@/lib/goalConstants';
+import { PROMPT_HOTKEY_MAP } from '@/lib/promptConstants';
 import { generateUUID } from '@/lib/helpers';
 import { useToast as useShadcnToast } from "@/hooks/use-toast"; 
 import { useErrorLog } from './use-error-log';

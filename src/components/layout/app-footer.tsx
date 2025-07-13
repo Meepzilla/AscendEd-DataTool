@@ -2,7 +2,7 @@
 'use client';
 
 import React from 'react';
-import { APP_NAME } from '@/lib/constants';
+import { APP_NAME } from '@/lib/appConstants';
 
 export default function AppFooter() {
   const currentYear = new Date().getFullYear();
