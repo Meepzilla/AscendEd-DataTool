@@ -670,14 +670,6 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
     sessionTargetValue: 4,
   },
   {
-    name: 'Make appropriate eye contact during conversation',
-    type: GOAL_TYPES.QUALITATIVE_OBSERVATION as GoalType,
-    smartGoalPrompt: 'Generate a SMART goal for a student to make appropriate eye contact during conversational exchanges.',
-    generatedSmartGoal: '',
-    isDefault: true,
-    sessionTargetValue: 3,
-  },
-  {
     name: 'Ask relevant follow-up questions in conversation',
     type: GOAL_TYPES.QUALITATIVE_OBSERVATION as GoalType,
     smartGoalPrompt: 'Generate a SMART goal for a student to ask at least one relevant follow-up question during a conversation to show engagement.',
@@ -781,4 +773,3 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
 
 // Defines the maximum number of student slots allowed on the data entry page.
 export const MAX_STUDENTS_DATA_ENTRY = 5;
-
