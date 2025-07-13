@@ -500,6 +500,81 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
     isDefault: true,
     sessionTargetValue: 75,
   },
+  // New Communicative Function Goals
+  {
+    name: 'Request for desired item or activity',
+    type: GOAL_TYPES.LANGUAGE_EXPRESSION as GoalType,
+    smartGoalPrompt: "Generate a SMART goal for a student to spontaneously request for a desired item or activity using verbal language or AAC in 4 out of 5 opportunities.",
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 80,
+  },
+  {
+    name: 'Protest or reject an undesired item or activity',
+    type: GOAL_TYPES.QUALITATIVE_OBSERVATION as GoalType,
+    smartGoalPrompt: "Generate a SMART goal for a student to use a functional communication method (e.g., saying 'no', pushing away, using AAC) to protest or reject non-preferred items/activities.",
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 4,
+  },
+  {
+    name: 'Make a comment during a shared activity',
+    type: GOAL_TYPES.LANGUAGE_EXPRESSION as GoalType,
+    smartGoalPrompt: "Generate a SMART goal for a student to make a spontaneous, relevant comment during a shared activity (e.g., 'wow cool', 'big ball') on 3 occasions per session.",
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 80,
+  },
+  {
+    name: 'Request for assistance',
+    type: GOAL_TYPES.QUALITATIVE_OBSERVATION as GoalType,
+    smartGoalPrompt: "Generate a SMART goal for a student to independently request for assistance when faced with a challenging task using a designated communication method.",
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 4,
+  },
+  {
+    name: 'Gain attention of a communication partner',
+    type: GOAL_TYPES.QUALITATIVE_OBSERVATION as GoalType,
+    smartGoalPrompt: "Generate a SMART goal for a student to use an appropriate method (e.g., tapping on shoulder, saying name) to gain a communication partner's attention before making a request.",
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 4,
+  },
+  
+  // New Gestalt Language Processor (GLP) Goals
+  {
+    name: 'GLP: Identify and document new scripts/gestalts',
+    type: GOAL_TYPES.QUALITATIVE_OBSERVATION as GoalType,
+    smartGoalPrompt: "Generate a SMART goal for the clinician and caregiver to identify and document new scripts/gestalts used by the student in different contexts to understand their communicative intent (NLA Stage 1).",
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 5,
+  },
+  {
+    name: 'GLP: Mitigate scripts into smaller chunks',
+    type: GOAL_TYPES.LANGUAGE_EXPRESSION as GoalType,
+    smartGoalPrompt: "Generate a SMART goal for a student to break down larger gestalts into smaller, more flexible chunks (e.g., 'let's go outside' becomes 'go outside' or just 'go') (NLA Stage 2).",
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 70,
+  },
+  {
+    name: 'GLP: Generate novel two-word phrases',
+    type: GOAL_TYPES.LANGUAGE_EXPRESSION as GoalType,
+    smartGoalPrompt: "Generate a SMART goal for a student to combine two isolated single words to create a novel two-word phrase (e.g., 'go car', 'eat cookie') (NLA Stage 3).",
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 80,
+  },
+  {
+    name: 'GLP: Create sentences with beginning grammar',
+    type: GOAL_TYPES.LANGUAGE_EXPRESSION as GoalType,
+    smartGoalPrompt: "Generate a SMART goal for a student to create flexible 3-4 word sentences using emerging grammar (e.g., 'I am going out') (NLA Stage 4).",
+    generatedSmartGoal: '',
+    isDefault: true,
+    sessionTargetValue: 80,
+  },
 
   // Fluency Goals
   {
