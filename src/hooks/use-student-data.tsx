@@ -261,6 +261,46 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       safeToast({ title: "Info", description: "Loaded default local goal templates."});
   }, [currentUser?.uid, safeToast, saveTemplatesToLocal]);
   
+  const fetchDashboardSummaryData = useCallback(async (uid: string, dbInstance: typeof firestoreDbModule | null) => {
+    if (!uid) {
+        console.error("fetchDashboardSummaryData: UID is required.");
+        return { studentCount: 0, goalTemplateCount: 0, sessionCount: 0, activeGoalCount: 0, recentSessions: [] };
+    }
+
+    let studentCount = 0;
+    let goalTemplateCount = 0;
+    let sessionCount = 0;
+    let activeGoalCount = 0;
+    let recentSessions: SessionData[] = [];
+
+    if (dbInstance) {
+        try {
+            const studentsQuery = query(collection(dbInstance, getStudentsCollectionPath(APP_ID)), where("userId", "==", uid));
+            const studentsSnapshot = await getDocs(studentsQuery);
+            studentCount = studentsSnapshot.size;
+            const studentData = studentsSnapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as Student));
+            activeGoalCount = studentData.reduce((count, student) => count + (student.goals?.filter(g => !g.isArchived).length || 0), 0);
+
+            const templatesQuery = query(collection(dbInstance, getGoalTemplatesCollectionPath(APP_ID)), where("userId", "==", uid));
+            const templatesSnapshot = await getDocs(templatesQuery);
+            goalTemplateCount = templatesSnapshot.size;
+
+            const sessionsQuery = query(collection(dbInstance, getSessionsCollectionPath(APP_ID)), where("userId", "==", uid));
+            const sessionsSnapshot = await getDocs(sessionsQuery); // Note: This gets all sessions, consider limiting if needed.
+            sessionCount = sessionsSnapshot.size;
+            // Limit recent sessions for dashboard
+            recentSessions = sessionsSnapshot.docs.map(docSnap => ({ sessionId: docSnap.id, ...docSnap.data() } as SessionData))
+                .sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                .slice(0, 5); // Limit to latest 5 sessions
+
+        } catch (e: any) {
+            console.error("Error fetching dashboard summary data from Firebase:", e);
+        }
+    } // Add local data fetching logic if needed for non-Firebase mode
+
+    return { studentCount, goalTemplateCount, sessionCount, activeGoalCount, recentSessions };
+  }, [APP_ID]);
+
   // Persist Data Entry state to localStorage
   useEffect(() => {
     if (typeof window !== 'undefined' && currentUser?.uid) {

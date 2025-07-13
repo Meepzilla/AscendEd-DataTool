@@ -33,14 +33,8 @@ export default function AppLayout({
   // Prefetch all main pages in the background after initial load
   useEffect(() => {
     if (currentUser) { // Only prefetch if user is logged in
-      const pagesToPrefetch = [
+      const pagesToPrefetch = [ 
         '/dashboard',
-        '/student-profile',
-        '/data-entry',
-        '/analysis-report',
-        '/manage-sessions',
-        '/goal-templates',
-        '/help',
         '/changelog',
       ];
       
