@@ -350,13 +350,14 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     
     try {
       const existingDefaultsSnapshot = await getDocs(q);
-      const templatesToSeed = DEFAULT_GOAL_TEMPLATES.filter(defaultTemplate =>
-          !existingDefaultsSnapshot.docs.some(doc => doc.data().name === defaultTemplate.name)
+      const existingDefaultNames = new Set(existingDefaultsSnapshot.docs.map(doc => doc.data().name));
+      const templatesToSeed = DEFAULT_GOAL_TEMPLATES.filter(
+        defaultTemplate => !existingDefaultNames.has(defaultTemplate.name)
       );
 
       if (templatesToSeed.length === 0) return;
 
-      console.log("StudentData: Seeding Firebase default templates for missing ones.");
+      console.log(`StudentData: Seeding ${templatesToSeed.length} missing Firebase default templates.`);
       const batch = writeBatch(dbInstance);
       for (const template of templatesToSeed) {
           const newTemplateRef = doc(collection(dbInstance, getGoalTemplatesCollectionPath(APP_ID)));
@@ -459,8 +460,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         setGoalTemplatesState(sortedTemplates);
         saveTemplatesToLocal(sortedTemplates, currentUser.uid);
 
-        const defaultTemplatesInDb = templateData.filter(t => t.isDefault && t.userId === currentUser.uid);
-        if (defaultTemplatesInDb.length < DEFAULT_GOAL_TEMPLATES.length && currentUser && firestoreDbModule) {
+        if (currentUser && firestoreDbModule) {
          await seedFirebaseDefaultTemplates(currentUser, firestoreDbModule);
         }
       }, (err: Error) => {
