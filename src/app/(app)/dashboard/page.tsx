@@ -10,10 +10,26 @@ import { UserPlus, ListPlus, ClipboardList, BarChart2, Users, Target, Activity, 
 import { APP_NAME } from '@/lib/appConstants';
 import { formatDate } from '@/lib/helpers';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Timestamp } from 'firebase/firestore';
 
 const AppLoadingSkeleton = lazy(() => import('@/components/layout/AppLoadingSkeleton'));
 export default function DashboardPage() {
   const { students, goalTemplates, sessions, loading, sessionsLoading, openAddStudentModal } = useStudentData();
+
+  // Helper to safely get a timestamp from different date types
+  const getSafeTimestamp = (date: Date | Timestamp | string): number => {
+    if (date instanceof Date) {
+      return date.getTime();
+    }
+    if (typeof date === 'string') {
+      return new Date(date).getTime();
+    }
+    if (date && typeof (date as Timestamp).toDate === 'function') {
+      return (date as Timestamp).toDate().getTime();
+    }
+    return 0; // Fallback for unexpected types
+  };
+
 
   // Placeholder data for summary cards
   const summaryData = [
@@ -46,12 +62,12 @@ export default function DashboardPage() {
         }));
         
     const templateActivities = [...goalTemplates]
-        .sort((a, b) => (b.createdAt instanceof Date ? b.createdAt.getTime() : b.createdAt.toDate().getTime()) - (a.createdAt instanceof Date ? a.createdAt.getTime() : a.createdAt.toDate().getTime()))
+        .sort((a, b) => getSafeTimestamp(b.createdAt) - getSafeTimestamp(a.createdAt))
         .slice(0, 5)
         .map(template => ({
             id: `template-${template.id}`,
             type: 'template' as const,
-            timestamp: template.createdAt instanceof Date ? template.createdAt : template.createdAt.toDate(),
+            timestamp: template.createdAt instanceof Date ? template.createdAt : (template.createdAt as Timestamp).toDate(),
             text: <>{template.isDefault ? 'New default template' : 'New template'} "<strong>{template.name}</strong>" created.</>
         }));
 
@@ -162,3 +178,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+
