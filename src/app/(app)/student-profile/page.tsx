@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useEffect, lazy, Suspense } from 'react';
 import { useStudentData } from '@/hooks/use-student-data';
@@ -8,20 +9,22 @@ import { UserSearch } from 'lucide-react';
 const AppLoadingSkeleton = lazy(() => import('@/components/layout/AppLoadingSkeleton'));
 
 export default function StudentProfileLandingPage() {
-  const { students, selectedStudent, loading } = useStudentData();
+  const { students, selectedStudent, loading, setSelectedStudent } = useStudentData();
   const router = useRouter();
 
   useEffect(() => {
     if (!loading) {
       if (selectedStudent) {
+        // If a student is already selected, make sure the URL matches
         router.replace(`/student-profile/${selectedStudent.id}`);
       } else if (students.length > 0) {
-        // Optionally, select the first student if none is selected
-        // setSelectedStudent(students[0]); // This would trigger re-render and redirect
-        // Or let user choose from sidebar
+        // If no student is selected, select the first one and redirect
+        setSelectedStudent(students[0]);
+        router.replace(`/student-profile/${students[0].id}`);
       }
+      // If no students exist, the user will see the "Select a Student" message.
     }
-  }, [selectedStudent, students, loading, router]);
+  }, [selectedStudent, students, loading, router, setSelectedStudent]);
 
   if (loading) {
     return (
