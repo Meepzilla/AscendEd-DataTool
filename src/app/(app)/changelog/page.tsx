@@ -4,7 +4,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, Trash2, LayoutGrid, Minimize2, UserX, UserPlus, ArrowRightLeft, Lightbulb, Download, ListPlus, Workflow, Shuffle, CheckSquare, ListChecks } from 'lucide-react';
+import { ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, Trash2, LayoutGrid, Minimize2, UserX, UserPlus, ArrowRightLeft, Lightbulb, Download, ListPlus, Workflow, Shuffle, CheckSquare, ListChecks, DatabaseZap } from 'lucide-react';
 import { APP_NAME } from '@/lib/appConstants';
 
 interface ChangelogEntry {
@@ -17,6 +17,34 @@ interface ChangelogEntry {
 }
 
 const changelogEntries: ChangelogEntry[] = [
+    {
+    date: '2025-07-13',
+    title: 'Expanded & Diversified Goal Template Library',
+    description: "The default goal template library has been significantly expanded to 75 unique templates. This includes new, dedicated goals for Gestalt Language Processors (GLP) and a wider range of communicative functions, providing more comprehensive and neurodiversity-affirming starting points.",
+    type: 'feature',
+    icon: ListPlus,
+  },
+  {
+    date: '2025-07-13',
+    title: 'Robust Data Seeding & Syncing',
+    description: "Corrected the data seeding logic for both Firebase and local guest users to ensure the full set of 75 default goal templates are always available upon first use or after an update. This resolves issues where the goal template count appeared incorrect.",
+    type: 'improvement',
+    icon: DatabaseZap,
+  },
+   {
+    date: '2025-07-13',
+    title: 'Restored "Correct/Incorrect" Data Entry',
+    description: 'Based on user feedback, the data entry flow for quantitative goals has been reverted to a direct "Correct" and "Incorrect" count system, replacing the "Opportunities" field for a more streamlined workflow.',
+    type: 'improvement',
+    icon: ArrowRightLeft,
+  },
+  {
+    date: '2025-07-13',
+    title: 'Build & Runtime Stability Fixes',
+    description: "Addressed multiple build-time and runtime errors to improve application stability. This includes fixing syntax errors in constants files, resolving an issue with date formatting on the dashboard, and updating the student profile page to prevent Next.js parameter handling warnings.",
+    type: 'fix',
+    icon: Bug,
+  },
     {
     date: '2025-06-30',
     title: 'New User Sign-Up Flow',
