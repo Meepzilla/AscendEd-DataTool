@@ -6,16 +6,18 @@ import { useStudentData } from '@/hooks/use-student-data';
 import type { Student, Goal, SessionData, SessionGoalData, PromptType, StudentSessionState } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Save, PlusCircle, RotateCcw } from 'lucide-react';
+import { Save, PlusCircle, RotateCcw, ChevronDown, ChevronUp, Edit2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import TouchControls from '@/components/forms/touch-controls';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Info } from 'lucide-react';
 import { useMemo, useState, useEffect, useCallback, Suspense } from 'react';
+import { DatePicker } from '@/components/ui/date-picker';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 const AppLoadingSkeleton = lazy(() => import('@/components/layout/AppLoadingSkeleton'));
 const ConfirmationModal = lazy(() => import('@/components/modals/confirmation-modal'));
-const DataEntryHeaderCard = lazy(() => import('@/components/data-entry/DataEntryHeaderCard'));
 const StudentCardList = lazy(() => import('@/components/data-entry/StudentCardList'));
 
 export default function DataEntryPage() {
@@ -214,16 +216,51 @@ export default function DataEntryPage() {
         )}
       </Suspense>
 
-      <Suspense fallback={<div>Loading Header...</div>}>
-        <DataEntryHeaderCard
-          isHeaderCardCollapsed={isHeaderCardCollapsed}
-          setIsHeaderCardCollapsed={setIsHeaderCardCollapsed}
-          dataEntrySessionDate={dataEntrySessionDate}
-          setDataEntrySessionDate={setDataEntrySessionDate}
-          dataEntrySessionTime={dataEntrySessionTime}
-          setDataEntrySessionTime={setDataEntrySessionTime}
-        />
-      </Suspense>
+      <Card className="shadow-lg flex-shrink-0">
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <Edit2 className="h-7 w-7 text-primary" />
+              <CardTitle className="text-2xl font-bold">Data Entry</CardTitle>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsHeaderCardCollapsed(!isHeaderCardCollapsed)}
+              title={isHeaderCardCollapsed ? "Expand Header" : "Collapse Header"}
+            >
+              {isHeaderCardCollapsed ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
+              <span className="sr-only">{isHeaderCardCollapsed ? "Expand Header" : "Collapse Header"}</span>
+            </Button>
+          </div>
+          {!isHeaderCardCollapsed && (
+            <CardDescription>Record session data for students. AI suggests activities. Use hotkeys for speed.</CardDescription>
+          )}
+        </CardHeader>
+        {!isHeaderCardCollapsed && (
+          <CardContent className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+              <div className="w-full sm:w-auto">
+                <Label htmlFor="sessionDate" className="block text-sm font-medium mb-1">Session Date</Label>
+                <DatePicker date={dataEntrySessionDate} setDate={setDataEntrySessionDate} />
+              </div>
+              <div className="w-full sm:w-auto">
+                <Label htmlFor="sessionTime" className="block text-sm font-medium mb-1">Session Time</Label>
+                <Input
+                  id="sessionTime"
+                  type="time"
+                  value={dataEntrySessionTime}
+                  onChange={(e) => setDataEntrySessionTime(e.target.value)}
+                  className="w-full sm:w-[150px]"
+                />
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Hotkeys: 1-4 Focus initial slots | A/Alt+A Cycle Students | S/Alt+S Cycle Goals | C/N/D/V/G/P/F/I for prompts | Ctrl+Enter Save. See Help page for full list.
+            </p>
+          </CardContent>
+        )}
+      </Card>
 
       <ScrollArea className="flex-grow min-h-0">
          <Suspense fallback={<div>Loading student cards...</div>}>
