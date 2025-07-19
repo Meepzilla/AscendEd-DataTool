@@ -18,6 +18,34 @@ interface ChangelogEntry {
 
 const changelogEntries: ChangelogEntry[] = [
     {
+    date: '2025-07-19',
+    title: 'Expanded Goal Template Library to 75',
+    description: "The default goal template library has been significantly expanded to 75 unique templates. This includes a much wider range of articulation goals covering initial, medial, and final word positions for key phonemes.",
+    type: 'feature',
+    icon: ListPlus,
+  },
+  {
+    date: '2025-07-19',
+    title: 'Robust Data Seeding for Goal Templates',
+    description: "Corrected the data seeding logic for both Firebase and local guest users to ensure the full set of 75 default goal templates are always available upon first use or after an update. This resolves issues where the goal template count appeared incorrect.",
+    type: 'improvement',
+    icon: DatabaseZap,
+  },
+   {
+    date: '2025-07-19',
+    title: 'Updated Prompting Terminology to "Imitation"',
+    description: 'Based on clinical feedback, the "Full Physical" prompt type has been updated to "Imitation" throughout the application for better clarity and alignment with standard practices.',
+    type: 'improvement',
+    icon: ArrowRightLeft,
+  },
+  {
+    date: '2025-07-19',
+    title: 'Build & Runtime Stability Fixes',
+    description: "Addressed multiple build-time and runtime errors to improve application stability. This includes fixing syntax errors, resolving date formatting issues on the dashboard and goal templates pages, and updating the student profile page to prevent Next.js parameter handling warnings.",
+    type: 'fix',
+    icon: Bug,
+  },
+    {
     date: '2025-07-13',
     title: 'Expanded & Diversified Goal Template Library',
     description: "The default goal template library has been significantly expanded to 75 unique templates. This includes new, dedicated goals for Gestalt Language Processors (GLP) and a wider range of communicative functions, providing more comprehensive and neurodiversity-affirming starting points.",
