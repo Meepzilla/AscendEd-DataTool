@@ -183,18 +183,44 @@ const transformDataForSankeyChart = (sessions: SessionData[], studentActiveGoals
   return { nodes: finalNodes, links: finalLinks };
 };
 
-const CustomSankeyNode = ({ x, y, width, height, index, payload }: any) => {
+const CustomSankeyNode = ({ x, y, width, height, index, payload, containerWidth }: any) => {
   if (!payload || typeof payload.name === 'undefined') return null;
-  const isRight = x > 100; // Simplified check for node position
-  const nodeName = String(payload.name), nodeValue = payload.value !== undefined ? ` (${payload.value.toLocaleString()})` : '';
-  const textX = isRight ? -6 : width + 6;
-  const textAnchor = isRight ? "end" : "start";
+
+  const nodeName = String(payload.name);
+  const nodeValue = payload.value !== undefined ? ` (${payload.value.toLocaleString()})` : '';
+  const nodeLabel = `${nodeName}${nodeValue}`;
+
+  const isFirstColumn = x < width;
+  const isLastColumn = x + width > containerWidth - width;
+
+  let textAnchor = 'start';
+  let textX = width + 6;
+  let textFill = 'hsl(var(--foreground))';
+  
+  if (isFirstColumn) {
+      textAnchor = 'end';
+      textX = -6;
+  } else if (isLastColumn) {
+      textAnchor = 'start';
+      textX = width + 6;
+  } else { // Middle column
+      textAnchor = 'middle';
+      textX = width / 2;
+      // If the node is very short, the text might not fit. In a real-world scenario,
+      // you might add more complex logic to handle this, but for now we'll check against a threshold.
+      // A simple check: if the text in pixels is wider than the box, make it white.
+      // This is an approximation. A better way would be to measure text width.
+      if (nodeLabel.length * 6 > width) { // 6 is a magic number for avg char width
+          textFill = 'white';
+      }
+  }
+
 
   return (
     <g transform={`translate(${x},${y})`}>
       <rect height={height} width={width} fill={payload.color || "hsl(var(--muted))"} strokeWidth="0" rx="2" ry="2"/>
-      <text x={textX} y={height / 2} textAnchor={textAnchor} dominantBaseline="middle" fill="hsl(var(--foreground))" fontSize="12">
-        {nodeName}{nodeValue}
+      <text x={textX} y={height / 2} textAnchor={textAnchor} dominantBaseline="middle" fill={textFill} fontSize="12">
+        {nodeLabel}
       </text>
     </g>
   );
@@ -283,7 +309,7 @@ Chart data (last ${chartDataSummary.length} sessions) accuracies: ${chartDataSum
        </div>
        {sankeyData.links.length > 0 && (
         <Card className="col-span-1 lg:col-span-2"><CardHeader><CardTitle className="flex items-center gap-2"><Workflow className="h-6 w-6 text-primary"/>Goal Performance Flow</CardTitle><CardDescription>Flow of opportunities from Goal Type to Specific Goal, then to Correct/Incorrect outcomes for {selectedGoalId ? `goal: ${activeStudentGoals.find(g=>g.id === selectedGoalId)?.name || 'selected goal'}` : 'all active goals'}.</CardDescription></CardHeader><CardContent className="h-[400px] w-full">
-          <ResponsiveContainer width="100%" height="100%"><Sankey data={sankeyData} node={<CustomSankeyNode />} nodePadding={20} margin={{ top: 5, right: 5, bottom: 5, left: 5 }} linkCurviness={0.5} iterations={32}><RechartsTooltip formatter={(value:any, name:any) => [value.toLocaleString(), name.replace(/([A-Z])/g, ' $1').trim()]} /></Sankey></ResponsiveContainer>
+          <ResponsiveContainer width="100%" height="100%"><Sankey data={sankeyData} node={<CustomSankeyNode />} nodePadding={20} margin={{ top: 5, right: 120, bottom: 5, left: 120 }} linkCurviness={0.5} iterations={32}><RechartsTooltip formatter={(value:any, name:any) => [value.toLocaleString(), name.replace(/([A-Z])/g, ' $1').trim()]} /></Sankey></ResponsiveContainer>
         </CardContent></Card>
        )}
       <Card>
