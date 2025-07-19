@@ -348,14 +348,16 @@ export default function DataEntryPage() {
             );
           })}
 
-          <Button
-            variant="outline"
-            onClick={addStudentSlot}
-            className="flex-shrink-0 w-[300px] min-h-[200px] flex items-center justify-center py-8 border-dashed hover:border-primary hover:text-primary"
-            title="Add another student data entry card"
-          >
-            <PlusCircle className="mr-2 h-5 w-5" /> Add Student Slot
-          </Button>
+          {dataEntrySelectedStudentIds.length < students.length && (
+            <Button
+              variant="outline"
+              onClick={addStudentSlot}
+              className="flex-shrink-0 w-[300px] min-h-[200px] flex items-center justify-center py-8 border-dashed hover:border-primary hover:text-primary"
+              title="Add another student data entry card"
+            >
+              <PlusCircle className="mr-2 h-5 w-5" /> Add Student Slot
+            </Button>
+          )}
         </div>
       </ScrollArea>
 

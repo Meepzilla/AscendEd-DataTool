@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { Suspense, lazy } from 'react';
@@ -8,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Users, XCircle, Eye, EyeOff } from 'lucide-react';
+import { Users, XCircle, Eye, EyeOff, Loader2, Lightbulb } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -121,115 +122,120 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
           </div>
         </div>
       </CardHeader>
-      <ScrollArea className="h-[450px]">
-        <CardContent className="p-3 space-y-3">
-          <div>
-            <Label htmlFor={`activity-${student.id}`}>Activity</Label>
-            <Input
-              id={`activity-${student.id}`}
-              placeholder="Describe the session activity"
-              value={state.activity}
-              onChange={(e) => handleInputChange(student.id, 'activity', e.target.value)}
-            />
-          </div>
-          <div className="flex items-center space-x-2 mt-2">
-            <Switch
-              id={`show-archived-${student.id}`}
-              checked={dataEntryShowArchivedByStudentId[student.id] || false}
-              onCheckedChange={(checked) => setDataEntryShowArchivedByStudentId(prev => ({ ...prev, [student.id]: checked }))}
-            />
-            <Label htmlFor={`show-archived-${student.id}`} className="text-xs text-muted-foreground">
-              {dataEntryShowArchivedByStudentId[student.id] ? "Showing Archived Goals" : "Show Archived Goals"}
-            </Label>
-          </div>
+      <ScrollArea className="h-[550px]">
+        <CardContent className="p-3 space-y-3 flex flex-col-reverse justify-end min-h-full">
+          
+          {/* Main data entry area */}
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor={`activity-${student.id}`}>Activity</Label>
+              <Input
+                id={`activity-${student.id}`}
+                placeholder="Describe the session activity"
+                value={state.activity}
+                onChange={(e) => handleInputChange(student.id, 'activity', e.target.value)}
+              />
+            </div>
+            <div className="flex items-center space-x-2 mt-2">
+              <Switch
+                id={`show-archived-${student.id}`}
+                checked={dataEntryShowArchivedByStudentId[student.id] || false}
+                onCheckedChange={(checked) => setDataEntryShowArchivedByStudentId(prev => ({ ...prev, [student.id]: checked }))}
+              />
+              <Label htmlFor={`show-archived-${student.id}`} className="text-xs text-muted-foreground">
+                {dataEntryShowArchivedByStudentId[student.id] ? "Showing Archived Goals" : "Show Archived Goals"}
+              </Label>
+            </div>
 
-          {allStudentGoals.length === 0 ? (
-            <p className="text-sm text-muted-foreground p-4 text-center border rounded-md">No goals assigned to this student. Assign goals in the Student Profile.</p>
-          ) : displayedGoals.length === 0 && !showArchived ? (
-            <p className="text-sm text-muted-foreground p-4 text-center border rounded-md">No active goals. Toggle "Show Archived Goals" to view them.</p>
-          ) : displayedGoals.length === 0 && showArchived ? (
-            <p className="text-sm text-muted-foreground p-4 text-center border rounded-md">No goals (active or archived) for this student.</p>
-          ) : (
-            <Suspense fallback={<Skeleton className="h-40 w-full" />}>
-              <>
-                {displayedGoals.map((goal) => {
-                  const displayedGoalIndex = displayedGoals.findIndex(dg => dg.id === goal.id);
-                  const isGoalFocused = isStudentFocused && (dataEntryFocusedGoalIndexByStudentId[student.id] ?? 0) === displayedGoalIndex;
-                  const actualGoalIndexInOriginal = allStudentGoals.findIndex(g => g.id === goal.id);
+            {allStudentGoals.length === 0 ? (
+              <p className="text-sm text-muted-foreground p-4 text-center border rounded-md">No goals assigned. Assign goals in Student Profile.</p>
+            ) : displayedGoals.length === 0 && !showArchived ? (
+              <p className="text-sm text-muted-foreground p-4 text-center border rounded-md">No active goals. Toggle "Show Archived Goals" to view them.</p>
+            ) : displayedGoals.length === 0 && showArchived ? (
+              <p className="text-sm text-muted-foreground p-4 text-center border rounded-md">No goals (active or archived) for this student.</p>
+            ) : (
+              <Suspense fallback={<Skeleton className="h-40 w-full" />}>
+                <div className="space-y-3">
+                  {displayedGoals.map((goal) => {
+                    const displayedGoalIndex = displayedGoals.findIndex(dg => dg.id === goal.id);
+                    const isGoalFocused = isStudentFocused && (dataEntryFocusedGoalIndexByStudentId[student.id] ?? 0) === displayedGoalIndex;
+                    const actualGoalIndexInOriginal = allStudentGoals.findIndex(g => g.id === goal.id);
 
-                  return (
-                    <GoalDataInputComponent
-                      key={goal.id}
-                      id={`goal-input-${student.id}-${goal.id}`}
-                      goal={goal}
-                      data={state.goalData[goal.id] || GOAL_TYPE_FIELDS[goal.type]}
-                      onChange={(updatedField, newData) => handleGoalDataChange(student.id, goal.id, updatedField, newData)}
-                      isFocused={isGoalFocused}
-                      onMoveUp={() => handleMoveGoal(student.id, goal.id, 'up')}
-                      onMoveDown={() => handleMoveGoal(student.id, goal.id, 'down')}
-                      canMoveUp={actualGoalIndexInOriginal > 0}
-                      canMoveDown={actualGoalIndexInOriginal < allStudentGoals.length - 1}
-                      isArchived={goal.isArchived}
-                    />
-                  );
-                })}
-                {filteredStudentGoals.length > 10 && (
-                  <div className="flex justify-center mt-2">
-                    {visibleGoalCount < filteredStudentGoals.length ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setDataEntryVisibleGoalCountByStudentId(prev => ({ ...prev, [student.id]: filteredStudentGoals.length }))}
-                        className="text-xs"
-                      >
-                        <Eye className="mr-1.5 h-3.5 w-3.5" />
-                        Show More ({filteredStudentGoals.length - visibleGoalCount} more)
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setDataEntryVisibleGoalCountByStudentId(prev => ({ ...prev, [student.id]: 10 }))}
-                        className="text-xs"
-                      >
-                        <EyeOff className="mr-1.5 h-3.5 w-3.5" />
-                        Show Less
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </>
-            </Suspense>
-          )}
-
-          <div>
-            <Label htmlFor={`notes-${student.id}`}>General Notes</Label>
-            <Textarea
-              id={`notes-${student.id}`}
-              placeholder="Any additional observations or notes for this student's session"
-              value={state.notes}
-              onChange={(e) => handleInputChange(student.id, 'notes', e.target.value)}
-              rows={3}
-            />
-          </div>
-          <div className="border-t pt-3 space-y-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleLocalAiFetch(student.id)}
-              disabled={isAiLoading[student.id] || allStudentGoals.filter(g => !g.isArchived).length === 0}
-              className="w-full"
-            >
-              {isAiLoading[student.id] ? 'Getting Suggestions...' : 'Get AI Activity Suggestions'}
-            </Button>
-            {dataEntryAiActivitySuggestions[student.id] && dataEntryAiActivitySuggestions[student.id].length > 0 && (
-              <div className="p-2 border rounded-md bg-accent/30">
-                <h4 className="text-xs font-semibold mb-1">Suggested Activities:</h4>
-                <ul className="list-disc list-inside text-xs space-y-0.5">
-                  {dataEntryAiActivitySuggestions[student.id].map((sugg, i) => <li key={i}>{sugg}</li>)}
-                </ul>
-              </div>
+                    return (
+                      <GoalDataInputComponent
+                        key={goal.id}
+                        id={`goal-input-${student.id}-${goal.id}`}
+                        goal={goal}
+                        data={state.goalData[goal.id] || GOAL_TYPE_FIELDS[goal.type]}
+                        onChange={(updatedField, newData) => handleGoalDataChange(student.id, goal.id, updatedField, newData)}
+                        isFocused={isGoalFocused}
+                        onMoveUp={() => handleMoveGoal(student.id, goal.id, 'up')}
+                        onMoveDown={() => handleMoveGoal(student.id, goal.id, 'down')}
+                        canMoveUp={actualGoalIndexInOriginal > 0}
+                        canMoveDown={actualGoalIndexInOriginal < allStudentGoals.length - 1}
+                        isArchived={goal.isArchived}
+                      />
+                    );
+                  })}
+                  {filteredStudentGoals.length > 10 && (
+                    <div className="flex justify-center mt-2">
+                      {visibleGoalCount < filteredStudentGoals.length ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setDataEntryVisibleGoalCountByStudentId(prev => ({ ...prev, [student.id]: filteredStudentGoals.length }))}
+                          className="text-xs"
+                        >
+                          <Eye className="mr-1.5 h-3.5 w-3.5" />
+                          Show More ({filteredStudentGoals.length - visibleGoalCount} more)
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setDataEntryVisibleGoalCountByStudentId(prev => ({ ...prev, [student.id]: 10 }))}
+                          className="text-xs"
+                        >
+                          <EyeOff className="mr-1.5 h-3.5 w-3.5" />
+                          Show Less
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </Suspense>
             )}
+
+            <div>
+              <Label htmlFor={`notes-${student.id}`}>General Notes</Label>
+              <Textarea
+                id={`notes-${student.id}`}
+                placeholder="Any additional observations or notes for this student's session"
+                value={state.notes}
+                onChange={(e) => handleInputChange(student.id, 'notes', e.target.value)}
+                rows={3}
+              />
+            </div>
+            <div className="border-t pt-3 space-y-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleLocalAiFetch(student.id)}
+                disabled={isAiLoading[student.id] || allStudentGoals.filter(g => !g.isArchived).length === 0}
+                className="w-full"
+              >
+                {isAiLoading[student.id] ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <Lightbulb className="mr-2 h-4 w-4" />}
+                Get AI Activity Suggestions
+              </Button>
+              {dataEntryAiActivitySuggestions[student.id] && dataEntryAiActivitySuggestions[student.id].length > 0 && (
+                <div className="p-2 border rounded-md bg-accent/30">
+                  <h4 className="text-xs font-semibold mb-1">Suggested Activities:</h4>
+                  <ul className="list-disc list-inside text-xs space-y-0.5">
+                    {dataEntryAiActivitySuggestions[student.id].map((sugg, i) => <li key={i}>{sugg}</li>)}
+                  </ul>
+                </div>
+              )}
+            </div>
           </div>
         </CardContent>
       </ScrollArea>
