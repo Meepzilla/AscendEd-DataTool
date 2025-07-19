@@ -53,7 +53,7 @@ export default function AppHeader() {
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.09L6.71 11.8l1.41-1.41L11 13.27l4.88-4.88 1.41 1.41L11 16.09z"/>
             </svg>
             <div>
-              <h1 className="text-lg font-semibold text-primary-foreground">{APP_NAME}</h1>
+              <h1 className="text-lg font-semibold text-foreground">{APP_NAME}</h1>
               <p className="text-xs text-muted-foreground">{APP_SUBTITLE}</p>
             </div>
           </Link>
@@ -63,13 +63,14 @@ export default function AppHeader() {
           {/* Desktop Navigation - moved here */}
           <AppNavigation isMobile={false} />
 
-          <Button variant="ghost" size="icon" onClick={toggleErrorLogModal} title="Error Log (Alt+L)">
-            <FileText className="h-5 w-5" />
-            <span className="sr-only">Error Log</span>
-          </Button>
            <Button variant="ghost" size="icon" onClick={openAddStudentModal} title="Add Student (Alt+M)" className="hidden sm:flex">
             <UserPlus className="h-5 w-5" />
             <span className="sr-only">Add Student</span>
+          </Button>
+
+          <Button variant="ghost" size="icon" onClick={toggleErrorLogModal} title="Error Log (Alt+L)">
+            <FileText className="h-5 w-5" />
+            <span className="sr-only">Error Log</span>
           </Button>
           
           <div className="flex items-center gap-2 border-l border-border pl-1 sm:pl-2">
