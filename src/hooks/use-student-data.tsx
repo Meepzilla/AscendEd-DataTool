@@ -966,8 +966,9 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setDataEntryStudentSessionStatesState(prevStates => {
       const studentState = prevStates[studentId];
       if (!studentState) return prevStates;
+      
       const goal = studentState.originalGoalHeaders.find(g => g.id === goalId);
-      if (!goal || (goal.isArchived && !(dataEntryShowArchivedByStudentId[studentId]))) return prevStates; 
+      if (!goal) return prevStates;
 
       let processedData = { ...newData };
 
@@ -999,7 +1000,13 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     if (studentSlotIndex !== -1) {
       setDataEntryFocusedStudentSlotIndexState(studentSlotIndex);
     }
-  }, [dataEntrySelectedStudentIds, dataEntryShowArchivedByStudentId]);
+    const allGoals = dataEntryStudentSessionStates[studentId]?.originalGoalHeaders || [];
+    const visibleGoals = allGoals.filter(g => !g.isArchived || dataEntryShowArchivedByStudentId[studentId]);
+    const goalIndexInVisibleList = visibleGoals.findIndex(g => g.id === goalId);
+    if (goalIndexInVisibleList !== -1) {
+      setDataEntryFocusedGoalIndexByStudentIdState(prev => ({...prev, [studentId]: goalIndexInVisibleList}));
+    }
+  }, [dataEntrySelectedStudentIds, dataEntryStudentSessionStates, dataEntryShowArchivedByStudentId]);
   
   const handleMoveGoal = useCallback((studentId: string, goalId: string, direction: 'up' | 'down') => {
     setDataEntryStudentSessionStatesState(prevStates => {
