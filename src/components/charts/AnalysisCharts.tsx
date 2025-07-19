@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo, lazy, Suspense } from 'react';
@@ -33,50 +34,52 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
 
       let currentGoalCorrect = 0;
       let currentGoalIncorrect = 0;
-      let currentGoalOpportunities = 0;
+      
+      // Use GOAL_TYPE_FIELDS for default values to prevent undefined errors
+      const data = { ...(goalData.data || {}) };
 
       switch (goalData.goalType) {
         case 'ARTICULATION':
-            currentGoalCorrect = Number(goalData.data.correct) || 0;
-            currentGoalIncorrect = Number(goalData.data.incorrect) || 0;
+            currentGoalCorrect = Number(data.correct) || 0;
+            currentGoalIncorrect = Number(data.incorrect) || 0;
             break;
         case 'LANGUAGE_COMPREHENSION':
-            currentGoalCorrect = Number(goalData.data.questionsCorrect) || 0;
-            currentGoalIncorrect = Number(goalData.data.questionsIncorrect) || 0;
+            currentGoalCorrect = Number(data.questionsCorrect) || 0;
+            currentGoalIncorrect = Number(data.questionsIncorrect) || 0;
             break;
         case 'LANGUAGE_EXPRESSION':
-            currentGoalCorrect = Number(goalData.data.successfulResponses) || 0;
-            currentGoalIncorrect = Number(goalData.data.unsuccessfulResponses) || 0;
+            currentGoalCorrect = Number(data.successfulResponses) || 0;
+            currentGoalIncorrect = Number(data.unsuccessfulResponses) || 0;
             break;
         case 'PHONOLOGICAL_PROCESSES':
-            currentGoalCorrect = Number(goalData.data.correctProductions) || 0;
-            currentGoalIncorrect = Number(goalData.data.incorrectProductions) || 0;
+            currentGoalCorrect = Number(data.correctProductions) || 0;
+            currentGoalIncorrect = Number(data.incorrectProductions) || 0;
             break;
         case 'FLUENCY_SYLLABLE_STUTTER':
-            const totalSyllables = Number(goalData.data.totalSyllables) || 0;
-            const stutteredSyllables = Number(goalData.data.stutteredSyllables) || 0;
+            const totalSyllables = Number(data.totalSyllables) || 0;
+            const stutteredSyllables = Number(data.stutteredSyllables) || 0;
             currentGoalCorrect = Math.max(0, totalSyllables - stutteredSyllables);
             currentGoalIncorrect = stutteredSyllables;
             break;
         case 'FEEDING_SWALLOWING':
-            currentGoalCorrect = Number(goalData.data.trialsAccepted) || 0;
-            currentGoalIncorrect = Number(goalData.data.trialsRefused) || 0;
+            currentGoalCorrect = Number(data.trialsAccepted) || 0;
+            currentGoalIncorrect = Number(data.trialsRefused) || 0;
             break;
         case 'SEQUENCED_TRIALS':
-            currentGoalCorrect = Number(goalData.data.successfulAttempts) || 0;
-            currentGoalIncorrect = Number(goalData.data.failedAttempts) || 0;
+            currentGoalCorrect = Number(data.successfulAttempts) || 0;
+            currentGoalIncorrect = Number(data.failedAttempts) || 0;
             break;
       }
       
-      currentGoalOpportunities = currentGoalCorrect + currentGoalIncorrect;
+      let currentGoalOpportunities = currentGoalCorrect + currentGoalIncorrect;
       sessionCorrect += currentGoalCorrect;
       sessionIncorrect += currentGoalIncorrect;
       sessionOpportunities += currentGoalOpportunities;
 
       Object.keys(promptCounts).forEach(pt => {
         const key = pt as PromptType;
-        if (goalData.data[key] && typeof goalData.data[key] === 'number') {
-          promptCounts[key] = (promptCounts[key] || 0) + (Number(goalData.data[key]) || 0);
+        if (data[key] && typeof data[key] === 'number') {
+          promptCounts[key] = (promptCounts[key] || 0) + (Number(data[key]) || 0);
         }
       });
     });
@@ -116,8 +119,9 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, select
   const chartData = useMemo(() => transformSessionDataForChart(studentSessions, selectedStudent?.goals || [], selectedGoalId), [studentSessions, selectedStudent?.goals, selectedGoalId]);
   
   const hasPromptUsageData = useMemo(() => {
-    return chartData.some(session => Object.keys(session).some(key => key !== 'totalPrompts' && key !== 'Independent' && session[key as PromptType] > 0));
+    return chartData.some(session => Object.keys(session).some(key => key !== 'totalPrompts' && key !== 'Independent' && session[key as keyof typeof session] > 0));
   }, [chartData]);
+
 
   if (sessionsLoading) {
     return <AnalysisReportChartsSkeleton />;

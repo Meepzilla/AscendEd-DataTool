@@ -91,7 +91,9 @@ const CustomSankeyNode = ({ x, y, width, height, index, payload, containerWidth 
     const nodeLabel = `${nodeName}${nodeValue}`;
     const textFill = 'hsl(var(--foreground))';
   
+    // Use depth for reliable column detection
     const isFirstColumn = payload.depth === 0;
+    // The last column nodes have no source links in a simple left-to-right Sankey.
     const isLastColumn = payload.sourceLinks.length === 0 && payload.targetLinks.length > 0;
   
     let textAnchor = 'middle';
