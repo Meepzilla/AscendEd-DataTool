@@ -28,6 +28,7 @@ interface StudentDataCardProps {
   dataEntryShowArchivedByStudentId: Record<string, boolean>;
   dataEntryVisibleGoalCountByStudentId: Record<string, number>;
   dataEntryFocusedGoalIndexByStudentId: Record<string, number>;
+  setDataEntryFocusedGoalIndexByStudentId: React.Dispatch<React.SetStateAction<Record<string, number>>>;
   dataEntryAiActivitySuggestions: Record<string, string[]>;
   isAiLoading: Record<string, boolean>;
   setDataEntryFocusedStudentSlotIndex: (index: number) => void;
@@ -52,6 +53,7 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
   dataEntryShowArchivedByStudentId,
   dataEntryVisibleGoalCountByStudentId,
   dataEntryFocusedGoalIndexByStudentId,
+  setDataEntryFocusedGoalIndexByStudentId,
   dataEntryAiActivitySuggestions,
   isAiLoading,
   setDataEntryFocusedStudentSlotIndex,
@@ -154,7 +156,7 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
             ) : (
               <Suspense fallback={<Skeleton className="h-40 w-full" />}>
                 <div className="space-y-3">
-                  {displayedGoals.map((goal) => {
+                  {displayedGoals.map((goal, index) => {
                     const displayedGoalIndex = displayedGoals.findIndex(dg => dg.id === goal.id);
                     const isGoalFocused = isStudentFocused && (dataEntryFocusedGoalIndexByStudentId[student.id] ?? 0) === displayedGoalIndex;
                     const actualGoalIndexInOriginal = allStudentGoals.findIndex(g => g.id === goal.id);
@@ -167,6 +169,7 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
                         data={state.goalData[goal.id] || GOAL_TYPE_FIELDS[goal.type]}
                         onChange={(updatedField, newData) => handleGoalDataChange(student.id, goal.id, updatedField, newData)}
                         isFocused={isGoalFocused}
+                        onSetFocus={() => setDataEntryFocusedGoalIndexByStudentId(prev => ({ ...prev, [student.id]: index }))}
                         onMoveUp={() => handleMoveGoal(student.id, goal.id, 'up')}
                         onMoveDown={() => handleMoveGoal(student.id, goal.id, 'down')}
                         canMoveUp={actualGoalIndexInOriginal > 0}
@@ -242,4 +245,3 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
 };
 
 export default StudentDataCard;
-

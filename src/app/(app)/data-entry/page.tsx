@@ -35,6 +35,7 @@ export default function DataEntryPage() {
     dataEntryFocusedStudentSlotIndex,
     setDataEntryFocusedStudentSlotIndex,
     dataEntryFocusedGoalIndexByStudentId,
+    setDataEntryFocusedGoalIndexByStudentId,
     dataEntryShowArchivedByStudentId,
     setDataEntryShowArchivedByStudentId,
     dataEntryVisibleGoalCountByStudentId,
@@ -237,6 +238,7 @@ export default function DataEntryPage() {
             dataEntryVisibleGoalCountByStudentId={dataEntryVisibleGoalCountByStudentId}
             setDataEntryVisibleGoalCountByStudentId={setDataEntryVisibleGoalCountByStudentId}
             dataEntryFocusedGoalIndexByStudentId={dataEntryFocusedGoalIndexByStudentId}
+            setDataEntryFocusedGoalIndexByStudentId={setDataEntryFocusedGoalIndexByStudentId}
             dataEntryAiActivitySuggestions={dataEntryAiActivitySuggestions}
             isAiLoading={isAiLoading}
             setDataEntryFocusedStudentSlotIndex={setDataEntryFocusedStudentSlotIndex}

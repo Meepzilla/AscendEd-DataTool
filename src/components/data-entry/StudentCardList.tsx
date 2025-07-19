@@ -19,6 +19,7 @@ interface StudentCardListProps {
   dataEntryVisibleGoalCountByStudentId: Record<string, number>;
   setDataEntryVisibleGoalCountByStudentId: React.Dispatch<React.SetStateAction<Record<string, number>>>;
   dataEntryFocusedGoalIndexByStudentId: Record<string, number>;
+  setDataEntryFocusedGoalIndexByStudentId: React.Dispatch<React.SetStateAction<Record<string, number>>>;
   dataEntryAiActivitySuggestions: Record<string, string[]>;
   isAiLoading: Record<string, boolean>;
   setDataEntryFocusedStudentSlotIndex: (index: number) => void;
@@ -43,6 +44,7 @@ const StudentCardList: React.FC<StudentCardListProps> = ({
   dataEntryVisibleGoalCountByStudentId,
   setDataEntryVisibleGoalCountByStudentId,
   dataEntryFocusedGoalIndexByStudentId,
+  setDataEntryFocusedGoalIndexByStudentId,
   dataEntryAiActivitySuggestions,
   isAiLoading,
   setDataEntryFocusedStudentSlotIndex,
@@ -78,6 +80,7 @@ const StudentCardList: React.FC<StudentCardListProps> = ({
               dataEntryVisibleGoalCountByStudentId={dataEntryVisibleGoalCountByStudentId}
               setDataEntryVisibleGoalCountByStudentId={setDataEntryVisibleGoalCountByStudentId}
               dataEntryFocusedGoalIndexByStudentId={dataEntryFocusedGoalIndexByStudentId}
+              setDataEntryFocusedGoalIndexByStudentId={setDataEntryFocusedGoalIndexByStudentId}
               dataEntryAiActivitySuggestions={dataEntryAiActivitySuggestions}
               isAiLoading={isAiLoading}
               setDataEntryFocusedStudentSlotIndex={setDataEntryFocusedStudentSlotIndex}

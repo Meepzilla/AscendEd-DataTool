@@ -11,7 +11,7 @@ import { Slider } from '@/components/ui/slider';
 import { PROMPT_TYPES, PROMPT_COLORS, PROMPT_ABBREVIATIONS, PROMPT_HOTKEY_MAP } from '@/lib/promptConstants';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { TrendingUp, ArrowUp, ArrowDown, Plus, Minus, ArchiveIcon } from 'lucide-react';
+import { TrendingUp, ArrowUp, ArrowDown, Plus, Minus, ArchiveIcon, Pin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface GoalDataInputComponentProps {
@@ -19,6 +19,7 @@ interface GoalDataInputComponentProps {
   data: SessionGoalData['data'];
   onChange: (updatedFieldName: string, newData: SessionGoalData['data']) => void;
   isFocused?: boolean;
+  onSetFocus?: () => void;
   id: string;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
@@ -32,6 +33,7 @@ export default function GoalDataInputComponent({
   data,
   onChange,
   isFocused,
+  onSetFocus,
   id,
   onMoveUp,
   onMoveDown,
@@ -476,6 +478,11 @@ export default function GoalDataInputComponent({
                         </Badge>
                     </div>
                 </CardTitle>
+                 {!isFocused && onSetFocus && (
+                    <Button variant="link" size="sm" onClick={onSetFocus} className="h-auto p-0 text-xs mt-1">
+                        <Pin className="mr-1 h-3 w-3" /> Set Focus
+                    </Button>
+                 )}
                 {goal.sessionTargetValue !== undefined && (
                 <div className="text-xs text-muted-foreground flex items-center gap-0.5 pt-0.5">
                     <TrendingUp className="h-3 w-3 text-green-600" />
