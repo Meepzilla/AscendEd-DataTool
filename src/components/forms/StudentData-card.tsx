@@ -122,7 +122,7 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
         </div>
       </CardHeader>
       <ScrollArea className="h-[550px]">
-        <CardContent className="p-3 space-y-3">
+        <CardContent className="p-3 space-y-3 flex flex-col-reverse justify-end min-h-full">
           <div>
             <Label htmlFor={`activity-${student.id}`}>Activity</Label>
             <Input
@@ -151,7 +151,7 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
             <p className="text-sm text-muted-foreground p-4 text-center border rounded-md">No goals (active or archived) for this student.</p>
           ) : (
             <Suspense fallback={<Skeleton className="h-40 w-full" />}>
-              <>
+              <div className="space-y-3">
                 {displayedGoals.map((goal) => {
                   const displayedGoalIndex = displayedGoals.findIndex(dg => dg.id === goal.id);
                   const isGoalFocused = isStudentFocused && (dataEntryFocusedGoalIndexByStudentId[student.id] ?? 0) === displayedGoalIndex;
@@ -198,7 +198,7 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
                     )}
                   </div>
                 )}
-              </>
+              </div>
             </Suspense>
           )}
 
