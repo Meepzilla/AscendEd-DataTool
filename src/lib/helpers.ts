@@ -8,6 +8,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatDate(date: Date | Timestamp | string): string {
+  if (!date) return 'Invalid Date';
   let d: Date;
   if (date instanceof Timestamp) {
     d = date.toDate();
@@ -16,6 +17,9 @@ export function formatDate(date: Date | Timestamp | string): string {
   } else {
     d = date;
   }
+  
+  if (isNaN(d.getTime())) return 'Invalid Date';
+
   return d.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
@@ -32,6 +36,8 @@ export function formatTime(date: Date | Timestamp | string): string {
   } else {
     d = date;
   }
+   if (isNaN(d.getTime())) return '';
+
   return d.toLocaleTimeString('en-US', {
     hour: '2-digit',
     minute: '2-digit',

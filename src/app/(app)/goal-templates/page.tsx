@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { GOAL_TYPES } from '@/lib/goalConstants';
+import { Timestamp } from 'firebase/firestore';
 
 // Lazy load modals
 const AddGoalTemplateModal = lazy(() => import('@/components/modals/add-goal-template-modal'));
@@ -43,14 +44,28 @@ export default function GoalTemplatesPage() {
   const [filterType, setFilterType] = useState<string>('ALL');
 
   const filteredTemplates = useMemo(() => {
+    // Helper to safely get a timestamp from different date types
+    const getSafeTimestamp = (date: Date | Timestamp | string): number => {
+        if (date instanceof Date) {
+        return date.getTime();
+        }
+        if (typeof date === 'string') {
+        return new Date(date).getTime();
+        }
+        if (date && typeof (date as Timestamp).toDate === 'function') {
+        return (date as Timestamp).toDate().getTime();
+        }
+        return 0; // Fallback for unexpected types
+    };
+
     return goalTemplates.filter(template => {
       const nameMatch = template.name.toLowerCase().includes(searchTerm.toLowerCase());
       const typeMatch = filterType === 'ALL' || template.type === filterType;
       const promptMatch = template.smartGoalPrompt?.toLowerCase().includes(searchTerm.toLowerCase());
       return (nameMatch || promptMatch) && typeMatch;
     }).sort((a,b) => {
-        const dateA = a.createdAt instanceof Date ? a.createdAt.getTime() : a.createdAt.toDate().getTime();
-        const dateB = b.createdAt instanceof Date ? b.createdAt.getTime() : b.createdAt.toDate().getTime();
+        const dateA = getSafeTimestamp(a.createdAt);
+        const dateB = getSafeTimestamp(b.createdAt);
         return dateB - dateA;
     });
   }, [goalTemplates, searchTerm, filterType]);
@@ -164,7 +179,7 @@ export default function GoalTemplatesPage() {
                   </CardContent>
                   <CardFooter className="flex justify-between items-center pt-3 border-t">
                     <p className="text-xs text-muted-foreground">
-                      Created: {template.createdAt ? formatDate(template.createdAt instanceof Date ? template.createdAt : template.createdAt.toDate()) : 'N/A'}
+                      Created: {template.createdAt ? formatDate(template.createdAt) : 'N/A'}
                     </p>
                     <div className="flex gap-1">
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditGoalTemplateModal(template)}>
