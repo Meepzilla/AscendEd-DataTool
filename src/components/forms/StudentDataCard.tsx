@@ -123,10 +123,8 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
         </div>
       </CardHeader>
       <ScrollArea className="h-[550px]">
-        <CardContent className="p-3 space-y-3 flex flex-col-reverse justify-end min-h-full">
-          
-          {/* Main data entry area */}
-          <div className="space-y-3">
+        <CardContent className="p-3 space-y-3 flex flex-col justify-end min-h-full">
+          <div className="flex-grow space-y-3">
             <div>
               <Label htmlFor={`activity-${student.id}`}>Activity</Label>
               <Input
@@ -244,3 +242,4 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
 };
 
 export default StudentDataCard;
+

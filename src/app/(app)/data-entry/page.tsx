@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { lazy } from 'react';
@@ -8,14 +9,14 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Save, PlusCircle, RotateCcw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import TouchControls from '@/components/forms/touch-controls';
-import { Card, CardContent, Info } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { Info } from 'lucide-react';
 import { useMemo, useState, useEffect, useCallback, Suspense } from 'react';
 
 const AppLoadingSkeleton = lazy(() => import('@/components/layout/AppLoadingSkeleton'));
 const ConfirmationModal = lazy(() => import('@/components/modals/confirmation-modal'));
 const DataEntryHeaderCard = lazy(() => import('@/components/data-entry/DataEntryHeaderCard'));
-const StudentDataCard = lazy(() => import('@/components/forms/StudentDataCard'));
-
+const StudentCardsList = lazy(() => import('@/components/data-entry/StudentCardsList'));
 
 export default function DataEntryPage() {
   const {
@@ -282,54 +283,31 @@ export default function DataEntryPage() {
       </Suspense>
 
       <ScrollArea className="flex-grow min-h-0">
-        <div className="flex flex-row gap-6 items-start py-4 px-1">
-          {dataEntrySelectedStudentIds.map((studentId, slotIndex) => {
-            const student = students.find(s => s.id === studentId);
-            const state = dataEntryStudentSessionStates[studentId];
-            if (!student || !state) return null;
-
-            const isStudentFocused = slotIndex === dataEntryFocusedStudentSlotIndex;
-
-            return (
-              <Suspense key={studentId} fallback={<div>Loading student card...</div>}>
-                <StudentDataCard
-                  student={student}
-                  state={state}
-                  slotIndex={slotIndex}
-                  isStudentFocused={isStudentFocused}
-                  availableStudentsForDropdown={availableStudentsForDropdown}
-                  dataEntrySelectedStudentIds={dataEntrySelectedStudentIds}
-                  dataEntryShowArchivedByStudentId={dataEntryShowArchivedByStudentId}
-                  dataEntryVisibleGoalCountByStudentId={dataEntryVisibleGoalCountByStudentId}
-                  dataEntryFocusedGoalIndexByStudentId={dataEntryFocusedGoalIndexByStudentId}
-                  dataEntryAiActivitySuggestions={dataEntryAiActivitySuggestions}
-                  isAiLoading={isAiLoading}
-                  setDataEntryFocusedStudentSlotIndex={setDataEntryFocusedStudentSlotIndex}
-                  openEditStudentModal={openEditStudentModal}
-                  handleStudentSelect={handleStudentSelect}
-                  removeStudentSlot={removeStudentSlot}
-                  handleInputChange={handleInputChange}
-                  setDataEntryShowArchivedByStudentId={setDataEntryShowArchivedByStudentId}
-                  setDataEntryVisibleGoalCountByStudentId={setDataEntryVisibleGoalCountByStudentId}
-                  handleGoalDataChange={handleGoalDataChange}
-                  handleMoveGoal={handleMoveGoal}
-                  handleLocalAiFetch={handleLocalAiFetch}
-                />
-              </Suspense>
-            );
-          })}
-
-          {dataEntrySelectedStudentIds.length < students.length && (
-            <Button
-              variant="outline"
-              onClick={addStudentSlot}
-              className="flex-shrink-0 w-[300px] min-h-[200px] flex items-center justify-center py-8 border-dashed hover:border-primary hover:text-primary"
-              title="Add another student data entry card"
-            >
-              <PlusCircle className="mr-2 h-5 w-5" /> Add Student Slot
-            </Button>
-          )}
-        </div>
+         <Suspense fallback={<div>Loading student cards...</div>}>
+          <StudentCardsList
+            dataEntrySelectedStudentIds={dataEntrySelectedStudentIds}
+            students={students}
+            dataEntryStudentSessionStates={dataEntryStudentSessionStates}
+            dataEntryFocusedStudentSlotIndex={dataEntryFocusedStudentSlotIndex}
+            availableStudentsForDropdown={availableStudentsForDropdown}
+            dataEntryShowArchivedByStudentId={dataEntryShowArchivedByStudentId}
+            setDataEntryShowArchivedByStudentId={setDataEntryShowArchivedByStudentId}
+            dataEntryVisibleGoalCountByStudentId={dataEntryVisibleGoalCountByStudentId}
+            setDataEntryVisibleGoalCountByStudentId={setDataEntryVisibleGoalCountByStudentId}
+            dataEntryFocusedGoalIndexByStudentId={dataEntryFocusedGoalIndexByStudentId}
+            dataEntryAiActivitySuggestions={dataEntryAiActivitySuggestions}
+            isAiLoading={isAiLoading}
+            setDataEntryFocusedStudentSlotIndex={setDataEntryFocusedStudentSlotIndex}
+            openEditStudentModal={openEditStudentModal}
+            handleStudentSelect={handleStudentSelect}
+            removeStudentSlot={removeStudentSlot}
+            handleInputChange={handleInputChange}
+            handleGoalDataChange={handleGoalDataChange}
+            handleMoveGoal={handleMoveGoal}
+            handleLocalAiFetch={handleLocalAiFetch}
+            addStudentSlot={addStudentSlot}
+          />
+        </Suspense>
       </ScrollArea>
 
       {dataEntrySelectedStudentIds.length > 0 && (
@@ -360,3 +338,4 @@ export default function DataEntryPage() {
     </div>
   );
 }
+
