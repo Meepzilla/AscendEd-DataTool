@@ -15,6 +15,7 @@ import EditStudentModal from '@/components/modals/edit-student-modal';
 import ErrorLogModal from '@/components/modals/error-log-modal';
 import AppNavigation from './app-navigation'; 
 import { useRouter } from 'next/navigation';
+import { Separator } from '../ui/separator';
 
 export default function AppHeader() {
   const { currentUser, signOut } = useAuth();
@@ -46,6 +47,13 @@ export default function AppHeader() {
                 </Link>
               </div>
               <AppNavigation isMobile={true} />
+              <div className="p-2 absolute bottom-0 w-full">
+                <Separator className="my-2" />
+                <Button variant="outline" className="w-full" onClick={openAddStudentModal}>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Add Student
+                </Button>
+              </div>
             </SheetContent>
           </Sheet>
           <Link href="/dashboard" className="hidden md:flex items-center gap-2">
