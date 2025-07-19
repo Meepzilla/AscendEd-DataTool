@@ -69,7 +69,7 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
         case 'SEQUENCED_TRIALS':
           currentGoalCorrect = Number(goalData.data.successfulAttempts) || 0;
           currentGoalIncorrect = Number(goalData.data.failedAttempts) || 0;
-          currentGoalOpportunities = currentGoalCorrect + currentGoalIncorrect;
+          currentGoalOpportunities = currentCorrect + currentIncorrect;
           break;
         default:
           break;
@@ -189,14 +189,16 @@ const CustomSankeyNode = ({ x, y, width, height, index, payload, containerWidth 
   const nodeName = String(payload.name);
   const nodeValue = payload.value !== undefined ? ` (${payload.value.toLocaleString()})` : '';
   const nodeLabel = `${nodeName}${nodeValue}`;
+  const textFill = 'hsl(var(--foreground))';
 
-  const isFirstColumn = x < width;
-  const isLastColumn = x + width > containerWidth - width;
+  // Robust check for first, middle, and last columns
+  const isFirstColumn = payload.depth === 0;
+  const isLastColumn = payload.sourceLinks.length === 0;
+  const isMiddleColumn = !isFirstColumn && !isLastColumn;
 
   let textAnchor = 'start';
-  let textX = width + 6;
-  let textFill = 'hsl(var(--foreground))';
-  
+  let textX = width + 6; // Default to right of the node
+
   if (isFirstColumn) {
       textAnchor = 'end';
       textX = -6;
@@ -206,15 +208,7 @@ const CustomSankeyNode = ({ x, y, width, height, index, payload, containerWidth 
   } else { // Middle column
       textAnchor = 'middle';
       textX = width / 2;
-      // If the node is very short, the text might not fit. In a real-world scenario,
-      // you might add more complex logic to handle this, but for now we'll check against a threshold.
-      // A simple check: if the text in pixels is wider than the box, make it white.
-      // This is an approximation. A better way would be to measure text width.
-      if (nodeLabel.length * 6 > width) { // 6 is a magic number for avg char width
-          textFill = 'white';
-      }
   }
-
 
   return (
     <g transform={`translate(${x},${y})`}>
