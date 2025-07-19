@@ -16,7 +16,7 @@ import { useMemo, useState, useEffect, useCallback, Suspense } from 'react';
 const AppLoadingSkeleton = lazy(() => import('@/components/layout/AppLoadingSkeleton'));
 const ConfirmationModal = lazy(() => import('@/components/modals/confirmation-modal'));
 const DataEntryHeaderCard = lazy(() => import('@/components/data-entry/DataEntryHeaderCard'));
-const StudentCardsList = lazy(() => import('@/components/data-entry/StudentCardsList'));
+const StudentCardList = lazy(() => import('@/components/data-entry/StudentCardList'));
 
 export default function DataEntryPage() {
   const {
@@ -284,7 +284,7 @@ export default function DataEntryPage() {
 
       <ScrollArea className="flex-grow min-h-0">
          <Suspense fallback={<div>Loading student cards...</div>}>
-          <StudentCardsList
+          <StudentCardList
             dataEntrySelectedStudentIds={dataEntrySelectedStudentIds}
             students={students}
             dataEntryStudentSessionStates={dataEntryStudentSessionStates}
@@ -338,4 +338,3 @@ export default function DataEntryPage() {
     </div>
   );
 }
-
