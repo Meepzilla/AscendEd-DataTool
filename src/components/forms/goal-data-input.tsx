@@ -97,7 +97,7 @@ export default function GoalDataInputComponent({
         const successful = Number(data.successfulAttempts || 0);
         const failed = Number(data.failedAttempts || 0);
         totalOpportunities = successful + failed;
-        actualPerformancePct = totalOpportunities > 0 ? (successful / totalOpportunities) * 100 : 0;
+        actualPerformancePct = totalOpportunities > 0 ? (successful / total) * 100 : 0;
         break;
       }
       case 'PROMPTING':
@@ -586,4 +586,3 @@ const FormItem: React.FC<{children: React.ReactNode, className?: string}> = ({ c
 const FormLabel: React.FC<{children: React.ReactNode, htmlFor?: string}> = ({ children, htmlFor }) => (
   <Label htmlFor={htmlFor} className="text-xs font-medium text-muted-foreground">{children}</Label>
 );
-

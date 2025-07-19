@@ -118,7 +118,7 @@ export interface SequencedTrialsData {
 }
 
 
-export type PromptType = "Independent" | "Visual" | "Verbal" | "Gestural" | "PartialPhysical" | "FullPhysical";
+export type PromptType = "Independent" | "Visual" | "Verbal" | "Gestural" | "PartialPhysical" | "Imitation";
 
 export interface User {
   uid: string;

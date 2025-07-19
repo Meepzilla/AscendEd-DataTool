@@ -3,7 +3,7 @@ import type { PromptType } from './types';
 
 // -- Prompting Constants --
 // Defines the ordered list of prompt types used in the application.
-export const PROMPT_TYPES: PromptType[] = ["Independent", "Visual", "Verbal", "Gestural", "PartialPhysical", "FullPhysical"];
+export const PROMPT_TYPES: PromptType[] = ["Independent", "Visual", "Verbal", "Gestural", "PartialPhysical", "Imitation"];
 
 // Maps keyboard hotkeys to their corresponding prompt types for data entry.
 export const PROMPT_HOTKEY_MAP: Record<string, PromptType> = {
@@ -11,7 +11,7 @@ export const PROMPT_HOTKEY_MAP: Record<string, PromptType> = {
   'V': 'Verbal',
   'G': 'Gestural',
   'P': 'PartialPhysical',
-  'F': 'FullPhysical',
+  'F': 'Imitation',
   'I': 'Independent',
 };
 
@@ -22,7 +22,7 @@ export const PROMPT_COLORS: Record<PromptType, string> = {
   Verbal: '#3B82F6', // blue-500
   Gestural: '#10B981', // emerald-500
   PartialPhysical: '#F59E0B', // amber-500
-  FullPhysical: '#EF4444', // red-500
+  Imitation: '#EF4444', // red-500
 };
 
 // Defines short abbreviations for prompt types, useful for compact UI displays.
@@ -32,5 +32,5 @@ export const PROMPT_ABBREVIATIONS: Record<PromptType, string> = {
   Verbal: 'V',
   Gestural: 'G',
   PartialPhysical: 'PP',
-  FullPhysical: 'FP',
+  Imitation: 'Imit',
 };

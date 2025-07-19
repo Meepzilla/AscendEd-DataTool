@@ -23,36 +23,36 @@ export const GOAL_TYPE_FIELDS: Record<GoalType, Record<string, any>> = {
     incorrect: 0,
     targetSound: '',
     wordList: '',
-    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, FullPhysical: 0,
+    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, Imitation: 0,
   },
   [GOAL_TYPES.FLUENCY_SYLLABLE_STUTTER]: {
     totalSyllables: 0,
     stutteredSyllables: 0,
     observationNotes: '',
-    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, FullPhysical: 0,
+    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, Imitation: 0,
   },
   [GOAL_TYPES.QUALITATIVE_OBSERVATION]: {
     notes: '',
     rating: 3,
-    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, FullPhysical: 0,
+    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, Imitation: 0,
   },
   [GOAL_TYPES.LANGUAGE_COMPREHENSION]: {
     questionsCorrect: 0,
     questionsIncorrect: 0,
     details: '',
-    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, FullPhysical: 0,
+    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, Imitation: 0,
   },
   [GOAL_TYPES.LANGUAGE_EXPRESSION]: {
     successfulResponses: 0,
     unsuccessfulResponses: 0,
     details: '',
-    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, FullPhysical: 0,
+    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, Imitation: 0,
   },
   [GOAL_TYPES.PHONOLOGICAL_PROCESSES]: {
     targetProcess: '',
     correctProductions: 0,
     incorrectProductions: 0,
-    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, FullPhysical: 0,
+    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, Imitation: 0,
   },
   [GOAL_TYPES.FEEDING_SWALLOWING]: {
     foodOrLiquidName: '',
@@ -60,17 +60,17 @@ export const GOAL_TYPE_FIELDS: Record<GoalType, Record<string, any>> = {
     trialsAccepted: 0,
     trialsRefused: 0,
     notes: '',
-    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, FullPhysical: 0,
+    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, Imitation: 0,
   },
   [GOAL_TYPES.SEQUENCED_TRIALS]: {
     trialsPerAttempt: 5,
     successfulAttempts: 0,
     failedAttempts: 0,
-    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, FullPhysical: 0,
+    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, Imitation: 0,
   },
   [GOAL_TYPES.PROMPTING]: {
     notes: '',
-    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, FullPhysical: 0,
+    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, Imitation: 0,
   },
 };
 

@@ -95,7 +95,7 @@ export function useKeyboardShortcuts() {
         case 'V': // Decrement Verbal Prompt count
         case 'G': // Decrement Gestural Prompt count
         case 'P': // Decrement Partial Physical Prompt count
-        case 'F': // Decrement Full Physical Prompt count
+        case 'F': // Decrement Imitation Prompt count
         case 'I': // Decrement Independent count
         case 'D': // Decrement Visual Prompt count
            if (pathname.startsWith('/data-entry')) handleDataEntryHotkey(key, alt); 
@@ -120,7 +120,7 @@ export function useKeyboardShortcuts() {
                 case 'V': // Increment Verbal Prompt count
                 case 'G': // Increment Gestural Prompt count
                 case 'P': // Increment Partial Physical Prompt count
-                case 'F': // Increment Full Physical Prompt count
+                case 'F': // Increment Imitation Prompt count
                 case 'I': // Increment Independent count
                     handleDataEntryHotkey(key, alt); // Pass the key and `false` for `alt` (no alt pressed).
                     break;
