@@ -129,7 +129,7 @@ interface StudentDataContextType {
   dataEntrySessionTime: string;
   setDataEntrySessionTime: (time: string) => void;
   dataEntrySelectedStudentIds: string[];
-  setDataEntrySelectedStudentIds: (ids: string[]) => void;
+  setDataEntrySelectedStudentIds: React.Dispatch<React.SetStateAction<string[]>>;
   dataEntryActiveStudentsInSlots: Student[];
   dataEntryStudentSessionStates: Record<string, StudentSessionState>;
   setDataEntryStudentSessionStates: React.Dispatch<React.SetStateAction<Record<string, StudentSessionState>>>;
@@ -461,81 +461,6 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       unsubscribeSessions();
     };
   }, [authLoading, currentUser, isFirebaseDBAvailable, firestoreDbModule, seedFirebaseDefaultTemplates, safeToast, APP_ID, addErrorLog, saveStudentsToLocal, saveTemplatesToLocal, saveSessionsToLocal]);
-
-  useEffect(() => {
-    setDataEntryVisibleGoalCountByStudentIdState(prevCounts => {
-      const newCounts = { ...prevCounts };
-      let changed = false;
-      dataEntrySelectedStudentIds.forEach(id => {
-        if (!(id in newCounts)) {
-          newCounts[id] = 10;
-          changed = true;
-        }
-      });
-      Object.keys(newCounts).forEach(id => {
-        if (!dataEntrySelectedStudentIds.includes(id)) {
-          delete newCounts[id];
-          changed = true;
-        }
-      });
-      return changed ? newCounts : prevCounts;
-    });
-
-    setDataEntryShowArchivedByStudentIdState(prevShowArchived => {
-        const newShowArchived = { ...prevShowArchived };
-        let changed = false;
-        dataEntrySelectedStudentIds.forEach(id => {
-            if (!(id in newShowArchived)) {
-                newShowArchived[id] = false;
-                changed = true;
-            }
-        });
-        Object.keys(newShowArchived).forEach(id => {
-            if (!dataEntrySelectedStudentIds.includes(id)) {
-                delete newShowArchived[id];
-                changed = true;
-            }
-        });
-        return changed ? newShowArchived : prevShowArchived;
-    });
-
-  }, [dataEntrySelectedStudentIds]);
-
-  useEffect(() => {
-    setDataEntryFocusedGoalIndexByStudentIdState(prevIndexes => {
-        let focusIndexesChanged = false;
-        const newFocusedGoalIndexes: Record<string, number> = { ...prevIndexes };
-
-        dataEntrySelectedStudentIds.forEach(id => {
-            const studentState = dataEntryStudentSessionStates[id];
-            if (studentState) {
-                const visibleGoals = studentState.originalGoalHeaders.filter(g => !g.isArchived || dataEntryShowArchivedByStudentId[id]);
-                const currentFocus = newFocusedGoalIndexes[id];
-
-                if (currentFocus === undefined && visibleGoals.length > 0) {
-                    newFocusedGoalIndexes[id] = 0;
-                    focusIndexesChanged = true;
-                } else if (currentFocus !== undefined && currentFocus >= visibleGoals.length) {
-                    newFocusedGoalIndexes[id] = Math.max(0, visibleGoals.length - 1);
-                    focusIndexesChanged = true;
-                } else if (visibleGoals.length === 0 && currentFocus !== undefined) {
-                    delete newFocusedGoalIndexes[id];
-                    focusIndexesChanged = true;
-                }
-            }
-        });
-
-        Object.keys(newFocusedGoalIndexes).forEach(studentId => {
-            if (!dataEntrySelectedStudentIds.includes(studentId)) {
-                delete newFocusedGoalIndexes[studentId];
-                focusIndexesChanged = true;
-            }
-        });
-
-        return focusIndexesChanged ? newFocusedGoalIndexes : prevIndexes;
-    });
-  }, [dataEntryStudentSessionStates, dataEntrySelectedStudentIds, dataEntryShowArchivedByStudentId]);
-
 
   const addStudent = useCallback(async (name: string): Promise<Student | null> => {
     if (!currentUser) {
@@ -1265,15 +1190,52 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   }, [getCurrentFocusedGoalInfo, handleGoalDataChange]);
   // #endregion
-
+  
   const setDataEntrySessionDate = useCallback((date: Date | undefined) => setDataEntrySessionDateState(date), []);
   const setDataEntrySessionTime = useCallback((time: string) => setDataEntrySessionTimeState(time), []);
-  const setDataEntrySelectedStudentIds = useCallback((ids: string[]) => setDataEntrySelectedStudentIdsState(ids), []);
   const setDataEntryFocusedStudentSlotIndex = useCallback((index: number) => setDataEntryFocusedStudentSlotIndexState(index), []);
   const setDataEntryAiActivitySuggestions = useCallback((suggestions: Record<string, string[]>) => setDataEntryAiActivitySuggestionsState(suggestions), []);
   const setDataEntryVisibleGoalCountByStudentId = useCallback((updater: (prev: Record<string, number>) => Record<string, number>) => setDataEntryVisibleGoalCountByStudentIdState(updater), []);
   const setDataEntryShowArchivedByStudentId = useCallback((updater: (prev: Record<string, boolean>) => Record<string, boolean>) => setDataEntryShowArchivedByStudentIdState(updater), []);
 
+  const setDataEntrySelectedStudentIds = useCallback((updater: string[] | ((prev: string[]) => string[])) => {
+    const newSelectedIds = typeof updater === 'function' ? updater(dataEntrySelectedStudentIds) : updater;
+
+    setDataEntrySelectedStudentIdsState(newSelectedIds);
+
+    // Sync session states when selection changes
+    setDataEntryStudentSessionStatesState(prevStates => {
+      const newContextStudentStates: Record<string, StudentSessionState> = { ...prevStates };
+      let statesChanged = false;
+
+      newSelectedIds.forEach((id) => {
+        const student = studentsState.find(s => s.id === id);
+        if (student) {
+          const existingState = newContextStudentStates[id];
+          if (!existingState) {
+            const initialGoalData: Record<string, SessionGoalData['data']> = {};
+            student.goals.forEach(goal => {
+              initialGoalData[goal.id] = JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type] || {}));
+            });
+            newContextStudentStates[id] = {
+              studentId: student.id, studentName: student.name, activity: '', notes: '',
+              goalData: initialGoalData, originalGoalHeaders: student.goals,
+            };
+            statesChanged = true;
+          }
+        }
+      });
+      
+      Object.keys(newContextStudentStates).forEach(studentId => {
+        if (!newSelectedIds.includes(studentId)) {
+          delete newContextStudentStates[studentId];
+          statesChanged = true;
+        }
+      });
+      return statesChanged ? newContextStudentStates : prevStates;
+    });
+
+  }, [dataEntrySelectedStudentIds, studentsState]);
 
   const contextValue = useMemo(() => ({
     students: studentsState,

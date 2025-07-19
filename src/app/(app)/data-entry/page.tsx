@@ -77,64 +77,6 @@ export default function DataEntryPage() {
   }, [studentsLoading, students, studentFromContext, dataEntrySelectedStudentIds, setDataEntrySelectedStudentIds, setDataEntryFocusedStudentSlotIndex]);
 
 
-  // Effect to synchronize student session states when selection or student list changes
-  useEffect(() => {
-    setDataEntryStudentSessionStates(prevStates => {
-        const newContextStudentStates: Record<string, StudentSessionState> = { ...prevStates };
-        let statesChanged = false;
-
-        dataEntrySelectedStudentIds.forEach((id) => {
-            const student = students.find(s => s.id === id);
-            if (student) {
-                const existingState = newContextStudentStates[id];
-                const goalsHaveChanged = !existingState || !existingState.originalGoalHeaders || existingState.originalGoalHeaders.length !== student.goals.length ||
-                    student.goals.some((goal, index) => 
-                        !existingState.originalGoalHeaders[index] || 
-                        goal.id !== existingState.originalGoalHeaders[index].id || 
-                        goal.name !== existingState.originalGoalHeaders[index].name ||
-                        goal.isArchived !== existingState.originalGoalHeaders[index].isArchived
-                    );
-
-                if (!existingState) {
-                    const initialGoalData: Record<string, SessionGoalData['data']> = {};
-                    // Access GOAL_TYPE_FIELDS only when creating the state
-                    // This requires GOAL_TYPE_FIELDS to be imported or available here
-                     // Note: GOAL_TYPE_FIELDS import needs to be added to this file if not already present
-                    student.goals.forEach(goal => {
-                        initialGoalData[goal.id] = JSON.parse(JSON.stringify({})); // Placeholder, actual structure depends on goal type
-                    });
-                    newContextStudentStates[id] = {
-                        studentId: student.id, studentName: student.name, activity: '', notes: '',
-                        goalData: initialGoalData, originalGoalHeaders: student.goals,
-                    };
-                    statesChanged = true;
-                } else if (goalsHaveChanged || existingState.studentName !== student.name) {
-                    const newGoalData: Record<string, SessionGoalData['data']> = {};
-                    student.goals.forEach(goal => {
-                        newGoalData[goal.id] = existingState.goalData?.[goal.id] ? existingState.goalData[goal.id] : JSON.parse(JSON.stringify({})); // Placeholder
-                    });
-                    newContextStudentStates[id] = {
-                        ...existingState,
-                        studentName: student.name,
-                        goalData: newGoalData,
-                        originalGoalHeaders: student.goals,
-                    };
-                    statesChanged = true;
-                }
-            }
-        });
-
-        Object.keys(newContextStudentStates).forEach(studentId => {
-            if (!dataEntrySelectedStudentIds.includes(studentId)) {
-                delete newContextStudentStates[studentId];
-                statesChanged = true;
-            }
-        });
-
-        return statesChanged ? newContextStudentStates : prevStates;
-    });
-  }, [dataEntrySelectedStudentIds, students, setDataEntryStudentSessionStates]);
-
  useEffect(() => {
     if (dataEntrySelectedStudentIds.length > 0 && dataEntryFocusedStudentSlotIndex >= 0 && dataEntryFocusedStudentSlotIndex < dataEntrySelectedStudentIds.length) {
       const studentCardId = `student-card-slot-${dataEntryFocusedStudentSlotIndex}`;
