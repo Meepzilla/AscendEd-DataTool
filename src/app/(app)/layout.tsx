@@ -36,6 +36,10 @@ export default function AppLayout({
       const pagesToPrefetch = [ 
         '/dashboard',
         '/changelog',
+        '/data-entry',
+        '/analysis-report',
+        '/goal-templates',
+        '/student-profile',
       ];
       
       // Use requestIdleCallback to prefetch without impacting the main thread

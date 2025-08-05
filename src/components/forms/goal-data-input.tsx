@@ -99,7 +99,7 @@ export default function GoalDataInputComponent({
         const successful = Number(data.successfulAttempts || 0);
         const failed = Number(data.failedAttempts || 0);
         totalOpportunities = successful + failed;
-        actualPerformancePct = totalOpportunities > 0 ? (successful / total) * 100 : 0;
+        actualPerformancePct = totalOpportunities > 0 ? (successful / totalOpportunities) * 100 : 0;
         break;
       }
       case 'PROMPTING':
