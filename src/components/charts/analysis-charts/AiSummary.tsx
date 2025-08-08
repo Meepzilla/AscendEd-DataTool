@@ -56,23 +56,45 @@ const AiSummary: React.FC<AiSummaryProps> = ({ studentSessions, selectedStudent,
   };
 
   return (
-    
-      
-        
-          
-            AI-Powered Technical Summary
-          
-          
-            An AI-generated summary of the student's progress based on the selected data (active goals).
-          
-        
-        
-          {isAiLoading && }
-          {!isAiLoading && technicalSummary && {technicalSummary}}
-          {!isAiLoading && !technicalSummary && Click "Generate Summary" to get an AI analysis.}
-        
-      
-    
+    <Card className="col-span-1 lg:col-span-2">
+      <CardHeader>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Lightbulb className="h-6 w-6 text-yellow-500" />
+              AI-Powered Technical Summary
+            </CardTitle>
+            <CardDescription className="mt-1">
+              An AI-generated summary of the student's progress based on the selected data (active goals).
+            </CardDescription>
+          </div>
+          <Button onClick={handleGenerateSummary} disabled={isAiLoading} size="sm" variant="outline">
+            {isAiLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+            {isAiLoading ? 'Generating...' : (technicalSummary ? 'Regenerate' : 'Generate Summary')}
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="min-h-[100px] text-sm">
+        {isAiLoading && (
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+          </div>
+        )}
+        {!isAiLoading && technicalSummary && (
+          <blockquote className="border-l-2 pl-4 italic text-muted-foreground">
+            {technicalSummary}
+          </blockquote>
+        )}
+        {!isAiLoading && !technicalSummary && (
+          <div className="text-center text-muted-foreground flex flex-col items-center justify-center h-full gap-2">
+            <MessageSquare className="h-8 w-8" />
+            <p>Click "Generate Summary" to get an AI analysis.</p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 

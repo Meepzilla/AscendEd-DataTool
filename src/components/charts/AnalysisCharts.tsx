@@ -144,46 +144,45 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, select
 
   return (
     <div className="space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Suspense fallback={<ChartSuspenseFallback />}
-                <ProgressOverTimeChart chartData={chartData} selectedGoalId={selectedGoalId} activeStudentGoals={activeStudentGoals} />
-            </Suspense>
-            <Suspense fallback={<ChartSuspenseFallback />}
-                <ResponseCountsChart chartData={chartData} selectedGoalId={selectedGoalId} activeStudentGoals={activeStudentGoals} />
-            </Suspense>
-            <Suspense fallback={<ChartSuspenseFallback />}
-                <OpportunitiesChart chartData={chartData} selectedGoalId={selectedGoalId} activeStudentGoals={activeStudentGoals} />
-            </Suspense>
-            <Suspense fallback={<ChartSuspenseFallback />}
-                <PerformanceScatterPlot chartData={chartData} />
-            </Suspense>
-            {hasPromptUsageData && (
-                <Suspense fallback={<ChartSuspenseFallback />}
-                     <div className="lg:col-span-2">
-                        <PromptUsageChart chartData={chartData} />
-                     </div>
-                </Suspense>
-            )}
-        
-        
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Suspense fallback={<ChartSuspenseFallback />}>
+          <ProgressOverTimeChart chartData={chartData} selectedGoalId={selectedGoalId} activeStudentGoals={activeStudentGoals} />
+        </Suspense>
+        <Suspense fallback={<ChartSuspenseFallback />}>
+          <ResponseCountsChart chartData={chartData} selectedGoalId={selectedGoalId} activeStudentGoals={activeStudentGoals} />
+        </Suspense>
+        <Suspense fallback={<ChartSuspenseFallback />}>
+          <OpportunitiesChart chartData={chartData} selectedGoalId={selectedGoalId} activeStudentGoals={activeStudentGoals} />
+        </Suspense>
+        <Suspense fallback={<ChartSuspenseFallback />}>
+          <PerformanceScatterPlot chartData={chartData} />
+        </Suspense>
+        {hasPromptUsageData && (
+          <Suspense fallback={<ChartSuspenseFallback />}>
+            <div className="lg:col-span-2">
+              <PromptUsageChart chartData={chartData} />
+            </div>
+          </Suspense>
+        )}
+        <Suspense fallback={<ChartSuspenseFallback />}>
             <GoalPerformanceSankey studentSessions={studentSessions} activeStudentGoals={activeStudentGoals} selectedGoalId={selectedGoalId} />
-        
-
-        
+        </Suspense>
+        <Suspense fallback={<ChartSuspenseFallback />}>
             <AiSummary studentSessions={studentSessions} selectedStudent={selectedStudent} selectedGoalId={selectedGoalId} chartData={chartData} />
-        
-    
+        </Suspense>
+      </div>
+    </div>
   );
 };
 
 export function AnalysisReportChartsSkeleton() {
     return (
-         
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <ChartSuspenseFallback />
             <ChartSuspenseFallback />
             <ChartSuspenseFallback />
             <ChartSuspenseFallback />
-        
+        </div>
     );
 }
 
