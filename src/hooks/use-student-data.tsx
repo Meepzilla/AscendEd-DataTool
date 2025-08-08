@@ -1188,6 +1188,8 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
             case 'FEEDING_SWALLOWING': fieldToUpdate = 'trialsRefused'; break;
             case 'SEQUENCED_TRIALS': fieldToUpdate = 'failedAttempts'; break;
         }
+    } else if (key === 'B') { // Approximate
+        fieldToUpdate = 'approximate';
     }
 
     if (fieldToUpdate) {

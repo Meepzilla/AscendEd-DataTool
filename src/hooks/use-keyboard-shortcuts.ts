@@ -82,7 +82,14 @@ export function useKeyboardShortcuts() {
         // Global Action Hotkeys: Trigger application-wide actions
         case 'L': toggleErrorLogModal(); break; // Alt+L to toggle Error Log Modal visibility
         case 'M': openAddStudentModal(); break; // Alt+M to open the Add Student Modal
-        case 'B': if (toggleSidebar) toggleSidebar(); break; // Alt+B to toggle Sidebar visibility (check if toggleSidebar exists)
+        case 'B': if (event.altKey && key === 'B') {
+            if (pathname.startsWith('/data-entry')) {
+              handleDataEntryHotkey(key, alt);
+            } else if (toggleSidebar) {
+              toggleSidebar();
+            }
+          }
+          break;
         
         // Data Entry Page Specific Actions (with Alt modifier): Decrement counts or trigger edit modal
         case 'A': if (pathname.startsWith('/data-entry')) cycleFocusedStudent('prev'); break; // Alt+A to cycle to the previous student slot
@@ -114,6 +121,7 @@ export function useKeyboardShortcuts() {
                 case 'S': cycleFocusedGoal('next'); break; // 'S' to cycle to the next goal for the focused student
                 
                 // Data Entry Hotkeys for incrementing prompt counts (No Alt/Ctrl modifier)
+                case 'B': // Increment Approximate
                 case 'C': // Increment Correct / Total Syllables / Trials Accepted / Slider Right
                 case 'N': // Increment Incorrect / Stuttered Syllables / Trials Refused / Slider Left
                 case 'D': // Increment Visual Prompt count

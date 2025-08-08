@@ -21,6 +21,7 @@ export const GOAL_TYPE_FIELDS: Record<GoalType, Record<string, any>> = {
   [GOAL_TYPES.ARTICULATION]: {
     correct: 0,
     incorrect: 0,
+    approximate: 0,
     targetSound: '',
     wordList: '',
     Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, Imitation: 0,
@@ -39,12 +40,14 @@ export const GOAL_TYPE_FIELDS: Record<GoalType, Record<string, any>> = {
   [GOAL_TYPES.LANGUAGE_COMPREHENSION]: {
     questionsCorrect: 0,
     questionsIncorrect: 0,
+    approximate: 0,
     details: '',
     Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, Imitation: 0,
   },
   [GOAL_TYPES.LANGUAGE_EXPRESSION]: {
     successfulResponses: 0,
     unsuccessfulResponses: 0,
+    approximate: 0,
     details: '',
     Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, Imitation: 0,
   },
@@ -52,6 +55,7 @@ export const GOAL_TYPE_FIELDS: Record<GoalType, Record<string, any>> = {
     targetProcess: '',
     correctProductions: 0,
     incorrectProductions: 0,
+    approximate: 0,
     Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, Imitation: 0,
   },
   [GOAL_TYPES.FEEDING_SWALLOWING]: {
@@ -66,6 +70,7 @@ export const GOAL_TYPE_FIELDS: Record<GoalType, Record<string, any>> = {
     trialsPerAttempt: 5,
     successfulAttempts: 0,
     failedAttempts: 0,
+    approximate: 0,
     Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, Imitation: 0,
   },
   [GOAL_TYPES.PROMPTING]: {
