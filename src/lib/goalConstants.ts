@@ -123,6 +123,15 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
   { name: 'Produce /v/ in conversational speech', type: 'ARTICULATION', smartGoalPrompt: 'Student will produce /v/ in conversational speech.', isDefault: true, sessionTargetValue: 90, generatedSmartGoal: '' },
   { name: 'Produce "ch" (tʃ) in sentences', type: 'ARTICULATION', smartGoalPrompt: 'Student will produce "ch" (tʃ) in sentences.', isDefault: true, sessionTargetValue: 80, generatedSmartGoal: '' },
 
+  // Syllable Shape Goals
+  { name: 'Produce CV syllable structures', type: 'ARTICULATION', smartGoalPrompt: 'Student will produce Consonant-Vowel (CV) syllable structures in isolation or in single words.', isDefault: true, sessionTargetValue: 90, generatedSmartGoal: '' },
+  { name: 'Produce VC syllable structures', type: 'ARTICULATION', smartGoalPrompt: 'Student will produce Vowel-Consonant (VC) syllable structures in isolation or in single words.', isDefault: true, sessionTargetValue: 90, generatedSmartGoal: '' },
+  { name: 'Produce CVC syllable structures', type: 'ARTICULATION', smartGoalPrompt: 'Student will produce Consonant-Vowel-Consonant (CVC) words.', isDefault: true, sessionTargetValue: 85, generatedSmartGoal: '' },
+  { name: 'Produce CVCV syllable structures', type: 'ARTICULATION', smartGoalPrompt: 'Student will produce reduplicated Consonant-Vowel-Consonant-Vowel (CVCV) syllable structures (e.g., "dada", "wawa").', isDefault: true, sessionTargetValue: 85, generatedSmartGoal: '' },
+  { name: 'Produce VCV syllable structures', type: 'ARTICULATION', smartGoalPrompt: 'Student will produce Vowel-Consonant-Vowel (VCV) words (e.g., "apple", "away").', isDefault: true, sessionTargetValue: 80, generatedSmartGoal: '' },
+  { name: 'Produce CCVC syllable structures', type: 'ARTICULATION', smartGoalPrompt: 'Student will produce initial Consonant-Consonant-Vowel-Consonant (CCVC) words (e.g., "stop", "plan").', isDefault: true, sessionTargetValue: 75, generatedSmartGoal: '' },
+  { name: 'Produce CVCC syllable structures', type: 'ARTICULATION', smartGoalPrompt: 'Student will produce final Consonant-Vowel-Consonant-Consonant (CVCC) words (e.g., "lamp", "desk").', isDefault: true, sessionTargetValue: 75, generatedSmartGoal: '' },
+
   // Phonological Processes Goals (10)
   { name: 'Eliminate Final Consonant Deletion in CVC words', type: 'PHONOLOGICAL_PROCESSES', smartGoalPrompt: 'Student will eliminate final consonant deletion in CVC words.', isDefault: true, sessionTargetValue: 80, generatedSmartGoal: '' },
   { name: 'Reduce Fronting of /k, g/', type: 'PHONOLOGICAL_PROCESSES', smartGoalPrompt: 'Student will reduce fronting of /k, g/ sounds.', isDefault: true, sessionTargetValue: 75, generatedSmartGoal: '' },
