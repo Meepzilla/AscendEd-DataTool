@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 import type { Student, SessionData } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { RefreshCw, Lightbulb, MessageSquare } from 'lucide-react';
+import { RefreshCw, Lightbulb, MessageSquare, Loader2 } from 'lucide-react';
 import { generateTechnicalSummary } from '@/ai/flows/technical-summary-generation';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -97,5 +97,3 @@ const AiSummary: React.FC<AiSummaryProps> = ({ studentSessions, selectedStudent,
     </Card>
   );
 };
-
-export default AiSummary;
