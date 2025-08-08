@@ -44,8 +44,13 @@ interface AuthContextType {
 // Creates the React Context for authentication. It will hold the authentication state and methods.
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Checks if Firebase Auth module is available (i.e., Firebase is configured).
-const isFirebaseAvailable = !!authModule;
+// Function to check if Firebase is enabled via localStorage
+const checkFirebaseEnabled = () => {
+  if (typeof window === 'undefined') return true; // SSR default
+  const storedSetting = window.localStorage.getItem('firebase_enabled');
+  return storedSetting === null ? true : JSON.parse(storedSetting);
+};
+
 
 /**
  * AuthProvider component.
@@ -58,18 +63,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [isFirebaseAvailable, setIsFirebaseAvailable] = useState(false);
   // Access the error logging hook to log authentication-related errors.
   const { addErrorLog } = useErrorLog();
 
   // Effect hook to listen for Firebase authentication state changes.
   // This runs once on mount and handles initial user loading and local mode fallback.
   useEffect(() => {
+    const isEnabled = checkFirebaseEnabled() && !!authModule;
+    setIsFirebaseAvailable(isEnabled);
+
     // If Firebase is not configured, set a local guest user and an error message.
-    if (!isFirebaseAvailable) { 
+    if (!isEnabled) { 
       setCurrentUser(LOCAL_GUEST_USER); 
-      const configError = new Error("Firebase not configured. Operating in local mode. Some features like cloud sync will be unavailable.");
+      const configError = new Error("Firebase not configured or is disabled in settings. Operating in local mode.");
       setError(configError);
-      addErrorLog({ message: configError.message, source: 'useAuth.init', type: 'warning', details: 'Firebase SDK (authModule) is null.' });
+      addErrorLog({ message: configError.message, source: 'useAuth.init', type: 'warning', details: 'Firebase SDK (authModule) is null or disabled.' });
       setLoading(false);
       return;
     }
@@ -132,7 +141,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setCurrentUser(user);
         setError(null);
       } else { // No Firebase user is logged in.
-        if (!isFirebaseAvailable) { // If Firebase is not configured, keep the local guest user.
+        if (!isEnabled) { // If Firebase is not configured, keep the local guest user.
             setCurrentUser(LOCAL_GUEST_USER); 
         } else { // If Firebase is available but no user, set currentUser to null.
             setCurrentUser(null);
@@ -329,7 +338,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       addErrorLog({ message: 'Failed to get ID token result.', source: 'useAuth.getTokenResult', details: e.message, type: 'error' });
       return null;
     }
-  }, [addErrorLog]);
+  }, [addErrorLog, isFirebaseAvailable]);
 
   return (
     // Provides the authentication context values to any child components wrapped by AuthProvider.

@@ -23,8 +23,15 @@ let app: FirebaseApp | null = null;
 let authModule: Auth | null = null; // Renamed to avoid conflict with auth from getAuth
 let dbModule: Firestore | null = null; // Renamed
 
-// Check if essential configuration is present
-if (finalFirebaseConfig.apiKey && finalFirebaseConfig.projectId) {
+// Check if Firebase is enabled in localStorage
+const isFirebaseGloballyEnabled = () => {
+  if (typeof window === 'undefined') return true; // Default to enabled on server-side
+  const storedSetting = window.localStorage.getItem('firebase_enabled');
+  return storedSetting === null ? true : JSON.parse(storedSetting); // Enabled by default
+}
+
+// Check if essential configuration is present AND Firebase is enabled
+if (isFirebaseGloballyEnabled() && finalFirebaseConfig.apiKey && finalFirebaseConfig.projectId) {
   try {
     if (!getApps().length) {
       app = initializeApp(finalFirebaseConfig);
@@ -76,11 +83,14 @@ if (finalFirebaseConfig.apiKey && finalFirebaseConfig.projectId) {
     dbModule = null;
   }
 } else {
-  console.warn(
-    "Firebase API Key or Project ID is missing. App will use local data mode. For Firebase integration, ensure NEXT_PUBLIC_FIREBASE_API_KEY and NEXT_PUBLIC_FIREBASE_PROJECT_ID are set in your .env file."
-  );
+  if (!isFirebaseGloballyEnabled()) {
+    console.log("Firebase is disabled via settings. App will run in local-only mode.");
+  } else {
+    console.warn(
+      "Firebase API Key or Project ID is missing. App will use local data mode. For Firebase integration, ensure NEXT_PUBLIC_FIREBASE_API_KEY and NEXT_PUBLIC_FIREBASE_PROJECT_ID are set in your .env file."
+    );
+  }
   // app, authModule, dbModule remain null
 }
 
 export { app, authModule as auth, dbModule as db };
-
