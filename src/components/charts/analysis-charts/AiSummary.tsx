@@ -97,3 +97,5 @@ const AiSummary: React.FC<AiSummaryProps> = ({ studentSessions, selectedStudent,
     </Card>
   );
 };
+
+export default AiSummary;
