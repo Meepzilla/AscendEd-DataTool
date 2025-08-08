@@ -22,6 +22,7 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
   return sessions.map(session => {
     let sessionCorrect = 0;
     let sessionIncorrect = 0;
+    let sessionApproximate = 0; // Added to track approximate
     let sessionOpportunities = 0;
     let promptCounts: Record<PromptType, number> = {
         'Independent': 0, 'Visual': 0, 'Verbal': 0, 'Gestural': 0, 'PartialPhysical': 0, 'Imitation': 0
@@ -34,26 +35,30 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
 
       let currentGoalCorrect = 0;
       let currentGoalIncorrect = 0;
+      let currentGoalApproximate = 0;
       
-      // Use GOAL_TYPE_FIELDS for default values to prevent undefined errors
       const data = { ...(goalData.data || {}) };
 
       switch (goalData.goalType) {
         case 'ARTICULATION':
             currentGoalCorrect = Number(data.correct) || 0;
             currentGoalIncorrect = Number(data.incorrect) || 0;
+            currentGoalApproximate = Number(data.approximate) || 0;
             break;
         case 'LANGUAGE_COMPREHENSION':
             currentGoalCorrect = Number(data.questionsCorrect) || 0;
             currentGoalIncorrect = Number(data.questionsIncorrect) || 0;
+            currentGoalApproximate = Number(data.approximate) || 0;
             break;
         case 'LANGUAGE_EXPRESSION':
             currentGoalCorrect = Number(data.successfulResponses) || 0;
             currentGoalIncorrect = Number(data.unsuccessfulResponses) || 0;
+            currentGoalApproximate = Number(data.approximate) || 0;
             break;
         case 'PHONOLOGICAL_PROCESSES':
             currentGoalCorrect = Number(data.correctProductions) || 0;
             currentGoalIncorrect = Number(data.incorrectProductions) || 0;
+            currentGoalApproximate = Number(data.approximate) || 0;
             break;
         case 'FLUENCY_SYLLABLE_STUTTER':
             const totalSyllables = Number(data.totalSyllables) || 0;
@@ -68,12 +73,14 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
         case 'SEQUENCED_TRIALS':
             currentGoalCorrect = Number(data.successfulAttempts) || 0;
             currentGoalIncorrect = Number(data.failedAttempts) || 0;
+            currentGoalApproximate = Number(data.approximate) || 0;
             break;
       }
       
-      let currentGoalOpportunities = currentGoalCorrect + currentGoalIncorrect;
+      let currentGoalOpportunities = currentGoalCorrect + currentGoalIncorrect + currentGoalApproximate;
       sessionCorrect += currentGoalCorrect;
       sessionIncorrect += currentGoalIncorrect;
+      sessionApproximate += currentGoalApproximate;
       sessionOpportunities += currentGoalOpportunities;
 
       Object.keys(promptCounts).forEach(pt => {
@@ -92,6 +99,7 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
       accuracy: parseFloat(accuracy.toFixed(1)),
       correct: sessionCorrect,
       incorrect: sessionIncorrect,
+      approximate: sessionApproximate, // Return approximate count
       opportunities: sessionOpportunities,
       totalPrompts: totalPrompts,
       ...promptCounts,
@@ -137,46 +145,45 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, select
   return (
     <div className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Suspense fallback={<ChartSuspenseFallback />}>
+            <Suspense fallback={<ChartSuspenseFallback />}
                 <ProgressOverTimeChart chartData={chartData} selectedGoalId={selectedGoalId} activeStudentGoals={activeStudentGoals} />
             </Suspense>
-            <Suspense fallback={<ChartSuspenseFallback />}>
+            <Suspense fallback={<ChartSuspenseFallback />}
                 <ResponseCountsChart chartData={chartData} selectedGoalId={selectedGoalId} activeStudentGoals={activeStudentGoals} />
             </Suspense>
-            <Suspense fallback={<ChartSuspenseFallback />}>
+            <Suspense fallback={<ChartSuspenseFallback />}
                 <OpportunitiesChart chartData={chartData} selectedGoalId={selectedGoalId} activeStudentGoals={activeStudentGoals} />
             </Suspense>
-            <Suspense fallback={<ChartSuspenseFallback />}>
+            <Suspense fallback={<ChartSuspenseFallback />}
                 <PerformanceScatterPlot chartData={chartData} />
             </Suspense>
             {hasPromptUsageData && (
-                <Suspense fallback={<ChartSuspenseFallback />}>
+                <Suspense fallback={<ChartSuspenseFallback />}
                      <div className="lg:col-span-2">
                         <PromptUsageChart chartData={chartData} />
                      </div>
                 </Suspense>
             )}
-        </div>
         
-        <Suspense fallback={<ChartSuspenseFallback />}>
+        
             <GoalPerformanceSankey studentSessions={studentSessions} activeStudentGoals={activeStudentGoals} selectedGoalId={selectedGoalId} />
-        </Suspense>
+        
 
-        <Suspense fallback={<ChartSuspenseFallback />}>
+        
             <AiSummary studentSessions={studentSessions} selectedStudent={selectedStudent} selectedGoalId={selectedGoalId} chartData={chartData} />
-        </Suspense>
-    </div>
+        
+    
   );
 };
 
 export function AnalysisReportChartsSkeleton() {
     return (
-         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+         
             <ChartSuspenseFallback />
             <ChartSuspenseFallback />
             <ChartSuspenseFallback />
             <ChartSuspenseFallback />
-        </div>
+        
     );
 }
 

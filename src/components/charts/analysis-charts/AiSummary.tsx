@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -36,7 +37,7 @@ const AiSummary: React.FC<AiSummaryProps> = ({ studentSessions, selectedStudent,
       const progressDataPoints = studentSessions.slice(-5).map(s => `On ${formatDate(s.date)}: Activity "${s.activity}", Notes: "${s.notes}". Goals covered: ${s.goals.filter(sg => { const goal = activeStudentGoals.find(g => g.id === sg.goalId); return goal && !goal.isArchived; }).length}.`).join('\n');
       const primaryGoal = selectedGoalId ? activeStudentGoals.find(g => g.id === selectedGoalId)?.name : "overall progress on active goals";
       const chartDataSummary = chartData.slice(-3);
-      const summaryText = `Recent sessions show the following trends (focus on active goals):\n${progressDataPoints}\nChart data (last ${chartDataSummary.length} sessions) accuracies: ${chartDataSummary.map(d => `${d.accuracy}%`).join(', ')}; opportunities: ${chartDataSummary.map(d => d.opportunities).join(', ')}; correct responses: ${chartDataSummary.map(d => d.correct).join(', ')}; incorrect responses: ${chartDataSummary.map(d => d.incorrect).join(', ')}; total prompts used (excluding independent): ${chartDataSummary.map(d => d.totalPrompts).join(', ')}.`;
+      const summaryText = `Recent sessions show the following trends (focus on active goals):\n${progressDataPoints}\nChart data (last ${chartDataSummary.length} sessions) accuracies: ${chartDataSummary.map(d => `${d.accuracy}%`).join(', ')}; opportunities: ${chartDataSummary.map(d => d.opportunities).join(', ')}; correct: ${chartDataSummary.map(d => d.correct).join(', ')}; incorrect: ${chartDataSummary.map(d => d.incorrect).join(', ')}; approximate: ${chartDataSummary.map(d => d.approximate).join(', ')}; total prompts (excluding independent): ${chartDataSummary.map(d => d.totalPrompts).join(', ')}.`;
 
       const result = await generateTechnicalSummary({
         studentName: selectedStudent.name,
@@ -55,23 +56,23 @@ const AiSummary: React.FC<AiSummaryProps> = ({ studentSessions, selectedStudent,
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-          <CardTitle className="flex items-center gap-2"><MessageSquare className="h-6 w-6 text-primary"/>AI-Powered Technical Summary</CardTitle>
-          <Button onClick={handleGenerateSummary} disabled={isAiLoading} size="sm">
-            {isAiLoading ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Lightbulb className="mr-2 h-4 w-4" />}
-            {technicalSummary ? 'Re-generate' : 'Generate Summary'}
-          </Button>
-        </div>
-        <CardDescription>An AI-generated summary of the student's progress based on the selected data (active goals).</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {isAiLoading && <Skeleton className="h-24 w-full" />}
-        {!isAiLoading && technicalSummary && <div className="p-4 border rounded-md bg-muted/50 whitespace-pre-wrap text-sm leading-relaxed">{technicalSummary}</div>}
-        {!isAiLoading && !technicalSummary && <p className="text-muted-foreground">Click "Generate Summary" to get an AI analysis.</p>}
-      </CardContent>
-    </Card>
+    
+      
+        
+          
+            AI-Powered Technical Summary
+          
+          
+            An AI-generated summary of the student's progress based on the selected data (active goals).
+          
+        
+        
+          {isAiLoading && }
+          {!isAiLoading && technicalSummary && {technicalSummary}}
+          {!isAiLoading && !technicalSummary && Click "Generate Summary" to get an AI analysis.}
+        
+      
+    
   );
 };
 
