@@ -96,90 +96,90 @@ export default function StudentSidebar() {
 
       <SidebarContent>
         <ScrollArea className="h-full">
-          {loading && (
-            <div className="p-2 space-y-2">
-              {[1, 2, 3].map(i => <SidebarMenuSkeleton key={i} showIcon />)}
-            </div>
-          )}
-          {error && <p className="p-2 text-sm text-destructive">Error loading students.</p>}
-          {!loading && !error && (
-            <SidebarMenu className="p-2">
-              {filteredStudents.length === 0 && !loading && (
-                <p className={cn("text-sm text-muted-foreground p-2 text-center", sidebarState === 'collapsed' && "hidden")}>No students found.</p>
-              )}
-              {filteredStudents.map((student) => (
-                <SidebarMenuItem key={student.id} className="group/menu-item relative">
-                   <Link
-                      href={`/student-profile/${student.id}`}
-                      onClick={() => handleSelectStudent(student)}
-                      className="w-full block" // Make link take full width for better click area
-                    >
-                    <SidebarMenuButton
-                      asChild // Allow Link to control navigation
-                      isActive={selectedStudent?.id === student.id}
-                      className="justify-between w-full" // Ensure button itself takes full width of its container
-                      tooltip={student.name}
-                    >
-                      {/* Content of the old 'a' tag now goes directly here */}
-                      <div className="flex items-center gap-2 overflow-hidden">
-                        <User className="h-5 w-5 flex-shrink-0" />
-                        <span className={cn("truncate", sidebarState === 'collapsed' && "sr-only")}>{student.name}</span>
+            {loading && (
+              <div className="p-2 space-y-2">
+                {[1, 2, 3].map(i => <SidebarMenuSkeleton key={i} showIcon />)}
+              </div>
+            )}
+            {error && <p className="p-2 text-sm text-destructive">Error loading students.</p>}
+            {!loading && !error && (
+              <SidebarMenu className="p-2">
+                {filteredStudents.length === 0 && !loading && (
+                  <p className={cn("text-sm text-muted-foreground p-2 text-center", sidebarState === 'collapsed' && "hidden")}>No students found.</p>
+                )}
+                {filteredStudents.map((student) => (
+                  <SidebarMenuItem key={student.id} className="group/menu-item relative">
+                    <Link
+                        href={`/student-profile/${student.id}`}
+                        onClick={() => handleSelectStudent(student)}
+                        className="w-full block" // Make link take full width for better click area
+                      >
+                      <SidebarMenuButton
+                        asChild // Allow Link to control navigation
+                        isActive={selectedStudent?.id === student.id}
+                        className="justify-between w-full" // Ensure button itself takes full width of its container
+                        tooltip={student.name}
+                      >
+                        {/* Content of the old 'a' tag now goes directly here */}
+                        <div className="flex items-center gap-2 overflow-hidden">
+                          <User className="h-5 w-5 flex-shrink-0" />
+                          <span className={cn("truncate", sidebarState === 'collapsed' && "sr-only")}>{student.name}</span>
+                        </div>
+                      </SidebarMenuButton>
+                    </Link>
+                    {sidebarState !== 'collapsed' && (
+                      <div className="absolute right-1 top-1/2 -translate-y-1/2 flex opacity-0 group-hover/menu-item:opacity-100 focus-within:opacity-100 transition-opacity">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-7 w-7" 
+                          onClick={(e) => { e.stopPropagation(); openEditStudentModal(student);}} 
+                          title={`Edit ${student.name}`}
+                        >
+                          <Edit3 className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-7 w-7" 
+                          onClick={(e) => { e.stopPropagation(); openDeleteStudentModal(student);}} 
+                          title={`Delete ${student.name}`}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
                       </div>
-                    </SidebarMenuButton>
-                  </Link>
-                  {sidebarState !== 'collapsed' && (
-                    <div className="absolute right-1 top-1/2 -translate-y-1/2 flex opacity-0 group-hover/menu-item:opacity-100 focus-within:opacity-100 transition-opacity">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-7 w-7" 
-                        onClick={(e) => { e.stopPropagation(); openEditStudentModal(student);}} 
-                        title={`Edit ${student.name}`}
-                      >
-                        <Edit3 className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-7 w-7" 
-                        onClick={(e) => { e.stopPropagation(); openDeleteStudentModal(student);}} 
-                        title={`Delete ${student.name}`}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  )}
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          )}
+                    )}
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            )}
 
-          {selectedStudent && (
-            <>
-              <SidebarSeparator />
-              <SidebarFooter className={cn("mt-auto", sidebarState === 'collapsed' ? "p-0" : "p-2")}>
-                <Accordion type="single" collapsible className="w-full" defaultValue={isStudentSelectedAndOnProfile ? undefined : "item-1"}>
-                  <AccordionItem value="item-1" className="border-none">
-                    <AccordionTrigger className={cn(
-                        "py-2 px-2 hover:bg-sidebar-accent rounded-md w-full justify-start hover:no-underline",
-                        sidebarState === 'collapsed' && "justify-center p-2",
-                      )}>
-                      <div className="flex items-center gap-2">
-                        <User className="h-5 w-5"/>
-                        <span className={cn("font-medium text-sm", sidebarState === 'collapsed' && "sr-only")}>
-                          {selectedStudent.name}
-                        </span>
-                      </div>
-                      {sidebarState !== 'collapsed' && <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200 accordion-chevron" />}
-                    </AccordionTrigger>
-                    <AccordionContent className={cn("pt-0", sidebarState === 'collapsed' && "hidden")}>
-                      <StudentProgressSidebar student={selectedStudent} studentSessions={studentSpecificSessions} />
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
-              </SidebarFooter>
-            </>
-          )}
+            {selectedStudent && (
+              <>
+                <SidebarSeparator />
+                <SidebarFooter className={cn("mt-auto", sidebarState === 'collapsed' ? "p-0" : "p-2")}>
+                  <Accordion type="single" collapsible className="w-full" defaultValue={isStudentSelectedAndOnProfile ? undefined : "item-1"}>
+                    <AccordionItem value="item-1" className="border-none">
+                      <AccordionTrigger className={cn(
+                          "py-2 px-2 hover:bg-sidebar-accent rounded-md w-full justify-start hover:no-underline",
+                          sidebarState === 'collapsed' && "justify-center p-2",
+                        )}>
+                        <div className="flex items-center gap-2">
+                          <User className="h-5 w-5"/>
+                          <span className={cn("font-medium text-sm", sidebarState === 'collapsed' && "sr-only")}>
+                            {selectedStudent.name}
+                          </span>
+                        </div>
+                        {sidebarState !== 'collapsed' && <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200 accordion-chevron" />}
+                      </AccordionTrigger>
+                      <AccordionContent className={cn("pt-0", sidebarState === 'collapsed' && "hidden")}>
+                        <StudentProgressSidebar student={selectedStudent} studentSessions={studentSpecificSessions} />
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                </SidebarFooter>
+              </>
+            )}
         </ScrollArea>
       </SidebarContent>
     </Sidebar>
