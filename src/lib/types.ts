@@ -51,6 +51,7 @@ export interface SessionData {
   studentName: string;
   date: string; 
   time: string; 
+  endTime?: string; // New field for end time
   activity: string;
   notes: string;
   goals: SessionGoalData[];

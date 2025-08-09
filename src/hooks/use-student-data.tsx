@@ -49,7 +49,7 @@ const getDataEntryStorageKeys = (uid: string | undefined): Record<string, string
      */
     if (!uid) {
         return {
-            DATE: null, TIME: null, SELECTED_IDS: null, SESSION_STATES: null,
+            DATE: null, TIME: null, END_TIME: null, SELECTED_IDS: null, SESSION_STATES: null,
             FOCUSED_SLOT: null, FOCUSED_GOALS: null, VISIBLE_COUNTS: null, SHOW_ARCHIVED: null,
         };
     }
@@ -57,6 +57,7 @@ const getDataEntryStorageKeys = (uid: string | undefined): Record<string, string
     return {
         DATE: `${prefix}date`,
         TIME: `${prefix}time`,
+        END_TIME: `${prefix}end_time`,
         SELECTED_IDS: `${prefix}selected_ids`,
         SESSION_STATES: `${prefix}session_states`,
         FOCUSED_SLOT: `${prefix}focused_slot`,
@@ -128,6 +129,8 @@ interface StudentDataContextType {
   setDataEntrySessionDate: (date: Date | undefined) => void;
   dataEntrySessionTime: string;
   setDataEntrySessionTime: (time: string) => void;
+  dataEntrySessionEndTime: string;
+  setDataEntrySessionEndTime: (time: string) => void;
   dataEntrySelectedStudentIds: string[];
   setDataEntrySelectedStudentIds: React.Dispatch<React.SetStateAction<string[]>>;
   dataEntryActiveStudentsInSlots: Student[];
@@ -193,6 +196,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   // Data Entry Page Persisted State (initialized with defaults)
   const [dataEntrySessionDate, setDataEntrySessionDateState] = useState<Date | undefined>(undefined);
   const [dataEntrySessionTime, setDataEntrySessionTimeState] = useState<string>('');
+  const [dataEntrySessionEndTime, setDataEntrySessionEndTimeState] = useState<string>('');
   const [dataEntrySelectedStudentIds, setDataEntrySelectedStudentIdsState] = useState<string[]>([]);
   const [dataEntryStudentSessionStates, setDataEntryStudentSessionStatesState] = useState<Record<string, StudentSessionState>>({});
   const [dataEntryFocusedStudentSlotIndex, setDataEntryFocusedStudentSlotIndexState] = useState<number>(0);
@@ -288,6 +292,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
         if (keys.DATE) localStorage.setItem(keys.DATE, JSON.stringify(dataEntrySessionDate ? dataEntrySessionDate.toISOString() : null));
         if (keys.TIME) localStorage.setItem(keys.TIME, JSON.stringify(dataEntrySessionTime));
+        if (keys.END_TIME) localStorage.setItem(keys.END_TIME, JSON.stringify(dataEntrySessionEndTime));
         if (keys.SELECTED_IDS) localStorage.setItem(keys.SELECTED_IDS, JSON.stringify(dataEntrySelectedStudentIds));
         if (keys.SESSION_STATES) localStorage.setItem(keys.SESSION_STATES, JSON.stringify(dataEntryStudentSessionStates));
         if (keys.FOCUSED_SLOT) localStorage.setItem(keys.FOCUSED_SLOT, JSON.stringify(dataEntryFocusedStudentSlotIndex));
@@ -297,7 +302,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   }, [
     currentUser?.uid,
-    dataEntrySessionDate, dataEntrySessionTime, dataEntrySelectedStudentIds,
+    dataEntrySessionDate, dataEntrySessionTime, dataEntrySessionEndTime, dataEntrySelectedStudentIds,
     dataEntryStudentSessionStates, dataEntryFocusedStudentSlotIndex,
     dataEntryFocusedGoalIndexByStudentId, dataEntryVisibleGoalCountByStudentId,
     dataEntryShowArchivedByStudentId
@@ -313,6 +318,9 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
       const storedTime = keys.TIME ? getFromLocalStorage(keys.TIME, '') : '';
       setDataEntrySessionTimeState(storedTime);
+
+      const storedEndTime = keys.END_TIME ? getFromLocalStorage(keys.END_TIME, '') : '';
+      setDataEntrySessionEndTimeState(storedEndTime);
 
       if (keys.SELECTED_IDS) setDataEntrySelectedStudentIdsState(getFromLocalStorage(keys.SELECTED_IDS, []));
       if (keys.SESSION_STATES) setDataEntryStudentSessionStatesState(getFromLocalStorage(keys.SESSION_STATES, {}));
@@ -338,6 +346,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       setSelectedStudentState(null);
       setDataEntrySessionDateState(undefined);
       setDataEntrySessionTimeState('');
+      setDataEntrySessionEndTimeState('');
       setDataEntrySelectedStudentIdsState([]);
       setDataEntryStudentSessionStatesState({});
       setDataEntryFocusedStudentSlotIndexState(0);
@@ -894,6 +903,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         studentName: state.studentName,
         date: dataEntrySessionDate.toISOString(),
         time: dataEntrySessionTime,
+        endTime: dataEntrySessionEndTime,
         activity: state.activity,
         notes: state.notes,
         goals: sessionGoals,
@@ -923,6 +933,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   }, [
       dataEntrySessionDate, 
       dataEntrySessionTime, 
+      dataEntrySessionEndTime,
       dataEntrySelectedStudentIds, 
       dataEntryFocusedStudentSlotIndex, 
       dataEntryStudentSessionStates, 
@@ -1202,6 +1213,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   
   const setDataEntrySessionDate = useCallback((date: Date | undefined) => setDataEntrySessionDateState(date), []);
   const setDataEntrySessionTime = useCallback((time: string) => setDataEntrySessionTimeState(time), []);
+  const setDataEntrySessionEndTime = useCallback((time: string) => setDataEntrySessionEndTimeState(time), []);
   const setDataEntryFocusedStudentSlotIndex = useCallback((index: number) => setDataEntryFocusedStudentSlotIndexState(index), []);
   const setDataEntryAiActivitySuggestions = useCallback((suggestions: Record<string, string[]>) => setDataEntryAiActivitySuggestionsState(suggestions), []);
   const setDataEntryVisibleGoalCountByStudentId = useCallback((updater: (prev: Record<string, number>) => Record<string, number>) => setDataEntryVisibleGoalCountByStudentIdState(updater), []);
@@ -1270,6 +1282,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     editingAssignedGoal, openEditAssignedGoalModal, closeEditAssignedGoalModal,
     dataEntrySessionDate, setDataEntrySessionDate,
     dataEntrySessionTime, setDataEntrySessionTime,
+    dataEntrySessionEndTime, setDataEntrySessionEndTime,
     dataEntrySelectedStudentIds, setDataEntrySelectedStudentIds,
     dataEntryActiveStudentsInSlots,
     dataEntryStudentSessionStates, setDataEntryStudentSessionStates: setDataEntryStudentSessionStatesState,
@@ -1296,6 +1309,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     editingAssignedGoal, openEditAssignedGoalModal, closeEditAssignedGoalModal,
     dataEntrySessionDate, setDataEntrySessionDate,
     dataEntrySessionTime, setDataEntrySessionTime,
+    dataEntrySessionEndTime, setDataEntrySessionEndTime,
     dataEntrySelectedStudentIds, setDataEntrySelectedStudentIds,
     dataEntryActiveStudentsInSlots,
     dataEntryStudentSessionStates,

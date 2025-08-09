@@ -16,6 +16,8 @@ interface DataEntryHeaderCardProps {
   setDataEntrySessionDate: (date: Date | undefined) => void;
   dataEntrySessionTime: string;
   setDataEntrySessionTime: (time: string) => void;
+  dataEntrySessionEndTime: string;
+  setDataEntrySessionEndTime: (time: string) => void;
 }
 
 const DataEntryHeaderCard: React.FC<DataEntryHeaderCardProps> = ({
@@ -25,6 +27,8 @@ const DataEntryHeaderCard: React.FC<DataEntryHeaderCardProps> = ({
   setDataEntrySessionDate,
   dataEntrySessionTime,
   setDataEntrySessionTime,
+  dataEntrySessionEndTime,
+  setDataEntrySessionEndTime,
 }) => {
   return (
     <Card className="shadow-lg flex-shrink-0">
@@ -56,12 +60,22 @@ const DataEntryHeaderCard: React.FC<DataEntryHeaderCardProps> = ({
               <DatePicker date={dataEntrySessionDate} setDate={setDataEntrySessionDate} />
             </div>
             <div className="w-full sm:w-auto">
-              <Label htmlFor="sessionTime" className="block text-sm font-medium mb-1">Session Time</Label>
+              <Label htmlFor="sessionTime" className="block text-sm font-medium mb-1">Start Time</Label>
               <Input
                 id="sessionTime"
                 type="time"
                 value={dataEntrySessionTime}
                 onChange={(e) => setDataEntrySessionTime(e.target.value)}
+                className="w-full sm:w-[150px]"
+              />
+            </div>
+            <div className="w-full sm:w-auto">
+              <Label htmlFor="sessionEndTime" className="block text-sm font-medium mb-1">End Time</Label>
+              <Input
+                id="sessionEndTime"
+                type="time"
+                value={dataEntrySessionEndTime}
+                onChange={(e) => setDataEntrySessionEndTime(e.target.value)}
                 className="w-full sm:w-[150px]"
               />
             </div>

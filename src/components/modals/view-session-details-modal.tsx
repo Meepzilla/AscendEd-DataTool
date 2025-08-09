@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -23,7 +24,7 @@ export default function ViewSessionDetailsModal({ session, isOpen, onClose }: Vi
       isOpen={isOpen}
       onClose={onClose}
       title={`Session Details: ${session.studentName}`}
-      description={`Review the recorded data for the session on ${formatDate(session.date)} at ${formatTime(session.date)}. `}
+      description={`Review the recorded data for the session on ${formatDate(session.date)} at ${session.time}. `}
       size="xl"
     >
       <div>
@@ -40,7 +41,7 @@ export default function ViewSessionDetailsModal({ session, isOpen, onClose }: Vi
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="h-5 w-5 text-muted-foreground"/>
-                <strong>Time:</strong> {session.time}
+                <strong>Time:</strong> {session.time} {session.endTime ? `- ${session.endTime}`: ''}
               </div>
               <div className="md:col-span-2 flex items-start gap-2">
                 <FileText className="h-5 w-5 text-muted-foreground mt-0.5"/>

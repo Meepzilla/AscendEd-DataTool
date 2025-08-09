@@ -46,7 +46,7 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
   }, [currentSession]);
 
 
-  const handleInputChange = (field: keyof Pick<SessionData, 'activity' | 'notes' | 'time'>, value: string) => {
+  const handleInputChange = (field: keyof Pick<SessionData, 'activity' | 'notes' | 'time' | 'endTime'>, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -113,7 +113,7 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
       isOpen={!!currentSession}
       onClose={closeEditSessionModal}
       title={`Edit Session for ${currentSession.studentName}`}
-      description={`Session on ${new Date(currentSession.date).toLocaleDateString()} at ${currentSession.time}`}
+      description={`Session on ${new Date(currentSession.date).toLocaleDateString()}`}
       size="xl"
     >
       <form
@@ -129,7 +129,7 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
       >
         <ScrollArea className="max-h-[60vh] p-1">
             <div className="space-y-4 p-4"> {/* Apply padding to the inner div */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                         <Label htmlFor="sessionDateEdit">Session Date</Label>
                         <DatePicker
@@ -138,12 +138,21 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
                         />
                     </div>
                     <div>
-                        <Label htmlFor="sessionTimeEdit">Session Time</Label>
+                        <Label htmlFor="sessionTimeEdit">Start Time</Label>
                         <Input
                             id="sessionTimeEdit"
                             type="time"
                             value={formData.time || ''}
                             onChange={(e) => handleInputChange('time', e.target.value)}
+                        />
+                    </div>
+                     <div>
+                        <Label htmlFor="sessionEndTimeEdit">End Time</Label>
+                        <Input
+                            id="sessionEndTimeEdit"
+                            type="time"
+                            value={formData.endTime || ''}
+                            onChange={(e) => handleInputChange('endTime', e.target.value)}
                         />
                     </div>
                 </div>
