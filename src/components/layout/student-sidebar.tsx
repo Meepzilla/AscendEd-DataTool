@@ -153,36 +153,35 @@ export default function StudentSidebar() {
               ))}
             </SidebarMenu>
           )}
+
+          {selectedStudent && (
+            <>
+              <SidebarSeparator />
+              <SidebarFooter className={cn("mt-auto", sidebarState === 'collapsed' ? "p-0" : "p-2")}>
+                <Accordion type="single" collapsible className="w-full" defaultValue={isStudentSelectedAndOnProfile ? undefined : "item-1"}>
+                  <AccordionItem value="item-1" className="border-none">
+                    <AccordionTrigger className={cn(
+                        "py-2 px-2 hover:bg-sidebar-accent rounded-md w-full justify-start hover:no-underline",
+                        sidebarState === 'collapsed' && "justify-center p-2",
+                      )}>
+                      <div className="flex items-center gap-2">
+                        <User className="h-5 w-5"/>
+                        <span className={cn("font-medium text-sm", sidebarState === 'collapsed' && "sr-only")}>
+                          {selectedStudent.name}
+                        </span>
+                      </div>
+                      {sidebarState !== 'collapsed' && <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200 accordion-chevron" />}
+                    </AccordionTrigger>
+                    <AccordionContent className={cn("pt-0", sidebarState === 'collapsed' && "hidden")}>
+                      <StudentProgressSidebar student={selectedStudent} studentSessions={studentSpecificSessions} />
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </SidebarFooter>
+            </>
+          )}
         </ScrollArea>
       </SidebarContent>
-      
-      {selectedStudent && (
-        <>
-          <SidebarSeparator />
-          <SidebarFooter className={cn(sidebarState === 'collapsed' ? "p-0" : "p-2")}>
-             <Accordion type="single" collapsible className="w-full" defaultValue={isStudentSelectedAndOnProfile ? undefined : "item-1"}>
-              <AccordionItem value="item-1" className="border-none">
-                <AccordionTrigger className={cn(
-                    "py-2 px-2 hover:bg-sidebar-accent rounded-md w-full justify-start hover:no-underline",
-                    sidebarState === 'collapsed' && "justify-center p-2",
-                  )}>
-                   <div className="flex items-center gap-2">
-                    <User className="h-5 w-5"/>
-                    <span className={cn("font-medium text-sm", sidebarState === 'collapsed' && "sr-only")}>
-                      {selectedStudent.name}
-                    </span>
-                   </div>
-                   {sidebarState !== 'collapsed' && <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200 accordion-chevron" />}
-                </AccordionTrigger>
-                <AccordionContent className={cn("pt-0", sidebarState === 'collapsed' && "hidden")}>
-                  <StudentProgressSidebar student={selectedStudent} studentSessions={studentSpecificSessions} />
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          </SidebarFooter>
-        </>
-      )}
     </Sidebar>
   );
 }
-
