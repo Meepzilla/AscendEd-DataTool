@@ -25,7 +25,7 @@ const hotkeys: Hotkey[] = [
   { key: 'Alt + H', description: 'Open this Help Page', category: 'Global Actions' },
   { key: 'Alt + L', description: 'Open Error Log Modal', category: 'Global Actions' },
   { key: 'Alt + M', description: 'Open Add Student Modal', category: 'Global Actions' },
-  { key: 'Alt + B', description: 'Toggle Sidebar', category: 'Global Actions' },
+  { key: 'Alt + B', description: 'Toggle Sidebar', category: 'Global Actions'},
   { key: 'Ctrl + Enter', description: 'Confirm action / Save (contextual)', category: 'Global Actions'},
   // Data Entry Specific
   { key: '1, 2, 3, or 4', description: 'Focus on Student Slot 1-4', category: 'Data Entry' },
@@ -35,6 +35,8 @@ const hotkeys: Hotkey[] = [
   { key: 'Alt + S', description: 'Cycle to Previous Goal (for focused student)', category: 'Data Entry' },
   { key: 'C', description: 'Increment Correct / Total Syllables / Trials Accepted / Slider Right', category: 'Data Entry' },
   { key: 'Alt + C', description: 'Decrement Correct / Total Syllables / Trials Accepted', category: 'Data Entry' },
+  { key: 'B', description: 'Increment Approximate count', category: 'Data Entry' },
+  { key: 'Alt + B', description: 'Decrement Approximate count', category: 'Data Entry' },
   { key: 'N', description: 'Increment Incorrect / Stuttered Syllables / Trials Refused / Slider Left', category: 'Data Entry' },
   { key: 'Alt + N', description: 'Decrement Incorrect / Stuttered Syllables / Trials Refused', category: 'Data Entry' },
   { key: 'D', description: 'Increment Visual Prompt count', category: 'Data Entry' },

@@ -18,6 +18,13 @@ interface ChangelogEntry {
 
 const changelogEntries: ChangelogEntry[] = [
     {
+    date: '2025-08-08',
+    title: 'UI & Data Entry Enhancements',
+    description: "Improved the user interface by making the side navigation menus scrollable on smaller screens, preventing layout issues. Enhanced data entry by adding an 'End Time' for sessions and including an 'Approximate' response counter.",
+    type: 'improvement',
+    icon: GitMerge,
+  },
+    {
     date: '2025-07-19',
     title: 'Expanded Goal Template Library to 75',
     description: "The default goal template library has been significantly expanded to 75 unique templates. This includes a much wider range of articulation goals covering initial, medial, and final word positions for key phonemes.",
