@@ -7,6 +7,7 @@ import { UserCog, ListPlus, ClipboardList, ListChecks, BarChart2, LayoutDashboar
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface NavItem {
   href: string;
@@ -97,32 +98,34 @@ export default function AppNavigation({ isMobile = false }: AppNavigationProps) 
 
   // Mobile navigation (vertical list in sheet)
   return (
-    <nav className={cn("flex flex-col gap-1 p-2 sm:p-4", isMobile ? "h-full" : "w-full")}>
-      {mainNavItems.map((item) => (
-        <Link
-          key={item.label}
-          href={item.href}
-          className={navLinkClasses(item.href)}
-          title={`${item.label} ${item.hotkey ? `(Alt+${item.hotkey})` : ''}`}
-          aria-current={(pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) ? "page" : undefined}
-        >
-          <item.icon className="h-5 w-5" />
-          <span>{item.label}</span>
-        </Link>
-      ))}
-      {(isMobile || secondaryNavItems.length > 0) && <Separator className="my-2" />}
-      {secondaryNavItems.map((item) => (
-         <Link
-          key={item.label}
-          href={item.href}
-          className={navLinkClasses(item.href)}
-          title={`${item.label} ${item.hotkey ? `(Alt+${item.hotkey})` : ''}`}
-          aria-current={(pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) ? "page" : undefined}
-        >
-          <item.icon className="h-5 w-5" />
-          <span>{item.label}</span>
-        </Link>
-      ))}
-    </nav>
+    <ScrollArea className="h-full">
+        <nav className={cn("flex flex-col gap-1 p-2 sm:p-4", isMobile ? "h-full" : "w-full")}>
+            {mainNavItems.map((item) => (
+                <Link
+                key={item.label}
+                href={item.href}
+                className={navLinkClasses(item.href)}
+                title={`${item.label} ${item.hotkey ? `(Alt+${item.hotkey})` : ''}`}
+                aria-current={(pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) ? "page" : undefined}
+                >
+                <item.icon className="h-5 w-5" />
+                <span>{item.label}</span>
+                </Link>
+            ))}
+            {(isMobile || secondaryNavItems.length > 0) && <Separator className="my-2" />}
+            {secondaryNavItems.map((item) => (
+                <Link
+                key={item.label}
+                href={item.href}
+                className={navLinkClasses(item.href)}
+                title={`${item.label} ${item.hotkey ? `(Alt+${item.hotkey})` : ''}`}
+                aria-current={(pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) ? "page" : undefined}
+                >
+                <item.icon className="h-5 w-5" />
+                <span>{item.label}</span>
+                </Link>
+            ))}
+        </nav>
+    </ScrollArea>
   );
 }
