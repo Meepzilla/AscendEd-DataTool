@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useMemo } from 'react';
@@ -23,7 +24,7 @@ const transformDataForSankeyChart = (sessions: SessionData[], studentActiveGoals
     }
   };
 
-  const aggregatedGoalStats: Record<string, { opportunities: number; correct: number; incorrect: number; name: string; type: GoalType; }> = {};
+  const aggregatedGoalStats: Record<string, { opportunities: number; correct: number; incorrect: number; approximate: number; name: string; type: GoalType; }> = {};
 
   sessions.forEach(session => {
     session.goals.forEach(goalDataEntry => {
@@ -31,37 +32,67 @@ const transformDataForSankeyChart = (sessions: SessionData[], studentActiveGoals
       if (!originalGoal || originalGoal.isArchived) return;
 
       if (!aggregatedGoalStats[originalGoal.id]) {
-        aggregatedGoalStats[originalGoal.id] = { opportunities: 0, correct: 0, incorrect: 0, name: originalGoal.name, type: originalGoal.type };
+        aggregatedGoalStats[originalGoal.id] = { opportunities: 0, correct: 0, incorrect: 0, approximate: 0, name: originalGoal.name, type: originalGoal.type };
       }
 
-      let currentCorrect = 0, currentIncorrect = 0;
+      let currentCorrect = 0, currentIncorrect = 0, currentApproximate = 0;
       switch (originalGoal.type) {
-        case 'ARTICULATION': currentCorrect = Number(goalDataEntry.data.correct) || 0; currentIncorrect = Number(goalDataEntry.data.incorrect) || 0; break;
-        case 'LANGUAGE_COMPREHENSION': currentCorrect = Number(goalDataEntry.data.questionsCorrect) || 0; currentIncorrect = Number(goalDataEntry.data.questionsIncorrect) || 0; break;
-        case 'LANGUAGE_EXPRESSION': currentCorrect = Number(goalDataEntry.data.successfulResponses) || 0; currentIncorrect = Number(goalDataEntry.data.unsuccessfulResponses) || 0; break;
-        case 'PHONOLOGICAL_PROCESSES': currentCorrect = Number(goalDataEntry.data.correctProductions) || 0; currentIncorrect = Number(goalDataEntry.data.incorrectProductions) || 0; break;
-        case 'FLUENCY_SYLLABLE_STUTTER': const totalSyllables = Number(goalDataEntry.data.totalSyllables) || 0; const stutteredSyllables = Number(goalDataEntry.data.stutteredSyllables) || 0; currentCorrect = Math.max(0, totalSyllables - stutteredSyllables); currentIncorrect = stutteredSyllables; break;
-        case 'FEEDING_SWALLOWING': currentCorrect = Number(goalDataEntry.data.trialsAccepted) || 0; currentIncorrect = Number(goalDataEntry.data.trialsRefused) || 0; break;
-        case 'SEQUENCED_TRIALS': currentCorrect = Number(goalDataEntry.data.successfulAttempts) || 0; currentIncorrect = Number(goalDataEntry.data.failedAttempts) || 0; break;
+        case 'ARTICULATION': 
+            currentCorrect = Number(goalDataEntry.data.correct) || 0; 
+            currentIncorrect = Number(goalDataEntry.data.incorrect) || 0; 
+            currentApproximate = Number(goalDataEntry.data.approximate) || 0;
+            break;
+        case 'LANGUAGE_COMPREHENSION': 
+            currentCorrect = Number(goalDataEntry.data.questionsCorrect) || 0; 
+            currentIncorrect = Number(goalDataEntry.data.questionsIncorrect) || 0; 
+            currentApproximate = Number(goalDataEntry.data.approximate) || 0;
+            break;
+        case 'LANGUAGE_EXPRESSION': 
+            currentCorrect = Number(goalDataEntry.data.successfulResponses) || 0; 
+            currentIncorrect = Number(goalDataEntry.data.unsuccessfulResponses) || 0; 
+            currentApproximate = Number(goalDataEntry.data.approximate) || 0;
+            break;
+        case 'PHONOLOGICAL_PROCESSES': 
+            currentCorrect = Number(goalDataEntry.data.correctProductions) || 0; 
+            currentIncorrect = Number(goalDataEntry.data.incorrectProductions) || 0;
+            currentApproximate = Number(goalDataEntry.data.approximate) || 0;
+            break;
+        case 'FLUENCY_SYLLABLE_STUTTER': 
+            const totalSyllables = Number(goalDataEntry.data.totalSyllables) || 0; 
+            const stutteredSyllables = Number(goalDataEntry.data.stutteredSyllables) || 0; 
+            currentCorrect = Math.max(0, totalSyllables - stutteredSyllables); 
+            currentIncorrect = stutteredSyllables; 
+            break;
+        case 'FEEDING_SWALLOWING': 
+            currentCorrect = Number(goalDataEntry.data.trialsAccepted) || 0; 
+            currentIncorrect = Number(goalDataEntry.data.trialsRefused) || 0; 
+            break;
+        case 'SEQUENCED_TRIALS': 
+            currentCorrect = Number(goalDataEntry.data.successfulAttempts) || 0; 
+            currentIncorrect = Number(goalDataEntry.data.failedAttempts) || 0; 
+            currentApproximate = Number(goalDataEntry.data.approximate) || 0;
+            break;
         default: return;
       }
-      aggregatedGoalStats[originalGoal.id].opportunities += (currentCorrect + currentIncorrect);
+      aggregatedGoalStats[originalGoal.id].opportunities += (currentCorrect + currentIncorrect + currentApproximate);
       aggregatedGoalStats[originalGoal.id].correct += currentCorrect;
       aggregatedGoalStats[originalGoal.id].incorrect += currentIncorrect;
+      aggregatedGoalStats[originalGoal.id].approximate += currentApproximate;
     });
   });
 
   const rawLinks: { source: string; target: string; value: number }[] = [];
   
-  const correctOutcomeNodeName = "Correct Outcomes", incorrectOutcomeNodeName = "Incorrect Outcomes";
+  const correctOutcomeNodeName = "Correct", incorrectOutcomeNodeName = "Incorrect", approximateOutcomeNodeName = "Approximate";
   addRawNode(correctOutcomeNodeName, 'hsl(var(--chart-2))');
   addRawNode(incorrectOutcomeNodeName, 'hsl(var(--chart-5))');
+  addRawNode(approximateOutcomeNodeName, 'hsl(var(--chart-4))');
 
   const goalTypeNodeNames: Set<string> = new Set();
   Object.values(aggregatedGoalStats).forEach(stats => {
     if (stats.opportunities > 0) {
       goalTypeNodeNames.add(stats.type);
-      addRawNode(stats.name, 'hsl(var(--chart-4))');
+      addRawNode(stats.name, 'hsl(var(--primary))');
     }
   });
   goalTypeNodeNames.forEach(type => addRawNode(type, 'hsl(var(--chart-1))'));
@@ -71,6 +102,7 @@ const transformDataForSankeyChart = (sessions: SessionData[], studentActiveGoals
     rawLinks.push({ source: stats.type, target: stats.name, value: stats.opportunities });
     if (stats.correct > 0) rawLinks.push({ source: stats.name, target: correctOutcomeNodeName, value: stats.correct });
     if (stats.incorrect > 0) rawLinks.push({ source: stats.name, target: incorrectOutcomeNodeName, value: stats.incorrect });
+    if (stats.approximate > 0) rawLinks.push({ source: stats.name, target: approximateOutcomeNodeName, value: stats.approximate });
   });
 
   const linkedNodeNames = new Set<string>();
@@ -139,7 +171,7 @@ const GoalPerformanceSankey: React.FC<GoalPerformanceSankeyProps> = ({ studentSe
     <Card className="col-span-1 lg:col-span-2">
       <CardHeader>
         <CardTitle className="flex items-center gap-2"><Workflow className="h-6 w-6 text-primary"/>Goal Performance Flow</CardTitle>
-        <CardDescription>Flow of opportunities from Goal Type to Specific Goal, then to Correct/Incorrect outcomes for {selectedGoalId ? `goal: ${activeStudentGoals.find(g => g.id === selectedGoalId)?.name || 'selected goal'}` : 'all active goals'}.</CardDescription>
+        <CardDescription>Flow of opportunities from Goal Type to Specific Goal, then to Correct/Approximate/Incorrect outcomes for {selectedGoalId ? `goal: ${activeStudentGoals.find(g => g.id === selectedGoalId)?.name || 'selected goal'}` : 'all active goals'}.</CardDescription>
       </CardHeader>
       <CardContent className="h-[400px] w-full">
         <ResponsiveContainer width="100%" height="100%">
