@@ -1,9 +1,7 @@
+
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
-  // TypeScript configuration is now using default settings, which means build errors are no longer ignored.
-  // This helps in catching potential issues early during development.
-  
   // ESLint configuration for Next.js build.
   // 'ignoreDuringBuilds: true' is set to skip ESLint checks during the build process.
   // This can speed up builds but means linting issues won't halt the build.
