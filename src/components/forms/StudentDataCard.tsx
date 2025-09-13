@@ -245,3 +245,5 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
 };
 
 export default StudentDataCard;
+
+    

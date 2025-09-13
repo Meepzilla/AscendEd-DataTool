@@ -15,11 +15,12 @@ import { useMemo, useState, useEffect, useCallback, Suspense } from 'react';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import DataEntryHeaderCard from '@/components/data-entry/DataEntryHeaderCard';
 
 const AppLoadingSkeleton = lazy(() => import('@/components/layout/AppLoadingSkeleton'));
 const ConfirmationModal = lazy(() => import('@/components/modals/confirmation-modal'));
-const StudentCardList = lazy(() => import('@/components/data-entry/StudentCardList'));
+const StudentCardsList = lazy(() => import('@/components/data-entry/StudentCardsList'));
+const DataEntryHeaderCard = lazy(() => import('@/components/data-entry/DataEntryHeaderCard'));
+
 
 export default function DataEntryPage() {
   const {
@@ -222,20 +223,22 @@ export default function DataEntryPage() {
         )}
       </Suspense>
 
-      <DataEntryHeaderCard
-        isHeaderCardCollapsed={isHeaderCardCollapsed}
-        setIsHeaderCardCollapsed={setIsHeaderCardCollapsed}
-        dataEntrySessionDate={dataEntrySessionDate}
-        setDataEntrySessionDate={setDataEntrySessionDate}
-        dataEntrySessionTime={dataEntrySessionTime}
-        setDataEntrySessionTime={setDataEntrySessionTime}
-        dataEntrySessionEndTime={dataEntrySessionEndTime}
-        setDataEntrySessionEndTime={setDataEntrySessionEndTime}
-      />
+      <Suspense fallback={<Card><CardContent>Loading header...</CardContent></Card>}>
+        <DataEntryHeaderCard
+          isHeaderCardCollapsed={isHeaderCardCollapsed}
+          setIsHeaderCardCollapsed={setIsHeaderCardCollapsed}
+          dataEntrySessionDate={dataEntrySessionDate}
+          setDataEntrySessionDate={setDataEntrySessionDate}
+          dataEntrySessionTime={dataEntrySessionTime}
+          setDataEntrySessionTime={setDataEntrySessionTime}
+          dataEntrySessionEndTime={dataEntrySessionEndTime}
+          setDataEntrySessionEndTime={setDataEntrySessionEndTime}
+        />
+      </Suspense>
 
       <ScrollArea className="flex-grow min-h-0">
          <Suspense fallback={<div>Loading student cards...</div>}>
-          <StudentCardList
+          <StudentCardsList
             dataEntrySelectedStudentIds={dataEntrySelectedStudentIds}
             students={students}
             dataEntryStudentSessionStates={dataEntryStudentSessionStates}
