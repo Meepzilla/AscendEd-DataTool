@@ -180,4 +180,7 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
   { name: 'GLP: Spontaneously use a self-generated phrase', type: 'LANGUAGE_EXPRESSION', smartGoalPrompt: 'Student will spontaneously use a novel (self-generated) phrase to communicate a need or want.', isDefault: true, sessionTargetValue: 80, generatedSmartGoal: '' },
   { name: 'GLP: Use language for a variety of communicative functions', type: 'QUALITATIVE_OBSERVATION', smartGoalPrompt: 'Student will use language for at least 3 different communicative functions (e.g., commenting, requesting, protesting).', isDefault: true, sessionTargetValue: 4, generatedSmartGoal: '' },
   { name: 'GLP: Use grammar in self-generated sentences', type: 'LANGUAGE_EXPRESSION', smartGoalPrompt: 'Student will begin to use grammatical markers (e.g., plurals, verb tenses) in self-generated sentences.', isDefault: true, sessionTargetValue: 70, generatedSmartGoal: '' },
+
+  // New goal for sequenced trials
+  { name: 'Discrete Trial Training - Tacting', type: 'SEQUENCED_TRIALS', smartGoalPrompt: 'Student will correctly tact 10 objects from a field of 3.', isDefault: true, sessionTargetValue: 90, generatedSmartGoal: ''},
 ];
