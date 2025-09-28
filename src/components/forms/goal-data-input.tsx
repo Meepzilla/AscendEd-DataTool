@@ -51,6 +51,7 @@ export default function GoalDataInputComponent({
       const newSize = Math.max(1, Number(value) || 1);
       const oldTrials = Array.isArray(data.trials) ? data.trials : [];
       const newTrials = Array(newSize).fill('untouched');
+      // Copy over the old trial data up to the new size
       for (let i = 0; i < Math.min(oldTrials.length, newSize); i++) {
         newTrials[i] = oldTrials[i];
       }
@@ -665,3 +666,5 @@ const FormItem: React.FC<{children: React.ReactNode, className?: string}> = ({ c
 const FormLabel: React.FC<{children: React.ReactNode, htmlFor?: string}> = ({ children, htmlFor }) => (
   <Label htmlFor={htmlFor} className="text-xs font-medium text-muted-foreground">{children}</Label>
 );
+
+    
