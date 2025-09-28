@@ -71,10 +71,6 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
             currentGoalIncorrect = Number(data.trialsRefused) || 0;
             break;
         case 'SEQUENCED_TRIALS':
-            currentGoalCorrect = Number(data.successfulAttempts) || 0;
-            currentGoalIncorrect = Number(data.failedAttempts) || 0;
-            currentGoalApproximate = Number(data.approximate) || 0;
-            break;
         case 'DISCRETE_TRIALS':
             if (Array.isArray(data.trials)) {
                 currentGoalCorrect = data.trials.filter((t: TrialStatus) => t === 'correct').length;

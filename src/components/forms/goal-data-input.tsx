@@ -105,14 +105,7 @@ export default function GoalDataInputComponent({
         totalOpportunities = accepted + refused;
         actualPerformancePct = totalOpportunities > 0 ? (accepted / totalOpportunities) * 100 : 0;
         break;
-      case 'SEQUENCED_TRIALS': {
-        const successful = Number(data.successfulAttempts || 0);
-        const failed = Number(data.failedAttempts || 0);
-        const approximate = Number(data.approximate || 0);
-        totalOpportunities = successful + failed + approximate;
-        actualPerformancePct = totalOpportunities > 0 ? (successful / totalOpportunities) * 100 : 0;
-        break;
-      }
+      case 'SEQUENCED_TRIALS':
       case 'DISCRETE_TRIALS': {
         const trials = data.trials || [];
         const correctCount = trials.filter((t: TrialStatus) => t === 'correct').length;
@@ -202,6 +195,7 @@ export default function GoalDataInputComponent({
             </div>
           </>
         );
+      case 'SEQUENCED_TRIALS':
       case 'DISCRETE_TRIALS': {
         const trials = Array.isArray(data.trials) ? data.trials : Array(data.numberOfTrials || 5).fill('untouched');
         return (
@@ -306,48 +300,6 @@ export default function GoalDataInputComponent({
                 disabled={isArchived}
               />
             </FormItem>
-          </>
-        );
-      case 'SEQUENCED_TRIALS':
-        return (
-          <>
-            <FormItem>
-              <FormLabel>Trials Per Attempt</FormLabel>
-              <Input
-                type="number"
-                min="1"
-                value={data.trialsPerAttempt ?? 5}
-                onChange={(e) => handleChange('trialsPerAttempt', parseInt(e.target.value) || 1)}
-                className="h-8 text-sm text-center w-24"
-                disabled={isArchived}
-              />
-            </FormItem>
-            <div className="grid grid-cols-3 gap-1">
-              <FormItem>
-                <FormLabel>Successful</FormLabel>
-                <div className="flex items-center gap-1">
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('successfulAttempts', Math.max(0, (Number(data.successfulAttempts) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
-                  <Input type="number" min="0" value={data.successfulAttempts ?? 0} onChange={(e) => handleChange('successfulAttempts', parseInt(e.target.value) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('successfulAttempts', (Number(data.successfulAttempts) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
-                </div>
-              </FormItem>
-              <FormItem>
-                <FormLabel>Approx.</FormLabel>
-                <div className="flex items-center gap-1">
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('approximate', Math.max(0, (Number(data.approximate) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
-                  <Input type="number" min="0" value={data.approximate ?? 0} onChange={(e) => handleChange('approximate', parseInt(e.target.value) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('approximate', (Number(data.approximate) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
-                </div>
-              </FormItem>
-              <FormItem>
-                <FormLabel>Failed</FormLabel>
-                <div className="flex items-center gap-1">
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('failedAttempts', Math.max(0, (Number(data.failedAttempts) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
-                  <Input type="number" min="0" value={data.failedAttempts ?? 0} onChange={(e) => handleChange('failedAttempts', parseInt(e.target.value) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('failedAttempts', (Number(data.failedAttempts) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
-                </div>
-              </FormItem>
-            </div>
           </>
         );
       case 'FLUENCY_SYLLABLE_STUTTER':

@@ -68,10 +68,8 @@ export const GOAL_TYPE_FIELDS: Record<GoalType, Record<string, any>> = {
     Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, Imitation: 0,
   },
   [GOAL_TYPES.SEQUENCED_TRIALS]: {
-    trialsPerAttempt: 5,
-    successfulAttempts: 0,
-    failedAttempts: 0,
-    approximate: 0,
+    numberOfTrials: 5,
+    trials: Array(5).fill('untouched'),
     Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, Imitation: 0,
   },
   [GOAL_TYPES.PROMPTING]: {
