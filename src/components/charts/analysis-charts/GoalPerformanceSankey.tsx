@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import type { Goal, SessionData, PromptType, GoalType } from '@/lib/types';
+import type { Goal, SessionData, PromptType, GoalType, TrialStatus } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Sankey, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { Workflow } from 'lucide-react';
@@ -71,6 +71,13 @@ const transformDataForSankeyChart = (sessions: SessionData[], studentActiveGoals
             currentCorrect = Number(goalDataEntry.data.successfulAttempts) || 0; 
             currentIncorrect = Number(goalDataEntry.data.failedAttempts) || 0; 
             currentApproximate = Number(goalDataEntry.data.approximate) || 0;
+            break;
+        case 'DISCRETE_TRIALS':
+            if (Array.isArray(goalDataEntry.data.trials)) {
+                currentCorrect = goalDataEntry.data.trials.filter((t: TrialStatus) => t === 'correct').length;
+                currentIncorrect = goalDataEntry.data.trials.filter((t: TrialStatus) => t === 'incorrect').length;
+                currentApproximate = goalDataEntry.data.trials.filter((t: TrialStatus) => t === 'approximate').length;
+            }
             break;
         default: return;
       }
@@ -185,5 +192,3 @@ const GoalPerformanceSankey: React.FC<GoalPerformanceSankeyProps> = ({ studentSe
 };
 
 export default GoalPerformanceSankey;
-
-    

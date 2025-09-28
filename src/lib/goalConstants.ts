@@ -13,6 +13,7 @@ export const GOAL_TYPES: Record<string, GoalType> = {
   FEEDING_SWALLOWING: 'FEEDING_SWALLOWING',
   SEQUENCED_TRIALS: 'SEQUENCED_TRIALS',
   PROMPTING: 'PROMPTING',
+  DISCRETE_TRIALS: 'DISCRETE_TRIALS',
 };
 
 // Defines the default data structure (fields and initial values) for each goal type
@@ -75,6 +76,11 @@ export const GOAL_TYPE_FIELDS: Record<GoalType, Record<string, any>> = {
   },
   [GOAL_TYPES.PROMPTING]: {
     notes: '',
+    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, Imitation: 0,
+  },
+  [GOAL_TYPES.DISCRETE_TRIALS]: {
+    numberOfTrials: 5,
+    trials: Array(5).fill('untouched'),
     Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, Imitation: 0,
   },
 };
@@ -183,4 +189,6 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
 
   // New goal for sequenced trials
   { name: 'Discrete Trial Training - Tacting', type: 'SEQUENCED_TRIALS', smartGoalPrompt: 'Student will correctly tact 10 objects from a field of 3.', isDefault: true, sessionTargetValue: 90, generatedSmartGoal: ''},
+  // New Goal for Discrete Trials
+  { name: 'Discrete Trials - 5 Trials', type: 'DISCRETE_TRIALS', smartGoalPrompt: 'Student will complete 5 discrete trials for a targeted skill.', isDefault: true, sessionTargetValue: 80, generatedSmartGoal: '' },
 ];

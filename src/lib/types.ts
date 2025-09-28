@@ -31,7 +31,8 @@ export type GoalType =
   | 'PHONOLOGICAL_PROCESSES'
   | 'FEEDING_SWALLOWING'
   | 'SEQUENCED_TRIALS'
-  | 'PROMPTING';
+  | 'PROMPTING'
+  | 'DISCRETE_TRIALS';
 
 export interface GoalTemplate {
   id: string;
@@ -116,6 +117,13 @@ export interface SequencedTrialsData {
   trialsPerAttempt: number;
   successfulAttempts: number;
   failedAttempts: number;
+}
+
+export type TrialStatus = 'untouched' | 'correct' | 'incorrect' | 'approximate';
+
+export interface DiscreteTrialsData {
+  numberOfTrials: number;
+  trials: TrialStatus[];
 }
 
 

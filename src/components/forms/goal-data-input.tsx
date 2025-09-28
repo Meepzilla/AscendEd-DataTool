@@ -2,7 +2,7 @@
 'use client';
 
 import React from 'react';
-import type { Goal, SessionGoalData, PromptType, GoalType } from '@/lib/types';
+import type { Goal, SessionGoalData, PromptType, GoalType, TrialStatus } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -11,13 +11,13 @@ import { Slider } from '@/components/ui/slider';
 import { PROMPT_TYPES, PROMPT_COLORS, PROMPT_ABBREVIATIONS, PROMPT_HOTKEY_MAP } from '@/lib/promptConstants';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { TrendingUp, ArrowUp, ArrowDown, Plus, Minus, ArchiveIcon, Pin } from 'lucide-react';
+import { TrendingUp, ArrowUp, ArrowDown, Plus, Minus, ArchiveIcon, Pin, Check, X, CircleHelp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface GoalDataInputComponentProps {
   goal: Goal;
   data: SessionGoalData['data'];
-  onChange: (updatedFieldName: string, newData: SessionGoalData['data']) => void;
+  onChange: (updatedFieldName: string, newData: SessionGoalgData['data']) => void;
   isFocused?: boolean;
   onSetFocus?: () => void;
   id: string;
@@ -46,6 +46,16 @@ export default function GoalDataInputComponent({
     if (isArchived) return; // Prevent changes if archived
     
     let newData = { ...data, [field]: value };
+
+    if (field === 'numberOfTrials') {
+      const newSize = Math.max(1, Number(value) || 1);
+      const oldTrials = Array.isArray(data.trials) ? data.trials : [];
+      const newTrials = Array(newSize).fill('untouched');
+      for (let i = 0; i < Math.min(oldTrials.length, newSize); i++) {
+        newTrials[i] = oldTrials[i];
+      }
+      newData.trials = newTrials;
+    }
 
     if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
       onChange(field, value);
@@ -103,6 +113,13 @@ export default function GoalDataInputComponent({
         actualPerformancePct = totalOpportunities > 0 ? (successful / totalOpportunities) * 100 : 0;
         break;
       }
+      case 'DISCRETE_TRIALS': {
+        const trials = data.trials || [];
+        const correctCount = trials.filter((t: TrialStatus) => t === 'correct').length;
+        const validTrials = trials.filter((t: TrialStatus) => t !== 'untouched').length;
+        actualPerformancePct = validTrials > 0 ? (correctCount / validTrials) * 100 : 0;
+        return `${actualPerformancePct.toFixed(1)}% (${correctCount}/${validTrials})`;
+      }
       case 'PROMPTING':
         return 'N/A';
       default:
@@ -111,6 +128,20 @@ export default function GoalDataInputComponent({
 
     if (totalOpportunities === 0) return 'N/A (0%)';
     return `${actualPerformancePct.toFixed(1)}%`;
+  };
+
+  const handleTrialClick = (index: number) => {
+    if (isArchived) return;
+    const currentTrials: TrialStatus[] = Array.isArray(data.trials) ? [...data.trials] : Array(data.numberOfTrials || 5).fill('untouched');
+    const currentState = currentTrials[index] || 'untouched';
+    const nextStateCycle: Record<TrialStatus, TrialStatus> = {
+      'untouched': 'correct',
+      'correct': 'approximate',
+      'approximate': 'incorrect',
+      'incorrect': 'untouched',
+    };
+    currentTrials[index] = nextStateCycle[currentState];
+    handleChange('trials', currentTrials);
   };
 
 
@@ -171,6 +202,54 @@ export default function GoalDataInputComponent({
             </div>
           </>
         );
+      case 'DISCRETE_TRIALS': {
+        const trials = Array.isArray(data.trials) ? data.trials : Array(data.numberOfTrials || 5).fill('untouched');
+        return (
+          <>
+            <FormItem>
+              <FormLabel>Number of Trials</FormLabel>
+              <Input
+                type="number"
+                min="1"
+                max="20"
+                value={data.numberOfTrials ?? 5}
+                onChange={(e) => handleChange('numberOfTrials', parseInt(e.target.value))}
+                className="h-8 text-sm text-center w-24"
+                disabled={isArchived}
+              />
+            </FormItem>
+            <FormItem>
+              <FormLabel>Trial Sequence (Click to cycle)</FormLabel>
+              <div className="flex flex-wrap gap-2 items-center">
+                {trials.map((status: TrialStatus, index: number) => {
+                   const statusClasses = {
+                      untouched: 'bg-muted/50 border-dashed text-muted-foreground',
+                      correct: 'bg-green-100 dark:bg-green-900/50 border-green-500 text-green-600 dark:text-green-400',
+                      incorrect: 'bg-red-100 dark:bg-red-900/50 border-red-500 text-red-600 dark:text-red-400',
+                      approximate: 'bg-yellow-100 dark:bg-yellow-900/50 border-yellow-500 text-yellow-600 dark:text-yellow-400',
+                   };
+                   const Icon = status === 'correct' ? Check : status === 'incorrect' ? X : status === 'approximate' ? () => <span className="font-bold">A</span> : CircleHelp;
+
+                  return (
+                    <Button
+                      key={index}
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className={cn("h-8 w-8 rounded-full transition-all", statusClasses[status])}
+                      onClick={() => handleTrialClick(index)}
+                      disabled={isArchived}
+                      title={`Trial ${index + 1}: ${status}. Click to change.`}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </Button>
+                  );
+                })}
+              </div>
+            </FormItem>
+          </>
+        );
+      }
       case 'FEEDING_SWALLOWING':
         return (
           <>
@@ -634,5 +713,3 @@ const FormItem: React.FC<{children: React.ReactNode, className?: string}> = ({ c
 const FormLabel: React.FC<{children: React.ReactNode, htmlFor?: string}> = ({ children, htmlFor }) => (
   <Label htmlFor={htmlFor} className="text-xs font-medium text-muted-foreground">{children}</Label>
 );
-
-    

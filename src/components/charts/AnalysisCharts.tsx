@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useMemo, lazy, Suspense } from 'react';
-import type { Student, SessionData, Goal, PromptType, GoalType } from '@/lib/types';
+import type { Student, SessionData, Goal, PromptType, GoalType, TrialStatus } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertTriangle } from 'lucide-react';
@@ -74,6 +74,13 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
             currentGoalCorrect = Number(data.successfulAttempts) || 0;
             currentGoalIncorrect = Number(data.failedAttempts) || 0;
             currentGoalApproximate = Number(data.approximate) || 0;
+            break;
+        case 'DISCRETE_TRIALS':
+            if (Array.isArray(data.trials)) {
+                currentGoalCorrect = data.trials.filter((t: TrialStatus) => t === 'correct').length;
+                currentGoalIncorrect = data.trials.filter((t: TrialStatus) => t === 'incorrect').length;
+                currentGoalApproximate = data.trials.filter((t: TrialStatus) => t === 'approximate').length;
+            }
             break;
       }
       
@@ -187,5 +194,3 @@ export function AnalysisReportChartsSkeleton() {
 }
 
 export default AnalysisCharts;
-
-    
