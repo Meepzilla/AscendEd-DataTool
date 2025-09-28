@@ -207,8 +207,8 @@ export default function GoalDataInputComponent({
                 type="number"
                 min="1"
                 max="20"
-                value={data.numberOfTrials ?? 5}
-                onChange={(e) => handleChange('numberOfTrials', parseInt(e.target.value, 10) || 5)}
+                value={data.numberOfTrials ?? ''}
+                onChange={(e) => handleChange('numberOfTrials', e.target.value === '' ? undefined : parseInt(e.target.value, 10))}
                 className="h-8 text-sm text-center w-24"
                 disabled={isArchived}
               />
