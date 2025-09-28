@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 interface GoalDataInputComponentProps {
   goal: Goal;
   data: SessionGoalData['data'];
-  onChange: (updatedFieldName: string, newData: SessionGoalgData['data']) => void;
+  onChange: (updatedFieldName: string, newData: SessionGoalData['data']) => void;
   isFocused?: boolean;
   onSetFocus?: () => void;
   id: string;
