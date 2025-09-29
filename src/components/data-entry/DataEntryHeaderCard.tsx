@@ -5,9 +5,8 @@ import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronUp, Edit2 } from 'lucide-react';
-import { DatePicker } from '@/components/ui/date-picker';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import SessionDateTimePickers from './SessionDateTimePickers';
+import HotkeysMessage from './HotkeysMessage';
 
 interface DataEntryHeaderCardProps {
   isHeaderCardCollapsed: boolean;
@@ -54,35 +53,15 @@ const DataEntryHeaderCard: React.FC<DataEntryHeaderCardProps> = ({
       </CardHeader>
       {!isHeaderCardCollapsed && (
         <CardContent className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-            <div className="w-full sm:w-auto">
-              <Label htmlFor="sessionDate" className="block text-sm font-medium mb-1">Session Date</Label>
-              <DatePicker date={dataEntrySessionDate} setDate={setDataEntrySessionDate} />
-            </div>
-            <div className="w-full sm:w-auto">
-              <Label htmlFor="sessionTime" className="block text-sm font-medium mb-1">Start Time</Label>
-              <Input
-                id="sessionTime"
-                type="time"
-                value={dataEntrySessionTime}
-                onChange={(e) => setDataEntrySessionTime(e.target.value)}
-                className="w-full sm:w-[150px]"
-              />
-            </div>
-            <div className="w-full sm:w-auto">
-              <Label htmlFor="sessionEndTime" className="block text-sm font-medium mb-1">End Time</Label>
-              <Input
-                id="sessionEndTime"
-                type="time"
-                value={dataEntrySessionEndTime}
-                onChange={(e) => setDataEntrySessionEndTime(e.target.value)}
-                className="w-full sm:w-[150px]"
-              />
-            </div>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Hotkeys: 1-4 Focus initial slots | A/Alt+A Cycle Students | S/Alt+S Cycle Goals | C/N/D/V/G/P/F/I for prompts | Ctrl+Enter Save. See Help page for full list.
-          </p>
+          <SessionDateTimePickers
+            dataEntrySessionDate={dataEntrySessionDate}
+            setDataEntrySessionDate={setDataEntrySessionDate}
+            dataEntrySessionTime={dataEntrySessionTime}
+            setDataEntrySessionTime={setDataEntrySessionTime}
+            dataEntrySessionEndTime={dataEntrySessionEndTime}
+            setDataEntrySessionEndTime={setDataEntrySessionEndTime}
+          />
+          <HotkeysMessage />
         </CardContent>
       )}
     </Card>
