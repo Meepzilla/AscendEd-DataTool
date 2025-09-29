@@ -66,11 +66,13 @@ export default function AppHeader() {
             </div>
           </Link>
         </div>
+        
+        {/* Desktop Navigation - centered */}
+        <div className="hidden md:flex flex-1 justify-center">
+            <AppNavigation isMobile={false} />
+        </div>
 
         <div className="flex items-center gap-1 sm:gap-2">
-          {/* Desktop Navigation - moved here */}
-          <AppNavigation isMobile={false} />
-
            <Button variant="ghost" size="icon" onClick={openAddStudentModal} title="Add Student (Alt+M)" className="hidden sm:flex">
             <UserPlus className="h-5 w-5" />
             <span className="sr-only">Add Student</span>
