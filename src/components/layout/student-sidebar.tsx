@@ -121,13 +121,13 @@ export default function StudentSidebar() {
                       <SidebarMenuButton
                         asChild // Allow Link to control navigation
                         isActive={selectedStudent?.id === student.id}
-                        className="justify-between w-full" // Ensure button itself takes full width of its container
+                        className="justify-between w-full h-auto" // Ensure button itself takes full width of its container
                         tooltip={student.name}
                       >
                         {/* Content of the old 'a' tag now goes directly here */}
                         <div className="flex items-center gap-2 overflow-hidden">
                           <User className="h-5 w-5 flex-shrink-0" />
-                          <span className={cn("truncate", sidebarState === 'collapsed' && "sr-only")}>{student.name}</span>
+                          <span className={cn("whitespace-normal break-words", sidebarState === 'collapsed' && "sr-only")}>{student.name}</span>
                         </div>
                       </SidebarMenuButton>
                     </Link>
