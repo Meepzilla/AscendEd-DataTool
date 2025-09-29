@@ -12,11 +12,18 @@ interface ChangelogEntry {
   date: string;
   title: string;
   description: string;
-  type: 'feature' | 'fix' | 'improvement' | 'hotkey';
+  type: 'feature' | 'improvement' | 'fix' | 'hotkey';
   icon: React.ElementType;
 }
 
 const changelogEntries: ChangelogEntry[] = [
+    {
+    date: '2025-08-09',
+    title: 'UI & Data Entry Enhancements',
+    description: 'Improved the "Edit Session" modal to ensure all content is fully scrollable, preventing fields from being cut off on smaller screens. The "Number of Trials" input on the Data Entry page can now be cleared, making it easier to input new values without needing to delete the previous one.',
+    type: 'improvement',
+    icon: GitMerge,
+  },
     {
     date: '2025-08-08',
     title: 'UI & Data Entry Enhancements',
