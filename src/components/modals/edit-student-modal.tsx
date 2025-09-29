@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { GOAL_TYPES } from '@/lib/goalConstants';
+import { GOAL_TYPES } from '@/lib/goal-constants';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { generateUUID } from '@/lib/helpers';

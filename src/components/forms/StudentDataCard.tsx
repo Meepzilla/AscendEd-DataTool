@@ -14,7 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
-import { GOAL_TYPE_FIELDS } from '@/lib/goalConstants';
+import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 
 const GoalDataInputComponent = lazy(() => import('@/components/forms/goal-data-input'));
 

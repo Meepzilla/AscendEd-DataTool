@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { GOAL_TYPES } from '@/lib/goalConstants';
+import { GOAL_TYPES } from '@/lib/goal-constants';
 import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
 import { generateUUID } from '@/lib/helpers';

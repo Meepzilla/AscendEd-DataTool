@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { GOAL_TYPES } from '@/lib/goalConstants';
+import { GOAL_TYPES } from '@/lib/goal-constants';
 import { Timestamp } from 'firebase/firestore';
 
 // Lazy load modals

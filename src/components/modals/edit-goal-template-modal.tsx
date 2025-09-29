@@ -13,7 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useStudentData } from '@/hooks/use-student-data';
 import { GoalTemplateSchema, GoalType, type GoalTemplate } from '@/lib/types';
-import { GOAL_TYPES } from '@/lib/goalConstants';
+import { GOAL_TYPES } from '@/lib/goal-constants';
 import { generateSmartGoal } from '@/ai/flows/smart-goal-generation';
 import { Sparkles, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
