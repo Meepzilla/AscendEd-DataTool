@@ -161,11 +161,11 @@ export default function StudentProgressSidebar({ student, studentSessions }: {st
                 : `${Math.round(goal.progress)}% (Actual)`;
             return (
               <div key={goal.id} className="p-2 rounded-md hover:bg-sidebar-accent transition-colors">
-                <div className="flex justify-between items-center text-xs mb-1">
-                  <p className="font-medium text-sidebar-foreground truncate pr-2" title={goal.name}>{goal.name}</p>
-                  <span className={`font-semibold ${goal.progress >= (goal.sessionTargetValue ?? 100) ? 'text-green-500' : goal.progress > 0 ? 'text-primary' : 'text-muted-foreground'}`}>
-                    {displayValue}
-                  </span>
+                <div className="flex justify-between items-start gap-2 text-xs mb-1">
+                    <p className="font-medium text-sidebar-foreground truncate min-w-0 pr-2" title={goal.name}>{goal.name}</p>
+                    <span className={`font-semibold whitespace-nowrap ${goal.progress >= (goal.sessionTargetValue ?? 100) ? 'text-green-500' : goal.progress > 0 ? 'text-primary' : 'text-muted-foreground'}`}>
+                        {displayValue}
+                    </span>
                 </div>
                 <Progress value={goal.progress} className="h-1.5" indicatorClassName={goal.progress >= (goal.sessionTargetValue ?? 100) ? 'bg-green-500' : goal.progress > 0 ? 'bg-primary' : 'bg-muted'}/>
               </div>
