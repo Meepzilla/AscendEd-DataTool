@@ -12,7 +12,7 @@ import type { SessionData, Goal, SessionGoalData } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { GOAL_TYPE_FIELDS } from '@/lib/goalConstants';
+import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 
 
 interface EditSessionModalProps {
@@ -127,7 +127,7 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
         }}
         className="space-y-4"
       >
-        <ScrollArea className="max-h-[60vh] p-1">
+        <ScrollArea className="max-h-[60vh]">
             <div className="space-y-4 p-4"> {/* Apply padding to the inner div */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
