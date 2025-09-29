@@ -15,7 +15,8 @@ import {
   SidebarMenuSkeleton,
   SidebarSeparator,
   useSidebar,
-} from '@/components/ui/sidebar'; // Assuming this is the ShadCN sidebar
+  SidebarTrigger
+} from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -74,10 +75,13 @@ export default function StudentSidebar() {
       <SidebarHeader>
         <div className="flex items-center justify-between p-2">
            <h2 className={cn("text-lg font-semibold", sidebarState === 'collapsed' && "sr-only")}>Students</h2>
-          <Button variant="ghost" size="icon" onClick={openAddStudentModal} className={cn(sidebarState === 'collapsed' && "mx-auto")}>
-            <PlusCircle className="h-5 w-5" />
-            <span className="sr-only">Add Student</span>
-          </Button>
+          <div className='flex items-center gap-1'>
+            <Button variant="ghost" size="icon" onClick={openAddStudentModal} className={cn("h-7 w-7", sidebarState === 'collapsed' && "mx-auto")}>
+              <PlusCircle className="h-5 w-5" />
+              <span className="sr-only">Add Student</span>
+            </Button>
+            <SidebarTrigger className={cn(sidebarState === 'collapsed' ? 'block' : 'hidden sm:block')} />
+          </div>
         </div>
         <div className={cn("px-2", sidebarState === 'collapsed' && "hidden")}>
           <div className="relative">
