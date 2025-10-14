@@ -28,7 +28,9 @@ export default function RootLayout({
     // Set the language of the document to English and enable dark mode by default.
     <html lang="en" className="dark">
       <head>
-        {/* Note: Direct Google Font links were removed as next/font handles font loading and optimization. */}
+        {/* Preconnect to Google Fonts servers to improve font loading performance */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       {/* Apply font-body CSS variable and antialiased class for smoother text rendering. */}
       <body className={`${inter.variable} font-body antialiased`}>
