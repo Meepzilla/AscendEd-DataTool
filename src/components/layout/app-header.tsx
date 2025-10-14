@@ -57,12 +57,11 @@ export default function AppHeader() {
             </SheetContent>
           </Sheet>
           <Link href="/dashboard" className="hidden md:flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-8 w-8 text-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6 text-primary">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.09L6.71 11.8l1.41-1.41L11 13.27l4.88-4.88 1.41 1.41L11 16.09z"/>
             </svg>
             <div>
-              <h1 className="text-lg font-semibold text-foreground">{APP_NAME}</h1>
-              <p className="text-xs text-muted-foreground">{APP_SUBTITLE}</p>
+              <h1 className="font-semibold text-foreground">{APP_NAME}</h1>
             </div>
           </Link>
         </div>
