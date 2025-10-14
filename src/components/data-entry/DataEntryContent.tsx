@@ -221,7 +221,6 @@ export default function DataEntryContent() {
             dataEntryVisibleGoalCountByStudentId={dataEntryVisibleGoalCountByStudentId}
             setDataEntryVisibleGoalCountByStudentId={setDataEntryVisibleGoalCountByStudentId}
             dataEntryFocusedGoalIndexByStudentId={dataEntryFocusedGoalIndexByStudentId}
-            setDataEntryFocusedGoalIndexByStudentId={setDataEntryFocusedGoalIndexByStudentId}
             dataEntryAiActivitySuggestions={dataEntryAiActivitySuggestions}
             isAiLoading={isAiLoading}
             setDataEntryFocusedStudentSlotIndex={setDataEntryFocusedStudentSlotIndex}
@@ -233,6 +232,7 @@ export default function DataEntryContent() {
             handleMoveGoal={handleMoveGoal}
             handleLocalAiFetch={handleLocalAiFetch}
             addStudentSlot={addStudentSlot}
+            setDataEntryFocusedGoalIndexByStudentId={setDataEntryFocusedGoalIndexByStudentId}
           />
         </Suspense>
       </ScrollArea>

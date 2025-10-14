@@ -65,12 +65,18 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
             const stutteredSyllables = Number(data.stutteredSyllables) || 0;
             currentGoalCorrect = Math.max(0, totalSyllables - stutteredSyllables);
             currentGoalIncorrect = stutteredSyllables;
+            currentGoalApproximate = Number(data.approximate) || 0;
             break;
         case 'FEEDING_SWALLOWING':
             currentGoalCorrect = Number(data.trialsAccepted) || 0;
             currentGoalIncorrect = Number(data.trialsRefused) || 0;
+            currentGoalApproximate = Number(data.approximate) || 0;
             break;
         case 'SEQUENCED_TRIALS':
+            currentGoalCorrect = Number(data.successfulAttempts) || 0;
+            currentGoalIncorrect = Number(data.failedAttempts) || 0;
+            currentGoalApproximate = Number(data.approximate) || 0;
+            break;
         case 'DISCRETE_TRIALS':
             if (Array.isArray(data.trials)) {
                 currentGoalCorrect = data.trials.filter((t: TrialStatus) => t === 'correct').length;

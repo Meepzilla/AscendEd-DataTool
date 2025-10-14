@@ -82,14 +82,7 @@ export function useKeyboardShortcuts() {
         // Global Action Hotkeys: Trigger application-wide actions
         case 'L': toggleErrorLogModal(); break; // Alt+L to toggle Error Log Modal visibility
         case 'M': openAddStudentModal(); break; // Alt+M to open the Add Student Modal
-        case 'B': if (event.altKey && key === 'B') {
-            if (pathname.startsWith('/data-entry')) {
-              handleDataEntryHotkey(key, alt);
-            } else if (toggleSidebar) {
-              toggleSidebar();
-            }
-          }
-          break;
+        case 'B': if (toggleSidebar) toggleSidebar(); break;
         
         // Data Entry Page Specific Actions (with Alt modifier): Decrement counts or trigger edit modal
         case 'A': if (pathname.startsWith('/data-entry')) cycleFocusedStudent('prev'); break; // Alt+A to cycle to the previous student slot
@@ -104,6 +97,7 @@ export function useKeyboardShortcuts() {
         case 'P': // Decrement Partial Physical Prompt count
         case 'F': // Decrement Imitation Prompt count
         case 'I': // Decrement Independent count
+        case 'B': // Decrement Approximate
         case 'D': // Decrement Visual Prompt count
            if (pathname.startsWith('/data-entry')) handleDataEntryHotkey(key, alt); 
            break;
