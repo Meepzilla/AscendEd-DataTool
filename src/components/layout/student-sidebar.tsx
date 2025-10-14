@@ -85,7 +85,7 @@ export default function StudentSidebar() {
         </div>
         <div className={cn("px-2 mt-2", sidebarState === 'collapsed' && "hidden")}>
           <div className="relative flex items-center">
-            <Search className="absolute left-3 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 h-4 w-4 text-muted-foreground z-10" />
             <Input
               placeholder="Search students..."
               value={searchTerm}
@@ -113,46 +113,46 @@ export default function StudentSidebar() {
                 )}
                 {filteredStudents.map((student) => (
                   <SidebarMenuItem key={student.id} className="group/menu-item relative">
-                    <Link
-                        href={`/student-profile/${student.id}`}
-                        onClick={() => handleSelectStudent(student)}
-                        className="w-full block" // Make link take full width for better click area
-                      >
-                      <SidebarMenuButton
-                        asChild // Allow Link to control navigation
-                        isActive={selectedStudent?.id === student.id}
-                        className="justify-between w-full h-auto" // Ensure button itself takes full width of its container
-                        tooltip={student.name}
-                      >
-                        {/* Content of the old 'a' tag now goes directly here */}
-                        <div className="flex items-center gap-2 min-w-0">
+                    <SidebarMenuButton
+                      asChild
+                      isActive={selectedStudent?.id === student.id}
+                      className="justify-between w-full h-auto"
+                      tooltip={student.name}
+                      onClick={() => handleSelectStudent(student)}
+                    >
+                      <Link
+                          href={`/student-profile/${student.id}`}
+                          className="flex items-center justify-between w-full"
+                        >
+                        <div className="flex items-center gap-2 flex-grow min-w-0">
                           <User className="h-5 w-5 flex-shrink-0" />
                           <span className={cn("whitespace-normal break-words", sidebarState === 'collapsed' && "sr-only")}>{student.name}</span>
                         </div>
-                      </SidebarMenuButton>
-                    </Link>
-                    {sidebarState !== 'collapsed' && (
-                      <div className="absolute right-1 top-1/2 -translate-y-1/2 flex opacity-0 group-hover/menu-item:opacity-100 focus-within:opacity-100 transition-opacity">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-7 w-7" 
-                          onClick={(e) => { e.stopPropagation(); openEditStudentModal(student);}} 
-                          title={`Edit ${student.name}`}
-                        >
-                          <Edit3 className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-7 w-7" 
-                          onClick={(e) => { e.stopPropagation(); openDeleteStudentModal(student);}} 
-                          title={`Delete ${student.name}`}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    )}
+                        
+                        {sidebarState !== 'collapsed' && (
+                          <div className="flex-shrink-0 opacity-0 group-hover/menu-item:opacity-100 focus-within:opacity-100 transition-opacity">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-7 w-7" 
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEditStudentModal(student);}} 
+                              title={`Edit ${student.name}`}
+                            >
+                              <Edit3 className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-7 w-7" 
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDeleteStudentModal(student);}} 
+                              title={`Delete ${student.name}`}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        )}
+                      </Link>
+                    </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>
