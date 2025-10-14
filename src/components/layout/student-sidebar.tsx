@@ -83,7 +83,7 @@ export default function StudentSidebar() {
             <SidebarTrigger className={cn(sidebarState === 'collapsed' ? 'block' : 'hidden sm:block')} />
           </div>
         </div>
-        <div className={cn("px-2 mt-1", sidebarState === 'collapsed' && "hidden")}>
+        <div className={cn("px-2 mt-2", sidebarState === 'collapsed' && "hidden")}>
           <div className="relative flex items-center">
             <Search className="absolute left-2 h-4 w-4 text-muted-foreground" />
             <Input
