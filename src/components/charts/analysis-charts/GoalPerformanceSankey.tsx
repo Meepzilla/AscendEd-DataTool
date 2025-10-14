@@ -196,7 +196,7 @@ const GoalPerformanceSankey: React.FC<GoalPerformanceSankeyProps> = ({ studentSe
   return (
     <Card className="col-span-1 lg:col-span-2">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2"><Workflow className="h-6 w-6 text-primary"/>Goal Performance Flow</CardTitle>
+        <CardTitle className="flex items-center gap-2"><Workflow className="h-6 w-6 text-primary"/>Goal Performance Flow (Beta)</CardTitle>
         <CardDescription>Flow of opportunities from Goal Type to Goal, to Prompt, then to Outcome for {selectedGoalId ? `goal: ${activeStudentGoals.find(g => g.id === selectedGoalId)?.name || 'selected goal'}` : 'all active goals'}.</CardDescription>
       </CardHeader>
       <CardContent className="h-[400px] w-full">
