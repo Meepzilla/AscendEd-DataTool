@@ -80,9 +80,9 @@ export function useKeyboardShortcuts() {
         case 'H': router.push('/help'); break; // Alt+H to Help Page
 
         // Global Action Hotkeys: Trigger application-wide actions
-        case 'L': toggleErrorLogModal(); break; // Alt+L to toggle Error Log Modal visibility
+        case 'B': toggleErrorLogModal(); break; // Alt+B to toggle Error Log Modal visibility
         case 'M': openAddStudentModal(); break; // Alt+M to open the Add Student Modal
-        case 'B': if (toggleSidebar) toggleSidebar(); break;
+        case 'L': if (toggleSidebar) toggleSidebar(); break; // Alt+L to toggle Sidebar
         
         // Data Entry Page Specific Actions (with Alt modifier): Decrement counts or trigger edit modal
         case 'A': if (pathname.startsWith('/data-entry')) cycleFocusedStudent('prev'); break; // Alt+A to cycle to the previous student slot
