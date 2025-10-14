@@ -8,7 +8,7 @@ import { PlusCircle } from 'lucide-react';
 
 const StudentDataCard = lazy(() => import('@/components/forms/StudentDataCard'));
 
-interface StudentCardListProps {
+interface StudentCardsListProps {
   dataEntrySelectedStudentIds: string[];
   students: Student[];
   dataEntryStudentSessionStates: Record<string, StudentSessionState>;
@@ -33,7 +33,7 @@ interface StudentCardListProps {
   addStudentSlot: () => void;
 }
 
-const StudentCardsList: React.FC<StudentCardListProps> = ({
+const StudentCardsList: React.FC<StudentCardsListProps> = ({
   dataEntrySelectedStudentIds,
   students,
   dataEntryStudentSessionStates,
