@@ -85,12 +85,12 @@ export default function StudentSidebar() {
         </div>
         <div className={cn("px-2 mt-2", sidebarState === 'collapsed' && "hidden")}>
           <div className="relative flex items-center">
-            <Search className="absolute left-2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search students..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8 h-9"
+              className="pl-9 h-9"
             />
           </div>
         </div>
