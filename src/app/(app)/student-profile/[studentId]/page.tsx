@@ -4,12 +4,12 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useStudentData } from '@/hooks/use-student-data';
-import type { Student, Goal, GoalTemplate } from '@/lib/types';
+import type { Student, Goal } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Edit, Trash2, PlusCircle, Info, Target, Edit3, CheckSquare, TrendingUp, Archive, ArchiveRestore } from 'lucide-react';
-import { formatDate, generateUUID } from '@/lib/helpers'; 
+import { formatDate } from '@/lib/helpers'; 
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
@@ -53,10 +53,10 @@ export default function StudentProfilePage() {
         if (!selectedStudent || selectedStudent.id !== foundStudent.id) {
           setSelectedStudent(foundStudent);
         }
-      } else if (!loading && students.length > 0) {
-        setCurrentStudent(null); 
+      } else if (!loading) { // If not loading and student not found
+        setCurrentStudent(null);
       }
-    } else if (studentIdFromParams === undefined && !loading) {
+    } else if (!loading) { // If no studentId in URL and not loading
       setCurrentStudent(null);
     }
   }, [studentIdFromParams, students, loading, selectedStudent, setSelectedStudent]);
@@ -261,6 +261,3 @@ function StudentProfileSkeleton() {
     </div>
   );
 }
-    
-
-    

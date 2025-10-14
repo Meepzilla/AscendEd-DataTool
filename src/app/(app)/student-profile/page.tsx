@@ -1,30 +1,14 @@
-
 'use client';
-import React, { useEffect, lazy, Suspense } from 'react';
+import React, { lazy, Suspense } from 'react';
 import { useStudentData } from '@/hooks/use-student-data';
-import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { UserSearch } from 'lucide-react';
+import AppLoadingSkeleton from '@/components/layout/AppLoadingSkeleton';
 
-const AppLoadingSkeleton = lazy(() => import('@/components/layout/AppLoadingSkeleton'));
+const StudentSelectionGrid = lazy(() => import('@/components/student-selection/StudentSelectionGrid'));
 
 export default function StudentProfileLandingPage() {
-  const { students, selectedStudent, loading, setSelectedStudent } = useStudentData();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!loading) {
-      if (selectedStudent) {
-        // If a student is already selected, make sure the URL matches
-        router.replace(`/student-profile/${selectedStudent.id}`);
-      } else if (students.length > 0) {
-        // If no student is selected, select the first one and redirect
-        setSelectedStudent(students[0]);
-        router.replace(`/student-profile/${students[0].id}`);
-      }
-      // If no students exist, the user will see the "Select a Student" message.
-    }
-  }, [selectedStudent, students, loading, router, setSelectedStudent]);
+  const { students, loading } = useStudentData();
 
   if (loading) {
     return (
@@ -33,29 +17,37 @@ export default function StudentProfileLandingPage() {
       </Suspense>
     );
   }
-  
-  if (selectedStudent) {
-     return <div className="flex items-center justify-center h-full"><p>Redirecting to student profile...</p></div>;
-  }
 
   return (
-    <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-      <Card className="w-full max-w-lg">
+    <div className="space-y-6">
+       <Card className="shadow-lg">
         <CardHeader>
-          <UserSearch className="w-16 h-16 mx-auto text-primary mb-4" />
-          <CardTitle className="text-2xl">Select a Student</CardTitle>
-          <CardDescription>
-            Please select a student from the sidebar to view their profile and manage their goals.
-          </CardDescription>
+          <div className="flex items-center gap-3">
+            <UserSearch className="h-10 w-10 text-primary" />
+            <div>
+              <CardTitle className="text-3xl font-bold">Select a Student</CardTitle>
+              <CardDescription>
+                Choose a student from the list below to view their profile and manage their goals.
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent>
-          {students.length === 0 && (
-            <p className="text-muted-foreground">
-              No students found. You can add a new student using the 'Add Student' button or (Alt+M).
-            </p>
-          )}
-        </CardContent>
       </Card>
+      
+      {students.length === 0 && !loading ? (
+         <Card>
+            <CardHeader className="text-center">
+                <CardTitle>No Students Found</CardTitle>
+                <CardDescription>
+                    You can add a new student using the sidebar button or by pressing (Alt+M).
+                </CardDescription>
+            </CardHeader>
+        </Card>
+      ) : (
+        <Suspense fallback={<AppLoadingSkeleton />}>
+            <StudentSelectionGrid students={students} />
+        </Suspense>
+      )}
     </div>
   );
 }
