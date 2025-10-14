@@ -182,7 +182,14 @@ const GoalPerformanceSankey: React.FC<GoalPerformanceSankeyProps> = ({ studentSe
       </CardHeader>
       <CardContent className="h-[400px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <Sankey data={sankeyData} node={<CustomSankeyNode />} nodePadding={20} margin={{ top: 5, right: 120, bottom: 5, left: 120 }} linkCurviness={0.5} iterations={32}>
+          <Sankey 
+            data={sankeyData} 
+            node={<CustomSankeyNode />} 
+            nodePadding={20} 
+            margin={{ top: 5, right: 120, bottom: 5, left: 120 }} 
+            link={{ stroke: 'hsl(var(--border))', strokeOpacity: 0.5 }}
+            iterations={32}
+          >
             <RechartsTooltip formatter={(value: any, name: any) => [value.toLocaleString(), name.replace(/([A-Z])/g, ' $1').trim()]} />
           </Sankey>
         </ResponsiveContainer>
