@@ -125,7 +125,7 @@ export default function StudentSidebar() {
                         tooltip={student.name}
                       >
                         {/* Content of the old 'a' tag now goes directly here */}
-                        <div className="flex items-center gap-2 overflow-hidden">
+                        <div className="flex items-center gap-2 min-w-0">
                           <User className="h-5 w-5 flex-shrink-0" />
                           <span className={cn("whitespace-normal break-words", sidebarState === 'collapsed' && "sr-only")}>{student.name}</span>
                         </div>
