@@ -1,3 +1,4 @@
+
 // This file aggregates goal constants from individual, domain-specific files
 // for better organization and maintainability. It serves as the new single
 // source of truth for goal-related constants in the application.
@@ -9,6 +10,7 @@ import { LANGUAGE_FIELDS, LANGUAGE_TEMPLATES } from './language';
 import { OBSERVATION_FIELDS, OBSERVATION_TEMPLATES } from './observation';
 import { PHONOLOGICAL_FIELDS, PHONOLOGICAL_TEMPLATES } from './phonological';
 import { TRIALS_FIELDS, TRIALS_TEMPLATES } from './trials';
+import { FEEDING_TEMPLATES } from './feeding';
 
 // Combine all field definitions from individual files.
 export const GOAL_TYPE_FIELDS: Record<GoalType, Record<string, any>> = {
@@ -38,4 +40,5 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
   ...OBSERVATION_TEMPLATES,
   ...PHONOLOGICAL_TEMPLATES,
   ...TRIALS_TEMPLATES,
+  ...FEEDING_TEMPLATES,
 ];
