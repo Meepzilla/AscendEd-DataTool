@@ -4,7 +4,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, Trash2, LayoutGrid, Minimize2, UserX, UserPlus, ArrowRightLeft, Lightbulb, Download, ListPlus, Workflow, Shuffle, CheckSquare, ListChecks, DatabaseZap } from 'lucide-react';
+import { ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, Trash2, LayoutGrid, Minimize2, UserX, UserPlus, ArrowRightLeft, Lightbulb, Download, ListPlus, Workflow, Shuffle, CheckSquare, ListChecks, DatabaseZap, UserSearch } from 'lucide-react';
 import { APP_NAME } from '@/lib/appConstants';
 
 interface ChangelogEntry {
@@ -17,6 +17,13 @@ interface ChangelogEntry {
 }
 
 const changelogEntries: ChangelogEntry[] = [
+    {
+    date: '2025-08-11',
+    title: 'Improved Student Selection & UI Refactor',
+    description: 'Replaced the automatic redirect on the Student Profile page with a dedicated student selection grid for a more intuitive user experience. Refactored the Data Entry header card to use cleaner, more modular components.',
+    type: 'improvement',
+    icon: UserSearch,
+  },
     {
     date: '2025-08-10',
     title: 'UI and Layout Enhancements',
@@ -442,5 +449,7 @@ export default function ChangelogPage() {
     </div>
   );
 }
+
+    
 
     
