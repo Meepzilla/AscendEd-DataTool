@@ -33,6 +33,8 @@ const hotkeys: Hotkey[] = [
   { key: 'Alt + A', description: 'Cycle to Previous Student Slot', category: 'Data Entry' },
   { key: 'S', description: 'Cycle to Next Goal (for focused student)', category: 'Data Entry' },
   { key: 'Alt + S', description: 'Cycle to Previous Goal (for focused student)', category: 'Data Entry' },
+  { key: 'Alt + U', description: 'Open Select Student modal', category: 'Data Entry' },
+  { key: 'Alt + T', description: 'Open Select Goal modal', category: 'Data Entry' },
   { key: 'C', description: 'Increment Correct / Total Syllables / Trials Accepted / Slider Right', category: 'Data Entry' },
   { key: 'Alt + C', description: 'Decrement Correct / Total Syllables / Trials Accepted', category: 'Data Entry' },
   { key: 'B', description: 'Increment Approximate count', category: 'Data Entry' },

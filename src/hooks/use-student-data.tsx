@@ -123,6 +123,8 @@ interface StudentDataContextType {
   editingAssignedGoal: { studentId: string; goal: Goal } | null;
   openEditAssignedGoalModal: (studentId: string, goal: Goal) => void;
   closeEditAssignedGoalModal: () => void;
+  selectionModalType: 'student' | 'goal' | null;
+  setSelectionModalType: (type: 'student' | 'goal' | null) => void;
 
   // Data Entry Page Persisted State and Actions
   dataEntrySessionDate: Date | undefined;
@@ -160,6 +162,8 @@ interface StudentDataContextType {
   cycleFocusedGoal: (direction: 'next' | 'prev') => void;
   handleDataEntryHotkey: (key: string, alt: boolean) => void;
   triggerEditFocusedStudent: () => void;
+  toggleStudentSelectionModal: () => void;
+  toggleGoalSelectionModal: () => void;
   getCurrentFocusedGoalInfo: () => { studentId: string; studentState: StudentSessionState; goal: Goal; goalData: any; goalIndex: number; } | null;
 }
 
@@ -192,6 +196,8 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [editingSession, setEditingSession] = useState<SessionData | null>(null);
   const [deletingSession, setDeletingSession] = useState<SessionData | null>(null);
   const [editingAssignedGoal, setEditingAssignedGoal] = useState<{ studentId: string; goal: Goal } | null>(null);
+  const [selectionModalType, setSelectionModalType] = useState<'student' | 'goal' | null>(null);
+
 
   // Data Entry Page Persisted State (initialized with defaults)
   const [dataEntrySessionDate, setDataEntrySessionDateState] = useState<Date | undefined>(undefined);
@@ -1128,6 +1134,15 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   }, [dataEntrySelectedStudentIds, dataEntryFocusedStudentSlotIndex, studentsState, openEditStudentModal]);
 
+  const toggleStudentSelectionModal = useCallback(() => {
+    setSelectionModalType(prev => prev === 'student' ? null : 'student');
+  }, []);
+
+  const toggleGoalSelectionModal = useCallback(() => {
+    setSelectionModalType(prev => prev === 'goal' ? null : 'goal');
+  }, []);
+
+
   const handleDataEntryHotkey = useCallback((key: string, alt: boolean) => {
     const focusedInfo = getCurrentFocusedGoalInfo();
     if (!focusedInfo || !focusedInfo.goal || !focusedInfo.goalData || focusedInfo.goal.isArchived) return; 
@@ -1280,6 +1295,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     editingSession, openEditSessionModal, closeEditSessionModal,
     deletingSession, openDeleteSessionModal, closeDeleteSessionModal,
     editingAssignedGoal, openEditAssignedGoalModal, closeEditAssignedGoalModal,
+    selectionModalType, setSelectionModalType,
     dataEntrySessionDate, setDataEntrySessionDate,
     dataEntrySessionTime, setDataEntrySessionTime,
     dataEntrySessionEndTime, setDataEntrySessionEndTime,
@@ -1292,7 +1308,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     dataEntryVisibleGoalCountByStudentId, setDataEntryVisibleGoalCountByStudentId,
     dataEntryShowArchivedByStudentId, setDataEntryShowArchivedByStudentId,
     fetchAiActivitySuggestions, saveDataEntrySession, resetDataEntrySession, handleGoalDataChange, handleMoveGoal,
-    focusStudentSlot, cycleFocusedStudent, cycleFocusedGoal, handleDataEntryHotkey, triggerEditFocusedStudent, getCurrentFocusedGoalInfo
+    focusStudentSlot, cycleFocusedStudent, cycleFocusedGoal, handleDataEntryHotkey, triggerEditFocusedStudent, toggleStudentSelectionModal, toggleGoalSelectionModal, getCurrentFocusedGoalInfo
   }), [
     studentsState, goalTemplatesState, sessionsState, selectedStudent, loading, sessionsLoading, error, isFirebaseDBAvailable,
     addStudent, updateStudent, deleteStudent, assignGoalToStudent, removeGoalFromStudent, updateStudentGoal,
@@ -1307,6 +1323,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     editingSession, openEditSessionModal, closeEditSessionModal,
     deletingSession, openDeleteSessionModal, closeDeleteSessionModal,
     editingAssignedGoal, openEditAssignedGoalModal, closeEditAssignedGoalModal,
+    selectionModalType, setSelectionModalType,
     dataEntrySessionDate, setDataEntrySessionDate,
     dataEntrySessionTime, setDataEntrySessionTime,
     dataEntrySessionEndTime, setDataEntrySessionEndTime,
@@ -1319,7 +1336,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     dataEntryVisibleGoalCountByStudentId, setDataEntryVisibleGoalCountByStudentId,
     dataEntryShowArchivedByStudentId, setDataEntryShowArchivedByStudentId,
     fetchAiActivitySuggestions, saveDataEntrySession, resetDataEntrySession, handleGoalDataChange, handleMoveGoal,
-    focusStudentSlot, cycleFocusedStudent, cycleFocusedGoal, handleDataEntryHotkey, triggerEditFocusedStudent, getCurrentFocusedGoalInfo
+    focusStudentSlot, cycleFocusedStudent, cycleFocusedGoal, handleDataEntryHotkey, triggerEditFocusedStudent, toggleStudentSelectionModal, toggleGoalSelectionModal, getCurrentFocusedGoalInfo
   ]);
 
   return (

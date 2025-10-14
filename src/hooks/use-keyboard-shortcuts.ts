@@ -27,6 +27,8 @@ export function useKeyboardShortcuts() {
     handleDataEntryHotkey, // Function to handle specific data entry hotkeys (e.g., for counts)
     saveDataEntrySession,  // Function to save session data in data entry
     triggerEditFocusedStudent, // Function to open edit modal for the focused student
+    toggleStudentSelectionModal,
+    toggleGoalSelectionModal,
   } = useStudentData();
   // Access sidebar toggle function from the sidebar hook.
   const { toggleSidebar } = useSidebar(); 
@@ -86,6 +88,8 @@ export function useKeyboardShortcuts() {
         case 'K': if (toggleSidebar) toggleSidebar(); break; // Alt+K to toggle Sidebar
         
         // Data Entry Page Specific Actions (with Alt modifier): Decrement counts or trigger edit modal
+        case 'U': if (pathname.startsWith('/data-entry')) toggleStudentSelectionModal(); break; // Alt+U to open student selection
+        case 'T': if (pathname.startsWith('/data-entry')) toggleGoalSelectionModal(); break; // Alt+T to open goal selection
         case 'A': if (pathname.startsWith('/data-entry')) cycleFocusedStudent('prev'); break; // Alt+A to cycle to the previous student slot
         case 'S': if (pathname.startsWith('/data-entry')) cycleFocusedGoal('prev'); break; // Alt+S to cycle to the previous goal for the focused student
         case 'E': if (pathname.startsWith('/data-entry')) triggerEditFocusedStudent(); break; // Alt+E to open edit modal for the focused student
@@ -143,7 +147,9 @@ export function useKeyboardShortcuts() {
     cycleFocusedGoal,
     handleDataEntryHotkey,
     saveDataEntrySession,
-    triggerEditFocusedStudent
+    triggerEditFocusedStudent,
+    toggleStudentSelectionModal,
+    toggleGoalSelectionModal
   ]);
 
   // Effect hook to attach and clean up the global keydown event listener.

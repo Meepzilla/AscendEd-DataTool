@@ -1,14 +1,12 @@
-
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { Users, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useStudentData } from '@/hooks/use-student-data';
 import SelectionModal from '@/components/modals/selection-modal';
 
 export default function TouchControls() {
-  const [modalType, setModalType] = useState<'student' | 'goal' | null>(null);
 
   const {
     dataEntryActiveStudentsInSlots,
@@ -18,6 +16,8 @@ export default function TouchControls() {
     dataEntryFocusedGoalIndexByStudentId,
     setDataEntryFocusedGoalIndexByStudentId,
     dataEntryShowArchivedByStudentId,
+    selectionModalType,
+    setSelectionModalType,
   } = useStudentData();
 
   const focusedStudentId = useMemo(() => {
@@ -47,7 +47,7 @@ export default function TouchControls() {
 
   const handleStudentSelect = (indexStr: string) => {
     setDataEntryFocusedStudentSlotIndex(parseInt(indexStr, 10));
-    setModalType(null);
+    setSelectionModalType(null);
   };
 
   const handleGoalSelect = (goalId: string) => {
@@ -56,7 +56,7 @@ export default function TouchControls() {
     if (goalIndex !== -1) {
       setDataEntryFocusedGoalIndexByStudentId(prev => ({ ...prev, [focusedStudentId]: goalIndex }));
     }
-    setModalType(null);
+    setSelectionModalType(null);
   };
   
   const selectedGoalId = useMemo(() => {
@@ -76,10 +76,11 @@ export default function TouchControls() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => setModalType('student')}
+            onClick={() => setSelectionModalType('student')}
             disabled={studentSlots.length <= 1}
             size="lg"
             aria-label="Select Student"
+            title="Select Focused Student (Alt+U)"
           >
             <Users className="mr-2 h-5 w-5" />
             <span className="hidden sm:inline">Select Student</span>
@@ -89,10 +90,11 @@ export default function TouchControls() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => setModalType('goal')}
+            onClick={() => setSelectionModalType('goal')}
             disabled={visibleGoals.length <= 1}
             size="lg"
             aria-label="Select Goal"
+            title="Select Focused Goal (Alt+T)"
           >
             <Target className="mr-2 h-5 w-5" />
             <span className="hidden sm:inline">Select Goal</span>
@@ -100,21 +102,21 @@ export default function TouchControls() {
       </div>
       
       <SelectionModal
-        isOpen={modalType !== null}
-        onClose={() => setModalType(null)}
-        title={modalType === 'student' ? 'Select Student' : 'Select Goal'}
+        isOpen={selectionModalType !== null}
+        onClose={() => setSelectionModalType(null)}
+        title={selectionModalType === 'student' ? 'Select Student' : 'Select Goal'}
         items={
-          modalType === 'student'
+          selectionModalType === 'student'
             ? studentSlots
             : visibleGoals.map(g => ({ id: g.id, name: g.name }))
         }
         onSelect={
-          modalType === 'student'
+          selectionModalType === 'student'
             ? handleStudentSelect
             : handleGoalSelect
         }
         selectedId={
-            modalType === 'student'
+            selectionModalType === 'student'
             ? dataEntryFocusedStudentSlotIndex.toString()
             : selectedGoalId
         }
