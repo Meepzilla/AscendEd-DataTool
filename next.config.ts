@@ -1,12 +1,7 @@
+
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
-  // TypeScript configuration for Next.js build.
-  // 'ignoreBuildErrors: true' is set to bypass TypeScript errors during the build process.
-  // This can be useful in development or for specific project setups, but should be used with caution in production.
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   // ESLint configuration for Next.js build.
   // 'ignoreDuringBuilds: true' is set to skip ESLint checks during the build process.
   // Similar to TypeScript errors, this can speed up builds but means linting issues won't halt the build.
