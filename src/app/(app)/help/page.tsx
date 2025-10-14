@@ -16,7 +16,7 @@ interface Hotkey {
 const hotkeys: Hotkey[] = [
   // Global Navigation
   { key: 'Alt + D', description: 'Navigate to Dashboard', category: 'Global Navigation' },
-  { key: 'Alt + 1', description: 'Navigate to Student Profile', category: 'Global Navigation' },
+  { key: 'Alt + 1', description: 'Navigate to Students Page', category: 'Global Navigation' },
   { key: 'Alt + 2', description: 'Navigate to Goal Templates', category: 'Global Navigation' },
   { key: 'Alt + 3', description: 'Navigate to Data Entry', category: 'Global Navigation' },
   { key: 'Alt + 4', description: 'Navigate to Manage Sessions', category: 'Global Navigation' },
@@ -47,8 +47,8 @@ const hotkeys: Hotkey[] = [
   { key: 'Alt + G', description: 'Decrement Gestural Prompt count', category: 'Data Entry' },
   { key: 'P', description: 'Increment Partial Physical Prompt count', category: 'Data Entry' },
   { key: 'Alt + P', description: 'Decrement Partial Physical Prompt count', category: 'Data Entry' },
-  { key: 'F', description: 'Increment Full Physical Prompt count', category: 'Data Entry' },
-  { key: 'Alt + F', description: 'Decrement Full Physical Prompt count', category: 'Data Entry' },
+  { key: 'F', description: 'Increment Imitation Prompt count', category: 'Data Entry' },
+  { key: 'Alt + F', description: 'Decrement Imitation Prompt count', category: 'Data Entry' },
   { key: 'I', description: 'Increment Independent count (also increments main Correct count)', category: 'Data Entry' },
   { key: 'Alt + I', description: 'Decrement Independent count (also decrements main Correct count)', category: 'Data Entry' },
   { key: 'Alt + E', description: 'Edit focused student\'s info/goals (from Data Entry page)', category: 'Data Entry' },
@@ -118,8 +118,8 @@ export default function HelpPage() {
             <p>The Dashboard provides an overview of your students, goal templates, and recent activity. Use it as your starting point.</p>
           </div>
           <div>
-            <h3 className="font-semibold text-foreground text-lg mb-1">Student Profile</h3>
-            <p>Manage individual student details, assign goals from templates, or create custom goals for them. The sidebar shows a quick progress overview for the selected student. Use the "Edit Student Info" button, or the "Edit Student" modal (accessible from Data Entry via icon or Alt+E) for comprehensive goal management.</p>
+            <h3 className="font-semibold text-foreground text-lg mb-1">Students</h3>
+            <p>The "Students" page allows you to select a student to view their profile. From an individual student's profile page, you can manage their details, assign goals from templates, or create custom goals for them. The sidebar also provides a quick progress overview for the selected student. Use the "Edit Student Info" button on the profile page, or the "Edit Student" modal (accessible from Data Entry via icon or Alt+E) for comprehensive goal management.</p>
           </div>
           <div>
             <h3 className="font-semibold text-foreground text-lg mb-1">Goal Templates</h3>
