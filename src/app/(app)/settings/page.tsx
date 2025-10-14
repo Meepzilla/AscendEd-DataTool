@@ -12,15 +12,15 @@ import { Settings, Wifi, WifiOff } from 'lucide-react';
 const FIREBASE_ENABLED_KEY = 'firebase_enabled';
 
 export default function SettingsPage() {
-  const [isFirebaseEnabled, setIsFirebaseEnabled] = useState(true);
+  const [isFirebaseEnabled, setIsFirebaseEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const storedSetting = window.localStorage.getItem(FIREBASE_ENABLED_KEY);
-      // Default to true if no setting is found
-      setIsFirebaseEnabled(storedSetting === null ? true : JSON.parse(storedSetting));
+      // Default to false if no setting is found
+      setIsFirebaseEnabled(storedSetting === null ? false : JSON.parse(storedSetting));
       setIsLoading(false);
     }
   }, []);

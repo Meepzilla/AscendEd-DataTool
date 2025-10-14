@@ -46,9 +46,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Function to check if Firebase is enabled via localStorage
 const checkFirebaseEnabled = () => {
-  if (typeof window === 'undefined') return true; // SSR default
+  if (typeof window === 'undefined') return false; // SSR default
   const storedSetting = window.localStorage.getItem('firebase_enabled');
-  return storedSetting === null ? true : JSON.parse(storedSetting);
+  return storedSetting === null ? false : JSON.parse(storedSetting);
 };
 
 
