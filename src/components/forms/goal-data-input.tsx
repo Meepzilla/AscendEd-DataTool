@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -597,53 +596,17 @@ export default function GoalDataInputComponent({
                         onClick={() => {
                             if (isArchived) return;
                             const currentPromptCount = Number(data[pt] || 0);
-                            const newPromptCount = currentPromptCount + 1;
+                            const newPromptValue = currentPromptCount + 1;
                             
-                            let updatedData = { ...data, [pt]: newPromptCount };
-
-                            if (pt === 'Independent') {
-                                switch(goal.type) {
-                                    case 'ARTICULATION':
-                                        updatedData.correct = (Number(data.correct) || 0) + 1;
-                                        break;
-                                    case 'LANGUAGE_COMPREHENSION':
-                                        updatedData.questionsCorrect = (Number(data.questionsCorrect) || 0) + 1;
-                                        break;
-                                    case 'LANGUAGE_EXPRESSION':
-                                        updatedData.successfulResponses = (Number(data.successfulResponses) || 0) + 1;
-                                        break;
-                                    case 'PHONOLOGICAL_PROCESSES':
-                                        updatedData.correctProductions = (Number(data.correctProductions) || 0) + 1;
-                                        break;
-                                }
-                            }
-                            onChange(pt, updatedData);
+                            onChange(pt, { ...data, [pt]: newPromptValue });
                         }}
                         onContextMenu={(e) => {
                             e.preventDefault();
                             if (isArchived) return;
                             const currentPromptCount = Number(data[pt] || 0);
-                            const newPromptCount = Math.max(0, currentPromptCount - 1);
+                            const newPromptValue = Math.max(0, currentPromptCount - 1);
                             
-                            let updatedData = { ...data, [pt]: newPromptCount };
-
-                            if (pt === 'Independent' && currentPromptCount > 0) { // Only decrement main correct if Independent was > 0
-                                switch(goal.type) {
-                                    case 'ARTICULATION':
-                                        updatedData.correct = Math.max(0, (Number(data.correct) || 0) - 1);
-                                        break;
-                                    case 'LANGUAGE_COMPREHENSION':
-                                        updatedData.questionsCorrect = Math.max(0, (Number(data.questionsCorrect) || 0) - 1);
-                                        break;
-                                    case 'LANGUAGE_EXPRESSION':
-                                        updatedData.successfulResponses = Math.max(0, (Number(data.successfulResponses) || 0) - 1);
-                                        break;
-                                    case 'PHONOLOGICAL_PROCESSES':
-                                        updatedData.correctProductions = Math.max(0, (Number(data.correctProductions) || 0) - 1);
-                                        break;
-                                }
-                            }
-                            onChange(pt, updatedData);
+                            onChange(pt, { ...data, [pt]: newPromptValue });
                         }}
                         title={`Click to increment ${pt}, Right-click to decrement. ${hotkey ? `Hotkeys: ${hotkey} / Alt+${hotkey}` : ''}`}
                         disabled={isArchived}
@@ -666,5 +629,3 @@ const FormItem: React.FC<{children: React.ReactNode, className?: string}> = ({ c
 const FormLabel: React.FC<{children: React.ReactNode, htmlFor?: string}> = ({ children, htmlFor }) => (
   <Label htmlFor={htmlFor} className="text-xs font-medium text-muted-foreground">{children}</Label>
 );
-
-    

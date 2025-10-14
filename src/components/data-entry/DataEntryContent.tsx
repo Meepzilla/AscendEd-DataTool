@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { lazy, useState, useEffect, useCallback, Suspense, useMemo } from 'react';
@@ -10,6 +9,8 @@ import { useToast } from '@/hooks/use-toast';
 import TouchControls from '@/components/forms/touch-controls';
 import { Card, CardContent } from '@/components/ui/card';
 import { Info } from 'lucide-react';
+import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
+import type { StudentSessionState } from '@/lib/types';
 
 const ConfirmationModal = lazy(() => import('@/components/modals/confirmation-modal'));
 const StudentCardsList = lazy(() => import('@/components/data-entry/StudentCardsList'));
@@ -40,7 +41,7 @@ export default function DataEntryContent() {
     setDataEntryVisibleGoalCountByStudentId,
     dataEntryAiActivitySuggestions,
     fetchAiActivitySuggestions,
-    saveDataEntrySession,
+    saveDataEntrySession: contextSaveDataEntrySession, // Renamed to avoid conflict
     resetDataEntrySession,
     handleGoalDataChange,
     handleMoveGoal,
@@ -159,7 +160,29 @@ export default function DataEntryContent() {
 
   const handleSave = async () => {
     setIsSaving(true);
-    await saveDataEntrySession();
+    const success = await contextSaveDataEntrySession();
+    if (success) {
+      setDataEntryStudentSessionStates(prevStates => {
+        const focusedStudentId = dataEntrySelectedStudentIds[dataEntryFocusedStudentSlotIndex];
+        if (!focusedStudentId || !prevStates[focusedStudentId]) return prevStates;
+        
+        const studentStateToReset = prevStates[focusedStudentId];
+        const newStudentState: StudentSessionState = {
+          ...studentStateToReset,
+          activity: '',
+          notes: '',
+          goalData: studentStateToReset.originalGoalHeaders.reduce((acc, goal) => {
+            acc[goal.id] = JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type] || {}));
+            return acc;
+          }, {} as Record<string, any>),
+        };
+        
+        return {
+          ...prevStates,
+          [focusedStudentId]: newStudentState,
+        };
+      });
+    }
     setIsSaving(false);
   }
 
