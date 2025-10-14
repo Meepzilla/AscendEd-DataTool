@@ -13,9 +13,9 @@ export default function AppFooter() {
     { key: 'Alt+1-5', desc: 'Navigate Views' },
     { key: 'Alt+6', desc: 'Changelog' },
     { key: 'Alt+H', desc: 'Help Page' },
-    { key: 'Alt+B', desc: 'Error Log (Icon)' },
+    { key: 'Alt+L', desc: 'Error Log (Icon)' },
     { key: 'Alt+M', desc: 'Add Student' },
-    { key: 'Alt+L', desc: 'Toggle Sidebar' },
+    { key: 'Alt+K', desc: 'Toggle Sidebar' },
   ];
 
   return (
