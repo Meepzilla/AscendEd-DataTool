@@ -18,6 +18,13 @@ interface ChangelogEntry {
 
 const changelogEntries: ChangelogEntry[] = [
     {
+    date: '2025-08-10',
+    title: 'UI and Layout Enhancements',
+    description: 'Improved the main application layout by making the student sidebar resizable. Enhanced the top header by centering the main navigation for a more balanced look. Fixed several text overflow and wrapping issues in the sidebar to ensure content remains visible. Adjusted component alignment and spacing for a more polished UI.',
+    type: 'improvement',
+    icon: LayoutGrid,
+  },
+    {
     date: '2025-08-09',
     title: 'UI & Data Entry Enhancements',
     description: 'Improved the "Edit Session" modal to ensure all content is fully scrollable, preventing fields from being cut off on smaller screens. The "Number of Trials" input on the Data Entry page can now be cleared, making it easier to input new values without needing to delete the previous one.',
