@@ -160,29 +160,7 @@ export default function DataEntryContent() {
 
   const handleSave = async () => {
     setIsSaving(true);
-    const success = await contextSaveDataEntrySession();
-    if (success) {
-      setDataEntryStudentSessionStates(prevStates => {
-        const focusedStudentId = dataEntrySelectedStudentIds[dataEntryFocusedStudentSlotIndex];
-        if (!focusedStudentId || !prevStates[focusedStudentId]) return prevStates;
-        
-        const studentStateToReset = prevStates[focusedStudentId];
-        const newStudentState: StudentSessionState = {
-          ...studentStateToReset,
-          activity: '',
-          notes: '',
-          goalData: studentStateToReset.originalGoalHeaders.reduce((acc, goal) => {
-            acc[goal.id] = JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type] || {}));
-            return acc;
-          }, {} as Record<string, any>),
-        };
-        
-        return {
-          ...prevStates,
-          [focusedStudentId]: newStudentState,
-        };
-      });
-    }
+    await contextSaveDataEntrySession();
     setIsSaving(false);
   }
 
