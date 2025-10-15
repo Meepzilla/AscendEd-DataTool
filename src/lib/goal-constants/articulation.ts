@@ -49,7 +49,6 @@ export const ARTICULATION_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
   { name: 'Produce "pl" blend in initial word position', type: 'ARTICULATION', smartGoalPrompt: 'Student will produce the "pl" blend in initial position of words.', isDefault: true, sessionTargetValue: 80, generatedSmartGoal: '' },
   { name: 'Produce "bl" blend in initial word position', type: 'ARTICULATION', smartGoalPrompt: 'Student will produce the "bl" blend in initial position of words.', isDefault: true, sessionTargetValue: 80, generatedSmartGoal: '' },
   { name: 'Produce "gr" blend in initial word position', type: 'ARTICULATION', smartGoalPrompt: 'Student will produce the "gr" blend in initial position of words.', isDefault: true, sessionTargetValue: 80, generatedSmartGoal: '' },
-  { name: 'Produce /d/ in sentences', type: 'ARTICULATION', smartGoalPrompt: 'Student will produce /d/ in sentences.', isDefault: true, sessionTargetValue: 80, generatedSmartGoal: '' },
   { name: 'Produce /v/ in conversational speech', type: 'ARTICULATION', smartGoalPrompt: 'Student will produce /v/ in conversational speech.', isDefault: true, sessionTargetValue: 90, generatedSmartGoal: '' },
   { name: 'Produce "ch" (tʃ) in sentences', type: 'ARTICULATION', smartGoalPrompt: 'Student will produce "ch" (tʃ) in sentences.', isDefault: true, sessionTargetValue: 80, generatedSmartGoal: '' },
   // Syllable Shape Goals
