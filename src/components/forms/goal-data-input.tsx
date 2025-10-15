@@ -167,31 +167,35 @@ export default function GoalDataInputComponent({
                 />
               </FormItem>
             </div>
-            <div className="grid grid-cols-3 gap-1">
-               <FormItem>
-                <FormLabel>Correct</FormLabel>
-                <div className="flex items-center gap-1">
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('correct', Math.max(0, (Number(data.correct) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
-                  <Input type="number" min="0" value={data.correct ?? 0} onChange={(e) => handleChange('correct', parseInt(e.target.value, 10) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('correct', (Number(data.correct) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
+            <div className="space-y-1">
+                <div className="flex justify-center gap-1">
+                    <FormItem>
+                        <FormLabel>Correct</FormLabel>
+                        <div className="flex items-center gap-1">
+                        <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('correct', Math.max(0, (Number(data.correct) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
+                        <Input type="number" min="0" value={data.correct ?? 0} onChange={(e) => handleChange('correct', parseInt(e.target.value, 10) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
+                        <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('correct', (Number(data.correct) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
+                        </div>
+                    </FormItem>
+                    <FormItem>
+                        <FormLabel>Approx.</FormLabel>
+                        <div className="flex items-center gap-1">
+                        <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('approximate', Math.max(0, (Number(data.approximate) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
+                        <Input type="number" min="0" value={data.approximate ?? 0} onChange={(e) => handleChange('approximate', parseInt(e.target.value, 10) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
+                        <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('approximate', (Number(data.approximate) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
+                        </div>
+                    </FormItem>
                 </div>
-              </FormItem>
-              <FormItem>
-                <FormLabel>Approx.</FormLabel>
-                <div className="flex items-center gap-1">
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('approximate', Math.max(0, (Number(data.approximate) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
-                  <Input type="number" min="0" value={data.approximate ?? 0} onChange={(e) => handleChange('approximate', parseInt(e.target.value, 10) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('approximate', (Number(data.approximate) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
+                <div className="flex justify-center">
+                    <FormItem>
+                        <FormLabel>Incorrect</FormLabel>
+                        <div className="flex items-center gap-1">
+                        <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('incorrect', Math.max(0, (Number(data.incorrect) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
+                        <Input type="number" min="0" value={data.incorrect ?? 0} onChange={(e) => handleChange('incorrect', parseInt(e.target.value, 10) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
+                        <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('incorrect', (Number(data.incorrect) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
+                        </div>
+                    </FormItem>
                 </div>
-              </FormItem>
-              <FormItem>
-                <FormLabel>Incorrect</FormLabel>
-                <div className="flex items-center gap-1">
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('incorrect', Math.max(0, (Number(data.incorrect) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
-                  <Input type="number" min="0" value={data.incorrect ?? 0} onChange={(e) => handleChange('incorrect', parseInt(e.target.value, 10) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('incorrect', (Number(data.incorrect) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
-                </div>
-              </FormItem>
             </div>
           </>
         );
@@ -391,31 +395,35 @@ export default function GoalDataInputComponent({
                 disabled={isArchived}
               />
             </FormItem>
-            <div className="grid grid-cols-3 gap-1">
-              <FormItem>
-                <FormLabel>Correct</FormLabel>
-                <div className="flex items-center gap-1">
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('questionsCorrect', Math.max(0, (Number(data.questionsCorrect) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
-                  <Input type="number" min="0" value={data.questionsCorrect ?? 0} onChange={(e) => handleChange('questionsCorrect', parseInt(e.target.value, 10) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('questionsCorrect', (Number(data.questionsCorrect) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
+            <div className="space-y-1">
+                <div className="flex justify-center gap-1">
+                    <FormItem>
+                        <FormLabel>Correct</FormLabel>
+                        <div className="flex items-center gap-1">
+                        <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('questionsCorrect', Math.max(0, (Number(data.questionsCorrect) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
+                        <Input type="number" min="0" value={data.questionsCorrect ?? 0} onChange={(e) => handleChange('questionsCorrect', parseInt(e.target.value, 10) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
+                        <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('questionsCorrect', (Number(data.questionsCorrect) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
+                        </div>
+                    </FormItem>
+                    <FormItem>
+                        <FormLabel>Approx.</FormLabel>
+                        <div className="flex items-center gap-1">
+                        <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('approximate', Math.max(0, (Number(data.approximate) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
+                        <Input type="number" min="0" value={data.approximate ?? 0} onChange={(e) => handleChange('approximate', parseInt(e.target.value, 10) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
+                        <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('approximate', (Number(data.approximate) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
+                        </div>
+                    </FormItem>
                 </div>
-              </FormItem>
-              <FormItem>
-                <FormLabel>Approx.</FormLabel>
-                <div className="flex items-center gap-1">
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('approximate', Math.max(0, (Number(data.approximate) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
-                  <Input type="number" min="0" value={data.approximate ?? 0} onChange={(e) => handleChange('approximate', parseInt(e.target.value, 10) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('approximate', (Number(data.approximate) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
+                <div className="flex justify-center">
+                    <FormItem>
+                        <FormLabel>Incorrect</FormLabel>
+                        <div className="flex items-center gap-1">
+                        <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('questionsIncorrect', Math.max(0, (Number(data.questionsIncorrect) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
+                        <Input type="number" min="0" value={data.questionsIncorrect ?? 0} onChange={(e) => handleChange('questionsIncorrect', parseInt(e.target.value, 10) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
+                        <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('questionsIncorrect', (Number(data.questionsIncorrect) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
+                        </div>
+                    </FormItem>
                 </div>
-              </FormItem>
-              <FormItem>
-                <FormLabel>Incorrect</FormLabel>
-                <div className="flex items-center gap-1">
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('questionsIncorrect', Math.max(0, (Number(data.questionsIncorrect) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
-                  <Input type="number" min="0" value={data.questionsIncorrect ?? 0} onChange={(e) => handleChange('questionsIncorrect', parseInt(e.target.value, 10) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('questionsIncorrect', (Number(data.questionsIncorrect) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
-                </div>
-              </FormItem>
             </div>
           </>
         );
@@ -433,31 +441,35 @@ export default function GoalDataInputComponent({
                 disabled={isArchived}
               />
             </FormItem>
-            <div className="grid grid-cols-3 gap-1">
-              <FormItem>
-                <FormLabel>Correct</FormLabel>
-                <div className="flex items-center gap-1">
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('successfulResponses', Math.max(0, (Number(data.successfulResponses) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
-                  <Input type="number" min="0" value={data.successfulResponses ?? 0} onChange={(e) => handleChange('successfulResponses', parseInt(e.target.value, 10) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('successfulResponses', (Number(data.successfulResponses) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
+            <div className="space-y-1">
+                <div className="flex justify-center gap-1">
+                    <FormItem>
+                        <FormLabel>Correct</FormLabel>
+                        <div className="flex items-center gap-1">
+                        <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('successfulResponses', Math.max(0, (Number(data.successfulResponses) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
+                        <Input type="number" min="0" value={data.successfulResponses ?? 0} onChange={(e) => handleChange('successfulResponses', parseInt(e.target.value, 10) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
+                        <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('successfulResponses', (Number(data.successfulResponses) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
+                        </div>
+                    </FormItem>
+                    <FormItem>
+                        <FormLabel>Approx.</FormLabel>
+                        <div className="flex items-center gap-1">
+                        <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('approximate', Math.max(0, (Number(data.approximate) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
+                        <Input type="number" min="0" value={data.approximate ?? 0} onChange={(e) => handleChange('approximate', parseInt(e.target.value, 10) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
+                        <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('approximate', (Number(data.approximate) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
+                        </div>
+                    </FormItem>
                 </div>
-              </FormItem>
-               <FormItem>
-                <FormLabel>Approx.</FormLabel>
-                <div className="flex items-center gap-1">
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('approximate', Math.max(0, (Number(data.approximate) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
-                  <Input type="number" min="0" value={data.approximate ?? 0} onChange={(e) => handleChange('approximate', parseInt(e.target.value, 10) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('approximate', (Number(data.approximate) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
+                <div className="flex justify-center">
+                    <FormItem>
+                        <FormLabel>Incorrect</FormLabel>
+                        <div className="flex items-center gap-1">
+                        <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('unsuccessfulResponses', Math.max(0, (Number(data.unsuccessfulResponses) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
+                        <Input type="number" min="0" value={data.unsuccessfulResponses ?? 0} onChange={(e) => handleChange('unsuccessfulResponses', parseInt(e.target.value, 10) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
+                        <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('unsuccessfulResponses', (Number(data.unsuccessfulResponses) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
+                        </div>
+                    </FormItem>
                 </div>
-              </FormItem>
-              <FormItem>
-                <FormLabel>Incorrect</FormLabel>
-                <div className="flex items-center gap-1">
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('unsuccessfulResponses', Math.max(0, (Number(data.unsuccessfulResponses) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
-                  <Input type="number" min="0" value={data.unsuccessfulResponses ?? 0} onChange={(e) => handleChange('unsuccessfulResponses', parseInt(e.target.value, 10) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('unsuccessfulResponses', (Number(data.unsuccessfulResponses) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
-                </div>
-              </FormItem>
             </div>
           </>
         );
@@ -475,31 +487,35 @@ export default function GoalDataInputComponent({
                 disabled={isArchived}
               />
             </FormItem>
-            <div className="grid grid-cols-3 gap-1">
-               <FormItem>
-                <FormLabel>Correct</FormLabel>
-                <div className="flex items-center gap-1">
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('correctProductions', Math.max(0, (Number(data.correctProductions) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
-                  <Input type="number" min="0" value={data.correctProductions ?? 0} onChange={(e) => handleChange('correctProductions', parseInt(e.target.value, 10) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('correctProductions', (Number(data.correctProductions) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
+            <div className="space-y-1">
+                <div className="flex justify-center gap-1">
+                    <FormItem>
+                        <FormLabel>Correct</FormLabel>
+                        <div className="flex items-center gap-1">
+                        <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('correctProductions', Math.max(0, (Number(data.correctProductions) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
+                        <Input type="number" min="0" value={data.correctProductions ?? 0} onChange={(e) => handleChange('correctProductions', parseInt(e.target.value, 10) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
+                        <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('correctProductions', (Number(data.correctProductions) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
+                        </div>
+                    </FormItem>
+                    <FormItem>
+                        <FormLabel>Approx.</FormLabel>
+                        <div className="flex items-center gap-1">
+                        <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('approximate', Math.max(0, (Number(data.approximate) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
+                        <Input type="number" min="0" value={data.approximate ?? 0} onChange={(e) => handleChange('approximate', parseInt(e.target.value, 10) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
+                        <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('approximate', (Number(data.approximate) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
+                        </div>
+                    </FormItem>
                 </div>
-              </FormItem>
-              <FormItem>
-                <FormLabel>Approx.</FormLabel>
-                <div className="flex items-center gap-1">
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('approximate', Math.max(0, (Number(data.approximate) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
-                  <Input type="number" min="0" value={data.approximate ?? 0} onChange={(e) => handleChange('approximate', parseInt(e.target.value, 10) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('approximate', (Number(data.approximate) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
+                <div className="flex justify-center">
+                    <FormItem>
+                        <FormLabel>Incorrect</FormLabel>
+                        <div className="flex items-center gap-1">
+                        <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('incorrectProductions', Math.max(0, (Number(data.incorrectProductions) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
+                        <Input type="number" min="0" value={data.incorrectProductions ?? 0} onChange={(e) => handleChange('incorrectProductions', parseInt(e.target.value, 10) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
+                        <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('incorrectProductions', (Number(data.incorrectProductions) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
+                        </div>
+                    </FormItem>
                 </div>
-              </FormItem>
-              <FormItem>
-                <FormLabel>Incorrect</FormLabel>
-                 <div className="flex items-center gap-1">
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('incorrectProductions', Math.max(0, (Number(data.incorrectProductions) || 0) - 1))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
-                  <Input type="number" min="0" value={data.incorrectProductions ?? 0} onChange={(e) => handleChange('incorrectProductions', parseInt(e.target.value, 10) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived} />
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => handleChange('incorrectProductions', (Number(data.incorrectProductions) || 0) + 1)} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
-                </div>
-              </FormItem>
             </div>
           </>
         );
