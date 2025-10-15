@@ -1,3 +1,4 @@
+
 import type { GoalTemplate, GoalType } from '../types';
 
 export const ARTICULATION_FIELDS: Record<string, Record<string, any>> = {
@@ -23,7 +24,6 @@ export const ARTICULATION_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
   { name: 'Produce /t/ in medial word position', type: 'ARTICULATION', smartGoalPrompt: 'Student will produce /t/ in the medial position of words.', isDefault: true, sessionTargetValue: 80, generatedSmartGoal: '' },
   { name: 'Produce /t/ in final word position', type: 'ARTICULATION', smartGoalPrompt: 'Student will produce /t/ in the final position of words.', isDefault: true, sessionTargetValue: 80, generatedSmartGoal: '' },
   { name: 'Produce /d/ in initial word position', type: 'ARTICULATION', smartGoalPrompt: 'Student will produce /d/ in the initial position of words.', isDefault: true, sessionTargetValue: 80, generatedSmartGoal: '' },
-  { name: 'Produce /d/ in medial word position', type: 'ARTICULATION', smartGoalPrompt: 'Student will produce /d/ in the medial position of words.', isDefault: true, sessionTargetValue: 80, generatedSmartGoal: '' },
   { name: 'Produce /d/ in final word position', type: 'ARTICULATION', smartGoalPrompt: 'Student will produce /d/ in the final position of words.', isDefault: true, sessionTargetValue: 80, generatedSmartGoal: '' },
   { name: 'Produce /k/ in initial word position', type: 'ARTICULATION', smartGoalPrompt: 'Student will produce /k/ in the initial position of words.', isDefault: true, sessionTargetValue: 80, generatedSmartGoal: '' },
   { name: 'Produce /k/ in medial word position', type: 'ARTICULATION', smartGoalPrompt: 'Student will produce /k/ in the medial position of words.', isDefault: true, sessionTargetValue: 80, generatedSmartGoal: '' },
