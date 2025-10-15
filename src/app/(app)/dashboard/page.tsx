@@ -101,6 +101,28 @@ export default function DashboardPage() {
         <p className="text-muted-foreground">Your central hub for student goal management and progress tracking.</p>
       </div>
 
+      {/* Quick Actions */}
+      <section aria-labelledby="quick-actions-title">
+        <h2 id="quick-actions-title" className="text-xl font-semibold mb-4 text-foreground">Quick Actions</h2>
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
+          {quickActions.map((action) => (
+            <Card key={action.label} className="hover:bg-muted/50 transition-colors">
+              <CardContent className="p-6 flex flex-col items-center text-center">
+                <action.icon className="h-10 w-10 text-primary mb-3" />
+                <h3 className="text-md font-semibold mb-2">{action.label}</h3>
+                {action.href ? (
+                  <Link href={action.href} passHref>
+                    <Button variant="outline" size="sm">Go</Button>
+                  </Link>
+                ) : (
+                  <Button variant="outline" size="sm" onClick={action.action}>Start</Button>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
+
       {/* Summary Cards */}
       <section aria-labelledby="summary-title">
         <h2 id="summary-title" className="text-xl font-semibold mb-4 text-foreground">Overview</h2>
@@ -118,28 +140,6 @@ export default function DashboardPage() {
                     <Button variant="link" className="p-0 h-auto text-xs">{item.buttonLabel}</Button>
                   </Link>
                 </p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      {/* Quick Actions */}
-      <section aria-labelledby="quick-actions-title">
-        <h2 id="quick-actions-title" className="text-xl font-semibold mb-4 text-foreground">Quick Actions</h2>
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
-          {quickActions.map((action) => (
-            <Card key={action.label} className="hover:bg-muted/50 transition-colors">
-              <CardContent className="p-6 flex flex-col items-center text-center">
-                <action.icon className="h-10 w-10 text-primary mb-3" />
-                <h3 className="text-md font-semibold mb-2">{action.label}</h3>
-                {action.href ? (
-                  <Link href={action.href} passHref>
-                    <Button variant="outline" size="sm">Go</Button>
-                  </Link>
-                ) : (
-                  <Button variant="outline" size="sm" onClick={action.action}>Start</Button>
-                )}
               </CardContent>
             </Card>
           ))}
