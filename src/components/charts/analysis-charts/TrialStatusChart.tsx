@@ -28,7 +28,7 @@ const TrialStatusSequenceChart: React.FC<TrialSequenceChartProps> = ({ studentSe
         if (goalData.goalType === 'DISCRETE_TRIALS' && Array.isArray(goalData.data.trials)) {
           trialsForSession.push(...goalData.data.trials);
         } else if (goalData.goalType === 'SEQUENCED_TRIALS') {
-          // For sequenced trials, we reconstruct the sequence from counts.
+          // For sequenced trials, reconstruct the sequence from counts.
           const successful = Number(goalData.data.successfulAttempts) || 0;
           const failed = Number(goalData.data.failedAttempts) || 0;
           const approximate = Number(goalData.data.approximate) || 0;
