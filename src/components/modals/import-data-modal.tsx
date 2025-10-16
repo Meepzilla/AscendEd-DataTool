@@ -1,14 +1,12 @@
-
 'use client';
 
 import React, { useState, useCallback } from 'react';
 import GenericModal from './generic-modal';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, UploadCloud, FileCheck2, AlertTriangle } from 'lucide-react';
 import Papa from 'papaparse';
-import type { SessionData } from '@/lib/types';
+import type { SessionData, SessionGoalData } from '@/lib/types';
 import { useDropzone } from 'react-dropzone';
 
 interface ImportDataModalProps {
@@ -45,26 +43,82 @@ export default function ImportDataModal({ onClose, onImport }: ImportDataModalPr
         skipEmptyLines: true,
         complete: (results) => {
           try {
-            const sessions: Omit<SessionData, 'sessionId'>[] = results.data.map(row => {
-              if (!row.studentId || !row.date || !row.studentName) {
-                throw new Error('CSV row is missing required fields (studentId, date, studentName).');
+            const rows = results.data;
+            if (rows.length === 0) {
+              throw new Error("CSV file is empty or contains no data rows.");
+            }
+
+            // Group rows by Session ID
+            const sessionsMap = new Map<string, Omit<SessionData, 'sessionId'>>();
+
+            for (const row of rows) {
+              const sessionId = row['Session ID'];
+              if (!sessionId) {
+                console.warn("Skipping row with missing Session ID:", row);
+                continue;
               }
-              return {
-                studentId: row.studentId,
-                studentName: row.studentName,
-                date: row.date,
-                time: row.time,
-                endTime: row.endTime,
-                activity: row.activity,
-                notes: row.notes,
-                goals: JSON.parse(row.goals || '[]'),
-                originalGoalHeaders: [], // This will be ignored on import, but needed for type
-              };
-            });
-            setParsedSessions(sessions);
+
+              let sessionEntry = sessionsMap.get(sessionId);
+
+              // If it's the first time seeing this session ID, create the base session object.
+              if (!sessionEntry) {
+                 if (!row['Student ID'] || !row['Date'] || !row['Student Name']) {
+                    throw new Error(`Row for session ${sessionId} is missing required fields (Student ID, Date, Student Name).`);
+                }
+                sessionEntry = {
+                  studentId: row['Student ID'],
+                  studentName: row['Student Name'],
+                  date: row['Date'],
+                  time: row['Start Time'],
+                  endTime: row['End Time'] || undefined,
+                  activity: row['Activity'],
+                  notes: row['Session Notes'],
+                  goals: [],
+                  originalGoalHeaders: [], // This will be ignored on import
+                };
+                sessionsMap.set(sessionId, sessionEntry);
+              }
+
+              // If the row contains goal information, process it.
+              if (row['Goal ID'] && row['Goal Name']) {
+                const goalData: SessionGoalData['data'] = {};
+                for (const key in row) {
+                  if (key.startsWith('Goal Data: ')) {
+                    const dataKey = key.replace('Goal Data: ', '').replace(/ /g, '');
+                    const firstLetter = dataKey.charAt(0).toLowerCase();
+                    const restOfString = dataKey.slice(1);
+                    const camelCaseKey = `${firstLetter}${restOfString}`;
+                    
+                    let value = row[key];
+                    // Try to parse if it looks like JSON (for arrays like in discrete trials)
+                    try {
+                        const parsed = JSON.parse(value);
+                        value = parsed;
+                    } catch (e) {
+                        // Not JSON, keep as string or try to convert to number
+                        if (!isNaN(Number(value)) && value.trim() !== '') {
+                            value = Number(value);
+                        }
+                    }
+                    goalData[camelCaseKey] = value;
+                  }
+                }
+
+                const sessionGoal: SessionGoalData = {
+                  goalId: row['Goal ID'],
+                  goalName: row['Goal Name'],
+                  goalType: row['Goal Type'],
+                  data: goalData,
+                };
+                sessionEntry.goals.push(sessionGoal);
+              }
+            }
+
+            const finalSessions = Array.from(sessionsMap.values());
+            setParsedSessions(finalSessions);
             toast({
               title: "File Parsed Successfully",
-              description: `Found ${sessions.length} session records to import.`,
+              description: `Found ${finalSessions.length} session records to import.`,
             });
           } catch (error: any) {
             console.error("Error parsing CSV data:", error);
