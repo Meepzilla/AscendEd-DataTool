@@ -59,7 +59,7 @@ export default function ConfirmationModal({
     try {
       if (itemToUpdate && updateAction && actionType === 'student') {
         // Handle update actions like archiving
-        await updateAction(itemToUpdate.id, { isArchived: (itemToUpdate as Student).isArchived });
+        await updateAction(itemToUpdate.id, { isArchived: itemToUpdate.isArchived });
       } else if (itemToDelete && actionType) {
         // Handle delete actions
         switch (actionType) {
@@ -102,8 +102,9 @@ export default function ConfirmationModal({
       };
     }
   }, [isOpen, handleConfirmAction]);
+  
+  const isDestructive = actionType === 'student' && itemToUpdate ? !itemToUpdate.isArchived : false;
 
-  const isDestructive = actionType === 'student' && !(itemToUpdate as Student)?.isArchived;
 
   return (
     <AlertDialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -129,3 +130,5 @@ export default function ConfirmationModal({
     </AlertDialog>
   );
 }
+
+    

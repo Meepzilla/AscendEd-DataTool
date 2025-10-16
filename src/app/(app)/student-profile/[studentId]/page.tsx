@@ -114,7 +114,7 @@ export default function StudentProfilePage() {
   const handleToggleArchiveStudent = () => {
     if (currentStudent) {
       openDeleteConfirmationModal(
-        { ...currentStudent, isArchived: !currentStudent.isArchived },
+        currentStudent,
         'student'
       );
     }
@@ -132,26 +132,24 @@ export default function StudentProfilePage() {
         />
       )}
 
-      {deletingStudent && (
+      {deletingStudent && deletingStudent.type === 'student' && (
         <ConfirmationModal
           isOpen={!!deletingStudent}
           onClose={closeDeleteConfirmationModal}
           title={
-            deletingStudent.type === 'student'
-              ? (deletingStudent.item as Student).isArchived
-                ? `Unarchive Student: ${(deletingStudent.item as Student).name}`
-                : `Archive Student: ${(deletingStudent.item as Student).name}`
-              : `Delete Student: ${(deletingStudent.item as Student).name}`
+            (deletingStudent.item as Student).isArchived
+              ? `Unarchive Student: ${(deletingStudent.item as Student).name}`
+              : `Archive Student: ${(deletingStudent.item as Student).name}`
           }
           description={
-             deletingStudent.type === 'student' && (deletingStudent.item as Student).isArchived
+            (deletingStudent.item as Student).isArchived
               ? "Unarchiving this student will make them visible in all active lists again. Are you sure?"
               : "Archiving a student will hide them from active lists like the sidebar and data entry. Their data will be preserved. Are you sure you want to archive?"
           }
-          itemToUpdate={deletingStudent.item as Student}
+          itemToUpdate={{ ...(deletingStudent.item as Student), isArchived: !(deletingStudent.item as Student).isArchived }}
           updateAction={(id, data) => updateStudent(id, data)}
-          confirmText={ (deletingStudent.item as Student)?.isArchived ? 'Yes, Unarchive' : 'Yes, Archive'}
-          actionType={deletingStudent.type}
+          confirmText={(deletingStudent.item as Student).isArchiv ? 'Yes, Unarchive' : 'Yes, Archive'}
+          actionType="student"
         />
       )}
 
@@ -288,3 +286,5 @@ function StudentProfileSkeleton() {
     </div>
   );
 }
+
+    
