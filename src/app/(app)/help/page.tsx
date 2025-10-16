@@ -16,9 +16,9 @@ interface Hotkey {
 const hotkeys: Hotkey[] = [
   // Global Navigation
   { key: 'Alt + D', description: 'Navigate to Dashboard', category: 'Global Navigation' },
-  { key: 'Alt + 1', description: 'Navigate to Students Page', category: 'Global Navigation' },
-  { key: 'Alt + 2', description: 'Navigate to Goal Templates', category: 'Global Navigation' },
-  { key: 'Alt + 3', description: 'Navigate to Data Entry', category: 'Global Navigation' },
+  { key: 'Alt + 1', description: 'Navigate to Data Entry', category: 'Global Navigation' },
+  { key: 'Alt + 2', description: 'Navigate to Students Page', category: 'Global Navigation' },
+  { key: 'Alt + 3', description: 'Navigate to Goal Templates', category: 'Global Navigation' },
   { key: 'Alt + 4', description: 'Navigate to Manage Sessions', category: 'Global Navigation' },
   { key: 'Alt + 5', description: 'Navigate to Analysis & Reports', category: 'Global Navigation' },
   // Global Actions

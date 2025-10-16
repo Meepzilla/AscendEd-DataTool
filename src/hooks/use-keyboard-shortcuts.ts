@@ -73,9 +73,9 @@ export function useKeyboardShortcuts() {
       switch (key) {
         // Global Navigation Hotkeys: Navigate to different pages
         case 'D': router.push('/dashboard'); break; // Alt+D to Dashboard
-        case '1': router.push('/student-profile'); break; // Alt+1 to Student Profile
-        case '2': router.push('/goal-templates'); break; // Alt+2 to Goal Templates
-        case '3': router.push('/data-entry'); break; // Alt+3 to Data Entry
+        case '1': router.push('/data-entry'); break; // Alt+1 to Data Entry
+        case '2': router.push('/student-profile'); break; // Alt+2 to Student Profile
+        case '3': router.push('/goal-templates'); break; // Alt+3 to Goal Templates
         case '4': router.push('/manage-sessions'); break; // Alt+4 to Manage Sessions
         case '5': router.push('/analysis-report'); break; // Alt+5 to Analysis & Reports
         case '6': router.push('/changelog'); break; // Alt+6 to Changelog
