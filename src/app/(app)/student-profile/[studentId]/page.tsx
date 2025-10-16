@@ -287,14 +287,14 @@ export default function StudentProfilePage() {
                       <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{goal.smartGoal}</p>
                     </div>
                     <div className="flex gap-1 shrink-0 mt-2 sm:mt-0 sm:ml-2">
-                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleToggleArchiveGoal(goal)} title={goal.isArchived ? "Unarchive Goal" : "Archive Goal"}>
-                        {goal.isArchived ? <ArchiveRestore className="h-4 w-4 text-green-600" /> : <Archive className="h-4 w-4 text-orange-600" />}
-                      </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenEditAssignedGoalModal(goal)} title="Edit Assigned Goal">
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openDeleteConfirmationModal(currentStudent, 'student')} title="Remove Goal Assignment">
                         <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleToggleArchiveGoal(goal)} title={goal.isArchived ? "Unarchive Goal" : "Archive Goal"}>
+                        {goal.isArchived ? <ArchiveRestore className="h-4 w-4 text-green-600" /> : <Archive className="h-4 w-4 text-orange-600" />}
                       </Button>
                     </div>
                   </div>
