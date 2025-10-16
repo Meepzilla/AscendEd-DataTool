@@ -14,6 +14,7 @@ import type { DateRange } from "react-day-picker";
 import { useSearchParams, useRouter } from 'next/navigation';
 import Papa from 'papaparse';
 import { useToast } from '@/hooks/use-toast';
+import { formatDate } from '@/lib/helpers';
 
 // Dynamically import the heavy charting component
 const AnalysisCharts = lazy(() => import('@/components/charts/AnalysisCharts'));
@@ -83,17 +84,48 @@ export default function AnalysisReportPage() {
       return;
     }
 
-    const dataToExport = studentSessions.map(session => ({
-      sessionId: session.sessionId,
-      studentId: session.studentId,
-      studentName: session.studentName,
-      date: session.date,
-      time: session.time,
-      endTime: session.endTime,
-      activity: session.activity,
-      notes: session.notes,
-      goals: JSON.stringify(session.goals), // Flatten nested goals array
-    }));
+    const dataToExport = studentSessions.flatMap(session => {
+        // If a session has no goals, export a single row for the session itself.
+        if (!session.goals || session.goals.length === 0) {
+            return [{
+                'Session ID': session.sessionId,
+                'Student ID': session.studentId,
+                'Student Name': session.studentName,
+                'Date': formatDate(session.date),
+                'Start Time': session.time,
+                'End Time': session.endTime || 'N/A',
+                'Activity': session.activity,
+                'Session Notes': session.notes,
+                'Goal Name': 'N/A (No goals recorded)',
+            }];
+        }
+
+        // Otherwise, create a row for each goal in the session.
+        return session.goals.map(goalData => {
+            const baseData = {
+                'Session ID': session.sessionId,
+                'Student ID': session.studentId,
+                'Student Name': session.studentName,
+                'Date': formatDate(session.date),
+                'Start Time': session.time,
+                'End Time': session.endTime || 'N/A',
+                'Activity': session.activity,
+                'Session Notes': session.notes,
+                'Goal Name': goalData.goalName,
+                'Goal Type': goalData.goalType,
+                'Goal ID': goalData.goalId,
+            };
+
+            // Flatten the goal-specific data into separate columns
+            const flattenedGoalData = Object.entries(goalData.data).reduce((acc, [key, value]) => {
+                const formattedKey = `Goal Data: ${key.replace(/([A-Z])/g, ' $1').trim()}`;
+                acc[formattedKey] = Array.isArray(value) ? JSON.stringify(value) : value;
+                return acc;
+            }, {} as Record<string, any>);
+
+            return { ...baseData, ...flattenedGoalData };
+        });
+    });
 
     const csv = Papa.unparse(dataToExport);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
