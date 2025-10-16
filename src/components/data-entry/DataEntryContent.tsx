@@ -10,7 +10,6 @@ import { useToast } from '@/hooks/use-toast';
 import TouchControls from '@/components/forms/touch-controls';
 import { Card, CardContent } from '@/components/ui/card';
 import { Info } from 'lucide-react';
-import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 import type { StudentSessionState } from '@/lib/types';
 
 const ConfirmationModal = lazy(() => import('@/components/modals/confirmation-modal'));
@@ -185,7 +184,7 @@ export default function DataEntryContent() {
   };
 
   return (
-    <div className="space-y-6 flex flex-col h-full">
+    <div className="flex flex-col h-full">
        <Suspense fallback={null}>
         {isResetConfirmationOpen && (
           <ConfirmationModal
@@ -212,7 +211,7 @@ export default function DataEntryContent() {
         />
       </Suspense>
 
-      <ScrollArea className="flex-grow min-h-0">
+      <ScrollArea className="flex-grow min-h-0 mt-4">
          <Suspense fallback={<div>Loading student cards...</div>}>
           <StudentCardsList
             dataEntrySelectedStudentIds={dataEntrySelectedStudentIds}
@@ -242,7 +241,7 @@ export default function DataEntryContent() {
       </ScrollArea>
 
       {dataEntrySelectedStudentIds.length > 0 && (
-        <div className="mt-auto flex-shrink-0 flex justify-between items-center gap-2 py-4 border-t">
+        <div className="mt-auto flex-shrink-0 flex justify-between items-center gap-2 py-2 border-t">
           <TouchControls />
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={handleOpenResetConfirmation} disabled={isSaving} size="lg">
