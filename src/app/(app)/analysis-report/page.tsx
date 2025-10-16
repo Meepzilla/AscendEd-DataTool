@@ -214,7 +214,7 @@ export default function AnalysisReportPage() {
                 selectedGoalId={selectedGoalId}
                 sessionsLoading={sessionsLoading}
             />
-             <Suspense>
+            <Suspense fallback={<div className="mt-6"><Skeleton className="h-[300px] w-full" /></div>}>
               <TrialStatusChart 
                   studentSessions={studentSessions}
                   selectedStudent={selectedStudent}
