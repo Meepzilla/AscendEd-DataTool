@@ -124,7 +124,7 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
           </div>
         </div>
       </CardHeader>
-      <ScrollArea className="h-[550px]">
+      <ScrollArea className="h-[650px]">
         <CardContent className="p-3 space-y-3 flex flex-col justify-end min-h-full">
           <div className="flex-grow space-y-3">
             <div>
@@ -245,5 +245,3 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
 };
 
 export default StudentDataCard;
-
-    
