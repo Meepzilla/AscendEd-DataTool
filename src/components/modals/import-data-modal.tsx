@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useCallback } from 'react';
@@ -84,10 +85,8 @@ export default function ImportDataModal({ onClose, onImport }: ImportDataModalPr
                 const goalData: SessionGoalData['data'] = {};
                 for (const key in row) {
                   if (key.startsWith('Goal Data: ')) {
-                    const dataKey = key.replace('Goal Data: ', '').replace(/ /g, '');
-                    const firstLetter = dataKey.charAt(0).toLowerCase();
-                    const restOfString = dataKey.slice(1);
-                    const camelCaseKey = `${firstLetter}${restOfString}`;
+                    const dataKeyRaw = key.replace('Goal Data: ', '');
+                    const camelCaseKey = dataKeyRaw.replace(/\s(.)/g, ($1) => $1.toUpperCase()).replace(/\s/g, '').replace(/^(.)/, ($1) => $1.toLowerCase());
                     
                     let value = row[key];
                     // Try to parse if it looks like JSON (for arrays like in discrete trials)
@@ -110,7 +109,11 @@ export default function ImportDataModal({ onClose, onImport }: ImportDataModalPr
                   goalType: row['Goal Type'],
                   data: goalData,
                 };
-                sessionEntry.goals.push(sessionGoal);
+
+                // Avoid duplicating goals if they appear in multiple rows for the same session (unlikely with new format, but safe)
+                if (!sessionEntry.goals.find(g => g.goalId === sessionGoal.goalId)) {
+                    sessionEntry.goals.push(sessionGoal);
+                }
               }
             }
 

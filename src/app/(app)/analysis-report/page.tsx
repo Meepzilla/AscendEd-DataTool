@@ -103,7 +103,7 @@ export default function AnalysisReportPage() {
 
         // Otherwise, create a row for each goal in the session.
         return session.goals.map(goalData => {
-            const baseData = {
+            const baseData: Record<string, any> = {
                 'Session ID': session.sessionId,
                 'Student ID': session.studentId,
                 'Student Name': session.studentName,
@@ -112,9 +112,9 @@ export default function AnalysisReportPage() {
                 'End Time': session.endTime || 'N/A',
                 'Activity': session.activity,
                 'Session Notes': session.notes,
+                'Goal ID': goalData.goalId,
                 'Goal Name': goalData.goalName,
                 'Goal Type': goalData.goalType,
-                'Goal ID': goalData.goalId,
             };
 
             // Flatten the goal-specific data into separate columns

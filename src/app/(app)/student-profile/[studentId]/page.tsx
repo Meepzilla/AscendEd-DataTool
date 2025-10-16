@@ -1,14 +1,14 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useStudentData } from '@/hooks/use-student-data';
 import type { Student, Goal } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Edit, Trash2, PlusCircle, Info, Target, Edit3, CheckSquare, TrendingUp, Archive, ArchiveRestore } from 'lucide-react';
+import { Edit, Trash2, PlusCircle, Info, Target, Edit3, CheckSquare, TrendingUp, Archive, ArchiveRestore, Upload } from 'lucide-react';
 import { formatDate } from '@/lib/helpers'; 
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +18,8 @@ import AssignGoalToStudentModal from '@/components/modals/assign-goal-to-student
 import EditAssignedGoalModal from '@/components/modals/edit-assigned-goal-modal';
 import ConfirmationModal from '@/components/modals/confirmation-modal';
 import { cn } from '@/lib/utils';
+
+const ImportDataModal = lazy(() => import('@/components/modals/import-data-modal'));
 
 
 export default function StudentProfilePage() {
@@ -42,10 +44,13 @@ export default function StudentProfilePage() {
     closeEditAssignedGoalModal, 
     updateStudentGoal,
     updateStudent,
+    importSessions,
   } = useStudentData();
 
   const [currentStudent, setCurrentStudent] = useState<Student | null>(null);
   const [isAssignGoalModalOpen, setIsAssignGoalModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+
 
   useEffect(() => {
     if (studentIdFromParams) {
@@ -123,6 +128,10 @@ export default function StudentProfilePage() {
 
   return (
     <div className="space-y-6">
+      <Suspense fallback={null}>
+        {isImportModalOpen && <ImportDataModal onClose={() => setIsImportModalOpen(false)} onImport={importSessions} />}
+      </Suspense>
+
       {editingAssignedGoal && currentStudent && (
         <EditAssignedGoalModal
           isOpen={!!editingAssignedGoal}
@@ -148,7 +157,7 @@ export default function StudentProfilePage() {
           }
           itemToUpdate={{ ...(deletingStudent.item as Student), isArchived: !(deletingStudent.item as Student).isArchived }}
           updateAction={(id, data) => updateStudent(id, data)}
-          confirmText={(deletingStudent.item as Student).isArchiv ? 'Yes, Unarchive' : 'Yes, Archive'}
+          confirmText={(deletingStudent.item as Student).isArchived ? 'Yes, Unarchive' : 'Yes, Archive'}
           actionType="student"
         />
       )}
@@ -173,6 +182,9 @@ export default function StudentProfilePage() {
             </div>
           </div>
           <div className="flex flex-wrap sm:flex-nowrap gap-2 mt-3 sm:mt-0 w-full sm:w-auto">
+            <Button variant="outline" size="sm" onClick={() => setIsImportModalOpen(true)} className="w-full sm:w-auto">
+              <Upload className="mr-2 h-4 w-4" /> Import Data
+            </Button>
             <Button variant="outline" size="sm" onClick={() => openEditStudentModal(currentStudent)} className="w-full sm:w-auto">
               <Edit3 className="mr-2 h-4 w-4" /> Edit Student Info
             </Button>
@@ -265,6 +277,7 @@ function StudentProfileSkeleton() {
             </div>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 mt-2 sm:mt-0 w-full sm:w-auto">
+            <Skeleton className="h-9 w-full sm:w-32" />
             <Skeleton className="h-9 w-full sm:w-28" />
             <Skeleton className="h-9 w-full sm:w-32" />
           </div>
@@ -286,5 +299,3 @@ function StudentProfileSkeleton() {
     </div>
   );
 }
-
-    
