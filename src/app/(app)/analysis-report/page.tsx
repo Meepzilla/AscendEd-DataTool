@@ -7,23 +7,28 @@ import type { Student, SessionData } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Download, Info, BarChart2 } from 'lucide-react';
+import { Download, Info, BarChart2, Upload } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
 import type { DateRange } from "react-day-picker";
 import { useSearchParams, useRouter } from 'next/navigation';
+import Papa from 'papaparse';
+import { useToast } from '@/hooks/use-toast';
 
 // Dynamically import the heavy charting component
 const AnalysisCharts = lazy(() => import('@/components/charts/AnalysisCharts'));
+const ImportDataModal = lazy(() => import('@/components/modals/import-data-modal'));
 
 export default function AnalysisReportPage() {
-  const { students, sessions, loading: studentsLoading, sessionsLoading } = useStudentData();
+  const { students, sessions, loading: studentsLoading, sessionsLoading, importSessions } = useStudentData();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { toast } = useToast();
   
   const [selectedStudentId, setSelectedStudentId] = useState<string | undefined>(undefined);
   const [selectedGoalId, setSelectedGoalId] = useState<string | undefined>(undefined);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   const selectedStudent = useMemo(() => students.find(s => s.id === selectedStudentId), [students, selectedStudentId]);
   const activeStudentGoals = useMemo(() => selectedStudent?.goals.filter(g => !g.isArchived) || [], [selectedStudent]);
@@ -69,8 +74,37 @@ export default function AnalysisReportPage() {
   };
 
   const handleExportData = () => {
-    // This function can remain here or be passed down. Keeping it here is fine.
-    // ... implementation for handleExportData
+    if (!selectedStudent || studentSessions.length === 0) {
+      toast({
+        title: "No Data to Export",
+        description: "There is no session data for the selected student in the specified date range.",
+        variant: "default",
+      });
+      return;
+    }
+
+    const dataToExport = studentSessions.map(session => ({
+      sessionId: session.sessionId,
+      studentId: session.studentId,
+      studentName: session.studentName,
+      date: session.date,
+      time: session.time,
+      endTime: session.endTime,
+      activity: session.activity,
+      notes: session.notes,
+      goals: JSON.stringify(session.goals), // Flatten nested goals array
+    }));
+
+    const csv = Papa.unparse(dataToExport);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    const safeStudentName = selectedStudent.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    link.setAttribute('download', `sessions_${safeStudentName}_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   if (studentsLoading && students.length === 0) {
@@ -79,6 +113,9 @@ export default function AnalysisReportPage() {
 
   return (
     <div className="space-y-6">
+      <Suspense fallback={null}>
+        {isImportModalOpen && <ImportDataModal onClose={() => setIsImportModalOpen(false)} onImport={importSessions} />}
+      </Suspense>
       <Card className="shadow-lg">
         <CardHeader>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
@@ -88,9 +125,14 @@ export default function AnalysisReportPage() {
                 </CardTitle>
                 <CardDescription>Visualize student progress, analyze trends, and generate summaries (for active goals).</CardDescription>
              </div>
-             <Button onClick={handleExportData} size="sm" variant="outline" disabled={studentSessions.length === 0}>
-                <Download className="mr-2 h-4 w-4" /> Export Data
-            </Button>
+             <div className="flex gap-2">
+                <Button onClick={() => setIsImportModalOpen(true)} size="sm" variant="outline">
+                    <Upload className="mr-2 h-4 w-4" /> Import Data
+                </Button>
+                <Button onClick={handleExportData} size="sm" variant="outline" disabled={studentSessions.length === 0}>
+                    <Download className="mr-2 h-4 w-4" /> Export Data
+                </Button>
+             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -160,7 +202,10 @@ function AnalysisReportSkeleton() {
                 <CardHeader>
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                         <div><Skeleton className="h-8 w-56 mb-1" /><Skeleton className="h-4 w-80" /></div>
-                        <Skeleton className="h-9 w-32" />
+                        <div className="flex gap-2">
+                          <Skeleton className="h-9 w-32" />
+                          <Skeleton className="h-9 w-32" />
+                        </div>
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
