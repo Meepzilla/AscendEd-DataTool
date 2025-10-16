@@ -8,11 +8,13 @@ import type { Student, Goal } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Edit, Trash2, PlusCircle, Info, Target, Edit3, CheckSquare, TrendingUp, Archive, ArchiveRestore, Upload } from 'lucide-react';
+import { Edit, Trash2, PlusCircle, Info, Target, Edit3, CheckSquare, TrendingUp, Archive, ArchiveRestore, Upload, Download } from 'lucide-react';
 import { formatDate } from '@/lib/helpers'; 
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
+import Papa from 'papaparse';
+import { useToast } from '@/hooks/use-toast';
 
 import AssignGoalToStudentModal from '@/components/modals/assign-goal-to-student-modal';
 import EditAssignedGoalModal from '@/components/modals/edit-assigned-goal-modal';
@@ -26,9 +28,11 @@ export default function StudentProfilePage() {
   const params = useParams();
   const studentIdFromParams = params.studentId as string | undefined;
   const router = useRouter();
+  const { toast } = useToast();
   
   const {
     students,
+    sessions,
     loading, 
     error,
     isFirebaseDBAvailable,
@@ -68,6 +72,11 @@ export default function StudentProfilePage() {
     }
   }, [studentIdFromParams, students, loading, selectedStudent, setSelectedStudent]);
 
+  const studentSessions = React.useMemo(() => {
+    if (!currentStudent) return [];
+    return sessions.filter(s => s.studentId === currentStudent.id);
+  }, [currentStudent, sessions]);
+
 
   if (loading && !currentStudent) { 
     return <StudentProfileSkeleton />;
@@ -96,6 +105,55 @@ export default function StudentProfilePage() {
   if (!currentStudent) {
     return <StudentProfileSkeleton />; 
   }
+
+  const handleExportData = () => {
+    if (!currentStudent || studentSessions.length === 0) {
+      toast({
+        title: "No Data to Export",
+        description: "There is no session data for this student.",
+        variant: "default",
+      });
+      return;
+    }
+
+    const dataToExport = studentSessions.flatMap(session => {
+      if (!session.goals || session.goals.length === 0) {
+        return [{
+          'Session ID': session.sessionId, 'Student ID': session.studentId, 'Student Name': session.studentName,
+          'Date': formatDate(session.date), 'Start Time': session.time, 'End Time': session.endTime || 'N/A',
+          'Activity': session.activity, 'Session Notes': session.notes, 'Goal Name': 'N/A (No goals recorded)',
+        }];
+      }
+
+      return session.goals.map(goalData => {
+        const baseData: Record<string, any> = {
+          'Session ID': session.sessionId, 'Student ID': session.studentId, 'Student Name': session.studentName,
+          'Date': formatDate(session.date), 'Start Time': session.time, 'End Time': session.endTime || 'N/A',
+          'Activity': session.activity, 'Session Notes': session.notes, 'Goal ID': goalData.goalId,
+          'Goal Name': goalData.goalName, 'Goal Type': goalData.goalType,
+        };
+
+        const flattenedGoalData = Object.entries(goalData.data).reduce((acc, [key, value]) => {
+          const formattedKey = `Goal Data: ${key.replace(/([A-Z])/g, ' $1').trim()}`;
+          acc[formattedKey] = Array.isArray(value) ? JSON.stringify(value) : value;
+          return acc;
+        }, {} as Record<string, any>);
+
+        return { ...baseData, ...flattenedGoalData };
+      });
+    });
+
+    const csv = Papa.unparse(dataToExport);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    const safeStudentName = currentStudent.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    link.setAttribute('download', `sessions_${safeStudentName}_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
 
   const handleRemoveGoal = async (goalId: string) => {
@@ -182,6 +240,9 @@ export default function StudentProfilePage() {
             </div>
           </div>
           <div className="flex flex-wrap sm:flex-nowrap gap-2 mt-3 sm:mt-0 w-full sm:w-auto">
+            <Button variant="outline" size="sm" onClick={handleExportData} className="w-full sm:w-auto" disabled={studentSessions.length === 0}>
+              <Download className="mr-2 h-4 w-4" /> Export Data
+            </Button>
             <Button variant="outline" size="sm" onClick={() => setIsImportModalOpen(true)} className="w-full sm:w-auto">
               <Upload className="mr-2 h-4 w-4" /> Import Data
             </Button>
