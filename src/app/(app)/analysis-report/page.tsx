@@ -19,6 +19,7 @@ import { formatDate } from '@/lib/helpers';
 // Dynamically import the heavy charting component
 const AnalysisCharts = lazy(() => import('@/components/charts/AnalysisCharts'));
 const ImportDataModal = lazy(() => import('@/components/modals/import-data-modal'));
+const TrialStatusChart = lazy(() => import('@/components/charts/analysis-charts/TrialStatusChart'));
 
 export default function AnalysisReportPage() {
   const { students, sessions, loading: studentsLoading, sessionsLoading, importSessions } = useStudentData();
@@ -213,6 +214,13 @@ export default function AnalysisReportPage() {
                 selectedGoalId={selectedGoalId}
                 sessionsLoading={sessionsLoading}
             />
+             <Suspense>
+              <TrialStatusChart 
+                  studentSessions={studentSessions}
+                  selectedStudent={selectedStudent}
+                  selectedGoalId={selectedGoalId}
+              />
+            </Suspense>
         </Suspense>
       )}
     </div>
