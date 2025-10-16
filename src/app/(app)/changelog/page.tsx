@@ -4,7 +4,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, Trash2, LayoutGrid, Minimize2, UserX, UserPlus, ArrowRightLeft, Lightbulb, Download, ListPlus, Workflow, Shuffle, CheckSquare, ListChecks, DatabaseZap, UserSearch } from 'lucide-react';
+import { ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, Trash2, LayoutGrid, Minimize2, UserX, UserPlus, ArrowRightLeft, Lightbulb, Download, ListPlus, Workflow, Shuffle, CheckSquare, ListChecks, DatabaseZap, UserSearch, Upload } from 'lucide-react';
 import { APP_NAME } from '@/lib/appConstants';
 
 interface ChangelogEntry {
@@ -17,6 +17,34 @@ interface ChangelogEntry {
 }
 
 const changelogEntries: ChangelogEntry[] = [
+  {
+    date: '2025-10-15',
+    title: 'Data Import & Export',
+    description: 'Added the ability to export and import student session data as a readable CSV file. This feature is available on both the Analysis Report and the individual Student Profile pages.',
+    type: 'feature',
+    icon: Upload,
+  },
+  {
+    date: '2025-10-15',
+    title: 'Student Archiving',
+    description: 'You can now archive students instead of permanently deleting them. Archived students are hidden from active lists by default but their data is preserved. Use the toggle on the Students page to view them.',
+    type: 'feature',
+    icon: UserX,
+  },
+   {
+    date: '2025-10-15',
+    title: 'Navigation & Hotkey Updates',
+    description: 'Reordered the main navigation to place "Data Entry" directly after "Dashboard" for quicker access. All associated navigation hotkeys (Alt+1 through Alt+5) have been updated to match the new order.',
+    type: 'improvement',
+    icon: ArrowRightLeft,
+  },
+  {
+    date: '2025-10-15',
+    title: 'Dashboard & Data Entry UI Enhancements',
+    description: 'The Dashboard\'s "Quick Actions" have been moved to the top and their card size reduced for a more compact layout. On the Data Entry page, the layout for Correct/Incorrect/Approximate counters has been adjusted for better alignment and readability.',
+    type: 'improvement',
+    icon: LayoutGrid,
+  },
     {
     date: '2025-10-14',
     title: 'UI and Layout Enhancements',
