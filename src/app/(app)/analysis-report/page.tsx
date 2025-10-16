@@ -31,6 +31,7 @@ export default function AnalysisReportPage() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
+  const activeStudents = useMemo(() => students.filter(s => !s.isArchived), [students]);
   const selectedStudent = useMemo(() => students.find(s => s.id === selectedStudentId), [students, selectedStudentId]);
   const activeStudentGoals = useMemo(() => selectedStudent?.goals.filter(g => !g.isArchived) || [], [selectedStudent]);
 
@@ -46,13 +47,13 @@ export default function AnalysisReportPage() {
     } 
     // Case 2: URL has no student ID, we're not loading, students exist, and no student is selected yet.
     // This is the default case on first load.
-    else if (!studentsLoading && students.length > 0 && !selectedStudentId) {
-      const firstStudentId = students[0].id;
+    else if (!studentsLoading && activeStudents.length > 0 && !selectedStudentId) {
+      const firstStudentId = activeStudents[0].id;
       setSelectedStudentId(firstStudentId);
       // Update the URL to reflect this default selection.
       router.replace(`/analysis-report?studentId=${firstStudentId}`, { scroll: false });
     }
-  }, [searchParams, students, studentsLoading, selectedStudentId, router]);
+  }, [searchParams, activeStudents, studentsLoading, selectedStudentId, router]);
   
   const studentSessions = useMemo(() => {
     if (!selectedStudentId) return [];
@@ -174,7 +175,7 @@ export default function AnalysisReportPage() {
                 <SelectValue placeholder="Select Student" />
               </SelectTrigger>
               <SelectContent>
-                {students.map(student => (
+                {activeStudents.map(student => (
                   <SelectItem key={student.id} value={student.id}>{student.name}</SelectItem>
                 ))}
               </SelectContent>

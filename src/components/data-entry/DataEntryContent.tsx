@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { lazy, useState, useEffect, useCallback, Suspense, useMemo } from 'react';
@@ -54,6 +55,8 @@ export default function DataEntryContent() {
   const [isHeaderCardCollapsed, setIsHeaderCardCollapsed] = useState(false);
   const [isResetConfirmationOpen, setIsResetConfirmationOpen] = useState(false);
 
+  const activeStudents = useMemo(() => students.filter(s => !s.isArchived), [students]);
+
   useEffect(() => {
     if (dataEntrySessionDate === undefined) {
       setDataEntrySessionDate(new Date());
@@ -67,9 +70,9 @@ export default function DataEntryContent() {
   }, [setDataEntrySessionDate, setDataEntrySessionTime, setDataEntrySessionEndTime, dataEntrySessionDate, dataEntrySessionTime]);
 
   useEffect(() => {
-    if (dataEntrySelectedStudentIds.length === 0 && students.length > 0) {
+    if (dataEntrySelectedStudentIds.length === 0 && activeStudents.length > 0) {
       let initialIdToSelect: string | undefined = undefined;
-      if (studentFromContext && students.find(s => s.id === studentFromContext.id)) {
+      if (studentFromContext && activeStudents.find(s => s.id === studentFromContext.id)) {
         initialIdToSelect = studentFromContext.id;
       }
       if (initialIdToSelect) {
@@ -77,7 +80,7 @@ export default function DataEntryContent() {
         setDataEntryFocusedStudentSlotIndex(0);
       }
     }
-  }, [students, studentFromContext, dataEntrySelectedStudentIds, setDataEntrySelectedStudentIds, setDataEntryFocusedStudentSlotIndex]);
+  }, [activeStudents, studentFromContext, dataEntrySelectedStudentIds, setDataEntrySelectedStudentIds, setDataEntryFocusedStudentSlotIndex]);
 
  useEffect(() => {
     if (dataEntrySelectedStudentIds.length > 0 && dataEntryFocusedStudentSlotIndex >= 0 && dataEntryFocusedStudentSlotIndex < dataEntrySelectedStudentIds.length) {
@@ -112,7 +115,7 @@ export default function DataEntryContent() {
   }, [setDataEntrySelectedStudentIds, setDataEntryFocusedStudentSlotIndex]);
 
   const addStudentSlot = () => {
-    const availableStudent = students.find(s => !dataEntrySelectedStudentIds.includes(s.id));
+    const availableStudent = activeStudents.find(s => !dataEntrySelectedStudentIds.includes(s.id));
     if (availableStudent) {
       setDataEntrySelectedStudentIds([...dataEntrySelectedStudentIds, availableStudent.id]);
       setDataEntryFocusedStudentSlotIndex(dataEntrySelectedStudentIds.length);
@@ -170,8 +173,8 @@ export default function DataEntryContent() {
   }
 
   const availableStudentsForDropdown = useMemo(() => {
-    return students.filter(s => !dataEntrySelectedStudentIds.includes(s.id));
-  }, [students, dataEntrySelectedStudentIds]);
+    return activeStudents.filter(s => !dataEntrySelectedStudentIds.includes(s.id));
+  }, [activeStudents, dataEntrySelectedStudentIds]);
 
   const handleOpenResetConfirmation = () => {
     if (dataEntrySelectedStudentIds.length === 0) {

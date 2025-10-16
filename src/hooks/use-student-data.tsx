@@ -94,6 +94,7 @@ interface StudentDataContextType {
   updateSession: (sessionId: string, data: Partial<SessionData>) => Promise<void>;
   deleteSession: (sessionId: string) => Promise<void>;
   getSessionsForStudent: (studentId: string) => SessionData[];
+  importSessions: (sessionsToImport: Omit<SessionData, 'sessionId'>[]) => Promise<{ newCount: number; duplicateCount: number; }>;
 
   // Modal states
   isAddStudentModalOpen: boolean;
@@ -102,9 +103,9 @@ interface StudentDataContextType {
   editingStudent: Student | null;
   openEditStudentModal: (student: Student) => void;
   closeEditStudentModal: () => void;
-  deletingStudent: Student | null;
-  openDeleteStudentModal: (student: Student | null) => void; 
-  closeDeleteStudentModal: () => void;
+  deletingStudent: { item: Student | GoalTemplate | SessionData | null, type: 'student' | 'goalTemplate' | 'session' } | null;
+  openDeleteConfirmationModal: (item: Student | GoalTemplate | SessionData, type: 'student' | 'goalTemplate' | 'session') => void;
+  closeDeleteConfirmationModal: () => void;
   isAddGoalTemplateModalOpen: boolean;
   openAddGoalTemplateModal: () => void;
   closeAddGoalTemplateModal: () => void;
@@ -189,7 +190,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   // Modal states
   const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
-  const [deletingStudent, setDeletingStudent] = useState<Student | null>(null);
+  const [deletingItem, setDeletingItem] = useState<{ item: Student | GoalTemplate | SessionData | null, type: 'student' | 'goalTemplate' | 'session' } | null>(null);
   const [isAddGoalTemplateModalOpen, setIsAddGoalTemplateModalOpen] = useState(false);
   const [editingGoalTemplate, setEditingGoalTemplate] = useState<GoalTemplate | null>(null);
   const [deletingGoalTemplate, setDeletingGoalTemplate] = useState<GoalTemplate | null>(null);
@@ -215,7 +216,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   // Derived state for students in active slots
   const dataEntryActiveStudentsInSlots = useMemo(() => {
     return dataEntrySelectedStudentIds
-      .map(id => studentsState.find(s => s.id === id))
+      .map(id => studentsState.find(s => s.id === id && !s.isArchived))
       .filter((s): s is Student => !!s);
   }, [dataEntrySelectedStudentIds, studentsState]);
 
@@ -483,7 +484,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       addErrorLog({ message: 'Attempted to add student without authenticated user.', source: 'useStudentData.addStudent', type: 'error' });
       return null;
     }
-    const studentDataOmitId: Omit<Student, 'id'> = { name, goals: [], createdAt: new Date().toISOString(), userId: currentUser.uid };
+    const studentDataOmitId: Omit<Student, 'id'> = { name, goals: [], createdAt: new Date().toISOString(), userId: currentUser.uid, isArchived: false };
 
     if (isFirebaseDBAvailable && firestoreDbModule) {
       try {
@@ -588,7 +589,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       safeToast({ title: "Success", description: "Student and their sessions deleted locally." });
     }
     if (selectedStudent?.id === studentId) setSelectedStudentState(null);
-    setDeletingStudent(null); 
+    setDeletingItem(null); 
   }, [isFirebaseDBAvailable, firestoreDbModule, currentUser, selectedStudent, safeToast, APP_ID, addErrorLog, studentsState, sessionsState, saveStudentsToLocal, saveSessionsToLocal]);
 
   const assignGoalToStudent = useCallback(async (studentId: string, goal: Goal) => {
@@ -814,6 +815,49 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setDeletingSession(null); 
   }, [isFirebaseDBAvailable, safeToast, APP_ID, currentUser, addErrorLog, sessionsState, saveSessionsToLocal]);
 
+  const importSessions = useCallback(async (sessionsToImport: Omit<SessionData, 'sessionId'>[]): Promise<{ newCount: number, duplicateCount: number }> => {
+    if (!currentUser) {
+      throw new Error("User is not authenticated.");
+    }
+  
+    const sessionExists = (session: Omit<SessionData, 'sessionId'>) => {
+      return sessionsState.some(existing => 
+        existing.studentId === session.studentId &&
+        new Date(existing.date).toDateString() === new Date(session.date).toDateString() &&
+        existing.time === session.time
+      );
+    };
+  
+    const uniqueSessions = sessionsToImport.filter(s => !sessionExists(s));
+    const newCount = uniqueSessions.length;
+    const duplicateCount = sessionsToImport.length - newCount;
+  
+    if (newCount === 0) {
+      return { newCount: 0, duplicateCount };
+    }
+  
+    if (isFirebaseDBAvailable && firestoreDbModule) {
+      const batch = writeBatch(firestoreDbModule);
+      uniqueSessions.forEach(session => {
+        const newDocRef = doc(collection(firestoreDbModule, getSessionsCollectionPath(APP_ID)));
+        const sessionWithUser = { ...session, userId: currentUser.uid };
+        batch.set(newDocRef, sessionWithUser);
+      });
+      await batch.commit();
+    } else {
+      const newSessionsWithIds = uniqueSessions.map(s => ({
+        ...s,
+        sessionId: generateUUID(),
+        userId: currentUser.uid
+      }));
+      const updatedLocalSessions = [...sessionsState, ...newSessionsWithIds].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      setSessionsState(updatedLocalSessions);
+      saveSessionsToLocal(updatedLocalSessions, currentUser.uid);
+    }
+  
+    return { newCount, duplicateCount };
+  }, [currentUser, sessionsState, isFirebaseDBAvailable, saveSessionsToLocal, APP_ID, firestoreDbModule]);
+
   const getSessionsForStudent = useCallback((studentId: string) => {
     return sessionsState.filter(s => s.studentId === studentId);
   }, [sessionsState]);
@@ -822,8 +866,8 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const closeAddStudentModal = useCallback(() => setIsAddStudentModalOpen(false), []);
   const openEditStudentModal = useCallback((student: Student) => setEditingStudent(student), []);
   const closeEditStudentModal = useCallback(() => setEditingStudent(null), []);
-  const openDeleteStudentModal = useCallback((student: Student | null) => setDeletingStudent(student), []);
-  const closeDeleteStudentModal = useCallback(() => setDeletingStudent(null), []);
+  const openDeleteConfirmationModal = useCallback((item: Student | GoalTemplate | SessionData, type: 'student' | 'goalTemplate' | 'session') => setDeletingItem({ item, type }), []);
+  const closeDeleteConfirmationModal = useCallback(() => setDeletingItem(null), []);
   const openAddGoalTemplateModal = useCallback(() => setIsAddGoalTemplateModalOpen(true), []);
   const closeAddGoalTemplateModal = useCallback(() => setIsAddGoalTemplateModalOpen(false), []);
   const openEditGoalTemplateModal = useCallback((template: GoalTemplate) => setEditingGoalTemplate(template), []);
@@ -1286,9 +1330,10 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     addStudent, updateStudent, deleteStudent, assignGoalToStudent, removeGoalFromStudent, updateStudentGoal,
     addGoalTemplate, updateGoalTemplate, deleteGoalTemplate,
     addSession, updateSession, deleteSession, getSessionsForStudent,
+    importSessions,
     isAddStudentModalOpen, openAddStudentModal, closeAddStudentModal,
     editingStudent, openEditStudentModal, closeEditStudentModal,
-    deletingStudent, openDeleteStudentModal, closeDeleteStudentModal,
+    deletingStudent: deletingItem, openDeleteConfirmationModal, closeDeleteConfirmationModal,
     isAddGoalTemplateModalOpen, openAddGoalTemplateModal, closeAddGoalTemplateModal,
     editingGoalTemplate, openEditGoalTemplateModal, closeEditGoalTemplateModal,
     deletingGoalTemplate, openDeleteGoalTemplateModal, closeDeleteGoalTemplateModal,
@@ -1313,10 +1358,10 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     studentsState, goalTemplatesState, sessionsState, selectedStudent, loading, sessionsLoading, error, isFirebaseDBAvailable,
     addStudent, updateStudent, deleteStudent, assignGoalToStudent, removeGoalFromStudent, updateStudentGoal,
     addGoalTemplate, updateGoalTemplate, deleteGoalTemplate,
-    addSession, updateSession, deleteSession, getSessionsForStudent,
+    addSession, updateSession, deleteSession, getSessionsForStudent, importSessions,
     isAddStudentModalOpen, openAddStudentModal, closeAddStudentModal,
     editingStudent, openEditStudentModal, closeEditStudentModal,
-    deletingStudent, openDeleteStudentModal, closeDeleteStudentModal,
+    deletingItem, openDeleteConfirmationModal, closeDeleteConfirmationModal,
     isAddGoalTemplateModalOpen, openAddGoalTemplateModal, closeAddGoalTemplateModal,
     editingGoalTemplate, openEditGoalTemplateModal, closeEditGoalTemplateModal,
     deletingGoalTemplate, openDeleteGoalTemplateModal, closeDeleteGoalTemplateModal,

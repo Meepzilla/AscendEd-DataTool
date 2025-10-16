@@ -20,7 +20,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { User, PlusCircle, Search, Edit3, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
+import { User, PlusCircle, Search, Edit3, Trash2, Archive, ArchiveRestore } from 'lucide-react';
 import { useStudentData } from '@/hooks/use-student-data';
 import type { Student } from '@/lib/types';
 import StudentProgressSidebar from '@/components/progress/student-progress-sidebar';
@@ -33,6 +33,8 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { cn } from '@/lib/utils';
+import { Label } from '../ui/label';
+import { Switch } from '../ui/switch';
 
 
 export default function StudentSidebar() {
@@ -45,16 +47,18 @@ export default function StudentSidebar() {
     setSelectedStudent, 
     openAddStudentModal, 
     openEditStudentModal, 
-    openDeleteStudentModal 
+    openDeleteConfirmationModal 
   } = useStudentData();
   const [searchTerm, setSearchTerm] = useState('');
+  const [showArchived, setShowArchived] = useState(false);
   const { state: sidebarState } = useSidebar(); // To adapt content based on collapsed/expanded
   const router = useRouter();
   const pathname = usePathname();
 
-  const filteredStudents = students.filter(student =>
-    student.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredStudents = useMemo(() => students
+    .filter(student => student.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    .filter(student => showArchived || !student.isArchived)
+  , [students, searchTerm, showArchived]);
 
   const handleSelectStudent = (student: Student) => {
     setSelectedStudent(student);
@@ -83,7 +87,7 @@ export default function StudentSidebar() {
             <SidebarTrigger className={cn(sidebarState === 'collapsed' ? 'block' : 'hidden sm:block')} />
           </div>
         </div>
-        <div className={cn("px-2 mt-2", sidebarState === 'collapsed' && "hidden")}>
+        <div className={cn("px-2 mt-2 space-y-2", sidebarState === 'collapsed' && "hidden")}>
           <div className="relative flex items-center">
             <Search className="absolute left-3 h-4 w-4 text-muted-foreground z-10" />
             <Input
@@ -93,6 +97,10 @@ export default function StudentSidebar() {
               className="pl-9 h-9"
             />
           </div>
+           <div className="flex items-center space-x-2 justify-end px-1">
+              <Label htmlFor="show-archived-sidebar" className="text-xs">Show Archived</Label>
+              <Switch id="show-archived-sidebar" checked={showArchived} onCheckedChange={setShowArchived} />
+            </div>
         </div>
       </SidebarHeader>
       
@@ -124,8 +132,8 @@ export default function StudentSidebar() {
                           href={`/student-profile/${student.id}`}
                           className="flex items-center justify-between w-full"
                         >
-                        <div className="flex items-center gap-2 flex-grow min-w-0">
-                          <User className="h-5 w-5 flex-shrink-0" />
+                        <div className={cn("flex items-center gap-2 flex-grow min-w-0", student.isArchived && "opacity-60")}>
+                          {student.isArchived ? <Archive className="h-5 w-5 flex-shrink-0 text-orange-500" /> : <User className="h-5 w-5 flex-shrink-0" />}
                           <span className={cn("whitespace-normal break-words", sidebarState === 'collapsed' && "sr-only")}>{student.name}</span>
                         </div>
                         
@@ -144,7 +152,7 @@ export default function StudentSidebar() {
                               variant="ghost" 
                               size="icon" 
                               className="h-7 w-7" 
-                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDeleteStudentModal(student);}} 
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDeleteConfirmationModal(student, 'student');}} 
                               title={`Delete ${student.name}`}
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
@@ -168,13 +176,12 @@ export default function StudentSidebar() {
                           "py-2 px-2 hover:bg-sidebar-accent rounded-md w-full justify-start hover:no-underline",
                           sidebarState === 'collapsed' && "justify-center p-2",
                         )}>
-                        <div className="flex items-center gap-2">
-                          <User className="h-5 w-5"/>
+                        <div className={cn("flex items-center gap-2", selectedStudent.isArchived && "opacity-60")}>
+                          {selectedStudent.isArchived ? <ArchiveRestore className="h-5 w-5 text-orange-500"/> : <User className="h-5 w-5"/>}
                           <span className={cn("font-medium text-sm", sidebarState === 'collapsed' && "sr-only")}>
                             {selectedStudent.name}
                           </span>
                         </div>
-                        {sidebarState !== 'collapsed' && <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200 accordion-chevron" />}
                       </AccordionTrigger>
                       <AccordionContent className={cn("pt-0", sidebarState === 'collapsed' && "hidden")}>
                         <StudentProgressSidebar student={selectedStudent} studentSessions={studentSpecificSessions} />

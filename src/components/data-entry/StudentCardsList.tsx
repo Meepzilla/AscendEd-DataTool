@@ -57,6 +57,8 @@ const StudentCardsList: React.FC<StudentCardsListProps> = ({
   handleLocalAiFetch,
   addStudentSlot,
 }) => {
+  const activeStudents = students.filter(s => !s.isArchived);
+
   return (
     <div className="flex flex-row gap-6 items-start py-4 px-1">
       {dataEntrySelectedStudentIds.map((studentId, slotIndex) => {
@@ -96,7 +98,7 @@ const StudentCardsList: React.FC<StudentCardsListProps> = ({
         );
       })}
 
-      {dataEntrySelectedStudentIds.length < students.length && (
+      {dataEntrySelectedStudentIds.length < activeStudents.length && (
         <Button
           variant="outline"
           onClick={addStudentSlot}

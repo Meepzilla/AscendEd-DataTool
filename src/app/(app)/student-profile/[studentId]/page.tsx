@@ -17,6 +17,7 @@ import Link from 'next/link';
 import AssignGoalToStudentModal from '@/components/modals/assign-goal-to-student-modal';
 import EditAssignedGoalModal from '@/components/modals/edit-assigned-goal-modal';
 import ConfirmationModal from '@/components/modals/confirmation-modal';
+import { cn } from '@/lib/utils';
 
 
 export default function StudentProfilePage() {
@@ -33,13 +34,14 @@ export default function StudentProfilePage() {
     setSelectedStudent,
     openEditStudentModal, 
     deletingStudent, 
-    openDeleteStudentModal, 
-    closeDeleteStudentModal, 
+    openDeleteConfirmationModal,
+    closeDeleteConfirmationModal, 
     removeGoalFromStudent,
     editingAssignedGoal, 
     openEditAssignedGoalModal, 
     closeEditAssignedGoalModal, 
     updateStudentGoal,
+    updateStudent,
   } = useStudentData();
 
   const [currentStudent, setCurrentStudent] = useState<Student | null>(null);
@@ -109,6 +111,15 @@ export default function StudentProfilePage() {
     }
   };
 
+  const handleToggleArchiveStudent = () => {
+    if (currentStudent) {
+      openDeleteConfirmationModal(
+        { ...currentStudent, isArchived: !currentStudent.isArchived },
+        'student'
+      );
+    }
+  };
+
 
   return (
     <div className="space-y-6">
@@ -124,11 +135,23 @@ export default function StudentProfilePage() {
       {deletingStudent && (
         <ConfirmationModal
           isOpen={!!deletingStudent}
-          onClose={closeDeleteStudentModal}
-          title={`Delete Student: ${deletingStudent.name}`}
-          description="Are you sure you want to delete this student and all their associated session data? This action cannot be undone."
-          itemToDelete={deletingStudent}
-          deleteActionType="student"
+          onClose={closeDeleteConfirmationModal}
+          title={
+            deletingStudent.type === 'student'
+              ? (deletingStudent.item as Student).isArchived
+                ? `Unarchive Student: ${(deletingStudent.item as Student).name}`
+                : `Archive Student: ${(deletingStudent.item as Student).name}`
+              : `Delete Student: ${(deletingStudent.item as Student).name}`
+          }
+          description={
+             deletingStudent.type === 'student' && (deletingStudent.item as Student).isArchived
+              ? "Unarchiving this student will make them visible in all active lists again. Are you sure?"
+              : "Archiving a student will hide them from active lists like the sidebar and data entry. Their data will be preserved. Are you sure you want to archive?"
+          }
+          itemToUpdate={deletingStudent.item as Student}
+          updateAction={(id, data) => updateStudent(id, data)}
+          confirmText={ (deletingStudent.item as Student)?.isArchived ? 'Yes, Unarchive' : 'Yes, Archive'}
+          actionType={deletingStudent.type}
         />
       )}
 
@@ -141,7 +164,10 @@ export default function StudentProfilePage() {
               <AvatarFallback>{currentStudent.name.substring(0, 2).toUpperCase()}</AvatarFallback>
             </Avatar>
             <div>
-              <CardTitle className="text-2xl sm:text-3xl font-bold">{currentStudent.name}</CardTitle>
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-2xl sm:text-3xl font-bold">{currentStudent.name}</CardTitle>
+                {currentStudent.isArchived && <Badge variant="outline" className="border-orange-500 text-orange-600 bg-orange-50 dark:bg-orange-900/20">Archived</Badge>}
+              </div>
               <CardDescription className="text-xs sm:text-sm">
                 Student ID: {currentStudent.id} | Joined: {formatDate(currentStudent.createdAt)}
                 {!isFirebaseDBAvailable && !loading && <span className="text-orange-500 font-semibold block">(Local Mode)</span>}
@@ -152,8 +178,9 @@ export default function StudentProfilePage() {
             <Button variant="outline" size="sm" onClick={() => openEditStudentModal(currentStudent)} className="w-full sm:w-auto">
               <Edit3 className="mr-2 h-4 w-4" /> Edit Student Info
             </Button>
-            <Button variant="destructive"  size="sm" onClick={() => openDeleteStudentModal(currentStudent)} className="w-full sm:w-auto">
-              <Trash2 className="mr-2 h-4 w-4" /> Delete Student
+            <Button variant="outline" size="sm" onClick={handleToggleArchiveStudent} className={cn("w-full sm:w-auto", currentStudent.isArchived ? "text-green-600 hover:text-green-700 border-green-500 hover:bg-green-50" : "text-orange-600 hover:text-orange-700 border-orange-500 hover:bg-orange-50")}>
+              {currentStudent.isArchived ? <ArchiveRestore className="mr-2 h-4 w-4"/> : <Archive className="mr-2 h-4 w-4"/>}
+              {currentStudent.isArchived ? 'Unarchive' : 'Archive'}
             </Button>
           </div>
         </CardHeader>
@@ -195,7 +222,7 @@ export default function StudentProfilePage() {
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenEditAssignedGoalModal(goal)} title="Edit Assigned Goal">
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveGoal(goal.id)} title="Remove Goal Assignment">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openDeleteConfirmationModal(currentStudent, 'student')} title="Remove Goal Assignment">
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>

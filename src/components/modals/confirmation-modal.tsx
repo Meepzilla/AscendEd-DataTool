@@ -12,54 +12,57 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Button, buttonVariants } from '@/components/ui/button'; // Import buttonVariants
+import { Button, buttonVariants } from '@/components/ui/button';
 import { useStudentData } from '@/hooks/use-student-data';
 import type { Student, GoalTemplate, SessionData } from '@/lib/types';
-import { cn } from '@/lib/utils'; // Import cn
+import { cn } from '@/lib/utils';
 
 interface ConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm?: () => void; 
+  onConfirm?: () => void;
   title: string;
   description: string;
   confirmText?: string;
   cancelText?: string;
-  itemToDelete?: Student | GoalTemplate | SessionData | null; 
-  deleteActionType?: 'student' | 'goalTemplate' | 'session'; 
+  itemToDelete?: Student | GoalTemplate | SessionData | null;
+  itemToUpdate?: Student | null; // Added for updates like archiving
+  updateAction?: (id: string, data: Partial<Student>) => void; // Action for updates
+  deleteActionType?: 'student' | 'goalTemplate' | 'session';
+  actionType?: 'student' | 'goalTemplate' | 'session'; // More generic for updates
 }
 
 export default function ConfirmationModal({
   isOpen,
   onClose,
-  onConfirm, 
+  onConfirm,
   title,
   description,
   confirmText = "Confirm",
   cancelText = "Cancel",
   itemToDelete,
-  deleteActionType,
+  itemToUpdate,
+  updateAction,
+  actionType,
 }: ConfirmationModalProps) {
-  const { 
-    deleteStudent: contextDeleteStudent, 
-    deleteGoalTemplate: contextDeleteGoalTemplate, 
+  const {
+    deleteStudent: contextDeleteStudent,
+    deleteGoalTemplate: contextDeleteGoalTemplate,
     deleteSession: contextDeleteSession,
     loading: dataLoading,
   } = useStudentData();
-  const [isProcessing, setIsProcessing] = useState(false); // Renamed from isDeleting for clarity
+  const [isProcessing, setIsProcessing] = useState(false);
   const confirmButtonRef = useRef<HTMLButtonElement>(null);
 
   const handleConfirmAction = useCallback(async () => {
-    if (deleteActionType && !itemToDelete) { // If it's a delete action, itemToDelete must exist
-      onConfirm?.(); // Call generic confirm if provided
-      if (!onConfirm) onClose();
-      return;
-    }
-    
     setIsProcessing(true);
     try {
-      if (deleteActionType && itemToDelete) {
-        switch (deleteActionType) {
+      if (itemToUpdate && updateAction && actionType === 'student') {
+        // Handle update actions like archiving
+        await updateAction(itemToUpdate.id, { isArchived: (itemToUpdate as Student).isArchived });
+      } else if (itemToDelete && actionType) {
+        // Handle delete actions
+        switch (actionType) {
           case 'student':
             await contextDeleteStudent(itemToDelete.id);
             break;
@@ -70,19 +73,19 @@ export default function ConfirmationModal({
             await contextDeleteSession((itemToDelete as SessionData).sessionId);
             break;
           default:
-            console.warn("Unknown delete action type");
+            console.warn("Unknown action type");
         }
-      } else if (onConfirm) { // Handle generic confirm actions
+      } else if (onConfirm) {
+        // Handle generic confirm actions
         await onConfirm();
       }
     } catch (error) {
-      console.error(`Error performing action (${deleteActionType || 'confirm'}):`, error);
-      // Toast or error handling can be added here if needed
+      console.error(`Error performing action (${actionType || 'confirm'}):`, error);
     } finally {
       setIsProcessing(false);
-      onClose(); 
+      onClose();
     }
-  }, [itemToDelete, deleteActionType, contextDeleteStudent, contextDeleteGoalTemplate, contextDeleteSession, onClose, onConfirm]);
+  }, [itemToDelete, itemToUpdate, updateAction, actionType, contextDeleteStudent, contextDeleteGoalTemplate, contextDeleteSession, onClose, onConfirm]);
 
   useEffect(() => {
     if (isOpen) {
@@ -100,28 +103,29 @@ export default function ConfirmationModal({
     }
   }, [isOpen, handleConfirmAction]);
 
+  const isDestructive = actionType === 'student' && !(itemToUpdate as Student)?.isArchived;
+
   return (
     <AlertDialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>
-            {description}
-          </AlertDialogDescription>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={onClose} disabled={isProcessing || dataLoading}>{cancelText}</AlertDialogCancel>
-          <AlertDialogAction 
-            ref={confirmButtonRef} 
-            onClick={handleConfirmAction} 
+          <AlertDialogCancel onClick={onClose} disabled={isProcessing || dataLoading}>
+            {cancelText}
+          </AlertDialogCancel>
+          <AlertDialogAction
+            ref={confirmButtonRef}
+            onClick={handleConfirmAction}
             disabled={isProcessing || dataLoading}
-            className={cn(buttonVariants({ variant: deleteActionType ? 'destructive' : 'default' }))}
+            className={cn(buttonVariants({ variant: isDestructive ? 'destructive' : 'default' }))}
           >
-            {isProcessing || dataLoading ? (deleteActionType ? 'Deleting...' : 'Processing...') : confirmText}
+            {isProcessing || dataLoading ? 'Processing...' : confirmText}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
   );
 }
-
