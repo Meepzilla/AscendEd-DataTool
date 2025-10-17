@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import TouchControls from '../forms/touch-controls';
+import { useSidebar } from '@/components/ui/sidebar';
 
 export default function AppHeader() {
   const { currentUser, signOut } = useAuth();
@@ -33,6 +34,7 @@ export default function AppHeader() {
   const { toggleErrorLogModal, isErrorLogModalOpen } = useErrorLog(); 
   const router = useRouter();
   const pathname = usePathname();
+  const { toggleSidebar } = useSidebar();
 
   const userInitial = currentUser?.displayName?.charAt(0) || currentUser?.email?.charAt(0) || 'U';
   const isDataEntryPage = pathname.startsWith('/data-entry');
@@ -71,14 +73,19 @@ export default function AppHeader() {
               </div>
             </SheetContent>
           </Sheet>
-          <Link href="/dashboard" className="hidden md:flex items-center gap-2">
+          <Button
+            variant="ghost"
+            onClick={toggleSidebar}
+            className="hidden md:flex items-center gap-2 px-2"
+            title="Toggle Sidebar (Alt+K)"
+          >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6 text-primary">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.09L6.71 11.8l1.41-1.41L11 13.27l4.88-4.88 1.41 1.41L11 16.09z"/>
             </svg>
             <div>
               <h1 className="font-semibold text-foreground">{APP_NAME}</h1>
             </div>
-          </Link>
+          </Button>
         </div>
         
         {/* Desktop Navigation - centered */}
