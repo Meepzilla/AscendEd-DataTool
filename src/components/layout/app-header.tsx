@@ -4,8 +4,8 @@
 import React from 'react'; 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet'; // Added SheetHeader, SheetTitle
-import { Menu, FileText, UserCircle, UserPlus } from 'lucide-react';
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Menu, FileText, UserPlus } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { APP_NAME, APP_SUBTITLE } from '@/lib/appConstants';
 import { useStudentData } from '@/hooks/use-student-data';
@@ -16,12 +16,23 @@ import ErrorLogModal from '@/components/modals/error-log-modal';
 import AppNavigation from './app-navigation'; 
 import { useRouter } from 'next/navigation';
 import { Separator } from '../ui/separator';
+import { 
+  DropdownMenu, 
+  DropdownMenuTrigger, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator 
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export default function AppHeader() {
   const { currentUser, signOut } = useAuth();
   const { openAddStudentModal, editingStudent } = useStudentData();
   const { toggleErrorLogModal, isErrorLogModalOpen } = useErrorLog(); 
   const router = useRouter();
+
+  const userInitial = currentUser?.displayName?.charAt(0) || currentUser?.email?.charAt(0) || 'U';
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-card/80 backdrop-blur-md">
@@ -84,15 +95,37 @@ export default function AppHeader() {
           
           <div className="flex items-center gap-2 border-l border-border pl-1 sm:pl-2">
              {currentUser ? (
-              <>
-                <UserCircle className="h-6 w-6 text-muted-foreground" />
-                <div className="text-xs hidden sm:block">
-                  <p className="font-medium text-foreground truncate max-w-[100px]">{currentUser.displayName || currentUser.email || 'User'}</p>
-                </div>
-                <Button variant="ghost" size="sm" onClick={signOut}>Sign Out</Button>
-              </>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <Avatar className="h-8 w-8">
+                       <AvatarImage 
+                          src={`https://avatar.vercel.sh/${currentUser.uid}.png?text=${userInitial}`} 
+                          alt={currentUser.displayName || currentUser.email || 'User'}
+                        />
+                      <AvatarFallback>{userInitial}</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">{currentUser.displayName || 'User'}</p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        {currentUser.email}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={signOut}>
+                    Sign out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : (
-              <UserCircle className="h-6 w-6 text-muted-foreground" />
+               <Avatar className="h-8 w-8">
+                  <AvatarFallback>{userInitial}</AvatarFallback>
+                </Avatar>
             )}
           </div>
         </div>
