@@ -174,10 +174,7 @@ export default function StudentProfilePage() {
 
   const handleToggleArchiveStudent = () => {
     if (currentStudent) {
-      openDeleteConfirmationModal(
-        { ...currentStudent, isArchived: !currentStudent.isArchived },
-        'student'
-      );
+      openDeleteConfirmationModal(currentStudent, 'student');
     }
   };
   
@@ -224,24 +221,16 @@ export default function StudentProfilePage() {
             isOpen={!!deletingStudent}
             onClose={closeDeleteConfirmationModal}
             title={
-                'isArchived' in deletingStudent.item
-                ? ((deletingStudent.item as Student).isArchived ? `Unarchive Student: ${(deletingStudent.item as Student).name}` : `Archive Student: ${(deletingStudent.item as Student).name}`)
-                : ''
+                (deletingStudent.item as Student).isArchived ? `Unarchive Student: ${(deletingStudent.item as Student).name}` : `Archive Student: ${(deletingStudent.item as Student).name}`
             }
             description={
-                'isArchived' in deletingStudent.item
-                ? ((deletingStudent.item as Student).isArchived ? "Unarchiving this student will make them visible in all active lists again. Are you sure?" : "Archiving a student will hide them from active lists. Their data will be preserved. Are you sure?")
-                : ''
+                (deletingStudent.item as Student).isArchived ? "Unarchiving this student will make them visible in all active lists again. Are you sure?" : "Archiving a student will hide them from active lists. Their data will be preserved. Are you sure?"
             }
             onConfirm={() => {
-                 if ('isArchived' in deletingStudent.item!) {
-                    updateStudent(deletingStudent.item!.id, { isArchived: (deletingStudent.item as Student).isArchived })
-                 }
+                updateStudent(deletingStudent.item!.id, { isArchived: !(deletingStudent.item as Student).isArchived })
             }}
             confirmText={
-                'isArchived' in deletingStudent.item
-                ? ((deletingStudent.item as Student).isArchived ? 'Yes, Unarchive' : 'Yes, Archive')
-                : ''
+                (deletingStudent.item as Student).isArchived ? 'Yes, Unarchive' : 'Yes, Archive'
             }
         />
       )}
