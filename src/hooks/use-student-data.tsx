@@ -113,9 +113,6 @@ interface StudentDataContextType {
   editingGoalTemplate: GoalTemplate | null;
   openEditGoalTemplateModal: (template: GoalTemplate) => void;
   closeEditGoalTemplateModal: () => void;
-  deletingGoalTemplate: GoalTemplate | null;
-  openDeleteGoalTemplateModal: (template: GoalTemplate | null) => void; 
-  closeDeleteGoalTemplateModal: () => void;
   editingSession: SessionData | null;
   openEditSessionModal: (session: SessionData) => void;
   closeEditSessionModal: () => void;
@@ -197,7 +194,6 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [isAddGoalTemplateModalOpen, setIsAddGoalTemplateModalOpen] = useState(false);
   const [addGoalTemplateInitialPrompt, setAddGoalTemplateInitialPrompt] = useState<string | null>(null);
   const [editingGoalTemplate, setEditingGoalTemplate] = useState<GoalTemplate | null>(null);
-  const [deletingGoalTemplate, setDeletingGoalTemplate] = useState<GoalTemplate | null>(null);
   const [editingSession, setEditingSession] = useState<SessionData | null>(null);
   const [deletingSession, setDeletingSession] = useState<SessionData | null>(null);
   const [editingAssignedGoal, setEditingAssignedGoal] = useState<{ studentId: string; goal: Goal } | null>(null);
@@ -716,8 +712,9 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const deleteGoalTemplate = useCallback(async (templateId: string) => {
     const templateToDelete = goalTemplatesState.find(t => t.id === templateId);
     if (templateToDelete?.isDefault) {
-        safeToast({ title: "Info", description: "Default templates cannot be deleted.", variant: "default"});
-        return;
+      safeToast({ title: "Info", description: "Default templates cannot be deleted.", variant: "default" });
+      setDeletingItem(null);
+      return;
     }
     if (!currentUser) {
       addErrorLog({ message: 'Attempted to delete goal template without authenticated user.', source: 'useStudentData.deleteGoalTemplate', type: 'error' });
@@ -739,7 +736,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       saveTemplatesToLocal(newTemplates, currentUser.uid);
       safeToast({ title: "Success", description: "Goal template deleted locally." });
     }
-     setDeletingGoalTemplate(null); 
+    setDeletingItem(null);
   }, [isFirebaseDBAvailable, goalTemplatesState, safeToast, APP_ID, currentUser, addErrorLog, saveTemplatesToLocal]);
 
   const addSession = useCallback(async (sessionDataOmitId: Omit<SessionData, 'sessionId'>): Promise<SessionData | null> => {
@@ -885,8 +882,6 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const openEditGoalTemplateModal = useCallback((template: GoalTemplate) => setEditingGoalTemplate(template), []);
   const closeEditGoalTemplateModal = useCallback(() => setEditingGoalTemplate(null), []);
-  const openDeleteGoalTemplateModal = useCallback((template: GoalTemplate | null) => setDeletingGoalTemplate(template), []);
-  const closeDeleteGoalTemplateModal = useCallback(() => setDeletingGoalTemplate(null), []);
   const openEditSessionModal = useCallback((session: SessionData) => setEditingSession(session), []);
   const closeEditSessionModal = useCallback(() => setEditingSession(null), []);
   const openDeleteSessionModal = useCallback((session: SessionData | null) => setDeletingSession(session), []);
@@ -1438,7 +1433,6 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     deletingStudent: deletingItem, openDeleteConfirmationModal, closeDeleteConfirmationModal,
     isAddGoalTemplateModalOpen, openAddGoalTemplateModal, closeAddGoalTemplateModal, addGoalTemplateInitialPrompt,
     editingGoalTemplate, openEditGoalTemplateModal, closeEditGoalTemplateModal,
-    deletingGoalTemplate, openDeleteGoalTemplateModal, closeDeleteGoalTemplateModal,
     editingSession, openEditSessionModal, closeEditSessionModal,
     deletingSession, openDeleteSessionModal, closeDeleteSessionModal,
     editingAssignedGoal, openEditAssignedGoalModal, closeEditAssignedGoalModal,
@@ -1467,7 +1461,6 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     deletingItem, openDeleteConfirmationModal, closeDeleteConfirmationModal,
     isAddGoalTemplateModalOpen, openAddGoalTemplateModal, closeAddGoalTemplateModal, addGoalTemplateInitialPrompt,
     editingGoalTemplate, openEditGoalTemplateModal, closeEditGoalTemplateModal,
-    deletingGoalTemplate, openDeleteGoalTemplateModal, closeDeleteGoalTemplateModal,
     editingSession, openEditSessionModal, closeEditSessionModal,
     deletingSession, openDeleteSessionModal, closeDeleteSessionModal,
     editingAssignedGoal, openEditAssignedGoalModal, closeEditAssignedGoalModal,

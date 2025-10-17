@@ -31,9 +31,9 @@ export default function GoalTemplatesPage() {
     isFirebaseDBAvailable,
     openAddGoalTemplateModal,
     openEditGoalTemplateModal,
-    openDeleteGoalTemplateModal,
+    openDeleteConfirmationModal,
     editingGoalTemplate, 
-    deletingGoalTemplate, 
+    deletingStudent,
     addGoalTemplateInitialPrompt,
   } = useStudentData();
   
@@ -176,15 +176,15 @@ export default function GoalTemplatesPage() {
       <Suspense fallback={null}>
         <AddGoalTemplateModal initialPrompt={addGoalTemplateInitialPrompt} />
         {editingGoalTemplate && <EditGoalTemplateModal templateToEdit={editingGoalTemplate} />}
-        {deletingGoalTemplate && (
+        {deletingStudent && deletingStudent.type === 'goalTemplate' && (
           <ConfirmationModal
-            isOpen={!!deletingGoalTemplate}
-            onClose={() => openDeleteGoalTemplateModal(null)}
-            onConfirm={() => { /* Context handles delete */ }}
-            title={`Delete Template: ${deletingGoalTemplate.name}`}
+            isOpen={!!deletingStudent}
+            onClose={() => openDeleteConfirmationModal(null, 'goalTemplate')}
+            title={`Delete Template: ${(deletingStudent.item as GoalTemplate)?.name}`}
             description="Are you sure you want to delete this goal template? This action cannot be undone."
-            itemToDelete={deletingGoalTemplate}
+            itemToDelete={deletingStudent.item as GoalTemplate}
             deleteActionType="goalTemplate"
+            actionType="goalTemplate"
           />
         )}
       </Suspense>
@@ -289,7 +289,7 @@ export default function GoalTemplatesPage() {
                           <Edit className="h-4 w-4" />
                         </Button>
                         {!template.isDefault && (
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openDeleteGoalTemplateModal(template)}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openDeleteConfirmationModal(template, 'goalTemplate')}>
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         )}
@@ -337,3 +337,4 @@ function TemplateCardSkeleton() {
         </Card>
     );
 }
+
