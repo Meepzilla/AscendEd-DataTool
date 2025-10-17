@@ -81,7 +81,7 @@ export default function StudentSidebar() {
         <div className="flex items-center justify-between p-2">
            <h2 className={cn("text-lg font-semibold", sidebarState === 'collapsed' && "sr-only")}>Students</h2>
            <div className="flex items-center gap-1">
-             {sidebarState === 'collapsed' && <SidebarTrigger className="h-7 w-7" title="Toggle Sidebar (Alt+K)" />}
+             <SidebarTrigger className="h-7 w-7" title="Toggle Sidebar (Alt+K)" />
              <Button variant="ghost" size="icon" onClick={openAddStudentModal} className={cn("h-7 w-7", sidebarState === 'collapsed' && "mx-auto")}>
                 <PlusCircle className="h-5 w-5" />
                 <span className="sr-only">Add Student</span>
@@ -99,7 +99,6 @@ export default function StudentSidebar() {
             />
           </div>
            <div className="flex items-center space-x-2 justify-end px-1">
-              {sidebarState !== 'collapsed' && <SidebarTrigger className="h-7 w-7" title="Toggle Sidebar (Alt+K)" />}
               <Label htmlFor="show-archived-sidebar" className="text-xs">Show Archived</Label>
               <Switch id="show-archived-sidebar" checked={showArchived} onCheckedChange={setShowArchived} />
             </div>
