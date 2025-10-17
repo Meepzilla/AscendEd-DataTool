@@ -573,12 +573,12 @@ export default function GoalDataInputComponent({
         <div className="flex justify-between items-start">
             <div className="flex items-center space-y-0.5 shrink-0 mr-1">
                 {onMoveUp && (
-                    <Button variant="ghost" size="icon" className="h-5 w-5 p-0" onClick={(e) => handleInteraction(e, onMoveUp)} disabled={!canMoveUp || isArchived} title="Move goal up">
+                    <Button variant="ghost" size="icon" className="h-5 w-5 p-0" onClick={(e) => handleInteraction(e, onMoveUp!)} disabled={!canMoveUp || isArchived} title="Move goal up">
                         <ArrowUp className="h-3.5 w-3.5" />
                     </Button>
                 )}
                 {onMoveDown && (
-                     <Button variant="ghost" size="icon" className="h-5 w-5 p-0" onClick={(e) => handleInteraction(e, onMoveDown)} disabled={!canMoveDown || isArchived} title="Move goal down">
+                     <Button variant="ghost" size="icon" className="h-5 w-5 p-0" onClick={(e) => handleInteraction(e, onMoveDown!)} disabled={!canMoveDown || isArchived} title="Move goal down">
                         <ArrowDown className="h-3.5 w-3.5" />
                     </Button>
                 )}
