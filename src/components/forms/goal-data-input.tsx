@@ -708,7 +708,7 @@ export default function GoalDataInputComponent({
         {showPromptCounters && (
           <FormItem>
             <FormLabel>Prompt Levels</FormLabel>
-            <div className="flex flex-wrap gap-1.5 mt-0.5">
+            <div className="grid grid-cols-3 gap-1.5 mt-0.5">
               {PROMPT_TYPES.map(pt => {
                 const hotkey = Object.keys(PROMPT_HOTKEY_MAP).find(k => PROMPT_HOTKEY_MAP[k] === pt);
                 return (
@@ -717,7 +717,7 @@ export default function GoalDataInputComponent({
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="px-2 py-1 h-auto text-xs min-w-[60px] justify-center"
+                        className="px-2 py-1 h-auto text-xs justify-center w-full sm:w-auto"
                         style={{
                         borderColor: PROMPT_COLORS[pt],
                         color: PROMPT_COLORS[pt],
