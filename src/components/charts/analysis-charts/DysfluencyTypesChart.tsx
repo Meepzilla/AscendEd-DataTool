@@ -7,11 +7,11 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLe
 import { BarChart, Bar, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { Waves } from 'lucide-react';
 
-interface DisfluencyTypesChartProps {
+interface DysfluencyTypesChartProps {
   chartData: any[];
 }
 
-const DisfluencyTypesChart: React.FC<DisfluencyTypesChartProps> = ({ chartData }) => {
+const DysfluencyTypesChart: React.FC<DysfluencyTypesChartProps> = ({ chartData }) => {
   const chartConfig = {
     blocks: { label: 'Blocks', color: 'hsl(var(--chart-1))' },
     repetitions: { label: 'Repetitions', color: 'hsl(var(--chart-2))' },
@@ -24,9 +24,9 @@ const DisfluencyTypesChart: React.FC<DisfluencyTypesChartProps> = ({ chartData }
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
             <Waves className="h-6 w-6 text-primary" />
-            Disfluency Types
+            Dysfluency Types
         </CardTitle>
-        <CardDescription>Counts of different disfluency types per session.</CardDescription>
+        <CardDescription>Counts of different dysfluency types per session.</CardDescription>
       </CardHeader>
       <CardContent className="h-[300px] w-full">
         <ChartContainer config={chartConfig} className="h-full w-full">
@@ -47,4 +47,4 @@ const DisfluencyTypesChart: React.FC<DisfluencyTypesChartProps> = ({ chartData }
   );
 };
 
-export default DisfluencyTypesChart;
+export default DysfluencyTypesChart;

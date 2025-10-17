@@ -16,7 +16,7 @@ const PromptUsageChart = lazy(() => import('./analysis-charts/PromptUsageChart')
 const GoalPerformanceSankey = lazy(() => import('./analysis-charts/GoalPerformanceSankey'));
 const AiSummary = lazy(() => import('./analysis-charts/AiSummary'));
 const SyllableFluencyChart = lazy(() => import('./analysis-charts/SyllableFluencyChart'));
-const DisfluencyTypesChart = lazy(() => import('./analysis-charts/DisfluencyTypesChart'));
+const DysfluencyTypesChart = lazy(() => import('./analysis-charts/DysfluencyTypesChart'));
 
 
 // Helper to transform session data for charts
@@ -196,7 +196,7 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, select
                 <SyllableFluencyChart chartData={chartData} />
             </Suspense>
             <Suspense fallback={<ChartSuspenseFallback />}>
-                <DisfluencyTypesChart chartData={chartData} />
+                <DysfluencyTypesChart chartData={chartData} />
             </Suspense>
           </>
         )}
