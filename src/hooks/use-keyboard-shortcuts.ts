@@ -6,6 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useStudentData } from './use-student-data';
 import { useSidebar } from '@/components/ui/sidebar'; 
 import { useErrorLog } from './use-error-log';
+import { useToast } from './use-toast';
 
 /**
  * Custom hook for managing global and page-specific keyboard shortcuts (hotkeys).
@@ -17,6 +18,7 @@ export function useKeyboardShortcuts() {
   const router = useRouter();
   // Get the current pathname to apply hotkeys contextually.
   const pathname = usePathname();
+  const { toast } = useToast();
 
   // Destructure relevant functions and states from custom data and UI hooks.
   const { 
@@ -30,6 +32,7 @@ export function useKeyboardShortcuts() {
     toggleStudentSelectionModal,
     toggleGoalSelectionModal,
     addStudentSlot,
+    isStudentAccessLocked,
     setIsStudentAccessLocked,
   } = useStudentData();
   // Access sidebar toggle function from the sidebar hook.
@@ -59,11 +62,25 @@ export function useKeyboardShortcuts() {
     const key = event.key.toUpperCase();
     const alt = event.altKey;
     const ctrl = event.ctrlKey;
+    const isDataEntryContext = pathname.startsWith('/data-entry');
+
+
+    const showAccessLockedToast = () => {
+      toast({
+        title: "Access Locked",
+        description: "Hotkeys for data modification are disabled. Unlock to make changes.",
+        variant: "default",
+      });
+    };
 
     // -- Ctrl+Enter Hotkey (Global for form submission / Data Entry save) --
     if (ctrl && key === 'ENTER') {
-      if (pathname.startsWith('/data-entry')) {
+      if (isDataEntryContext) {
         event.preventDefault(); // Prevent default browser form submission behavior (e.g., new line in textarea).
+        if (isStudentAccessLocked) {
+          showAccessLockedToast();
+          return;
+        }
         saveDataEntrySession(); // Trigger the save action for data entry sessions.
       }
       return; // Stop further processing after handling Ctrl+Enter.
@@ -85,18 +102,28 @@ export function useKeyboardShortcuts() {
 
         // Global Action Hotkeys: Trigger application-wide actions
         case 'J': toggleErrorLogModal(); break; // Alt+J to toggle Error Log Modal visibility
-        case 'L': if (pathname.startsWith('/data-entry')) setIsStudentAccessLocked(prev => !prev); break;
+        case 'L': if (isDataEntryContext) setIsStudentAccessLocked(prev => !prev); break;
         case 'M': openAddStudentModal(); break; // Alt+M to open the Add Student Modal
         
         case 'K': if (toggleSidebar) toggleSidebar(); break; // Alt+K to toggle Sidebar
         
         // Data Entry Page Specific Actions (with Alt modifier)
-        case 'W': if (pathname.startsWith('/data-entry')) addStudentSlot(); break; // Alt+W to add a new student slot
-        case 'U': if (pathname.startsWith('/data-entry')) toggleStudentSelectionModal(); break; // Alt+U to open student selection
-        case 'T': if (pathname.startsWith('/data-entry')) toggleGoalSelectionModal(); break; // Alt+T to open goal selection
-        case 'A': if (pathname.startsWith('/data-entry')) cycleFocusedStudent('prev'); break; // Alt+A to cycle to the previous student slot
-        case 'S': if (pathname.startsWith('/data-entry')) cycleFocusedGoal('prev'); break; // Alt+S to cycle to the previous goal for the focused student
-        case 'E': if (pathname.startsWith('/data-entry')) triggerEditFocusedStudent(); break; // Alt+E to open edit modal for the focused student
+        case 'W': 
+          if (isDataEntryContext) {
+            if (isStudentAccessLocked) { showAccessLockedToast(); return; }
+            addStudentSlot();
+          }
+          break; // Alt+W to add a new student slot
+        case 'U': if (isDataEntryContext) toggleStudentSelectionModal(); break; // Alt+U to open student selection
+        case 'T': if (isDataEntryContext) toggleGoalSelectionModal(); break; // Alt+T to open goal selection
+        case 'A': if (isDataEntryContext) cycleFocusedStudent('prev'); break; // Alt+A to cycle to the previous student slot
+        case 'S': if (isDataEntryContext) cycleFocusedGoal('prev'); break; // Alt+S to cycle to the previous goal for the focused student
+        case 'E': 
+          if (isDataEntryContext) {
+            if (isStudentAccessLocked) { showAccessLockedToast(); return; }
+            triggerEditFocusedStudent();
+          }
+          break; // Alt+E to open edit modal for the focused student
         
         // Data Entry Hotkeys for decrementing prompt counts (Alt + key combination)
         case 'C': // Decrement Correct / Total Syllables / Trials Accepted
@@ -108,13 +135,16 @@ export function useKeyboardShortcuts() {
         case 'I': // Decrement Independent count
         case 'B': // Decrement Approximate
         case 'D': // Decrement Visual Prompt count
-           if (pathname.startsWith('/data-entry')) handleDataEntryHotkey(key, alt); 
+           if (isDataEntryContext) {
+             if (isStudentAccessLocked) { showAccessLockedToast(); return; }
+             handleDataEntryHotkey(key, alt); 
+           }
            break;
         default: break;
       }
     } else if (!alt && !ctrl) { // -- Simple Key Presses (no Alt or Ctrl modifiers) --
         // Data Entry Page Specific Actions (without Alt/Ctrl modifier): Focus slots or increment counts
-        if (pathname.startsWith('/data-entry')) {
+        if (isDataEntryContext) {
             switch (key) {
                 // Hotkeys to directly focus student slots (1, 2, 3, 4)
                 case '1': case '2': case '3': case '4':
@@ -133,6 +163,7 @@ export function useKeyboardShortcuts() {
                 case 'P': // Increment Partial Physical Prompt count
                 case 'F': // Increment Imitation Prompt count
                 case 'I': // Increment Independent count
+                    if (isStudentAccessLocked) { showAccessLockedToast(); return; }
                     handleDataEntryHotkey(key, alt); // Pass the key and `false` for `alt` (no alt pressed).
                     break;
                 default: break;
@@ -143,6 +174,8 @@ export function useKeyboardShortcuts() {
   }, [
     router,
     pathname,
+    toast,
+    isStudentAccessLocked,
     openAddStudentModal,
     toggleSidebar,
     toggleErrorLogModal,
