@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { lazy, useState, useEffect, useCallback, Suspense, useMemo } from 'react';
@@ -205,7 +204,7 @@ export default function DataEntryContent() {
       </div>
 
       <div className="flex-grow min-h-0 mt-4">
-        <ScrollArea className="h-full pb-20"> {/* Add padding-bottom for the sticky footer */}
+        <ScrollArea className="h-full pb-24"> {/* Increased padding-bottom */}
           <Suspense fallback={<div>Loading student cards...</div>}>
             <StudentCardsList
               dataEntrySelectedStudentIds={dataEntrySelectedStudentIds}
@@ -232,15 +231,17 @@ export default function DataEntryContent() {
               setDataEntryFocusedGoalIndexByStudentId={setDataEntryFocusedGoalIndexByStudentId}
             />
           </Suspense>
+           {dataEntrySelectedStudentIds.length > 0 && (
+              <div className="sticky bottom-16 left-0 p-2">
+                <TouchControls />
+              </div>
+            )}
         </ScrollArea>
       </div>
 
       {dataEntrySelectedStudentIds.length > 0 && (
           <div className="sticky bottom-0 left-0 right-0 z-10 bg-background/95 backdrop-blur-sm">
-              <div className="flex justify-between items-center gap-2 p-2 border-t">
-                  <div className="flex gap-2">
-                    <TouchControls />
-                  </div>
+              <div className="flex justify-end items-center gap-2 p-2 border-t">
                   <div className="flex gap-2">
                       <Button variant="outline" onClick={handleOpenResetConfirmation} disabled={isSaving} size="lg">
                       <RotateCcw className="mr-2 h-5 w-5" />
