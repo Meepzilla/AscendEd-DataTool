@@ -73,9 +73,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const isEnabled = checkFirebaseEnabled() && !!authModule;
     setIsFirebaseAvailable(isEnabled);
 
-    // If Firebase is not configured, set a local guest user and an error message.
-    if (!isEnabled) { 
-      setCurrentUser(LOCAL_GUEST_USER); 
+    if (!isEnabled) {
+      setCurrentUser(LOCAL_GUEST_USER);
       const configError = new Error("Firebase not configured or is disabled in settings. Operating in local mode.");
       setError(configError);
       addErrorLog({ message: configError.message, source: 'useAuth.init', type: 'warning', details: 'Firebase SDK (authModule) is null or disabled.' });
@@ -83,13 +82,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    // Subscribe to Firebase Auth state changes.
-    const unsubscribe = onAuthStateChanged(authModule, async (firebaseUser: FirebaseUser | null) => {
-      if (firebaseUser) { // A Firebase user is logged in.
+    const unsubscribe = onAuthStateChanged(authModule, async (firebaseUser) => {
+      if (firebaseUser) {
         let userProfileData: Partial<User> = {};
         let userExistsInFirestore = false;
 
-        // Attempt to fetch user profile from Firestore if Firestore DB is available.
         if (firestoreDbModule) {
           const userDocRef = doc(firestoreDbModule, "users", firebaseUser.uid);
           try {
@@ -97,11 +94,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (userDoc.exists()) {
               userExistsInFirestore = true;
               const firestoreData = userDoc.data();
-              // Populate user profile data from Firestore, falling back to FirebaseUser properties.
               userProfileData = {
                 displayName: firestoreData.displayName || firebaseUser.displayName,
-                createdAt: firestoreData.createdAt, // This will be Firestore Timestamp or converted Date
-                email: firestoreData.email || firebaseUser.email, // Prioritize Firestore email if available
+                createdAt: firestoreData.createdAt,
+                email: firestoreData.email || firebaseUser.email,
               };
             }
           } catch (dbError: any) {
@@ -109,28 +105,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             addErrorLog({ message: 'Error fetching user profile from Firestore.', source: 'useAuth.onAuthStateChanged', details: dbError.message, type: 'error' });
           }
         }
-        
-        // If Firestore is available, user is not anonymous, has an email, and no Firestore profile exists,
-        // create a new user document in Firestore.
+
         if (firestoreDbModule && !userExistsInFirestore && firebaseUser.email && !firebaseUser.isAnonymous) {
-            console.log(`User document for UID ${firebaseUser.uid} not found in 'users' collection. Creating one.`);
             const newDisplayName = firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User';
             const newUserProfile = {
               uid: firebaseUser.uid,
               email: firebaseUser.email,
               displayName: newDisplayName,
-              createdAt: serverTimestamp(), // Use Firestore server timestamp for creation time.
+              createdAt: serverTimestamp(),
             };
             try {
                 await setDoc(doc(firestoreDbModule, "users", firebaseUser.uid), newUserProfile);
-                userProfileData = { displayName: newDisplayName, createdAt: new Date() }; // Approx createdAt for current session
+                userProfileData = { displayName: newDisplayName, createdAt: new Date() };
             } catch (dbError: any) {
                 console.error("Error creating user document in Firestore:", dbError);
                 addErrorLog({ message: 'Error creating user profile in Firestore.', source: 'useAuth.onAuthStateChanged', details: dbError.message, type: 'error' });
             }
         }
 
-        // Construct the application-specific User object from FirebaseUser and Firestore data.
         const user: User = {
           uid: firebaseUser.uid,
           email: userProfileData.email || firebaseUser.email,
@@ -140,25 +132,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
         setCurrentUser(user);
         setError(null);
-      } else { // No Firebase user is logged in.
-        if (!isEnabled) { // If Firebase is not configured, keep the local guest user.
-            setCurrentUser(LOCAL_GUEST_USER); 
-        } else { // If Firebase is available but no user, set currentUser to null.
-            setCurrentUser(null);
-        }
+      } else {
+        setCurrentUser(null);
       }
-      setLoading(false); // Authentication state determined, set loading to false.
-    }, (err: Error) => { // Error handler for onAuthStateChanged.
+      setLoading(false);
+    }, (err: Error) => {
       console.error("Auth state error:", err);
       setError(err);
       addErrorLog({ message: 'Auth state listener error.', source: 'useAuth.onAuthStateChanged', details: err.message, type: 'error' });
-      setCurrentUser(null); 
+      setCurrentUser(null);
       setLoading(false);
     });
 
-    // Cleanup function: unsubscribe from the auth state listener when the component unmounts.
     return () => unsubscribe();
-  }, [addErrorLog]); // Dependency array: re-run effect if addErrorLog changes (unlikely for a stable function).
+  }, [addErrorLog]);
 
   /**
    * Authenticates a user with a custom Firebase authentication token.
