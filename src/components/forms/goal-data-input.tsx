@@ -570,7 +570,7 @@ export default function GoalDataInputComponent({
        )}
       <CardHeader className="p-2 bg-muted/30 rounded-t-lg">
         <div className="flex justify-between items-start">
-            <div className="flex flex-col items-center space-y-0.5 shrink-0 mr-1">
+            <div className="flex items-center space-y-0.5 shrink-0 mr-1">
                 {onMoveUp && (
                     <Button variant="ghost" size="icon" className="h-5 w-5 p-0" onClick={onMoveUp} disabled={!canMoveUp || isArchived || isLocked} title="Move goal up">
                         <ArrowUp className="h-3.5 w-3.5" />
