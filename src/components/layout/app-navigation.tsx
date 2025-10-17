@@ -19,10 +19,10 @@ interface NavItem {
 const mainNavItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, hotkey: 'D' },
   { href: '/data-entry', label: 'Data Entry', icon: ClipboardList, hotkey: '1' },
-  { href: '/student-profile', label: 'Students', icon: UserCog, hotkey: '2' },
-  { href: '/goal-templates', label: 'Goals', icon: ListPlus, hotkey: '3' },
-  { href: '/manage-sessions', label: 'Sessions', icon: ListChecks, hotkey: '4' },
-  { href: '/analysis-report', label: 'Reports', icon: BarChart2, hotkey: '5' },
+  { href: '/manage-sessions', label: 'Sessions', icon: ListChecks, hotkey: '2' },
+  { href: '/analysis-report', label: 'Reports', icon: BarChart2, hotkey: '3' },
+  { href: '/student-profile', label: 'Students', icon: UserCog, hotkey: '4' },
+  { href: '/goal-templates', label: 'Goals', icon: ListPlus, hotkey: '5' },
 ];
 
 const secondaryNavItems: NavItem[] = [

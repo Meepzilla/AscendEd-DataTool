@@ -17,10 +17,10 @@ const hotkeys: Hotkey[] = [
   // Global Navigation
   { key: 'Alt + D', description: 'Navigate to Dashboard', category: 'Global Navigation' },
   { key: 'Alt + 1', description: 'Navigate to Data Entry', category: 'Global Navigation' },
-  { key: 'Alt + 2', description: 'Navigate to Students Page', category: 'Global Navigation' },
-  { key: 'Alt + 3', description: 'Navigate to Goal Templates', category: 'Global Navigation' },
-  { key: 'Alt + 4', description: 'Navigate to Manage Sessions', category: 'Global Navigation' },
-  { key: 'Alt + 5', description: 'Navigate to Analysis & Reports', category: 'Global Navigation' },
+  { key: 'Alt + 2', description: 'Navigate to Sessions Page', category: 'Global Navigation' },
+  { key: 'Alt + 3', description: 'Navigate to Analysis & Reports', category: 'Global Navigation' },
+  { key: 'Alt + 4', description: 'Navigate to Students Page', category: 'Global Navigation' },
+  { key: 'Alt + 5', description: 'Navigate to Goal Templates', category: 'Global Navigation' },
   // Global Actions
   { key: 'Alt + H', description: 'Open this Help Page', category: 'Global Actions' },
   { key: 'Alt + L', description: 'Open Error Log Modal', category: 'Global Actions' },
@@ -33,6 +33,7 @@ const hotkeys: Hotkey[] = [
   { key: 'Alt + A', description: 'Cycle to Previous Student Slot', category: 'Data Entry' },
   { key: 'S', description: 'Cycle to Next Goal (for focused student)', category: 'Data Entry' },
   { key: 'Alt + S', description: 'Cycle to Previous Goal (for focused student)', category: 'Data Entry' },
+  { key: 'Alt + W', description: 'Add a new student slot', category: 'Data Entry'},
   { key: 'Alt + U', description: 'Open Select Student modal', category: 'Data Entry' },
   { key: 'Alt + T', description: 'Open Select Goal modal', category: 'Data Entry' },
   { key: 'C', description: 'Increment Correct / Total Syllables / Trials Accepted / Slider Right', category: 'Data Entry' },

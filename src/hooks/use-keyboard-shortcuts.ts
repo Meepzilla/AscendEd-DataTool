@@ -29,6 +29,7 @@ export function useKeyboardShortcuts() {
     triggerEditFocusedStudent, // Function to open edit modal for the focused student
     toggleStudentSelectionModal,
     toggleGoalSelectionModal,
+    addStudentSlot,
   } = useStudentData();
   // Access sidebar toggle function from the sidebar hook.
   const { toggleSidebar } = useSidebar(); 
@@ -74,10 +75,10 @@ export function useKeyboardShortcuts() {
         // Global Navigation Hotkeys: Navigate to different pages
         case 'D': router.push('/dashboard'); break; // Alt+D to Dashboard
         case '1': router.push('/data-entry'); break; // Alt+1 to Data Entry
-        case '2': router.push('/student-profile'); break; // Alt+2 to Student Profile
-        case '3': router.push('/goal-templates'); break; // Alt+3 to Goal Templates
-        case '4': router.push('/manage-sessions'); break; // Alt+4 to Manage Sessions
-        case '5': router.push('/analysis-report'); break; // Alt+5 to Analysis & Reports
+        case '2': router.push('/manage-sessions'); break; 
+        case '3': router.push('/analysis-report'); break;
+        case '4': router.push('/student-profile'); break;
+        case '5': router.push('/goal-templates'); break;
         case '6': router.push('/changelog'); break; // Alt+6 to Changelog
         case 'H': router.push('/help'); break; // Alt+H to Help Page
 
@@ -87,7 +88,8 @@ export function useKeyboardShortcuts() {
         
         case 'K': if (toggleSidebar) toggleSidebar(); break; // Alt+K to toggle Sidebar
         
-        // Data Entry Page Specific Actions (with Alt modifier): Decrement counts or trigger edit modal
+        // Data Entry Page Specific Actions (with Alt modifier)
+        case 'W': if (pathname.startsWith('/data-entry')) addStudentSlot(); break; // Alt+W to add a new student slot
         case 'U': if (pathname.startsWith('/data-entry')) toggleStudentSelectionModal(); break; // Alt+U to open student selection
         case 'T': if (pathname.startsWith('/data-entry')) toggleGoalSelectionModal(); break; // Alt+T to open goal selection
         case 'A': if (pathname.startsWith('/data-entry')) cycleFocusedStudent('prev'); break; // Alt+A to cycle to the previous student slot
@@ -149,7 +151,8 @@ export function useKeyboardShortcuts() {
     saveDataEntrySession,
     triggerEditFocusedStudent,
     toggleStudentSelectionModal,
-    toggleGoalSelectionModal
+    toggleGoalSelectionModal,
+    addStudentSlot,
   ]);
 
   // Effect hook to attach and clean up the global keydown event listener.
