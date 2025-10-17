@@ -262,6 +262,7 @@ export default function GoalDataInputComponent({
       case 'SEQUENCED_TRIALS':
       case 'DISCRETE_TRIALS': {
         const trials = Array.isArray(data.trials) ? data.trials : Array(data.numberOfTrials || 5).fill('untouched');
+        const focusedTrialIndex = data.focusedTrialIndex ?? trials.findIndex(t => t === 'untouched');
         return (
           <>
             <FormItem>
@@ -303,7 +304,7 @@ export default function GoalDataInputComponent({
                       type="button"
                       variant="outline"
                       size="icon"
-                      className={cn("h-8 w-8 rounded-full transition-all", statusClasses[status])}
+                      className={cn("h-8 w-8 rounded-full transition-all", statusClasses[status], isFocused && index === focusedTrialIndex && "ring-2 ring-primary ring-offset-2")}
                       onClick={(e) => handleTrialClick(index, e)}
                       disabled={isArchived}
                       title={`Trial ${index + 1}: ${status}. Click to change.`}

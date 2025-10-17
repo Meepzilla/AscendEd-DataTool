@@ -2,7 +2,7 @@
 'use client';
 
 import { useCallback } from 'react';
-import type { Student, Goal, StudentSessionState } from '@/lib/types';
+import type { Student, Goal, StudentSessionState, TrialStatus } from '@/lib/types';
 import { PROMPT_HOTKEY_MAP } from '@/lib/promptConstants';
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 
@@ -97,6 +97,35 @@ export function useKeyboardShortcutHandlers({
         // Ensure goalData is not undefined. Initialize if it's missing.
         if (!goalData) {
             goalData = GOAL_TYPE_FIELDS[goal.type] || {};
+        }
+
+        if ((goal.type === 'DISCRETE_TRIALS' || goal.type === 'SEQUENCED_TRIALS')) {
+            const currentTrials: TrialStatus[] = Array.isArray(goalData.trials) ? [...goalData.trials] : Array(goalData.numberOfTrials || 5).fill('untouched');
+            const currentTrialIndex = goalData.focusedTrialIndex ?? currentTrials.findIndex(t => t === 'untouched');
+            
+            if (key === 'C' && !alt) { // Cycle trial status
+                if (currentTrialIndex !== -1) {
+                    const currentState = currentTrials[currentTrialIndex];
+                    const nextStateCycle: Record<TrialStatus, TrialStatus> = {
+                        'untouched': 'correct',
+                        'correct': 'approximate',
+                        'approximate': 'incorrect',
+                        'incorrect': 'untouched',
+                    };
+                    currentTrials[currentTrialIndex] = nextStateCycle[currentState];
+                    handleGoalDataChange(studentId, goal.id, 'trials', { ...goalData, trials: currentTrials, focusedTrialIndex: currentTrialIndex });
+                }
+                return;
+            }
+            if (key === 'N' && !alt) { // Mark incorrect and go to next
+                 if (currentTrialIndex !== -1) {
+                    currentTrials[currentTrialIndex] = 'incorrect';
+                    const nextUntouchedIndex = currentTrials.findIndex((t, i) => t === 'untouched' && i > currentTrialIndex);
+                    const newFocusedIndex = nextUntouchedIndex !== -1 ? nextUntouchedIndex : currentTrialIndex;
+                    handleGoalDataChange(studentId, goal.id, 'trials', { ...goalData, trials: currentTrials, focusedTrialIndex: newFocusedIndex });
+                }
+                return;
+            }
         }
         
         const increment = alt ? -1 : 1;
