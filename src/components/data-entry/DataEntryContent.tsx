@@ -105,7 +105,7 @@ export default function DataEntryContent() {
           const goalElement = document.getElementById(goalElementId);
 
           if (goalElement) {
-              goalElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              goalElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
           }
         }
     }, 50); // Small delay to ensure DOM is updated after student focus changes
