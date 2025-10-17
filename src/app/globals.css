@@ -24,8 +24,8 @@ body {
     --secondary-foreground: 210 20% 25%; /* Text color on secondary background */
     --muted: 210 20% 90%; /* Muted background color */
     --muted-foreground: 210 20% 45%; /* Muted text color */
-    --accent: 35 65% 45%; /* Accent color (Golden Brown) */
-    --accent-foreground: 35 20% 95%; /* Text color on accent background */
+    --accent: 35 50% 92%; /* Accent color (Lighter Golden Brown for hover) */
+    --accent-foreground: 35 20% 15%; /* Text color on accent background */
     --destructive: 0 84.2% 60.2%; /* Destructive action color (Red) */
     --destructive-foreground: 0 0% 98%; /* Text color on destructive background */
     --border: 35 40% 80%; /* Border color (Light Golden Brown) */
@@ -65,7 +65,7 @@ body {
     --secondary-foreground: 210 20% 85%; /* Text color on secondary background */
     --muted: 210 20% 30%; /* Muted background color */
     --muted-foreground: 210 20% 65%; /* Muted text color (like text-slate-400) */
-    --accent: 35 65% 45%; /* Darker Golden Brown */
+    --accent: 35 40% 25%; /* Accent color (Darker, less saturated Golden Brown for hover) */
     --accent-foreground: 35 20% 95%; /* Light text on accent for contrast */
     --destructive: 0 62.8% 30.6%; /* Destructive action color (Dark Red) */
     --destructive-foreground: 0 0% 98%; /* Text color on destructive background */
