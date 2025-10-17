@@ -80,12 +80,18 @@ export default function StudentSidebar() {
       <SidebarHeader>
         <div className="flex items-center justify-between p-2">
            <h2 className={cn("text-lg font-semibold", sidebarState === 'collapsed' && "sr-only")}>Students</h2>
-            <Button variant="ghost" size="icon" onClick={openAddStudentModal} className={cn("h-7 w-7", sidebarState === 'collapsed' && "mx-auto")}>
-              <PlusCircle className="h-5 w-5" />
-              <span className="sr-only">Add Student</span>
-            </Button>
+           <div className="flex items-center gap-1">
+             <Button variant="ghost" size="icon" onClick={toggleSidebar} className={cn("h-7 w-7")}>
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle Sidebar</span>
+              </Button>
+              <Button variant="ghost" size="icon" onClick={openAddStudentModal} className={cn("h-7 w-7", sidebarState === 'collapsed' && "mx-auto")}>
+                <PlusCircle className="h-5 w-5" />
+                <span className="sr-only">Add Student</span>
+              </Button>
+           </div>
         </div>
-        <div className={cn("px-2 mt-2 space-y-2", sidebarState === 'collapsed' && "hidden")}>
+        <div className={cn("px-2 mt-1 space-y-2", sidebarState === 'collapsed' && "hidden")}>
           <div className="relative flex items-center">
             <Search className="absolute left-3 h-4 w-4 text-muted-foreground z-10" />
             <Input
@@ -96,10 +102,6 @@ export default function StudentSidebar() {
             />
           </div>
            <div className="flex items-center space-x-2 justify-end px-1">
-              <Button variant="ghost" size="icon" onClick={toggleSidebar} className={cn("h-7 w-7 mr-auto")}>
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle Sidebar</span>
-              </Button>
               <Label htmlFor="show-archived-sidebar" className="text-xs">Show Archived</Label>
               <Switch id="show-archived-sidebar" checked={showArchived} onCheckedChange={setShowArchived} />
             </div>
