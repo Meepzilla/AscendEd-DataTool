@@ -21,7 +21,7 @@ interface GenericModalProps {
   description?: string;
   children: React.ReactNode;
   footerContent?: React.ReactNode;
-  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'full'; // Added '2xl'
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | 'full';
   // onOpenAutoFocus?: (event: Event) => void; // For focus trapping
 }
 
@@ -59,7 +59,8 @@ export default function GenericModal({
     md: 'sm:max-w-lg',
     lg: 'sm:max-w-xl',
     xl: 'sm:max-w-5xl',
-    '2xl': 'sm:max-w-6xl', // Added 2xl size
+    '2xl': 'sm:max-w-6xl',
+    '3xl': 'sm:max-w-7xl', // New wider size
     full: 'sm:max-w-full h-full sm:h-auto',
   };
 

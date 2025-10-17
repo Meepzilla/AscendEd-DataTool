@@ -193,7 +193,7 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
       isOpen={!!currentStudent} 
       onClose={closeEditStudentModal}
       title={`Edit Student: ${currentStudent.name}`}
-      size="2xl" 
+      size="3xl" 
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Column 1: Student Info & AI Goal Creation */}
