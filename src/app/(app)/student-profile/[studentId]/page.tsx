@@ -290,7 +290,7 @@ export default function StudentProfilePage() {
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenEditAssignedGoalModal(goal)} title="Edit Assigned Goal">
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openDeleteConfirmationModal(currentStudent, 'student')} title="Remove Goal Assignment">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveGoal(goal.id)} title="Remove Goal Assignment">
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleToggleArchiveGoal(goal)} title={goal.isArchived ? "Unarchive Goal" : "Archive Goal"}>
