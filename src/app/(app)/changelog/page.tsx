@@ -18,14 +18,21 @@ interface ChangelogEntry {
 
 const changelogEntries: ChangelogEntry[] = [
   {
-    date: '2025-10-19',
+    date: '2025-10-17',
+    title: 'Goal Template Search Refactor',
+    description: "Refactored the goal template search and filter functionality for improved performance and maintainability. Encapsulated the logic into a new reusable hook (`useGoalTemplateSearch`). This change also resolves a bug where the standard search filter was not working as expected.",
+    type: 'improvement',
+    icon: GitMerge,
+  },
+  {
+    date: '2025-10-17',
     title: 'Enhanced Goal & Session Management',
     description: "Improved workflow with several new features. Added a 'Cognitive' goal type for tracking skills like attention and memory, complete with default templates. The Goal Templates page now allows deleting custom templates and archiving/unarchiving default templates. The Data Entry page now includes a 'Save All' button to save data for all active students at once. The 'Edit Student' modal has also been widened for better usability.",
     type: 'feature',
     icon: BrainCircuit,
   },
     {
-    date: '2025-10-18',
+    date: '2025-10-17',
     title: 'Data Entry UI & Controls Refinement',
     description: "Improved the layout and user experience on the Data Entry page. The 'Select Student' and 'Select Goal' buttons are now integrated into the bottom action bar on mobile devices for easier access, while remaining as a floating control on desktop for a cleaner workspace. Also adjusted student card height for better visibility.",
     type: 'improvement',

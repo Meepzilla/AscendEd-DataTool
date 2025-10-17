@@ -17,19 +17,19 @@ body {
     --card-foreground: 210 20% 25%; /* Text color on cards */
     --popover: 210 20% 98%; /* Popover background color */
     --popover-foreground: 210 20% 25%; /* Text color on popovers */
-    --primary: 210 67% 46%; /* Primary accent color (Blue: #2563eb) */
-    --primary-foreground: 210 20% 98%; /* Text color on primary background */
+    --primary: 45 90% 55%; /* Primary accent color (Golden) */
+    --primary-foreground: 35 20% 15%; /* Text color on primary background */
     --secondary: 210 20% 90%; /* Secondary background color */
     --secondary-foreground: 210 20% 25%; /* Text color on secondary background */
     --muted: 210 20% 90%; /* Muted background color */
     --muted-foreground: 210 20% 45%; /* Muted text color */
-    --accent: 180 55% 50%; /* Accent color (Cyan: #4DD0E1) */
-    --accent-foreground: 210 20% 15%; /* Text color on accent background */
+    --accent: 35 65% 45%; /* Accent color (Golden Brown) */
+    --accent-foreground: 35 20% 95%; /* Text color on accent background */
     --destructive: 0 84.2% 60.2%; /* Destructive action color (Red) */
     --destructive-foreground: 0 0% 98%; /* Text color on destructive background */
     --border: 210 20% 80%; /* Border color */
     --input: 210 20% 80%; /* Input field background color */
-    --ring: 210 67% 46%; /* Ring color for focus states */
+    --ring: 45 90% 55%; /* Ring color for focus states (Gold) */
     
     /* Chart specific colors for light mode */
     --chart-1: 12 76% 61%;
@@ -43,34 +43,34 @@ body {
     /* Sidebar specific colors for light theme */
     --sidebar-background: 210 20% 95%;
     --sidebar-foreground: 210 20% 25%;
-    --sidebar-primary: 210 67% 46%;
-    --sidebar-primary-foreground: 210 20% 98%;
+    --sidebar-primary: 45 90% 55%;
+    --sidebar-primary-foreground: 35 20% 15%;
     --sidebar-accent: 210 20% 88%;
     --sidebar-accent-foreground: 210 20% 15%;
     --sidebar-border: 210 20% 80%;
-    --sidebar-ring: 210 67% 46%;
+    --sidebar-ring: 45 90% 55%;
   }
 
   .dark { /* Dark mode color variables */
-    --background: 210 20% 15%; /* Dark mode main background color (like bg-slate-900) */
+    --background: 220 40% 12%; /* Darker Blue */
     --foreground: 210 20% 85%; /* Dark mode main text color (like text-slate-200) */
-    --card: 210 20% 20%; /* Card background color (like bg-slate-800) */
+    --card: 220 35% 17%; /* Card background, adjusted for new background */
     --card-foreground: 210 20% 85%; /* Text color on cards */
-    --popover: 210 20% 20%; /* Popover background color */
+    --popover: 220 35% 17%; /* Popover background, adjusted for new background */
     --popover-foreground: 210 20% 85%; /* Text color on popovers */
-    --primary: 210 67% 46%; /* Primary accent color (Blue: #2563eb) */
-    --primary-foreground: 210 20% 98%; /* Text color on primary background */
+    --primary: 45 90% 55%; /* Primary accent color (Golden) */
+    --primary-foreground: 35 20% 15%; /* Text color on primary background */
     --secondary: 210 20% 30%; /* Secondary background color (like bg-slate-700) */
     --secondary-foreground: 210 20% 85%; /* Text color on secondary background */
     --muted: 210 20% 30%; /* Muted background color */
     --muted-foreground: 210 20% 65%; /* Muted text color (like text-slate-400) */
-    --accent: 180 55% 50%; /* Accent color (Cyan: #4DD0E1) */
-    --accent-foreground: 210 20% 10%; /* Darker text on accent for contrast */
+    --accent: 35 65% 45%; /* Darker Golden Brown */
+    --accent-foreground: 35 20% 95%; /* Light text on accent for contrast */
     --destructive: 0 62.8% 30.6%; /* Destructive action color (Dark Red) */
     --destructive-foreground: 0 0% 98%; /* Text color on destructive background */
     --border: 210 20% 35%; /* Border color (like border-slate-700) */
     --input: 210 20% 35%; /* Input field background color */
-    --ring: 210 67% 46%; /* Ring color for focus states */
+    --ring: 45 90% 55%; /* Ring color for focus states (Gold) */
 
     /* Chart specific colors for dark mode */
     --chart-1: 220 70% 50%;
@@ -80,14 +80,14 @@ body {
     --chart-5: 340 75% 55%;
 
     /* Sidebar specific colors for dark theme */
-    --sidebar-background: 210 20% 18%; /* Slightly different from main card background for distinction */
+    --sidebar-background: 220 38% 15%; /* Sidebar background, adjusted for new background */
     --sidebar-foreground: 210 20% 80%;
-    --sidebar-primary: 210 67% 46%;
-    --sidebar-primary-foreground: 210 20% 98%;
+    --sidebar-primary: 45 90% 55%;
+    --sidebar-primary-foreground: 35 20% 15%;
     --sidebar-accent: 210 20% 28%;
     --sidebar-accent-foreground: 210 20% 90%;
     --sidebar-border: 210 20% 30%;
-    --sidebar-ring: 210 67% 46%;
+    --sidebar-ring: 45 90% 55%; /* Ring color for focus states (Gold) */
   }
 }
 
