@@ -174,16 +174,16 @@ export default function StudentProfilePage() {
   const handleToggleArchiveStudent = () => {
     if (currentStudent) {
       openDeleteConfirmationModal(
-        currentStudent,
+        { ...currentStudent, isArchived: !currentStudent.isArchived },
         'student'
       );
     }
   };
-
+  
   const handleDeleteStudent = () => {
-    if (currentStudent) {
-      openDeleteConfirmationModal(currentStudent, 'student');
-    }
+      if (currentStudent) {
+          openDeleteConfirmationModal(currentStudent, 'student');
+      }
   };
 
 
@@ -218,28 +218,29 @@ export default function StudentProfilePage() {
       )}
 
       {deletingStudent && deletingStudent.type === 'student' && (
-        <ConfirmationModal
-          isOpen={!!deletingStudent}
-          onClose={closeDeleteConfirmationModal}
-          title={
-            (deletingStudent.item as Student).isArchived !== undefined
-              ? ((deletingStudent.item as Student).isArchived ? `Unarchive Student: ${(deletingStudent.item as Student).name}` : `Archive Student: ${(deletingStudent.item as Student).name}`)
-              : `Delete Student: ${(deletingStudent.item as Student)?.name}`
-          }
-          description={
-             (deletingStudent.item as Student).isArchived !== undefined
-              ? ((deletingStudent.item as Student).isArchived ? "Unarchiving this student will make them visible in all active lists again. Are you sure?" : "Archiving a student will hide them from active lists. Their data will be preserved. Are you sure?")
-              : `Are you sure you want to permanently delete this student and all their associated session data? This action cannot be undone.`
-          }
-          itemToDelete={(deletingStudent.item as Student).isArchived === undefined ? deletingStudent.item as Student : undefined}
-          itemToUpdate={(deletingStudent.item as Student).isArchived !== undefined ? { ...(deletingStudent.item as Student), isArchived: !(deletingStudent.item as Student).isArchived } : undefined}
-          updateAction={(id, data) => updateStudent(id, data)}
-          confirmText={
-             (deletingStudent.item as Student).isArchived !== undefined
-              ? ((deletingStudent.item as Student).isArchived ? 'Yes, Unarchive' : 'Yes, Archive')
-              : 'Yes, Delete Permanently'
-          }
-          actionType="student"
+         <ConfirmationModal
+            isOpen={!!deletingStudent}
+            onClose={closeDeleteConfirmationModal}
+            title={
+                deletingStudent.item && 'isArchived' in deletingStudent.item && (deletingStudent.item as Student).isArchived !== undefined
+                ? ((deletingStudent.item as Student).isArchived ? `Unarchive Student: ${(deletingStudent.item as Student).name}` : `Archive Student: ${(deletingStudent.item as Student).name}`)
+                : `Delete Student: ${deletingStudent.item?.name}`
+            }
+            description={
+                deletingStudent.item && 'isArchived' in deletingStudent.item && (deletingStudent.item as Student).isArchived !== undefined
+                ? ((deletingStudent.item as Student).isArchived ? "Unarchiving this student will make them visible in all active lists again. Are you sure?" : "Archiving a student will hide them from active lists. Their data will be preserved. Are you sure?")
+                : `Are you sure you want to permanently delete this student and all their associated session data? This action cannot be undone.`
+            }
+            onConfirm={
+                deletingStudent.item && 'isArchived' in deletingStudent.item && (deletingStudent.item as Student).isArchived !== undefined
+                ? () => updateStudent(deletingStudent.item!.id, { isArchived: (deletingStudent.item as Student).isArchived })
+                : () => deleteStudent(deletingStudent.item!.id)
+            }
+            confirmText={
+                deletingStudent.item && 'isArchived' in deletingStudent.item && (deletingStudent.item as Student).isArchived !== undefined
+                ? ((deletingStudent.item as Student).isArchived ? 'Yes, Unarchive' : 'Yes, Archive')
+                : 'Yes, Delete Permanently'
+            }
         />
       )}
 

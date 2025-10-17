@@ -25,10 +25,6 @@ interface ConfirmationModalProps {
   description: string;
   confirmText?: string;
   cancelText?: string;
-  itemToDelete?: Student | GoalTemplate | SessionData | Goal | null;
-  itemToUpdate?: Student | null; // Added for updates like archiving
-  updateAction?: (id: string, data: Partial<Student>) => void; // Action for updates
-  actionType?: 'student' | 'goalTemplate' | 'session' | 'assignedGoal'; // More generic for updates
 }
 
 export default function ConfirmationModal({
@@ -39,52 +35,23 @@ export default function ConfirmationModal({
   description,
   confirmText = "Confirm",
   cancelText = "Cancel",
-  itemToDelete,
-  itemToUpdate,
-  updateAction,
-  actionType,
 }: ConfirmationModalProps) {
-  const {
-    deleteStudent: contextDeleteStudent,
-    deleteGoalTemplate: contextDeleteGoalTemplate,
-    deleteSession: contextDeleteSession,
-    loading: dataLoading,
-  } = useStudentData();
+  const { loading: dataLoading } = useStudentData();
   const [isProcessing, setIsProcessing] = useState(false);
   const confirmButtonRef = useRef<HTMLButtonElement>(null);
 
   const handleConfirmAction = useCallback(async () => {
+    if (!onConfirm) return;
     setIsProcessing(true);
     try {
-      if (itemToUpdate && updateAction && actionType === 'student') {
-        // Handle update actions like archiving
-        await updateAction(itemToUpdate.id, { isArchived: itemToUpdate.isArchived });
-      } else if (itemToDelete && actionType) {
-        // Handle delete actions
-        switch (actionType) {
-          case 'student':
-            await contextDeleteStudent((itemToDelete as Student).id);
-            break;
-          case 'goalTemplate':
-            await contextDeleteGoalTemplate((itemToDelete as GoalTemplate).id);
-            break;
-          case 'session':
-            await contextDeleteSession((itemToDelete as SessionData).sessionId);
-            break;
-          default:
-            console.warn("Unknown action type for deletion");
-        }
-      } else if (onConfirm) {
-        // Handle generic confirm actions
-        await onConfirm();
-      }
+      await onConfirm();
     } catch (error) {
-      console.error(`Error performing action (${actionType || 'confirm'}):`, error);
+      console.error(`Error performing confirm action:`, error);
     } finally {
       setIsProcessing(false);
       onClose();
     }
-  }, [itemToDelete, itemToUpdate, updateAction, actionType, contextDeleteStudent, contextDeleteGoalTemplate, contextDeleteSession, onClose, onConfirm]);
+  }, [onConfirm, onClose]);
 
   useEffect(() => {
     if (isOpen) {
@@ -102,7 +69,7 @@ export default function ConfirmationModal({
     }
   }, [isOpen, handleConfirmAction]);
   
-  const isDestructive = !!itemToDelete;
+  const isDestructive = title.toLowerCase().includes('delete');
 
 
   return (
