@@ -20,7 +20,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { User, PlusCircle, Search, Edit3, Trash2, Archive, ArchiveRestore, Menu } from 'lucide-react';
+import { User, PlusCircle, Search, Edit3, Trash2, Archive, ArchiveRestore, PanelLeftOpen, PanelRightOpen } from 'lucide-react';
 import { useStudentData } from '@/hooks/use-student-data';
 import type { Student } from '@/lib/types';
 import StudentProgressSidebar from '@/components/progress/student-progress-sidebar';
@@ -78,10 +78,18 @@ export default function StudentSidebar() {
   return (
     <Sidebar side="left" collapsible="icon" variant="sidebar" className="border-r">
       <SidebarHeader>
-        <div className="flex items-center justify-between p-2">
+        <div className={cn("flex items-center justify-between p-2", sidebarState === 'collapsed' && "flex-col")}>
            <h2 className={cn("text-lg font-semibold", sidebarState === 'collapsed' && "sr-only")}>Students</h2>
            <div className="flex items-center gap-1">
-             <SidebarTrigger className="h-7 w-7" title="Toggle Sidebar (Alt+K)" />
+             {sidebarState === 'expanded' ? (
+                <Button variant="ghost" size="icon" onClick={toggleSidebar} className="h-7 w-7" title="Collapse Sidebar (Alt+K)">
+                    <PanelLeftOpen className="h-5 w-5" />
+                </Button>
+             ) : (
+                <Button variant="ghost" size="icon" onClick={toggleSidebar} className="h-7 w-7" title="Expand Sidebar (Alt+K)">
+                    <PanelRightOpen className="h-5 w-5" />
+                </Button>
+             )}
              <Button variant="ghost" size="icon" onClick={openAddStudentModal} className={cn("h-7 w-7", sidebarState === 'collapsed' && "mx-auto")}>
                 <PlusCircle className="h-5 w-5" />
                 <span className="sr-only">Add Student</span>
