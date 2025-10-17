@@ -36,7 +36,7 @@ export default function AppHeader() {
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-card/80 backdrop-blur-md">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="container mx-auto flex h-16 items-center px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-2 sm:gap-4">
           <Sheet>
             <SheetTrigger asChild>
@@ -82,7 +82,7 @@ export default function AppHeader() {
             <AppNavigation isMobile={false} />
         </div>
 
-        <div className="flex items-center gap-1 sm:gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 ml-auto">
            <Button variant="ghost" size="icon" onClick={openAddStudentModal} title="Add Student (Alt+M)" className="hidden sm:flex">
             <UserPlus className="h-5 w-5" />
             <span className="sr-only">Add Student</span>
