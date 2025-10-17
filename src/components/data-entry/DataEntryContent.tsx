@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Save, RotateCcw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import TouchControls from '@/components/forms/touch-controls';
 import { Card, CardContent } from '@/components/ui/card';
 import { Info } from 'lucide-react';
 import type { StudentSessionState } from '@/lib/types';
@@ -235,18 +234,10 @@ export default function DataEntryContent() {
         </ScrollArea>
       </div>
 
-      {/* Floating Action Buttons */}
-      {dataEntrySelectedStudentIds.length > 0 && (
-        <div className="fixed bottom-2 left-1/2 -translate-x-1/2 z-20">
-          <TouchControls />
-        </div>
-      )}
-
-
       {dataEntrySelectedStudentIds.length > 0 && (
         <div className="sticky bottom-0 left-0 right-0 z-10 bg-background/95 backdrop-blur-sm">
             <div className="flex justify-end items-center gap-2 p-2 border-t">
-                {/* TouchControls are now floating, so this is just a spacer */}
+                {/* TouchControls are now in the sidebar */}
                 <div className="flex items-center gap-2">
                     <Button variant="outline" onClick={handleOpenResetConfirmation} disabled={isSaving} size="lg">
                     <RotateCcw className="mr-2 h-5 w-5" />

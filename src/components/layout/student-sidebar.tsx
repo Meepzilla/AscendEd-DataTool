@@ -35,6 +35,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Label } from '../ui/label';
 import { Switch } from '../ui/switch';
+import TouchControls from '@/components/forms/touch-controls';
 
 
 export default function StudentSidebar() {
@@ -67,6 +68,7 @@ export default function StudentSidebar() {
   };
   
   const isStudentSelectedAndOnProfile = selectedStudent && pathname.includes(`/student-profile/${selectedStudent.id}`);
+  const isDataEntryPage = pathname.startsWith('/data-entry');
 
   const studentSpecificSessions = useMemo(() => {
     if (!selectedStudent) return [];
@@ -166,10 +168,10 @@ export default function StudentSidebar() {
               </SidebarMenu>
             )}
 
-            {selectedStudent && (
+            {selectedStudent && !isDataEntryPage && (
               <>
                 <SidebarSeparator />
-                <SidebarFooter className={cn("mt-auto", sidebarState === 'collapsed' ? "p-0" : "p-2")}>
+                <div className={cn("mt-auto", sidebarState === 'collapsed' ? "p-0" : "p-2")}>
                   <Accordion type="single" collapsible className="w-full" defaultValue={isStudentSelectedAndOnProfile ? undefined : "item-1"}>
                     <AccordionItem value="item-1" className="border-none">
                       <AccordionTrigger className={cn(
@@ -188,11 +190,17 @@ export default function StudentSidebar() {
                       </AccordionContent>
                     </AccordionItem>
                   </Accordion>
-                </SidebarFooter>
+                </div>
               </>
             )}
         </ScrollArea>
       </SidebarContent>
+
+      {isDataEntryPage && (
+        <SidebarFooter className={cn(sidebarState === 'collapsed' ? 'items-center' : 'items-end', 'p-2')}>
+          <TouchControls />
+        </SidebarFooter>
+      )}
     </Sidebar>
   );
 }
