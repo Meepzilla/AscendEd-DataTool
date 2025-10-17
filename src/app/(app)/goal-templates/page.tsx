@@ -1,13 +1,13 @@
 
 'use client';
 
-import React, { useState, useMemo, Suspense, lazy } from 'react';
+import React, { useState, useMemo, Suspense, lazy, useEffect, useCallback } from 'react';
 import { useStudentData } from '@/hooks/use-student-data';
 import type { GoalTemplate } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { PlusCircle, Edit, Trash2, Search, ListFilter, Sparkles, Info, ListPlus, Grid } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Search, ListFilter, Sparkles, Info, ListPlus, Grid, Loader2 } from 'lucide-react';
 import { formatDate } from '@/lib/helpers';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +21,9 @@ import {
 import { GOAL_TYPES } from '@/lib/goal-constants';
 import { Timestamp } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
+import { findRelevantGoals } from '@/ai/flows/semantic-search-flow';
+import { useToast } from '@/hooks/use-toast';
+import { useErrorLog } from '@/hooks/use-error-log';
 
 // Lazy load modals
 const AddGoalTemplateModal = lazy(() => import('@/components/modals/add-goal-template-modal'));
@@ -32,18 +35,68 @@ export default function GoalTemplatesPage() {
   const { 
     goalTemplates, 
     loading, 
-    error, // This error is now for actual Firebase errors
-    isFirebaseDBAvailable, // Use this to check for local mode
+    error,
+    isFirebaseDBAvailable,
     openAddGoalTemplateModal,
     openEditGoalTemplateModal,
     openDeleteGoalTemplateModal,
     editingGoalTemplate, 
     deletingGoalTemplate, 
   } = useStudentData();
+  
+  const { toast } = useToast();
+  const { addErrorLog } = useErrorLog();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('ALL');
   const [gridSize, setGridSize] = useState<'sm' | 'md' | 'lg'>('md');
+  const [isAiSearching, setIsAiSearching] = useState(false);
+  const [rankedGoalIds, setRankedGoalIds] = useState<string[] | null>(null);
+
+  const handleSemanticSearch = useCallback(async () => {
+    if (!searchTerm.trim() || goalTemplates.length === 0) {
+      setRankedGoalIds(null);
+      return;
+    }
+    
+    setIsAiSearching(true);
+    try {
+      const templatesForSearch = goalTemplates.map(t => ({
+        id: t.id,
+        name: t.name,
+        type: t.type,
+        smartGoalPrompt: t.smartGoalPrompt || '',
+      }));
+
+      const result = await findRelevantGoals({
+        query: searchTerm,
+        goals: templatesForSearch,
+      });
+
+      setRankedGoalIds(result.rankedGoalIds);
+      toast({ title: 'Search Complete', description: `AI has ranked ${result.rankedGoalIds.length} relevant goals.` });
+    } catch (err: any) {
+      console.error("Semantic search failed:", err);
+      addErrorLog({ message: 'Semantic search AI flow failed.', source: 'GoalTemplatesPage.handleSemanticSearch', details: err.message, type: 'error' });
+      toast({ title: 'AI Search Error', description: 'Could not perform semantic search.', variant: 'destructive' });
+      setRankedGoalIds(null); // Fallback to normal filtering on error
+    } finally {
+      setIsAiSearching(false);
+    }
+  }, [searchTerm, goalTemplates, toast, addErrorLog]);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      if (searchTerm.trim()) {
+        handleSemanticSearch();
+      } else {
+        setRankedGoalIds(null);
+      }
+    }, 500); // Debounce search
+
+    return () => clearTimeout(handler);
+  }, [searchTerm, handleSemanticSearch]);
+
 
   const filteredTemplates = useMemo(() => {
     const getSafeTimestamp = (date: Date | Timestamp | string): number => {
@@ -53,40 +106,35 @@ export default function GoalTemplatesPage() {
         return 0;
     };
 
-    const searchWords = searchTerm.toLowerCase().split(' ').filter(word => word);
+    let templates = [...goalTemplates];
 
-    return goalTemplates
-      .filter(template => {
-        const typeMatch = filterType === 'ALL' || template.type === filterType;
-        if (!typeMatch) return false;
+    // Apply type filter first
+    if (filterType !== 'ALL') {
+      templates = templates.filter(template => template.type === filterType);
+    }
 
-        if (searchWords.length === 0) return true;
+    if (rankedGoalIds) {
+      // AI Ranking is active
+      const rankedMap = new Map(rankedGoalIds.map((id, index) => [id, index]));
+      return templates
+        .filter(t => rankedMap.has(t.id)) // Only include templates ranked by AI
+        .sort((a, b) => (rankedMap.get(a.id) ?? Infinity) - (rankedMap.get(b.id) ?? Infinity));
+    } else {
+      // Fallback to simple text search if no search term or AI fails
+      if (searchTerm.trim()) {
+        const searchWords = searchTerm.toLowerCase().split(' ').filter(word => word);
+        return templates
+          .filter(template => {
+            const templateText = `${template.name.toLowerCase()} ${template.smartGoalPrompt?.toLowerCase() || ''}`;
+            return searchWords.every(word => templateText.includes(word));
+          })
+          .sort((a, b) => getSafeTimestamp(b.createdAt) - getSafeTimestamp(a.createdAt));
+      }
 
-        const templateText = `${template.name.toLowerCase()} ${template.smartGoalPrompt?.toLowerCase() || ''}`;
-        return searchWords.every(word => templateText.includes(word));
-      })
-      .map(template => {
-        let score = 0;
-        if (searchWords.length > 0) {
-          const templateName = template.name.toLowerCase();
-          const templatePrompt = template.smartGoalPrompt?.toLowerCase() || '';
-          
-          searchWords.forEach(word => {
-            if (templateName.includes(word)) score += 2; // Higher score for name match
-            if (templatePrompt.includes(word)) score += 1;
-          });
-        }
-        return { ...template, score };
-      })
-      .sort((a, b) => {
-        if (a.score !== b.score) {
-          return b.score - a.score; // Higher score first
-        }
-        const dateA = getSafeTimestamp(a.createdAt);
-        const dateB = getSafeTimestamp(b.createdAt);
-        return dateB - dateA; // Then by most recent
-      });
-  }, [goalTemplates, searchTerm, filterType]);
+      // Default sort by date if no search
+      return templates.sort((a, b) => getSafeTimestamp(b.createdAt) - getSafeTimestamp(a.createdAt));
+    }
+  }, [goalTemplates, filterType, rankedGoalIds, searchTerm]);
 
   const gridClasses = {
     sm: 'grid-cols-1 sm:grid-cols-2',
@@ -95,7 +143,7 @@ export default function GoalTemplatesPage() {
   };
 
 
-  if (error) { // This will now only show for actual Firebase data loading errors
+  if (error) {
     return <div className="text-destructive p-4">Error loading goal templates from Firebase: {error.message}</div>;
   }
 
@@ -123,7 +171,7 @@ export default function GoalTemplatesPage() {
             <div>
               <CardTitle className="text-2xl font-bold flex items-center gap-2"><ListPlus className="h-7 w-7 text-primary"/>Goals</CardTitle>
               <CardDescription>
-                Manage your library of reusable goal templates. 
+                Manage your library of reusable goal templates.
                 {!isFirebaseDBAvailable && !loading && <span className="text-orange-500 font-semibold">(Local Mode: Data not saved to cloud)</span>}
               </CardDescription>
             </div>
@@ -135,13 +183,15 @@ export default function GoalTemplatesPage() {
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-2 mb-4">
             <div className="relative flex-grow">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <div className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground">
+                  {isAiSearching ? <Loader2 className="animate-spin" /> : <Sparkles className="text-yellow-500" />}
+                </div>
                 <Input
-                type="search"
-                placeholder="Search templates by name or prompt..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 w-full"
+                  type="search"
+                  placeholder="AI Semantic Search for goals..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9 w-full"
                 />
             </div>
             <Select value={filterType} onValueChange={setFilterType}>
@@ -169,13 +219,13 @@ export default function GoalTemplatesPage() {
             </Select>
           </div>
 
-          {loading && (
+          {(loading || isAiSearching) && (
              <div className={cn("grid gap-4", gridClasses[gridSize])}>
                 {[1,2,3,4].map(i => <TemplateCardSkeleton key={i} />)}
             </div>
           )}
           
-          {!loading && filteredTemplates.length === 0 && (
+          {!loading && !isAiSearching && filteredTemplates.length === 0 && (
             <div className="text-center py-10 text-muted-foreground">
               <Info className="mx-auto h-12 w-12 mb-4 text-primary" />
               <p>No goal templates found matching your criteria.</p>
@@ -183,7 +233,7 @@ export default function GoalTemplatesPage() {
             </div>
           )}
 
-          {!loading && filteredTemplates.length > 0 && (
+          {!loading && !isAiSearching && filteredTemplates.length > 0 && (
             <div className={cn("grid gap-4", gridClasses[gridSize])}>
               {filteredTemplates.map((template) => (
                 <Card key={template.id} className="flex flex-col justify-between hover:shadow-md transition-shadow">
