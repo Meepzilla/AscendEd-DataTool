@@ -7,7 +7,7 @@ import type { GoalTemplate } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { PlusCircle, Edit, Trash2, Search, ListFilter, Sparkles, Info, ListPlus, Grid, Loader2 } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Search, ListFilter, Sparkles, Info, ListPlus, Grid, Loader2, ArrowUpDown } from 'lucide-react';
 import { formatDate } from '@/lib/helpers';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -42,6 +42,7 @@ export default function GoalTemplatesPage() {
     openDeleteGoalTemplateModal,
     editingGoalTemplate, 
     deletingGoalTemplate, 
+    addGoalTemplateInitialPrompt,
   } = useStudentData();
   
   const { toast } = useToast();
@@ -50,6 +51,7 @@ export default function GoalTemplatesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('ALL');
   const [gridSize, setGridSize] = useState<'sm' | 'md' | 'lg'>('md');
+  const [sortOrder, setSortOrder] = useState<string>('date-desc');
   const [isAiSearching, setIsAiSearching] = useState(false);
   const [rankedGoals, setRankedGoals] = useState<FindRelevantGoalsOutput['rankedGoals'] | null>(null);
 
@@ -60,6 +62,7 @@ export default function GoalTemplatesPage() {
     }
     
     setIsAiSearching(true);
+    setSortOrder('relevance'); // Default to relevance sort on AI search
     try {
       const templatesForSearch = goalTemplates.map(t => ({
         id: t.id,
@@ -96,8 +99,18 @@ export default function GoalTemplatesPage() {
     }
   };
 
+  useEffect(() => {
+    // When search term is cleared, also clear AI results
+    if (!searchTerm.trim()) {
+      setRankedGoals(null);
+      if (sortOrder === 'relevance') {
+        setSortOrder('date-desc'); // Revert to default sort
+      }
+    }
+  }, [searchTerm, sortOrder]);
 
-  const filteredTemplates = useMemo(() => {
+
+  const filteredAndSortedTemplates = useMemo(() => {
     const getSafeTimestamp = (date: Date | Timestamp | string): number => {
         if (date instanceof Date) return date.getTime();
         if (typeof date === 'string') return new Date(date).getTime();
@@ -111,29 +124,47 @@ export default function GoalTemplatesPage() {
     if (filterType !== 'ALL') {
       templates = templates.filter(template => template.type === filterType);
     }
-
+    
+    // Determine if AI ranking is active
     if (rankedGoals) {
-      // AI Ranking is active
-      const rankedMap = new Map(rankedGoals.map((g, index) => [g.id, { rank: index, score: g.relevanceScore }]));
-      return templates
-        .filter(t => rankedMap.has(t.id)) // Only include templates ranked by AI
-        .sort((a, b) => (rankedMap.get(a.id)?.rank ?? Infinity) - (rankedMap.get(b.id)?.rank ?? Infinity));
-    } else {
-      // Fallback to simple text search if no search term or AI fails
-      if (searchTerm.trim()) {
+       templates = templates.filter(t => rankedGoals.some(rg => rg.id === t.id));
+    }
+    
+    // Apply simple text search if not using AI ranking
+    else if (searchTerm.trim()) {
         const searchWords = searchTerm.toLowerCase().split(' ').filter(word => word);
-        return templates
-          .filter(template => {
+        templates = templates.filter(template => {
             const templateText = `${template.name.toLowerCase()} ${template.smartGoalPrompt?.toLowerCase() || ''}`;
             return searchWords.every(word => templateText.includes(word));
-          })
-          .sort((a, b) => getSafeTimestamp(b.createdAt) - getSafeTimestamp(a.createdAt));
-      }
-
-      // Default sort by date if no search
-      return templates.sort((a, b) => getSafeTimestamp(b.createdAt) - getSafeTimestamp(a.createdAt));
+          });
     }
-  }, [goalTemplates, filterType, rankedGoals, searchTerm]);
+
+    // Apply sorting
+    const rankedMap = rankedGoals ? new Map(rankedGoals.map((g, index) => [g.id, { rank: index, score: g.relevanceScore }])) : null;
+
+    templates.sort((a, b) => {
+        switch (sortOrder) {
+            case 'relevance':
+                if (rankedMap) {
+                    const rankA = rankedMap.get(a.id)?.rank ?? Infinity;
+                    const rankB = rankedMap.get(b.id)?.rank ?? Infinity;
+                    return rankA - rankB;
+                }
+                return 0; // Fallback if no ranks
+            case 'date-asc':
+                return getSafeTimestamp(a.createdAt) - getSafeTimestamp(b.createdAt);
+            case 'name-asc':
+                return a.name.localeCompare(b.name);
+            case 'name-desc':
+                return b.name.localeCompare(a.name);
+            case 'date-desc':
+            default:
+                return getSafeTimestamp(b.createdAt) - getSafeTimestamp(a.createdAt);
+        }
+    });
+
+    return templates;
+  }, [goalTemplates, filterType, rankedGoals, searchTerm, sortOrder]);
 
   const gridClasses = {
     sm: 'grid-cols-1 sm:grid-cols-2',
@@ -154,7 +185,7 @@ export default function GoalTemplatesPage() {
   return (
     <div className="space-y-6">
       <Suspense fallback={null}>
-        <AddGoalTemplateModal />
+        <AddGoalTemplateModal initialPrompt={addGoalTemplateInitialPrompt} />
         {editingGoalTemplate && <EditGoalTemplateModal templateToEdit={editingGoalTemplate} />}
         {deletingGoalTemplate && (
           <ConfirmationModal
@@ -211,6 +242,19 @@ export default function GoalTemplatesPage() {
                     ))}
                 </SelectContent>
             </Select>
+            <Select value={sortOrder} onValueChange={setSortOrder}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                    <ArrowUpDown className="mr-2 h-4 w-4 text-muted-foreground" />
+                    <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                    {rankedGoals && <SelectItem value="relevance">Relevance</SelectItem>}
+                    <SelectItem value="date-desc">Date: Newest</SelectItem>
+                    <SelectItem value="date-asc">Date: Oldest</SelectItem>
+                    <SelectItem value="name-asc">Name: A-Z</SelectItem>
+                    <SelectItem value="name-desc">Name: Z-A</SelectItem>
+                </SelectContent>
+            </Select>
             <Select value={gridSize} onValueChange={(value) => setGridSize(value as 'sm' | 'md' | 'lg')}>
                 <SelectTrigger className="w-full sm:w-[130px]">
                     <Grid className="mr-2 h-4 w-4 text-muted-foreground" />
@@ -230,7 +274,7 @@ export default function GoalTemplatesPage() {
             </div>
           )}
           
-          {!loading && !isAiSearching && filteredTemplates.length === 0 && (
+          {!loading && !isAiSearching && filteredAndSortedTemplates.length === 0 && (
             <div className="text-center py-10 text-muted-foreground">
               <Info className="mx-auto h-12 w-12 mb-4 text-primary" />
               <p>No goal templates found matching your criteria.</p>
@@ -245,9 +289,9 @@ export default function GoalTemplatesPage() {
             </div>
           )}
 
-          {!loading && !isAiSearching && filteredTemplates.length > 0 && (
+          {!loading && !isAiSearching && filteredAndSortedTemplates.length > 0 && (
             <div className={cn("grid gap-4", gridClasses[gridSize])}>
-              {filteredTemplates.map((template) => {
+              {filteredAndSortedTemplates.map((template) => {
                 const relevanceScore = relevanceScoreMap.get(template.id);
                 return (
                   <Card key={template.id} className="flex flex-col justify-between hover:shadow-md transition-shadow">
