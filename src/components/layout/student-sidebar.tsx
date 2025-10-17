@@ -35,7 +35,6 @@ import {
 import { cn } from '@/lib/utils';
 import { Label } from '../ui/label';
 import { Switch } from '../ui/switch';
-import TouchControls from '@/components/forms/touch-controls';
 
 
 export default function StudentSidebar() {
@@ -196,11 +195,6 @@ export default function StudentSidebar() {
         </ScrollArea>
       </SidebarContent>
 
-      {isDataEntryPage && (
-        <SidebarFooter className={cn(sidebarState === 'collapsed' ? 'items-center' : 'items-end', 'p-2')}>
-          <TouchControls />
-        </SidebarFooter>
-      )}
     </Sidebar>
   );
 }

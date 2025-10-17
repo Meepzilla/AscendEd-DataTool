@@ -63,13 +63,6 @@ export default function AppHeader() {
               </div>
               <AppNavigation isMobile={true} />
               <div className="p-2 absolute bottom-0 w-full">
-                {isDataEntryPage && (
-                  <>
-                    <div className="mb-2">
-                       <TouchControls />
-                    </div>
-                  </>
-                )}
                 <Separator className="my-2" />
                 <Button variant="outline" className="w-full" onClick={openAddStudentModal}>
                     <UserPlus className="mr-2 h-4 w-4" />
