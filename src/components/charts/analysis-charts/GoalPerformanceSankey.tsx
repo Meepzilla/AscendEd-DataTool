@@ -152,7 +152,7 @@ const CustomSankeyNode = ({ x, y, width, height, index, payload, containerWidth 
     return (
       <g transform={`translate(${x},${y})`}>
         <rect height={height} width={width} fill={payload.color || "hsl(var(--muted))"} strokeWidth="0" rx="2" ry="2"/>
-        <foreignObject x={foreignObjectX} y={-10} width={foreignObjectWidth} height={height + 20}>
+        <foreignObject x={foreignObjectX} y={0} width={foreignObjectWidth} height={height}>
             <div
                 style={{
                     color: 'hsl(var(--foreground))',
