@@ -6,7 +6,7 @@ import { useStudentData } from '@/hooks/use-student-data';
 import type { GoalTemplate } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { PlusCircle, Edit, Trash2, Sparkles, Info, Loader2, BrainCircuit } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Sparkles, Info, Loader2, BrainCircuit, Archive, ArchiveRestore } from 'lucide-react';
 import { formatDate } from '@/lib/helpers';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +35,8 @@ export default function GoalTemplatesPage() {
     editingGoalTemplate, 
     deletingStudent,
     addGoalTemplateInitialPrompt,
+    updateGoalTemplate,
+    closeDeleteConfirmationModal,
   } = useStudentData();
   
   const { toast } = useToast();
@@ -47,6 +49,7 @@ export default function GoalTemplatesPage() {
   const [isAiSearchEnabled, setIsAiSearchEnabled] = useState(true);
   const [isAiSearching, setIsAiSearching] = useState(false);
   const [rankedGoals, setRankedGoals] = useState<FindRelevantGoalsOutput['rankedGoals'] | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
 
   const handleSemanticSearch = useCallback(async () => {
     if (!searchTerm.trim() || goalTemplates.length === 0) {
@@ -102,7 +105,7 @@ export default function GoalTemplatesPage() {
         return 0;
     };
 
-    let templates = [...goalTemplates];
+    let templates = [...goalTemplates].filter(template => showArchived || !template.isArchived);
 
     // Apply type filter first
     if (filterType !== 'ALL') {
@@ -153,7 +156,7 @@ export default function GoalTemplatesPage() {
     });
 
     return templates;
-  }, [goalTemplates, filterType, rankedGoals, searchTerm, sortOrder, isAiSearchEnabled]);
+  }, [goalTemplates, filterType, rankedGoals, searchTerm, sortOrder, isAiSearchEnabled, showArchived]);
 
   const gridClasses = {
     sm: 'grid-cols-1 sm:grid-cols-2',
@@ -165,7 +168,13 @@ export default function GoalTemplatesPage() {
     if (!rankedGoals) return new Map();
     return new Map(rankedGoals.map(g => [g.id, g.relevanceScore]));
   }, [rankedGoals]);
-
+  
+  const handleArchiveToggle = (template: GoalTemplate) => {
+    openDeleteConfirmationModal({
+      ...template,
+      isArchived: !template.isArchived,
+    }, 'goalTemplate');
+  };
 
   if (error) {
     return <div className="text-destructive p-4">Error loading goal templates from Firebase: {error.message}</div>;
@@ -179,11 +188,25 @@ export default function GoalTemplatesPage() {
         {deletingStudent && deletingStudent.type === 'goalTemplate' && (
           <ConfirmationModal
             isOpen={!!deletingStudent}
-            onClose={() => openDeleteConfirmationModal(null, 'goalTemplate')}
-            title={`Delete Template: ${(deletingStudent.item as GoalTemplate)?.name}`}
-            description="Are you sure you want to delete this goal template? This action cannot be undone."
-            itemToDelete={deletingStudent.item as GoalTemplate}
-            deleteActionType="goalTemplate"
+            onClose={() => closeDeleteConfirmationModal()}
+            title={
+              (deletingStudent.item as GoalTemplate)?.isArchived !== undefined && (deletingStudent.item as GoalTemplate).isDefault
+                ? ((deletingStudent.item as GoalTemplate).isArchived ? `Unarchive Default Template` : `Archive Default Template`)
+                : `Delete Template: ${(deletingStudent.item as GoalTemplate)?.name}`
+            }
+            description={
+               (deletingStudent.item as GoalTemplate)?.isArchived !== undefined && (deletingStudent.item as GoalTemplate).isDefault
+                ? ((deletingStudent.item as GoalTemplate).isArchived ? "This will make the template visible in the main library again. Are you sure?" : "Archiving a default template will hide it from the main library. You can view and unarchive it later. Are you sure?")
+                : "Are you sure you want to permanently delete this custom goal template? This action cannot be undone."
+            }
+            itemToDelete={(deletingStudent.item as GoalTemplate)?.isDefault ? undefined : (deletingStudent.item as GoalTemplate)}
+            itemToUpdate={(deletingStudent.item as GoalTemplate)?.isDefault ? (deletingStudent.item as GoalTemplate) : undefined}
+            updateAction={(id, data) => updateGoalTemplate(id, data)}
+            confirmText={
+               (deletingStudent.item as GoalTemplate)?.isArchived !== undefined && (deletingStudent.item as GoalTemplate).isDefault
+                ? ((deletingStudent.item as GoalTemplate).isArchived ? 'Yes, Unarchive' : 'Yes, Archive')
+                : 'Yes, Delete'
+            }
             actionType="goalTemplate"
           />
         )}
@@ -219,6 +242,8 @@ export default function GoalTemplatesPage() {
             isAiSearching={isAiSearching}
             onSemanticSearch={handleSemanticSearch}
             onClearAiSearch={() => setRankedGoals(null)}
+            showArchived={showArchived}
+            setShowArchived={setShowArchived}
           />
 
           {(loading || isAiSearching) && (
@@ -245,7 +270,7 @@ export default function GoalTemplatesPage() {
               {filteredAndSortedTemplates.map((template) => {
                 const relevanceScore = relevanceScoreMap.get(template.id);
                 return (
-                  <Card key={template.id} className="flex flex-col justify-between hover:shadow-md transition-shadow">
+                  <Card key={template.id} className={cn("flex flex-col justify-between hover:shadow-md transition-shadow", template.isArchived && "opacity-60 bg-muted/30")}>
                     <CardHeader className="pb-3">
                       <div className="flex justify-between items-start">
                         <CardTitle className="text-lg font-semibold leading-tight">{template.name}</CardTitle>
@@ -255,7 +280,10 @@ export default function GoalTemplatesPage() {
                               {relevanceScore}%
                             </Badge>
                           )}
-                          {template.isDefault && <Badge variant="outline">Default</Badge>}
+                          {template.isArchived ? 
+                            <Badge variant='outline' className="border-orange-500 text-orange-600">Archived</Badge> 
+                            : (template.isDefault && <Badge variant="outline">Default</Badge>)
+                          }
                         </div>
                       </div>
                       <Badge variant="secondary" className="mt-1 w-fit">
@@ -288,7 +316,11 @@ export default function GoalTemplatesPage() {
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditGoalTemplateModal(template)}>
                           <Edit className="h-4 w-4" />
                         </Button>
-                        {!template.isDefault && (
+                        {template.isDefault ? (
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleArchiveToggle(template)} title={template.isArchived ? "Unarchive Template" : "Archive Template"}>
+                             {template.isArchived ? <ArchiveRestore className="h-4 w-4 text-green-600"/> : <Archive className="h-4 w-4 text-orange-600"/>}
+                          </Button>
+                        ) : (
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openDeleteConfirmationModal(template, 'goalTemplate')}>
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
@@ -337,4 +369,3 @@ function TemplateCardSkeleton() {
         </Card>
     );
 }
-

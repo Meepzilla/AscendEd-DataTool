@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { GOAL_TYPES } from '@/lib/goal-constants';
-import { ListFilter, Search, ArrowUpDown, Grid, BrainCircuit, Sparkles, Loader2 } from 'lucide-react';
+import { ListFilter, Search, ArrowUpDown, Grid, BrainCircuit, Sparkles, Loader2, Archive } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export type GoalTemplateSortOrder = 'relevance' | 'date-desc' | 'date-asc' | 'name-asc' | 'name-desc';
@@ -27,6 +27,8 @@ interface GoalTemplateFiltersProps {
   isAiSearching: boolean;
   onSemanticSearch: () => void;
   onClearAiSearch: () => void;
+  showArchived: boolean;
+  setShowArchived: (value: boolean) => void;
 }
 
 const GoalTemplateFilters: React.FC<GoalTemplateFiltersProps> = ({
@@ -43,6 +45,8 @@ const GoalTemplateFilters: React.FC<GoalTemplateFiltersProps> = ({
   isAiSearching,
   onSemanticSearch,
   onClearAiSearch,
+  showArchived,
+  setShowArchived,
 }) => {
 
   const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -113,7 +117,7 @@ const GoalTemplateFilters: React.FC<GoalTemplateFiltersProps> = ({
           <SelectItem value="lg">Large</SelectItem>
         </SelectContent>
       </Select>
-      <div className="flex items-center space-x-2 border p-2 rounded-md">
+       <div className="flex items-center space-x-2 border p-2 rounded-md">
         <Switch
           id="ai-search-toggle"
           checked={isAiSearchEnabled}
@@ -121,6 +125,16 @@ const GoalTemplateFilters: React.FC<GoalTemplateFiltersProps> = ({
         />
         <Label htmlFor="ai-search-toggle" className="flex items-center gap-1.5 text-sm cursor-pointer">
           <BrainCircuit className="h-4 w-4" /> AI Search
+        </Label>
+      </div>
+      <div className="flex items-center space-x-2 border p-2 rounded-md">
+        <Switch
+          id="show-archived-toggle"
+          checked={showArchived}
+          onCheckedChange={setShowArchived}
+        />
+        <Label htmlFor="show-archived-toggle" className="flex items-center gap-1.5 text-sm cursor-pointer">
+          <Archive className="h-4 w-4" /> Show Archived
         </Label>
       </div>
     </div>
