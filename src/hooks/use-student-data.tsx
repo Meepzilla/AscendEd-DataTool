@@ -106,6 +106,9 @@ interface StudentDataContextType {
   deletingStudent: { item: Student | GoalTemplate | SessionData | null, type: 'student' | 'goalTemplate' | 'session' } | null;
   openDeleteConfirmationModal: (item: Student | GoalTemplate | SessionData, type: 'student' | 'goalTemplate' | 'session') => void;
   closeDeleteConfirmationModal: () => void;
+  deletingAssignedGoal: { studentId: string; goal: Goal } | null;
+  openDeleteAssignedGoalConfirmationModal: (studentId: string, goal: Goal) => void;
+  closeDeleteAssignedGoalConfirmationModal: () => void;
   isAddGoalTemplateModalOpen: boolean;
   openAddGoalTemplateModal: (initialPrompt?: string) => void;
   closeAddGoalTemplateModal: () => void;
@@ -191,6 +194,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [deletingItem, setDeletingItem] = useState<{ item: Student | GoalTemplate | SessionData | null, type: 'student' | 'goalTemplate' | 'session' } | null>(null);
+  const [deletingAssignedGoal, setDeletingAssignedGoal] = useState<{ studentId: string; goal: Goal } | null>(null);
   const [isAddGoalTemplateModalOpen, setIsAddGoalTemplateModalOpen] = useState(false);
   const [addGoalTemplateInitialPrompt, setAddGoalTemplateInitialPrompt] = useState<string | null>(null);
   const [editingGoalTemplate, setEditingGoalTemplate] = useState<GoalTemplate | null>(null);
@@ -869,6 +873,8 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const closeEditStudentModal = useCallback(() => setEditingStudent(null), []);
   const openDeleteConfirmationModal = useCallback((item: Student | GoalTemplate | SessionData, type: 'student' | 'goalTemplate' | 'session') => setDeletingItem({ item, type }), []);
   const closeDeleteConfirmationModal = useCallback(() => setDeletingItem(null), []);
+  const openDeleteAssignedGoalConfirmationModal = useCallback((studentId: string, goal: Goal) => setDeletingAssignedGoal({ studentId, goal }), []);
+  const closeDeleteAssignedGoalConfirmationModal = useCallback(() => setDeletingAssignedGoal(null), []);
   
   const openAddGoalTemplateModal = useCallback((initialPrompt?: string) => {
     setAddGoalTemplateInitialPrompt(initialPrompt || null);
@@ -1431,6 +1437,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     isAddStudentModalOpen, openAddStudentModal, closeAddStudentModal,
     editingStudent, openEditStudentModal, closeEditStudentModal,
     deletingStudent: deletingItem, openDeleteConfirmationModal, closeDeleteConfirmationModal,
+    deletingAssignedGoal, openDeleteAssignedGoalConfirmationModal, closeDeleteAssignedGoalConfirmationModal,
     isAddGoalTemplateModalOpen, openAddGoalTemplateModal, closeAddGoalTemplateModal, addGoalTemplateInitialPrompt,
     editingGoalTemplate, openEditGoalTemplateModal, closeEditGoalTemplateModal,
     editingSession, openEditSessionModal, closeEditSessionModal,
@@ -1459,6 +1466,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     isAddStudentModalOpen, openAddStudentModal, closeAddStudentModal,
     editingStudent, openEditStudentModal, closeEditStudentModal,
     deletingItem, openDeleteConfirmationModal, closeDeleteConfirmationModal,
+    deletingAssignedGoal, openDeleteAssignedGoalConfirmationModal, closeDeleteAssignedGoalConfirmationModal,
     isAddGoalTemplateModalOpen, openAddGoalTemplateModal, closeAddGoalTemplateModal, addGoalTemplateInitialPrompt,
     editingGoalTemplate, openEditGoalTemplateModal, closeEditGoalTemplateModal,
     editingSession, openEditSessionModal, closeEditSessionModal,

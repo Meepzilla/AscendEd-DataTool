@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button, buttonVariants } from '@/components/ui/button';
 import { useStudentData } from '@/hooks/use-student-data';
-import type { Student, GoalTemplate, SessionData } from '@/lib/types';
+import type { Student, Goal, GoalTemplate, SessionData } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 interface ConfirmationModalProps {
@@ -25,11 +25,11 @@ interface ConfirmationModalProps {
   description: string;
   confirmText?: string;
   cancelText?: string;
-  itemToDelete?: Student | GoalTemplate | SessionData | null;
+  itemToDelete?: Student | GoalTemplate | SessionData | Goal | null;
   itemToUpdate?: Student | null; // Added for updates like archiving
   updateAction?: (id: string, data: Partial<Student>) => void; // Action for updates
   deleteActionType?: 'student' | 'goalTemplate' | 'session';
-  actionType?: 'student' | 'goalTemplate' | 'session'; // More generic for updates
+  actionType?: 'student' | 'goalTemplate' | 'session' | 'assignedGoal'; // More generic for updates
 }
 
 export default function ConfirmationModal({
@@ -64,16 +64,16 @@ export default function ConfirmationModal({
         // Handle delete actions
         switch (actionType) {
           case 'student':
-            await contextDeleteStudent(itemToDelete.id);
+            await contextDeleteStudent((itemToDelete as Student).id);
             break;
           case 'goalTemplate':
-            await contextDeleteGoalTemplate(itemToDelete.id);
+            await contextDeleteGoalTemplate((itemToDelete as GoalTemplate).id);
             break;
           case 'session':
             await contextDeleteSession((itemToDelete as SessionData).sessionId);
             break;
           default:
-            console.warn("Unknown action type");
+            console.warn("Unknown action type for deletion");
         }
       } else if (onConfirm) {
         // Handle generic confirm actions
@@ -103,7 +103,7 @@ export default function ConfirmationModal({
     }
   }, [isOpen, handleConfirmAction]);
   
-  const isDestructive = actionType === 'student' && itemToUpdate ? !itemToUpdate.isArchived : false;
+  const isDestructive = actionType === 'student' && itemToUpdate ? !itemToUpdate.isArchived : true;
 
 
   return (
@@ -130,5 +130,3 @@ export default function ConfirmationModal({
     </AlertDialog>
   );
 }
-
-    

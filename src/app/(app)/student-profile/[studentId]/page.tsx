@@ -49,6 +49,9 @@ export default function StudentProfilePage() {
     updateStudentGoal,
     updateStudent,
     importSessions,
+    deletingAssignedGoal,
+    openDeleteAssignedGoalConfirmationModal,
+    closeDeleteAssignedGoalConfirmationModal,
   } = useStudentData();
 
   const [currentStudent, setCurrentStudent] = useState<Student | null>(null);
@@ -155,13 +158,6 @@ export default function StudentProfilePage() {
     document.body.removeChild(link);
   };
 
-
-  const handleRemoveGoal = async (goalId: string) => {
-    if (currentStudent) { 
-        await removeGoalFromStudent(currentStudent.id, goalId);
-    }
-  };
-
   const handleOpenEditAssignedGoalModal = (goal: Goal) => {
     if (currentStudent) {
       openEditAssignedGoalModal(currentStudent.id, goal);
@@ -196,6 +192,21 @@ export default function StudentProfilePage() {
           onClose={closeEditAssignedGoalModal}
           studentId={editingAssignedGoal.studentId} 
           goalToEdit={editingAssignedGoal.goal}
+        />
+      )}
+      
+      {deletingAssignedGoal && (
+        <ConfirmationModal
+          isOpen={!!deletingAssignedGoal}
+          onClose={closeDeleteAssignedGoalConfirmationModal}
+          onConfirm={() => {
+            if (deletingAssignedGoal) {
+              removeGoalFromStudent(deletingAssignedGoal.studentId, deletingAssignedGoal.goal.id);
+            }
+          }}
+          title={`Remove Goal: "${deletingAssignedGoal.goal.name}"?`}
+          description={`Are you sure you want to remove this goal from ${currentStudent.name}? This action cannot be undone.`}
+          confirmText="Yes, Remove Goal"
         />
       )}
 
@@ -290,7 +301,7 @@ export default function StudentProfilePage() {
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenEditAssignedGoalModal(goal)} title="Edit Assigned Goal">
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveGoal(goal.id)} title="Remove Goal Assignment">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openDeleteAssignedGoalConfirmationModal(currentStudent.id, goal)} title="Remove Goal Assignment">
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleToggleArchiveGoal(goal)} title={goal.isArchived ? "Unarchive Goal" : "Archive Goal"}>
