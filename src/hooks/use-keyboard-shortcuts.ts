@@ -22,18 +22,19 @@ export function useKeyboardShortcuts() {
 
   // Destructure relevant functions and states from custom data and UI hooks.
   const { 
-    openAddStudentModal, // Function to open the add student modal
-    focusStudentSlot,    // Function to focus a specific student slot in data entry
-    cycleFocusedStudent, // Function to cycle through student slots
-    cycleFocusedGoal,    // Function to cycle through goals for a focused student
-    handleDataEntryHotkey, // Function to handle specific data entry hotkeys (e.g., for counts)
-    saveDataEntrySession,  // Function to save session data in data entry
-    triggerEditFocusedStudent, // Function to open edit modal for the focused student
-    toggleStudentSelectionModal,
-    toggleGoalSelectionModal,
+    openAddStudentModal,
+    saveDataEntrySession,
     addStudentSlot,
     isStudentAccessLocked,
     setIsStudentAccessLocked,
+    // Data-specific hotkey handlers are now inside useStudentData
+    focusStudentSlot,
+    cycleFocusedStudent,
+    cycleFocusedGoal,
+    handleDataEntryHotkey,
+    triggerEditFocusedStudent,
+    toggleStudentSelectionModal,
+    toggleGoalSelectionModal,
   } = useStudentData();
   // Access sidebar toggle function from the sidebar hook.
   const { toggleSidebar } = useSidebar(); 
@@ -135,6 +136,9 @@ export function useKeyboardShortcuts() {
         case 'I': // Decrement Independent count
         case 'B': // Decrement Approximate
         case 'D': // Decrement Visual Prompt count
+        case 'R':
+        case 'H':
+        case 'J':
            if (isDataEntryContext) {
              if (isStudentAccessLocked) { showAccessLockedToast(); return; }
              handleDataEntryHotkey(key, alt); 
@@ -163,6 +167,9 @@ export function useKeyboardShortcuts() {
                 case 'P': // Increment Partial Physical Prompt count
                 case 'F': // Increment Imitation Prompt count
                 case 'I': // Increment Independent count
+                case 'R':
+                case 'H':
+                case 'J':
                     if (isStudentAccessLocked) { showAccessLockedToast(); return; }
                     handleDataEntryHotkey(key, alt); // Pass the key and `false` for `alt` (no alt pressed).
                     break;
