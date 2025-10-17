@@ -154,6 +154,7 @@ interface StudentDataContextType {
   // Data Entry Actions
   fetchAiActivitySuggestions: (studentId: string) => Promise<void>;
   saveDataEntrySession: () => Promise<void>;
+  saveAllDataEntrySessions: () => Promise<void>;
   resetDataEntrySession: () => void;
   handleGoalDataChange: (studentId: string, goalId: string, updatedFieldName: string, newData: SessionGoalData['data']) => void;
   handleMoveGoal: (studentId: string, goalId: string, direction: 'up' | 'down') => void;
@@ -1004,6 +1005,79 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       addErrorLog
   ]);
 
+  const saveAllDataEntrySessions = useCallback(async () => {
+    if (!dataEntrySessionDate) {
+        safeToast({ title: "Error", description: "Please select a date.", variant: "destructive"});
+        return;
+    }
+
+    if (dataEntrySelectedStudentIds.length === 0) {
+        safeToast({ title: "Error", description: "No students selected to save sessions for.", variant: "destructive"});
+        return;
+    }
+
+    let savedCount = 0;
+    let errorCount = 0;
+
+    for (const studentId of dataEntrySelectedStudentIds) {
+        const state = dataEntryStudentSessionStates[studentId];
+        if (!state) continue;
+
+        const sessionGoals: SessionGoalData[] = state.originalGoalHeaders
+            .filter(goal => !goal.isArchived)
+            .map(goal => ({
+                goalId: goal.id,
+                goalName: goal.name,
+                goalType: goal.type,
+                data: state.goalData[goal.id] || JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type])),
+            }));
+
+        if (sessionGoals.length === 0) continue;
+
+        const session: Omit<SessionData, 'sessionId'> = {
+            studentId: state.studentId,
+            studentName: state.studentName,
+            date: dataEntrySessionDate.toISOString(),
+            time: dataEntrySessionTime,
+            endTime: dataEntrySessionEndTime,
+            activity: state.activity,
+            notes: state.notes,
+            goals: sessionGoals,
+            originalGoalHeaders: state.originalGoalHeaders,
+        };
+
+        const savedSession = await addSession(session);
+        if (savedSession) {
+            savedCount++;
+            setDataEntryStudentSessionStatesState(prevStates => {
+                const newStates = { ...prevStates };
+                if (newStates[studentId]) {
+                    newStates[studentId].activity = '';
+                    newStates[studentId].notes = '';
+                    const initialGoalData: Record<string, SessionGoalData['data']> = {};
+                    newStates[studentId].originalGoalHeaders.forEach(goal => {
+                        initialGoalData[goal.id] = JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type]));
+                    });
+                    newStates[studentId].goalData = initialGoalData;
+                }
+                return newStates;
+            });
+        } else {
+            errorCount++;
+        }
+    }
+
+    if (savedCount > 0) {
+        safeToast({ title: "Success", description: `Saved ${savedCount} session(s).` });
+    }
+    if (errorCount > 0) {
+        safeToast({ title: "Error", description: `Failed to save ${errorCount} session(s).`, variant: "destructive" });
+    }
+    if (savedCount === 0 && errorCount === 0) {
+        safeToast({ title: "Info", description: "No sessions with data to save.", variant: "default" });
+    }
+  }, [dataEntrySessionDate, dataEntrySessionTime, dataEntrySessionEndTime, dataEntrySelectedStudentIds, dataEntryStudentSessionStates, addSession, safeToast]);
+
   const resetDataEntrySession = useCallback(() => {
     if (dataEntrySelectedStudentIds.length === 0 || dataEntryFocusedStudentSlotIndex >= dataEntrySelectedStudentIds.length) {
         safeToast({ title: "Info", description: "No student is focused to reset data for.", variant: "default" });
@@ -1380,7 +1454,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     dataEntryAiActivitySuggestions, setDataEntryAiActivitySuggestions,
     dataEntryVisibleGoalCountByStudentId, setDataEntryVisibleGoalCountByStudentId,
     dataEntryShowArchivedByStudentId, setDataEntryShowArchivedByStudentId,
-    fetchAiActivitySuggestions, saveDataEntrySession, resetDataEntrySession, handleGoalDataChange, handleMoveGoal,
+    fetchAiActivitySuggestions, saveDataEntrySession, saveAllDataEntrySessions, resetDataEntrySession, handleGoalDataChange, handleMoveGoal,
     addStudentSlot,
     focusStudentSlot, cycleFocusedStudent, cycleFocusedGoal, handleDataEntryHotkey, triggerEditFocusedStudent, toggleStudentSelectionModal, toggleGoalSelectionModal, getCurrentFocusedGoalInfo
   }), [
@@ -1409,7 +1483,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     dataEntryAiActivitySuggestions, setDataEntryAiActivitySuggestions,
     dataEntryVisibleGoalCountByStudentId, setDataEntryVisibleGoalCountByStudentId,
     dataEntryShowArchivedByStudentId, setDataEntryShowArchivedByStudentId,
-    fetchAiActivitySuggestions, saveDataEntrySession, resetDataEntrySession, handleGoalDataChange, handleMoveGoal,
+    fetchAiActivitySuggestions, saveDataEntrySession, saveAllDataEntrySessions, resetDataEntrySession, handleGoalDataChange, handleMoveGoal,
     addStudentSlot,
     focusStudentSlot, cycleFocusedStudent, cycleFocusedGoal, handleDataEntryHotkey, triggerEditFocusedStudent, toggleStudentSelectionModal, toggleGoalSelectionModal, getCurrentFocusedGoalInfo
   ]);

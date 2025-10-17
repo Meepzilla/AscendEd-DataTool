@@ -43,6 +43,7 @@ export default function DataEntryContent() {
     dataEntryAiActivitySuggestions,
     fetchAiActivitySuggestions,
     saveDataEntrySession: contextSaveDataEntrySession, // Renamed to avoid conflict
+    saveAllDataEntrySessions,
     resetDataEntrySession,
     handleGoalDataChange,
     handleMoveGoal,
@@ -51,6 +52,7 @@ export default function DataEntryContent() {
   } = useStudentData();
 
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingAll, setIsSavingAll] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
   const [isHeaderCardCollapsed, setIsHeaderCardCollapsed] = useState(false);
@@ -158,6 +160,12 @@ export default function DataEntryContent() {
     setIsSaving(false);
   }
 
+  const handleSaveAll = async () => {
+    setIsSavingAll(true);
+    await saveAllDataEntrySessions();
+    setIsSavingAll(false);
+  }
+
   const handleReset = () => {
     resetDataEntrySession();
     setIsResetConfirmationOpen(false);
@@ -237,31 +245,34 @@ export default function DataEntryContent() {
       </div>
       
       {dataEntrySelectedStudentIds.length > 0 && (
-        <>
-          {/* Floating controls for larger screens */}
-          <div className="hidden sm:block fixed bottom-4 left-4 z-20">
-            <TouchControls />
-          </div>
-
           <div className="sticky bottom-0 left-0 right-0 z-10 bg-background/95 backdrop-blur-sm">
               <div className="flex justify-between items-center gap-2 p-2 border-t">
+                  {/* Floating controls for larger screens */}
+                  <div className="hidden sm:block">
+                    <TouchControls />
+                  </div>
+                  
                   {/* Inline controls for smaller screens */}
                   <div className="sm:hidden">
                     <TouchControls />
                   </div>
+
                   <div className="flex gap-2 ml-auto">
-                      <Button variant="outline" onClick={handleOpenResetConfirmation} disabled={isSaving} size="lg">
+                      <Button variant="outline" onClick={handleOpenResetConfirmation} disabled={isSaving || isSavingAll} size="lg">
                       <RotateCcw className="mr-2 h-5 w-5" />
-                      Reset Focused Student
+                      Reset Focused
                       </Button>
-                      <Button onClick={handleSave} disabled={isSaving} size="lg">
-                      <Save className="mr-2 h-5 w-5" />
-                      {isSaving ? 'Saving Session...' : 'Save Focused Session'}
+                      <Button onClick={handleSave} disabled={isSaving || isSavingAll} size="lg">
+                        <Save className="mr-2 h-5 w-5" />
+                        {isSaving ? 'Saving...' : 'Save Focused'}
+                      </Button>
+                      <Button onClick={handleSaveAll} disabled={isSaving || isSavingAll} size="lg">
+                        <Save className="mr-2 h-5 w-5" />
+                        {isSavingAll ? 'Saving All...' : 'Save All'}
                       </Button>
                   </div>
               </div>
           </div>
-        </>
       )}
        {dataEntrySelectedStudentIds.length === 0 && (
           <Card className="mt-6 flex-shrink-0">
