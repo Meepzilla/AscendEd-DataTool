@@ -154,6 +154,24 @@ export default function GoalDataInputComponent({
     });
   };
 
+  const handleFillNextTrial = (status: TrialStatus, e: React.MouseEvent<HTMLButtonElement>) => {
+    handleInteraction(e, () => {
+        const currentTrials: TrialStatus[] = Array.isArray(data.trials) ? [...data.trials] : Array(data.numberOfTrials || 5).fill('untouched');
+        const nextUntouchedIndex = currentTrials.indexOf('untouched');
+
+        if (nextUntouchedIndex !== -1) {
+            currentTrials[nextUntouchedIndex] = status;
+            handleChange('trials', currentTrials);
+        } else {
+            toast({
+                title: "All Trials Filled",
+                description: "All available trials have been recorded.",
+                variant: "default",
+            });
+        }
+    });
+  };
+
 
   const renderInputFields = () => {
     switch (goal.type) {
@@ -226,15 +244,22 @@ export default function GoalDataInputComponent({
           <>
             <FormItem>
               <FormLabel>Number of Trials</FormLabel>
-              <Input
-                type="number"
-                min="1"
-                max="20"
-                value={data.numberOfTrials ?? ''}
-                onChange={(e) => handleChange('numberOfTrials', e.target.value === '' ? undefined : parseInt(e.target.value, 10))}
-                className="h-8 text-sm text-center w-24"
-                disabled={isArchived || isLocked}
-              />
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  min="1"
+                  max="20"
+                  value={data.numberOfTrials ?? ''}
+                  onChange={(e) => handleChange('numberOfTrials', e.target.value === '' ? undefined : parseInt(e.target.value, 10))}
+                  className="h-8 text-sm text-center w-24"
+                  disabled={isArchived || isLocked}
+                />
+                 <div className="flex gap-1">
+                    <Button size="sm" className="h-7 px-2 text-xs bg-green-500 hover:bg-green-600" onClick={(e) => handleFillNextTrial('correct', e)} disabled={isArchived || isLocked}>Correct</Button>
+                    <Button size="sm" className="h-7 px-2 text-xs bg-yellow-500 hover:bg-yellow-600" onClick={(e) => handleFillNextTrial('approximate', e)} disabled={isArchived || isLocked}>Approx.</Button>
+                    <Button size="sm" className="h-7 px-2 text-xs bg-red-500 hover:bg-red-600" onClick={(e) => handleFillNextTrial('incorrect', e)} disabled={isArchived || isLocked}>Incorrect</Button>
+                </div>
+              </div>
             </FormItem>
             <FormItem>
               <FormLabel>Trial Sequence (Click to cycle)</FormLabel>
