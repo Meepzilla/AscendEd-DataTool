@@ -78,7 +78,7 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
       id={`student-card-slot-${slotIndex}`}
       className={cn(
         `flex flex-col transition-all duration-300 ease-in-out shadow-md flex-shrink-0`,
-        isStudentFocused ? 'w-[450px]' : 'w-[330px]',
+        isStudentFocused ? 'w-[450px]' : 'w-[320px]',
         isStudentFocused && 'ring-2 ring-primary ring-offset-2 shadow-xl'
       )}
       onClick={() => setDataEntryFocusedStudentSlotIndex(slotIndex)}
@@ -169,6 +169,14 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
                         data={state.goalData[goal.id] || GOAL_TYPE_FIELDS[goal.type]}
                         onChange={(updatedField, newData) => handleGoalDataChange(student.id, goal.id, updatedField, newData)}
                         isFocused={isGoalFocused}
+                        onSetFocus={() => {
+                          const visibleGoals = allStudentGoals.filter(g => !g.isArchived || dataEntryShowArchivedByStudentId[student.id]);
+                          const newIndex = visibleGoals.findIndex(g => g.id === goal.id);
+                          if (newIndex !== -1) {
+                            setDataEntryFocusedStudentSlotIndex(slotIndex);
+                            handleGoalDataChange(student.id, goal.id, 'focus', state.goalData[goal.id]);
+                          }
+                        }}
                         onMoveUp={() => handleMoveGoal(student.id, goal.id, 'up')}
                         onMoveDown={() => handleMoveGoal(student.id, goal.id, 'down')}
                         canMoveUp={actualGoalIndexInOriginal > 0}
