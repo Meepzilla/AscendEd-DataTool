@@ -126,7 +126,7 @@ export default function HelpPage() {
           </div>
           <div>
             <h3 className="font-semibold text-foreground text-lg mb-1">Goal Templates</h3>
-            <p>Create and manage reusable goal templates, including for the new "Feeding/Swallowing" type. Use the AI feature to help generate SMART goals from your prompts. These templates can then be assigned to multiple students.</p>
+            <p>Create and manage reusable goal templates. The page features an AI-powered semantic search: type your query and press Enter to find goals based on meaning. You can also generate a new template directly from your search query if you don't find what you're looking for. These templates can then be assigned to multiple students.</p>
           </div>
           <div>
             <h3 className="font-semibold text-foreground text-lg mb-1">Data Entry</h3>
