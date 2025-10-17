@@ -1346,18 +1346,19 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
 
     if (goal.type === 'QUALITATIVE_OBSERVATION' && !alt) {
+      const currentRating = Number(goalData.rating ?? 3);
+      let newRating = currentRating;
       if (key === 'C') {
-        const currentRating = Number(goalData.rating ?? 3);
-        const newRating = Math.min(5, currentRating + 1);
-        handleGoalDataChange(studentId, goal.id, 'rating', { ...goalData, rating: newRating });
-        return;
+        newRating = Math.min(5, currentRating + 1);
       } else if (key === 'N') {
-        const currentRating = Number(goalData.rating ?? 3);
-        const newRating = Math.max(1, currentRating - 1);
+        newRating = Math.max(1, currentRating - 1);
+      }
+      if (newRating !== currentRating) {
         handleGoalDataChange(studentId, goal.id, 'rating', { ...goalData, rating: newRating });
         return;
       }
     }
+
 
     let fieldToUpdate: string | null = null;
     let increment = alt ? -1 : 1;
