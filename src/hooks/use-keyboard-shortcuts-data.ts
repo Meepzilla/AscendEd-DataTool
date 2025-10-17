@@ -122,19 +122,23 @@ export function useKeyboardShortcutHandlers({
                 case 'R': fieldToUpdate = 'repetitions'; break;
                 case 'H': fieldToUpdate = 'prolongations'; break;
                 case 'J': fieldToUpdate = 'interjections'; break;
+                case 'C': fieldToUpdate = 'totalSyllables'; break;
+                case 'N': fieldToUpdate = 'stutteredSyllables'; break;
             }
         }
         
         if (!fieldToUpdate) {
             if (key === 'C') {
-                fieldToUpdate = 'correct' || 'questionsCorrect' || 'successfulResponses' || 'correctProductions' || 'totalSyllables' || 'trialsAccepted' || 'successfulAttempts';
+                const fields = ['correct', 'questionsCorrect', 'successfulResponses', 'correctProductions', 'trialsAccepted', 'successfulAttempts'];
+                fieldToUpdate = fields.find(f => goalData.hasOwnProperty(f)) || null;
             } else if (key === 'N') {
-                fieldToUpdate = 'incorrect' || 'questionsIncorrect' || 'unsuccessfulResponses' || 'incorrectProductions' || 'stutteredSyllables' || 'trialsRefused' || 'failedAttempts';
+                const fields = ['incorrect', 'questionsIncorrect', 'unsuccessfulResponses', 'incorrectProductions', 'trialsRefused', 'failedAttempts'];
+                fieldToUpdate = fields.find(f => goalData.hasOwnProperty(f)) || null;
             } else if (key === 'B' && goal.type !== 'FLUENCY_SYLLABLE_STUTTER') {
-                fieldToUpdate = 'approximate';
+                 if(goalData.hasOwnProperty('approximate')) fieldToUpdate = 'approximate';
             }
         }
-
+        
         if (fieldToUpdate) {
             const currentValue = Number(goalData[fieldToUpdate] || 0);
             const newValue = Math.max(0, currentValue + increment);
