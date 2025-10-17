@@ -21,122 +21,108 @@ const DysfluencyTypesChart = lazy(() => import('./analysis-charts/DysfluencyType
 
 // Helper to transform session data for charts
 const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goal[], selectedGoalId?: string) => {
-  return sessions.map(session => {
-    let sessionCorrect = 0;
-    let sessionIncorrect = 0;
-    let sessionApproximate = 0; // Added to track approximate
-    let sessionOpportunities = 0;
-    let promptCounts: Record<PromptType, number> = {
-        'Independent': 0, 'Visual': 0, 'Verbal': 0, 'Gestural': 0, 'PartialPhysical': 0, 'Imitation': 0
-    };
-    // Fluency specific data
-    let totalSyllables = 0;
-    let stutteredSyllables = 0;
-    let blocks = 0;
-    let repetitions = 0;
-    let prolongations = 0;
-    let interjections = 0;
+  const dailyData: Record<string, any> = {};
+
+  sessions.forEach(session => {
+    const sessionDate = new Date(session.date).toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    if (!dailyData[sessionDate]) {
+      dailyData[sessionDate] = {
+        date: new Date(sessionDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        sessionCount: 0,
+        totalCorrect: 0,
+        totalIncorrect: 0,
+        totalApproximate: 0,
+        totalOpportunities: 0,
+        totalPrompts: 0,
+        promptCounts: { 'Independent': 0, 'Visual': 0, 'Verbal': 0, 'Gestural': 0, 'PartialPhysical': 0, 'Imitation': 0 },
+        totalSyllables: 0,
+        stutteredSyllables: 0,
+        blocks: 0,
+        repetitions: 0,
+        prolongations: 0,
+        interjections: 0,
+      };
+    }
+    
+    const day = dailyData[sessionDate];
+    day.sessionCount += 1;
 
     session.goals.forEach(goalData => {
       const currentGoal = studentGoals.find(g => g.id === goalData.goalId);
       if (currentGoal?.isArchived) return;
       if (selectedGoalId && goalData.goalId !== selectedGoalId) return;
-
-      let currentGoalCorrect = 0;
-      let currentGoalIncorrect = 0;
-      let currentGoalApproximate = 0;
       
+      let currentGoalCorrect = 0, currentGoalIncorrect = 0, currentGoalApproximate = 0;
       const data = { ...(goalData.data || {}) };
 
       switch (goalData.goalType) {
         case 'ARTICULATION':
-            currentGoalCorrect = Number(data.correct) || 0;
-            currentGoalIncorrect = Number(data.incorrect) || 0;
-            currentGoalApproximate = Number(data.approximate) || 0;
-            break;
         case 'LANGUAGE_COMPREHENSION':
-            currentGoalCorrect = Number(data.questionsCorrect) || 0;
-            currentGoalIncorrect = Number(data.questionsIncorrect) || 0;
-            currentGoalApproximate = Number(data.approximate) || 0;
-            break;
         case 'LANGUAGE_EXPRESSION':
-            currentGoalCorrect = Number(data.successfulResponses) || 0;
-            currentGoalIncorrect = Number(data.unsuccessfulResponses) || 0;
-            currentGoalApproximate = Number(data.approximate) || 0;
-            break;
         case 'PHONOLOGICAL_PROCESSES':
-            currentGoalCorrect = Number(data.correctProductions) || 0;
-            currentGoalIncorrect = Number(data.incorrectProductions) || 0;
+        case 'SEQUENCED_TRIALS':
+        case 'DISCRETE_TRIALS':
+            currentGoalCorrect = Number(data.correct || data.questionsCorrect || data.successfulResponses || data.correctProductions || data.successfulAttempts) || 0;
+            currentGoalIncorrect = Number(data.incorrect || data.questionsIncorrect || data.unsuccessfulResponses || data.incorrectProductions || data.failedAttempts) || 0;
             currentGoalApproximate = Number(data.approximate) || 0;
+            if(goalData.goalType === 'DISCRETE_TRIALS' && Array.isArray(data.trials)) {
+                currentGoalCorrect = data.trials.filter((t: TrialStatus) => t === 'correct').length;
+                currentGoalIncorrect = data.trials.filter((t: TrialStatus) => t === 'incorrect').length;
+                currentGoalApproximate = data.trials.filter((t: TrialStatus) => t === 'approximate').length;
+            }
             break;
         case 'FLUENCY_SYLLABLE_STUTTER':
             const currentTotalSyllables = Number(data.totalSyllables) || 0;
             const currentStutteredSyllables = Number(data.stutteredSyllables) || 0;
             currentGoalCorrect = Math.max(0, currentTotalSyllables - currentStutteredSyllables);
             currentGoalIncorrect = currentStutteredSyllables;
-            currentGoalApproximate = Number(data.approximate) || 0;
-            // Aggregate fluency specific data
-            totalSyllables += currentTotalSyllables;
-            stutteredSyllables += currentStutteredSyllables;
-            blocks += Number(data.blocks) || 0;
-            repetitions += Number(data.repetitions) || 0;
-            prolongations += Number(data.prolongations) || 0;
-            interjections += Number(data.interjections) || 0;
+            day.totalSyllables += currentTotalSyllables;
+            day.stutteredSyllables += currentStutteredSyllables;
+            day.blocks += Number(data.blocks) || 0;
+            day.repetitions += Number(data.repetitions) || 0;
+            day.prolongations += Number(data.prolongations) || 0;
+            day.interjections += Number(data.interjections) || 0;
             break;
         case 'FEEDING_SWALLOWING':
             currentGoalCorrect = Number(data.trialsAccepted) || 0;
             currentGoalIncorrect = Number(data.trialsRefused) || 0;
-            currentGoalApproximate = Number(data.approximate) || 0;
-            break;
-        case 'SEQUENCED_TRIALS':
-            currentGoalCorrect = Number(data.successfulAttempts) || 0;
-            currentGoalIncorrect = Number(data.failedAttempts) || 0;
-            currentGoalApproximate = Number(data.approximate) || 0;
-            break;
-        case 'DISCRETE_TRIALS':
-            if (Array.isArray(data.trials)) {
-                currentGoalCorrect = data.trials.filter((t: TrialStatus) => t === 'correct').length;
-                currentGoalIncorrect = data.trials.filter((t: TrialStatus) => t === 'incorrect').length;
-                currentGoalApproximate = data.trials.filter((t: TrialStatus) => t === 'approximate').length;
-            }
             break;
       }
       
-      let currentGoalOpportunities = currentGoalCorrect + currentGoalIncorrect + currentGoalApproximate;
-      sessionCorrect += currentGoalCorrect;
-      sessionIncorrect += currentGoalIncorrect;
-      sessionApproximate += currentGoalApproximate;
-      sessionOpportunities += currentGoalOpportunities;
+      day.totalCorrect += currentGoalCorrect;
+      day.totalIncorrect += currentGoalIncorrect;
+      day.totalApproximate += currentGoalApproximate;
+      day.totalOpportunities += currentGoalCorrect + currentGoalIncorrect + currentGoalApproximate;
 
-      Object.keys(promptCounts).forEach(pt => {
+      Object.keys(day.promptCounts).forEach(pt => {
         const key = pt as PromptType;
         if (data[key] && typeof data[key] === 'number') {
-          promptCounts[key] = (promptCounts[key] || 0) + (Number(data[key]) || 0);
+          day.promptCounts[key] += Number(data[key]);
         }
       });
     });
-
-    const accuracy = sessionOpportunities > 0 ? (sessionCorrect / sessionOpportunities) * 100 : 0;
-    const totalPrompts = Object.entries(promptCounts).reduce((sum, [key, value]) => key !== 'Independent' ? sum + value : sum, 0);
-
-    return {
-      date: new Date(session.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      accuracy: parseFloat(accuracy.toFixed(1)),
-      correct: sessionCorrect,
-      incorrect: sessionIncorrect,
-      approximate: sessionApproximate, // Return approximate count
-      opportunities: sessionOpportunities,
-      totalPrompts: totalPrompts,
-      ...promptCounts,
-      // Fluency data for new charts
-      totalSyllables,
-      stutteredSyllables,
-      blocks,
-      repetitions,
-      prolongations,
-      interjections,
-    };
   });
+
+  return Object.values(dailyData).map(day => {
+    const accuracy = day.totalOpportunities > 0 ? (day.totalCorrect / day.totalOpportunities) * 100 : 0;
+    const totalPrompts = Object.entries(day.promptCounts).reduce((sum, [key, value]) => key !== 'Independent' ? sum + (value as number) : sum, 0);
+    return {
+      date: day.date,
+      accuracy: parseFloat(accuracy.toFixed(1)),
+      correct: day.totalCorrect,
+      incorrect: day.totalIncorrect,
+      approximate: day.totalApproximate,
+      opportunities: day.totalOpportunities,
+      totalPrompts: totalPrompts,
+      ...day.promptCounts,
+      totalSyllables: day.totalSyllables,
+      stutteredSyllables: day.stutteredSyllables,
+      blocks: day.blocks,
+      repetitions: day.repetitions,
+      prolongations: day.prolongations,
+      interjections: day.interjections,
+    };
+  }).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 };
 
 export interface AnalysisChartsProps {
