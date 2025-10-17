@@ -52,6 +52,7 @@ export default function StudentProfilePage() {
     deletingAssignedGoal,
     openDeleteAssignedGoalConfirmationModal,
     closeDeleteAssignedGoalConfirmationModal,
+    deleteStudent,
   } = useStudentData();
 
   const [currentStudent, setCurrentStudent] = useState<Student | null>(null);
@@ -179,6 +180,12 @@ export default function StudentProfilePage() {
     }
   };
 
+  const handleDeleteStudent = () => {
+    if (currentStudent) {
+      openDeleteConfirmationModal(currentStudent, 'student');
+    }
+  };
+
 
   return (
     <div className="space-y-6">
@@ -215,18 +222,23 @@ export default function StudentProfilePage() {
           isOpen={!!deletingStudent}
           onClose={closeDeleteConfirmationModal}
           title={
-            (deletingStudent.item as Student).isArchived
-              ? `Unarchive Student: ${(deletingStudent.item as Student).name}`
-              : `Archive Student: ${(deletingStudent.item as Student).name}`
+            (deletingStudent.item as Student).isArchived !== undefined
+              ? ((deletingStudent.item as Student).isArchived ? `Unarchive Student: ${(deletingStudent.item as Student).name}` : `Archive Student: ${(deletingStudent.item as Student).name}`)
+              : `Delete Student: ${(deletingStudent.item as Student)?.name}`
           }
           description={
-            (deletingStudent.item as Student).isArchived
-              ? "Unarchiving this student will make them visible in all active lists again. Are you sure?"
-              : "Archiving a student will hide them from active lists like the sidebar and data entry. Their data will be preserved. Are you sure you want to archive?"
+             (deletingStudent.item as Student).isArchived !== undefined
+              ? ((deletingStudent.item as Student).isArchived ? "Unarchiving this student will make them visible in all active lists again. Are you sure?" : "Archiving a student will hide them from active lists. Their data will be preserved. Are you sure?")
+              : `Are you sure you want to permanently delete this student and all their associated session data? This action cannot be undone.`
           }
-          itemToUpdate={{ ...(deletingStudent.item as Student), isArchived: !(deletingStudent.item as Student).isArchived }}
+          itemToDelete={(deletingStudent.item as Student).isArchived === undefined ? deletingStudent.item as Student : undefined}
+          itemToUpdate={(deletingStudent.item as Student).isArchived !== undefined ? { ...(deletingStudent.item as Student), isArchived: !(deletingStudent.item as Student).isArchived } : undefined}
           updateAction={(id, data) => updateStudent(id, data)}
-          confirmText={(deletingStudent.item as Student).isArchived ? 'Yes, Unarchive' : 'Yes, Archive'}
+          confirmText={
+             (deletingStudent.item as Student).isArchived !== undefined
+              ? ((deletingStudent.item as Student).isArchived ? 'Yes, Unarchive' : 'Yes, Archive')
+              : 'Yes, Delete Permanently'
+          }
           actionType="student"
         />
       )}
@@ -263,6 +275,10 @@ export default function StudentProfilePage() {
             <Button variant="outline" size="sm" onClick={handleToggleArchiveStudent} className={cn("w-full sm:w-auto", currentStudent.isArchived ? "text-green-600 hover:text-green-700 border-green-500 hover:bg-green-50" : "text-orange-600 hover:text-orange-700 border-orange-500 hover:bg-orange-50")}>
               {currentStudent.isArchived ? <ArchiveRestore className="mr-2 h-4 w-4"/> : <Archive className="mr-2 h-4 w-4"/>}
               {currentStudent.isArchived ? 'Unarchive' : 'Archive'}
+            </Button>
+            <Button variant="destructive" size="sm" onClick={handleDeleteStudent} className="w-full sm:w-auto">
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
             </Button>
           </div>
         </CardHeader>

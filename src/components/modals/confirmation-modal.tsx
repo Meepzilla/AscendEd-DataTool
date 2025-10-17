@@ -28,7 +28,6 @@ interface ConfirmationModalProps {
   itemToDelete?: Student | GoalTemplate | SessionData | Goal | null;
   itemToUpdate?: Student | null; // Added for updates like archiving
   updateAction?: (id: string, data: Partial<Student>) => void; // Action for updates
-  deleteActionType?: 'student' | 'goalTemplate' | 'session';
   actionType?: 'student' | 'goalTemplate' | 'session' | 'assignedGoal'; // More generic for updates
 }
 
@@ -103,7 +102,7 @@ export default function ConfirmationModal({
     }
   }, [isOpen, handleConfirmAction]);
   
-  const isDestructive = actionType === 'student' && itemToUpdate ? !itemToUpdate.isArchived : true;
+  const isDestructive = !!itemToDelete;
 
 
   return (
