@@ -46,30 +46,46 @@ export default function GoalTemplatesPage() {
   const [gridSize, setGridSize] = useState<'sm' | 'md' | 'lg'>('md');
 
   const filteredTemplates = useMemo(() => {
-    // Helper to safely get a timestamp from different date types
     const getSafeTimestamp = (date: Date | Timestamp | string): number => {
-        if (date instanceof Date) {
-        return date.getTime();
-        }
-        if (typeof date === 'string') {
-        return new Date(date).getTime();
-        }
-        if (date && typeof (date as Timestamp).toDate === 'function') {
-        return (date as Timestamp).toDate().getTime();
-        }
-        return 0; // Fallback for unexpected types
+        if (date instanceof Date) return date.getTime();
+        if (typeof date === 'string') return new Date(date).getTime();
+        if (date && typeof (date as Timestamp).toDate === 'function') return (date as Timestamp).toDate().getTime();
+        return 0;
     };
 
-    return goalTemplates.filter(template => {
-      const nameMatch = template.name.toLowerCase().includes(searchTerm.toLowerCase());
-      const typeMatch = filterType === 'ALL' || template.type === filterType;
-      const promptMatch = template.smartGoalPrompt?.toLowerCase().includes(searchTerm.toLowerCase());
-      return (nameMatch || promptMatch) && typeMatch;
-    }).sort((a,b) => {
+    const searchWords = searchTerm.toLowerCase().split(' ').filter(word => word);
+
+    return goalTemplates
+      .filter(template => {
+        const typeMatch = filterType === 'ALL' || template.type === filterType;
+        if (!typeMatch) return false;
+
+        if (searchWords.length === 0) return true;
+
+        const templateText = `${template.name.toLowerCase()} ${template.smartGoalPrompt?.toLowerCase() || ''}`;
+        return searchWords.every(word => templateText.includes(word));
+      })
+      .map(template => {
+        let score = 0;
+        if (searchWords.length > 0) {
+          const templateName = template.name.toLowerCase();
+          const templatePrompt = template.smartGoalPrompt?.toLowerCase() || '';
+          
+          searchWords.forEach(word => {
+            if (templateName.includes(word)) score += 2; // Higher score for name match
+            if (templatePrompt.includes(word)) score += 1;
+          });
+        }
+        return { ...template, score };
+      })
+      .sort((a, b) => {
+        if (a.score !== b.score) {
+          return b.score - a.score; // Higher score first
+        }
         const dateA = getSafeTimestamp(a.createdAt);
         const dateB = getSafeTimestamp(b.createdAt);
-        return dateB - dateA;
-    });
+        return dateB - dateA; // Then by most recent
+      });
   }, [goalTemplates, searchTerm, filterType]);
 
   const gridClasses = {
@@ -105,7 +121,7 @@ export default function GoalTemplatesPage() {
         <CardHeader>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
             <div>
-              <CardTitle className="text-2xl font-bold flex items-center gap-2"><ListPlus className="h-7 w-7 text-primary"/>Goal Templates</CardTitle>
+              <CardTitle className="text-2xl font-bold flex items-center gap-2"><ListPlus className="h-7 w-7 text-primary"/>Goals</CardTitle>
               <CardDescription>
                 Manage your library of reusable goal templates. 
                 {!isFirebaseDBAvailable && !loading && <span className="text-orange-500 font-semibold">(Local Mode: Data not saved to cloud)</span>}
@@ -253,3 +269,6 @@ function TemplateCardSkeleton() {
     );
 }
 
+
+
+    
