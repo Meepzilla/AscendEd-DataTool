@@ -139,20 +139,20 @@ export default function DashboardPage() {
         <h2 id="summary-title" className="text-xl font-semibold mb-4 text-foreground">Overview</h2>
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           {summaryData.map((item) => (
-            <Card key={item.title} className="shadow-lg hover:shadow-xl transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{item.title}</CardTitle>
-                <item.icon className="h-5 w-5 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">{item.value}</div>
-                <p className="text-xs text-muted-foreground pt-1">
-                  <Link href={item.href} passHref>
-                    <Button variant="link" className="p-0 h-auto text-xs">{item.buttonLabel}</Button>
-                  </Link>
-                </p>
-              </CardContent>
-            </Card>
+            <Link key={item.title} href={item.href} passHref>
+              <Card className="shadow-lg hover:shadow-xl transition-shadow h-full hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-primary">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">{item.title}</CardTitle>
+                  <item.icon className="h-5 w-5 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">{item.value}</div>
+                  <p className="text-xs text-muted-foreground pt-1">
+                    {item.buttonLabel} &rarr;
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
       </section>
