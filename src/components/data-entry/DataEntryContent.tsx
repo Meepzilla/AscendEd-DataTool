@@ -137,6 +137,10 @@ export default function DataEntryContent() {
   };
 
   const handleInputChange = (studentId: string, field: 'activity' | 'notes', value: string) => {
+    if (isStudentAccessLocked) {
+      toast({ title: 'Access Locked', description: 'Student access is locked. Unlock to make changes.', variant: 'default' });
+      return;
+    }
     setDataEntryStudentSessionStates(prev => ({
       ...prev,
       [studentId]: { ...prev[studentId], [field]: value },
@@ -242,7 +246,7 @@ export default function DataEntryContent() {
               handleMoveGoal={handleMoveGoal}
               handleLocalAiFetch={handleLocalAiFetch}
               addStudentSlot={addStudentSlot}
-              setDataEntryFocusedGoalIndexByStudentId={setDataEntryFocusedGoalIndexByStudentId}
+              isStudentAccessLocked={isStudentAccessLocked}
             />
           </Suspense>
         </ScrollArea>

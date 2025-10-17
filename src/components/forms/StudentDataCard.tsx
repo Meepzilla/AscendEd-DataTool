@@ -40,7 +40,7 @@ interface StudentDataCardProps {
   handleGoalDataChange: (studentId: string, goalId: string, updatedField: any, newData: any) => void;
   handleMoveGoal: (studentId: string, goalId: string, direction: 'up' | 'down') => void;
   handleLocalAiFetch: (studentId: string) => void;
-  setDataEntryFocusedGoalIndexByStudentId: React.Dispatch<React.SetStateAction<Record<string, number>>>;
+  isStudentAccessLocked: boolean;
 }
 
 const StudentDataCard: React.FC<StudentDataCardProps> = ({
@@ -65,7 +65,7 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
   handleGoalDataChange,
   handleMoveGoal,
   handleLocalAiFetch,
-  setDataEntryFocusedGoalIndexByStudentId,
+  isStudentAccessLocked,
 }) => {
   const showArchived = dataEntryShowArchivedByStudentId[student.id] || false;
   const allStudentGoals = state.originalGoalHeaders;
@@ -134,6 +134,7 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
                 placeholder="Describe the session activity"
                 value={state.activity}
                 onChange={(e) => handleInputChange(student.id, 'activity', e.target.value)}
+                disabled={isStudentAccessLocked}
               />
             </div>
             <div className="flex items-center space-x-2 mt-2">
@@ -157,8 +158,7 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
               <Suspense fallback={<Skeleton className="h-40 w-full" />}>
                 <div className="space-y-3">
                   {displayedGoals.map((goal, index) => {
-                    const displayedGoalIndex = displayedGoals.findIndex(dg => dg.id === goal.id);
-                    const isGoalFocused = isStudentFocused && (dataEntryFocusedGoalIndexByStudentId[student.id] ?? 0) === displayedGoalIndex;
+                    const isGoalFocused = isStudentFocused && (dataEntryFocusedGoalIndexByStudentId[student.id] ?? 0) === index;
                     const actualGoalIndexInOriginal = allStudentGoals.findIndex(g => g.id === goal.id);
 
                     return (
@@ -169,12 +169,12 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
                         data={state.goalData[goal.id] || GOAL_TYPE_FIELDS[goal.type]}
                         onChange={(updatedField, newData) => handleGoalDataChange(student.id, goal.id, updatedField, newData)}
                         isFocused={isGoalFocused}
-                        onSetFocus={() => setDataEntryFocusedGoalIndexByStudentId(prev => ({ ...prev, [student.id]: index }))}
                         onMoveUp={() => handleMoveGoal(student.id, goal.id, 'up')}
                         onMoveDown={() => handleMoveGoal(student.id, goal.id, 'down')}
                         canMoveUp={actualGoalIndexInOriginal > 0}
                         canMoveDown={actualGoalIndexInOriginal < allStudentGoals.length - 1}
                         isArchived={goal.isArchived}
+                        isLocked={isStudentAccessLocked}
                       />
                     );
                   })}
@@ -215,6 +215,7 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
                 value={state.notes}
                 onChange={(e) => handleInputChange(student.id, 'notes', e.target.value)}
                 rows={3}
+                disabled={isStudentAccessLocked}
               />
             </div>
             <div className="border-t pt-3 space-y-2">

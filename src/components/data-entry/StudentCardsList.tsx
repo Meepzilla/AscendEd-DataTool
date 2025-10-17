@@ -30,7 +30,7 @@ interface StudentCardsListProps {
   handleMoveGoal: (studentId: string, goalId: string, direction: 'up' | 'down') => void;
   handleLocalAiFetch: (studentId: string) => Promise<void>;
   addStudentSlot: () => void;
-  setDataEntryFocusedGoalIndexByStudentId: React.Dispatch<React.SetStateAction<Record<string, number>>>;
+  isStudentAccessLocked: boolean;
 }
 
 const StudentCardsList: React.FC<StudentCardsListProps> = ({
@@ -55,7 +55,7 @@ const StudentCardsList: React.FC<StudentCardsListProps> = ({
   handleMoveGoal,
   handleLocalAiFetch,
   addStudentSlot,
-  setDataEntryFocusedGoalIndexByStudentId,
+  isStudentAccessLocked,
 }) => {
   const activeStudents = students.filter(s => !s.isArchived);
 
@@ -82,7 +82,6 @@ const StudentCardsList: React.FC<StudentCardsListProps> = ({
               dataEntryVisibleGoalCountByStudentId={dataEntryVisibleGoalCountByStudentId}
               setDataEntryVisibleGoalCountByStudentId={setDataEntryVisibleGoalCountByStudentId}
               dataEntryFocusedGoalIndexByStudentId={dataEntryFocusedGoalIndexByStudentId}
-              setDataEntryFocusedGoalIndexByStudentId={setDataEntryFocusedGoalIndexByStudentId}
               dataEntryAiActivitySuggestions={dataEntryAiActivitySuggestions}
               isAiLoading={isAiLoading}
               setDataEntryFocusedStudentSlotIndex={setDataEntryFocusedStudentSlotIndex}
@@ -93,6 +92,7 @@ const StudentCardsList: React.FC<StudentCardsListProps> = ({
               handleGoalDataChange={handleGoalDataChange}
               handleMoveGoal={handleMoveGoal}
               handleLocalAiFetch={handleLocalAiFetch}
+              isStudentAccessLocked={isStudentAccessLocked}
             />
           </Suspense>
         );
