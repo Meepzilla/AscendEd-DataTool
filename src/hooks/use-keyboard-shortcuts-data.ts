@@ -4,6 +4,7 @@
 import { useCallback } from 'react';
 import type { Student, Goal, StudentSessionState } from '@/lib/types';
 import { PROMPT_HOTKEY_MAP } from '@/lib/promptConstants';
+import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 
 interface UseKeyboardShortcutHandlersProps {
     students: Student[];
@@ -93,9 +94,9 @@ export function useKeyboardShortcutHandlers({
         if (!focusedInfo?.goal || focusedInfo.goal.isArchived) return;
 
         let { studentId, goal, goalData } = focusedInfo;
-        // Ensure goalData is not undefined.
+        // Ensure goalData is not undefined. Initialize if it's missing.
         if (!goalData) {
-            goalData = {};
+            goalData = GOAL_TYPE_FIELDS[goal.type] || {};
         }
         
         const increment = alt ? -1 : 1;
