@@ -107,8 +107,9 @@ interface StudentDataContextType {
   openDeleteConfirmationModal: (item: Student | GoalTemplate | SessionData, type: 'student' | 'goalTemplate' | 'session') => void;
   closeDeleteConfirmationModal: () => void;
   isAddGoalTemplateModalOpen: boolean;
-  openAddGoalTemplateModal: () => void;
+  openAddGoalTemplateModal: (initialPrompt?: string) => void;
   closeAddGoalTemplateModal: () => void;
+  addGoalTemplateInitialPrompt: string | null;
   editingGoalTemplate: GoalTemplate | null;
   openEditGoalTemplateModal: (template: GoalTemplate) => void;
   closeEditGoalTemplateModal: () => void;
@@ -192,6 +193,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [deletingItem, setDeletingItem] = useState<{ item: Student | GoalTemplate | SessionData | null, type: 'student' | 'goalTemplate' | 'session' } | null>(null);
   const [isAddGoalTemplateModalOpen, setIsAddGoalTemplateModalOpen] = useState(false);
+  const [addGoalTemplateInitialPrompt, setAddGoalTemplateInitialPrompt] = useState<string | null>(null);
   const [editingGoalTemplate, setEditingGoalTemplate] = useState<GoalTemplate | null>(null);
   const [deletingGoalTemplate, setDeletingGoalTemplate] = useState<GoalTemplate | null>(null);
   const [editingSession, setEditingSession] = useState<SessionData | null>(null);
@@ -868,8 +870,17 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const closeEditStudentModal = useCallback(() => setEditingStudent(null), []);
   const openDeleteConfirmationModal = useCallback((item: Student | GoalTemplate | SessionData, type: 'student' | 'goalTemplate' | 'session') => setDeletingItem({ item, type }), []);
   const closeDeleteConfirmationModal = useCallback(() => setDeletingItem(null), []);
-  const openAddGoalTemplateModal = useCallback(() => setIsAddGoalTemplateModalOpen(true), []);
-  const closeAddGoalTemplateModal = useCallback(() => setIsAddGoalTemplateModalOpen(false), []);
+  
+  const openAddGoalTemplateModal = useCallback((initialPrompt?: string) => {
+    setAddGoalTemplateInitialPrompt(initialPrompt || null);
+    setIsAddGoalTemplateModalOpen(true);
+  }, []);
+
+  const closeAddGoalTemplateModal = useCallback(() => {
+    setIsAddGoalTemplateModalOpen(false);
+    setAddGoalTemplateInitialPrompt(null);
+  }, []);
+
   const openEditGoalTemplateModal = useCallback((template: GoalTemplate) => setEditingGoalTemplate(template), []);
   const closeEditGoalTemplateModal = useCallback(() => setEditingGoalTemplate(null), []);
   const openDeleteGoalTemplateModal = useCallback((template: GoalTemplate | null) => setDeletingGoalTemplate(template), []);
@@ -1334,7 +1345,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     isAddStudentModalOpen, openAddStudentModal, closeAddStudentModal,
     editingStudent, openEditStudentModal, closeEditStudentModal,
     deletingStudent: deletingItem, openDeleteConfirmationModal, closeDeleteConfirmationModal,
-    isAddGoalTemplateModalOpen, openAddGoalTemplateModal, closeAddGoalTemplateModal,
+    isAddGoalTemplateModalOpen, openAddGoalTemplateModal, closeAddGoalTemplateModal, addGoalTemplateInitialPrompt,
     editingGoalTemplate, openEditGoalTemplateModal, closeEditGoalTemplateModal,
     deletingGoalTemplate, openDeleteGoalTemplateModal, closeDeleteGoalTemplateModal,
     editingSession, openEditSessionModal, closeEditSessionModal,
@@ -1362,7 +1373,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     isAddStudentModalOpen, openAddStudentModal, closeAddStudentModal,
     editingStudent, openEditStudentModal, closeEditStudentModal,
     deletingItem, openDeleteConfirmationModal, closeDeleteConfirmationModal,
-    isAddGoalTemplateModalOpen, openAddGoalTemplateModal, closeAddGoalTemplateModal,
+    isAddGoalTemplateModalOpen, openAddGoalTemplateModal, closeAddGoalTemplateModal, addGoalTemplateInitialPrompt,
     editingGoalTemplate, openEditGoalTemplateModal, closeEditGoalTemplateModal,
     deletingGoalTemplate, openDeleteGoalTemplateModal, closeDeleteGoalTemplateModal,
     editingSession, openEditSessionModal, closeEditSessionModal,

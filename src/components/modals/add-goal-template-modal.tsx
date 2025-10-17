@@ -22,7 +22,13 @@ import { useErrorLog } from '@/hooks/use-error-log';
 type AddGoalTemplateFormData = z.infer<typeof GoalTemplateSchema>;
 
 export default function AddGoalTemplateModal() {
-  const { isAddGoalTemplateModalOpen, closeAddGoalTemplateModal, addGoalTemplate, loading: dataLoading } = useStudentData();
+  const { 
+    isAddGoalTemplateModalOpen, 
+    addGoalTemplateInitialPrompt,
+    closeAddGoalTemplateModal, 
+    addGoalTemplate, 
+    loading: dataLoading 
+  } = useStudentData();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const { toast } = useToast();
@@ -44,12 +50,13 @@ export default function AddGoalTemplateModal() {
       form.reset({
         name: '',
         type: Object.keys(GOAL_TYPES)[0] as GoalType,
-        smartGoalPrompt: '',
+        smartGoalPrompt: addGoalTemplateInitialPrompt || '',
         generatedSmartGoal: '',
         sessionTargetValue: undefined,
       });
     }
-  }, [isAddGoalTemplateModalOpen, form]);
+  }, [isAddGoalTemplateModalOpen, addGoalTemplateInitialPrompt, form]);
+
 
   const handleGenerateSmartGoal = async () => {
     const promptValue = form.getValues('smartGoalPrompt');

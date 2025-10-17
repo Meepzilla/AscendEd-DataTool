@@ -180,7 +180,7 @@ export default function GoalTemplatesPage() {
                 {!isFirebaseDBAvailable && !loading && <span className="text-orange-500 font-semibold">(Local Mode: Data not saved to cloud)</span>}
               </CardDescription>
             </div>
-            <Button onClick={openAddGoalTemplateModal} size="sm">
+            <Button onClick={() => openAddGoalTemplateModal()} size="sm">
               <PlusCircle className="mr-2 h-4 w-4" /> Add New Template
             </Button>
           </div>
@@ -234,7 +234,14 @@ export default function GoalTemplatesPage() {
             <div className="text-center py-10 text-muted-foreground">
               <Info className="mx-auto h-12 w-12 mb-4 text-primary" />
               <p>No goal templates found matching your criteria.</p>
-              <p>Try adjusting your search or filters, or add a new template.</p>
+              {searchTerm.trim() ? (
+                <Button onClick={() => openAddGoalTemplateModal(searchTerm)} className="mt-4">
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Generate New Goal from Search
+                </Button>
+              ) : (
+                <p>Try adjusting your search or filters, or add a new template.</p>
+              )}
             </div>
           )}
 
