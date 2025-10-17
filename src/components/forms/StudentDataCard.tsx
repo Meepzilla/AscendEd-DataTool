@@ -28,7 +28,6 @@ interface StudentDataCardProps {
   dataEntryShowArchivedByStudentId: Record<string, boolean>;
   dataEntryVisibleGoalCountByStudentId: Record<string, number>;
   dataEntryFocusedGoalIndexByStudentId: Record<string, number>;
-  setDataEntryFocusedGoalIndexByStudentId: React.Dispatch<React.SetStateAction<Record<string, number>>>;
   dataEntryAiActivitySuggestions: Record<string, string[]>;
   isAiLoading: Record<string, boolean>;
   setDataEntryFocusedStudentSlotIndex: (index: number) => void;
@@ -41,6 +40,7 @@ interface StudentDataCardProps {
   handleGoalDataChange: (studentId: string, goalId: string, updatedField: any, newData: any) => void;
   handleMoveGoal: (studentId: string, goalId: string, direction: 'up' | 'down') => void;
   handleLocalAiFetch: (studentId: string) => void;
+  setDataEntryFocusedGoalIndexByStudentId: React.Dispatch<React.SetStateAction<Record<string, number>>>;
 }
 
 const StudentDataCard: React.FC<StudentDataCardProps> = ({
@@ -53,7 +53,6 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
   dataEntryShowArchivedByStudentId,
   dataEntryVisibleGoalCountByStudentId,
   dataEntryFocusedGoalIndexByStudentId,
-  setDataEntryFocusedGoalIndexByStudentId,
   dataEntryAiActivitySuggestions,
   isAiLoading,
   setDataEntryFocusedStudentSlotIndex,
@@ -66,6 +65,7 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
   handleGoalDataChange,
   handleMoveGoal,
   handleLocalAiFetch,
+  setDataEntryFocusedGoalIndexByStudentId,
 }) => {
   const showArchived = dataEntryShowArchivedByStudentId[student.id] || false;
   const allStudentGoals = state.originalGoalHeaders;

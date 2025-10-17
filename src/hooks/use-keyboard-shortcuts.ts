@@ -97,8 +97,8 @@ export function useKeyboardShortcuts() {
         case 'E': if (pathname.startsWith('/data-entry')) triggerEditFocusedStudent(); break; // Alt+E to open edit modal for the focused student
         
         // Data Entry Hotkeys for decrementing prompt counts (Alt + key combination)
-        case 'C': // Decrement Correct / Total Syllables / Trials Accepted / Slider Left
-        case 'N': // Decrement Incorrect / Stuttered Syllables / Trials Refused / Slider Right
+        case 'C': // Decrement Correct / Total Syllables / Trials Accepted
+        case 'N': // Decrement Incorrect / Stuttered Syllables / Trials Refused
         case 'V': // Decrement Verbal Prompt count
         case 'G': // Decrement Gestural Prompt count
         case 'P': // Decrement Partial Physical Prompt count
@@ -123,8 +123,8 @@ export function useKeyboardShortcuts() {
                 
                 // Data Entry Hotkeys for incrementing prompt counts (No Alt/Ctrl modifier)
                 case 'B': // Increment Approximate
-                case 'C': // Increment Correct / Total Syllables / Trials Accepted / Slider Right
-                case 'N': // Increment Incorrect / Stuttered Syllables / Trials Refused / Slider Left
+                case 'C': // Increment Correct / Total Syllables / Trials Accepted
+                case 'N': // Increment Incorrect / Stuttered Syllables / Trials Refused
                 case 'D': // Increment Visual Prompt count
                 case 'V': // Increment Verbal Prompt count
                 case 'G': // Increment Gestural Prompt count

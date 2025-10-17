@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -6,8 +7,6 @@ import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronUp, Edit2 } from 'lucide-react';
 import SessionDateTimePickers from './SessionDateTimePickers';
 import HotkeysMessage from './HotkeysMessage';
-import FakeDataToggle from './FakeDataToggle';
-import { useStudentData } from '@/hooks/use-student-data';
 
 interface DataEntryHeaderCardProps {
   isHeaderCardCollapsed: boolean;
@@ -30,7 +29,6 @@ const DataEntryHeaderCard: React.FC<DataEntryHeaderCardProps> = ({
   dataEntrySessionEndTime,
   setDataEntrySessionEndTime,
 }) => {
-  const { isFakeDataMode, setIsFakeDataMode } = useStudentData();
 
   return (
     <Card className="shadow-lg flex-shrink-0">
@@ -65,7 +63,6 @@ const DataEntryHeaderCard: React.FC<DataEntryHeaderCardProps> = ({
               dataEntrySessionEndTime={dataEntrySessionEndTime}
               setDataEntrySessionEndTime={setDataEntrySessionEndTime}
             />
-            <FakeDataToggle isFakeDataMode={isFakeDataMode} setIsFakeDataMode={setIsFakeDataMode} />
           </div>
          
           <HotkeysMessage />
