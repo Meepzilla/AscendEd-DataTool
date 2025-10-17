@@ -214,7 +214,7 @@ export default function DataEntryContent() {
       </div>
 
       <div className="flex-grow min-h-0">
-        <ScrollArea className="h-full pb-24"> {/* Increased padding-bottom */}
+        <ScrollArea className="h-full pb-20"> {/* Reduced padding-bottom */}
           <Suspense fallback={<div>Loading student cards...</div>}>
             <StudentCardsList
               dataEntrySelectedStudentIds={dataEntrySelectedStudentIds}
