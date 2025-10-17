@@ -7,7 +7,7 @@ import type { GoalTemplate } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { PlusCircle, Edit, Trash2, Search, ListFilter, Sparkles, Info, ListPlus, Grid, Loader2, ArrowUpDown } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Search, ListFilter, Sparkles, Info, ListPlus, Grid, Loader2, ArrowUpDown, BrainCircuit } from 'lucide-react';
 import { formatDate } from '@/lib/helpers';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +24,8 @@ import { cn } from '@/lib/utils';
 import { findRelevantGoals, type FindRelevantGoalsOutput } from '@/ai/flows/semantic-search-flow';
 import { useToast } from '@/hooks/use-toast';
 import { useErrorLog } from '@/hooks/use-error-log';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 
 // Lazy load modals
 const AddGoalTemplateModal = lazy(() => import('@/components/modals/add-goal-template-modal'));
@@ -52,6 +54,7 @@ export default function GoalTemplatesPage() {
   const [filterType, setFilterType] = useState<string>('ALL');
   const [gridSize, setGridSize] = useState<'sm' | 'md' | 'lg'>('md');
   const [sortOrder, setSortOrder] = useState<string>('date-desc');
+  const [isAiSearchEnabled, setIsAiSearchEnabled] = useState(true);
   const [isAiSearching, setIsAiSearching] = useState(false);
   const [rankedGoals, setRankedGoals] = useState<FindRelevantGoalsOutput['rankedGoals'] | null>(null);
 
@@ -90,24 +93,28 @@ export default function GoalTemplatesPage() {
 
   const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
-      event.preventDefault(); // Prevent form submission if it's in a form
-      if (searchTerm.trim()) {
-        handleSemanticSearch();
-      } else {
-        setRankedGoals(null); // Clear AI results if search is empty
+      event.preventDefault(); 
+      if (isAiSearchEnabled) {
+        if (searchTerm.trim()) {
+          handleSemanticSearch();
+        } else {
+          setRankedGoals(null); // Clear AI results if search is empty
+        }
       }
     }
   };
 
   useEffect(() => {
-    // When search term is cleared, also clear AI results
-    if (!searchTerm.trim()) {
+    if (!isAiSearchEnabled) {
       setRankedGoals(null);
       if (sortOrder === 'relevance') {
-        setSortOrder('date-desc'); // Revert to default sort
+        setSortOrder('date-desc');
       }
+    } else {
+        // When AI search is re-enabled, clear the simple search term to avoid confusion
+        setRankedGoals(null);
     }
-  }, [searchTerm, sortOrder]);
+  }, [isAiSearchEnabled, sortOrder]);
 
 
   const filteredAndSortedTemplates = useMemo(() => {
@@ -125,18 +132,23 @@ export default function GoalTemplatesPage() {
       templates = templates.filter(template => template.type === filterType);
     }
     
-    // Determine if AI ranking is active
-    if (rankedGoals) {
-       templates = templates.filter(t => rankedGoals.some(rg => rg.id === t.id));
-    }
-    
-    // Apply simple text search if not using AI ranking
-    else if (searchTerm.trim()) {
-        const searchWords = searchTerm.toLowerCase().split(' ').filter(word => word);
-        templates = templates.filter(template => {
-            const templateText = `${template.name.toLowerCase()} ${template.smartGoalPrompt?.toLowerCase() || ''}`;
-            return searchWords.every(word => templateText.includes(word));
-          });
+    if (isAiSearchEnabled) {
+        // AI Search logic (uses rankedGoals)
+        if (rankedGoals) {
+            templates = templates.filter(t => rankedGoals.some(rg => rg.id === t.id));
+        } else if (searchTerm.trim() !== '') {
+            // Before AI search is run, don't show any results to avoid confusion
+            templates = [];
+        }
+    } else {
+        // Simple keyword filter logic
+        if (searchTerm.trim()) {
+            const searchWords = searchTerm.toLowerCase().split(' ').filter(word => word);
+            templates = templates.filter(template => {
+                const templateText = `${template.name.toLowerCase()} ${template.smartGoalPrompt?.toLowerCase() || ''}`;
+                return searchWords.every(word => templateText.includes(word));
+            });
+        }
     }
 
     // Apply sorting
@@ -164,7 +176,7 @@ export default function GoalTemplatesPage() {
     });
 
     return templates;
-  }, [goalTemplates, filterType, rankedGoals, searchTerm, sortOrder]);
+  }, [goalTemplates, filterType, rankedGoals, searchTerm, sortOrder, isAiSearchEnabled]);
 
   const gridClasses = {
     sm: 'grid-cols-1 sm:grid-cols-2',
@@ -216,14 +228,14 @@ export default function GoalTemplatesPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col sm:flex-row gap-2 mb-4">
-            <div className="relative flex-grow">
-                <div className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground">
-                  {isAiSearching ? <Loader2 className="animate-spin" /> : <Sparkles className="text-yellow-500" />}
+          <div className="flex flex-wrap gap-2 mb-4">
+            <div className="relative flex-grow min-w-[200px]">
+                <div className={cn("absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground", isAiSearchEnabled && "text-yellow-500")}>
+                  {isAiSearching ? <Loader2 className="animate-spin" /> : isAiSearchEnabled ? <Sparkles /> : <Search />}
                 </div>
                 <Input
                   type="search"
-                  placeholder="AI Semantic Search... (Press Enter)"
+                  placeholder={isAiSearchEnabled ? "AI Semantic Search... (Press Enter)" : "Filter by keyword..."}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onKeyDown={handleSearchKeyDown}
@@ -248,7 +260,7 @@ export default function GoalTemplatesPage() {
                     <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>
-                    {rankedGoals && <SelectItem value="relevance">Relevance</SelectItem>}
+                    {isAiSearchEnabled && <SelectItem value="relevance">Relevance</SelectItem>}
                     <SelectItem value="date-desc">Date: Newest</SelectItem>
                     <SelectItem value="date-asc">Date: Oldest</SelectItem>
                     <SelectItem value="name-asc">Name: A-Z</SelectItem>
@@ -266,6 +278,16 @@ export default function GoalTemplatesPage() {
                     <SelectItem value="lg">Large</SelectItem>
                 </SelectContent>
             </Select>
+             <div className="flex items-center space-x-2 border p-2 rounded-md">
+                <Switch
+                  id="ai-search-toggle"
+                  checked={isAiSearchEnabled}
+                  onCheckedChange={setIsAiSearchEnabled}
+                />
+                <Label htmlFor="ai-search-toggle" className="flex items-center gap-1.5 text-sm cursor-pointer">
+                    <BrainCircuit className="h-4 w-4" /> AI Search
+                </Label>
+             </div>
           </div>
 
           {(loading || isAiSearching) && (
@@ -278,13 +300,11 @@ export default function GoalTemplatesPage() {
             <div className="text-center py-10 text-muted-foreground">
               <Info className="mx-auto h-12 w-12 mb-4 text-primary" />
               <p>No goal templates found matching your criteria.</p>
-              {searchTerm.trim() ? (
+              {searchTerm.trim() && isAiSearchEnabled && (
                 <Button onClick={() => openAddGoalTemplateModal(searchTerm)} className="mt-4">
                   <Sparkles className="mr-2 h-4 w-4" />
                   Generate New Goal from Search
                 </Button>
-              ) : (
-                <p>Try adjusting your search or filters, or add a new template.</p>
               )}
             </div>
           )}
