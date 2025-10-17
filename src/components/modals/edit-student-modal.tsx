@@ -338,7 +338,7 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
             {currentStudent.goals.length === 0 ? (
               <p className="text-sm text-muted-foreground">No goals assigned yet.</p>
             ) : (
-              <ScrollArea className="h-64 border rounded-md p-2">
+              <ScrollArea className="h-60 border rounded-md p-2">
                 <ul className="space-y-1">
                   {currentStudent.goals.map(goal => (
                     <li key={goal.id} className="flex items-center p-1.5 bg-muted/50 rounded-md text-sm gap-2">
@@ -388,7 +388,7 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
                 </SelectContent>
               </Select>
             </div>
-            <ScrollArea className="h-64 border rounded-md p-2">
+            <ScrollArea className="h-60 border rounded-md p-2">
               {filteredGoalTemplates.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">No matching templates found or all assigned.</p>
               ) : (
