@@ -8,7 +8,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import {z} from 'zod';
 
 const ActivitySuggestionsInputSchema = z.object({
   goal: z.string().describe('The learning goal for which to suggest activities.'),

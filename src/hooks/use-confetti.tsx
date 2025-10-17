@@ -1,11 +1,10 @@
-
 'use client';
 
 import React, { createContext, useContext, useCallback, ReactNode } from 'react';
 import confetti from 'canvas-confetti';
 
 type ConfettiContextType = {
-  fire: (origin: { x: number; y: number }) => void;
+  fire: (origin: HTMLElement | null) => void;
 };
 
 const ConfettiContext = createContext<ConfettiContextType | null>(null);
