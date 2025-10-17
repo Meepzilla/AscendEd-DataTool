@@ -15,6 +15,8 @@ const PerformanceScatterPlot = lazy(() => import('./analysis-charts/PerformanceS
 const PromptUsageChart = lazy(() => import('./analysis-charts/PromptUsageChart'));
 const GoalPerformanceSankey = lazy(() => import('./analysis-charts/GoalPerformanceSankey'));
 const AiSummary = lazy(() => import('./analysis-charts/AiSummary'));
+const SyllableFluencyChart = lazy(() => import('./analysis-charts/SyllableFluencyChart'));
+const DisfluencyTypesChart = lazy(() => import('./analysis-charts/DisfluencyTypesChart'));
 
 
 // Helper to transform session data for charts
@@ -27,6 +29,13 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
     let promptCounts: Record<PromptType, number> = {
         'Independent': 0, 'Visual': 0, 'Verbal': 0, 'Gestural': 0, 'PartialPhysical': 0, 'Imitation': 0
     };
+    // Fluency specific data
+    let totalSyllables = 0;
+    let stutteredSyllables = 0;
+    let blocks = 0;
+    let repetitions = 0;
+    let prolongations = 0;
+    let interjections = 0;
 
     session.goals.forEach(goalData => {
       const currentGoal = studentGoals.find(g => g.id === goalData.goalId);
@@ -61,11 +70,18 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
             currentGoalApproximate = Number(data.approximate) || 0;
             break;
         case 'FLUENCY_SYLLABLE_STUTTER':
-            const totalSyllables = Number(data.totalSyllables) || 0;
-            const stutteredSyllables = Number(data.stutteredSyllables) || 0;
-            currentGoalCorrect = Math.max(0, totalSyllables - stutteredSyllables);
-            currentGoalIncorrect = stutteredSyllables;
+            const currentTotalSyllables = Number(data.totalSyllables) || 0;
+            const currentStutteredSyllables = Number(data.stutteredSyllables) || 0;
+            currentGoalCorrect = Math.max(0, currentTotalSyllables - currentStutteredSyllables);
+            currentGoalIncorrect = currentStutteredSyllables;
             currentGoalApproximate = Number(data.approximate) || 0;
+            // Aggregate fluency specific data
+            totalSyllables += currentTotalSyllables;
+            stutteredSyllables += currentStutteredSyllables;
+            blocks += Number(data.blocks) || 0;
+            repetitions += Number(data.repetitions) || 0;
+            prolongations += Number(data.prolongations) || 0;
+            interjections += Number(data.interjections) || 0;
             break;
         case 'FEEDING_SWALLOWING':
             currentGoalCorrect = Number(data.trialsAccepted) || 0;
@@ -112,6 +128,13 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
       opportunities: sessionOpportunities,
       totalPrompts: totalPrompts,
       ...promptCounts,
+      // Fluency data for new charts
+      totalSyllables,
+      stutteredSyllables,
+      blocks,
+      repetitions,
+      prolongations,
+      interjections,
     };
   });
 };
@@ -138,6 +161,13 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, select
   const hasPromptUsageData = useMemo(() => {
     return chartData.some(session => Object.keys(session).some(key => key !== 'totalPrompts' && key !== 'Independent' && session[key as keyof typeof session] > 0));
   }, [chartData]);
+  
+  const hasFluencyData = useMemo(() => {
+    if (selectedGoalId) {
+        return activeStudentGoals.some(g => g.id === selectedGoalId && g.type === 'FLUENCY_SYLLABLE_STUTTER');
+    }
+    return activeStudentGoals.some(g => g.type === 'FLUENCY_SYLLABLE_STUTTER');
+  }, [activeStudentGoals, selectedGoalId]);
 
 
   if (sessionsLoading) {
@@ -160,6 +190,16 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, select
         <Suspense fallback={<ChartSuspenseFallback />}>
           <ResponseCountsChart chartData={chartData} selectedGoalId={selectedGoalId} activeStudentGoals={activeStudentGoals} />
         </Suspense>
+        {hasFluencyData && (
+          <>
+            <Suspense fallback={<ChartSuspenseFallback />}>
+                <SyllableFluencyChart chartData={chartData} />
+            </Suspense>
+            <Suspense fallback={<ChartSuspenseFallback />}>
+                <DisfluencyTypesChart chartData={chartData} />
+            </Suspense>
+          </>
+        )}
         <Suspense fallback={<ChartSuspenseFallback />}>
           <OpportunitiesChart chartData={chartData} selectedGoalId={selectedGoalId} activeStudentGoals={activeStudentGoals} />
         </Suspense>
