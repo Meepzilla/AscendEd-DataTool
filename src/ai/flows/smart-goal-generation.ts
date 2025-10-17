@@ -4,8 +4,8 @@
  * @fileOverview A SMART goal generation AI agent.
  *
  * - generateSmartGoal - A function that handles the generation of a SMART goal.
- * - GenerateSmartGoalInput - The input type for the generateSmartGoal function.
- * - GenerateSmartGoalOutput - The return type for the generateSmartGoal function.
+ * - GenerateSmartGoalInput - The input type for the generateSmartGoal function
+ * - GenerateSmartGoalOutput - The return type for the generateSmartGoal function
  */
 
 import {ai} from '@/ai/genkit';
