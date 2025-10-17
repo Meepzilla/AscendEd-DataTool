@@ -96,18 +96,19 @@ export default function DataEntryContent() {
       }
     }
 
-    const focusedInfo = getCurrentFocusedGoalInfo();
-    if (focusedInfo && focusedInfo.goal && focusedInfo.studentState) {
-      const { studentId: studentIdForGoal, goal } = focusedInfo;
-      const goalElementId = `goal-input-${studentIdForGoal}-${goal.id}`;
-      const goalElement = document.getElementById(goalElementId);
+    setTimeout(() => {
+        const focusedInfo = getCurrentFocusedGoalInfo();
+        if (focusedInfo && focusedInfo.goal && focusedInfo.studentState) {
+          const { studentId: studentIdForGoal, goal } = focusedInfo;
+          const goalElementId = `goal-input-${studentIdForGoal}-${goal.id}`;
+          const goalElement = document.getElementById(goalElementId);
 
-      if (goalElement) {
-        setTimeout(() => {
-          goalElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }, 50);
-      }
-    }
+          if (goalElement) {
+              goalElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        }
+    }, 50); // Small delay to ensure DOM is updated after student focus changes
+
   }, [dataEntrySelectedStudentIds, dataEntryFocusedStudentSlotIndex, dataEntryFocusedGoalIndexByStudentId, getCurrentFocusedGoalInfo]);
 
   const handleStudentSelect = useCallback((studentId: string, index: number) => {
