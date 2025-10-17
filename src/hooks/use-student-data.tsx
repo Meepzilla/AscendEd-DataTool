@@ -157,6 +157,7 @@ interface StudentDataContextType {
   resetDataEntrySession: () => void;
   handleGoalDataChange: (studentId: string, goalId: string, updatedFieldName: string, newData: SessionGoalData['data']) => void;
   handleMoveGoal: (studentId: string, goalId: string, direction: 'up' | 'down') => void;
+  addStudentSlot: () => void;
   
   // Keyboard Shortcut Handlers
   focusStudentSlot: (slotIndex: number) => void;
@@ -1113,6 +1114,18 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       };
     });
   }, [dataEntryShowArchivedByStudentId]);
+  
+  const addStudentSlot = useCallback(() => {
+    const activeStudents = studentsState.filter(s => !s.isArchived);
+    const availableStudent = activeStudents.find(s => !dataEntrySelectedStudentIds.includes(s.id));
+    if (availableStudent) {
+      setDataEntrySelectedStudentIdsState(prev => [...prev, availableStudent.id]);
+      setDataEntryFocusedStudentSlotIndexState(dataEntrySelectedStudentIds.length);
+    } else {
+      safeToast({ title: "Info", description: "No more unique available students to add.", variant: "default" });
+    }
+  }, [studentsState, dataEntrySelectedStudentIds, safeToast]);
+
 
   // #endregion
 
@@ -1364,6 +1377,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     dataEntryVisibleGoalCountByStudentId, setDataEntryVisibleGoalCountByStudentId,
     dataEntryShowArchivedByStudentId, setDataEntryShowArchivedByStudentId,
     fetchAiActivitySuggestions, saveDataEntrySession, resetDataEntrySession, handleGoalDataChange, handleMoveGoal,
+    addStudentSlot,
     focusStudentSlot, cycleFocusedStudent, cycleFocusedGoal, handleDataEntryHotkey, triggerEditFocusedStudent, toggleStudentSelectionModal, toggleGoalSelectionModal, getCurrentFocusedGoalInfo
   }), [
     studentsState, goalTemplatesState, sessionsState, selectedStudent, loading, sessionsLoading, error, isFirebaseDBAvailable,
@@ -1392,6 +1406,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     dataEntryVisibleGoalCountByStudentId, setDataEntryVisibleGoalCountByStudentId,
     dataEntryShowArchivedByStudentId, setDataEntryShowArchivedByStudentId,
     fetchAiActivitySuggestions, saveDataEntrySession, resetDataEntrySession, handleGoalDataChange, handleMoveGoal,
+    addStudentSlot,
     focusStudentSlot, cycleFocusedStudent, cycleFocusedGoal, handleDataEntryHotkey, triggerEditFocusedStudent, toggleStudentSelectionModal, toggleGoalSelectionModal, getCurrentFocusedGoalInfo
   ]);
 

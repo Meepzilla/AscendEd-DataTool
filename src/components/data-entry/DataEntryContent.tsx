@@ -46,6 +46,7 @@ export default function DataEntryContent() {
     handleGoalDataChange,
     handleMoveGoal,
     getCurrentFocusedGoalInfo,
+    addStudentSlot,
   } = useStudentData();
 
   const [isSaving, setIsSaving] = useState(false);
@@ -112,16 +113,6 @@ export default function DataEntryContent() {
     });
     setDataEntryFocusedStudentSlotIndex(index);
   }, [setDataEntrySelectedStudentIds, setDataEntryFocusedStudentSlotIndex]);
-
-  const addStudentSlot = () => {
-    const availableStudent = activeStudents.find(s => !dataEntrySelectedStudentIds.includes(s.id));
-    if (availableStudent) {
-      setDataEntrySelectedStudentIds([...dataEntrySelectedStudentIds, availableStudent.id]);
-      setDataEntryFocusedStudentSlotIndex(dataEntrySelectedStudentIds.length);
-    } else {
-      toast({ title: "Info", description: "No more unique available students to add, or all students are already in slots.", variant: "default" });
-    }
-  };
 
   const removeStudentSlot = (indexToRemove: number) => {
     const currentFocusedId = dataEntrySelectedStudentIds[dataEntryFocusedStudentSlotIndex];
