@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
 import { Info } from 'lucide-react';
 import type { StudentSessionState } from '@/lib/types';
+import TouchControls from '@/components/forms/touch-controls';
 
 const ConfirmationModal = lazy(() => import('@/components/modals/confirmation-modal'));
 const StudentCardsList = lazy(() => import('@/components/data-entry/StudentCardsList'));
@@ -236,8 +237,10 @@ export default function DataEntryContent() {
 
       {dataEntrySelectedStudentIds.length > 0 && (
         <div className="sticky bottom-0 left-0 right-0 z-10 bg-background/95 backdrop-blur-sm">
-            <div className="flex justify-end items-center gap-2 p-2 border-t">
-                {/* TouchControls are now in the sidebar */}
+            <div className="flex justify-between items-center gap-2 p-2 border-t">
+                 <div className="flex items-center gap-2">
+                   <TouchControls />
+                 </div>
                 <div className="flex items-center gap-2">
                     <Button variant="outline" onClick={handleOpenResetConfirmation} disabled={isSaving} size="lg">
                     <RotateCcw className="mr-2 h-5 w-5" />
