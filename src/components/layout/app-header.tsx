@@ -14,7 +14,7 @@ import AddStudentModal from '@/components/modals/add-student-modal';
 import EditStudentModal from '@/components/modals/edit-student-modal';
 import ErrorLogModal from '@/components/modals/error-log-modal';
 import AppNavigation from './app-navigation'; 
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Separator } from '../ui/separator';
 import { 
   DropdownMenu, 
@@ -25,14 +25,18 @@ import {
   DropdownMenuSeparator 
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import TouchControls from '../forms/touch-controls';
 
 export default function AppHeader() {
   const { currentUser, signOut } = useAuth();
   const { openAddStudentModal, editingStudent } = useStudentData();
   const { toggleErrorLogModal, isErrorLogModalOpen } = useErrorLog(); 
   const router = useRouter();
+  const pathname = usePathname();
 
   const userInitial = currentUser?.displayName?.charAt(0) || currentUser?.email?.charAt(0) || 'U';
+  const isDataEntryPage = pathname.startsWith('/data-entry');
+
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-card/80 backdrop-blur-md">
@@ -59,6 +63,13 @@ export default function AppHeader() {
               </div>
               <AppNavigation isMobile={true} />
               <div className="p-2 absolute bottom-0 w-full">
+                {isDataEntryPage && (
+                  <>
+                    <div className="mb-2">
+                       <TouchControls />
+                    </div>
+                  </>
+                )}
                 <Separator className="my-2" />
                 <Button variant="outline" className="w-full" onClick={openAddStudentModal}>
                     <UserPlus className="mr-2 h-4 w-4" />
