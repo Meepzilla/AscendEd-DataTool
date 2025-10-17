@@ -8,7 +8,7 @@ import type { Student, Goal } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Edit, Trash2, PlusCircle, Info, Target, Edit3, CheckSquare, TrendingUp, Archive, ArchiveRestore, Upload, Download } from 'lucide-react';
+import { Edit, Trash2, PlusCircle, Info, Target, Edit3, CheckSquare, TrendingUp, Archive, ArchiveRestore, Upload, Download, ArrowLeft } from 'lucide-react';
 import { formatDate } from '@/lib/helpers'; 
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -255,6 +255,12 @@ export default function StudentProfilePage() {
       <Card className="shadow-lg">
         <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 sm:p-6">
           <div className="flex items-center gap-3 sm:gap-4">
+             <Link href="/student-profile" passHref>
+                <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0">
+                  <ArrowLeft className="h-6 w-6" />
+                  <span className="sr-only">Back to All Students</span>
+                </Button>
+              </Link>
             <Avatar className="h-14 w-14 sm:h-16 sm:w-16">
               <AvatarImage src={`https://avatar.vercel.sh/${currentStudent.id}.png?text=${currentStudent.name.substring(0,2).toUpperCase()}`} alt={currentStudent.name} data-ai-hint="abstract avatar"/>
               <AvatarFallback>{currentStudent.name.substring(0, 2).toUpperCase()}</AvatarFallback>
@@ -395,3 +401,4 @@ function StudentProfileSkeleton() {
     </div>
   );
 }
+
