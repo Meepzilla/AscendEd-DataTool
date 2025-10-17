@@ -49,6 +49,8 @@ export default function DataEntryContent() {
     handleMoveGoal,
     getCurrentFocusedGoalInfo,
     addStudentSlot,
+    isStudentAccessLocked,
+    setIsStudentAccessLocked,
   } = useStudentData();
 
   const [isSaving, setIsSaving] = useState(false);
@@ -209,6 +211,8 @@ export default function DataEntryContent() {
             setDataEntrySessionTime={setDataEntrySessionTime}
             dataEntrySessionEndTime={dataEntrySessionEndTime}
             setDataEntrySessionEndTime={setDataEntrySessionEndTime}
+            isStudentAccessLocked={isStudentAccessLocked}
+            setIsStudentAccessLocked={setIsStudentAccessLocked}
           />
         </Suspense>
       </div>

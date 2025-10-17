@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronUp, Edit2 } from 'lucide-react';
 import SessionDateTimePickers from './SessionDateTimePickers';
 import HotkeysMessage from './HotkeysMessage';
+import StudentAccessToggle from './StudentAccessToggle';
 
 interface DataEntryHeaderCardProps {
   isHeaderCardCollapsed: boolean;
@@ -17,6 +18,8 @@ interface DataEntryHeaderCardProps {
   setDataEntrySessionTime: (time: string) => void;
   dataEntrySessionEndTime: string;
   setDataEntrySessionEndTime: (time: string) => void;
+  isStudentAccessLocked: boolean;
+  setIsStudentAccessLocked: (locked: boolean) => void;
 }
 
 const DataEntryHeaderCard: React.FC<DataEntryHeaderCardProps> = ({
@@ -28,6 +31,8 @@ const DataEntryHeaderCard: React.FC<DataEntryHeaderCardProps> = ({
   setDataEntrySessionTime,
   dataEntrySessionEndTime,
   setDataEntrySessionEndTime,
+  isStudentAccessLocked,
+  setIsStudentAccessLocked,
 }) => {
 
   return (
@@ -62,6 +67,10 @@ const DataEntryHeaderCard: React.FC<DataEntryHeaderCardProps> = ({
               setDataEntrySessionTime={setDataEntrySessionTime}
               dataEntrySessionEndTime={dataEntrySessionEndTime}
               setDataEntrySessionEndTime={setDataEntrySessionEndTime}
+            />
+            <StudentAccessToggle
+                isStudentAccessLocked={isStudentAccessLocked}
+                setIsStudentAccessLocked={setIsStudentAccessLocked}
             />
           </div>
          

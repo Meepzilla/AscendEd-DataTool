@@ -159,8 +159,8 @@ interface StudentDataContextType {
   handleGoalDataChange: (studentId: string, goalId: string, updatedFieldName: string, newData: SessionGoalData['data']) => void;
   handleMoveGoal: (studentId: string, goalId: string, direction: 'up' | 'down') => void;
   addStudentSlot: () => void;
-  isFakeDataMode: boolean;
-  setIsFakeDataMode: (isFake: boolean) => void;
+  isStudentAccessLocked: boolean;
+  setIsStudentAccessLocked: (isLocked: boolean) => void;
   
   // Keyboard Shortcut Handlers
   focusStudentSlot: (slotIndex: number) => void;
@@ -217,7 +217,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [dataEntryAiActivitySuggestions, setDataEntryAiActivitySuggestionsState] = useState<Record<string, string[]>>({}); // Not persisted
   const [dataEntryVisibleGoalCountByStudentId, setDataEntryVisibleGoalCountByStudentIdState] = useState<Record<string, number>>({});
   const [dataEntryShowArchivedByStudentId, setDataEntryShowArchivedByStudentIdState] = useState<Record<string, boolean>>({});
-  const [isFakeDataMode, setIsFakeDataMode] = useState(false);
+  const [isStudentAccessLocked, setIsStudentAccessLocked] = useState(false);
 
 
   // Derived state for students in active slots
@@ -747,8 +747,8 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   }, [isFirebaseDBAvailable, goalTemplatesState, safeToast, APP_ID, currentUser, addErrorLog, saveTemplatesToLocal]);
 
   const addSession = useCallback(async (sessionDataOmitId: Omit<SessionData, 'sessionId'>): Promise<SessionData | null> => {
-    if (isFakeDataMode) {
-      safeToast({ title: "Dev Mode", description: `Fake session for ${sessionDataOmitId.studentName} "saved".`});
+    if (isStudentAccessLocked) {
+      safeToast({ title: "Simulated Save", description: `Access is locked. Session for ${sessionDataOmitId.studentName} not saved.`});
       return { sessionId: generateUUID(), ...sessionDataOmitId };
     }
      if (!currentUser) {
@@ -778,7 +778,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       safeToast({ title: "Success", description: "Session saved locally." });
       return newSession;
     }
-  }, [currentUser, isFirebaseDBAvailable, safeToast, APP_ID, addErrorLog, sessionsState, saveSessionsToLocal, isFakeDataMode]);
+  }, [currentUser, isFirebaseDBAvailable, safeToast, APP_ID, addErrorLog, sessionsState, saveSessionsToLocal, isStudentAccessLocked]);
 
   const updateSession = useCallback(async (sessionId: string, data: Partial<SessionData>) => {
     if (!currentUser) {
@@ -983,25 +983,23 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
     const savedSession = await addSession(session);
     
-    if (savedSession) {
+    if (savedSession && !isStudentAccessLocked) {
         safeToast({ title: "Success", description: `Session for ${state.studentName} saved.`});
-        if (!isFakeDataMode) {
-            // Reset state for the saved student only if not in fake data mode
-            setDataEntryStudentSessionStatesState(prevStates => {
-                const newStates = { ...prevStates };
-                if (newStates[focusedStudentId]) {
-                    const studentState = newStates[focusedStudentId];
-                    studentState.activity = '';
-                    studentState.notes = '';
-                    const initialGoalData: Record<string, SessionGoalData['data']> = {};
-                    studentState.originalGoalHeaders.forEach(goal => {
-                        initialGoalData[goal.id] = JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type]));
-                    });
-                    studentState.goalData = initialGoalData;
-                }
-                return newStates;
-            });
-        }
+        // Reset state for the saved student only if not in locked mode
+        setDataEntryStudentSessionStatesState(prevStates => {
+            const newStates = { ...prevStates };
+            if (newStates[focusedStudentId]) {
+                const studentState = newStates[focusedStudentId];
+                studentState.activity = '';
+                studentState.notes = '';
+                const initialGoalData: Record<string, SessionGoalData['data']> = {};
+                studentState.originalGoalHeaders.forEach(goal => {
+                    initialGoalData[goal.id] = JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type]));
+                });
+                studentState.goalData = initialGoalData;
+            }
+            return newStates;
+        });
     }
   }, [
       dataEntrySessionDate, 
@@ -1013,7 +1011,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       addSession, 
       safeToast, 
       addErrorLog,
-      isFakeDataMode
+      isStudentAccessLocked
   ]);
 
   const saveAllDataEntrySessions = useCallback(async () => {
@@ -1029,10 +1027,16 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
     let savedCount = 0;
     let errorCount = 0;
+    let simulatedCount = 0;
 
     for (const studentId of dataEntrySelectedStudentIds) {
         const state = dataEntryStudentSessionStates[studentId];
         if (!state) continue;
+
+        if (isStudentAccessLocked) {
+            simulatedCount++;
+            continue;
+        }
 
         const sessionGoals: SessionGoalData[] = state.originalGoalHeaders
             .filter(goal => !goal.isArchived)
@@ -1060,7 +1064,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         const savedSession = await addSession(session);
         if (savedSession) {
             savedCount++;
-            if (!isFakeDataMode) {
+            if (!isStudentAccessLocked) {
                 setDataEntryStudentSessionStatesState(prevStates => {
                     const newStates = { ...prevStates };
                     if (newStates[studentId]) {
@@ -1083,14 +1087,16 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     if (savedCount > 0) {
         safeToast({ title: "Success", description: `Saved ${savedCount} session(s).` });
     }
-
+    if (simulatedCount > 0) {
+        safeToast({ title: "Simulated Save", description: `${simulatedCount} session(s) were not saved because access is locked.` });
+    }
     if (errorCount > 0) {
         safeToast({ title: "Error", description: `Failed to save ${errorCount} session(s).`, variant: "destructive" });
     }
-    if (savedCount === 0 && errorCount === 0) {
+    if (savedCount === 0 && errorCount === 0 && simulatedCount === 0) {
         safeToast({ title: "Info", description: "No sessions with data to save.", variant: "default" });
     }
-  }, [dataEntrySessionDate, dataEntrySessionTime, dataEntrySessionEndTime, dataEntrySelectedStudentIds, dataEntryStudentSessionStates, addSession, safeToast, isFakeDataMode]);
+  }, [dataEntrySessionDate, dataEntrySessionTime, dataEntrySessionEndTime, dataEntrySelectedStudentIds, dataEntryStudentSessionStates, addSession, safeToast, isStudentAccessLocked]);
 
   const resetDataEntrySession = useCallback(() => {
     if (dataEntrySelectedStudentIds.length === 0 || dataEntryFocusedStudentSlotIndex >= dataEntrySelectedStudentIds.length) {
@@ -1470,7 +1476,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     dataEntryShowArchivedByStudentId, setDataEntryShowArchivedByStudentId,
     fetchAiActivitySuggestions, saveDataEntrySession, saveAllDataEntrySessions, resetDataEntrySession, handleGoalDataChange, handleMoveGoal,
     addStudentSlot,
-    isFakeDataMode, setIsFakeDataMode,
+    isStudentAccessLocked, setIsStudentAccessLocked,
     focusStudentSlot, cycleFocusedStudent, cycleFocusedGoal, handleDataEntryHotkey, triggerEditFocusedStudent, toggleStudentSelectionModal, toggleGoalSelectionModal, getCurrentFocusedGoalInfo
   }), [
     studentsState, goalTemplatesState, sessionsState, selectedStudent, loading, sessionsLoading, error, isFirebaseDBAvailable,
@@ -1500,7 +1506,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     dataEntryShowArchivedByStudentId, setDataEntryShowArchivedByStudentId,
     fetchAiActivitySuggestions, saveDataEntrySession, saveAllDataEntrySessions, resetDataEntrySession, handleGoalDataChange, handleMoveGoal,
     addStudentSlot,
-    isFakeDataMode,
+    isStudentAccessLocked,
     focusStudentSlot, cycleFocusedStudent, cycleFocusedGoal, handleDataEntryHotkey, triggerEditFocusedStudent, toggleStudentSelectionModal, toggleGoalSelectionModal, getCurrentFocusedGoalInfo
   ]);
 
