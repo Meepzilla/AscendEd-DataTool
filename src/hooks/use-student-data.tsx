@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
@@ -1316,85 +1317,85 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     if (!focusedInfo || !focusedInfo.goal || !focusedInfo.goalData || focusedInfo.goal.isArchived) return; 
 
     const { studentId, goal, goalData } = focusedInfo;
+    const increment = alt ? -1 : 1;
 
+    // Handle prompt hotkeys first
     const promptToUpdate = PROMPT_HOTKEY_MAP[key];
-
     if (promptToUpdate) {
-      const currentPromptCount = Number(goalData[promptToUpdate] || 0);
-      const newPromptValue = alt ? Math.max(0, currentPromptCount - 1) : currentPromptCount + 1;
+        const currentPromptCount = Number(goalData[promptToUpdate] || 0);
+        const newPromptValue = Math.max(0, currentPromptCount + increment);
 
-      let updatedDataForField = { ...goalData, [promptToUpdate]: newPromptValue };
+        let updatedDataForField = { ...goalData, [promptToUpdate]: newPromptValue };
 
-      if (promptToUpdate === 'Independent') {
-          const isIncrementingPrompt = !alt;
-          const canDecrementCorrectField = alt && currentPromptCount > 0; 
-          
-          if (isIncrementingPrompt || canDecrementCorrectField) {
-              const incrementAmount = isIncrementingPrompt ? 1 : -1;
-              switch(goal.type) {
-                  case 'ARTICULATION': updatedDataForField.correct = Math.max(0, (Number(goalData.correct) || 0) + incrementAmount); break;
-                  case 'LANGUAGE_COMPREHENSION': updatedDataForField.questionsCorrect = Math.max(0, (Number(goalData.questionsCorrect) || 0) + incrementAmount); break;
-                  case 'LANGUAGE_EXPRESSION': updatedDataForField.successfulResponses = Math.max(0, (Number(goalData.successfulResponses) || 0) + incrementAmount); break;
-                  case 'PHONOLOGICAL_PROCESSES': updatedDataForField.correctProductions = Math.max(0, (Number(goalData.correctProductions) || 0) + incrementAmount); break;
-                  case 'FEEDING_SWALLOWING': updatedDataForField.trialsAccepted = Math.max(0, (Number(goalData.trialsAccepted) || 0) + incrementAmount); break;
-                  case 'SEQUENCED_TRIALS': updatedDataForField.successfulAttempts = Math.max(0, (Number(goalData.successfulAttempts) || 0) + incrementAmount); break;
-              }
-          }
-      }
-      handleGoalDataChange(studentId, goal.id, promptToUpdate, updatedDataForField);
-      return;
-    }
-
-    if (goal.type === 'QUALITATIVE_OBSERVATION' && !alt) {
-      const currentRating = Number(goalData.rating ?? 3);
-      let newRating = currentRating;
-      if (key === 'C') {
-        newRating = Math.min(5, currentRating + 1);
-      } else if (key === 'N') {
-        newRating = Math.max(1, currentRating - 1);
-      }
-      if (newRating !== currentRating) {
-        handleGoalDataChange(studentId, goal.id, 'rating', { ...goalData, rating: newRating });
+        if (promptToUpdate === 'Independent') {
+            const canModifyCorrect = (alt && currentPromptCount > 0) || !alt;
+            if (canModifyCorrect) {
+                switch(goal.type) {
+                    case 'ARTICULATION':
+                    case 'AAC':
+                         updatedDataForField.correct = Math.max(0, (Number(goalData.correct) || 0) + increment); break;
+                    case 'LANGUAGE_COMPREHENSION': updatedDataForField.questionsCorrect = Math.max(0, (Number(goalData.questionsCorrect) || 0) + increment); break;
+                    case 'LANGUAGE_EXPRESSION': updatedDataForField.successfulResponses = Math.max(0, (Number(goalData.successfulResponses) || 0) + increment); break;
+                    case 'PHONOLOGICAL_PROCESSES': updatedDataForField.correctProductions = Math.max(0, (Number(goalData.correctProductions) || 0) + increment); break;
+                    case 'FEEDING_SWALLOWING': updatedDataForField.trialsAccepted = Math.max(0, (Number(goalData.trialsAccepted) || 0) + increment); break;
+                    case 'SEQUENCED_TRIALS': updatedDataForField.successfulAttempts = Math.max(0, (Number(goalData.successfulAttempts) || 0) + increment); break;
+                }
+            }
+        }
+        handleGoalDataChange(studentId, goal.id, promptToUpdate, updatedDataForField);
         return;
-      }
     }
 
-
+    // Handle goal-specific hotkeys
     let fieldToUpdate: string | null = null;
-    let increment = alt ? -1 : 1;
+    
+    if (goal.type === 'QUALITATIVE_OBSERVATION' && !alt) {
+        const currentRating = Number(goalData.rating ?? 3);
+        let newRating = currentRating;
+        if (key === 'C') newRating = Math.min(5, currentRating + 1);
+        else if (key === 'N') newRating = Math.max(1, currentRating - 1);
+        if (newRating !== currentRating) {
+            handleGoalDataChange(studentId, goal.id, 'rating', { ...goalData, rating: newRating });
+        }
+        return;
+    }
 
-    if (key === 'C') { // Correct / Accept
-        switch (goal.type) {
-            case 'ARTICULATION':
-            case 'AAC':
-                fieldToUpdate = 'correct'; break;
-            case 'LANGUAGE_COMPREHENSION': fieldToUpdate = 'questionsCorrect'; break;
-            case 'LANGUAGE_EXPRESSION': fieldToUpdate = 'successfulResponses'; break;
-            case 'PHONOLOGICAL_PROCESSES': fieldToUpdate = 'correctProductions'; break;
-            case 'FLUENCY_SYLLABLE_STUTTER': fieldToUpdate = 'totalSyllables'; break;
-            case 'FEEDING_SWALLOWING': fieldToUpdate = 'trialsAccepted'; break;
-            case 'SEQUENCED_TRIALS': fieldToUpdate = 'successfulAttempts'; break;
+    if (goal.type === 'FLUENCY_SYLLABLE_STUTTER') {
+        switch (key) {
+            case 'B': fieldToUpdate = 'blocks'; break;
+            case 'V': fieldToUpdate = 'repetitions'; break;
+            case 'H': fieldToUpdate = 'prolongations'; break;
+            case 'J': fieldToUpdate = 'interjections'; break;
         }
-    } else if (key === 'N') { // Incorrect / Refuse
-        switch (goal.type) {
-            case 'ARTICULATION':
-            case 'AAC':
-                fieldToUpdate = 'incorrect'; break;
-            case 'LANGUAGE_COMPREHENSION': fieldToUpdate = 'questionsIncorrect'; break;
-            case 'LANGUAGE_EXPRESSION': fieldToUpdate = 'unsuccessfulResponses'; break;
-            case 'PHONOLOGICAL_PROCESSES': fieldToUpdate = 'incorrectProductions'; break;
-            case 'FLUENCY_SYLLABLE_STUTTER': fieldToUpdate = 'stutteredSyllables'; break;
-            case 'FEEDING_SWALLOWING': fieldToUpdate = 'trialsRefused'; break;
-            case 'SEQUENCED_TRIALS': fieldToUpdate = 'failedAttempts'; break;
-        }
-    } else if (key === 'B') { // Approximate
-        switch (goal.type) {
-            case 'ARTICULATION':
-            case 'AAC':
-            case 'LANGUAGE_COMPREHENSION':
-            case 'LANGUAGE_EXPRESSION':
-            case 'PHONOLOGICAL_PROCESSES':
-                fieldToUpdate = 'approximate'; break;
+    }
+
+    if (!fieldToUpdate) {
+        if (key === 'C') { // Correct / Accept / Total
+            switch (goal.type) {
+                case 'ARTICULATION': case 'AAC': fieldToUpdate = 'correct'; break;
+                case 'LANGUAGE_COMPREHENSION': fieldToUpdate = 'questionsCorrect'; break;
+                case 'LANGUAGE_EXPRESSION': fieldToUpdate = 'successfulResponses'; break;
+                case 'PHONOLOGICAL_PROCESSES': fieldToUpdate = 'correctProductions'; break;
+                case 'FLUENCY_SYLLABLE_STUTTER': fieldToUpdate = 'totalSyllables'; break;
+                case 'FEEDING_SWALLOWING': fieldToUpdate = 'trialsAccepted'; break;
+                case 'SEQUENCED_TRIALS': fieldToUpdate = 'successfulAttempts'; break;
+            }
+        } else if (key === 'N') { // Incorrect / Refuse / Stuttered
+            switch (goal.type) {
+                case 'ARTICULATION': case 'AAC': fieldToUpdate = 'incorrect'; break;
+                case 'LANGUAGE_COMPREHENSION': fieldToUpdate = 'questionsIncorrect'; break;
+                case 'LANGUAGE_EXPRESSION': fieldToUpdate = 'unsuccessfulResponses'; break;
+                case 'PHONOLOGICAL_PROCESSES': fieldToUpdate = 'incorrectProductions'; break;
+                case 'FLUENCY_SYLLABLE_STUTTER': fieldToUpdate = 'stutteredSyllables'; break;
+                case 'FEEDING_SWALLOWING': fieldToUpdate = 'trialsRefused'; break;
+                case 'SEQUENCED_TRIALS': fieldToUpdate = 'failedAttempts'; break;
+            }
+        } else if (key === 'B' && goal.type !== 'FLUENCY_SYLLABLE_STUTTER') { // Approximate (excluding fluency)
+            switch (goal.type) {
+                case 'ARTICULATION': case 'AAC': case 'LANGUAGE_COMPREHENSION':
+                case 'LANGUAGE_EXPRESSION': case 'PHONOLOGICAL_PROCESSES':
+                    fieldToUpdate = 'approximate'; break;
+            }
         }
     }
 
@@ -1505,7 +1506,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     editingSession, openEditSessionModal, closeEditSessionModal,
     deletingSession, openDeleteSessionModal, closeDeleteSessionModal,
     editingAssignedGoal, openEditAssignedGoalModal, closeEditAssignedGoalModal,
-    selectionModalType,
+    selectionModalType, setSelectionModalType,
     dataEntrySessionDate, setDataEntrySessionDate,
     dataEntrySessionTime, setDataEntrySessionTime,
     dataEntrySessionEndTime, setDataEntrySessionEndTime,
@@ -1537,3 +1538,5 @@ export const useStudentData = (): StudentDataContextType => {
   }
   return context;
 };
+
+    
