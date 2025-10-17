@@ -231,15 +231,14 @@ export default function DataEntryContent() {
               setDataEntryFocusedGoalIndexByStudentId={setDataEntryFocusedGoalIndexByStudentId}
             />
           </Suspense>
-           {dataEntrySelectedStudentIds.length > 0 && (
-              <div className="sticky bottom-16 left-0 p-2">
-                <TouchControls />
-              </div>
-            )}
         </ScrollArea>
       </div>
-
+      
       {dataEntrySelectedStudentIds.length > 0 && (
+        <>
+          <div className="fixed bottom-24 left-4 z-20">
+            <TouchControls />
+          </div>
           <div className="sticky bottom-0 left-0 right-0 z-10 bg-background/95 backdrop-blur-sm">
               <div className="flex justify-end items-center gap-2 p-2 border-t">
                   <div className="flex gap-2">
@@ -254,6 +253,7 @@ export default function DataEntryContent() {
                   </div>
               </div>
           </div>
+        </>
       )}
        {dataEntrySelectedStudentIds.length === 0 && (
           <Card className="mt-6 flex-shrink-0">
