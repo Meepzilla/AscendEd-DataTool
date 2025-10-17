@@ -1,3 +1,4 @@
+
 import type { GoalTemplate } from '../types';
 
 export const TRIALS_FIELDS: Record<string, Record<string, any>> = {
