@@ -99,7 +99,7 @@ export default function AppHeader() {
             <span className="sr-only">Add Student</span>
           </Button>
 
-          <Button variant="ghost" size="icon" onClick={toggleErrorLogModal} title="Error Log (Alt+L)">
+          <Button variant="ghost" size="icon" onClick={toggleErrorLogModal} title="Error Log (Alt+J)">
             <FileText className="h-5 w-5" />
             <span className="sr-only">Error Log</span>
           </Button>

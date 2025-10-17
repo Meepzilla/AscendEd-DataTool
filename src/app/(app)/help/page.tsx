@@ -23,11 +23,12 @@ const hotkeys: Hotkey[] = [
   { key: 'Alt + 5', description: 'Navigate to Goal Templates', category: 'Global Navigation' },
   // Global Actions
   { key: 'Alt + H', description: 'Open this Help Page', category: 'Global Actions' },
-  { key: 'Alt + L', description: 'Open Error Log Modal', category: 'Global Actions' },
+  { key: 'Alt + J', description: 'Open Error Log Modal', category: 'Global Actions' },
   { key: 'Alt + M', description: 'Open Add Student Modal', category: 'Global Actions' },
   { key: 'Alt + K', description: 'Toggle Sidebar', category: 'Global Actions'},
   { key: 'Ctrl + Enter', description: 'Confirm action / Save (contextual)', category: 'Global Actions'},
   // Data Entry Specific
+  { key: 'Alt + L', description: 'Toggle Student Access Lock', category: 'Data Entry' },
   { key: '1, 2, 3, or 4', description: 'Focus on Student Slot 1-4', category: 'Data Entry' },
   { key: 'A', description: 'Cycle to Next Student Slot', category: 'Data Entry' },
   { key: 'Alt + A', description: 'Cycle to Previous Student Slot', category: 'Data Entry' },
@@ -151,7 +152,7 @@ export default function HelpPage() {
         <CardContent className="space-y-3 text-muted-foreground">
             <p><strong className="text-foreground">Performance:</strong> The app now loads essential data first to be interactive quickly, while session history loads in the background.</p>
             <p><strong className="text-foreground">Local Mode:</strong> If Firebase is not configured (e.g., missing API keys), the app runs in local mode. Data is stored in your browser and not synced to the cloud. You'll see indicators for this.</p>
-            <p><strong className="text-foreground">Error Log:</strong> If you encounter issues, check the Error Log (Alt+L or header icon) for recent application-level errors. For more detailed debugging, use your browser's developer console.</p>
+            <p><strong className="text-foreground">Error Log:</strong> If you encounter issues, check the Error Log (Alt+J or header icon) for recent application-level errors. For more detailed debugging, use your browser's developer console.</p>
             <p><strong className="text-foreground">AI Features:</strong> Make use of AI for SMART goal generation (in Goal Templates & Edit Student modal) and activity suggestions (in Data Entry) to enhance your planning.</p>
             <p><strong className="text-foreground">Ctrl+Enter:</strong> In many forms and on the Data Entry page, pressing Ctrl+Enter will act as a "confirm" or "save" action.</p>
             <p><strong className="text-foreground">Data Entry Focus:</strong> On the Data Entry page, student cards widen when focused. Click on a student card or use number keys (1-4) to focus.</p>

@@ -30,6 +30,7 @@ export function useKeyboardShortcuts() {
     toggleStudentSelectionModal,
     toggleGoalSelectionModal,
     addStudentSlot,
+    setIsStudentAccessLocked,
   } = useStudentData();
   // Access sidebar toggle function from the sidebar hook.
   const { toggleSidebar } = useSidebar(); 
@@ -83,7 +84,8 @@ export function useKeyboardShortcuts() {
         case 'H': router.push('/help'); break; // Alt+H to Help Page
 
         // Global Action Hotkeys: Trigger application-wide actions
-        case 'L': toggleErrorLogModal(); break; // Alt+L to toggle Error Log Modal visibility
+        case 'J': toggleErrorLogModal(); break; // Alt+J to toggle Error Log Modal visibility
+        case 'L': if (pathname.startsWith('/data-entry')) setIsStudentAccessLocked(prev => !prev); break;
         case 'M': openAddStudentModal(); break; // Alt+M to open the Add Student Modal
         
         case 'K': if (toggleSidebar) toggleSidebar(); break; // Alt+K to toggle Sidebar
@@ -153,6 +155,7 @@ export function useKeyboardShortcuts() {
     toggleStudentSelectionModal,
     toggleGoalSelectionModal,
     addStudentSlot,
+    setIsStudentAccessLocked,
   ]);
 
   // Effect hook to attach and clean up the global keydown event listener.
