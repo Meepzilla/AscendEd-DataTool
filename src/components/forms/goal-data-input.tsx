@@ -347,6 +347,51 @@ export default function GoalDataInputComponent({
                 </div>
               </FormItem>
             </div>
+             <div className="grid grid-cols-2 gap-1">
+                <FormItem>
+                    <FormLabel>Blocks</FormLabel>
+                    <div className="flex items-center gap-1">
+                        <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={(e) => handleInteraction(e, () => handleChange('blocks', Math.max(0, (Number(data.blocks) || 0) - 1)))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
+                        <Input type="number" min="0" value={data.blocks ?? 0} onChange={(e) => handleChange('blocks', parseInt(e.target.value, 10) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived || isLocked} />
+                        <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={(e) => handleInteraction(e, () => handleChange('blocks', (Number(data.blocks) || 0) + 1))} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
+                    </div>
+                </FormItem>
+                <FormItem>
+                    <FormLabel>Repetitions</FormLabel>
+                    <div className="flex items-center gap-1">
+                        <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={(e) => handleInteraction(e, () => handleChange('repetitions', Math.max(0, (Number(data.repetitions) || 0) - 1)))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
+                        <Input type="number" min="0" value={data.repetitions ?? 0} onChange={(e) => handleChange('repetitions', parseInt(e.target.value, 10) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived || isLocked} />
+                        <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={(e) => handleInteraction(e, () => handleChange('repetitions', (Number(data.repetitions) || 0) + 1))} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
+                    </div>
+                </FormItem>
+                 <FormItem>
+                    <FormLabel>Prolongations</FormLabel>
+                    <div className="flex items-center gap-1">
+                        <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={(e) => handleInteraction(e, () => handleChange('prolongations', Math.max(0, (Number(data.prolongations) || 0) - 1)))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
+                        <Input type="number" min="0" value={data.prolongations ?? 0} onChange={(e) => handleChange('prolongations', parseInt(e.target.value, 10) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived || isLocked} />
+                        <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={(e) => handleInteraction(e, () => handleChange('prolongations', (Number(data.prolongations) || 0) + 1))} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
+                    </div>
+                </FormItem>
+                <FormItem>
+                    <FormLabel>Interjections</FormLabel>
+                    <div className="flex items-center gap-1">
+                        <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={(e) => handleInteraction(e, () => handleChange('interjections', Math.max(0, (Number(data.interjections) || 0) - 1)))} disabled={isArchived}><Minus className="h-3.5 w-3.5" /></Button>
+                        <Input type="number" min="0" value={data.interjections ?? 0} onChange={(e) => handleChange('interjections', parseInt(e.target.value, 10) || 0)} className="h-8 text-sm text-center w-16" disabled={isArchived || isLocked} />
+                        <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={(e) => handleInteraction(e, () => handleChange('interjections', (Number(data.interjections) || 0) + 1))} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
+                    </div>
+                </FormItem>
+            </div>
+             <FormItem>
+              <FormLabel>Secondary Behaviors (notes)</FormLabel>
+              <Textarea
+                value={data.secondaryBehaviors || ''}
+                onChange={(e) => handleChange('secondaryBehaviors', e.target.value)}
+                placeholder="e.g., eye blinking, head nodding"
+                rows={1}
+                className="text-sm"
+                disabled={isArchived || isLocked}
+              />
+            </FormItem>
              <FormItem>
               <FormLabel>Observation Notes (Type of stutter, context, etc.)</FormLabel>
               <Textarea

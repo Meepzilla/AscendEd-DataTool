@@ -4,6 +4,11 @@ export const FLUENCY_FIELDS: Record<string, Record<string, any>> = {
   FLUENCY_SYLLABLE_STUTTER: {
     totalSyllables: 0,
     stutteredSyllables: 0,
+    blocks: 0,
+    repetitions: 0,
+    prolongations: 0,
+    interjections: 0,
+    secondaryBehaviors: '',
     observationNotes: '',
     Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, Imitation: 0,
   },
