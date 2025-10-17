@@ -4,7 +4,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, Trash2, LayoutGrid, Minimize2, UserX, UserPlus, ArrowRightLeft, Lightbulb, Download, ListPlus, Workflow, Shuffle, CheckSquare, ListChecks, DatabaseZap, UserSearch, Upload, Sparkles, BrainCircuit } from 'lucide-react';
+import { ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, Trash2, LayoutGrid, Minimize2, UserX, UserPlus, ArrowRightLeft, Lightbulb, Download, ListPlus, Workflow, Shuffle, CheckSquare, ListChecks, DatabaseZap, UserSearch, Upload, Sparkles, BrainCircuit, PanelLeft, ArrowLeft } from 'lucide-react';
 import { APP_NAME } from '@/lib/appConstants';
 
 interface ChangelogEntry {
@@ -17,6 +17,34 @@ interface ChangelogEntry {
 }
 
 const changelogEntries: ChangelogEntry[] = [
+  {
+    date: '2025-10-18',
+    title: 'Student Deletion',
+    description: 'You can now permanently delete a student and all their associated session data. A confirmation dialog has been added to prevent accidental deletion. This feature is accessible from the Student Profile page.',
+    type: 'feature',
+    icon: UserX,
+  },
+  {
+    date: '2025-10-18',
+    title: 'Enhanced Student Filtering & Sorting',
+    description: 'The Students page now includes powerful search, sort, and filter capabilities, similar to the Goal Templates page. You can now search by name and sort by name, date joined, or last updated.',
+    type: 'improvement',
+    icon: UserSearch,
+  },
+  {
+    date: '2025-10-18',
+    title: 'Back Button on Student Profile',
+    description: 'Added a back arrow button to the Student Profile page header, allowing for easy navigation back to the main student selection grid.',
+    type: 'improvement',
+    icon: ArrowLeft,
+  },
+  {
+    date: '2025-10-18',
+    title: 'Sidebar Display Setting',
+    description: 'Added a new toggle on the Settings page to enable or disable the student sidebar. This allows users to maximize their screen space when desired.',
+    type: 'feature',
+    icon: PanelLeft,
+  },
   {
     date: '2025-10-17',
     title: 'Goal Template Search Refactor',
@@ -518,4 +546,5 @@ export default function ChangelogPage() {
     
 
     
+
 
