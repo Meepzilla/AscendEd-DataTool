@@ -5,3 +5,4 @@ declare module '@next/bundle-analyzer' {
   export = withBundleAnalyzer;
 }
 declare module 'papaparse';
+declare module 'canvas-confetti';

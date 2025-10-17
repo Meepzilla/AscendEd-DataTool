@@ -12,6 +12,7 @@ import { Info } from 'lucide-react';
 import type { StudentSessionState } from '@/lib/types';
 import TouchControls from '@/components/forms/touch-controls';
 import { cn } from '@/lib/utils';
+import { ConfettiProvider } from '@/hooks/use-confetti';
 
 const ConfirmationModal = lazy(() => import('@/components/modals/confirmation-modal'));
 const StudentCardsList = lazy(() => import('@/components/data-entry/StudentCardsList'));
@@ -191,108 +192,110 @@ export default function DataEntryContent() {
   };
 
   return (
-    <div className="relative flex flex-col h-full">
-       <Suspense fallback={null}>
-        {isResetConfirmationOpen && (
-          <ConfirmationModal
-            isOpen={isResetConfirmationOpen}
-            onClose={() => setIsResetConfirmationOpen(false)}
-            onConfirm={handleReset}
-            title="Reset Focused Student Data?"
-            description="Are you sure you want to clear all current unsaved activity, notes, and goal data for the selected student? This action cannot be undone."
-            confirmText="Yes, Reset Data"
-          />
-        )}
-      </Suspense>
-      
-      <div className="flex-shrink-0">
-        <Suspense fallback={<Card><CardContent>Loading header...</CardContent></Card>}>
-          <DataEntryHeaderCard
-            isHeaderCardCollapsed={isHeaderCardCollapsed}
-            setIsHeaderCardCollapsed={setIsHeaderCardCollapsed}
-            dataEntrySessionDate={dataEntrySessionDate}
-            setDataEntrySessionDate={setDataEntrySessionDate}
-            dataEntrySessionTime={dataEntrySessionTime}
-            setDataEntrySessionTime={setDataEntrySessionTime}
-            dataEntrySessionEndTime={dataEntrySessionEndTime}
-            setDataEntrySessionEndTime={setDataEntrySessionEndTime}
-            isStudentAccessLocked={isStudentAccessLocked}
-            setIsStudentAccessLocked={setIsStudentAccessLocked}
-          />
+    <ConfettiProvider>
+      <div className="relative flex flex-col h-full">
+        <Suspense fallback={null}>
+          {isResetConfirmationOpen && (
+            <ConfirmationModal
+              isOpen={isResetConfirmationOpen}
+              onClose={() => setIsResetConfirmationOpen(false)}
+              onConfirm={handleReset}
+              title="Reset Focused Student Data?"
+              description="Are you sure you want to clear all current unsaved activity, notes, and goal data for the selected student? This action cannot be undone."
+              confirmText="Yes, Reset Data"
+            />
+          )}
         </Suspense>
-      </div>
-
-      <div className="flex-grow min-h-0">
-        <ScrollArea className="h-full pb-20"> {/* Reduced padding-bottom */}
-          <Suspense fallback={<div>Loading student cards...</div>}>
-            <StudentCardsList
-              dataEntrySelectedStudentIds={dataEntrySelectedStudentIds}
-              students={students}
-              dataEntryStudentSessionStates={dataEntryStudentSessionStates}
-              dataEntryFocusedStudentSlotIndex={dataEntryFocusedStudentSlotIndex}
-              availableStudentsForDropdown={availableStudentsForDropdown}
-              dataEntryShowArchivedByStudentId={dataEntryShowArchivedByStudentId}
-              setDataEntryShowArchivedByStudentId={setDataEntryShowArchivedByStudentId}
-              dataEntryVisibleGoalCountByStudentId={dataEntryVisibleGoalCountByStudentId}
-              setDataEntryVisibleGoalCountByStudentId={setDataEntryVisibleGoalCountByStudentId}
-              dataEntryFocusedGoalIndexByStudentId={dataEntryFocusedGoalIndexByStudentId}
-              dataEntryAiActivitySuggestions={dataEntryAiActivitySuggestions}
-              isAiLoading={isAiLoading}
-              setDataEntryFocusedStudentSlotIndex={setDataEntryFocusedStudentSlotIndex}
-              openEditStudentModal={openEditStudentModal}
-              handleStudentSelect={handleStudentSelect}
-              removeStudentSlot={removeStudentSlot}
-              handleInputChange={handleInputChange}
-              handleGoalDataChange={handleGoalDataChange}
-              handleMoveGoal={handleMoveGoal}
-              handleLocalAiFetch={handleLocalAiFetch}
-              addStudentSlot={addStudentSlot}
+        
+        <div className="flex-shrink-0">
+          <Suspense fallback={<Card><CardContent>Loading header...</CardContent></Card>}>
+            <DataEntryHeaderCard
+              isHeaderCardCollapsed={isHeaderCardCollapsed}
+              setIsHeaderCardCollapsed={setIsHeaderCardCollapsed}
+              dataEntrySessionDate={dataEntrySessionDate}
+              setDataEntrySessionDate={setDataEntrySessionDate}
+              dataEntrySessionTime={dataEntrySessionTime}
+              setDataEntrySessionTime={setDataEntrySessionTime}
+              dataEntrySessionEndTime={dataEntrySessionEndTime}
+              setDataEntrySessionEndTime={setDataEntrySessionEndTime}
               isStudentAccessLocked={isStudentAccessLocked}
+              setIsStudentAccessLocked={setIsStudentAccessLocked}
             />
           </Suspense>
-        </ScrollArea>
-      </div>
-      
-      {dataEntrySelectedStudentIds.length > 0 && (
-          <div className="sticky bottom-0 left-0 right-0 z-10 bg-background/95 backdrop-blur-sm">
-              <div className="flex justify-between items-center gap-2 p-2 border-t">
-                  {/* Floating controls for larger screens */}
-                  <div className="hidden sm:block">
-                    <TouchControls />
-                  </div>
-                  
-                  {/* Inline controls for smaller screens */}
-                  <div className="sm:hidden">
-                    <TouchControls />
-                  </div>
+        </div>
 
-                  <div className="flex gap-2 ml-auto">
-                      <Button variant="outline" onClick={handleOpenResetConfirmation} disabled={isSaving || isSavingAll} size="lg">
-                      <RotateCcw className="mr-2 h-5 w-5" />
-                      Reset Focused
-                      </Button>
-                      <Button onClick={handleSave} disabled={isSaving || isSavingAll} size="lg">
-                        <Save className="mr-2 h-5 w-5" />
-                        {isSaving ? 'Saving...' : 'Save Focused'}
-                      </Button>
-                      <Button onClick={handleSaveAll} disabled={isSaving || isSavingAll} size="lg">
-                        <Save className="mr-2 h-5 w-5" />
-                        {isSavingAll ? 'Saving All...' : 'Save All'}
-                      </Button>
-                  </div>
-              </div>
-          </div>
-      )}
-       {dataEntrySelectedStudentIds.length === 0 && (
-          <Card className="mt-6 flex-shrink-0">
-            <CardContent className="p-8 text-center text-muted-foreground">
-                <Info className="h-10 w-10 mx-auto mb-3 text-primary"/>
-                <p className="text-lg">No students selected for data entry.</p>
-                <p>Click "Add Student Slot" to begin.</p>
-                 {students.length === 0 && <p className="mt-2">You don't have any students yet. Go to 'Student Profile' or use Alt+M to add one.</p>}
-            </CardContent>
-          </Card>
+        <div className="flex-grow min-h-0">
+          <ScrollArea className="h-full pb-20"> {/* Reduced padding-bottom */}
+            <Suspense fallback={<div>Loading student cards...</div>}>
+              <StudentCardsList
+                dataEntrySelectedStudentIds={dataEntrySelectedStudentIds}
+                students={students}
+                dataEntryStudentSessionStates={dataEntryStudentSessionStates}
+                dataEntryFocusedStudentSlotIndex={dataEntryFocusedStudentSlotIndex}
+                availableStudentsForDropdown={availableStudentsForDropdown}
+                dataEntryShowArchivedByStudentId={dataEntryShowArchivedByStudentId}
+                setDataEntryShowArchivedByStudentId={setDataEntryShowArchivedByStudentId}
+                dataEntryVisibleGoalCountByStudentId={dataEntryVisibleGoalCountByStudentId}
+                setDataEntryVisibleGoalCountByStudentId={setDataEntryVisibleGoalCountByStudentId}
+                dataEntryFocusedGoalIndexByStudentId={dataEntryFocusedGoalIndexByStudentId}
+                dataEntryAiActivitySuggestions={dataEntryAiActivitySuggestions}
+                isAiLoading={isAiLoading}
+                setDataEntryFocusedStudentSlotIndex={setDataEntryFocusedStudentSlotIndex}
+                openEditStudentModal={openEditStudentModal}
+                handleStudentSelect={handleStudentSelect}
+                removeStudentSlot={removeStudentSlot}
+                handleInputChange={handleInputChange}
+                handleGoalDataChange={handleGoalDataChange}
+                handleMoveGoal={handleMoveGoal}
+                handleLocalAiFetch={handleLocalAiFetch}
+                addStudentSlot={addStudentSlot}
+                isStudentAccessLocked={isStudentAccessLocked}
+              />
+            </Suspense>
+          </ScrollArea>
+        </div>
+        
+        {dataEntrySelectedStudentIds.length > 0 && (
+            <div className="sticky bottom-0 left-0 right-0 z-10 bg-background/95 backdrop-blur-sm">
+                <div className="flex justify-between items-center gap-2 p-2 border-t">
+                    {/* Floating controls for larger screens */}
+                    <div className="hidden sm:block">
+                      <TouchControls />
+                    </div>
+                    
+                    {/* Inline controls for smaller screens */}
+                    <div className="sm:hidden">
+                      <TouchControls />
+                    </div>
+
+                    <div className="flex gap-2 ml-auto">
+                        <Button variant="outline" onClick={handleOpenResetConfirmation} disabled={isSaving || isSavingAll} size="lg">
+                        <RotateCcw className="mr-2 h-5 w-5" />
+                        Reset Focused
+                        </Button>
+                        <Button onClick={handleSave} disabled={isSaving || isSavingAll} size="lg">
+                          <Save className="mr-2 h-5 w-5" />
+                          {isSaving ? 'Saving...' : 'Save Focused'}
+                        </Button>
+                        <Button onClick={handleSaveAll} disabled={isSaving || isSavingAll} size="lg">
+                          <Save className="mr-2 h-5 w-5" />
+                          {isSavingAll ? 'Saving All...' : 'Save All'}
+                        </Button>
+                    </div>
+                </div>
+            </div>
         )}
-    </div>
+        {dataEntrySelectedStudentIds.length === 0 && (
+            <Card className="mt-6 flex-shrink-0">
+              <CardContent className="p-8 text-center text-muted-foreground">
+                  <Info className="h-10 w-10 mx-auto mb-3 text-primary"/>
+                  <p className="text-lg">No students selected for data entry.</p>
+                  <p>Click "Add Student Slot" to begin.</p>
+                  {students.length === 0 && <p className="mt-2">You don't have any students yet. Go to 'Student Profile' or use Alt+M to add one.</p>}
+              </CardContent>
+            </Card>
+          )}
+      </div>
+    </ConfettiProvider>
   );
 }
