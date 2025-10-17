@@ -1,6 +1,6 @@
 
 'use client';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import AppHeader from '@/components/layout/app-header';
@@ -17,6 +17,8 @@ function KeyboardShortcutInitializer() {
   return null; // This component does not render anything itself
 }
 
+const SIDEBAR_ENABLED_KEY = 'sidebar_enabled';
+
 export default function AppLayout({
   children,
 }: {
@@ -24,6 +26,15 @@ export default function AppLayout({
 }) {
   const { currentUser, loading } = useAuth();
   const router = useRouter();
+  const [isSidebarEnabled, setIsSidebarEnabled] = useState(true);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedSetting = window.localStorage.getItem(SIDEBAR_ENABLED_KEY);
+      // Default to true if no setting is found
+      setIsSidebarEnabled(storedSetting === null ? true : JSON.parse(storedSetting));
+    }
+  }, []);
 
   useEffect(() => {
     if (!loading && !currentUser) {
@@ -64,13 +75,17 @@ export default function AppLayout({
   }
 
   return (
-    <SidebarProvider defaultOpen={true}>
+    <SidebarProvider defaultOpen={isSidebarEnabled}>
       <KeyboardShortcutInitializer /> {/* Initialize shortcuts here */}
       <div className="flex min-h-screen flex-col bg-background">
         <AppHeader />
         <div className="flex flex-1">
-          <StudentSidebar />
-          <SidebarRail /> {/* Adds the draggable rail to resize/toggle student sidebar */}
+          {isSidebarEnabled && (
+            <>
+              <StudentSidebar />
+              <SidebarRail /> {/* Adds the draggable rail to resize/toggle student sidebar */}
+            </>
+          )}
           <SidebarInset> {/* This will be the main content area */}
             <div className="flex flex-1">
               {/* Desktop Navigation Panel (AppNavigation) has been removed from here */}

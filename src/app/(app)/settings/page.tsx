@@ -7,20 +7,25 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Settings, Wifi, WifiOff } from 'lucide-react';
+import { Settings, Wifi, WifiOff, PanelLeft } from 'lucide-react';
 
 const FIREBASE_ENABLED_KEY = 'firebase_enabled';
+const SIDEBAR_ENABLED_KEY = 'sidebar_enabled';
 
 export default function SettingsPage() {
   const [isFirebaseEnabled, setIsFirebaseEnabled] = useState(false);
+  const [isSidebarEnabled, setIsSidebarEnabled] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const storedSetting = window.localStorage.getItem(FIREBASE_ENABLED_KEY);
-      // Default to false if no setting is found
-      setIsFirebaseEnabled(storedSetting === null ? false : JSON.parse(storedSetting));
+      const storedFirebaseSetting = window.localStorage.getItem(FIREBASE_ENABLED_KEY);
+      setIsFirebaseEnabled(storedFirebaseSetting === null ? false : JSON.parse(storedFirebaseSetting));
+
+      const storedSidebarSetting = window.localStorage.getItem(SIDEBAR_ENABLED_KEY);
+      setIsSidebarEnabled(storedSidebarSetting === null ? true : JSON.parse(storedSidebarSetting));
+      
       setIsLoading(false);
     }
   }, []);
@@ -32,6 +37,17 @@ export default function SettingsPage() {
       toast({
         title: "Settings Updated",
         description: `Firebase has been ${enabled ? 'enabled' : 'disabled'}. Please reload the application for the changes to take full effect.`,
+      });
+    }
+  };
+
+  const handleToggleSidebar = (enabled: boolean) => {
+    setIsSidebarEnabled(enabled);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(SIDEBAR_ENABLED_KEY, JSON.stringify(enabled));
+      toast({
+        title: "Settings Updated",
+        description: `Student Sidebar has been ${enabled ? 'enabled' : 'disabled'}. Please reload the application to apply the change.`,
       });
     }
   };
@@ -62,6 +78,35 @@ export default function SettingsPage() {
 
       <Card>
         <CardHeader>
+          <CardTitle>Interface</CardTitle>
+          <CardDescription>
+            Control the application's user interface elements.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-row items-center justify-between rounded-lg border p-4">
+            <div className="space-y-0.5">
+              <Label htmlFor="sidebar-switch" className="text-base font-medium">
+                Enable Student Sidebar
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                When enabled, the sidebar for student selection and progress is visible. Disable it for more screen space.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+                <PanelLeft className="h-5 w-5 text-muted-foreground" />
+                <Switch
+                    id="sidebar-switch"
+                    checked={isSidebarEnabled}
+                    onCheckedChange={handleToggleSidebar}
+                />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Connectivity</CardTitle>
           <CardDescription>
             Control the application's connection to backend services.
@@ -87,7 +132,7 @@ export default function SettingsPage() {
             </div>
           </div>
            <div className="flex items-center justify-end gap-4 p-4 border-t">
-              <p className="text-sm text-muted-foreground">A page reload is required to apply connectivity changes.</p>
+              <p className="text-sm text-muted-foreground">A page reload is required to apply changes.</p>
               <Button onClick={handleReload}>Reload Now</Button>
             </div>
         </CardContent>
