@@ -1140,17 +1140,23 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       if (!goal) return prevStates;
 
       let processedData = { ...newData };
+      const originalData = studentState.goalData[goalId] || {};
 
       if (goal.type === 'FLUENCY_SYLLABLE_STUTTER') {
-        let newTotalSyllables = Math.max(0, Number(processedData.totalSyllables || 0));
-        let newStutteredSyllables = Math.max(0, Number(processedData.stutteredSyllables || 0));
+        const newTotalSyllables = Math.max(0, Number(processedData.totalSyllables || 0));
+        const newStutteredSyllables = Math.max(0, Number(processedData.stutteredSyllables || 0));
+        
         if (updatedFieldName === 'stutteredSyllables') {
-          newTotalSyllables = Math.max(newTotalSyllables, newStutteredSyllables);
+          const oldStuttered = Number(originalData.stutteredSyllables || 0);
+          if (newStutteredSyllables > oldStuttered) { // Only auto-increment total on increase
+              processedData.totalSyllables = newTotalSyllables + (newStutteredSyllables - oldStuttered);
+          }
+          // Ensure total is always at least as large as stuttered
+          processedData.totalSyllables = Math.max(Number(processedData.totalSyllables), newStutteredSyllables);
         } else if (updatedFieldName === 'totalSyllables') {
-          newStutteredSyllables = Math.min(newStutteredSyllables, newTotalSyllables);
+          // Ensure stuttered is not greater than total
+          processedData.stutteredSyllables = Math.min(newStutteredSyllables, newTotalSyllables);
         }
-        processedData.totalSyllables = newTotalSyllables;
-        processedData.stutteredSyllables = newStutteredSyllables;
       }
 
       return {
@@ -1539,5 +1545,7 @@ export const useStudentData = (): StudentDataContextType => {
   }
   return context;
 };
+
+    
 
     
