@@ -1365,7 +1365,9 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
     if (key === 'C') { // Correct / Accept
         switch (goal.type) {
-            case 'ARTICULATION': fieldToUpdate = 'correct'; break;
+            case 'ARTICULATION':
+            case 'AAC':
+                fieldToUpdate = 'correct'; break;
             case 'LANGUAGE_COMPREHENSION': fieldToUpdate = 'questionsCorrect'; break;
             case 'LANGUAGE_EXPRESSION': fieldToUpdate = 'successfulResponses'; break;
             case 'PHONOLOGICAL_PROCESSES': fieldToUpdate = 'correctProductions'; break;
@@ -1375,7 +1377,9 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         }
     } else if (key === 'N') { // Incorrect / Refuse
         switch (goal.type) {
-            case 'ARTICULATION': fieldToUpdate = 'incorrect'; break;
+            case 'ARTICULATION':
+            case 'AAC':
+                fieldToUpdate = 'incorrect'; break;
             case 'LANGUAGE_COMPREHENSION': fieldToUpdate = 'questionsIncorrect'; break;
             case 'LANGUAGE_EXPRESSION': fieldToUpdate = 'unsuccessfulResponses'; break;
             case 'PHONOLOGICAL_PROCESSES': fieldToUpdate = 'incorrectProductions'; break;
@@ -1384,7 +1388,14 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
             case 'SEQUENCED_TRIALS': fieldToUpdate = 'failedAttempts'; break;
         }
     } else if (key === 'B') { // Approximate
-        fieldToUpdate = 'approximate';
+        switch (goal.type) {
+            case 'ARTICULATION':
+            case 'AAC':
+            case 'LANGUAGE_COMPREHENSION':
+            case 'LANGUAGE_EXPRESSION':
+            case 'PHONOLOGICAL_PROCESSES':
+                fieldToUpdate = 'approximate'; break;
+        }
     }
 
     if (fieldToUpdate) {
