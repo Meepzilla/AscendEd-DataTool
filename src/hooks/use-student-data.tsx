@@ -1116,15 +1116,18 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   }, [dataEntryShowArchivedByStudentId]);
   
   const addStudentSlot = useCallback(() => {
-    const activeStudents = studentsState.filter(s => !s.isArchived);
-    const availableStudent = activeStudents.find(s => !dataEntrySelectedStudentIds.includes(s.id));
-    if (availableStudent) {
-      setDataEntrySelectedStudentIdsState(prev => [...prev, availableStudent.id]);
-      setDataEntryFocusedStudentSlotIndexState(dataEntrySelectedStudentIds.length);
-    } else {
-      safeToast({ title: "Info", description: "No more unique available students to add.", variant: "default" });
-    }
-  }, [studentsState, dataEntrySelectedStudentIds, safeToast]);
+    setDataEntrySelectedStudentIdsState(prevIds => {
+      const activeStudents = studentsState.filter(s => !s.isArchived);
+      const availableStudent = activeStudents.find(s => !prevIds.includes(s.id));
+      if (availableStudent) {
+        setDataEntryFocusedStudentSlotIndexState(prevIds.length);
+        return [...prevIds, availableStudent.id];
+      } else {
+        safeToast({ title: "Info", description: "No more unique available students to add.", variant: "default" });
+        return prevIds;
+      }
+    });
+  }, [studentsState, safeToast]);
 
 
   // #endregion
@@ -1302,12 +1305,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const setDataEntryVisibleGoalCountByStudentId = useCallback((updater: (prev: Record<string, number>) => Record<string, number>) => setDataEntryVisibleGoalCountByStudentIdState(updater), []);
   const setDataEntryShowArchivedByStudentId = useCallback((updater: (prev: Record<string, boolean>) => Record<string, boolean>) => setDataEntryShowArchivedByStudentIdState(updater), []);
 
-  const setDataEntrySelectedStudentIds = useCallback((updater: string[] | ((prev: string[]) => string[])) => {
-    const newSelectedIds = typeof updater === 'function' ? updater(dataEntrySelectedStudentIds) : updater;
-
-    setDataEntrySelectedStudentIdsState(newSelectedIds);
-
-    // Sync session states when selection changes
+  const updateStudentSessionState = useCallback((newSelectedIds: string[]) => {
     setDataEntryStudentSessionStatesState(prevStates => {
       const newContextStudentStates: Record<string, StudentSessionState> = { ...prevStates };
       let statesChanged = false;
@@ -1336,10 +1334,14 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
           statesChanged = true;
         }
       });
+
       return statesChanged ? newContextStudentStates : prevStates;
     });
+  }, [studentsState]);
 
-  }, [dataEntrySelectedStudentIds, studentsState]);
+  useEffect(() => {
+    updateStudentSessionState(dataEntrySelectedStudentIds);
+  }, [dataEntrySelectedStudentIds, studentsState, updateStudentSessionState]);
 
   const contextValue = useMemo(() => ({
     students: studentsState,
@@ -1368,7 +1370,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     dataEntrySessionDate, setDataEntrySessionDate,
     dataEntrySessionTime, setDataEntrySessionTime,
     dataEntrySessionEndTime, setDataEntrySessionEndTime,
-    dataEntrySelectedStudentIds, setDataEntrySelectedStudentIds,
+    dataEntrySelectedStudentIds, setDataEntrySelectedStudentIds: setDataEntrySelectedStudentIdsState,
     dataEntryActiveStudentsInSlots,
     dataEntryStudentSessionStates, setDataEntryStudentSessionStates: setDataEntryStudentSessionStatesState,
     dataEntryFocusedStudentSlotIndex, setDataEntryFocusedStudentSlotIndex,
@@ -1397,7 +1399,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     dataEntrySessionDate, setDataEntrySessionDate,
     dataEntrySessionTime, setDataEntrySessionTime,
     dataEntrySessionEndTime, setDataEntrySessionEndTime,
-    dataEntrySelectedStudentIds, setDataEntrySelectedStudentIds,
+    dataEntrySelectedStudentIds,
     dataEntryActiveStudentsInSlots,
     dataEntryStudentSessionStates,
     dataEntryFocusedStudentSlotIndex, setDataEntryFocusedStudentSlotIndex,
@@ -1424,3 +1426,5 @@ export const useStudentData = (): StudentDataContextType => {
   }
   return context;
 };
+
+    
