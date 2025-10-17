@@ -13,7 +13,7 @@ import { useStudentData } from '@/hooks/use-student-data';
 import type { Student, Goal, GoalTemplate, GoalType } from '@/lib/types';
 import { StudentSchema } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { XIcon, PlusCircleIcon, SearchIcon, Sparkles, Loader2 } from 'lucide-react';
+import { XIcon, PlusCircleIcon, SearchIcon, Sparkles, Loader2, Archive, ArchiveRestore } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Select,
@@ -30,6 +30,7 @@ import { generateSmartGoal } from '@/ai/flows/smart-goal-generation';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { useErrorLog } from '@/hooks/use-error-log';
+import { cn } from '@/lib/utils';
 
 type EditStudentFormData = z.infer<typeof StudentSchema>;
 
@@ -42,6 +43,7 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
     students, 
     closeEditStudentModal, 
     updateStudent, 
+    updateStudentGoal,
     loading: dataLoading,
     goalTemplates,
     assignGoalToStudent,
@@ -102,6 +104,12 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
       sessionTargetValue: template.sessionTargetValue,
     };
     assignGoalToStudent(currentStudent.id, newGoal);
+  };
+  
+  const handleToggleArchiveGoal = async (goal: Goal) => {
+    if (currentStudent) {
+      await updateStudentGoal(currentStudent.id, goal.id, { isArchived: !goal.isArchived });
+    }
   };
 
   const filteredGoalTemplates = goalTemplates.filter(template => {
@@ -333,11 +341,20 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
               <ScrollArea className="h-64 border rounded-md p-2">
                 <ul className="space-y-1">
                   {currentStudent.goals.map(goal => (
-                    <li key={goal.id} className="flex justify-between items-center p-1.5 bg-muted/50 rounded-md text-sm">
-                      <span className="truncate pr-2" title={goal.name}>{goal.name} <Badge variant="outline" className="ml-1">{goal.type}</Badge></span>
-                      <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => removeGoalFromStudent(currentStudent.id, goal.id)}>
-                        <XIcon className="h-4 w-4 text-destructive" />
-                      </Button>
+                    <li key={goal.id} className="flex items-center p-1.5 bg-muted/50 rounded-md text-sm gap-2">
+                        <div className="flex items-center gap-0.5">
+                            <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => handleToggleArchiveGoal(goal)} title={goal.isArchived ? "Unarchive Goal" : "Archive Goal"}>
+                                {goal.isArchived ? <ArchiveRestore className="h-4 w-4 text-green-600" /> : <Archive className="h-4 w-4 text-orange-600" />}
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => removeGoalFromStudent(currentStudent.id, goal.id)} title="Remove Goal Assignment">
+                                <XIcon className="h-4 w-4 text-destructive" />
+                            </Button>
+                        </div>
+                        <div className={cn("truncate flex-grow", goal.isArchived && "opacity-60")}>
+                            <span title={goal.name}>{goal.name}</span>
+                            <Badge variant="outline" className="ml-1">{goal.type}</Badge>
+                            {goal.isArchived && <Badge variant="destructive" className="ml-1">Archived</Badge>}
+                        </div>
                     </li>
                   ))}
                 </ul>
