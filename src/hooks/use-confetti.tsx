@@ -1,11 +1,10 @@
-
 'use client';
 
 import React, { createContext, useContext, useCallback, ReactNode } from 'react';
 import confetti from 'canvas-confetti';
 
 type ConfettiContextType = {
-  fire: (origin: HTMLElement | null) => void;
+  fire: () => void;
 };
 
 const ConfettiContext = createContext<ConfettiContextType | null>(null);
@@ -19,26 +18,27 @@ export const useConfetti = () => {
 };
 
 export const ConfettiProvider = ({ children }: { children: ReactNode }) => {
-  const fire = useCallback((originElement: HTMLElement | null) => {
-    if (!originElement) return;
+  const fire = useCallback(() => {
+    const duration = 5 * 1000;
+    const animationEnd = Date.now() + duration;
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
 
-    const rect = originElement.getBoundingClientRect();
-    const origin = {
-      x: (rect.left + rect.width / 2) / window.innerWidth,
-      y: (rect.top + rect.height / 2) / window.innerHeight,
-    };
+    function randomInRange(min: number, max: number) {
+      return Math.random() * (max - min) + min;
+    }
 
-    confetti({
-      origin: origin,
-      particleCount: 100,
-      spread: 70,
-      angle: 90,
-      startVelocity: 30,
-      gravity: 1,
-      scalar: 1.2,
-      ticks: 200,
-      colors: ['#3874F0', '#4DD0E1', '#FFFFFF']
-    });
+    const interval = window.setInterval(function() {
+      const timeLeft = animationEnd - Date.now();
+
+      if (timeLeft <= 0) {
+        return clearInterval(interval);
+      }
+
+      const particleCount = 50 * (timeLeft / duration);
+      // since particles fall down, start a bit higher than random
+      confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
+      confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+    }, 250);
   }, []);
 
   return (
