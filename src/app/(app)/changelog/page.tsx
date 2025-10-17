@@ -17,6 +17,13 @@ interface ChangelogEntry {
 }
 
 const changelogEntries: ChangelogEntry[] = [
+    {
+    date: '2025-10-18',
+    title: 'Data Entry UI & Controls Refinement',
+    description: "Improved the layout and user experience on the Data Entry page. The 'Select Student' and 'Select Goal' buttons are now integrated into the bottom action bar on mobile devices for easier access, while remaining as a floating control on desktop for a cleaner workspace. Also adjusted student card height for better visibility.",
+    type: 'improvement',
+    icon: LayoutGrid,
+  },
   {
     date: '2025-10-17',
     title: 'AI-Powered Semantic Search for Goals',
