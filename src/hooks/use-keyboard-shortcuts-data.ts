@@ -92,7 +92,12 @@ export function useKeyboardShortcutHandlers({
         const focusedInfo = getCurrentFocusedGoalInfo();
         if (!focusedInfo?.goal || focusedInfo.goal.isArchived) return;
 
-        const { studentId, goal, goalData } = focusedInfo;
+        let { studentId, goal, goalData } = focusedInfo;
+        // Ensure goalData is not undefined.
+        if (!goalData) {
+            goalData = {};
+        }
+        
         const increment = alt ? -1 : 1;
         const promptToUpdate = PROMPT_HOTKEY_MAP[key];
 
@@ -130,12 +135,12 @@ export function useKeyboardShortcutHandlers({
         if (!fieldToUpdate) {
             if (key === 'C') {
                 const fields = ['correct', 'questionsCorrect', 'successfulResponses', 'correctProductions', 'trialsAccepted', 'successfulAttempts'];
-                fieldToUpdate = fields.find(f => goalData.hasOwnProperty(f)) || null;
+                fieldToUpdate = fields.find(f => goalData.hasOwnProperty(f)) || (goal.type === 'AAC' ? 'correct' : null);
             } else if (key === 'N') {
                 const fields = ['incorrect', 'questionsIncorrect', 'unsuccessfulResponses', 'incorrectProductions', 'trialsRefused', 'failedAttempts'];
-                fieldToUpdate = fields.find(f => goalData.hasOwnProperty(f)) || null;
+                fieldToUpdate = fields.find(f => goalData.hasOwnProperty(f)) || (goal.type === 'AAC' ? 'incorrect' : null);
             } else if (key === 'B' && goal.type !== 'FLUENCY_SYLLABLE_STUTTER') {
-                 if(goalData.hasOwnProperty('approximate')) fieldToUpdate = 'approximate';
+                 if(goalData.hasOwnProperty('approximate') || goal.type === 'AAC') fieldToUpdate = 'approximate';
             }
         }
         
