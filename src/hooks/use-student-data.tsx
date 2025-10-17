@@ -1363,7 +1363,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     if (goal.type === 'FLUENCY_SYLLABLE_STUTTER') {
         switch (key) {
             case 'B': fieldToUpdate = 'blocks'; break;
-            case 'V': fieldToUpdate = 'repetitions'; break;
+            case 'R': fieldToUpdate = 'repetitions'; break;
             case 'H': fieldToUpdate = 'prolongations'; break;
             case 'J': fieldToUpdate = 'interjections'; break;
         }
@@ -1476,7 +1476,8 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     editingSession, openEditSessionModal, closeEditSessionModal,
     deletingSession, openDeleteSessionModal, closeDeleteSessionModal,
     editingAssignedGoal, openEditAssignedGoalModal, closeEditAssignedGoalModal,
-    selectionModalType, setSelectionModalType,
+    selectionModalType, 
+    setSelectionModalType,
     dataEntrySessionDate, setDataEntrySessionDate,
     dataEntrySessionTime, setDataEntrySessionTime,
     dataEntrySessionEndTime, setDataEntrySessionEndTime,

@@ -39,8 +39,8 @@ const hotkeys: Hotkey[] = [
   { key: 'Alt + T', description: 'Open Select Goal modal', category: 'Data Entry' },
   { key: 'C', description: 'Increment Correct / Total Syllables / Trials Accepted', category: 'Data Entry' },
   { key: 'Alt + C', description: 'Decrement Correct / Total Syllables / Trials Accepted', category: 'Data Entry' },
-  { key: 'B', description: 'Increment Approximate count', category: 'Data Entry' },
-  { key: 'Alt + B', description: 'Decrement Approximate count', category: 'Data Entry' },
+  { key: 'B', description: 'Increment Approximate / Blocks (Fluency)', category: 'Data Entry' },
+  { key: 'Alt + B', description: 'Decrement Approximate / Blocks (Fluency)', category: 'Data Entry' },
   { key: 'N', description: 'Increment Incorrect / Stuttered Syllables / Trials Refused', category: 'Data Entry' },
   { key: 'Alt + N', description: 'Decrement Incorrect / Stuttered Syllables / Trials Refused', category: 'Data Entry' },
   { key: 'D', description: 'Increment Visual Prompt count', category: 'Data Entry' },
@@ -56,6 +56,12 @@ const hotkeys: Hotkey[] = [
   { key: 'I', description: 'Increment Independent count (also increments main Correct count)', category: 'Data Entry' },
   { key: 'Alt + I', description: 'Decrement Independent count (also decrements main Correct count)', category: 'Data Entry' },
   { key: 'Alt + E', description: 'Edit focused student\'s info/goals (from Data Entry page)', category: 'Data Entry' },
+  { key: 'R', description: 'Increment Repetitions (Fluency)', category: 'Data Entry' },
+  { key: 'Alt + R', description: 'Decrement Repetitions (Fluency)', category: 'Data Entry' },
+  { key: 'H', description: 'Increment Prolongations (Fluency)', category: 'Data Entry' },
+  { key: 'Alt + H', description: 'Decrement Prolongations (Fluency)', category: 'Data Entry' },
+  { key: 'J', description: 'Increment Interjections (Fluency)', category: 'Data Entry' },
+  { key: 'Alt + J', description: 'Decrement Interjections (Fluency)', category: 'Data Entry' },
 ];
 
 const categorizedHotkeys = hotkeys.reduce((acc, hotkey) => {
