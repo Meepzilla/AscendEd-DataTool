@@ -21,7 +21,7 @@ import {
 import { GOAL_TYPES } from '@/lib/goal-constants';
 import { Timestamp } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
-import { findRelevantGoals } from '@/ai/flows/semantic-search-flow';
+import { findRelevantGoals, type FindRelevantGoalsOutput } from '@/ai/flows/semantic-search-flow';
 import { useToast } from '@/hooks/use-toast';
 import { useErrorLog } from '@/hooks/use-error-log';
 
@@ -51,11 +51,11 @@ export default function GoalTemplatesPage() {
   const [filterType, setFilterType] = useState<string>('ALL');
   const [gridSize, setGridSize] = useState<'sm' | 'md' | 'lg'>('md');
   const [isAiSearching, setIsAiSearching] = useState(false);
-  const [rankedGoalIds, setRankedGoalIds] = useState<string[] | null>(null);
+  const [rankedGoals, setRankedGoals] = useState<FindRelevantGoalsOutput['rankedGoals'] | null>(null);
 
   const handleSemanticSearch = useCallback(async () => {
     if (!searchTerm.trim() || goalTemplates.length === 0) {
-      setRankedGoalIds(null);
+      setRankedGoals(null);
       return;
     }
     
@@ -73,13 +73,13 @@ export default function GoalTemplatesPage() {
         goals: templatesForSearch,
       });
 
-      setRankedGoalIds(result.rankedGoalIds);
-      toast({ title: 'Search Complete', description: `AI has ranked ${result.rankedGoalIds.length} relevant goals.` });
+      setRankedGoals(result.rankedGoals);
+      toast({ title: 'Search Complete', description: `AI has ranked ${result.rankedGoals.length} relevant goals.` });
     } catch (err: any) {
       console.error("Semantic search failed:", err);
       addErrorLog({ message: 'Semantic search AI flow failed.', source: 'GoalTemplatesPage.handleSemanticSearch', details: err.message, type: 'error' });
       toast({ title: 'AI Search Error', description: 'Could not perform semantic search.', variant: 'destructive' });
-      setRankedGoalIds(null); // Fallback to normal filtering on error
+      setRankedGoals(null); // Fallback to normal filtering on error
     } finally {
       setIsAiSearching(false);
     }
@@ -90,7 +90,7 @@ export default function GoalTemplatesPage() {
       if (searchTerm.trim()) {
         handleSemanticSearch();
       } else {
-        setRankedGoalIds(null);
+        setRankedGoals(null);
       }
     }, 500); // Debounce search
 
@@ -113,12 +113,12 @@ export default function GoalTemplatesPage() {
       templates = templates.filter(template => template.type === filterType);
     }
 
-    if (rankedGoalIds) {
+    if (rankedGoals) {
       // AI Ranking is active
-      const rankedMap = new Map(rankedGoalIds.map((id, index) => [id, index]));
+      const rankedMap = new Map(rankedGoals.map((g, index) => [g.id, { rank: index, score: g.relevanceScore }]));
       return templates
         .filter(t => rankedMap.has(t.id)) // Only include templates ranked by AI
-        .sort((a, b) => (rankedMap.get(a.id) ?? Infinity) - (rankedMap.get(b.id) ?? Infinity));
+        .sort((a, b) => (rankedMap.get(a.id)?.rank ?? Infinity) - (rankedMap.get(b.id)?.rank ?? Infinity));
     } else {
       // Fallback to simple text search if no search term or AI fails
       if (searchTerm.trim()) {
@@ -134,13 +134,18 @@ export default function GoalTemplatesPage() {
       // Default sort by date if no search
       return templates.sort((a, b) => getSafeTimestamp(b.createdAt) - getSafeTimestamp(a.createdAt));
     }
-  }, [goalTemplates, filterType, rankedGoalIds, searchTerm]);
+  }, [goalTemplates, filterType, rankedGoals, searchTerm]);
 
   const gridClasses = {
     sm: 'grid-cols-1 sm:grid-cols-2',
     md: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
     lg: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4',
   };
+
+  const relevanceScoreMap = useMemo(() => {
+    if (!rankedGoals) return new Map();
+    return new Map(rankedGoals.map(g => [g.id, g.relevanceScore]));
+  }, [rankedGoals]);
 
 
   if (error) {
@@ -235,50 +240,60 @@ export default function GoalTemplatesPage() {
 
           {!loading && !isAiSearching && filteredTemplates.length > 0 && (
             <div className={cn("grid gap-4", gridClasses[gridSize])}>
-              {filteredTemplates.map((template) => (
-                <Card key={template.id} className="flex flex-col justify-between hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-3">
-                    <div className="flex justify-between items-start">
-                      <CardTitle className="text-lg font-semibold leading-tight">{template.name}</CardTitle>
-                      {template.isDefault && <Badge variant="outline">Default</Badge>}
-                    </div>
-                    <Badge variant="secondary" className="mt-1 w-fit">{template.type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}</Badge>
-                  </CardHeader>
-                  <CardContent className="flex-grow space-y-2 text-sm">
-                    <div>
-                        <p className="font-medium text-muted-foreground">SMART Goal Prompt:</p>
-                        <p className="text-foreground line-clamp-2" title={template.smartGoalPrompt}>{template.smartGoalPrompt}</p>
-                    </div>
-                     {template.generatedSmartGoal && (
-                        <div>
-                            <p className="font-medium text-muted-foreground flex items-center gap-1"><Sparkles className="h-4 w-4 text-yellow-500" />Generated SMART Goal:</p>
-                            <p className="text-foreground line-clamp-3" title={template.generatedSmartGoal}>{template.generatedSmartGoal}</p>
+              {filteredTemplates.map((template) => {
+                const relevanceScore = relevanceScoreMap.get(template.id);
+                return (
+                  <Card key={template.id} className="flex flex-col justify-between hover:shadow-md transition-shadow">
+                    <CardHeader className="pb-3">
+                      <div className="flex justify-between items-start">
+                        <CardTitle className="text-lg font-semibold leading-tight">{template.name}</CardTitle>
+                         <div className="flex items-center gap-1.5">
+                          {relevanceScore !== undefined && (
+                            <Badge variant="default" className="bg-green-600 hover:bg-green-700">
+                              {relevanceScore}%
+                            </Badge>
+                          )}
+                          {template.isDefault && <Badge variant="outline">Default</Badge>}
                         </div>
-                    )}
-                     {template.sessionTargetValue !== undefined && (
-                        <div>
-                            <p className="font-medium text-muted-foreground">Session Target:</p>
-                            <p className="text-foreground">{template.sessionTargetValue}{template.type.startsWith('QUALITATIVE') ? '' : '%'}</p>
-                        </div>
-                    )}
-                  </CardContent>
-                  <CardFooter className="flex justify-between items-center pt-3 border-t">
-                    <p className="text-xs text-muted-foreground">
-                      Created: {template.createdAt ? formatDate(template.createdAt) : 'N/A'}
-                    </p>
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditGoalTemplateModal(template)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      {!template.isDefault && (
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openDeleteGoalTemplateModal(template)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                      </div>
+                      <Badge variant="secondary" className="mt-1 w-fit">{template.type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}</Badge>
+                    </CardHeader>
+                    <CardContent className="flex-grow space-y-2 text-sm">
+                      <div>
+                          <p className="font-medium text-muted-foreground">SMART Goal Prompt:</p>
+                          <p className="text-foreground line-clamp-2" title={template.smartGoalPrompt}>{template.smartGoalPrompt}</p>
+                      </div>
+                       {template.generatedSmartGoal && (
+                          <div>
+                              <p className="font-medium text-muted-foreground flex items-center gap-1"><Sparkles className="h-4 w-4 text-yellow-500" />Generated SMART Goal:</p>
+                              <p className="text-foreground line-clamp-3" title={template.generatedSmartGoal}>{template.generatedSmartGoal}</p>
+                          </div>
                       )}
-                    </div>
-                  </CardFooter>
-                </Card>
-              ))}
+                       {template.sessionTargetValue !== undefined && (
+                          <div>
+                              <p className="font-medium text-muted-foreground">Session Target:</p>
+                              <p className="text-foreground">{template.sessionTargetValue}{template.type.startsWith('QUALITATIVE') ? '' : '%'}</p>
+                          </div>
+                      )}
+                    </CardContent>
+                    <CardFooter className="flex justify-between items-center pt-3 border-t">
+                      <p className="text-xs text-muted-foreground">
+                        Created: {template.createdAt ? formatDate(template.createdAt) : 'N/A'}
+                      </p>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditGoalTemplateModal(template)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        {!template.isDefault && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openDeleteGoalTemplateModal(template)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        )}
+                      </div>
+                    </CardFooter>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </CardContent>
