@@ -3,15 +3,16 @@
 import React, { useState, useMemo, lazy, Suspense } from 'react';
 import { useStudentData } from '@/hooks/use-student-data';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { UserSearch } from 'lucide-react';
+import { UserSearch, PlusCircle } from 'lucide-react';
 import AppLoadingSkeleton from '@/components/layout/AppLoadingSkeleton';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Button } from '@/components/ui/button';
 
 const StudentSelectionGrid = lazy(() => import('@/components/student-selection/StudentSelectionGrid'));
 
 export default function StudentProfileLandingPage() {
-  const { students, loading } = useStudentData();
+  const { students, loading, openAddStudentModal } = useStudentData();
   const [showArchived, setShowArchived] = useState(false);
 
   const filteredStudents = useMemo(() => {
@@ -40,9 +41,14 @@ export default function StudentProfileLandingPage() {
                 </CardDescription>
                 </div>
             </div>
-            <div className="flex items-center space-x-2">
-                <Label htmlFor="show-archived">Show Archived</Label>
-                <Switch id="show-archived" checked={showArchived} onCheckedChange={setShowArchived} />
+            <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                    <Label htmlFor="show-archived">Show Archived</Label>
+                    <Switch id="show-archived" checked={showArchived} onCheckedChange={setShowArchived} />
+                </div>
+                <Button onClick={openAddStudentModal} size="sm">
+                    <PlusCircle className="mr-2 h-4 w-4" /> Add Student
+                </Button>
             </div>
           </div>
         </CardHeader>
