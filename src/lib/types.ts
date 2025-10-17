@@ -34,6 +34,7 @@ export type GoalType =
   | 'SEQUENCED_TRIALS'
   | 'PROMPTING'
   | 'DISCRETE_TRIALS'
+  | 'COGNITIVE'
   | 'AAC';
 
 export interface GoalTemplate {

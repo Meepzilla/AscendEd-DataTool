@@ -12,6 +12,7 @@ import { PHONOLOGICAL_FIELDS, PHONOLOGICAL_TEMPLATES } from './phonological';
 import { TRIALS_FIELDS, TRIALS_TEMPLATES } from './trials';
 import { FEEDING_TEMPLATES } from './feeding';
 import { AAC_FIELDS, AAC_TEMPLATES } from './aac';
+import { COGNITIVE_FIELDS, COGNITIVE_TEMPLATES } from './cognitive';
 
 // Combine all field definitions from individual files.
 export const GOAL_TYPE_FIELDS: Record<GoalType, Record<string, any>> = {
@@ -22,6 +23,7 @@ export const GOAL_TYPE_FIELDS: Record<GoalType, Record<string, any>> = {
   ...PHONOLOGICAL_FIELDS,
   ...TRIALS_FIELDS,
   ...AAC_FIELDS,
+  ...COGNITIVE_FIELDS,
 };
 
 // Dynamically generate the GOAL_TYPES object from the keys of GOAL_TYPE_FIELDS.
@@ -44,4 +46,5 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
   ...TRIALS_TEMPLATES,
   ...FEEDING_TEMPLATES,
   ...AAC_TEMPLATES,
+  ...COGNITIVE_TEMPLATES,
 ];
