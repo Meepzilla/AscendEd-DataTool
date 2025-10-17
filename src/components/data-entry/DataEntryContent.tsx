@@ -237,7 +237,7 @@ export default function DataEntryContent() {
 
       {/* Floating Action Buttons */}
       {dataEntrySelectedStudentIds.length > 0 && (
-        <div className="fixed bottom-24 right-6 z-20">
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-20">
           <TouchControls />
         </div>
       )}
