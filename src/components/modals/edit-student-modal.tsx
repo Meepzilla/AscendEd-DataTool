@@ -330,7 +330,7 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
             {currentStudent.goals.length === 0 ? (
               <p className="text-sm text-muted-foreground">No goals assigned yet.</p>
             ) : (
-              <ScrollArea className="h-24 border rounded-md p-2">
+              <ScrollArea className="h-64 border rounded-md p-2">
                 <ul className="space-y-1">
                   {currentStudent.goals.map(goal => (
                     <li key={goal.id} className="flex justify-between items-center p-1.5 bg-muted/50 rounded-md text-sm">
