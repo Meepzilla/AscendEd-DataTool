@@ -20,7 +20,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { User, PlusCircle, Search, Edit3, Trash2, Archive, ArchiveRestore } from 'lucide-react';
+import { User, PlusCircle, Search, Edit3, Trash2, Archive, ArchiveRestore, Menu } from 'lucide-react';
 import { useStudentData } from '@/hooks/use-student-data';
 import type { Student } from '@/lib/types';
 import StudentProgressSidebar from '@/components/progress/student-progress-sidebar';
@@ -51,7 +51,7 @@ export default function StudentSidebar() {
   } = useStudentData();
   const [searchTerm, setSearchTerm] = useState('');
   const [showArchived, setShowArchived] = useState(false);
-  const { state: sidebarState } = useSidebar(); // To adapt content based on collapsed/expanded
+  const { state: sidebarState, toggleSidebar } = useSidebar(); // To adapt content based on collapsed/expanded
   const router = useRouter();
   const pathname = usePathname();
 
@@ -81,11 +81,14 @@ export default function StudentSidebar() {
         <div className="flex items-center justify-between p-2">
            <h2 className={cn("text-lg font-semibold", sidebarState === 'collapsed' && "sr-only")}>Students</h2>
           <div className='flex items-center gap-1'>
+             <Button variant="ghost" size="icon" onClick={toggleSidebar} className={cn("h-7 w-7", "hidden sm:flex")}>
+              <Menu className="h-5 w-5" />
+              <span className="sr-only">Toggle Sidebar</span>
+            </Button>
             <Button variant="ghost" size="icon" onClick={openAddStudentModal} className={cn("h-7 w-7", sidebarState === 'collapsed' && "mx-auto")}>
               <PlusCircle className="h-5 w-5" />
               <span className="sr-only">Add Student</span>
             </Button>
-            <SidebarTrigger className={cn(sidebarState === 'collapsed' ? 'block' : 'hidden sm:block')} />
           </div>
         </div>
         <div className={cn("px-2 mt-2 space-y-2", sidebarState === 'collapsed' && "hidden")}>
