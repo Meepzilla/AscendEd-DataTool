@@ -371,7 +371,7 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
                 </SelectContent>
               </Select>
             </div>
-            <ScrollArea className="h-32 border rounded-md p-2">
+            <ScrollArea className="h-64 border rounded-md p-2">
               {filteredGoalTemplates.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">No matching templates found or all assigned.</p>
               ) : (
