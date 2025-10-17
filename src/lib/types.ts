@@ -33,7 +33,8 @@ export type GoalType =
   | 'FEEDING_SWALLOWING'
   | 'SEQUENCED_TRIALS'
   | 'PROMPTING'
-  | 'DISCRETE_TRIALS';
+  | 'DISCRETE_TRIALS'
+  | 'AAC';
 
 export interface GoalTemplate {
   id: string;
@@ -125,6 +126,13 @@ export type TrialStatus = 'untouched' | 'correct' | 'incorrect' | 'approximate';
 export interface DiscreteTrialsData {
   numberOfTrials: number;
   trials: TrialStatus[];
+}
+
+export interface AacData {
+  details: string;
+  correct: number;
+  incorrect: number;
+  approximate: number;
 }
 
 

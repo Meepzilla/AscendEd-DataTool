@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import { findRelevantGoals, type FindRelevantGoalsOutput } from '@/ai/flows/semantic-search-flow';
 import { useToast } from '@/hooks/use-toast';
 import { useErrorLog } from '@/hooks/use-error-log';
-import GoalTemplateFilters from '@/components/goal-templates/GoalTemplateFilters';
+import GoalTemplateFilters, { type GoalTemplateSortOrder, type GridSize } from '@/components/goal-templates/GoalTemplateFilters';
 
 // Lazy load modals
 const AddGoalTemplateModal = lazy(() => import('@/components/modals/add-goal-template-modal'));
@@ -42,8 +42,8 @@ export default function GoalTemplatesPage() {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('ALL');
-  const [gridSize, setGridSize] = useState<'sm' | 'md' | 'lg'>('md');
-  const [sortOrder, setSortOrder] = useState<string>('date-desc');
+  const [gridSize, setGridSize] = useState<GridSize>('md');
+  const [sortOrder, setSortOrder] = useState<GoalTemplateSortOrder>('date-desc');
   const [isAiSearchEnabled, setIsAiSearchEnabled] = useState(true);
   const [isAiSearching, setIsAiSearching] = useState(false);
   const [rankedGoals, setRankedGoals] = useState<FindRelevantGoalsOutput['rankedGoals'] | null>(null);
@@ -335,5 +335,3 @@ function TemplateCardSkeleton() {
         </Card>
     );
 }
-
-    

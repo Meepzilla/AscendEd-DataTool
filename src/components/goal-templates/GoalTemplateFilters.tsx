@@ -10,15 +10,18 @@ import { GOAL_TYPES } from '@/lib/goal-constants';
 import { ListFilter, Search, ArrowUpDown, Grid, BrainCircuit, Sparkles, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+export type GoalTemplateSortOrder = 'relevance' | 'date-desc' | 'date-asc' | 'name-asc' | 'name-desc';
+export type GridSize = 'sm' | 'md' | 'lg';
+
 interface GoalTemplateFiltersProps {
   searchTerm: string;
   setSearchTerm: (value: string) => void;
   filterType: string;
   setFilterType: (value: string) => void;
-  sortOrder: string;
-  setSortOrder: (value: string) => void;
-  gridSize: 'sm' | 'md' | 'lg';
-  setGridSize: (value: 'sm' | 'md' | 'lg') => void;
+  sortOrder: GoalTemplateSortOrder;
+  setSortOrder: (value: GoalTemplateSortOrder) => void;
+  gridSize: GridSize;
+  setGridSize: (value: GridSize) => void;
   isAiSearchEnabled: boolean;
   setIsAiSearchEnabled: (value: boolean) => void;
   isAiSearching: boolean;
@@ -82,7 +85,7 @@ const GoalTemplateFilters: React.FC<GoalTemplateFiltersProps> = ({
           ))}
         </SelectContent>
       </Select>
-      <Select value={sortOrder} onValueChange={setSortOrder}>
+      <Select value={sortOrder} onValueChange={(value) => setSortOrder(value as GoalTemplateSortOrder)}>
         <SelectTrigger className="w-full sm:w-[180px]">
           <ArrowUpDown className="mr-2 h-4 w-4 text-muted-foreground" />
           <SelectValue placeholder="Sort by" />
@@ -95,7 +98,7 @@ const GoalTemplateFilters: React.FC<GoalTemplateFiltersProps> = ({
           <SelectItem value="name-desc">Name: Z-A</SelectItem>
         </SelectContent>
       </Select>
-      <Select value={gridSize} onValueChange={(value) => setGridSize(value as 'sm' | 'md' | 'lg')}>
+      <Select value={gridSize} onValueChange={(value) => setGridSize(value as GridSize)}>
         <SelectTrigger className="w-full sm:w-[130px]">
           <Grid className="mr-2 h-4 w-4 text-muted-foreground" />
           <SelectValue placeholder="Grid Size" />
@@ -121,5 +124,3 @@ const GoalTemplateFilters: React.FC<GoalTemplateFiltersProps> = ({
 };
 
 export default GoalTemplateFilters;
-
-    

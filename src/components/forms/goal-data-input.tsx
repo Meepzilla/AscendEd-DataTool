@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -73,6 +74,7 @@ export default function GoalDataInputComponent({
 
     switch (type) {
       case 'ARTICULATION':
+      case 'AAC':
         correct = Number(data.correct || 0);
         totalOpportunities = correct + Number(data.incorrect || 0) + Number(data.approximate || 0);
         actualPerformancePct = totalOpportunities > 0 ? (correct / totalOpportunities) * 100 : 0;
@@ -140,6 +142,7 @@ export default function GoalDataInputComponent({
 
   const renderInputFields = () => {
     switch (goal.type) {
+      case 'AAC':
       case 'ARTICULATION':
         return (
           <>
