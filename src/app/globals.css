@@ -6,6 +6,7 @@
 /* Apply Inter font to the body element */
 body {
   font-family: var(--font-inter), sans-serif;
+  zoom: 0.75;
 }
 
 /* Define CSS variables for theming, primarily using HSL color format */
@@ -17,7 +18,7 @@ body {
     --card-foreground: 210 20% 25%; /* Text color on cards */
     --popover: 210 20% 98%; /* Popover background color */
     --popover-foreground: 210 20% 25%; /* Text color on popovers */
-    --primary: 45 90% 55%; /* Primary accent color (Golden) */
+    --primary: 35 75% 45%; /* Primary accent color (Golden Brown) */
     --primary-foreground: 35 20% 15%; /* Text color on primary background */
     --secondary: 210 20% 90%; /* Secondary background color */
     --secondary-foreground: 210 20% 25%; /* Text color on secondary background */
@@ -27,9 +28,9 @@ body {
     --accent-foreground: 35 20% 95%; /* Text color on accent background */
     --destructive: 0 84.2% 60.2%; /* Destructive action color (Red) */
     --destructive-foreground: 0 0% 98%; /* Text color on destructive background */
-    --border: 210 20% 80%; /* Border color */
-    --input: 210 20% 80%; /* Input field background color */
-    --ring: 45 90% 55%; /* Ring color for focus states (Gold) */
+    --border: 35 40% 80%; /* Border color (Light Golden Brown) */
+    --input: 35 40% 80%; /* Input field background color */
+    --ring: 35 75% 45%; /* Ring color for focus states (Golden Brown) */
     
     /* Chart specific colors for light mode */
     --chart-1: 12 76% 61%;
@@ -43,12 +44,12 @@ body {
     /* Sidebar specific colors for light theme */
     --sidebar-background: 210 20% 95%;
     --sidebar-foreground: 210 20% 25%;
-    --sidebar-primary: 45 90% 55%;
+    --sidebar-primary: 35 75% 45%;
     --sidebar-primary-foreground: 35 20% 15%;
     --sidebar-accent: 210 20% 88%;
     --sidebar-accent-foreground: 210 20% 15%;
     --sidebar-border: 210 20% 80%;
-    --sidebar-ring: 45 90% 55%;
+    --sidebar-ring: 35 75% 45%;
   }
 
   .dark { /* Dark mode color variables */
@@ -58,7 +59,7 @@ body {
     --card-foreground: 210 20% 85%; /* Text color on cards */
     --popover: 220 35% 17%; /* Popover background, adjusted for new background */
     --popover-foreground: 210 20% 85%; /* Text color on popovers */
-    --primary: 45 90% 55%; /* Primary accent color (Golden) */
+    --primary: 35 75% 55%; /* Primary accent color (Golden Brown) */
     --primary-foreground: 35 20% 15%; /* Text color on primary background */
     --secondary: 210 20% 30%; /* Secondary background color (like bg-slate-700) */
     --secondary-foreground: 210 20% 85%; /* Text color on secondary background */
@@ -68,9 +69,9 @@ body {
     --accent-foreground: 35 20% 95%; /* Light text on accent for contrast */
     --destructive: 0 62.8% 30.6%; /* Destructive action color (Dark Red) */
     --destructive-foreground: 0 0% 98%; /* Text color on destructive background */
-    --border: 210 20% 35%; /* Border color (like border-slate-700) */
-    --input: 210 20% 35%; /* Input field background color */
-    --ring: 45 90% 55%; /* Ring color for focus states (Gold) */
+    --border: 35 30% 35%; /* Border color (Dark Golden Brown) */
+    --input: 35 30% 35%; /* Input field background color */
+    --ring: 35 75% 55%; /* Ring color for focus states (Golden Brown) */
 
     /* Chart specific colors for dark mode */
     --chart-1: 220 70% 50%;
@@ -82,12 +83,12 @@ body {
     /* Sidebar specific colors for dark theme */
     --sidebar-background: 220 38% 15%; /* Sidebar background, adjusted for new background */
     --sidebar-foreground: 210 20% 80%;
-    --sidebar-primary: 45 90% 55%;
+    --sidebar-primary: 35 75% 55%;
     --sidebar-primary-foreground: 35 20% 15%;
     --sidebar-accent: 210 20% 28%;
     --sidebar-accent-foreground: 210 20% 90%;
     --sidebar-border: 210 20% 30%;
-    --sidebar-ring: 45 90% 55%; /* Ring color for focus states (Gold) */
+    --sidebar-ring: 35 75% 55%; /* Ring color for focus states (Golden Brown) */
   }
 }
 
@@ -99,7 +100,6 @@ body {
   /* Apply background and text colors to the body, and custom scrollbar styles */
   body {
     @apply bg-background text-foreground;
-    zoom: 0.75;
     /* Custom scrollbar for Firefox */
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--muted)) hsl(var(--background));
