@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -11,7 +10,7 @@ import { Slider } from '@/components/ui/slider';
 import { PROMPT_TYPES, PROMPT_COLORS, PROMPT_ABBREVIATIONS, PROMPT_HOTKEY_MAP } from '@/lib/promptConstants';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { TrendingUp, ArrowUp, ArrowDown, Plus, Minus, ArchiveIcon, Pin, Check, X, CircleHelp } from 'lucide-react';
+import { TrendingUp, ArrowUp, ArrowDown, Plus, Minus, ArchiveIcon, Pin, Check, X, CircleHelp, RotateCcw, Undo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useConfetti } from '@/hooks/use-confetti';
@@ -172,6 +171,28 @@ export default function GoalDataInputComponent({
     });
   };
 
+  const handleClearTrials = (e: React.MouseEvent<HTMLButtonElement>) => {
+    handleInteraction(e, () => {
+      const currentTrials: TrialStatus[] = Array.isArray(data.trials) ? data.trials : [];
+      const clearedTrials = Array(currentTrials.length).fill('untouched');
+      handleChange('trials', clearedTrials);
+    });
+  };
+
+  const handleUndoLastTrial = (e: React.MouseEvent<HTMLButtonElement>) => {
+    handleInteraction(e, () => {
+      const currentTrials: TrialStatus[] = Array.isArray(data.trials) ? [...data.trials] : [];
+      const lastFilledIndex = currentTrials.map((t, i) => (t !== 'untouched' ? i : -1)).filter(i => i !== -1).pop();
+
+      if (lastFilledIndex !== undefined) {
+        currentTrials[lastFilledIndex] = 'untouched';
+        handleChange('trials', currentTrials);
+      } else {
+        toast({ title: "Nothing to Undo", description: "No trials have been marked yet.", variant: "default" });
+      }
+    });
+  };
+
 
   const renderInputFields = () => {
     switch (goal.type) {
@@ -251,13 +272,15 @@ export default function GoalDataInputComponent({
                   max="20"
                   value={data.numberOfTrials ?? ''}
                   onChange={(e) => handleChange('numberOfTrials', e.target.value === '' ? undefined : parseInt(e.target.value, 10))}
-                  className="h-8 text-sm text-center w-24"
+                  className="h-8 text-sm text-center w-20"
                   disabled={isArchived || isLocked}
                 />
-                 <div className="flex gap-1">
+                 <div className="flex flex-wrap gap-1">
                     <Button size="sm" className="h-7 px-2 text-xs bg-green-500 hover:bg-green-600" onClick={(e) => handleFillNextTrial('correct', e)} disabled={isArchived || isLocked}>Correct</Button>
                     <Button size="sm" className="h-7 px-2 text-xs bg-yellow-500 hover:bg-yellow-600" onClick={(e) => handleFillNextTrial('approximate', e)} disabled={isArchived || isLocked}>Approx.</Button>
                     <Button size="sm" className="h-7 px-2 text-xs bg-red-500 hover:bg-red-600" onClick={(e) => handleFillNextTrial('incorrect', e)} disabled={isArchived || isLocked}>Incorrect</Button>
+                    <Button size="icon" variant="outline" className="h-7 w-7" onClick={(e) => handleUndoLastTrial(e)} disabled={isArchived || isLocked} title="Undo Last"><Undo2 className="h-3.5 w-3.5" /></Button>
+                    <Button size="icon" variant="outline" className="h-7 w-7" onClick={(e) => handleClearTrials(e)} disabled={isArchived || isLocked} title="Clear All"><RotateCcw className="h-3.5 w-3.5" /></Button>
                 </div>
               </div>
             </FormItem>
