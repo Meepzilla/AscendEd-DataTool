@@ -591,17 +591,17 @@ export default function GoalDataInputComponent({
                         </Badge>
                     </div>
                 </CardTitle>
-                <div className="mt-1">
+                <div className="mt-1 flex items-center gap-2">
+                  {!isFocused && onSetFocus && (
+                    <Button variant="link" size="sm" onClick={onSetFocus} className="h-auto p-0 text-xs" disabled={isLocked}>
+                      <Pin className="mr-1 h-3 w-3" /> Set Focus
+                    </Button>
+                  )}
                   {goal.sessionTargetValue !== undefined && (
-                    <div className="text-xs text-muted-foreground flex items-center gap-0.5 pt-0.5">
+                    <div className="text-xs text-muted-foreground flex items-center gap-0.5">
                         <TrendingUp className="h-3 w-3 text-green-600" />
                         Target: {goal.sessionTargetValue}{goal.type !== 'QUALITATIVE_OBSERVATION' ? '%' : ''}
                     </div>
-                  )}
-                  {!isFocused && onSetFocus && (
-                    <Button variant="link" size="sm" onClick={onSetFocus} className="h-auto p-0 text-xs mt-1" disabled={isLocked}>
-                      <Pin className="mr-1 h-3 w-3" /> Set Focus
-                    </Button>
                   )}
                 </div>
             </div>
