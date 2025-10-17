@@ -596,7 +596,6 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       safeToast({ title: "Success", description: "Student and their sessions deleted locally." });
     }
     if (selectedStudent?.id === studentId) setSelectedStudentState(null);
-    setDeletingItem(null); 
   }, [isFirebaseDBAvailable, firestoreDbModule, currentUser, selectedStudent, safeToast, APP_ID, addErrorLog, studentsState, sessionsState, saveStudentsToLocal, saveSessionsToLocal]);
 
   const assignGoalToStudent = useCallback(async (studentId: string, goal: Goal) => {
@@ -1524,5 +1523,3 @@ export const useStudentData = (): StudentDataContextType => {
   }
   return context;
 };
-
-    

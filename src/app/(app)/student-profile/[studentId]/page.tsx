@@ -58,6 +58,7 @@ export default function StudentProfilePage() {
   const [currentStudent, setCurrentStudent] = useState<Student | null>(null);
   const [isAssignGoalModalOpen, setIsAssignGoalModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState(false);
 
 
   useEffect(() => {
@@ -182,7 +183,7 @@ export default function StudentProfilePage() {
   
   const handleDeleteStudent = () => {
       if (currentStudent) {
-          openDeleteConfirmationModal(currentStudent, 'student');
+          setIsDeleteConfirmationOpen(true);
       }
   };
 
@@ -216,7 +217,8 @@ export default function StudentProfilePage() {
           confirmText="Yes, Remove Goal"
         />
       )}
-
+        
+      {/* Modal for Archiving */}
       {deletingStudent && deletingStudent.type === 'student' && (
          <ConfirmationModal
             isOpen={!!deletingStudent}
@@ -224,24 +226,40 @@ export default function StudentProfilePage() {
             title={
                 'isArchived' in deletingStudent.item
                 ? ((deletingStudent.item as Student).isArchived ? `Unarchive Student: ${(deletingStudent.item as Student).name}` : `Archive Student: ${(deletingStudent.item as Student).name}`)
-                : `Delete Student: ${deletingStudent.item?.name}`
+                : ''
             }
             description={
                 'isArchived' in deletingStudent.item
                 ? ((deletingStudent.item as Student).isArchived ? "Unarchiving this student will make them visible in all active lists again. Are you sure?" : "Archiving a student will hide them from active lists. Their data will be preserved. Are you sure?")
-                : `Are you sure you want to permanently delete this student and all their associated session data? This action cannot be undone.`
+                : ''
             }
-            onConfirm={
-                'isArchived' in deletingStudent.item
-                ? () => updateStudent(deletingStudent.item!.id, { isArchived: (deletingStudent.item as Student).isArchived })
-                : () => deleteStudent(deletingStudent.item!.id)
-            }
+            onConfirm={() => {
+                 if ('isArchived' in deletingStudent.item!) {
+                    updateStudent(deletingStudent.item!.id, { isArchived: (deletingStudent.item as Student).isArchived })
+                 }
+            }}
             confirmText={
                 'isArchived' in deletingStudent.item
                 ? ((deletingStudent.item as Student).isArchived ? 'Yes, Unarchive' : 'Yes, Archive')
-                : 'Yes, Delete Permanently'
+                : ''
             }
         />
+      )}
+
+      {/* Modal for Deleting */}
+      {isDeleteConfirmationOpen && currentStudent && (
+          <ConfirmationModal
+              isOpen={isDeleteConfirmationOpen}
+              onClose={() => setIsDeleteConfirmationOpen(false)}
+              title={`Delete Student: ${currentStudent.name}?`}
+              description="Are you sure you want to permanently delete this student and all their associated session data? This action cannot be undone."
+              onConfirm={() => {
+                deleteStudent(currentStudent.id);
+                setIsDeleteConfirmationOpen(false); // Close modal on confirm
+                router.push('/student-profile'); // Redirect after delete
+              }}
+              confirmText="Yes, Delete Permanently"
+          />
       )}
 
 
