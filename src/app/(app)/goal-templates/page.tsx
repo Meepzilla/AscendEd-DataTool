@@ -7,7 +7,7 @@ import type { GoalTemplate } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { PlusCircle, Edit, Trash2, Search, ListFilter, Sparkles, Info, ListPlus } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Search, ListFilter, Sparkles, Info, ListPlus, Grid } from 'lucide-react';
 import { formatDate } from '@/lib/helpers';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { GOAL_TYPES } from '@/lib/goal-constants';
 import { Timestamp } from 'firebase/firestore';
+import { cn } from '@/lib/utils';
 
 // Lazy load modals
 const AddGoalTemplateModal = lazy(() => import('@/components/modals/add-goal-template-modal'));
@@ -42,6 +43,7 @@ export default function GoalTemplatesPage() {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('ALL');
+  const [gridSize, setGridSize] = useState<'sm' | 'md' | 'lg'>('md');
 
   const filteredTemplates = useMemo(() => {
     // Helper to safely get a timestamp from different date types
@@ -69,6 +71,12 @@ export default function GoalTemplatesPage() {
         return dateB - dateA;
     });
   }, [goalTemplates, searchTerm, filterType]);
+
+  const gridClasses = {
+    sm: 'grid-cols-1 sm:grid-cols-2',
+    md: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
+    lg: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4',
+  };
 
 
   if (error) { // This will now only show for actual Firebase data loading errors
@@ -132,11 +140,22 @@ export default function GoalTemplatesPage() {
                     ))}
                 </SelectContent>
             </Select>
+            <Select value={gridSize} onValueChange={(value) => setGridSize(value as 'sm' | 'md' | 'lg')}>
+                <SelectTrigger className="w-full sm:w-[130px]">
+                    <Grid className="mr-2 h-4 w-4 text-muted-foreground" />
+                    <SelectValue placeholder="Grid Size" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="sm">Small</SelectItem>
+                    <SelectItem value="md">Medium</SelectItem>
+                    <SelectItem value="lg">Large</SelectItem>
+                </SelectContent>
+            </Select>
           </div>
 
           {loading && (
-             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                {[1,2,3].map(i => <TemplateCardSkeleton key={i} />)}
+             <div className={cn("grid gap-4", gridClasses[gridSize])}>
+                {[1,2,3,4].map(i => <TemplateCardSkeleton key={i} />)}
             </div>
           )}
           
@@ -149,7 +168,7 @@ export default function GoalTemplatesPage() {
           )}
 
           {!loading && filteredTemplates.length > 0 && (
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+            <div className={cn("grid gap-4", gridClasses[gridSize])}>
               {filteredTemplates.map((template) => (
                 <Card key={template.id} className="flex flex-col justify-between hover:shadow-md transition-shadow">
                   <CardHeader className="pb-3">
@@ -233,3 +252,4 @@ function TemplateCardSkeleton() {
         </Card>
     );
 }
+
