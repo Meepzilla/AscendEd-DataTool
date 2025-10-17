@@ -5,7 +5,7 @@ import React, { lazy, useState, useEffect, useCallback, Suspense, useMemo } from
 import { useStudentData } from '@/hooks/use-student-data';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Save, RotateCcw } from 'lucide-react';
+import { Save, RotateCcw, PlusCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
 import { Info } from 'lucide-react';
@@ -289,9 +289,12 @@ export default function DataEntryContent() {
             <Card className="mt-6 flex-shrink-0">
               <CardContent className="p-8 text-center text-muted-foreground">
                   <Info className="h-10 w-10 mx-auto mb-3 text-primary"/>
-                  <p className="text-lg">No students selected for data entry.</p>
-                  <p>Click "Add Student Slot" to begin.</p>
-                  {students.length === 0 && <p className="mt-2">You don't have any students yet. Go to 'Student Profile' or use Alt+M to add one.</p>}
+                  <p className="text-lg mb-4">No students selected for data entry.</p>
+                  <Button variant="outline" onClick={addStudentSlot}>
+                    <PlusCircle className="mr-2 h-5 w-5" />
+                    Add Student Slot
+                  </Button>
+                  {students.length === 0 && <p className="mt-4 text-sm">You don't have any students yet. Go to 'Students' or press (Alt+M) to add one.</p>}
               </CardContent>
             </Card>
           )}
