@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -416,7 +415,7 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
           </div>
         </div>
       </div>
-      <div className="pt-4 flex justify-end border-t p-4">
+      <div className="pt-4 flex justify-end border-t mt-4">
         <Button type="button" variant="outline" onClick={closeEditStudentModal}>
           Done
         </Button>

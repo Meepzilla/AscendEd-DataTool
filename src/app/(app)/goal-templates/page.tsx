@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useMemo, Suspense, lazy, useCallback, useEffect } from 'react';
@@ -207,7 +206,7 @@ export default function GoalTemplatesPage() {
                 ? ((deletingStudent.item as GoalTemplate).isArchived ? 'Yes, Unarchive' : 'Yes, Archive')
                 : 'Yes, Delete'
             }
-            actionType="goalTemplate"
+            deleteActionType="goalTemplate"
           />
         )}
       </Suspense>

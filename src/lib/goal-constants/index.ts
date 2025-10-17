@@ -1,4 +1,3 @@
-
 // This file aggregates goal constants from individual, domain-specific files
 // for better organization and maintainability. It serves as the new single
 // source of truth for goal-related constants in the application.

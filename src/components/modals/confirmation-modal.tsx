@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
@@ -20,12 +19,17 @@ import { cn } from '@/lib/utils';
 interface ConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm?: () => void;
+  onConfirm?: () => void; // Made optional as some actions are internal
   title: string;
   description: string;
   confirmText?: string;
   cancelText?: string;
+  itemToDelete?: Student | GoalTemplate | SessionData;
+  itemToUpdate?: GoalTemplate;
+  updateAction?: (id: string, data: Partial<GoalTemplate>) => Promise<void>;
+  deleteActionType?: 'student' | 'goalTemplate' | 'session';
 }
+
 
 export default function ConfirmationModal({
   isOpen,
@@ -35,23 +39,42 @@ export default function ConfirmationModal({
   description,
   confirmText = "Confirm",
   cancelText = "Cancel",
+  itemToDelete,
+  itemToUpdate,
+  updateAction,
+  deleteActionType,
 }: ConfirmationModalProps) {
-  const { loading: dataLoading } = useStudentData();
+  const { deleteStudent, deleteGoalTemplate, deleteSession, loading: dataLoading } = useStudentData();
   const [isProcessing, setIsProcessing] = useState(false);
   const confirmButtonRef = useRef<HTMLButtonElement>(null);
 
   const handleConfirmAction = useCallback(async () => {
-    if (!onConfirm) return;
     setIsProcessing(true);
     try {
-      await onConfirm();
+      if (onConfirm) {
+        await onConfirm();
+      } else if (itemToDelete && deleteActionType) {
+        switch (deleteActionType) {
+          case 'student':
+            await deleteStudent((itemToDelete as Student).id);
+            break;
+          case 'goalTemplate':
+            await deleteGoalTemplate((itemToDelete as GoalTemplate).id);
+            break;
+          case 'session':
+            await deleteSession((itemToDelete as SessionData).sessionId);
+            break;
+        }
+      } else if (itemToUpdate && updateAction) {
+          await updateAction(itemToUpdate.id, { isArchived: !itemToUpdate.isArchived });
+      }
     } catch (error) {
       console.error(`Error performing confirm action:`, error);
     } finally {
       setIsProcessing(false);
       onClose();
     }
-  }, [onConfirm, onClose]);
+  }, [onConfirm, itemToDelete, deleteActionType, itemToUpdate, updateAction, deleteStudent, deleteGoalTemplate, deleteSession, onClose]);
 
   useEffect(() => {
     if (isOpen) {
