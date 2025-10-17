@@ -17,13 +17,13 @@ const GoalInfoSchema = z.object({
   smartGoalPrompt: z.string().optional(),
 });
 
-export const FindRelevantGoalsInputSchema = z.object({
+const FindRelevantGoalsInputSchema = z.object({
   query: z.string().describe('The user\'s search query.'),
   goals: z.array(GoalInfoSchema).describe('The list of all available goal templates to search through.'),
 });
 export type FindRelevantGoalsInput = z.infer<typeof FindRelevantGoalsInputSchema>;
 
-export const FindRelevantGoalsOutputSchema = z.object({
+const FindRelevantGoalsOutputSchema = z.object({
   rankedGoalIds: z.array(z.string()).describe('An array of goal IDs, ranked from most to least relevant based on the user query.'),
 });
 export type FindRelevantGoalsOutput = z.infer<typeof FindRelevantGoalsOutputSchema>;
