@@ -109,6 +109,7 @@ const transformDataForSankeyChart = (sessions: SessionData[], studentActiveGoals
   rawLinks.forEach(link => {
       const sourceIndex = nodeMap[link.source];
       const targetIndex = nodeMap[link.target];
+      if(sourceIndex === undefined || targetIndex === undefined) return;
       const key = `${sourceIndex}-${targetIndex}`;
       linkMap[key] = (linkMap[key] || 0) + link.value;
   });
@@ -126,21 +127,20 @@ const CustomSankeyNode = ({ x, y, width, height, index, payload, containerWidth 
     const nodeName = String(payload.name);
     const nodeValue = payload.value !== undefined ? ` (${payload.value.toLocaleString(undefined, {maximumFractionDigits: 1})})` : '';
     const nodeLabel = `${nodeName}${nodeValue}`;
-    const textFill = 'hsl(var(--foreground))';
   
     const isFirstColumn = payload.depth === 0;
     const isLastColumn = payload.sourceLinks.length > 0 && payload.targetLinks.length === 0;
   
     let textAnchor = 'start';
-    let textX = width + 6;
-  
+    let foreignObjectX = width + 6;
+    let foreignObjectWidth = 140; // Max width for the label text
+    
     if (isFirstColumn) {
         textAnchor = 'end';
-        textX = -6;
-    } else if (isLastColumn) {
-        textAnchor = 'start';
-        textX = width + 6;
-    } else {
+        foreignObjectX = -foreignObjectWidth - 6;
+    }
+
+    if (!isFirstColumn && !isLastColumn) {
       // Middle nodes - don't show label to avoid clutter
       return (
         <g transform={`translate(${x},${y})`}>
@@ -152,10 +152,22 @@ const CustomSankeyNode = ({ x, y, width, height, index, payload, containerWidth 
     return (
       <g transform={`translate(${x},${y})`}>
         <rect height={height} width={width} fill={payload.color || "hsl(var(--muted))"} strokeWidth="0" rx="2" ry="2"/>
-        <text x={textX} y={height / 2} textAnchor={textAnchor} dominantBaseline="middle" fill={textFill} fontSize="12">
-           {/* Basic text wrapping approximation */}
-          {nodeLabel.length > 30 ? `${nodeLabel.substring(0, 28)}...` : nodeLabel}
-        </text>
+        <foreignObject x={foreignObjectX} y={-10} width={foreignObjectWidth} height={height + 20}>
+            <div
+                style={{
+                    color: 'hsl(var(--foreground))',
+                    fontSize: '12px',
+                    textAlign: isFirstColumn ? 'right' : 'left',
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    wordBreak: 'break-word',
+                    lineHeight: '1.2'
+                }}
+            >
+                {nodeLabel}
+            </div>
+        </foreignObject>
       </g>
     );
 };
@@ -190,7 +202,7 @@ const GoalPerformanceSankey: React.FC<GoalPerformanceSankeyProps> = ({ studentSe
             data={sankeyData} 
             node={<CustomSankeyNode />} 
             nodePadding={20} 
-            margin={{ top: 5, right: 120, bottom: 5, left: 150 }} 
+            margin={{ top: 5, right: 150, bottom: 5, left: 150 }} 
             link={{ stroke: 'hsl(var(--border))', strokeOpacity: 0.5 }}
             iterations={32}
           >
