@@ -984,24 +984,24 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const savedSession = await addSession(session);
     
     if (savedSession) {
+        safeToast({ title: "Success", description: `Session for ${state.studentName} saved.`});
         if (!isFakeDataMode) {
-          safeToast({ title: "Success", description: `Session for ${state.studentName} saved.`});
+            // Reset state for the saved student only if not in fake data mode
+            setDataEntryStudentSessionStatesState(prevStates => {
+                const newStates = { ...prevStates };
+                if (newStates[focusedStudentId]) {
+                    const studentState = newStates[focusedStudentId];
+                    studentState.activity = '';
+                    studentState.notes = '';
+                    const initialGoalData: Record<string, SessionGoalData['data']> = {};
+                    studentState.originalGoalHeaders.forEach(goal => {
+                        initialGoalData[goal.id] = JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type]));
+                    });
+                    studentState.goalData = initialGoalData;
+                }
+                return newStates;
+            });
         }
-        // Reset state for the saved student
-        setDataEntryStudentSessionStatesState(prevStates => {
-            const newStates = { ...prevStates };
-            if (newStates[focusedStudentId]) {
-                const studentState = newStates[focusedStudentId];
-                studentState.activity = '';
-                studentState.notes = '';
-                const initialGoalData: Record<string, SessionGoalData['data']> = {};
-                studentState.originalGoalHeaders.forEach(goal => {
-                    initialGoalData[goal.id] = JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type]));
-                });
-                studentState.goalData = initialGoalData;
-            }
-            return newStates;
-        });
     }
   }, [
       dataEntrySessionDate, 
@@ -1060,28 +1060,28 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         const savedSession = await addSession(session);
         if (savedSession) {
             savedCount++;
-            setDataEntryStudentSessionStatesState(prevStates => {
-                const newStates = { ...prevStates };
-                if (newStates[studentId]) {
-                    newStates[studentId].activity = '';
-                    newStates[studentId].notes = '';
-                    const initialGoalData: Record<string, SessionGoalData['data']> = {};
-                    newStates[studentId].originalGoalHeaders.forEach(goal => {
-                        initialGoalData[goal.id] = JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type]));
-                    });
-                    newStates[studentId].goalData = initialGoalData;
-                }
-                return newStates;
-            });
+            if (!isFakeDataMode) {
+                setDataEntryStudentSessionStatesState(prevStates => {
+                    const newStates = { ...prevStates };
+                    if (newStates[studentId]) {
+                        newStates[studentId].activity = '';
+                        newStates[studentId].notes = '';
+                        const initialGoalData: Record<string, SessionGoalData['data']> = {};
+                        newStates[studentId].originalGoalHeaders.forEach(goal => {
+                            initialGoalData[goal.id] = JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type]));
+                        });
+                        newStates[studentId].goalData = initialGoalData;
+                    }
+                    return newStates;
+                });
+            }
         } else {
             errorCount++;
         }
     }
 
-    if (savedCount > 0 && !isFakeDataMode) {
+    if (savedCount > 0) {
         safeToast({ title: "Success", description: `Saved ${savedCount} session(s).` });
-    } else if (savedCount > 0 && isFakeDataMode) {
-        safeToast({ title: "Dev Mode", description: `Fake saved ${savedCount} session(s).` });
     }
 
     if (errorCount > 0) {
@@ -1518,3 +1518,5 @@ export const useStudentData = (): StudentDataContextType => {
   }
   return context;
 };
+
+    
