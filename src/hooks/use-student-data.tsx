@@ -159,6 +159,8 @@ interface StudentDataContextType {
   handleGoalDataChange: (studentId: string, goalId: string, updatedFieldName: string, newData: SessionGoalData['data']) => void;
   handleMoveGoal: (studentId: string, goalId: string, direction: 'up' | 'down') => void;
   addStudentSlot: () => void;
+  isFakeDataMode: boolean;
+  setIsFakeDataMode: (isFake: boolean) => void;
   
   // Keyboard Shortcut Handlers
   focusStudentSlot: (slotIndex: number) => void;
@@ -215,6 +217,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [dataEntryAiActivitySuggestions, setDataEntryAiActivitySuggestionsState] = useState<Record<string, string[]>>({}); // Not persisted
   const [dataEntryVisibleGoalCountByStudentId, setDataEntryVisibleGoalCountByStudentIdState] = useState<Record<string, number>>({});
   const [dataEntryShowArchivedByStudentId, setDataEntryShowArchivedByStudentIdState] = useState<Record<string, boolean>>({});
+  const [isFakeDataMode, setIsFakeDataMode] = useState(false);
 
 
   // Derived state for students in active slots
@@ -744,6 +747,10 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   }, [isFirebaseDBAvailable, goalTemplatesState, safeToast, APP_ID, currentUser, addErrorLog, saveTemplatesToLocal]);
 
   const addSession = useCallback(async (sessionDataOmitId: Omit<SessionData, 'sessionId'>): Promise<SessionData | null> => {
+    if (isFakeDataMode) {
+      safeToast({ title: "Dev Mode", description: `Fake session for ${sessionDataOmitId.studentName} "saved".`});
+      return { sessionId: generateUUID(), ...sessionDataOmitId };
+    }
      if (!currentUser) {
       safeToast({ title: "Error", description: "User not authenticated for saving session.", variant: "destructive" });
       addErrorLog({ message: 'Attempted to add session without authenticated user.', source: 'useStudentData.addSession', type: 'error' });
@@ -771,7 +778,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       safeToast({ title: "Success", description: "Session saved locally." });
       return newSession;
     }
-  }, [currentUser, isFirebaseDBAvailable, safeToast, APP_ID, addErrorLog, sessionsState, saveSessionsToLocal]);
+  }, [currentUser, isFirebaseDBAvailable, safeToast, APP_ID, addErrorLog, sessionsState, saveSessionsToLocal, isFakeDataMode]);
 
   const updateSession = useCallback(async (sessionId: string, data: Partial<SessionData>) => {
     if (!currentUser) {
@@ -977,7 +984,9 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const savedSession = await addSession(session);
     
     if (savedSession) {
-        safeToast({ title: "Success", description: `Session for ${state.studentName} saved.`});
+        if (!isFakeDataMode) {
+          safeToast({ title: "Success", description: `Session for ${state.studentName} saved.`});
+        }
         // Reset state for the saved student
         setDataEntryStudentSessionStatesState(prevStates => {
             const newStates = { ...prevStates };
@@ -1003,7 +1012,8 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       dataEntryStudentSessionStates, 
       addSession, 
       safeToast, 
-      addErrorLog
+      addErrorLog,
+      isFakeDataMode
   ]);
 
   const saveAllDataEntrySessions = useCallback(async () => {
@@ -1068,16 +1078,19 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         }
     }
 
-    if (savedCount > 0) {
+    if (savedCount > 0 && !isFakeDataMode) {
         safeToast({ title: "Success", description: `Saved ${savedCount} session(s).` });
+    } else if (savedCount > 0 && isFakeDataMode) {
+        safeToast({ title: "Dev Mode", description: `Fake saved ${savedCount} session(s).` });
     }
+
     if (errorCount > 0) {
         safeToast({ title: "Error", description: `Failed to save ${errorCount} session(s).`, variant: "destructive" });
     }
     if (savedCount === 0 && errorCount === 0) {
         safeToast({ title: "Info", description: "No sessions with data to save.", variant: "default" });
     }
-  }, [dataEntrySessionDate, dataEntrySessionTime, dataEntrySessionEndTime, dataEntrySelectedStudentIds, dataEntryStudentSessionStates, addSession, safeToast]);
+  }, [dataEntrySessionDate, dataEntrySessionTime, dataEntrySessionEndTime, dataEntrySelectedStudentIds, dataEntryStudentSessionStates, addSession, safeToast, isFakeDataMode]);
 
   const resetDataEntrySession = useCallback(() => {
     if (dataEntrySelectedStudentIds.length === 0 || dataEntryFocusedStudentSlotIndex >= dataEntrySelectedStudentIds.length) {
@@ -1457,6 +1470,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     dataEntryShowArchivedByStudentId, setDataEntryShowArchivedByStudentId,
     fetchAiActivitySuggestions, saveDataEntrySession, saveAllDataEntrySessions, resetDataEntrySession, handleGoalDataChange, handleMoveGoal,
     addStudentSlot,
+    isFakeDataMode, setIsFakeDataMode,
     focusStudentSlot, cycleFocusedStudent, cycleFocusedGoal, handleDataEntryHotkey, triggerEditFocusedStudent, toggleStudentSelectionModal, toggleGoalSelectionModal, getCurrentFocusedGoalInfo
   }), [
     studentsState, goalTemplatesState, sessionsState, selectedStudent, loading, sessionsLoading, error, isFirebaseDBAvailable,
@@ -1472,7 +1486,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     editingSession, openEditSessionModal, closeEditSessionModal,
     deletingSession, openDeleteSessionModal, closeDeleteSessionModal,
     editingAssignedGoal, openEditAssignedGoalModal, closeEditAssignedGoalModal,
-    selectionModalType, setSelectionModalType,
+    selectionModalType,
     dataEntrySessionDate, setDataEntrySessionDate,
     dataEntrySessionTime, setDataEntrySessionTime,
     dataEntrySessionEndTime, setDataEntrySessionEndTime,
@@ -1486,6 +1500,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     dataEntryShowArchivedByStudentId, setDataEntryShowArchivedByStudentId,
     fetchAiActivitySuggestions, saveDataEntrySession, saveAllDataEntrySessions, resetDataEntrySession, handleGoalDataChange, handleMoveGoal,
     addStudentSlot,
+    isFakeDataMode,
     focusStudentSlot, cycleFocusedStudent, cycleFocusedGoal, handleDataEntryHotkey, triggerEditFocusedStudent, toggleStudentSelectionModal, toggleGoalSelectionModal, getCurrentFocusedGoalInfo
   ]);
 

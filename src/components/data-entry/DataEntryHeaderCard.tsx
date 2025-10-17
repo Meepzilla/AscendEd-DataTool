@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronUp, Edit2 } from 'lucide-react';
 import SessionDateTimePickers from './SessionDateTimePickers';
 import HotkeysMessage from './HotkeysMessage';
+import FakeDataToggle from './FakeDataToggle';
+import { useStudentData } from '@/hooks/use-student-data';
 
 interface DataEntryHeaderCardProps {
   isHeaderCardCollapsed: boolean;
@@ -28,6 +30,8 @@ const DataEntryHeaderCard: React.FC<DataEntryHeaderCardProps> = ({
   dataEntrySessionEndTime,
   setDataEntrySessionEndTime,
 }) => {
+  const { isFakeDataMode, setIsFakeDataMode } = useStudentData();
+
   return (
     <Card className="shadow-lg flex-shrink-0">
       <CardHeader>
@@ -52,14 +56,18 @@ const DataEntryHeaderCard: React.FC<DataEntryHeaderCardProps> = ({
       </CardHeader>
       {!isHeaderCardCollapsed && (
         <CardContent className="space-y-4">
-          <SessionDateTimePickers
-            dataEntrySessionDate={dataEntrySessionDate}
-            setDataEntrySessionDate={setDataEntrySessionDate}
-            dataEntrySessionTime={dataEntrySessionTime}
-            setDataEntrySessionTime={setDataEntrySessionTime}
-            dataEntrySessionEndTime={dataEntrySessionEndTime}
-            setDataEntrySessionEndTime={setDataEntrySessionEndTime}
-          />
+          <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+             <SessionDateTimePickers
+              dataEntrySessionDate={dataEntrySessionDate}
+              setDataEntrySessionDate={setDataEntrySessionDate}
+              dataEntrySessionTime={dataEntrySessionTime}
+              setDataEntrySessionTime={setDataEntrySessionTime}
+              dataEntrySessionEndTime={dataEntrySessionEndTime}
+              setDataEntrySessionEndTime={setDataEntrySessionEndTime}
+            />
+            <FakeDataToggle isFakeDataMode={isFakeDataMode} setIsFakeDataMode={setIsFakeDataMode} />
+          </div>
+         
           <HotkeysMessage />
         </CardContent>
       )}
