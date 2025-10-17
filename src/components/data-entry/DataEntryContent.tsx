@@ -10,6 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Info } from 'lucide-react';
 import type { StudentSessionState } from '@/lib/types';
 import TouchControls from '@/components/forms/touch-controls';
+import { cn } from '@/lib/utils';
 
 const ConfirmationModal = lazy(() => import('@/components/modals/confirmation-modal'));
 const StudentCardsList = lazy(() => import('@/components/data-entry/StudentCardsList'));
@@ -236,12 +237,18 @@ export default function DataEntryContent() {
       
       {dataEntrySelectedStudentIds.length > 0 && (
         <>
-          <div className="fixed bottom-24 left-4 z-20">
+          {/* Floating controls for larger screens */}
+          <div className="hidden sm:block fixed bottom-4 left-4 z-20">
             <TouchControls />
           </div>
+
           <div className="sticky bottom-0 left-0 right-0 z-10 bg-background/95 backdrop-blur-sm">
-              <div className="flex justify-end items-center gap-2 p-2 border-t">
-                  <div className="flex gap-2">
+              <div className="flex justify-between items-center gap-2 p-2 border-t">
+                  {/* Inline controls for smaller screens */}
+                  <div className="sm:hidden">
+                    <TouchControls />
+                  </div>
+                  <div className="flex gap-2 ml-auto">
                       <Button variant="outline" onClick={handleOpenResetConfirmation} disabled={isSaving} size="lg">
                       <RotateCcw className="mr-2 h-5 w-5" />
                       Reset Focused Student
