@@ -255,7 +255,9 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
                 </SelectTrigger>
                 <SelectContent>
                   {Object.values(GOAL_TYPES).map(type => (
-                    <SelectItem key={type} value={type}>{type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}</SelectItem>
+                    <SelectItem key={type} value={type}>
+                      {type === 'AAC' ? 'AAC' : type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -362,7 +364,9 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
                 <SelectContent>
                   <SelectItem value="ALL">All Types</SelectItem>
                   {Object.values(GOAL_TYPES).map(type => (
-                    <SelectItem key={type} value={type}>{type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}</SelectItem>
+                    <SelectItem key={type} value={type}>
+                      {type === 'AAC' ? 'AAC' : type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>

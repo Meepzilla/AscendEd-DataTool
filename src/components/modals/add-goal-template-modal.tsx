@@ -141,7 +141,7 @@ export default function AddGoalTemplateModal() {
                   <SelectContent>
                     {Object.entries(GOAL_TYPES).map(([key, value]) => (
                       <SelectItem key={key} value={value}>
-                        {value.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+                        {value === 'AAC' ? 'AAC' : value.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
                       </SelectItem>
                     ))}
                   </SelectContent>

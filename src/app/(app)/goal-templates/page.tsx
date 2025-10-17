@@ -258,7 +258,9 @@ export default function GoalTemplatesPage() {
                           {template.isDefault && <Badge variant="outline">Default</Badge>}
                         </div>
                       </div>
-                      <Badge variant="secondary" className="mt-1 w-fit">{template.type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}</Badge>
+                      <Badge variant="secondary" className="mt-1 w-fit">
+                        {template.type === 'AAC' ? 'AAC' : template.type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+                      </Badge>
                     </CardHeader>
                     <CardContent className="flex-grow space-y-2 text-sm">
                       <div>

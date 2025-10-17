@@ -572,7 +572,7 @@ export default function GoalDataInputComponent({
                     <div className="flex justify-between items-start">
                         <span className="whitespace-normal break-words mr-1">{goal.name}</span>
                         <Badge variant="outline" className="whitespace-nowrap text-xs px-1.5 py-0.5 shrink-0">
-                            {goal.type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+                            {goal.type === 'AAC' ? 'AAC' : goal.type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
                         </Badge>
                     </div>
                 </CardTitle>

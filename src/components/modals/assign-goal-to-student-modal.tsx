@@ -176,7 +176,9 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
               <SelectContent>
                 <SelectItem value="ALL">All Types</SelectItem>
                 {Object.values(GOAL_TYPES).map(type => (
-                  <SelectItem key={type} value={type}>{type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}</SelectItem>
+                  <SelectItem key={type} value={type}>
+                    {type === 'AAC' ? 'AAC' : type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -256,7 +258,9 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
                 </SelectTrigger>
                 <SelectContent>
                   {Object.values(GOAL_TYPES).map(type => (
-                    <SelectItem key={type} value={type} className="text-sm">{type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}</SelectItem>
+                    <SelectItem key={type} value={type} className="text-sm">
+                      {type === 'AAC' ? 'AAC' : type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
