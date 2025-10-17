@@ -81,11 +81,7 @@ export default function StudentSidebar() {
         <div className="flex items-center justify-between p-2">
            <h2 className={cn("text-lg font-semibold", sidebarState === 'collapsed' && "sr-only")}>Students</h2>
            <div className="flex items-center gap-1">
-             <SidebarTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7" title="Toggle Sidebar (Alt+K)">
-                    <Menu className="h-5 w-5" />
-                </Button>
-             </SidebarTrigger>
+             <SidebarTrigger className="h-7 w-7" title="Toggle Sidebar (Alt+K)" />
              <Button variant="ghost" size="icon" onClick={openAddStudentModal} className={cn("h-7 w-7", sidebarState === 'collapsed' && "mx-auto")}>
                 <PlusCircle className="h-5 w-5" />
                 <span className="sr-only">Add Student</span>
