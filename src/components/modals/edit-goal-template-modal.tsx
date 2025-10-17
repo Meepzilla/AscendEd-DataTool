@@ -49,6 +49,9 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
       sessionTargetValue: undefined,
     },
   });
+  
+  const sortedGoalTypes = React.useMemo(() => Object.entries(GOAL_TYPES).sort(([, a], [, b]) => a.localeCompare(b)), []);
+
 
   useEffect(() => {
     if (currentTemplate) {
@@ -143,7 +146,7 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {Object.entries(GOAL_TYPES).map(([key, value]) => (
+                    {sortedGoalTypes.map(([key, value]) => (
                       <SelectItem key={key} value={value}>
                         {value === 'AAC' ? 'AAC' : value.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
                       </SelectItem>

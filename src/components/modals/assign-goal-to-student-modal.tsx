@@ -144,6 +144,9 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
     const isAssigned = student.goals.some(g => g.name === template.name && g.type === template.type);
     return nameMatch && typeMatch && !isAssigned;
   }).sort((a,b) => a.name.localeCompare(b.name));
+  
+  const sortedGoalTypes = React.useMemo(() => Object.values(GOAL_TYPES).sort((a, b) => a.localeCompare(b)), []);
+
 
   return (
     <GenericModal
@@ -175,7 +178,7 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">All Types</SelectItem>
-                {Object.values(GOAL_TYPES).map(type => (
+                {sortedGoalTypes.map(type => (
                   <SelectItem key={type} value={type}>
                     {type === 'AAC' ? 'AAC' : type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
                   </SelectItem>
@@ -257,7 +260,7 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
                   <SelectValue placeholder="Select goal type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.values(GOAL_TYPES).map(type => (
+                  {sortedGoalTypes.map(type => (
                     <SelectItem key={type} value={type} className="text-sm">
                       {type === 'AAC' ? 'AAC' : type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
                     </SelectItem>

@@ -44,18 +44,21 @@ export default function AddGoalTemplateModal() {
       sessionTargetValue: undefined,
     },
   });
+  
+  const sortedGoalTypes = React.useMemo(() => Object.entries(GOAL_TYPES).sort(([, a], [, b]) => a.localeCompare(b)), []);
+
 
   useEffect(() => {
     if (isAddGoalTemplateModalOpen) {
       form.reset({
         name: '',
-        type: Object.keys(GOAL_TYPES)[0] as GoalType,
+        type: sortedGoalTypes[0] ? (sortedGoalTypes[0][1] as GoalType) : undefined,
         smartGoalPrompt: addGoalTemplateInitialPrompt || '',
         generatedSmartGoal: '',
         sessionTargetValue: undefined,
       });
     }
-  }, [isAddGoalTemplateModalOpen, addGoalTemplateInitialPrompt, form]);
+  }, [isAddGoalTemplateModalOpen, addGoalTemplateInitialPrompt, form, sortedGoalTypes]);
 
 
   const handleGenerateSmartGoal = async () => {
@@ -139,7 +142,7 @@ export default function AddGoalTemplateModal() {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {Object.entries(GOAL_TYPES).map(([key, value]) => (
+                    {sortedGoalTypes.map(([key, value]) => (
                       <SelectItem key={key} value={value}>
                         {value === 'AAC' ? 'AAC' : value.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
                       </SelectItem>
