@@ -97,7 +97,7 @@ export default function StudentSidebar() {
            </div>
         </div>
         <div className={cn("px-2 mt-1 space-y-2", sidebarState === 'collapsed' && "hidden")}>
-          <div className="relative flex items-center">
+          <div className="relative flex items-center mt-2">
             <Search className="absolute left-3 h-4 w-4 text-muted-foreground z-10" />
             <Input
               placeholder="Search students..."
