@@ -58,6 +58,8 @@ const GoalTemplateFilters: React.FC<GoalTemplateFiltersProps> = ({
     }
   };
 
+  const sortedGoalTypes = React.useMemo(() => Object.values(GOAL_TYPES).sort((a, b) => a.localeCompare(b)), []);
+
   return (
     <div className="flex flex-wrap gap-2 mb-4">
       <div className="relative flex-grow min-w-[200px]">
@@ -80,7 +82,7 @@ const GoalTemplateFilters: React.FC<GoalTemplateFiltersProps> = ({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="ALL">All Types</SelectItem>
-          {Object.values(GOAL_TYPES).map(type => (
+          {sortedGoalTypes.map(type => (
             <SelectItem key={type} value={type}>
               {type === 'AAC' ? 'AAC' : type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
             </SelectItem>
