@@ -8,6 +8,7 @@ export interface Student {
   name: string;
   goals: Goal[];
   createdAt: string; // ISO string
+  updatedAt?: string; // ISO string
   userId: string;
   isArchived?: boolean; // New field for archiving
 }
@@ -164,6 +165,7 @@ import { z } from 'zod';
 export const StudentSchema = z.object({
   name: z.string().min(2, { message: "Student name must be at least 2 characters." }),
   isArchived: z.boolean().optional(),
+  updatedAt: z.string().optional(),
 });
 
 export const SignInSchema = z.object({

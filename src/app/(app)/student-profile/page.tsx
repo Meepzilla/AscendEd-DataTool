@@ -14,7 +14,7 @@ export default function StudentProfileLandingPage() {
   const { students, loading, openAddStudentModal } = useStudentData();
   const [showArchived, setShowArchived] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortOrder, setSortOrder] = useState<StudentSortOrder>('name-asc');
+  const [sortOrder, setSortOrder] = useState<StudentSortOrder>('updated-desc');
 
   const filteredStudents = useMemo(() => {
     let studentsToFilter = [...students];
@@ -33,16 +33,22 @@ export default function StudentProfileLandingPage() {
 
     // Sort the students
     studentsToFilter.sort((a, b) => {
+        const getDate = (dateString: string | undefined) => (dateString ? new Date(dateString).getTime() : 0);
+        
         switch (sortOrder) {
             case 'name-asc':
                 return a.name.localeCompare(b.name);
             case 'name-desc':
                 return b.name.localeCompare(a.name);
             case 'date-asc':
-                return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+                return getDate(a.createdAt) - getDate(b.createdAt);
+            case 'updated-asc':
+                return getDate(a.updatedAt) - getDate(b.updatedAt);
+            case 'updated-desc':
+                return getDate(b.updatedAt) - getDate(a.updatedAt);
             case 'date-desc':
             default:
-                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+                return getDate(b.createdAt) - getDate(a.createdAt);
         }
     });
 

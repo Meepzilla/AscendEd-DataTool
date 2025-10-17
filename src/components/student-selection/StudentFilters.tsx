@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -9,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Search, ArrowUpDown, Archive, PlusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export type StudentSortOrder = 'name-asc' | 'name-desc' | 'date-desc' | 'date-asc';
+export type StudentSortOrder = 'name-asc' | 'name-desc' | 'date-desc' | 'date-asc' | 'updated-desc' | 'updated-asc';
 
 interface StudentFiltersProps {
   searchTerm: string;
@@ -53,6 +54,8 @@ const StudentFilters: React.FC<StudentFiltersProps> = ({
           <SelectItem value="name-desc">Name: Z-A</SelectItem>
           <SelectItem value="date-desc">Date Joined: Newest</SelectItem>
           <SelectItem value="date-asc">Date Joined: Oldest</SelectItem>
+          <SelectItem value="updated-desc">Last Updated: Newest</SelectItem>
+          <SelectItem value="updated-asc">Last Updated: Oldest</SelectItem>
         </SelectContent>
       </Select>
       <div className="flex items-center space-x-2 border p-2 rounded-md">

@@ -491,7 +491,8 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       addErrorLog({ message: 'Attempted to add student without authenticated user.', source: 'useStudentData.addStudent', type: 'error' });
       return null;
     }
-    const studentDataOmitId: Omit<Student, 'id'> = { name, goals: [], createdAt: new Date().toISOString(), userId: currentUser.uid, isArchived: false };
+    const now = new Date().toISOString();
+    const studentDataOmitId: Omit<Student, 'id'> = { name, goals: [], createdAt: now, updatedAt: now, userId: currentUser.uid, isArchived: false };
 
     if (isFirebaseDBAvailable && firestoreDbModule) {
       try {
@@ -522,9 +523,10 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       addErrorLog({ message: 'Attempted to update student without authenticated user.', source: 'useStudentData.updateStudent', type: 'error' });
       return;
     }
+    const dataWithTimestamp = { ...data, updatedAt: new Date().toISOString() };
     if (isFirebaseDBAvailable && firestoreDbModule) {
       try {
-        await updateDoc(doc(firestoreDbModule, getStudentsCollectionPath(APP_ID), studentId), {...data, userId: currentUser.uid});
+        await updateDoc(doc(firestoreDbModule, getStudentsCollectionPath(APP_ID), studentId), {...dataWithTimestamp, userId: currentUser.uid});
         safeToast({ title: "Success", description: "Student updated." });
       } catch (e: any) {
         console.error("Firebase updateStudent error:", e);
@@ -533,12 +535,12 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         safeToast({ title: "Error", description: "Could not update student.", variant: "destructive" });
       }
     } else {
-      const newStudents = studentsState.map(s => s.id === studentId ? { ...s, ...data, id:s.id } as Student : s).sort((a,b) => a.name.localeCompare(b.name));
+      const newStudents = studentsState.map(s => s.id === studentId ? { ...s, ...dataWithTimestamp, id:s.id } as Student : s).sort((a,b) => a.name.localeCompare(b.name));
       setStudentsState(newStudents);
       saveStudentsToLocal(newStudents, currentUser.uid);
 
       if (selectedStudent?.id === studentId) {
-        setSelectedStudentState(prev => prev ? ({ ...prev, ...data } as Student) : null);
+        setSelectedStudentState(prev => prev ? ({ ...prev, ...dataWithTimestamp } as Student) : null);
       }
       safeToast({ title: "Success", description: "Student updated locally." });
     }
