@@ -105,21 +105,32 @@ export default function DashboardPage() {
       <section aria-labelledby="quick-actions-title">
         <h2 id="quick-actions-title" className="text-xl font-semibold mb-4 text-foreground">Quick Actions</h2>
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
-          {quickActions.map((action) => (
-            <Card key={action.label} className="hover:bg-muted/50 transition-colors">
-              <CardContent className="p-4 flex flex-col items-center text-center">
+          {quickActions.map((action) => {
+            const cardContent = (
+              <CardContent className="p-4 flex flex-col items-center justify-center text-center h-full">
                 <action.icon className="h-8 w-8 text-primary mb-2" />
-                <h3 className="text-sm font-semibold mb-2">{action.label}</h3>
-                {action.href ? (
-                  <Link href={action.href} passHref>
-                    <Button variant="outline" size="sm">Go</Button>
-                  </Link>
-                ) : (
-                  <Button variant="outline" size="sm" onClick={action.action}>Start</Button>
-                )}
+                <h3 className="text-sm font-semibold">{action.label}</h3>
               </CardContent>
-            </Card>
-          ))}
+            );
+
+            if (action.href) {
+              return (
+                <Link key={action.label} href={action.href} passHref>
+                  <Card className="h-full hover:bg-muted/50 transition-colors focus-visible:ring-2 focus-visible:ring-primary">
+                    {cardContent}
+                  </Card>
+                </Link>
+              );
+            } else {
+              return (
+                 <button key={action.label} onClick={action.action} className="w-full h-full text-left">
+                    <Card className="h-full hover:bg-muted/50 transition-colors focus-visible:ring-2 focus-visible:ring-primary">
+                        {cardContent}
+                    </Card>
+                 </button>
+              );
+            }
+          })}
         </div>
       </section>
 
