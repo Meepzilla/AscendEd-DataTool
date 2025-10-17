@@ -2,9 +2,14 @@
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
+  // Add experimental setting to handle server-side external packages.
+  // This is often required for libraries that have deep Node.js dependencies, like 'handlebars' used by Genkit.
+  experimental: {
+    serverComponentsExternalPackages: ['handlebars'],
+  },
   // ESLint configuration for Next.js build.
   // 'ignoreDuringBuilds: true' is set to skip ESLint checks during the build process.
-  // Similar to TypeScript errors, this can speed up builds but means linting issues won't halt the build.
+  // This can speed up builds but means linting issues won't halt the build.
   eslint: {
     ignoreDuringBuilds: true,
   },
