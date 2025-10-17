@@ -236,23 +236,24 @@ export default function DataEntryContent() {
       </div>
 
       {dataEntrySelectedStudentIds.length > 0 && (
-        <div className="sticky bottom-0 left-0 right-0 z-10 bg-background/95 backdrop-blur-sm">
-            <div className="flex justify-between items-center gap-2 p-2 border-t">
-                 <div className="flex items-center gap-2">
-                   <TouchControls />
-                 </div>
-                <div className="flex items-center gap-2">
-                    <Button variant="outline" onClick={handleOpenResetConfirmation} disabled={isSaving} size="lg">
-                    <RotateCcw className="mr-2 h-5 w-5" />
-                    Reset Focused Student
-                    </Button>
-                    <Button onClick={handleSave} disabled={isSaving} size="lg">
-                    <Save className="mr-2 h-5 w-5" />
-                    {isSaving ? 'Saving Session...' : 'Save Focused Session'}
-                    </Button>
-                </div>
-            </div>
-        </div>
+        <>
+          <div className="sticky bottom-0 left-0 right-0 z-10 bg-background/95 backdrop-blur-sm">
+              <div className="flex justify-end items-center gap-2 p-2 border-t">
+                  <Button variant="outline" onClick={handleOpenResetConfirmation} disabled={isSaving} size="lg">
+                  <RotateCcw className="mr-2 h-5 w-5" />
+                  Reset Focused Student
+                  </Button>
+                  <Button onClick={handleSave} disabled={isSaving} size="lg">
+                  <Save className="mr-2 h-5 w-5" />
+                  {isSaving ? 'Saving Session...' : 'Save Focused Session'}
+                  </Button>
+              </div>
+          </div>
+          {/* Floating Touch Controls */}
+          <div className="fixed bottom-4 left-4 z-20">
+            <TouchControls />
+          </div>
+        </>
       )}
        {dataEntrySelectedStudentIds.length === 0 && (
           <Card className="mt-6 flex-shrink-0">
