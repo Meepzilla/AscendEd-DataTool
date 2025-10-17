@@ -115,7 +115,7 @@ export default function StudentSidebar() {
       
       <SidebarSeparator />
 
-      <SidebarContent>
+      <SidebarContent className="p-0">
         <ScrollArea className="h-full">
             {loading && (
               <div className="p-2 space-y-2">
