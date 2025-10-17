@@ -1,13 +1,14 @@
+
 'use client';
 
-import React, { useMemo } from 'react';
-import { Users, Target } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Users, Target, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useStudentData } from '@/hooks/use-student-data';
 import SelectionModal from '@/components/modals/selection-modal';
+import { cn } from '@/lib/utils';
 
 export default function TouchControls() {
-
   const {
     dataEntryActiveStudentsInSlots,
     dataEntryStudentSessionStates,
@@ -19,6 +20,8 @@ export default function TouchControls() {
     selectionModalType,
     setSelectionModalType,
   } = useStudentData();
+
+  const [isHovered, setIsHovered] = useState(false);
 
   const focusedStudentId = useMemo(() => {
     if (dataEntryFocusedStudentSlotIndex >= 0 && dataEntryFocusedStudentSlotIndex < dataEntryActiveStudentsInSlots.length) {
@@ -43,7 +46,6 @@ export default function TouchControls() {
       name: student.name,
     }));
   }, [dataEntryActiveStudentsInSlots]);
-
 
   const handleStudentSelect = (indexStr: string) => {
     setDataEntryFocusedStudentSlotIndex(parseInt(indexStr, 10));
@@ -71,34 +73,51 @@ export default function TouchControls() {
 
   return (
     <>
-      <div className="flex justify-start items-center gap-2">
-          {/* Student Controls */}
+      <div 
+        className="relative flex flex-col items-end gap-2"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <Button
+          className={cn(
+            "rounded-full w-14 h-14 shadow-lg transition-all duration-300",
+            !isHovered && "opacity-80"
+          )}
+        >
+          <ChevronUp className={cn("h-6 w-6 transition-transform", isHovered && "rotate-180")} />
+        </Button>
+        <div className={cn(
+          "flex flex-col gap-2 transition-all duration-300 ease-in-out",
+          isHovered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
+        )}>
           <Button
             type="button"
-            variant="outline"
+            variant="secondary"
             onClick={() => setSelectionModalType('student')}
             disabled={studentSlots.length <= 1}
             size="lg"
+            className="shadow-md"
             aria-label="Select Student"
             title="Select Focused Student (Alt+U)"
           >
             <Users className="mr-2 h-5 w-5" />
-            <span className="hidden sm:inline">Select Student</span>
+            <span className="hidden sm:inline">Student</span>
           </Button>
 
-          {/* Goal Controls */}
           <Button
             type="button"
-            variant="outline"
+            variant="secondary"
             onClick={() => setSelectionModalType('goal')}
             disabled={visibleGoals.length <= 1}
             size="lg"
+            className="shadow-md"
             aria-label="Select Goal"
             title="Select Focused Goal (Alt+T)"
           >
             <Target className="mr-2 h-5 w-5" />
-            <span className="hidden sm:inline">Select Goal</span>
+            <span className="hidden sm:inline">Goal</span>
           </Button>
+        </div>
       </div>
       
       <SelectionModal

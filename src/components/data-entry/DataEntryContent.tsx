@@ -235,11 +235,18 @@ export default function DataEntryContent() {
         </ScrollArea>
       </div>
 
+      {/* Floating Action Buttons */}
+      {dataEntrySelectedStudentIds.length > 0 && (
+        <div className="fixed bottom-24 right-6 z-20">
+          <TouchControls />
+        </div>
+      )}
+
 
       {dataEntrySelectedStudentIds.length > 0 && (
         <div className="sticky bottom-0 left-0 right-0 z-10 bg-background/95 backdrop-blur-sm">
-            <div className="flex justify-between items-center gap-2 p-2 border-t">
-                <TouchControls />
+            <div className="flex justify-end items-center gap-2 p-2 border-t">
+                {/* TouchControls are now floating, so this is just a spacer */}
                 <div className="flex items-center gap-2">
                     <Button variant="outline" onClick={handleOpenResetConfirmation} disabled={isSaving} size="lg">
                     <RotateCcw className="mr-2 h-5 w-5" />
