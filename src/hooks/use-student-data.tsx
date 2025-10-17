@@ -1123,7 +1123,9 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         setDataEntryFocusedStudentSlotIndexState(prevIds.length);
         return [...prevIds, availableStudent.id];
       } else {
-        safeToast({ title: "Info", description: "No more unique available students to add.", variant: "default" });
+        setTimeout(() => {
+          safeToast({ title: "Info", description: "No more unique available students to add.", variant: "default" });
+        }, 0);
         return prevIds;
       }
     });
@@ -1426,5 +1428,3 @@ export const useStudentData = (): StudentDataContextType => {
   }
   return context;
 };
-
-    
