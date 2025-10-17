@@ -1,31 +1,21 @@
 
 'use client';
 
-import React, { useState, useMemo, Suspense, lazy, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, Suspense, lazy, useCallback, useEffect } from 'react';
 import { useStudentData } from '@/hooks/use-student-data';
 import type { GoalTemplate } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { PlusCircle, Edit, Trash2, Search, ListFilter, Sparkles, Info, ListPlus, Grid, Loader2, ArrowUpDown, BrainCircuit } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Sparkles, Info, Loader2, BrainCircuit } from 'lucide-react';
 import { formatDate } from '@/lib/helpers';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { GOAL_TYPES } from '@/lib/goal-constants';
 import { Timestamp } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 import { findRelevantGoals, type FindRelevantGoalsOutput } from '@/ai/flows/semantic-search-flow';
 import { useToast } from '@/hooks/use-toast';
 import { useErrorLog } from '@/hooks/use-error-log';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
+import GoalTemplateFilters from '@/components/goal-templates/GoalTemplateFilters';
 
 // Lazy load modals
 const AddGoalTemplateModal = lazy(() => import('@/components/modals/add-goal-template-modal'));
@@ -90,19 +80,6 @@ export default function GoalTemplatesPage() {
       setIsAiSearching(false);
     }
   }, [searchTerm, goalTemplates, toast, addErrorLog]);
-
-  const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter') {
-      event.preventDefault(); 
-      if (isAiSearchEnabled) {
-        if (searchTerm.trim()) {
-          handleSemanticSearch();
-        } else {
-          setRankedGoals(null); // Clear AI results if search is empty
-        }
-      }
-    }
-  };
 
   useEffect(() => {
     if (!isAiSearchEnabled) {
@@ -216,7 +193,7 @@ export default function GoalTemplatesPage() {
         <CardHeader>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
             <div>
-              <CardTitle className="text-2xl font-bold flex items-center gap-2"><ListPlus className="h-7 w-7 text-primary"/>Goals</CardTitle>
+              <CardTitle className="text-2xl font-bold flex items-center gap-2"><BrainCircuit className="h-7 w-7 text-primary"/>Goals</CardTitle>
               <CardDescription>
                 Manage your library of reusable goal templates.
                 {!isFirebaseDBAvailable && !loading && <span className="text-orange-500 font-semibold">(Local Mode: Data not saved to cloud)</span>}
@@ -228,67 +205,21 @@ export default function GoalTemplatesPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-2 mb-4">
-            <div className="relative flex-grow min-w-[200px]">
-                <div className={cn("absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground", isAiSearchEnabled && "text-yellow-500")}>
-                  {isAiSearching ? <Loader2 className="animate-spin" /> : isAiSearchEnabled ? <Sparkles /> : <Search />}
-                </div>
-                <Input
-                  type="search"
-                  placeholder={isAiSearchEnabled ? "AI Semantic Search... (Press Enter)" : "Filter by keyword..."}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyDown={handleSearchKeyDown}
-                  className="pl-9 w-full"
-                />
-            </div>
-            <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger className="w-full sm:w-[180px]">
-                    <ListFilter className="mr-2 h-4 w-4 text-muted-foreground" />
-                    <SelectValue placeholder="Filter by type" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="ALL">All Types</SelectItem>
-                    {Object.values(GOAL_TYPES).map(type => (
-                        <SelectItem key={type} value={type}>{type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}</SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-            <Select value={sortOrder} onValueChange={setSortOrder}>
-                <SelectTrigger className="w-full sm:w-[180px]">
-                    <ArrowUpDown className="mr-2 h-4 w-4 text-muted-foreground" />
-                    <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                    {isAiSearchEnabled && <SelectItem value="relevance">Relevance</SelectItem>}
-                    <SelectItem value="date-desc">Date: Newest</SelectItem>
-                    <SelectItem value="date-asc">Date: Oldest</SelectItem>
-                    <SelectItem value="name-asc">Name: A-Z</SelectItem>
-                    <SelectItem value="name-desc">Name: Z-A</SelectItem>
-                </SelectContent>
-            </Select>
-            <Select value={gridSize} onValueChange={(value) => setGridSize(value as 'sm' | 'md' | 'lg')}>
-                <SelectTrigger className="w-full sm:w-[130px]">
-                    <Grid className="mr-2 h-4 w-4 text-muted-foreground" />
-                    <SelectValue placeholder="Grid Size" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="sm">Small</SelectItem>
-                    <SelectItem value="md">Medium</SelectItem>
-                    <SelectItem value="lg">Large</SelectItem>
-                </SelectContent>
-            </Select>
-             <div className="flex items-center space-x-2 border p-2 rounded-md">
-                <Switch
-                  id="ai-search-toggle"
-                  checked={isAiSearchEnabled}
-                  onCheckedChange={setIsAiSearchEnabled}
-                />
-                <Label htmlFor="ai-search-toggle" className="flex items-center gap-1.5 text-sm cursor-pointer">
-                    <BrainCircuit className="h-4 w-4" /> AI Search
-                </Label>
-             </div>
-          </div>
+          <GoalTemplateFilters
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            filterType={filterType}
+            setFilterType={setFilterType}
+            sortOrder={sortOrder}
+            setSortOrder={setSortOrder}
+            gridSize={gridSize}
+            setGridSize={setGridSize}
+            isAiSearchEnabled={isAiSearchEnabled}
+            setIsAiSearchEnabled={setIsAiSearchEnabled}
+            isAiSearching={isAiSearching}
+            onSemanticSearch={handleSemanticSearch}
+            onClearAiSearch={() => setRankedGoals(null)}
+          />
 
           {(loading || isAiSearching) && (
              <div className={cn("grid gap-4", gridClasses[gridSize])}>
@@ -404,7 +335,5 @@ function TemplateCardSkeleton() {
         </Card>
     );
 }
-
-
 
     

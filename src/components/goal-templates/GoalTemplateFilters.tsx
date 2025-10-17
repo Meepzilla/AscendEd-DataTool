@@ -1,0 +1,125 @@
+
+'use client';
+
+import React from 'react';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { GOAL_TYPES } from '@/lib/goal-constants';
+import { ListFilter, Search, ArrowUpDown, Grid, BrainCircuit, Sparkles, Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+interface GoalTemplateFiltersProps {
+  searchTerm: string;
+  setSearchTerm: (value: string) => void;
+  filterType: string;
+  setFilterType: (value: string) => void;
+  sortOrder: string;
+  setSortOrder: (value: string) => void;
+  gridSize: 'sm' | 'md' | 'lg';
+  setGridSize: (value: 'sm' | 'md' | 'lg') => void;
+  isAiSearchEnabled: boolean;
+  setIsAiSearchEnabled: (value: boolean) => void;
+  isAiSearching: boolean;
+  onSemanticSearch: () => void;
+  onClearAiSearch: () => void;
+}
+
+const GoalTemplateFilters: React.FC<GoalTemplateFiltersProps> = ({
+  searchTerm,
+  setSearchTerm,
+  filterType,
+  setFilterType,
+  sortOrder,
+  setSortOrder,
+  gridSize,
+  setGridSize,
+  isAiSearchEnabled,
+  setIsAiSearchEnabled,
+  isAiSearching,
+  onSemanticSearch,
+  onClearAiSearch,
+}) => {
+
+  const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      event.preventDefault(); 
+      if (isAiSearchEnabled) {
+        if (searchTerm.trim()) {
+          onSemanticSearch();
+        } else {
+          onClearAiSearch();
+        }
+      }
+    }
+  };
+
+  return (
+    <div className="flex flex-wrap gap-2 mb-4">
+      <div className="relative flex-grow min-w-[200px]">
+        <div className={cn("absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground", isAiSearchEnabled && "text-yellow-500")}>
+          {isAiSearching ? <Loader2 className="animate-spin" /> : isAiSearchEnabled ? <Sparkles /> : <Search />}
+        </div>
+        <Input
+          type="search"
+          placeholder={isAiSearchEnabled ? "AI Semantic Search... (Press Enter)" : "Filter by keyword..."}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          onKeyDown={handleSearchKeyDown}
+          className="pl-9 w-full"
+        />
+      </div>
+      <Select value={filterType} onValueChange={setFilterType}>
+        <SelectTrigger className="w-full sm:w-[180px]">
+          <ListFilter className="mr-2 h-4 w-4 text-muted-foreground" />
+          <SelectValue placeholder="Filter by type" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="ALL">All Types</SelectItem>
+          {Object.values(GOAL_TYPES).map(type => (
+            <SelectItem key={type} value={type}>{type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select value={sortOrder} onValueChange={setSortOrder}>
+        <SelectTrigger className="w-full sm:w-[180px]">
+          <ArrowUpDown className="mr-2 h-4 w-4 text-muted-foreground" />
+          <SelectValue placeholder="Sort by" />
+        </SelectTrigger>
+        <SelectContent>
+          {isAiSearchEnabled && <SelectItem value="relevance">Relevance</SelectItem>}
+          <SelectItem value="date-desc">Date: Newest</SelectItem>
+          <SelectItem value="date-asc">Date: Oldest</SelectItem>
+          <SelectItem value="name-asc">Name: A-Z</SelectItem>
+          <SelectItem value="name-desc">Name: Z-A</SelectItem>
+        </SelectContent>
+      </Select>
+      <Select value={gridSize} onValueChange={(value) => setGridSize(value as 'sm' | 'md' | 'lg')}>
+        <SelectTrigger className="w-full sm:w-[130px]">
+          <Grid className="mr-2 h-4 w-4 text-muted-foreground" />
+          <SelectValue placeholder="Grid Size" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="sm">Small</SelectItem>
+          <SelectItem value="md">Medium</SelectItem>
+          <SelectItem value="lg">Large</SelectItem>
+        </SelectContent>
+      </Select>
+      <div className="flex items-center space-x-2 border p-2 rounded-md">
+        <Switch
+          id="ai-search-toggle"
+          checked={isAiSearchEnabled}
+          onCheckedChange={setIsAiSearchEnabled}
+        />
+        <Label htmlFor="ai-search-toggle" className="flex items-center gap-1.5 text-sm cursor-pointer">
+          <BrainCircuit className="h-4 w-4" /> AI Search
+        </Label>
+      </div>
+    </div>
+  );
+};
+
+export default GoalTemplateFilters;
+
+    
