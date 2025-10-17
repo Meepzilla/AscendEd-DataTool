@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { lazy, useState, useEffect, useCallback, Suspense, useMemo } from 'react';
@@ -204,7 +205,7 @@ export default function DataEntryContent() {
         </Suspense>
       </div>
 
-      <div className="flex-grow min-h-0 mt-4">
+      <div className="flex-grow min-h-0">
         <ScrollArea className="h-full pb-24"> {/* Increased padding-bottom */}
           <Suspense fallback={<div>Loading student cards...</div>}>
             <StudentCardsList
