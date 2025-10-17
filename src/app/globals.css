@@ -99,6 +99,7 @@ body {
   /* Apply background and text colors to the body, and custom scrollbar styles */
   body {
     @apply bg-background text-foreground;
+    zoom: 0.75;
     /* Custom scrollbar for Firefox */
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--muted)) hsl(var(--background));
