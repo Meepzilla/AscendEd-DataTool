@@ -85,17 +85,16 @@ export default function GoalTemplatesPage() {
     }
   }, [searchTerm, goalTemplates, toast, addErrorLog]);
 
-  useEffect(() => {
-    const handler = setTimeout(() => {
+  const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      event.preventDefault(); // Prevent form submission if it's in a form
       if (searchTerm.trim()) {
         handleSemanticSearch();
       } else {
-        setRankedGoals(null);
+        setRankedGoals(null); // Clear AI results if search is empty
       }
-    }, 500); // Debounce search
-
-    return () => clearTimeout(handler);
-  }, [searchTerm, handleSemanticSearch]);
+    }
+  };
 
 
   const filteredTemplates = useMemo(() => {
@@ -193,9 +192,10 @@ export default function GoalTemplatesPage() {
                 </div>
                 <Input
                   type="search"
-                  placeholder="AI Semantic Search for goals..."
+                  placeholder="AI Semantic Search... (Press Enter)"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={handleSearchKeyDown}
                   className="pl-9 w-full"
                 />
             </div>
