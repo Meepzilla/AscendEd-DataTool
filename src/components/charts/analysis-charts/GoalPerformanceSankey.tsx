@@ -131,13 +131,13 @@ const CustomSankeyNode = ({ x, y, width, height, index, payload, containerWidth 
     const isFirstColumn = payload.depth === 0;
     const isLastColumn = payload.sourceLinks.length > 0 && payload.targetLinks.length === 0;
   
-    let textAnchor = 'start';
     let foreignObjectX = width + 6;
     let foreignObjectWidth = 140; // Max width for the label text
+    let textAlign: 'left' | 'right' = 'left';
     
     if (isFirstColumn) {
-        textAnchor = 'end';
         foreignObjectX = -foreignObjectWidth - 6;
+        textAlign = 'right';
     }
 
     if (!isFirstColumn && !isLastColumn) {
@@ -152,12 +152,12 @@ const CustomSankeyNode = ({ x, y, width, height, index, payload, containerWidth 
     return (
       <g transform={`translate(${x},${y})`}>
         <rect height={height} width={width} fill={payload.color || "hsl(var(--muted))"} strokeWidth="0" rx="2" ry="2"/>
-        <foreignObject x={foreignObjectX} y={0} width={foreignObjectWidth} height={Math.max(height, 30)}>
+        <foreignObject x={foreignObjectX} y={0} width={foreignObjectWidth} height={height}>
             <div
                 style={{
                     color: 'hsl(var(--foreground))',
                     fontSize: '12px',
-                    textAlign: isFirstColumn ? 'right' : 'left',
+                    textAlign: textAlign,
                     height: '100%',
                     display: 'flex',
                     alignItems: 'center',
