@@ -4,7 +4,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, Trash2, LayoutGrid, Minimize2, UserX, UserPlus, ArrowRightLeft, Lightbulb, Download, ListPlus, Workflow, Shuffle, CheckSquare, ListChecks, DatabaseZap, UserSearch, Upload, Sparkles } from 'lucide-react';
+import { ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, Trash2, LayoutGrid, Minimize2, UserX, UserPlus, ArrowRightLeft, Lightbulb, Download, ListPlus, Workflow, Shuffle, CheckSquare, ListChecks, DatabaseZap, UserSearch, Upload, Sparkles, BrainCircuit } from 'lucide-react';
 import { APP_NAME } from '@/lib/appConstants';
 
 interface ChangelogEntry {
@@ -17,6 +17,13 @@ interface ChangelogEntry {
 }
 
 const changelogEntries: ChangelogEntry[] = [
+  {
+    date: '2025-10-19',
+    title: 'Enhanced Goal & Session Management',
+    description: "Improved workflow with several new features. Added a 'Cognitive' goal type for tracking skills like attention and memory, complete with default templates. The Goal Templates page now allows deleting custom templates and archiving/unarchiving default templates. The Data Entry page now includes a 'Save All' button to save data for all active students at once. The 'Edit Student' modal has also been widened for better usability.",
+    type: 'feature',
+    icon: BrainCircuit,
+  },
     {
     date: '2025-10-18',
     title: 'Data Entry UI & Controls Refinement',
@@ -504,3 +511,4 @@ export default function ChangelogPage() {
     
 
     
+
