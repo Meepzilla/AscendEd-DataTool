@@ -103,17 +103,13 @@ const transformDataForSankeyChart = (sessions: SessionData[], studentActiveGoals
     else color = 'hsl(var(--primary))';
     return { name, color };
   });
-
-  const links = rawLinks.map(link => ({
-    source: nodeMap[link.source],
-    target: nodeMap[link.target],
-    value: link.value,
-  }));
   
-  // Aggregate links
+  // Aggregate links correctly
   const linkMap: Record<string, number> = {};
-  links.forEach(link => {
-      const key = `${link.source}-${link.target}`;
+  rawLinks.forEach(link => {
+      const sourceIndex = nodeMap[link.source];
+      const targetIndex = nodeMap[link.target];
+      const key = `${sourceIndex}-${targetIndex}`;
       linkMap[key] = (linkMap[key] || 0) + link.value;
   });
   const aggregatedLinks = Object.keys(linkMap).map(key => {
@@ -157,7 +153,8 @@ const CustomSankeyNode = ({ x, y, width, height, index, payload, containerWidth 
       <g transform={`translate(${x},${y})`}>
         <rect height={height} width={width} fill={payload.color || "hsl(var(--muted))"} strokeWidth="0" rx="2" ry="2"/>
         <text x={textX} y={height / 2} textAnchor={textAnchor} dominantBaseline="middle" fill={textFill} fontSize="12">
-          {nodeLabel}
+           {/* Basic text wrapping approximation */}
+          {nodeLabel.length > 30 ? `${nodeLabel.substring(0, 28)}...` : nodeLabel}
         </text>
       </g>
     );
