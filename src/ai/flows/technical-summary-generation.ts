@@ -24,17 +24,22 @@ const TechnicalSummaryOutputSchema = z.object({
 });
 export type TechnicalSummaryOutput = z.infer<typeof TechnicalSummaryOutputSchema>;
 
+// This is the prompt schema that the AI will see. Note 'studentName' is removed.
+const AIPromptSchema = TechnicalSummaryInputSchema.omit({ studentName: true });
+
 export async function generateTechnicalSummary(input: TechnicalSummaryInput): Promise<TechnicalSummaryOutput> {
   return generateTechnicalSummaryFlow(input);
 }
 
 const prompt = ai.definePrompt({
   name: 'technicalSummaryPrompt',
-  input: {schema: TechnicalSummaryInputSchema},
+  input: {schema: AIPromptSchema}, // Use the schema without the student's name
   output: {schema: TechnicalSummaryOutputSchema},
   prompt: `You are an AI assistant specializing in synthesizing student progress data into concise, technical summaries for educators. Your role is to present the facts clearly without adding interpretation or speculation.
 
-Your task is to analyze the provided information for {{studentName}} regarding their work on "{{goalName}}". The input includes recent session notes, activities, and performance metrics (accuracy, response counts, opportunities, prompt counts).
+Your task is to analyze the provided information for "the student" regarding their work on "{{goalName}}". The input includes recent session notes, activities, and performance metrics (accuracy, response counts, opportunities, prompt counts).
+
+When referring to the user, always use the placeholder "the student".
 
 Generate a technical summary that:
 1.  Identifies key trends or significant changes in performance (e.g., improvements, declines, plateaus) based *only* on the provided data.
@@ -43,7 +48,6 @@ Generate a technical summary that:
 4.  Maintains a professional and strictly objective tone. Do not use interpretive language like "seems to be," "suggests," or "appears to."
 5.  Is concise, ideally 3-5 sentences.
 
-Student Name: {{{studentName}}}
 Goal Focus: {{{goalName}}}
 Progress Data (includes session details and quantitative metrics):
 {{{progressData}}}
@@ -59,10 +63,18 @@ const generateTechnicalSummaryFlow = ai.defineFlow(
     outputSchema: TechnicalSummaryOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
+    // Call the prompt with data that excludes the student's name
+    const {output} = await prompt({
+      goalName: input.goalName,
+      progressData: input.progressData,
+    });
+    
+    // After getting the response, replace the placeholder with the actual name
+    const finalSummary = output!.summary.replace(/the student/gi, input.studentName);
+
     return {
-      ...output!,
-      progress: 'Generated a technical summary of student progress.' // This describes the AI's action
+      summary: finalSummary,
+      progress: 'Generated a technical summary of student progress.'
     };
   }
 );
