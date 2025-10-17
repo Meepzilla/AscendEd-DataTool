@@ -26,9 +26,9 @@ const mainNavItems: NavItem[] = [
 ];
 
 const secondaryNavItems: NavItem[] = [
-   { href: '/help', label: 'Help', icon: HelpCircle, hotkey: 'H' },
    { href: '/changelog', label: 'Changelog', icon: ScrollText, hotkey: '6' },
    { href: '/settings', label: 'Settings', icon: Settings, hotkey: '7' },
+   { href: '/help', label: 'Help', icon: HelpCircle, hotkey: 'H' },
 ];
 
 interface AppNavigationProps {
