@@ -1,7 +1,8 @@
+
 'use client';
 
 import React, { Suspense, lazy } from 'react';
-import type { Student, StudentSessionState } from '@/lib/types';
+import type { Student, StudentSessionState, Goal } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -30,6 +31,7 @@ interface StudentDataCardProps {
   dataEntryAiActivitySuggestions: Record<string, string[]>;
   isAiLoading: Record<string, boolean>;
   setDataEntryFocusedStudentSlotIndex: (index: number) => void;
+  setDataEntryFocusedGoalIndexByStudentId: React.Dispatch<React.SetStateAction<Record<string, number>>>;
   openEditStudentModal: (student: Student) => void;
   handleStudentSelect: (studentId: string, index: number) => void;
   removeStudentSlot: (index: number) => void;
@@ -55,6 +57,7 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
   dataEntryAiActivitySuggestions,
   isAiLoading,
   setDataEntryFocusedStudentSlotIndex,
+  setDataEntryFocusedGoalIndexByStudentId,
   openEditStudentModal,
   handleStudentSelect,
   removeStudentSlot,
@@ -71,6 +74,15 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
   const filteredStudentGoals = allStudentGoals.filter(g => !g.isArchived || showArchived);
   const visibleGoalCount = dataEntryVisibleGoalCountByStudentId[student.id] ?? 10;
   const displayedGoals = filteredStudentGoals.slice(0, visibleGoalCount);
+
+  const handleSetGoalFocus = (goal: Goal) => {
+    const visibleGoals = allStudentGoals.filter(g => !g.isArchived || dataEntryShowArchivedByStudentId[student.id]);
+    const newIndex = visibleGoals.findIndex(g => g.id === goal.id);
+    if (newIndex !== -1) {
+      setDataEntryFocusedStudentSlotIndex(slotIndex);
+      setDataEntryFocusedGoalIndexByStudentId(prev => ({...prev, [student.id]: newIndex}));
+    }
+  };
 
   return (
     <Card
@@ -166,14 +178,7 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
                       data={state.goalData[goal.id] || GOAL_TYPE_FIELDS[goal.type]}
                       onChange={(updatedField, newData) => handleGoalDataChange(student.id, goal.id, updatedField, newData)}
                       isFocused={isGoalFocused}
-                      onSetFocus={() => {
-                        const visibleGoals = allStudentGoals.filter(g => !g.isArchived || dataEntryShowArchivedByStudentId[student.id]);
-                        const newIndex = visibleGoals.findIndex(g => g.id === goal.id);
-                        if (newIndex !== -1) {
-                          setDataEntryFocusedStudentSlotIndex(slotIndex);
-                          handleGoalDataChange(student.id, goal.id, 'focus', state.goalData[goal.id]);
-                        }
-                      }}
+                      onSetFocus={() => handleSetGoalFocus(goal)}
                       onMoveUp={() => handleMoveGoal(student.id, goal.id, 'up')}
                       onMoveDown={() => handleMoveGoal(student.id, goal.id, 'down')}
                       canMoveUp={actualGoalIndexInOriginal > 0}
