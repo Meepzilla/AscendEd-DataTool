@@ -41,26 +41,12 @@ interface StudentDataContextType {
   currentUser: any;
   selectedStudent: Student | null;
   setSelectedStudent: (student: Student | null) => void;
+  studentFromContext: Student | null;
   loading: boolean;
   sessionsLoading: boolean;
   error: Error | null;
   isFirebaseDBAvailable: boolean;
   addErrorLog: (log: any) => void;
-  isStudentAccessLocked: boolean;
-  setIsStudentAccessLocked: (isLocked: boolean) => void;
-
-  studentSessionStates: Record<string, StudentSessionState>;
-  setStudentSessionStates: React.Dispatch<React.SetStateAction<Record<string, StudentSessionState>>>;
-  selectedStudentIds: string[];
-  setSelectedStudentIds: React.Dispatch<React.SetStateAction<string[]>>;
-  focusedStudentSlotIndex: number;
-  setFocusedStudentSlotIndex: React.Dispatch<React.SetStateAction<number>>;
-
-  handleInputChange: (studentId: string, field: 'activity' | 'notes', value: string) => void;
-  handleGoalDataChange: (studentId: string, goalId: string, field: string, value: any) => void;
-  getActivitySuggestions: (studentId: string) => Promise<void>;
-  aiActivitySuggestions: Record<string, string[]>;
-  isAiLoading: Record<string, boolean>;
 
   addStudent: (name: string) => Promise<Student | null>;
   updateStudent: (studentId: string, data: Partial<Student>) => Promise<void>;
@@ -79,6 +65,7 @@ interface StudentDataContextType {
   getSessionsForStudent: (studentId: string) => SessionData[];
   importSessions: (sessionsToImport: Omit<SessionData, 'sessionId'>[]) => Promise<{ newCount: number; duplicateCount: number; }>;
 
+  // Modal State & Actions
   isAddStudentModalOpen: boolean;
   openAddStudentModal: () => void;
   closeAddStudentModal: () => void;
@@ -107,8 +94,6 @@ interface StudentDataContextType {
   editingAssignedGoal: { studentId: string; goal: Goal } | null;
   openEditAssignedGoalModal: (studentId: string, goal: Goal) => void;
   closeEditAssignedGoalModal: () => void;
-  selectionModalType: 'student' | 'goal' | null;
-  setSelectionModalType: (type: 'student' | 'goal' | null) => void;
 }
 
 const StudentDataContext = createContext<StudentDataContextType | undefined>(undefined);
@@ -133,15 +118,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [loading, setLoading] = useState(true);
   const [sessionsLoading, setSessionsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const [isStudentAccessLocked, setIsStudentAccessLocked] = useState(false);
-
-  // State for data entry page
-  const [studentSessionStates, setStudentSessionStates] = useState<Record<string, StudentSessionState>>({});
-  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
-  const [focusedStudentSlotIndex, setFocusedStudentSlotIndex] = useState<number>(0);
-  const [aiActivitySuggestions, setAiActivitySuggestions] = useState<Record<string, string[]>>({});
-  const [isAiLoading, setIsAiLoading] = useState<Record<string, boolean>>({});
-
+  
   const modalState = useModalState();
 
   const studentFromContext = useMemo(() => {
@@ -274,7 +251,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     if (isFirebaseDBAvailable) {
         try {
             const docRef = await addDoc(collection(firestoreDbModule, getSessionsCollectionPath(APP_ID)), newSession);
-            toast({ title: "Success", description: "Session saved." });
+            // Don't toast here; handled by consumer
             return { sessionId: docRef.id, ...newSession };
         } catch (e: any) { addErrorLog({ message: 'Firebase addSession failed.', details: e.message, type: 'error' }); return null; }
     } else {
@@ -282,10 +259,10 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         const newSessions = [sessionWithId, ...sessions].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         setSessions(newSessions);
         saveToLocal(sessionsKey, newSessions);
-        toast({ title: "Success", description: "Session saved locally." });
+        // Don't toast here; handled by consumer
         return sessionWithId;
     }
-  }, [currentUser, isFirebaseDBAvailable, sessions, sessionsKey, toast, addErrorLog, saveToLocal]);
+  }, [currentUser, isFirebaseDBAvailable, sessions, sessionsKey, addErrorLog, saveToLocal]);
 
   const updateSession = useCallback(async (sessionId: string, data: any) => {
     if (!currentUser) return;
@@ -405,29 +382,6 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   }, [authLoading, currentUser, isFirebaseDBAvailable, studentsKey, templatesKey, sessionsKey, saveToLocal, addErrorLog]);
   
-  useEffect(() => {
-    // Initialize or update studentSessionStates when students array changes
-    setStudentSessionStates(prevStates => {
-      const newStates: Record<string, StudentSessionState> = {};
-      students.forEach(student => {
-        const existingState = prevStates[student.id];
-        const initialGoalData: Record<string, SessionGoalData['data']> = {};
-        student.goals.forEach(goal => {
-            initialGoalData[goal.id] = (existingState?.goalData?.[goal.id]) || JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type] || {}));
-        });
-        
-        newStates[student.id] = {
-          studentId: student.id,
-          studentName: student.name,
-          activity: existingState?.activity || '',
-          notes: existingState?.notes || '',
-          originalGoalHeaders: student.goals,
-          goalData: initialGoalData,
-        };
-      });
-      return newStates;
-    });
-  }, [students]);
 
   const getSessionsForStudent = useCallback((studentId: string) => {
     return sessions.filter(s => s.studentId === studentId);
@@ -457,75 +411,19 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       await updateStudent(studentId, { goals: updatedGoals });
   }, [students, updateStudent]);
 
-  const handleInputChange = (studentId: string, field: 'activity' | 'notes', value: string) => {
-    if (isStudentAccessLocked) {
-      toast({ title: 'Access Locked', description: 'Student access is locked. Unlock to make changes.', variant: 'default' });
-      return;
-    }
-    setStudentSessionStates(prev => ({
-      ...prev,
-      [studentId]: { ...prev[studentId], [field]: value },
-    }));
-  };
-  
-  const handleGoalDataChange = useCallback((studentId: string, goalId: string, updatedFieldName: string, newData: any) => {
-    setStudentSessionStates(prevStates => {
-        const studentState = prevStates[studentId];
-        if (!studentState) return prevStates;
-        const goal = studentState.originalGoalHeaders.find((g: any) => g.id === goalId);
-        if (!goal) return prevStates;
-        let processedData = { ...newData };
-        return { ...prevStates, [studentId]: { ...studentState, goalData: { ...studentState.goalData, [goalId]: processedData } } };
-    });
-  }, []);
-
-  const getActivitySuggestions = async (studentId: string) => {
-    const studentState = studentSessionStates[studentId];
-    const activeGoals = studentState?.originalGoalHeaders.filter((g: any) => !g.isArchived);
-
-    if (!studentState || !activeGoals || activeGoals.length === 0) {
-      toast({ title: "Info", description: "Student has no active goals assigned or data is missing.", variant: "default" });
-      return;
-    }
-    setIsAiLoading(prev => ({...prev, [studentId]: true}));
-    
-    try {
-        const goalDescriptions = activeGoals.map(g => `${g.name} (${g.type})`).join(', ');
-        const studentProgressSummary = `Currently working on: ${goalDescriptions}. Recent activity: ${studentState.activity}. Notes: ${studentState.notes}`;
-        const sessionsForStudent = getSessionsForStudent(studentId);
-        const sessionHistorySummary = sessionsForStudent.slice(0, 3).map(s => `Date: ${s.date}, Activity: ${s.activity}`).join('\n');
-
-        const result = await getAiActivitySuggestions({
-            goal: goalDescriptions,
-            studentProgress: studentProgressSummary,
-            sessionHistory: sessionHistorySummary,
-        });
-        setAiActivitySuggestions(prev => ({ ...prev, [studentId]: result.suggestions }));
-        toast({ title: "AI Suggestions", description: `Found ${result.suggestions.length} activities. Reasoning: ${result.reasoning}` });
-    } catch (error: any) {
-        console.error("Error fetching AI activity suggestions:", error);
-        addErrorLog({ message: 'Failed to fetch AI activity suggestions.', source: 'DataEntryContent.handleLocalAiFetch', details: error.message, type: 'error' });
-        toast({ title: "AI Error", description: "Could not fetch activity suggestions.", variant: "destructive" });
-    } finally {
-        setIsAiLoading(prev => ({...prev, [studentId]: false}));
-    }
-  };
-
-
   const contextValue: StudentDataContextType = {
     students,
     goalTemplates,
     sessions,
     currentUser,
-    selectedStudent: studentFromContext,
+    selectedStudent,
     setSelectedStudent,
+    studentFromContext,
     loading,
     sessionsLoading,
     error,
     isFirebaseDBAvailable,
     addErrorLog,
-    isStudentAccessLocked,
-    setIsStudentAccessLocked,
 
     // Data Actions
     addStudent, updateStudent, deleteStudent,
@@ -533,13 +431,6 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     addGoalTemplate, updateGoalTemplate, deleteGoalTemplate,
     addSession, updateSession, deleteSession,
     getSessionsForStudent, importSessions,
-
-    // Data Entry State and Actions
-    studentSessionStates, setStudentSessionStates,
-    selectedStudentIds, setSelectedStudentIds,
-    focusedStudentSlotIndex, setFocusedStudentSlotIndex,
-    handleInputChange, handleGoalDataChange,
-    getActivitySuggestions, aiActivitySuggestions, isAiLoading,
 
     // Modal State & Actions
     ...modalState,
@@ -559,3 +450,5 @@ export const useStudentData = (): StudentDataContextType => {
   }
   return context;
 };
+
+    

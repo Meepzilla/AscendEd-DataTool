@@ -15,6 +15,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { GOAL_TYPE_FIELDS, GOAL_TYPES } from '@/lib/goal-constants';
 import { PROMPT_HOTKEY_MAP } from '@/lib/promptConstants';
 import GoalFocusManager from './GoalFocusManager';
+import { getActivitySuggestions as getAiActivitySuggestions } from '@/ai/flows/activity-suggestions';
 
 
 const ConfirmationModal = lazy(() => import('@/components/modals/confirmation-modal'));
@@ -28,20 +29,8 @@ export default function DataEntryContent() {
     studentFromContext,
     openEditStudentModal,
     addSession,
-    isStudentAccessLocked,
-    setIsStudentAccessLocked,
     addErrorLog,
-    studentSessionStates,
-    setStudentSessionStates,
-    selectedStudentIds,
-    setSelectedStudentIds,
-    focusedStudentSlotIndex,
-    setFocusedStudentSlotIndex,
-    handleInputChange,
-    handleGoalDataChange: contextHandleGoalDataChange,
-    getActivitySuggestions,
-    aiActivitySuggestions,
-    isAiLoading,
+    getSessionsForStudent,
   } = useStudentData();
   const { toast } = useToast();
   
@@ -58,6 +47,14 @@ export default function DataEntryContent() {
   const [isHeaderCardCollapsed, setIsHeaderCardCollapsed] = useState(false);
   const [isResetConfirmationOpen, setIsResetConfirmationOpen] = useState(false);
   const [selectionModalType, setSelectionModalType] = useState<'student' | 'goal' | null>(null);
+  const [isStudentAccessLocked, setIsStudentAccessLocked] = useState(false);
+  
+  // UI State moved from useStudentData
+  const [studentSessionStates, setStudentSessionStates] = useState<Record<string, StudentSessionState>>({});
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const [focusedStudentSlotIndex, setFocusedStudentSlotIndex] = useState<number>(0);
+  const [aiActivitySuggestions, setAiActivitySuggestions] = useState<Record<string, string[]>>({});
+  const [isAiLoading, setIsAiLoading] = useState<Record<string, boolean>>({});
 
   const activeStudents = useMemo(() => students.filter(s => !s.isArchived), [students]);
 
@@ -71,16 +68,13 @@ export default function DataEntryContent() {
             const existingState = prevStates[student.id];
             const studentGoals = student.goals || [];
             
-            // This creates a string representation of goal IDs to quickly check for changes.
             const existingGoalIds = existingState?.originalGoalHeaders.map(g => g.id).join(',');
             const currentGoalIds = studentGoals.map(g => g.id).join(',');
 
-            // If the state for a student doesn't exist or if their goals have changed...
             if (!existingState || existingGoalIds !== currentGoalIds) {
                 statesChanged = true;
                 const updatedGoalData = existingState?.goalData || {};
                 
-                // Ensure all current goals have an entry in goalData
                 studentGoals.forEach(goal => {
                     if (!updatedGoalData[goal.id]) {
                         updatedGoalData[goal.id] = JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type] || {}));
@@ -92,23 +86,21 @@ export default function DataEntryContent() {
                     studentName: student.name,
                     activity: existingState?.activity || '',
                     notes: existingState?.notes || '',
-                    originalGoalHeaders: studentGoals, // Always update to the latest goals
+                    originalGoalHeaders: studentGoals, 
                     goalData: updatedGoalData,
                 };
             } else {
-                // If no change, just carry over the existing state
                 newStates[student.id] = existingState;
             }
         });
 
-        // Only update the state if there was a meaningful change to prevent loops
         if (statesChanged || Object.keys(prevStates).length !== students.length) {
             return newStates;
         }
         
         return prevStates;
     });
-}, [students, setStudentSessionStates]);
+}, [students]);
 
 
   useEffect(() => {
@@ -272,6 +264,60 @@ export default function DataEntryContent() {
     toast({ title: "Data Reset", description: `Current unsaved data for the focused student has been reset.` });
     setIsResetConfirmationOpen(false);
   }
+
+  const handleInputChange = (studentId: string, field: 'activity' | 'notes', value: string) => {
+    if (isStudentAccessLocked) {
+      toast({ title: 'Access Locked', description: 'Student access is locked. Unlock to make changes.', variant: 'default' });
+      return;
+    }
+    setStudentSessionStates(prev => ({
+      ...prev,
+      [studentId]: { ...prev[studentId], [field]: value },
+    }));
+  };
+  
+  const handleGoalDataChange = useCallback((studentId: string, goalId: string, updatedFieldName: string, newData: any) => {
+    setStudentSessionStates(prevStates => {
+        const studentState = prevStates[studentId];
+        if (!studentState) return prevStates;
+        const goal = studentState.originalGoalHeaders.find((g: any) => g.id === goalId);
+        if (!goal) return prevStates;
+        let processedData = { ...newData };
+        return { ...prevStates, [studentId]: { ...studentState, goalData: { ...studentState.goalData, [goalId]: processedData } } };
+    });
+  }, []);
+
+  const getActivitySuggestions = async (studentId: string) => {
+    const studentState = studentSessionStates[studentId];
+    const activeGoals = studentState?.originalGoalHeaders.filter((g: any) => !g.isArchived);
+
+    if (!studentState || !activeGoals || activeGoals.length === 0) {
+      toast({ title: "Info", description: "Student has no active goals assigned or data is missing.", variant: "default" });
+      return;
+    }
+    setIsAiLoading(prev => ({...prev, [studentId]: true}));
+    
+    try {
+        const goalDescriptions = activeGoals.map(g => `${g.name} (${g.type})`).join(', ');
+        const studentProgressSummary = `Currently working on: ${goalDescriptions}. Recent activity: ${studentState.activity}. Notes: ${studentState.notes}`;
+        const sessionsForStudent = getSessionsForStudent(studentId);
+        const sessionHistorySummary = sessionsForStudent.slice(0, 3).map(s => `Date: ${s.date}, Activity: ${s.activity}`).join('\n');
+
+        const result = await getAiActivitySuggestions({
+            goal: goalDescriptions,
+            studentProgress: studentProgressSummary,
+            sessionHistory: sessionHistorySummary,
+        });
+        setAiActivitySuggestions(prev => ({ ...prev, [studentId]: result.suggestions }));
+        toast({ title: "AI Suggestions", description: `Found ${result.suggestions.length} activities. Reasoning: ${result.reasoning}` });
+    } catch (error: any) {
+        console.error("Error fetching AI activity suggestions:", error);
+        addErrorLog({ message: 'Failed to fetch AI activity suggestions.', source: 'DataEntryContent.handleLocalAiFetch', details: error.message, type: 'error' });
+        toast({ title: "AI Error", description: "Could not fetch activity suggestions.", variant: "destructive" });
+    } finally {
+        setIsAiLoading(prev => ({...prev, [studentId]: false}));
+    }
+  };
     
   const handleMoveGoal = useCallback((studentId: string, goalId: string, direction: 'up' | 'down') => {
     setStudentSessionStates(prevStates => {
@@ -356,13 +402,13 @@ export default function DataEntryContent() {
       .map(id => students.find(s => s.id === id))
       .filter((s): s is Student => !!s), [selectedStudentIds, students]);
 
-  const handleGoalDataChange = useCallback((studentId: string, goalId: string, field: string, value: any) => {
+  const localHandleGoalDataChange = useCallback((studentId: string, goalId: string, field: string, value: any) => {
     if (isStudentAccessLocked) {
       toast({ title: 'Access Locked', description: 'Unlock to make changes.', variant: 'default' });
       return;
     }
-    contextHandleGoalDataChange(studentId, goalId, field, value);
-  }, [isStudentAccessLocked, contextHandleGoalDataChange, toast]);
+    handleGoalDataChange(studentId, goalId, field, value);
+  }, [isStudentAccessLocked, handleGoalDataChange, toast]);
 
 
   // Data Entry Hotkeys
@@ -442,7 +488,7 @@ export default function DataEntryContent() {
             
             if (focusedGoal) {
                 const goalData = state.goalData[focusedGoal.id];
-                const increment = (field: string) => handleGoalDataChange(studentId, focusedGoal.id, field, (Number(goalData[field]) || 0) + 1);
+                const increment = (field: string) => localHandleGoalDataChange(studentId, focusedGoal.id, field, (Number(goalData[field]) || 0) + 1);
 
                 if (key === 'C') {
                     if (['ARTICULATION', 'AAC'].includes(focusedGoal.type)) increment('correct');
@@ -470,7 +516,7 @@ export default function DataEntryContent() {
 
 
                 // Prompt hotkeys
-                const promptType = PROMPT_HOTKEY_MAP[key];
+                const promptType = PROMPT_HOTKEY_MAP[key as keyof typeof PROMPT_HOTKEY_MAP];
                 if(promptType) {
                     increment(promptType);
                     if (promptType === 'Independent') {
@@ -498,7 +544,7 @@ export default function DataEntryContent() {
     activeStudentsInSlots, 
     setIsStudentAccessLocked,
     handleSave,
-    handleGoalDataChange,
+    localHandleGoalDataChange,
   ]);
 
   useEffect(() => {
@@ -583,7 +629,7 @@ export default function DataEntryContent() {
                   handleStudentSelect={handleStudentSelect}
                   removeStudentSlot={removeStudentSlot}
                   handleInputChange={handleInputChange}
-                  handleGoalDataChange={handleGoalDataChange}
+                  handleGoalDataChange={localHandleGoalDataChange}
                   handleMoveGoal={handleMoveGoal}
                   handleLocalAiFetch={getActivitySuggestions}
                   addStudentSlot={addStudentSlot}
