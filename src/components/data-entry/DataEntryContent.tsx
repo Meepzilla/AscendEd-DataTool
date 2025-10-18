@@ -103,12 +103,12 @@ export default function DataEntryContent() {
             studentCardElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
         }
 
-        // The logic to scroll the goal into view is also here now
         const focusedStudentId = dataEntrySelectedStudentIds[dataEntryFocusedStudentSlotIndex];
         const studentState = dataEntryStudentSessionStates[focusedStudentId];
+        const focusedGoalIndex = dataEntryFocusedGoalIndexByStudentId[focusedStudentId] ?? 0;
+        
         if (studentState?.originalGoalHeaders) {
             const visibleGoals = studentState.originalGoalHeaders.filter((g: any) => !g.isArchived || dataEntryShowArchivedByStudentId[focusedStudentId]);
-            const focusedGoalIndex = dataEntryFocusedGoalIndexByStudentId[focusedStudentId] ?? 0;
             if (visibleGoals.length > focusedGoalIndex) {
                 const focusedGoal = visibleGoals[focusedGoalIndex];
                 if (focusedGoal) {
@@ -125,10 +125,10 @@ export default function DataEntryContent() {
     }
 }, [
     dataEntryFocusedStudentSlotIndex, 
-    dataEntrySelectedStudentIds, // Full array is needed to get the ID
-    dataEntryStudentSessionStates, // Needed to find the goal
-    dataEntryFocusedGoalIndexByStudentId, // The index itself
-    dataEntryShowArchivedByStudentId, // Needed for filtering visible goals
+    dataEntrySelectedStudentIds,
+    dataEntryStudentSessionStates,
+    dataEntryFocusedGoalIndexByStudentId,
+    dataEntryShowArchivedByStudentId,
 ]);
 
 
@@ -210,29 +210,31 @@ export default function DataEntryContent() {
     setSelectionModalType(null);
   };
 
-  // Scroll functionality
   const updateScrollability = useCallback(() => {
     const container = scrollContainerRef.current;
     if (container) {
-      setCanScrollLeft(container.scrollLeft > 0);
-      setCanScrollRight(container.scrollLeft < container.scrollWidth - container.clientWidth);
+      const canScrollLeftNow = container.scrollLeft > 0;
+      const canScrollRightNow = container.scrollLeft < container.scrollWidth - container.clientWidth -1; // -1 to account for subpixel rendering
+      setCanScrollLeft(canScrollLeftNow);
+      setCanScrollRight(canScrollRightNow);
     }
   }, []);
 
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (container) {
-      updateScrollability();
       const observer = new ResizeObserver(updateScrollability);
       observer.observe(container);
-      container.addEventListener('scroll', updateScrollability);
+
+      // Initial check
+      updateScrollability();
 
       return () => {
         observer.unobserve(container);
-        container.removeEventListener('scroll', updateScrollability);
       };
     }
-  }, [updateScrollability, dataEntrySelectedStudentIds]);
+  }, [updateScrollability, dataEntrySelectedStudentIds]); // Rerun when list changes
+
 
   const handleScroll = (direction: 'left' | 'right') => {
     const container = scrollContainerRef.current;
@@ -291,7 +293,7 @@ export default function DataEntryContent() {
             size="icon"
             onClick={() => handleScroll('left')}
             className={cn(
-              "absolute left-0 top-1/2 -translate-y-1/2 z-30 h-10 w-10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity",
+              "absolute left-0 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity",
               !canScrollLeft && "hidden"
             )}
             title="Scroll Left"
@@ -299,7 +301,12 @@ export default function DataEntryContent() {
             <ChevronLeft className="h-6 w-6" />
           </Button>
 
-          <ScrollArea ref={scrollContainerRef} className="h-full w-full" orientation="horizontal">
+          <ScrollArea 
+            ref={scrollContainerRef} 
+            className="h-full w-full" 
+            orientation="horizontal"
+            onScroll={updateScrollability}
+          >
             <Suspense fallback={<div>Loading student cards...</div>}>
               <StudentCardsList
                   dataEntrySelectedStudentIds={dataEntrySelectedStudentIds}
@@ -332,7 +339,7 @@ export default function DataEntryContent() {
             size="icon"
             onClick={() => handleScroll('right')}
             className={cn(
-              "absolute right-0 top-1/2 -translate-y-1/2 z-30 h-10 w-10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity",
+              "absolute right-0 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity",
               !canScrollRight && "hidden"
             )}
             title="Scroll Right"
