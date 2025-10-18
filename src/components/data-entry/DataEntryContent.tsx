@@ -95,7 +95,7 @@ export default function DataEntryContent() {
     }
   }, [activeStudents, studentFromContext, dataEntrySelectedStudentIds, setDataEntrySelectedStudentIds, setDataEntryFocusedStudentSlotIndex]);
 
- useEffect(() => {
+  useEffect(() => {
     if (dataEntrySelectedStudentIds.length > 0 && dataEntryFocusedStudentSlotIndex >= 0 && dataEntryFocusedStudentSlotIndex < dataEntrySelectedStudentIds.length) {
         const studentCardId = `student-card-slot-${dataEntryFocusedStudentSlotIndex}`;
         const studentCardElement = document.getElementById(studentCardId);
@@ -123,13 +123,7 @@ export default function DataEntryContent() {
             }
         }
     }
-}, [
-    dataEntryFocusedStudentSlotIndex, 
-    dataEntrySelectedStudentIds,
-    dataEntryFocusedGoalIndexByStudentId,
-    dataEntryShowArchivedByStudentId,
-    // dataEntryStudentSessionStates was removed to prevent infinite loop
-]);
+}, [dataEntryFocusedStudentSlotIndex, dataEntrySelectedStudentIds, dataEntryShowArchivedByStudentId]);
 
 
   const handleStudentSelect = useCallback((studentId: string, index: number) => {
@@ -214,7 +208,7 @@ export default function DataEntryContent() {
     const container = scrollContainerRef.current;
     if (container) {
       const canScrollLeftNow = container.scrollLeft > 0;
-      const canScrollRightNow = container.scrollLeft < container.scrollWidth - container.clientWidth -1; // -1 to account for subpixel rendering
+      const canScrollRightNow = container.scrollLeft < container.scrollWidth - container.clientWidth - 1;
       setCanScrollLeft(canScrollLeftNow);
       setCanScrollRight(canScrollRightNow);
     }
@@ -225,15 +219,12 @@ export default function DataEntryContent() {
     if (container) {
       const observer = new ResizeObserver(updateScrollability);
       observer.observe(container);
-
-      // Initial check
-      updateScrollability();
-
+      updateScrollability(); // Initial check
       return () => {
         observer.unobserve(container);
       };
     }
-  }, [updateScrollability, dataEntrySelectedStudentIds]); // Rerun when list changes
+  }, [dataEntrySelectedStudentIds, updateScrollability]);
 
 
   const handleScroll = (direction: 'left' | 'right') => {
@@ -293,7 +284,7 @@ export default function DataEntryContent() {
             size="icon"
             onClick={() => handleScroll('left')}
             className={cn(
-              "absolute left-0 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity",
+              "absolute left-0 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity",
               !canScrollLeft && "hidden"
             )}
             title="Scroll Left"
@@ -339,7 +330,7 @@ export default function DataEntryContent() {
             size="icon"
             onClick={() => handleScroll('right')}
             className={cn(
-              "absolute right-0 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity",
+              "absolute right-0 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity",
               !canScrollRight && "hidden"
             )}
             title="Scroll Right"
@@ -393,5 +384,7 @@ export default function DataEntryContent() {
     </ConfettiProvider>
   );
 }
+
+    
 
     
