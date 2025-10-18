@@ -125,12 +125,22 @@ export function useKeyboardShortcutHandlers({
             }
              if (key === 'N' && !alt) { // Go to next trial
                  if (currentTrialIndex !== -1) {
-                    let nextUntouchedIndex = currentTrials.findIndex((t, i) => t === 'untouched' && i > currentTrialIndex);
-                    if (nextUntouchedIndex === -1) { // Loop back to the start if no more untouched trials are after the current one
-                        nextUntouchedIndex = currentTrials.findIndex(t => t === 'untouched');
+                    let nextFocusIndex = -1;
+                    // First, try to find the next untouched trial
+                    for (let i = 1; i < currentTrials.length; i++) {
+                        const checkIndex = (currentTrialIndex + i) % currentTrials.length;
+                        if (currentTrials[checkIndex] === 'untouched') {
+                            nextFocusIndex = checkIndex;
+                            break;
+                        }
                     }
-                    const newFocusedIndex = nextUntouchedIndex !== -1 ? nextUntouchedIndex : currentTrialIndex; // Stay if all are filled
-                    handleGoalDataChange(studentId, goal.id, 'focusedTrialIndex', { ...goalData, focusedTrialIndex: newFocusedIndex });
+                    
+                    // If no untouched trials are left, just cycle to the next index
+                    if (nextFocusIndex === -1) {
+                        nextFocusIndex = (currentTrialIndex + 1) % currentTrials.length;
+                    }
+
+                    handleGoalDataChange(studentId, goal.id, 'focusedTrialIndex', { ...goalData, focusedTrialIndex: nextFocusIndex });
                 }
                 return;
             }
