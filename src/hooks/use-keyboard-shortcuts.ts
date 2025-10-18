@@ -25,6 +25,7 @@ export function useKeyboardShortcuts() {
     openAddStudentModal,
     saveDataEntrySession,
     addStudentSlot,
+    removeFocusedStudentSlot,
     isStudentAccessLocked,
     setIsStudentAccessLocked,
     // Data-specific hotkey handlers are now inside useStudentData
@@ -115,6 +116,12 @@ export function useKeyboardShortcuts() {
             addStudentSlot();
           }
           break; // Alt+W to add a new student slot
+        case 'Q':
+          if (isDataEntryContext) {
+            if (isStudentAccessLocked) { showAccessLockedToast(); return; }
+            removeFocusedStudentSlot();
+          }
+          break; // Alt+Q to remove focused student slot
         case 'U': if (isDataEntryContext) toggleStudentSelectionModal(); break; // Alt+U to open student selection
         case 'T': if (isDataEntryContext) toggleGoalSelectionModal(); break; // Alt+T to open goal selection
         case 'A': if (isDataEntryContext) cycleFocusedStudent('prev'); break; // Alt+A to cycle to the previous student slot
@@ -195,6 +202,7 @@ export function useKeyboardShortcuts() {
     toggleStudentSelectionModal,
     toggleGoalSelectionModal,
     addStudentSlot,
+    removeFocusedStudentSlot,
     setIsStudentAccessLocked,
   ]);
 

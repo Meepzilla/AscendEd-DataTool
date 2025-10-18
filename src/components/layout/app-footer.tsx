@@ -16,6 +16,7 @@ export default function AppFooter() {
     { key: 'Alt+J', desc: 'Error Log (Icon)' },
     { key: 'Alt+M', desc: 'Add Student' },
     { key: 'Alt+K', desc: 'Toggle Sidebar' },
+    { key: 'Alt+Q', desc: 'Remove Slot'},
   ];
 
   return (

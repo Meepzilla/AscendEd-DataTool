@@ -105,6 +105,8 @@ interface StudentDataContextType {
   handleGoalDataChange: (studentId: string, goalId: string, updatedFieldName: string, newData: StudentSessionState['goalData'][string]) => void;
   handleMoveGoal: (studentId: string, goalId: string, direction: 'up' | 'down') => void;
   addStudentSlot: () => void;
+  removeStudentSlot: (indexToRemove: number) => void;
+  removeFocusedStudentSlot: () => void;
   isStudentAccessLocked: boolean;
   setIsStudentAccessLocked: (isLocked: boolean) => void;
   
@@ -149,6 +151,31 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       .filter((s): s is Student => !!s);
   }, [dataEntryState.dataEntrySelectedStudentIds, students]);
 
+  const removeStudentSlot = useCallback((indexToRemove: number) => {
+    const { dataEntrySelectedStudentIds, dataEntryFocusedStudentSlotIndex } = dataEntryState;
+    const currentFocusedId = dataEntrySelectedStudentIds[dataEntryFocusedStudentSlotIndex];
+    const newSelectedIds = dataEntrySelectedStudentIds.filter((_, i) => i !== indexToRemove);
+    dataEntryState.setDataEntrySelectedStudentIds(newSelectedIds);
+
+    if (newSelectedIds.length === 0) {
+        dataEntryState.setDataEntryFocusedStudentSlotIndex(0);
+    } else {
+        let newFocusIndex = newSelectedIds.indexOf(currentFocusedId);
+        if (newFocusIndex === -1) {
+            newFocusIndex = Math.min(indexToRemove, newSelectedIds.length - 1);
+            newFocusIndex = Math.max(0, newFocusIndex);
+        }
+        dataEntryState.setDataEntryFocusedStudentSlotIndex(newFocusIndex);
+    }
+  }, [dataEntryState]);
+
+  const removeFocusedStudentSlot = useCallback(() => {
+    const { dataEntrySelectedStudentIds, dataEntryFocusedStudentSlotIndex } = dataEntryState;
+    if (dataEntrySelectedStudentIds.length > 0 && dataEntryFocusedStudentSlotIndex < dataEntrySelectedStudentIds.length) {
+      removeStudentSlot(dataEntryFocusedStudentSlotIndex);
+    }
+  }, [dataEntryState, removeStudentSlot]);
+
   const dataEntryActions = useDataEntryActions({
     ...dataEntryState,
     students,
@@ -157,6 +184,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     getSessionsForStudent: isFirebaseDBAvailable ? firebaseActions.getSessionsForStudent : localActions.getSessionsForStudent,
     toast,
     addErrorLog,
+    removeStudentSlot,
   });
 
   const keyboardShortcutHandlers = useKeyboardShortcutHandlers({
@@ -209,7 +237,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       setLoading(false);
       setSessionsLoading(false);
     }
-  }, [authLoading, currentUser, isFirebaseDBAvailable]);
+  }, [authLoading, currentUser, isFirebaseDBAvailable, firebaseActions, localActions]);
   
   const getSessionsForStudent = useCallback((studentId: string) => {
     return sessions.filter(s => s.studentId === studentId);
@@ -266,6 +294,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     ...dataEntryState,
     ...dataEntryActions,
     dataEntryActiveStudentsInSlots: activeStudentsInSlots,
+    removeFocusedStudentSlot,
 
     // Keyboard Shortcut Handlers
     ...keyboardShortcutHandlers
@@ -277,7 +306,8 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     dataEntryState,
     dataEntryActions,
     activeStudentsInSlots,
-    keyboardShortcutHandlers
+    keyboardShortcutHandlers,
+    removeFocusedStudentSlot,
   ]);
 
   return (

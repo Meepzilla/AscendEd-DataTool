@@ -35,6 +35,7 @@ const hotkeys: Hotkey[] = [
   { key: 'S', description: 'Cycle to Next Goal (for focused student)', category: 'Data Entry' },
   { key: 'Alt + S', description: 'Cycle to Previous Goal (for focused student)', category: 'Data Entry' },
   { key: 'Alt + W', description: 'Add a new student slot', category: 'Data Entry'},
+  { key: 'Alt + Q', description: 'Remove focused student slot', category: 'Data Entry'},
   { key: 'Alt + U', description: 'Open Select Student modal', category: 'Data Entry' },
   { key: 'Alt + T', description: 'Open Select Goal modal', category: 'Data Entry' },
   { key: 'C', description: 'Increment Correct / Cycle Trial Status', category: 'Data Entry' },
