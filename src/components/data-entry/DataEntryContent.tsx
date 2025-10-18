@@ -17,6 +17,7 @@ import { ScrollArea } from '../ui/scroll-area';
 const ConfirmationModal = lazy(() => import('@/components/modals/confirmation-modal'));
 const StudentCardsList = lazy(() => import('@/components/data-entry/StudentCardsList'));
 const DataEntryHeaderCard = lazy(() => import('@/components/data-entry/DataEntryHeaderCard'));
+const SelectionModal = lazy(() => import('@/components/modals/selection-modal'));
 
 export default function DataEntryContent() {
   const {
@@ -52,6 +53,9 @@ export default function DataEntryContent() {
     addStudentSlot,
     isStudentAccessLocked,
     setIsStudentAccessLocked,
+    selectionModalType,
+    setSelectionModalType,
+    dataEntryActiveStudentsInSlots,
   } = useStudentData();
 
   const [isSaving, setIsSaving] = useState(false);
@@ -190,6 +194,22 @@ export default function DataEntryContent() {
     }
     setIsResetConfirmationOpen(true);
   };
+  
+  const studentSlotsForModal = useMemo(() => {
+    return dataEntryActiveStudentsInSlots.map((student, index) => ({
+      id: index.toString(),
+      name: student.name,
+    }));
+  }, [dataEntryActiveStudentsInSlots]);
+  
+  const focusedStudentIdForModal = useMemo(() => {
+    return dataEntryFocusedStudentSlotIndex.toString();
+  }, [dataEntryFocusedStudentSlotIndex]);
+
+  const handleSelectStudentFromModal = (indexStr: string) => {
+    setDataEntryFocusedStudentSlotIndex(parseInt(indexStr, 10));
+    setSelectionModalType(null);
+  };
 
   return (
     <ConfettiProvider>
@@ -203,6 +223,16 @@ export default function DataEntryContent() {
               title="Reset Focused Student Data?"
               description="Are you sure you want to clear all current unsaved activity, notes, and goal data for the selected student? This action cannot be undone."
               confirmText="Yes, Reset Data"
+            />
+          )}
+          {selectionModalType === 'student' && (
+            <SelectionModal
+              isOpen={selectionModalType === 'student'}
+              onClose={() => setSelectionModalType(null)}
+              title="Select Focused Student"
+              items={studentSlotsForModal}
+              onSelect={handleSelectStudentFromModal}
+              selectedId={focusedStudentIdForModal}
             />
           )}
         </Suspense>

@@ -135,24 +135,12 @@ export default function TouchControls() {
       </div>
       
       <SelectionModal
-        isOpen={selectionModalType !== null}
+        isOpen={selectionModalType === 'goal'}
         onClose={() => setSelectionModalType(null)}
-        title={selectionModalType === 'student' ? 'Select Student' : 'Select Goal'}
-        items={
-          selectionModalType === 'student'
-            ? studentSlots
-            : visibleGoals.map(g => ({ id: g.id, name: g.name }))
-        }
-        onSelect={
-          selectionModalType === 'student'
-            ? handleStudentSelect
-            : handleGoalSelect
-        }
-        selectedId={
-            selectionModalType === 'student'
-            ? dataEntryFocusedStudentSlotIndex.toString()
-            : selectedGoalId
-        }
+        title={'Select Goal'}
+        items={visibleGoals.map(g => ({ id: g.id, name: g.name }))}
+        onSelect={handleGoalSelect}
+        selectedId={selectedGoalId}
       />
     </>
   );
