@@ -225,34 +225,34 @@ export default function DataEntryContent() {
         </div>
 
         <div className="flex-grow min-h-0">
-            <ScrollArea className="h-full" orientation="horizontal">
-                <Suspense fallback={<div>Loading student cards...</div>}>
-                    <StudentCardsList
-                        dataEntrySelectedStudentIds={dataEntrySelectedStudentIds}
-                        students={students}
-                        dataEntryStudentSessionStates={dataEntryStudentSessionStates}
-                        dataEntryFocusedStudentSlotIndex={dataEntryFocusedStudentSlotIndex}
-                        availableStudentsForDropdown={availableStudentsForDropdown}
-                        dataEntryShowArchivedByStudentId={dataEntryShowArchivedByStudentId}
-                        setDataEntryShowArchivedByStudentId={setDataEntryShowArchivedByStudentId}
-                        dataEntryVisibleGoalCountByStudentId={dataEntryVisibleGoalCountByStudentId}
-                        setDataEntryVisibleGoalCountByStudentId={setDataEntryVisibleGoalCountByStudentId}
-                        dataEntryFocusedGoalIndexByStudentId={dataEntryFocusedGoalIndexByStudentId}
-                        dataEntryAiActivitySuggestions={dataEntryAiActivitySuggestions}
-                        isAiLoading={isAiLoading}
-                        setDataEntryFocusedStudentSlotIndex={setDataEntryFocusedStudentSlotIndex}
-                        openEditStudentModal={openEditStudentModal}
-                        handleStudentSelect={handleStudentSelect}
-                        removeStudentSlot={removeStudentSlot}
-                        handleInputChange={handleInputChange}
-                        handleGoalDataChange={handleGoalDataChange}
-                        handleMoveGoal={handleMoveGoal}
-                        handleLocalAiFetch={handleLocalAiFetch}
-                        addStudentSlot={addStudentSlot}
-                        isStudentAccessLocked={isStudentAccessLocked}
-                    />
-                </Suspense>
-            </ScrollArea>
+          <ScrollArea className="h-full w-full" orientation="horizontal">
+            <Suspense fallback={<div>Loading student cards...</div>}>
+              <StudentCardsList
+                  dataEntrySelectedStudentIds={dataEntrySelectedStudentIds}
+                  students={students}
+                  dataEntryStudentSessionStates={dataEntryStudentSessionStates}
+                  dataEntryFocusedStudentSlotIndex={dataEntryFocusedStudentSlotIndex}
+                  availableStudentsForDropdown={availableStudentsForDropdown}
+                  dataEntryShowArchivedByStudentId={dataEntryShowArchivedByStudentId}
+                  setDataEntryShowArchivedByStudentId={setDataEntryShowArchivedByStudentId}
+                  dataEntryVisibleGoalCountByStudentId={dataEntryVisibleGoalCountByStudentId}
+                  setDataEntryVisibleGoalCountByStudentId={setDataEntryVisibleGoalCountByStudentId}
+                  dataEntryFocusedGoalIndexByStudentId={dataEntryFocusedGoalIndexByStudentId}
+                  dataEntryAiActivitySuggestions={dataEntryAiActivitySuggestions}
+                  isAiLoading={isAiLoading}
+                  setDataEntryFocusedStudentSlotIndex={setDataEntryFocusedStudentSlotIndex}
+                  openEditStudentModal={openEditStudentModal}
+                  handleStudentSelect={handleStudentSelect}
+                  removeStudentSlot={removeStudentSlot}
+                  handleInputChange={handleInputChange}
+                  handleGoalDataChange={handleGoalDataChange}
+                  handleMoveGoal={handleMoveGoal}
+                  handleLocalAiFetch={handleLocalAiFetch}
+                  addStudentSlot={addStudentSlot}
+                  isStudentAccessLocked={isStudentAccessLocked}
+              />
+            </Suspense>
+          </ScrollArea>
         </div>
         
         {dataEntrySelectedStudentIds.length > 0 && (

@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -77,10 +78,8 @@ export default function AppLayout({
               <SidebarRail />
             </>
           )}
-          <SidebarInset className="flex-1 overflow-auto">
-            <main className="h-full p-4 sm:p-6 lg:p-8">
-              {children}
-            </main>
+          <SidebarInset className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+            {children}
           </SidebarInset>
         </div>
         <AppFooter />
