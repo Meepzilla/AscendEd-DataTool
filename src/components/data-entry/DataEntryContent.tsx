@@ -115,9 +115,14 @@ export default function DataEntryContent() {
               goalElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
           }
         }
-    }, 50); // Small delay to ensure DOM is updated after student focus changes
+    }, 50);
 
-  }, [dataEntrySelectedStudentIds, dataEntryFocusedStudentSlotIndex, dataEntryFocusedGoalIndexByStudentId]);
+  }, [
+    dataEntryFocusedStudentSlotIndex, 
+    dataEntrySelectedStudentIds.length,
+    // Using this as a proxy for when the focused goal index changes for a student
+    JSON.stringify(dataEntryFocusedGoalIndexByStudentId),
+  ]);
 
   const handleStudentSelect = useCallback((studentId: string, index: number) => {
     setDataEntrySelectedStudentIds((prev: string[]) => {
