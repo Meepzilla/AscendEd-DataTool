@@ -126,9 +126,9 @@ export default function DataEntryContent() {
 }, [
     dataEntryFocusedStudentSlotIndex, 
     dataEntrySelectedStudentIds,
-    dataEntryStudentSessionStates,
     dataEntryFocusedGoalIndexByStudentId,
     dataEntryShowArchivedByStudentId,
+    // dataEntryStudentSessionStates was removed to prevent infinite loop
 ]);
 
 
@@ -393,3 +393,5 @@ export default function DataEntryContent() {
     </ConfettiProvider>
   );
 }
+
+    
