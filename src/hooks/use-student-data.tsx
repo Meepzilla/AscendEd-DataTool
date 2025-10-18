@@ -142,8 +142,8 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const dataEntryState = useDataEntryState(currentUser?.uid);
   const modalState = useModalState();
 
-  const firebaseActions = useMemo(() => useStudentDataFirebase({ currentUser, setStudents, setGoalTemplates, setSessions, setLoading, setSessionsLoading, setError, toast, addErrorLog }), [currentUser, addErrorLog, toast]);
-  const localActions = useMemo(() => useStudentDataLocal({ currentUser, students, setStudents, goalTemplates, setGoalTemplates, sessions, setSessions, toast }), [currentUser, students, goalTemplates, sessions, toast]);
+  const firebaseActions = useStudentDataFirebase({ currentUser, setStudents, setGoalTemplates, setSessions, setLoading, setSessionsLoading, setError, toast, addErrorLog });
+  const localActions = useStudentDataLocal({ currentUser, students, setStudents, goalTemplates, setGoalTemplates, sessions, setSessions, toast });
   
   const dataActions = useMemo(() => isFirebaseDBAvailable ? firebaseActions : localActions, [isFirebaseDBAvailable, firebaseActions, localActions]);
   
