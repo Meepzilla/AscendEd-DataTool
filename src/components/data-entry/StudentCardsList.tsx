@@ -1,10 +1,10 @@
-
 'use client';
 
 import React, { lazy, Suspense } from 'react';
 import type { Student, StudentSessionState, Goal, SessionGoalData } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
+import { MAX_STUDENTS_DATA_ENTRY } from '@/lib/appConstants';
 
 const StudentDataCard = lazy(() => import('@/components/forms/StudentDataCard'));
 
@@ -60,7 +60,7 @@ const StudentCardsList: React.FC<StudentCardsListProps> = ({
   const activeStudents = students.filter(s => !s.isArchived);
 
   return (
-    <div className="flex flex-row gap-6 items-start py-4 px-1">
+    <div className="flex flex-row gap-6 items-start py-4 px-1 min-h-full">
       {dataEntrySelectedStudentIds.map((studentId, slotIndex) => {
         const student = students.find(s => s.id === studentId);
         const state = dataEntryStudentSessionStates[studentId];
@@ -98,7 +98,7 @@ const StudentCardsList: React.FC<StudentCardsListProps> = ({
         );
       })}
 
-      {dataEntrySelectedStudentIds.length < activeStudents.length && (
+      {dataEntrySelectedStudentIds.length < activeStudents.length && dataEntrySelectedStudentIds.length < MAX_STUDENTS_DATA_ENTRY && (
         <Button
           variant="outline"
           onClick={addStudentSlot}

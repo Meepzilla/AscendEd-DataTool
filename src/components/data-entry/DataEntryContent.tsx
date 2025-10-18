@@ -224,7 +224,7 @@ export default function DataEntryContent() {
         </div>
 
         <div className="flex-grow min-h-0">
-          <ScrollArea className="h-full pb-20"> {/* Reduced padding-bottom */}
+          <ScrollArea className="h-full pb-4" type="always">
             <Suspense fallback={<div>Loading student cards...</div>}>
               <StudentCardsList
                 dataEntrySelectedStudentIds={dataEntrySelectedStudentIds}
@@ -257,12 +257,10 @@ export default function DataEntryContent() {
         {dataEntrySelectedStudentIds.length > 0 && (
             <div className="sticky bottom-0 left-0 right-0 z-10 bg-background/95 backdrop-blur-sm">
                 <div className="flex justify-between items-center gap-2 p-2 border-t">
-                    {/* Floating controls for larger screens */}
                     <div className="hidden sm:block">
                       <TouchControls />
                     </div>
                     
-                    {/* Inline controls for smaller screens */}
                     <div className="sm:hidden">
                       <TouchControls />
                     </div>
