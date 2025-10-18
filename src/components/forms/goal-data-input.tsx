@@ -52,7 +52,7 @@ export default function GoalDataInputComponent({
     if (isArchived) return;
 
     if (isLocked) {
-      fire(e.currentTarget);
+      fire(e.currentTarget as any);
       return;
     }
     callback();
@@ -109,9 +109,13 @@ export default function GoalDataInputComponent({
         actualPerformancePct = totalOpportunities > 0 ? (correct / totalOpportunities) * 100 : 0;
         break;
       case 'FLUENCY_SYLLABLE_STUTTER':
-        const totalSyllables = Number(data.totalSyllables || 0);
+        const initialTotalSyllables = Number(data.totalSyllables || 0);
         const stutteredSyllables = Number(data.stutteredSyllables || 0);
-        correct = Math.max(0, totalSyllables - stutteredSyllables);
+        const blocks = Number(data.blocks || 0);
+        const repetitions = Number(data.repetitions || 0);
+        const totalDysfluencies = stutteredSyllables + blocks + repetitions;
+        const totalSyllables = initialTotalSyllables + blocks + repetitions;
+        correct = Math.max(0, totalSyllables - totalDysfluencies);
         totalOpportunities = totalSyllables;
         actualPerformancePct = totalOpportunities > 0 ? (correct / totalOpportunities) * 100 : 0;
         break;
@@ -729,7 +733,7 @@ export default function GoalDataInputComponent({
             <FormLabel>Prompt Levels</FormLabel>
             <div className="grid grid-cols-3 gap-1.5 mt-0.5">
               {PROMPT_TYPES.map(pt => {
-                const hotkey = Object.keys(PROMPT_HOTKEY_MAP).find(k => PROMPT_HOTKEY_MAP[k] === pt);
+                const hotkey = Object.keys(PROMPT_HOTKEY_MAP).find(k => PROMPT_HOTKEY_MAP[k as keyof typeof PROMPT_HOTKEY_MAP] === pt);
                 return (
                     <Button
                         key={pt}
@@ -756,7 +760,7 @@ export default function GoalDataInputComponent({
                                 onChange(pt, { ...data, [pt]: newPromptValue });
                             })
                         }}
-                        title={`Click to increment ${pt}, Right-click to decrement. ${hotkey ? `Hotkeys: ${hotkey} / Alt+${hotkey}` : ''}`}
+                        title={`Click to increment ${pt}, Right-click to decrement. ${hotkey ? `Hotkey: ${hotkey}` : ''}`}
                         disabled={isArchived}
                     >
                         {PROMPT_ABBREVIATIONS[pt]}: {Number(data[pt] || 0)}
@@ -777,5 +781,7 @@ const FormItem: React.FC<{children: React.ReactNode, className?: string}> = ({ c
 const FormLabel: React.FC<{children: React.ReactNode, htmlFor?: string}> = ({ children, htmlFor }) => (
   <Label htmlFor={htmlFor} className="text-xs font-medium text-muted-foreground">{children}</Label>
 );
+
+    
 
     
