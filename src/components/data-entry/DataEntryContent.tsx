@@ -57,36 +57,47 @@ export default function DataEntryContent() {
 
   useEffect(() => {
     setStudentSessionStates(prevStates => {
-      const newStates: Record<string, StudentSessionState> = {};
-      let stateChanged = false;
-      
-      students.forEach(student => {
-        const existingState = prevStates[student.id];
-        const goalsAreDifferent = !existingState || JSON.stringify(existingState.originalGoalHeaders) !== JSON.stringify(student.goals);
+        const newStates: Record<string, StudentSessionState> = {};
+        
+        students.forEach(student => {
+            const existingState = prevStates[student.id];
+            const goalsAreDifferent = !existingState || JSON.stringify(existingState.originalGoalHeaders) !== JSON.stringify(student.goals);
 
-        if (goalsAreDifferent) {
-          stateChanged = true;
-          const initialGoalData: Record<string, SessionGoalData['data']> = {};
-          student.goals.forEach(goal => {
-            initialGoalData[goal.id] = (existingState?.goalData?.[goal.id]) || JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type] || {}));
-          });
-          newStates[student.id] = {
-            studentId: student.id,
-            studentName: student.name,
-            activity: existingState?.activity || '',
-            notes: existingState?.notes || '',
-            originalGoalHeaders: student.goals,
-            goalData: initialGoalData,
-          };
-        } else {
-          newStates[student.id] = existingState;
+            if (goalsAreDifferent) {
+                const initialGoalData: Record<string, SessionGoalData['data']> = {};
+                student.goals.forEach(goal => {
+                    // Preserve existing data for a goal if it's still present, otherwise initialize
+                    initialGoalData[goal.id] = (existingState?.goalData?.[goal.id]) || JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type] || {}));
+                });
+                newStates[student.id] = {
+                    studentId: student.id,
+                    studentName: student.name,
+                    activity: existingState?.activity || '',
+                    notes: existingState?.notes || '',
+                    originalGoalHeaders: student.goals,
+                    goalData: initialGoalData,
+                };
+            } else {
+                newStates[student.id] = existingState;
+            }
+        });
+    
+        // Check if a student was removed
+        const newStudentIds = new Set(students.map(s => s.id));
+        Object.keys(prevStates).forEach(studentId => {
+            if (!newStudentIds.has(studentId)) {
+                // The student has been removed, so we don't need to carry over their state.
+                // This part of the logic is implicitly handled by building newStates from the current `students` list.
+            }
+        });
+
+        // Only update state if there's a meaningful change to avoid loops.
+        // A simple JSON.stringify is a bit heavy but effective for deep comparison here.
+        if (JSON.stringify(newStates) !== JSON.stringify(prevStates)) {
+             return newStates;
         }
-      });
-  
-      if (stateChanged || Object.keys(newStates).length !== Object.keys(prevStates).length) {
-        return newStates;
-      }
-      return prevStates;
+
+        return prevStates;
     });
   }, [students]);
 
@@ -487,7 +498,7 @@ export default function DataEntryContent() {
                   dataEntryFocusedStudentSlotIndex={focusedStudentSlotIndex}
                   availableStudentsForDropdown={availableStudentsForDropdown}
                   dataEntryShowArchivedByStudentId={showArchivedByStudentId}
-                  setDataEntryShowArchivedByStudentId={setShowArchivedByStudentId}
+                  setDataEntryShowArchivedByStudentId={setDataEntryShowArchivedByStudentId}
                   dataEntryVisibleGoalCountByStudentId={visibleGoalCountByStudentId}
                   setDataEntryVisibleGoalCountByStudentId={setVisibleGoalCountByStudentId}
                   dataEntryFocusedGoalIndexByStudentId={focusedGoalIndexByStudentId}
