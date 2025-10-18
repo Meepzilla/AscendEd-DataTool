@@ -295,7 +295,7 @@ export default function DataEntryContent() {
             size="icon"
             onClick={() => handleScroll('left')}
             className={cn(
-              "absolute left-0 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity",
+              "absolute left-0 top-1/2 -translate-y-1/2 z-30 h-10 w-10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity",
               !canScrollLeft && "hidden"
             )}
             title="Scroll Left"
@@ -336,7 +336,7 @@ export default function DataEntryContent() {
             size="icon"
             onClick={() => handleScroll('right')}
             className={cn(
-              "absolute right-0 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity",
+              "absolute right-0 top-1/2 -translate-y-1/2 z-30 h-10 w-10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity",
               !canScrollRight && "hidden"
             )}
             title="Scroll Right"

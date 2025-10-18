@@ -77,7 +77,7 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
     <Card
       id={`student-card-slot-${slotIndex}`}
       className={cn(
-        'flex flex-col transition-all duration-300 ease-in-out shadow-md flex-shrink-0 h-full w-[350px] sm:w-[450px]',
+        'relative flex flex-col transition-all duration-300 ease-in-out shadow-md flex-shrink-0 h-full w-[350px] sm:w-[450px]',
         isStudentFocused && 'ring-2 ring-primary ring-offset-2 shadow-xl'
       )}
       onClick={() => setDataEntryFocusedStudentSlotIndex(slotIndex)}
@@ -251,5 +251,3 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
 };
 
 export default StudentDataCard;
-
-    
