@@ -17,6 +17,7 @@ const GoalPerformanceSankey = lazy(() => import('./analysis-charts/GoalPerforman
 const AiSummary = lazy(() => import('./analysis-charts/AiSummary'));
 const SyllableFluencyChart = lazy(() => import('./analysis-charts/SyllableFluencyChart'));
 const DysfluencyTypesChart = lazy(() => import('./analysis-charts/DysfluencyTypesChart'));
+const DataSummary = lazy(() => import('./analysis-charts/DataSummary'));
 
 
 // Helper to transform session data for charts
@@ -60,9 +61,9 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
         case 'LANGUAGE_COMPREHENSION':
         case 'LANGUAGE_EXPRESSION':
         case 'PHONOLOGICAL_PROCESSES':
-        case 'SEQUENCED_TRIALS':
-            currentGoalCorrect = Number(data.correct || data.questionsCorrect || data.successfulResponses || data.correctProductions || data.successfulAttempts) || 0;
-            currentGoalIncorrect = Number(data.incorrect || data.questionsIncorrect || data.unsuccessfulResponses || data.incorrectProductions || data.failedAttempts) || 0;
+        case 'AAC':
+            currentGoalCorrect = Number(data.correct || data.questionsCorrect || data.successfulResponses || data.correctProductions || 0);
+            currentGoalIncorrect = Number(data.incorrect || data.questionsIncorrect || data.unsuccessfulResponses || data.incorrectProductions || 0);
             currentGoalApproximate = Number(data.approximate) || 0;
             break;
         case 'DISCRETE_TRIALS':
@@ -71,6 +72,11 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
                 currentGoalIncorrect = data.trials.filter((t: TrialStatus) => t === 'incorrect').length;
                 currentGoalApproximate = data.trials.filter((t: TrialStatus) => t === 'approximate').length;
             }
+            break;
+        case 'SEQUENCED_TRIALS':
+            currentGoalCorrect = Number(data.successfulAttempts || 0);
+            currentGoalIncorrect = Number(data.failedAttempts || 0);
+            currentGoalApproximate = Number(data.approximate || 0);
             break;
         case 'FLUENCY_SYLLABLE_STUTTER':
             const currentTotalSyllables = Number(data.totalSyllables) || 0;
@@ -170,6 +176,12 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, select
 
   return (
     <div className="space-y-6">
+       <Suspense fallback={<ChartSuspenseFallback />}>
+            <DataSummary studentSessions={studentSessions} selectedStudent={selectedStudent} selectedGoalId={selectedGoalId} chartData={chartData} />
+       </Suspense>
+       <Suspense fallback={<ChartSuspenseFallback />}>
+            <AiSummary studentSessions={studentSessions} selectedStudent={selectedStudent} selectedGoalId={selectedGoalId} chartData={chartData} />
+        </Suspense>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Suspense fallback={<ChartSuspenseFallback />}>
           <ProgressOverTimeChart chartData={chartData} selectedGoalId={selectedGoalId} activeStudentGoals={activeStudentGoals} />
@@ -203,9 +215,7 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, select
         <Suspense fallback={<ChartSuspenseFallback />}>
             <GoalPerformanceSankey studentSessions={studentSessions} activeStudentGoals={activeStudentGoals} selectedGoalId={selectedGoalId} />
         </Suspense>
-        <Suspense fallback={<ChartSuspenseFallback />}>
-            <AiSummary studentSessions={studentSessions} selectedStudent={selectedStudent} selectedGoalId={selectedGoalId} chartData={chartData} />
-        </Suspense>
+       
       </div>
     </div>
   );
