@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/use-auth';
 import AppHeader from '@/components/layout/app-header';
 import AppFooter from '@/components/layout/app-footer';
 import StudentSidebar from '@/components/layout/student-sidebar';
-import { SidebarProvider, SidebarInset, SidebarTrigger, SidebarRail } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarInset, SidebarRail } from '@/components/ui/sidebar';
 import { useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts';
 import { Toaster } from '@/components/ui/toaster';
 
@@ -72,15 +72,19 @@ export default function AppLayout({
       <div className="flex min-h-screen flex-col bg-background">
         <AppHeader />
         <div className="flex flex-1 overflow-hidden">
-          {isSidebarEnabled && (
+          {isSidebarEnabled ? (
             <>
               <StudentSidebar />
               <SidebarRail />
+              <SidebarInset className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+                {children}
+              </SidebarInset>
             </>
+          ) : (
+            <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+              {children}
+            </main>
           )}
-          <SidebarInset className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-            {children}
-          </SidebarInset>
         </div>
         <AppFooter />
       </div>
