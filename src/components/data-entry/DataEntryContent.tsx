@@ -223,8 +223,10 @@ export default function DataEntryContent() {
       updateScrollability(); // Initial check
       
       return () => {
-        observer.unobserve(container);
-        container.removeEventListener('scroll', updateScrollability);
+        if (container) {
+          observer.unobserve(container);
+          container.removeEventListener('scroll', updateScrollability);
+        }
       };
     }
   }, [dataEntrySelectedStudentIds, updateScrollability]);
@@ -386,5 +388,7 @@ export default function DataEntryContent() {
     </ConfettiProvider>
   );
 }
+
+    
 
     
