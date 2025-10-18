@@ -21,32 +21,6 @@ const StudentCardsList = lazy(() => import('@/components/data-entry/StudentCards
 const DataEntryHeaderCard = lazy(() => import('@/components/data-entry/DataEntryHeaderCard'));
 const SelectionModal = lazy(() => import('@/components/modals/selection-modal'));
 
-const getLocalStorageKey = (base: string, uid: string | undefined): string | null => {
-  if (!uid) return null;
-  return `ascended_de_v2_${uid}_${base}`;
-};
-
-const useStickyState = <T,>(key: string | null, defaultValue: T): [T, React.Dispatch<React.SetStateAction<T>>] => {
-  const [value, setValue] = useState<T>(() => {
-    if (typeof window === 'undefined' || !key) return defaultValue;
-    try {
-      const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item) : defaultValue;
-    } catch (error) {
-      return defaultValue;
-    }
-  });
-
-  useEffect(() => {
-    if (key) {
-      window.localStorage.setItem(key, JSON.stringify(value));
-    }
-  }, [key, value]);
-
-  return [value, setValue];
-};
-
-
 export default function DataEntryContent() {
   const {
     students,
@@ -62,26 +36,17 @@ export default function DataEntryContent() {
   const { toast } = useToast();
   
   const uid = currentUser?.uid;
-  const dateKey = getLocalStorageKey('date', uid);
-  const timeKey = getLocalStorageKey('time', uid);
-  const endTimeKey = getLocalStorageKey('endTime', uid);
-  const selectedIdsKey = getLocalStorageKey('selected_ids', uid);
-  const sessionStatesKey = getLocalStorageKey('session_states', uid);
-  const focusedSlotKey = getLocalStorageKey('focused_slot', uid);
-  const focusedGoalsKey = getLocalStorageKey('focused_goals', uid);
-  const visibleCountsKey = getLocalStorageKey('visible_counts', uid);
-  const showArchivedKey = getLocalStorageKey('show_archived', uid);
 
-  const [sessionDate, setSessionDate] = useStickyState<Date | undefined>(dateKey, undefined);
-  const [sessionTime, setSessionTime] = useStickyState<string>(timeKey, '');
-  const [sessionEndTime, setSessionEndTime] = useStickyState<string>(endTimeKey, '');
-  const [selectedStudentIds, setSelectedStudentIds] = useStickyState<string[]>(selectedIdsKey, []);
-  const [studentSessionStates, setStudentSessionStates] = useStickyState<Record<string, StudentSessionState>>(sessionStatesKey, {});
-  const [focusedStudentSlotIndex, setFocusedStudentSlotIndex] = useStickyState<number>(focusedSlotKey, 0);
-  const [focusedGoalIndexByStudentId, setFocusedGoalIndexByStudentId] = useStickyState<Record<string, number>>(focusedGoalsKey, {});
+  const [sessionDate, setSessionDate] = useState<Date | undefined>(undefined);
+  const [sessionTime, setSessionTime] = useState<string>('');
+  const [sessionEndTime, setSessionEndTime] = useState<string>('');
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const [studentSessionStates, setStudentSessionStates] = useState<Record<string, StudentSessionState>>({});
+  const [focusedStudentSlotIndex, setFocusedStudentSlotIndex] = useState<number>(0);
+  const [focusedGoalIndexByStudentId, setFocusedGoalIndexByStudentId] = useState<Record<string, number>>({});
   const [aiActivitySuggestions, setAiActivitySuggestions] = useState<Record<string, string[]>>({});
-  const [visibleGoalCountByStudentId, setVisibleGoalCountByStudentId] = useStickyState<Record<string, number>>(visibleCountsKey, {});
-  const [showArchivedByStudentId, setShowArchivedByStudentId] = useStickyState<Record<string, boolean>>(showArchivedKey, {});
+  const [visibleGoalCountByStudentId, setVisibleGoalCountByStudentId] = useState<Record<string, number>>({});
+  const [showArchivedByStudentId, setShowArchivedByStudentId] = useState<Record<string, boolean>>({});
 
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingAll, setIsSavingAll] = useState(false);
@@ -92,19 +57,17 @@ export default function DataEntryContent() {
 
   useEffect(() => {
     setStudentSessionStates(prevStates => {
-      const newStates = { ...prevStates };
+      const newStates: Record<string, StudentSessionState> = {};
       let stateChanged = false;
-  
+      
       students.forEach(student => {
-        const existingState = newStates[student.id];
-        // Deep comparison of goals can be heavy. A simpler check might be student.goals.length or stringify.
+        const existingState = prevStates[student.id];
         const goalsAreDifferent = !existingState || JSON.stringify(existingState.originalGoalHeaders) !== JSON.stringify(student.goals);
 
         if (goalsAreDifferent) {
           stateChanged = true;
           const initialGoalData: Record<string, SessionGoalData['data']> = {};
           student.goals.forEach(goal => {
-            // Preserve existing data if goal still exists, otherwise initialize.
             initialGoalData[goal.id] = (existingState?.goalData?.[goal.id]) || JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type] || {}));
           });
           newStates[student.id] = {
@@ -115,15 +78,17 @@ export default function DataEntryContent() {
             originalGoalHeaders: student.goals,
             goalData: initialGoalData,
           };
+        } else {
+          newStates[student.id] = existingState;
         }
       });
   
-      if (stateChanged) {
+      if (stateChanged || Object.keys(newStates).length !== Object.keys(prevStates).length) {
         return newStates;
       }
       return prevStates;
     });
-  }, [students, setStudentSessionStates]);
+  }, [students]);
 
 
   useEffect(() => {
