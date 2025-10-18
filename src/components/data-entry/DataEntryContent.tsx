@@ -16,7 +16,7 @@ import { ScrollArea } from '../ui/scroll-area';
 
 const ConfirmationModal = lazy(() => import('@/components/modals/confirmation-modal'));
 const StudentCardsList = lazy(() => import('@/components/data-entry/StudentCardsList'));
-const DataEntryHeaderCard = lazy(() => import('@/components/modals/DataEntryHeaderCard'));
+const DataEntryHeaderCard = lazy(() => import('@/components/data-entry/DataEntryHeaderCard'));
 const SelectionModal = lazy(() => import('@/components/modals/selection-modal'));
 
 export default function DataEntryContent() {
