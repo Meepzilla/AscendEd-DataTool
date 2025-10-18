@@ -1,10 +1,10 @@
 
 'use client';
 
-import React, { lazy, useState, useEffect, useCallback, Suspense, useMemo } from 'react';
+import React, { lazy, useState, useEffect, useCallback, Suspense, useMemo, useRef } from 'react';
 import { useStudentData } from '@/hooks/use-student-data';
 import { Button } from '@/components/ui/button';
-import { Save, RotateCcw, PlusCircle } from 'lucide-react';
+import { Save, RotateCcw, PlusCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
 import { Info } from 'lucide-react';
@@ -64,6 +64,9 @@ export default function DataEntryContent() {
   const { toast } = useToast();
   const [isHeaderCardCollapsed, setIsHeaderCardCollapsed] = useState(false);
   const [isResetConfirmationOpen, setIsResetConfirmationOpen] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
   const activeStudents = useMemo(() => students.filter(s => !s.isArchived), [students]);
 
@@ -211,6 +214,38 @@ export default function DataEntryContent() {
     setSelectionModalType(null);
   };
 
+  // Scroll functionality
+  const updateScrollability = useCallback(() => {
+    const container = scrollContainerRef.current;
+    if (container) {
+      setCanScrollLeft(container.scrollLeft > 0);
+      setCanScrollRight(container.scrollLeft < container.scrollWidth - container.clientWidth);
+    }
+  }, []);
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (container) {
+      updateScrollability();
+      const observer = new ResizeObserver(updateScrollability);
+      observer.observe(container);
+      container.addEventListener('scroll', updateScrollability);
+
+      return () => {
+        observer.unobserve(container);
+        container.removeEventListener('scroll', updateScrollability);
+      };
+    }
+  }, [updateScrollability, dataEntrySelectedStudentIds]);
+
+  const handleScroll = (direction: 'left' | 'right') => {
+    const container = scrollContainerRef.current;
+    if (container) {
+      const scrollAmount = container.clientWidth * 0.8;
+      container.scrollBy({ left: direction === 'left' ? -scrollAmount : scrollAmount, behavior: 'smooth' });
+    }
+  };
+
   return (
     <ConfettiProvider>
       <div className="flex flex-col h-full">
@@ -254,8 +289,21 @@ export default function DataEntryContent() {
           </Suspense>
         </div>
 
-        <div className="flex-grow min-h-0">
-          <ScrollArea className="h-full w-full" orientation="horizontal">
+        <div className="flex-grow min-h-0 relative group">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => handleScroll('left')}
+            className={cn(
+              "absolute left-0 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity",
+              !canScrollLeft && "hidden"
+            )}
+            title="Scroll Left"
+          >
+            <ChevronLeft className="h-6 w-6" />
+          </Button>
+
+          <ScrollArea ref={scrollContainerRef} className="h-full w-full" orientation="horizontal">
             <Suspense fallback={<div>Loading student cards...</div>}>
               <StudentCardsList
                   dataEntrySelectedStudentIds={dataEntrySelectedStudentIds}
@@ -283,6 +331,18 @@ export default function DataEntryContent() {
               />
             </Suspense>
           </ScrollArea>
+           <Button
+            variant="outline"
+            size="icon"
+            onClick={() => handleScroll('right')}
+            className={cn(
+              "absolute right-0 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity",
+              !canScrollRight && "hidden"
+            )}
+            title="Scroll Right"
+          >
+            <ChevronRight className="h-6 w-6" />
+          </Button>
         </div>
         
         {dataEntrySelectedStudentIds.length > 0 && (
