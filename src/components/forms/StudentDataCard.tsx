@@ -123,7 +123,7 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
           </div>
         </div>
       </CardHeader>
-      <ScrollArea className="flex-grow">
+      <ScrollArea className="flex-grow max-h-[730px]">
         <CardContent className="p-3 space-y-3">
           <div>
             <Label htmlFor={`activity-${student.id}`}>Activity</Label>
@@ -251,3 +251,5 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
 };
 
 export default StudentDataCard;
+
+    
