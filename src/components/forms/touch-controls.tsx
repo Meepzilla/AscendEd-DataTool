@@ -4,53 +4,64 @@
 import React, { useMemo, useState } from 'react';
 import { Users, Target, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useStudentData } from '@/hooks/use-student-data';
 import SelectionModal from '@/components/modals/selection-modal';
 import { cn } from '@/lib/utils';
 import { useSidebar } from '@/components/ui/sidebar';
+import type { Student, StudentSessionState, Goal } from '@/lib/types';
 
-export default function TouchControls() {
-  const {
-    dataEntryActiveStudentsInSlots,
-    dataEntryStudentSessionStates,
-    dataEntryFocusedStudentSlotIndex,
-    setDataEntryFocusedStudentSlotIndex,
-    dataEntryFocusedGoalIndexByStudentId,
-    setDataEntryFocusedGoalIndexByStudentId,
-    dataEntryShowArchivedByStudentId,
-    selectionModalType,
-    setSelectionModalType,
-  } = useStudentData();
+interface TouchControlsProps {
+  activeStudentsInSlots: Student[];
+  studentSessionStates: Record<string, StudentSessionState>;
+  focusedStudentSlotIndex: number;
+  setFocusedStudentSlotIndex: (index: number) => void;
+  focusedGoalIndexByStudentId: Record<string, number>;
+  setFocusedGoalIndexByStudentId: React.Dispatch<React.SetStateAction<Record<string, number>>>;
+  showArchivedByStudentId: Record<string, boolean>;
+  selectionModalType: 'student' | 'goal' | null;
+  setSelectionModalType: (type: 'student' | 'goal' | null) => void;
+}
+
+
+export default function TouchControls({
+  activeStudentsInSlots,
+  studentSessionStates,
+  focusedStudentSlotIndex,
+  setFocusedStudentSlotIndex,
+  focusedGoalIndexByStudentId,
+  setFocusedGoalIndexByStudentId,
+  showArchivedByStudentId,
+  selectionModalType,
+  setSelectionModalType,
+}: TouchControlsProps) {
   const { state: sidebarState } = useSidebar();
 
-  const [isExpanded, setIsExpanded] = useState(false);
-
   const focusedStudentId = useMemo(() => {
-    if (dataEntryFocusedStudentSlotIndex >= 0 && dataEntryFocusedStudentSlotIndex < dataEntryActiveStudentsInSlots.length) {
-      return dataEntryActiveStudentsInSlots[dataEntryFocusedStudentSlotIndex]?.id;
+    if (focusedStudentSlotIndex >= 0 && focusedStudentSlotIndex < activeStudentsInSlots.length) {
+      return activeStudentsInSlots[focusedStudentSlotIndex]?.id;
     }
     return null;
-  }, [dataEntryFocusedStudentSlotIndex, dataEntryActiveStudentsInSlots]);
+  }, [focusedStudentSlotIndex, activeStudentsInSlots]);
 
   const focusedStudentState = useMemo(() => {
-    return focusedStudentId ? dataEntryStudentSessionStates[focusedStudentId] : null;
-  }, [focusedStudentId, dataEntryStudentSessionStates]);
+    return focusedStudentId ? studentSessionStates[focusedStudentId] : null;
+  }, [focusedStudentId, studentSessionStates]);
 
   const visibleGoals = useMemo(() => {
     if (!focusedStudentState?.originalGoalHeaders || !focusedStudentId) return [];
-    const showArchived = dataEntryShowArchivedByStudentId[focusedStudentId] || false;
+    const showArchived = showArchivedByStudentId[focusedStudentId] || false;
     return focusedStudentState.originalGoalHeaders.filter(g => !g.isArchived || showArchived);
-  }, [focusedStudentState, focusedStudentId, dataEntryShowArchivedByStudentId]);
+  }, [focusedStudentState, focusedStudentId, showArchivedByStudentId]);
 
   const studentSlots = useMemo(() => {
-    return dataEntryActiveStudentsInSlots.map((student, index) => ({
+    if (!activeStudentsInSlots) return [];
+    return activeStudentsInSlots.map((student, index) => ({
       id: index.toString(),
       name: student.name,
     }));
-  }, [dataEntryActiveStudentsInSlots]);
+  }, [activeStudentsInSlots]);
 
   const handleStudentSelect = (indexStr: string) => {
-    setDataEntryFocusedStudentSlotIndex(parseInt(indexStr, 10));
+    setFocusedStudentSlotIndex(parseInt(indexStr, 10));
     setSelectionModalType(null);
   };
 
@@ -58,20 +69,20 @@ export default function TouchControls() {
     if (!focusedStudentId) return;
     const goalIndex = visibleGoals.findIndex(g => g.id === goalId);
     if (goalIndex !== -1) {
-      setDataEntryFocusedGoalIndexByStudentId(prev => ({ ...prev, [focusedStudentId]: goalIndex }));
+      setFocusedGoalIndexByStudentId(prev => ({ ...prev, [focusedStudentId]: goalIndex }));
     }
     setSelectionModalType(null);
   };
   
   const selectedGoalId = useMemo(() => {
     if (focusedStudentId && visibleGoals.length > 0) {
-      const focusedIndex = dataEntryFocusedGoalIndexByStudentId[focusedStudentId] ?? 0;
+      const focusedIndex = focusedGoalIndexByStudentId[focusedStudentId] ?? 0;
       if (focusedIndex < visibleGoals.length) {
          return visibleGoals[focusedIndex]?.id;
       }
     }
     return undefined;
-  }, [focusedStudentId, visibleGoals, dataEntryFocusedGoalIndexByStudentId]);
+  }, [focusedStudentId, visibleGoals, focusedGoalIndexByStudentId]);
 
   if (sidebarState === 'collapsed') {
     return (
@@ -109,7 +120,7 @@ export default function TouchControls() {
           type="button"
           variant="outline"
           onClick={() => setSelectionModalType('student')}
-          disabled={studentSlots.length <= 1}
+          disabled={!studentSlots || studentSlots.length <= 1}
           size="sm"
           className="w-full justify-start"
           aria-label="Select Student"
@@ -123,7 +134,7 @@ export default function TouchControls() {
           type="button"
           variant="outline"
           onClick={() => setSelectionModalType('goal')}
-          disabled={visibleGoals.length <= 1}
+          disabled={!visibleGoals || visibleGoals.length <= 1}
           size="sm"
           className="w-full justify-start"
           aria-label="Select Goal"

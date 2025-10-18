@@ -57,9 +57,9 @@ export default function DataEntryContent() {
     getSessionsForStudent,
     isStudentAccessLocked,
     setIsStudentAccessLocked,
+    addErrorLog,
   } = useStudentData();
   const { toast } = useToast();
-  const { addErrorLog } = useStudentData();
   
   const uid = currentUser?.uid;
   const dateKey = getLocalStorageKey('date', uid);
@@ -486,6 +486,11 @@ export default function DataEntryContent() {
       return newSelectedIds;
     });
   }, [focusedStudentSlotIndex, setSelectedStudentIds, setFocusedStudentSlotIndex]);
+  
+  const activeStudentsInSlots = useMemo(() => selectedStudentIds
+      .map(id => students.find(s => s.id === id))
+      .filter((s): s is Student => !!s), [selectedStudentIds, students]);
+
 
   return (
     <ConfettiProvider>
@@ -594,11 +599,31 @@ export default function DataEntryContent() {
             <div className="sticky bottom-0 left-0 right-0 z-10 bg-background/95 backdrop-blur-sm mt-auto">
                 <div className="flex justify-between items-center gap-2 p-2 border-t">
                     <div className="hidden sm:block">
-                      <TouchControls />
+                      <TouchControls
+                        activeStudentsInSlots={activeStudentsInSlots}
+                        studentSessionStates={studentSessionStates}
+                        focusedStudentSlotIndex={focusedStudentSlotIndex}
+                        setFocusedStudentSlotIndex={setFocusedStudentSlotIndex}
+                        focusedGoalIndexByStudentId={focusedGoalIndexByStudentId}
+                        setFocusedGoalIndexByStudentId={setFocusedGoalIndexByStudentId}
+                        showArchivedByStudentId={showArchivedByStudentId}
+                        selectionModalType={selectionModalType}
+                        setSelectionModalType={setSelectionModalType}
+                      />
                     </div>
                     
                     <div className="sm:hidden">
-                      <TouchControls />
+                       <TouchControls
+                        activeStudentsInSlots={activeStudentsInSlots}
+                        studentSessionStates={studentSessionStates}
+                        focusedStudentSlotIndex={focusedStudentSlotIndex}
+                        setFocusedStudentSlotIndex={setFocusedStudentSlotIndex}
+                        focusedGoalIndexByStudentId={focusedGoalIndexByStudentId}
+                        setFocusedGoalIndexByStudentId={setFocusedGoalIndexByStudentId}
+                        showArchivedByStudentId={showArchivedByStudentId}
+                        selectionModalType={selectionModalType}
+                        setSelectionModalType={setSelectionModalType}
+                      />
                     </div>
 
                     <div className="flex gap-2 ml-auto">
