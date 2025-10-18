@@ -50,7 +50,6 @@ export default function DataEntryContent() {
     handleGoalDataChange,
     handleMoveGoal,
     addStudentSlot,
-    removeStudentSlot,
     isStudentAccessLocked,
     setIsStudentAccessLocked,
     selectionModalType,
@@ -123,7 +122,7 @@ export default function DataEntryContent() {
             }
         }
     }
-  }, [dataEntryFocusedStudentSlotIndex, dataEntrySelectedStudentIds, dataEntryShowArchivedByStudentId, dataEntryFocusedGoalIndexByStudentId, dataEntryStudentSessionStates]);
+  }, [dataEntryFocusedStudentSlotIndex, dataEntrySelectedStudentIds, dataEntryShowArchivedByStudentId, dataEntryFocusedGoalIndexByStudentId[dataEntrySelectedStudentIds[dataEntryFocusedStudentSlotIndex]]]);
 
 
   const handleStudentSelect = useCallback((studentId: string, index: number) => {
@@ -207,10 +206,8 @@ export default function DataEntryContent() {
   const updateScrollability = useCallback(() => {
     const container = scrollContainerRef.current;
     if (container) {
-      const canScrollLeftNow = container.scrollLeft > 0;
-      const canScrollRightNow = container.scrollLeft < container.scrollWidth - container.clientWidth - 1;
-      setCanScrollLeft(canScrollLeftNow);
-      setCanScrollRight(canScrollRightNow);
+      setCanScrollLeft(container.scrollLeft > 0);
+      setCanScrollRight(container.scrollLeft < container.scrollWidth - container.clientWidth);
     }
   }, []);
 
@@ -220,7 +217,9 @@ export default function DataEntryContent() {
       const observer = new ResizeObserver(updateScrollability);
       observer.observe(container);
       container.addEventListener('scroll', updateScrollability);
-      updateScrollability(); // Initial check
+      
+      // Call explicitly to set initial state
+      updateScrollability();
       
       return () => {
         if (container) {
@@ -239,6 +238,25 @@ export default function DataEntryContent() {
       container.scrollBy({ left: direction === 'left' ? -scrollAmount : scrollAmount, behavior: 'smooth' });
     }
   };
+  
+  const removeStudentSlot = useCallback((indexToRemove: number) => {
+    setDataEntrySelectedStudentIds(prev => {
+      const currentFocusedId = prev[dataEntryFocusedStudentSlotIndex];
+      const newSelectedIds = prev.filter((_, i) => i !== indexToRemove);
+
+      if (newSelectedIds.length === 0) {
+          setDataEntryFocusedStudentSlotIndex(0);
+      } else {
+          let newFocusIndex = newSelectedIds.indexOf(currentFocusedId);
+          if (newFocusIndex === -1) {
+              newFocusIndex = Math.min(indexToRemove, newSelectedIds.length - 1);
+              newFocusIndex = Math.max(0, newFocusIndex);
+          }
+          setDataEntryFocusedStudentSlotIndex(newFocusIndex);
+      }
+      return newSelectedIds;
+    });
+  }, [dataEntryFocusedStudentSlotIndex, setDataEntrySelectedStudentIds, setDataEntryFocusedStudentSlotIndex]);
 
   return (
     <ConfettiProvider>
@@ -300,7 +318,7 @@ export default function DataEntryContent() {
           <ScrollArea 
             ref={scrollContainerRef} 
             className="h-full w-full" 
-            orientation="horizontal"
+            onScroll={updateScrollability}
           >
             <Suspense fallback={<div>Loading student cards...</div>}>
               <StudentCardsList

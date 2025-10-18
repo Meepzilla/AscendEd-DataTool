@@ -154,21 +154,22 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   }, [dataEntryState.dataEntrySelectedStudentIds, students]);
 
   const removeStudentSlot = useCallback((indexToRemove: number) => {
-    const { dataEntrySelectedStudentIds, dataEntryFocusedStudentSlotIndex } = dataEntryState;
-    const currentFocusedId = dataEntrySelectedStudentIds[dataEntryFocusedStudentSlotIndex];
-    const newSelectedIds = dataEntrySelectedStudentIds.filter((_, i) => i !== indexToRemove);
-    dataEntryState.setDataEntrySelectedStudentIds(newSelectedIds);
+    dataEntryState.setDataEntrySelectedStudentIds(prev => {
+      const currentFocusedId = prev[dataEntryState.dataEntryFocusedStudentSlotIndex];
+      const newSelectedIds = prev.filter((_, i) => i !== indexToRemove);
 
-    if (newSelectedIds.length === 0) {
-        dataEntryState.setDataEntryFocusedStudentSlotIndex(0);
-    } else {
-        let newFocusIndex = newSelectedIds.indexOf(currentFocusedId);
-        if (newFocusIndex === -1) {
-            newFocusIndex = Math.min(indexToRemove, newSelectedIds.length - 1);
-            newFocusIndex = Math.max(0, newFocusIndex);
-        }
-        dataEntryState.setDataEntryFocusedStudentSlotIndex(newFocusIndex);
-    }
+      if (newSelectedIds.length === 0) {
+          dataEntryState.setDataEntryFocusedStudentSlotIndex(0);
+      } else {
+          let newFocusIndex = newSelectedIds.indexOf(currentFocusedId);
+          if (newFocusIndex === -1) {
+              newFocusIndex = Math.min(indexToRemove, newSelectedIds.length - 1);
+              newFocusIndex = Math.max(0, newFocusIndex);
+          }
+          dataEntryState.setDataEntryFocusedStudentSlotIndex(newFocusIndex);
+      }
+      return newSelectedIds;
+    });
   }, [dataEntryState]);
 
   const removeFocusedStudentSlot = useCallback(() => {
