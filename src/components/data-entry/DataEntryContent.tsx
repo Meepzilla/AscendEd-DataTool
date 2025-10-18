@@ -12,7 +12,9 @@ import type { Student, StudentSessionState, SessionGoalData } from '@/lib/types'
 import TouchControls from '@/components/forms/touch-controls';
 import { ConfettiProvider } from '@/hooks/use-confetti';
 import { ScrollArea } from '../ui/scroll-area';
-import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
+import { GOAL_TYPE_FIELDS, GOAL_TYPES } from '@/lib/goal-constants';
+import { PROMPT_HOTKEY_MAP } from '@/lib/promptConstants';
+
 
 const ConfirmationModal = lazy(() => import('@/components/modals/confirmation-modal'));
 const StudentCardsList = lazy(() => import('@/components/data-entry/StudentCardsList'));
@@ -35,7 +37,7 @@ export default function DataEntryContent() {
     focusedStudentSlotIndex,
     setFocusedStudentSlotIndex,
     handleInputChange,
-    handleGoalDataChange,
+    handleGoalDataChange: contextHandleGoalDataChange,
     getActivitySuggestions,
     aiActivitySuggestions,
     isAiLoading,
@@ -56,6 +58,67 @@ export default function DataEntryContent() {
   const [isResetConfirmationOpen, setIsResetConfirmationOpen] = useState(false);
   const [selectionModalType, setSelectionModalType] = useState<'student' | 'goal' | null>(null);
 
+  const activeStudents = useMemo(() => students.filter(s => !s.isArchived), [students]);
+
+  useEffect(() => {
+    // This effect synchronizes the studentSessionStates with the global students list.
+    setStudentSessionStates(prevStates => {
+        const newStates: Record<string, StudentSessionState> = {};
+        let statesChanged = false;
+
+        students.forEach(student => {
+            const existingState = prevStates[student.id];
+            const studentGoals = student.goals || [];
+
+            // If state doesn't exist, it's a new student, so we create it.
+            if (!existingState) {
+                statesChanged = true;
+                const initialGoalData: Record<string, SessionGoalData['data']> = {};
+                studentGoals.forEach(goal => {
+                    initialGoalData[goal.id] = JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type] || {}));
+                });
+                newStates[student.id] = {
+                    studentId: student.id,
+                    studentName: student.name,
+                    activity: '', notes: '',
+                    originalGoalHeaders: studentGoals,
+                    goalData: initialGoalData,
+                };
+            } else {
+                // If state exists, check if goals have changed.
+                const existingGoalIds = existingState.originalGoalHeaders.map(g => g.id).join(',');
+                const currentGoalIds = studentGoals.map(g => g.id).join(',');
+
+                if (existingGoalIds !== currentGoalIds) {
+                    statesChanged = true;
+                    const updatedGoalData = { ...existingState.goalData };
+                    // Add new goals, remove old ones
+                    studentGoals.forEach(goal => {
+                        if (!updatedGoalData[goal.id]) {
+                            updatedGoalData[goal.id] = JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type] || {}));
+                        }
+                    });
+                    newStates[student.id] = {
+                        ...existingState,
+                        originalGoalHeaders: studentGoals,
+                        goalData: updatedGoalData,
+                    };
+                } else {
+                    // No changes, keep existing state
+                    newStates[student.id] = existingState;
+                }
+            }
+        });
+
+        // Only update state if there was a meaningful change.
+        if (statesChanged || Object.keys(prevStates).length !== students.length) {
+            return newStates;
+        }
+        return prevStates;
+    });
+}, [students, setStudentSessionStates]);
+
+
   useEffect(() => {
     if (sessionTime === '') {
       const now = new Date();
@@ -66,7 +129,6 @@ export default function DataEntryContent() {
   }, [setSessionTime, setSessionEndTime, sessionTime]);
 
   useEffect(() => {
-    const activeStudents = students.filter(s => !s.isArchived);
     if (selectedStudentIds.length === 0 && activeStudents.length > 0) {
       let initialIdToSelect: string | undefined = undefined;
       if (studentFromContext && activeStudents.find(s => s.id === studentFromContext.id)) {
@@ -77,7 +139,7 @@ export default function DataEntryContent() {
         setFocusedStudentSlotIndex(0);
       }
     }
-  }, [students, studentFromContext, selectedStudentIds.length, setSelectedStudentIds, setFocusedStudentSlotIndex]);
+  }, [students, studentFromContext, selectedStudentIds.length, setSelectedStudentIds, setFocusedStudentSlotIndex, activeStudents]);
   
   const studentIdForEffect = selectedStudentIds[focusedStudentSlotIndex];
   const focusedGoalIndexForEffect = focusedGoalIndexByStudentId[studentIdForEffect];
@@ -270,18 +332,15 @@ export default function DataEntryContent() {
   }, [showArchivedByStudentId, setStudentSessionStates]);
 
   const addStudentSlot = useCallback(() => {
-    const activeStudents = students.filter(s => !s.isArchived);
-    setSelectedStudentIds(prevIds => {
-      const availableStudent = activeStudents.find(s => !prevIds.includes(s.id));
-      if (availableStudent) {
-        setFocusedStudentSlotIndex(prevIds.length);
-        return [...prevIds, availableStudent.id];
-      } else {
-        toast({ title: "Info", description: "No more unique available students to add.", variant: "default" });
-        return prevIds;
-      }
-    });
-  }, [students, toast, setSelectedStudentIds, setFocusedStudentSlotIndex]);
+    const availableStudent = activeStudents.find(s => !selectedStudentIds.includes(s.id));
+    if (availableStudent) {
+      const newIndex = selectedStudentIds.length;
+      setSelectedStudentIds(prevIds => [...prevIds, availableStudent.id]);
+      setFocusedStudentSlotIndex(newIndex);
+    } else {
+      toast({ title: "Info", description: "No more unique available students to add.", variant: "default" });
+    }
+  }, [activeStudents, selectedStudentIds, toast, setSelectedStudentIds, setFocusedStudentSlotIndex]);
 
   const removeStudentSlot = useCallback((indexToRemove: number) => {
     setSelectedStudentIds(prev => {
@@ -303,9 +362,8 @@ export default function DataEntryContent() {
   }, [focusedStudentSlotIndex, setSelectedStudentIds, setFocusedStudentSlotIndex]);
 
   const availableStudentsForDropdown = useMemo(() => {
-    const activeStudents = students.filter(s => !s.isArchived);
     return activeStudents.filter(s => !selectedStudentIds.includes(s.id));
-  }, [students, selectedStudentIds]);
+  }, [activeStudents, selectedStudentIds]);
 
   const handleOpenResetConfirmation = () => {
     if (selectedStudentIds.length === 0) {
@@ -337,6 +395,158 @@ export default function DataEntryContent() {
   const activeStudentsInSlots = useMemo(() => selectedStudentIds
       .map(id => students.find(s => s.id === id))
       .filter((s): s is Student => !!s), [selectedStudentIds, students]);
+
+  const handleGoalDataChange = useCallback((studentId: string, goalId: string, field: string, value: any) => {
+    if (isStudentAccessLocked) {
+      toast({ title: 'Access Locked', description: 'Unlock to make changes.', variant: 'default' });
+      return;
+    }
+    contextHandleGoalDataChange(studentId, goalId, field, value);
+  }, [isStudentAccessLocked, contextHandleGoalDataChange, toast]);
+
+
+  // Data Entry Hotkeys
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    const target = event.target as HTMLElement;
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) && !(event.ctrlKey && event.key === 'Enter')) {
+      return; // Ignore hotkeys when typing in inputs, except for Ctrl+Enter
+    }
+
+    const key = event.key.toUpperCase();
+    const alt = event.altKey;
+    const ctrl = event.ctrlKey;
+
+    if (ctrl && key === 'ENTER') {
+      event.preventDefault();
+      handleSave();
+      return;
+    }
+
+    if (alt) {
+      event.preventDefault();
+      switch(key) {
+        case 'A': // Cycle students back
+          setFocusedStudentSlotIndex(p => (p - 1 + selectedStudentIds.length) % selectedStudentIds.length);
+          break;
+        case 'S': { // Cycle goals back
+          const studentId = selectedStudentIds[focusedStudentSlotIndex];
+          if (studentId) {
+            const state = studentSessionStates[studentId];
+            if (state) {
+              const visibleGoals = state.originalGoalHeaders.filter(g => !g.isArchived || showArchivedByStudentId[studentId]);
+              if (visibleGoals.length > 0) {
+                setFocusedGoalIndexByStudentId(p => ({ ...p, [studentId]: (p[studentId] - 1 + visibleGoals.length) % visibleGoals.length }));
+              }
+            }
+          }
+          break;
+        }
+        case 'W': addStudentSlot(); break;
+        case 'Q': removeStudentSlot(focusedStudentSlotIndex); break;
+        case 'U': setSelectionModalType('student'); break;
+        case 'T': setSelectionModalType('goal'); break;
+        case 'E': {
+          const focusedStudent = activeStudentsInSlots[focusedStudentSlotIndex];
+          if(focusedStudent) openEditStudentModal(focusedStudent);
+          break;
+        }
+        case 'L': setIsStudentAccessLocked(p => !p); break;
+      }
+    } else {
+      if (!alt && !ctrl && /^[1-4]$/.test(key)) {
+        const slotIndex = parseInt(key) - 1;
+        if (slotIndex < selectedStudentIds.length) {
+          setFocusedStudentSlotIndex(slotIndex);
+        }
+      } else if (key === 'A') { // Cycle students forward
+        setFocusedStudentSlotIndex(p => (p + 1) % selectedStudentIds.length);
+      } else if (key === 'S') { // Cycle goals forward
+        const studentId = selectedStudentIds[focusedStudentSlotIndex];
+        if (studentId) {
+          const state = studentSessionStates[studentId];
+          if (state) {
+            const visibleGoals = state.originalGoalHeaders.filter(g => !g.isArchived || showArchivedByStudentId[studentId]);
+            if (visibleGoals.length > 0) {
+              setFocusedGoalIndexByStudentId(p => ({ ...p, [studentId]: ((p[studentId] || 0) + 1) % visibleGoals.length }));
+            }
+          }
+        }
+      } else {
+        // Handle goal data hotkeys
+        const studentId = selectedStudentIds[focusedStudentSlotIndex];
+        if (studentId) {
+            const state = studentSessionStates[studentId];
+            const visibleGoals = state?.originalGoalHeaders.filter(g => !g.isArchived || showArchivedByStudentId[studentId]);
+            const focusedGoalIndex = focusedGoalIndexByStudentId[studentId] ?? 0;
+            const focusedGoal = visibleGoals?.[focusedGoalIndex];
+            
+            if (focusedGoal) {
+                const goalData = state.goalData[focusedGoal.id];
+                const increment = (field: string) => handleGoalDataChange(studentId, focusedGoal.id, field, (Number(goalData[field]) || 0) + 1);
+
+                if (key === 'C') {
+                    if (['ARTICULATION', 'AAC'].includes(focusedGoal.type)) increment('correct');
+                    else if (['LANGUAGE_COMPREHENSION'].includes(focusedGoal.type)) increment('questionsCorrect');
+                    else if (['LANGUAGE_EXPRESSION'].includes(focusedGoal.type)) increment('successfulResponses');
+                    else if (['PHONOLOGICAL_PROCESSES'].includes(focusedGoal.type)) increment('correctProductions');
+                    else if (['SEQUENCED_TRIALS'].includes(focusedGoal.type)) increment('successfulAttempts');
+                    else if (['FEEDING_SWALLOWING'].includes(focusedGoal.type)) increment('trialsAccepted');
+                } else if (key === 'N') {
+                    if (['ARTICULATION', 'AAC'].includes(focusedGoal.type)) increment('incorrect');
+                    else if (['LANGUAGE_COMPREHENSION'].includes(focusedGoal.type)) increment('questionsIncorrect');
+                    else if (['LANGUAGE_EXPRESSION'].includes(focusedGoal.type)) increment('unsuccessfulResponses');
+                    else if (['PHONOLOGICAL_PROCESSES'].includes(focusedGoal.type)) increment('incorrectProductions');
+                    else if (['SEQUENCED_TRIALS'].includes(focusedGoal.type)) increment('failedAttempts');
+                    else if (['FEEDING_SWALLOWING'].includes(focusedGoal.type)) increment('trialsRefused');
+                } else if (key === 'B') { // Approximate
+                    if (['ARTICULATION', 'AAC', 'LANGUAGE_COMPREHENSION', 'LANGUAGE_EXPRESSION', 'PHONOLOGICAL_PROCESSES', 'SEQUENCED_TRIALS'].includes(focusedGoal.type)) {
+                        increment('approximate');
+                    } else if (focusedGoal.type === 'FLUENCY_SYLLABLE_STUTTER') {
+                        increment('blocks');
+                    }
+                } else if (key === 'R' && focusedGoal.type === 'FLUENCY_SYLLABLE_STUTTER') increment('repetitions');
+                else if (key === 'H' && focusedGoal.type === 'FLUENCY_SYLLABLE_STUTTER') increment('prolongations');
+                else if (key === 'J' && focusedGoal.type === 'FLUENCY_SYLLABLE_STUTTER') increment('interjections');
+
+
+                // Prompt hotkeys
+                const promptType = PROMPT_HOTKEY_MAP[key];
+                if(promptType) {
+                    increment(promptType);
+                    if (promptType === 'Independent') {
+                        if (['ARTICULATION', 'AAC'].includes(focusedGoal.type)) increment('correct');
+                        else if (['LANGUAGE_COMPREHENSION'].includes(focusedGoal.type)) increment('questionsCorrect');
+                        else if (['LANGUAGE_EXPRESSION'].includes(focusedGoal.type)) increment('successfulResponses');
+                        else if (['PHONOLOGICAL_PROCESSES'].includes(focusedGoal.type)) increment('correctProductions');
+                    }
+                }
+            }
+        }
+      }
+    }
+  }, [
+    selectedStudentIds, 
+    focusedStudentSlotIndex, 
+    studentSessionStates, 
+    showArchivedByStudentId, 
+    focusedGoalIndexByStudentId,
+    setFocusedStudentSlotIndex, 
+    setFocusedGoalIndexByStudentId, 
+    addStudentSlot, 
+    removeStudentSlot, 
+    openEditStudentModal, 
+    activeStudentsInSlots, 
+    setIsStudentAccessLocked,
+    handleSave,
+    handleGoalDataChange,
+  ]);
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleKeyDown]);
 
 
   return (
