@@ -12,5 +12,4 @@ config();
 // with the Genkit runtime, making them available for use.
 import '@/ai/flows/smart-goal-generation.ts';
 import '@/ai/flows/activity-suggestions.ts';
-import '@/ai/flows/technical-summary-generation.ts';
 import '@/ai/flows/semantic-search-flow.ts';

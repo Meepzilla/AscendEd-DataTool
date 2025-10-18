@@ -1,101 +1,79 @@
 
 'use client';
 
-import React, { useState } from 'react';
-import type { Student, SessionData } from '@/lib/types';
-import { Button } from '@/components/ui/button';
+import React, { useMemo } from 'react';
+import type { Student } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { RefreshCw, Lightbulb, MessageSquare, Loader2 } from 'lucide-react';
-import { generateTechnicalSummary } from '@/ai/flows/technical-summary-generation';
-import { useToast } from '@/hooks/use-toast';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useErrorLog } from '@/hooks/use-error-log';
-import { formatDate } from '@/lib/helpers';
+import { Sigma, Percent, CheckCircle, XCircle, HelpCircle, Target } from 'lucide-react';
 
-interface AiSummaryProps {
-  studentSessions: SessionData[];
+interface DataSummaryProps {
+  studentSessions: any[];
   selectedStudent?: Student;
   selectedGoalId?: string;
   chartData: any[];
 }
 
-const AiSummary: React.FC<AiSummaryProps> = ({ studentSessions, selectedStudent, selectedGoalId, chartData }) => {
-  const [technicalSummary, setTechnicalSummary] = useState<string | null>(null);
-  const [isAiLoading, setIsAiLoading] = useState(false);
-  const { toast } = useToast();
-  const { addErrorLog } = useErrorLog();
+const DataSummary: React.FC<DataSummaryProps> = ({ studentSessions, selectedStudent, selectedGoalId, chartData }) => {
 
-  const handleGenerateSummary = async () => {
-    if (!selectedStudent || studentSessions.length === 0) {
-      toast({ title: "Info", description: "Select a student with session data to generate a summary.", variant: "default" });
-      return;
+  const summaryStats = useMemo(() => {
+    if (!chartData || chartData.length === 0) {
+      return {
+        sessionCount: 0,
+        avgAccuracy: 0,
+        totalCorrect: 0,
+        totalIncorrect: 0,
+        totalApproximate: 0,
+        totalOpportunities: 0,
+      };
     }
-    setIsAiLoading(true);
-    setTechnicalSummary(null);
-    try {
-      const activeStudentGoals = selectedStudent.goals.filter(g => !g.isArchived);
-      const progressDataPoints = studentSessions.slice(-5).map(s => `On ${formatDate(s.date)}: Activity "${s.activity}", Notes: "${s.notes}". Goals covered: ${s.goals.filter(sg => { const goal = activeStudentGoals.find(g => g.id === sg.goalId); return goal && !goal.isArchived; }).length}.`).join('\n');
-      const primaryGoal = selectedGoalId ? activeStudentGoals.find(g => g.id === selectedGoalId)?.name : "overall progress on active goals";
-      const chartDataSummary = chartData.slice(-3);
-      const summaryText = `Recent sessions show the following trends (focus on active goals):\n${progressDataPoints}\nChart data (last ${chartDataSummary.length} sessions) accuracies: ${chartDataSummary.map(d => `${d.accuracy}%`).join(', ')}; opportunities: ${chartDataSummary.map(d => d.opportunities).join(', ')}; correct: ${chartDataSummary.map(d => d.correct).join(', ')}; incorrect: ${chartDataSummary.map(d => d.incorrect).join(', ')}; approximate: ${chartDataSummary.map(d => d.approximate).join(', ')}; total prompts (excluding independent): ${chartDataSummary.map(d => d.totalPrompts).join(', ')}.`;
 
-      const result = await generateTechnicalSummary({
-        studentName: selectedStudent.name,
-        goalName: primaryGoal || "Multiple Active Goals",
-        progressData: summaryText,
-      });
-      setTechnicalSummary(result.summary);
-      toast({ title: "AI Summary Generated", description: result.progress });
-    } catch (error: any) {
-      console.error("Error generating technical summary:", error);
-      addErrorLog({ message: 'Failed to generate AI technical summary.', source: 'AiSummary.handleGenerateSummary', details: error.message, type: 'error' });
-      toast({ title: "AI Error", description: "Failed to generate summary.", variant: "destructive" });
-    } finally {
-      setIsAiLoading(false);
-    }
-  };
+    const totalCorrect = chartData.reduce((acc, session) => acc + (session.correct || 0), 0);
+    const totalIncorrect = chartData.reduce((acc, session) => acc + (session.incorrect || 0), 0);
+    const totalApproximate = chartData.reduce((acc, session) => acc + (session.approximate || 0), 0);
+    const totalOpportunities = chartData.reduce((acc, session) => acc + (session.opportunities || 0), 0);
+    
+    const avgAccuracy = totalOpportunities > 0 ? (totalCorrect / totalOpportunities) * 100 : 0;
+
+    return {
+      sessionCount: studentSessions.length,
+      avgAccuracy: parseFloat(avgAccuracy.toFixed(1)),
+      totalCorrect,
+      totalIncorrect,
+      totalApproximate,
+      totalOpportunities,
+    };
+  }, [chartData, studentSessions]);
+
+  const stats = [
+    { label: 'Total Sessions', value: summaryStats.sessionCount, icon: Sigma },
+    { label: 'Avg. Accuracy', value: `${summaryStats.avgAccuracy}%`, icon: Percent },
+    { label: 'Total Opportunities', value: summaryStats.totalOpportunities, icon: Target },
+    { label: 'Total Correct', value: summaryStats.totalCorrect, icon: CheckCircle, color: 'text-green-500' },
+    { label: 'Total Incorrect', value: summaryStats.totalIncorrect, icon: XCircle, color: 'text-red-500' },
+    { label: 'Total Approximate', value: summaryStats.totalApproximate, icon: HelpCircle, color: 'text-yellow-500' },
+  ];
 
   return (
     <Card className="col-span-1 lg:col-span-2">
       <CardHeader>
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <Lightbulb className="h-6 w-6 text-yellow-500" />
-              AI-Powered Technical Summary
-            </CardTitle>
-            <CardDescription className="mt-1">
-              An AI-generated summary of the student's progress based on the selected data (active goals).
-            </CardDescription>
-          </div>
-          <Button onClick={handleGenerateSummary} disabled={isAiLoading} size="sm" variant="outline">
-            {isAiLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-            {isAiLoading ? 'Generating...' : (technicalSummary ? 'Regenerate' : 'Generate Summary')}
-          </Button>
-        </div>
+        <CardTitle>Data Summary</CardTitle>
+        <CardDescription>
+          A quantitative overview of the selected data for {selectedStudent?.name || 'the student'}.
+        </CardDescription>
       </CardHeader>
-      <CardContent className="min-h-[100px] text-sm">
-        {isAiLoading && (
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-3/4" />
-          </div>
-        )}
-        {!isAiLoading && technicalSummary && (
-          <blockquote className="border-l-2 pl-4 italic text-muted-foreground">
-            {technicalSummary}
-          </blockquote>
-        )}
-        {!isAiLoading && !technicalSummary && (
-          <div className="text-center text-muted-foreground flex flex-col items-center justify-center h-full gap-2">
-            <MessageSquare className="h-8 w-8" />
-            <p>Click "Generate Summary" to get an AI analysis.</p>
-          </div>
-        )}
+      <CardContent>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-center">
+          {stats.map((stat, index) => (
+            <div key={index} className="p-4 rounded-lg bg-muted/50 flex flex-col items-center justify-center">
+              <stat.icon className={`h-6 w-6 mb-2 ${stat.color || 'text-primary'}`} />
+              <p className="text-2xl font-bold">{stat.value}</p>
+              <p className="text-xs text-muted-foreground">{stat.label}</p>
+            </div>
+          ))}
+        </div>
       </CardContent>
     </Card>
   );
 };
 
-export default AiSummary;
+export default DataSummary;
