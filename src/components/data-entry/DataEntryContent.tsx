@@ -49,8 +49,8 @@ export default function DataEntryContent() {
     resetDataEntrySession,
     handleGoalDataChange,
     handleMoveGoal,
-    getCurrentFocusedGoalInfo,
     addStudentSlot,
+    removeStudentSlot,
     isStudentAccessLocked,
     setIsStudentAccessLocked,
     selectionModalType,
@@ -97,32 +97,40 @@ export default function DataEntryContent() {
 
  useEffect(() => {
     if (dataEntrySelectedStudentIds.length > 0 && dataEntryFocusedStudentSlotIndex >= 0 && dataEntryFocusedStudentSlotIndex < dataEntrySelectedStudentIds.length) {
-      const studentCardId = `student-card-slot-${dataEntryFocusedStudentSlotIndex}`;
-      const studentCardElement = document.getElementById(studentCardId);
-      if (studentCardElement) {
-        studentCardElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-      }
-    }
-
-    setTimeout(() => {
-        const focusedInfo = getCurrentFocusedGoalInfo();
-        if (focusedInfo && focusedInfo.goal && focusedInfo.studentState) {
-          const { studentId: studentIdForGoal, goal } = focusedInfo;
-          const goalElementId = `goal-input-${studentIdForGoal}-${goal.id}`;
-          const goalElement = document.getElementById(goalElementId);
-
-          if (goalElement) {
-              goalElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-          }
+        const studentCardId = `student-card-slot-${dataEntryFocusedStudentSlotIndex}`;
+        const studentCardElement = document.getElementById(studentCardId);
+        if (studentCardElement) {
+            studentCardElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
         }
-    }, 50);
 
-  }, [
+        // The logic to scroll the goal into view is also here now
+        const focusedStudentId = dataEntrySelectedStudentIds[dataEntryFocusedStudentSlotIndex];
+        const studentState = dataEntryStudentSessionStates[focusedStudentId];
+        if (studentState?.originalGoalHeaders) {
+            const visibleGoals = studentState.originalGoalHeaders.filter((g: any) => !g.isArchived || dataEntryShowArchivedByStudentId[focusedStudentId]);
+            const focusedGoalIndex = dataEntryFocusedGoalIndexByStudentId[focusedStudentId] ?? 0;
+            if (visibleGoals.length > focusedGoalIndex) {
+                const focusedGoal = visibleGoals[focusedGoalIndex];
+                if (focusedGoal) {
+                    const goalElementId = `goal-input-${focusedStudentId}-${focusedGoal.id}`;
+                    setTimeout(() => {
+                        const goalElement = document.getElementById(goalElementId);
+                        if (goalElement) {
+                            goalElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }
+                    }, 50);
+                }
+            }
+        }
+    }
+}, [
     dataEntryFocusedStudentSlotIndex, 
-    dataEntrySelectedStudentIds.length,
-    // Using this as a proxy for when the focused goal index changes for a student
-    JSON.stringify(dataEntryFocusedGoalIndexByStudentId),
-  ]);
+    dataEntrySelectedStudentIds, // Full array is needed to get the ID
+    dataEntryStudentSessionStates, // Needed to find the goal
+    dataEntryFocusedGoalIndexByStudentId, // The index itself
+    dataEntryShowArchivedByStudentId, // Needed for filtering visible goals
+]);
+
 
   const handleStudentSelect = useCallback((studentId: string, index: number) => {
     setDataEntrySelectedStudentIds((prev: string[]) => {
@@ -132,23 +140,6 @@ export default function DataEntryContent() {
     });
     setDataEntryFocusedStudentSlotIndex(index);
   }, [setDataEntrySelectedStudentIds, setDataEntryFocusedStudentSlotIndex]);
-
-  const removeStudentSlot = (indexToRemove: number) => {
-    const currentFocusedId = dataEntrySelectedStudentIds[dataEntryFocusedStudentSlotIndex];
-    const newSelectedIds = dataEntrySelectedStudentIds.filter((_, i) => i !== indexToRemove);
-    setDataEntrySelectedStudentIds(newSelectedIds);
-
-    if (newSelectedIds.length === 0) {
-        setDataEntryFocusedStudentSlotIndex(0);
-    } else {
-        let newFocusIndex = newSelectedIds.indexOf(currentFocusedId);
-        if (newFocusIndex === -1) {
-            newFocusIndex = Math.min(indexToRemove, newSelectedIds.length - 1);
-            newFocusIndex = Math.max(0, newFocusIndex);
-        }
-        setDataEntryFocusedStudentSlotIndex(newFocusIndex);
-    }
-  };
 
   const handleInputChange = (studentId: string, field: 'activity' | 'notes', value: string) => {
     if (isStudentAccessLocked) {
@@ -163,7 +154,7 @@ export default function DataEntryContent() {
   
   const handleLocalAiFetch = async (studentId: string) => {
     const studentState = dataEntryStudentSessionStates[studentId];
-    const activeGoals = studentState?.originalGoalHeaders.filter(g => !g.isArchived);
+    const activeGoals = studentState?.originalGoalHeaders.filter((g: any) => !g.isArchived);
 
     if (!studentState || !activeGoals || activeGoals.length === 0) {
       toast({ title: "Info", description: "Student has no active goals assigned or data is missing.", variant: "default" });
