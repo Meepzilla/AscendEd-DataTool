@@ -1,9 +1,9 @@
+
 'use client';
 
 import React, { lazy, useState, useEffect, useCallback, Suspense, useMemo } from 'react';
 import { useStudentData } from '@/hooks/use-student-data';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Save, RotateCcw, PlusCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
@@ -12,6 +12,7 @@ import type { StudentSessionState } from '@/lib/types';
 import TouchControls from '@/components/forms/touch-controls';
 import { cn } from '@/lib/utils';
 import { ConfettiProvider } from '@/hooks/use-confetti';
+import { ScrollArea } from '../ui/scroll-area';
 
 const ConfirmationModal = lazy(() => import('@/components/modals/confirmation-modal'));
 const StudentCardsList = lazy(() => import('@/components/data-entry/StudentCardsList'));
@@ -92,7 +93,7 @@ export default function DataEntryContent() {
       const studentCardId = `student-card-slot-${dataEntryFocusedStudentSlotIndex}`;
       const studentCardElement = document.getElementById(studentCardId);
       if (studentCardElement) {
-        studentCardElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+        studentCardElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
       }
     }
 
@@ -224,34 +225,34 @@ export default function DataEntryContent() {
         </div>
 
         <div className="flex-grow min-h-0">
-          <ScrollArea className="h-full pb-4" type="always">
-            <Suspense fallback={<div>Loading student cards...</div>}>
-              <StudentCardsList
-                dataEntrySelectedStudentIds={dataEntrySelectedStudentIds}
-                students={students}
-                dataEntryStudentSessionStates={dataEntryStudentSessionStates}
-                dataEntryFocusedStudentSlotIndex={dataEntryFocusedStudentSlotIndex}
-                availableStudentsForDropdown={availableStudentsForDropdown}
-                dataEntryShowArchivedByStudentId={dataEntryShowArchivedByStudentId}
-                setDataEntryShowArchivedByStudentId={setDataEntryShowArchivedByStudentId}
-                dataEntryVisibleGoalCountByStudentId={dataEntryVisibleGoalCountByStudentId}
-                setDataEntryVisibleGoalCountByStudentId={setDataEntryVisibleGoalCountByStudentId}
-                dataEntryFocusedGoalIndexByStudentId={dataEntryFocusedGoalIndexByStudentId}
-                dataEntryAiActivitySuggestions={dataEntryAiActivitySuggestions}
-                isAiLoading={isAiLoading}
-                setDataEntryFocusedStudentSlotIndex={setDataEntryFocusedStudentSlotIndex}
-                openEditStudentModal={openEditStudentModal}
-                handleStudentSelect={handleStudentSelect}
-                removeStudentSlot={removeStudentSlot}
-                handleInputChange={handleInputChange}
-                handleGoalDataChange={handleGoalDataChange}
-                handleMoveGoal={handleMoveGoal}
-                handleLocalAiFetch={handleLocalAiFetch}
-                addStudentSlot={addStudentSlot}
-                isStudentAccessLocked={isStudentAccessLocked}
-              />
-            </Suspense>
-          </ScrollArea>
+            <ScrollArea className="h-full" orientation="horizontal">
+                <Suspense fallback={<div>Loading student cards...</div>}>
+                    <StudentCardsList
+                        dataEntrySelectedStudentIds={dataEntrySelectedStudentIds}
+                        students={students}
+                        dataEntryStudentSessionStates={dataEntryStudentSessionStates}
+                        dataEntryFocusedStudentSlotIndex={dataEntryFocusedStudentSlotIndex}
+                        availableStudentsForDropdown={availableStudentsForDropdown}
+                        dataEntryShowArchivedByStudentId={dataEntryShowArchivedByStudentId}
+                        setDataEntryShowArchivedByStudentId={setDataEntryShowArchivedByStudentId}
+                        dataEntryVisibleGoalCountByStudentId={dataEntryVisibleGoalCountByStudentId}
+                        setDataEntryVisibleGoalCountByStudentId={setDataEntryVisibleGoalCountByStudentId}
+                        dataEntryFocusedGoalIndexByStudentId={dataEntryFocusedGoalIndexByStudentId}
+                        dataEntryAiActivitySuggestions={dataEntryAiActivitySuggestions}
+                        isAiLoading={isAiLoading}
+                        setDataEntryFocusedStudentSlotIndex={setDataEntryFocusedStudentSlotIndex}
+                        openEditStudentModal={openEditStudentModal}
+                        handleStudentSelect={handleStudentSelect}
+                        removeStudentSlot={removeStudentSlot}
+                        handleInputChange={handleInputChange}
+                        handleGoalDataChange={handleGoalDataChange}
+                        handleMoveGoal={handleMoveGoal}
+                        handleLocalAiFetch={handleLocalAiFetch}
+                        addStudentSlot={addStudentSlot}
+                        isStudentAccessLocked={isStudentAccessLocked}
+                    />
+                </Suspense>
+            </ScrollArea>
         </div>
         
         {dataEntrySelectedStudentIds.length > 0 && (

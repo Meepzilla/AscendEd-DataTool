@@ -86,8 +86,7 @@ const StudentCardsList: React.FC<StudentCardsListProps> = ({
               handleInputChange={handleInputChange}
               handleGoalDataChange={handleGoalDataChange}
               handleMoveGoal={handleMoveGoal}
-              handleLocalAiFetch={handleLocalAiFetch}
-            />
+              handleLocalAiFetch={handleLocalAiFetch} isStudentAccessLocked={false}            />
           </Suspense>
         );
       })}

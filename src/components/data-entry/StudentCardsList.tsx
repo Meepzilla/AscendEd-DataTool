@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { lazy, Suspense } from 'react';
@@ -60,7 +61,7 @@ const StudentCardsList: React.FC<StudentCardsListProps> = ({
   const activeStudents = students.filter(s => !s.isArchived);
 
   return (
-    <div className="flex flex-row gap-6 items-start py-4 px-1 min-h-full">
+    <div className="flex flex-row gap-4 p-4 min-h-full">
       {dataEntrySelectedStudentIds.map((studentId, slotIndex) => {
         const student = students.find(s => s.id === studentId);
         const state = dataEntryStudentSessionStates[studentId];
@@ -102,7 +103,7 @@ const StudentCardsList: React.FC<StudentCardsListProps> = ({
         <Button
           variant="outline"
           onClick={addStudentSlot}
-          className="flex-shrink-0 w-[300px] min-h-[200px] flex items-center justify-center py-8 border-dashed hover:border-primary hover:text-primary"
+          className="flex-shrink-0 w-[300px] h-full flex items-center justify-center py-8 border-dashed hover:border-primary hover:text-primary"
           title="Add another student data entry card (Alt+W)"
         >
           <PlusCircle className="mr-2 h-5 w-5" /> Add Student Slot

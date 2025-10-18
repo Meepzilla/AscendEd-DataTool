@@ -77,7 +77,7 @@ export default function AppLayout({
               <SidebarRail />
             </>
           )}
-          <SidebarInset className="flex-1 overflow-y-auto overflow-x-hidden">
+          <SidebarInset className="flex-1 overflow-auto">
             <main className="h-full p-4 sm:p-6 lg:p-8">
               {children}
             </main>
