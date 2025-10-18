@@ -575,6 +575,7 @@ export default function DataEntryContent() {
                   dataEntryVisibleGoalCountByStudentId={visibleGoalCountByStudentId}
                   setDataEntryVisibleGoalCountByStudentId={setVisibleGoalCountByStudentId}
                   dataEntryFocusedGoalIndexByStudentId={focusedGoalIndexByStudentId}
+                  setDataEntryFocusedGoalIndexByStudentId={setFocusedGoalIndexByStudentId}
                   dataEntryAiActivitySuggestions={aiActivitySuggestions}
                   isAiLoading={isAiLoading}
                   setDataEntryFocusedStudentSlotIndex={setFocusedStudentSlotIndex}
@@ -657,3 +658,5 @@ export default function DataEntryContent() {
     </ConfettiProvider>
   );
 }
+
+    

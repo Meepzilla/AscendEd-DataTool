@@ -28,10 +28,10 @@ interface StudentDataCardProps {
   dataEntryShowArchivedByStudentId: Record<string, boolean>;
   dataEntryVisibleGoalCountByStudentId: Record<string, number>;
   dataEntryFocusedGoalIndexByStudentId: Record<string, number>;
+  setDataEntryFocusedGoalIndexByStudentId: React.Dispatch<React.SetStateAction<Record<string, number>>>;
   dataEntryAiActivitySuggestions: Record<string, string[]>;
   isAiLoading: Record<string, boolean>;
   setDataEntryFocusedStudentSlotIndex: (index: number) => void;
-  setDataEntryFocusedGoalIndexByStudentId: React.Dispatch<React.SetStateAction<Record<string, number>>>;
   openEditStudentModal: (student: Student) => void;
   handleStudentSelect: (studentId: string, index: number) => void;
   removeStudentSlot: (index: number) => void;
@@ -54,10 +54,10 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
   dataEntryShowArchivedByStudentId,
   dataEntryVisibleGoalCountByStudentId,
   dataEntryFocusedGoalIndexByStudentId,
+  setDataEntryFocusedGoalIndexByStudentId,
   dataEntryAiActivitySuggestions,
   isAiLoading,
   setDataEntryFocusedStudentSlotIndex,
-  setDataEntryFocusedGoalIndexByStudentId,
   openEditStudentModal,
   handleStudentSelect,
   removeStudentSlot,
@@ -255,3 +255,5 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
 };
 
 export default StudentDataCard;
+
+    
