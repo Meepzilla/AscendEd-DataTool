@@ -748,7 +748,7 @@ export default function GoalDataInputComponent({
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="px-2 py-1 h-auto text-xs justify-center w-full sm:w-auto"
+                        className="px-2 py-1.5 h-auto text-xs justify-center w-full sm:w-auto"
                         style={{
                         borderColor: PROMPT_COLORS[pt],
                         color: PROMPT_COLORS[pt],
