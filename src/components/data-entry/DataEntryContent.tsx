@@ -115,7 +115,7 @@ export default function DataEntryContent() {
         setFocusedStudentSlotIndex(0);
       }
     }
-  }, [students, studentFromContext, selectedStudentIds.length, setSelectedStudentIds, setFocusedStudentSlotIndex]);
+  }, [students, studentFromContext, selectedStudentIds.length]);
   
   const studentIdForEffect = selectedStudentIds[focusedStudentSlotIndex];
   const focusedGoalIndexForEffect = focusedGoalIndexByStudentId[studentIdForEffect];
@@ -157,7 +157,7 @@ export default function DataEntryContent() {
       return newSelection;
     });
     setFocusedStudentSlotIndex(index);
-  }, [setSelectedStudentIds, setFocusedStudentSlotIndex]);
+  }, []);
 
   const handleInputChange = (studentId: string, field: 'activity' | 'notes', value: string) => {
     if (isStudentAccessLocked) {
@@ -217,7 +217,7 @@ export default function DataEntryContent() {
         }
         return newStates;
     });
-  }, [setStudentSessionStates]);
+  }, []);
 
 
   const handleSave = async () => {
@@ -342,7 +342,7 @@ export default function DataEntryContent() {
     const visibleGoals = allGoals.filter((g: any) => !g.isArchived || showArchivedByStudentId[studentId]);
     const goalIndexInVisibleList = visibleGoals.findIndex((g: any) => g.id === goalId);
     if (goalIndexInVisibleList !== -1) setFocusedGoalIndexByStudentId(prev => ({ ...prev, [studentId]: goalIndexInVisibleList }));
-  }, [studentSessionStates, selectedStudentIds, showArchivedByStudentId, setFocusedStudentSlotIndex, setFocusedGoalIndexByStudentId, setStudentSessionStates]);
+  }, [studentSessionStates, selectedStudentIds, showArchivedByStudentId]);
     
   const handleMoveGoal = useCallback((studentId: string, goalId: string, direction: 'up' | 'down') => {
     setStudentSessionStates(prevStates => {
@@ -360,7 +360,7 @@ export default function DataEntryContent() {
         setFocusedGoalIndexByStudentId(prev => ({ ...prev, [studentId]: newFocusedIndexInVisible !== -1 ? newFocusedIndexInVisible : 0 }));
         return { ...prevStates, [studentId]: { ...studentState, originalGoalHeaders: goals } };
     });
-  }, [showArchivedByStudentId, setFocusedGoalIndexByStudentId, setStudentSessionStates]);
+  }, [showArchivedByStudentId]);
 
   const addStudentSlot = useCallback(() => {
     const activeStudents = students.filter(s => !s.isArchived);
@@ -374,7 +374,7 @@ export default function DataEntryContent() {
         return prevIds;
       }
     });
-  }, [students, toast, setSelectedStudentIds, setFocusedStudentSlotIndex]);
+  }, [students, toast]);
 
   const removeStudentSlot = useCallback((indexToRemove: number) => {
     setSelectedStudentIds(prev => {
@@ -393,7 +393,7 @@ export default function DataEntryContent() {
       }
       return newSelectedIds;
     });
-  }, [focusedStudentSlotIndex, setSelectedStudentIds, setFocusedStudentSlotIndex]);
+  }, [focusedStudentSlotIndex]);
 
   const availableStudentsForDropdown = useMemo(() => {
     const activeStudents = students.filter(s => !s.isArchived);
@@ -573,7 +573,3 @@ export default function DataEntryContent() {
     </ConfettiProvider>
   );
 }
-
-    
-
-    
