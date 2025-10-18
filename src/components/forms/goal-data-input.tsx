@@ -88,66 +88,67 @@ export default function GoalDataInputComponent({
 
 
   const calculateAccuracy = (): string => {
-    let correct = 0;
-    let totalOpportunities = 0;
+    let correct: number;
+    let totalOpportunities: number;
     const type = goal.type;
-    let actualPerformancePct = 0;
+    let actualPerformancePct: number;
 
     switch (type) {
       case 'ARTICULATION':
       case 'AAC':
         correct = Number(data.correct || 0);
         totalOpportunities = correct + Number(data.incorrect || 0) + Number(data.approximate || 0);
-        actualPerformancePct = totalOpportunities > 0 ? (correct / totalOpportunities) * 100 : 0;
         break;
       case 'LANGUAGE_COMPREHENSION':
         correct = Number(data.questionsCorrect || 0);
         totalOpportunities = correct + Number(data.questionsIncorrect || 0) + Number(data.approximate || 0);
-        actualPerformancePct = totalOpportunities > 0 ? (correct / totalOpportunities) * 100 : 0;
         break;
       case 'LANGUAGE_EXPRESSION':
         correct = Number(data.successfulResponses || 0);
         totalOpportunities = correct + Number(data.unsuccessfulResponses || 0) + Number(data.approximate || 0);
-        actualPerformancePct = totalOpportunities > 0 ? (correct / totalOpportunities) * 100 : 0;
         break;
       case 'PHONOLOGICAL_PROCESSES':
         correct = Number(data.correctProductions || 0);
         totalOpportunities = correct + Number(data.incorrectProductions || 0) + Number(data.approximate || 0);
-        actualPerformancePct = totalOpportunities > 0 ? (correct / totalOpportunities) * 100 : 0;
         break;
       case 'FLUENCY_SYLLABLE_STUTTER':
-        const totalSyllables = Number(data.totalSyllables || 0);
+        totalOpportunities = Number(data.totalSyllables || 0);
         const stutteredSyllables = Number(data.stutteredSyllables || 0);
         const blocks = Number(data.blocks || 0);
         const repetitions = Number(data.repetitions || 0);
         const interjections = Number(data.interjections || 0);
         const totalDysfluencies = stutteredSyllables + blocks + repetitions + interjections;
-        correct = Math.max(0, totalSyllables - totalDysfluencies);
-        totalOpportunities = totalSyllables;
-        actualPerformancePct = totalOpportunities > 0 ? (correct / totalOpportunities) * 100 : 0;
+        correct = Math.max(0, totalOpportunities - totalDysfluencies);
         break;
       case 'FEEDING_SWALLOWING':
-        const accepted = Number(data.trialsAccepted || 0);
-        const refused = Number(data.trialsRefused || 0);
-        totalOpportunities = accepted + refused;
-        actualPerformancePct = totalOpportunities > 0 ? (accepted / totalOpportunities) * 100 : 0;
+        correct = Number(data.trialsAccepted || 0);
+        totalOpportunities = correct + Number(data.trialsRefused || 0);
         break;
-      case 'SEQUENCED_TRIALS':
+      case 'SEQUENCED_TRIALS': {
+        const successful = Number(data.successfulAttempts || 0);
+        const failed = Number(data.failedAttempts || 0);
+        const approx = Number(data.approximate || 0);
+        totalOpportunities = successful + failed + approx;
+        correct = successful;
+        break;
+      }
       case 'DISCRETE_TRIALS': {
         const trials = data.trials || [];
-        const correctCount = trials.filter((t: TrialStatus) => t === 'correct').length;
+        correct = trials.filter((t: TrialStatus) => t === 'correct').length;
         const validTrials = trials.filter((t: TrialStatus) => t !== 'untouched').length;
-        actualPerformancePct = validTrials > 0 ? (correctCount / validTrials) * 100 : 0;
-        return `${actualPerformancePct.toFixed(1)}% (${correctCount}/${validTrials})`;
+        actualPerformancePct = validTrials > 0 ? (correct / validTrials) * 100 : 0;
+        return `${actualPerformancePct.toFixed(1)}% (${correct}/${validTrials})`;
       }
       case 'PROMPTING':
-        return 'N/A';
+      case 'QUALITATIVE_OBSERVATION':
       default:
         return 'N/A';
     }
 
     if (totalOpportunities === 0) return 'N/A (0%)';
-    return `${actualPerformancePct.toFixed(1)}%`;
+    
+    actualPerformancePct = (correct / totalOpportunities) * 100;
+    return `${actualPerformancePct.toFixed(1)}% (${correct}/${totalOpportunities})`;
   };
 
   const handleTrialClick = (index: number, e: React.MouseEvent<HTMLButtonElement>) => {
