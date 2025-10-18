@@ -61,11 +61,12 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
         case 'LANGUAGE_EXPRESSION':
         case 'PHONOLOGICAL_PROCESSES':
         case 'SEQUENCED_TRIALS':
-        case 'DISCRETE_TRIALS':
             currentGoalCorrect = Number(data.correct || data.questionsCorrect || data.successfulResponses || data.correctProductions || data.successfulAttempts) || 0;
             currentGoalIncorrect = Number(data.incorrect || data.questionsIncorrect || data.unsuccessfulResponses || data.incorrectProductions || data.failedAttempts) || 0;
             currentGoalApproximate = Number(data.approximate) || 0;
-            if(goalData.goalType === 'DISCRETE_TRIALS' && Array.isArray(data.trials)) {
+            break;
+        case 'DISCRETE_TRIALS':
+             if (Array.isArray(data.trials)) {
                 currentGoalCorrect = data.trials.filter((t: TrialStatus) => t === 'correct').length;
                 currentGoalIncorrect = data.trials.filter((t: TrialStatus) => t === 'incorrect').length;
                 currentGoalApproximate = data.trials.filter((t: TrialStatus) => t === 'approximate').length;
