@@ -99,7 +99,7 @@ const StudentCardsList: React.FC<StudentCardsListProps> = ({
         );
       })}
 
-      {dataEntrySelectedStudentIds.length < activeStudents.length && dataEntrySelectedStudentIds.length < MAX_STUDENTS_DATA_ENTRY && (
+      {activeStudents && dataEntrySelectedStudentIds.length < activeStudents.length && dataEntrySelectedStudentIds.length < MAX_STUDENTS_DATA_ENTRY && (
         <div className="flex-shrink-0 w-[300px] h-full flex items-center justify-center p-4">
             <Button
               variant="outline"

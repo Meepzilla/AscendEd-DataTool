@@ -51,7 +51,7 @@ export default function DataEntryContent() {
   const {
     students,
     currentUser,
-    selectedStudent: studentFromContext,
+    studentFromContext,
     openEditStudentModal,
     addSession,
     getSessionsForStudent,
@@ -94,10 +94,8 @@ export default function DataEntryContent() {
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
-  const activeStudents = useMemo(() => students.filter(s => !s.isArchived), [students]);
-
-  // Initialize student session states
-  useEffect(() => {
+  // Initialize student session states using useMemo to prevent unnecessary re-renders
+  useMemo(() => {
     setStudentSessionStates(prevStates => {
       const newStates = { ...prevStates };
       let stateChanged = false;
@@ -136,6 +134,7 @@ export default function DataEntryContent() {
   }, [setSessionDate, setSessionTime, setSessionEndTime, sessionDate, sessionTime]);
 
   useEffect(() => {
+    const activeStudents = students.filter(s => !s.isArchived);
     if (selectedStudentIds.length === 0 && activeStudents.length > 0) {
       let initialIdToSelect: string | undefined = undefined;
       if (studentFromContext && activeStudents.find(s => s.id === studentFromContext.id)) {
@@ -146,7 +145,7 @@ export default function DataEntryContent() {
         setFocusedStudentSlotIndex(0);
       }
     }
-  }, [activeStudents, studentFromContext, selectedStudentIds.length, setSelectedStudentIds, setFocusedStudentSlotIndex]);
+  }, [students, studentFromContext, selectedStudentIds.length, setSelectedStudentIds, setFocusedStudentSlotIndex]);
   
   const studentIdForEffect = selectedStudentIds[focusedStudentSlotIndex];
   const focusedGoalIndexForEffect = focusedGoalIndexByStudentId[studentIdForEffect];
@@ -394,6 +393,7 @@ export default function DataEntryContent() {
   }, [showArchivedByStudentId, setFocusedGoalIndexByStudentId, setStudentSessionStates]);
 
   const addStudentSlot = useCallback(() => {
+    const activeStudents = students.filter(s => !s.isArchived);
     setSelectedStudentIds(prevIds => {
       const availableStudent = activeStudents.find(s => !prevIds.includes(s.id));
       if (availableStudent) {
@@ -404,11 +404,12 @@ export default function DataEntryContent() {
         return prevIds;
       }
     });
-  }, [activeStudents, toast, setSelectedStudentIds, setFocusedStudentSlotIndex]);
+  }, [students, toast, setSelectedStudentIds, setFocusedStudentSlotIndex]);
 
   const availableStudentsForDropdown = useMemo(() => {
+    const activeStudents = students.filter(s => !s.isArchived);
     return activeStudents.filter(s => !selectedStudentIds.includes(s.id));
-  }, [activeStudents, selectedStudentIds]);
+  }, [students, selectedStudentIds]);
 
   const handleOpenResetConfirmation = () => {
     if (selectedStudentIds.length === 0) {
@@ -454,7 +455,9 @@ export default function DataEntryContent() {
       updateScrollability();
       return () => {
           observer.disconnect();
-          container.removeEventListener('scroll', updateScrollability);
+          if (container) {
+            container.removeEventListener('scroll', updateScrollability);
+          }
       };
     }
   }, [selectedStudentIds.length, updateScrollability]);
