@@ -71,7 +71,7 @@ export function useKeyboardShortcutHandlers({
 
     const cycleFocusedGoal = useCallback((direction: 'next' | 'prev') => {
         const focusedInfo = getCurrentFocusedGoalInfo();
-        if (!focusedInfo?.studentId) return;
+        if (!focusedInfo?.studentId || !focusedInfo?.studentState) return;
         const { studentId, studentState, goalIndex } = focusedInfo;
         const visibleGoals = studentState.originalGoalHeaders.filter(g => !g.isArchived || dataEntryShowArchivedByStudentId[studentId]);
         const numVisibleGoals = visibleGoals.length;
