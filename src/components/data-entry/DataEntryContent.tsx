@@ -94,19 +94,17 @@ export default function DataEntryContent() {
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
-  // Correct way to synchronize student session state with incoming student props
   useEffect(() => {
     setStudentSessionStates(prevStates => {
       const newStates = { ...prevStates };
       let stateChanged = false;
+  
       students.forEach(student => {
         const existingState = newStates[student.id];
-        // Check if student is new, or if their goals have changed since last seen.
         if (!existingState || JSON.stringify(existingState.originalGoalHeaders) !== JSON.stringify(student.goals)) {
           stateChanged = true;
           const initialGoalData: Record<string, SessionGoalData['data']> = {};
           student.goals.forEach(goal => {
-            // Preserve existing goal data if student's goals are just being re-ordered, otherwise initialize.
             initialGoalData[goal.id] = (existingState?.goalData?.[goal.id]) || JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type] || {}));
           });
           newStates[student.id] = {
@@ -119,8 +117,11 @@ export default function DataEntryContent() {
           };
         }
       });
-      // Only return a new object (and trigger a re-render) if something has actually changed.
-      return stateChanged ? newStates : prevStates;
+  
+      if (stateChanged) {
+        return newStates;
+      }
+      return prevStates;
     });
   }, [students, setStudentSessionStates]);
 
@@ -464,7 +465,7 @@ export default function DataEntryContent() {
           }
       };
     }
-  }, [selectedStudentIds.length, updateScrollability]);
+  }, [selectedStudentIds, updateScrollability]);
 
 
   const handleScroll = (direction: 'left' | 'right') => {
@@ -667,3 +668,5 @@ export default function DataEntryContent() {
     </ConfettiProvider>
   );
 }
+
+    
