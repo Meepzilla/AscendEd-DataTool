@@ -145,6 +145,8 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const firebaseActions = useStudentDataFirebase({ currentUser, setStudents, setGoalTemplates, setSessions, setLoading, setSessionsLoading, setError, toast, addErrorLog });
   const localActions = useStudentDataLocal({ currentUser, students, setStudents, goalTemplates, setGoalTemplates, sessions, setSessions, toast });
   
+  const dataActions = useMemo(() => isFirebaseDBAvailable ? firebaseActions : localActions, [isFirebaseDBAvailable, firebaseActions, localActions]);
+  
   const activeStudentsInSlots = useMemo(() => {
     return dataEntryState.dataEntrySelectedStudentIds
       .map(id => students.find(s => s.id === id && !s.isArchived))
@@ -180,8 +182,8 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     ...dataEntryState,
     students,
     activeStudentsInSlots,
-    addSession: isFirebaseDBAvailable ? firebaseActions.addSession : localActions.addSession,
-    getSessionsForStudent: isFirebaseDBAvailable ? firebaseActions.getSessionsForStudent : localActions.getSessionsForStudent,
+    addSession: dataActions.addSession,
+    getSessionsForStudent: dataActions.getSessionsForStudent,
     toast,
     addErrorLog,
     removeStudentSlot,
@@ -196,9 +198,6 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     toggleGoalSelectionModal: modalState.toggleGoalSelectionModal,
   });
   
-  // Choose which set of actions to use based on Firebase availability
-  const dataActions = isFirebaseDBAvailable ? firebaseActions : localActions;
-
   // Main effect for loading initial data and setting up listeners
   useEffect(() => {
     if (authLoading) {
