@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Sankey, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { Workflow } from 'lucide-react';
 import { PROMPT_TYPES } from '@/lib/promptConstants';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface SankeyNode { name: string; color?: string; }
 interface SankeyLink { source: number; target: number; value: number; }
@@ -32,6 +33,7 @@ const transformDataForSankeyChart = (sessions: SessionData[], studentActiveGoals
 
       switch (originalGoal.type) {
         case 'ARTICULATION':
+        case 'AAC':
             currentCorrect = Number(data.correct) || 0;
             currentIncorrect = Number(data.incorrect) || 0;
             currentApproximate = Number(data.approximate) || 0;
@@ -189,6 +191,9 @@ const GoalPerformanceSankey: React.FC<GoalPerformanceSankeyProps> = ({ studentSe
   if (sankeyData.links.length === 0) {
     return null;
   }
+  
+  const calculatedHeight = Math.max(600, sankeyData.nodes.length * 20);
+
 
   return (
     <Card className="col-span-1 lg:col-span-2">
@@ -196,19 +201,21 @@ const GoalPerformanceSankey: React.FC<GoalPerformanceSankeyProps> = ({ studentSe
         <CardTitle className="flex items-center gap-2"><Workflow className="h-6 w-6 text-primary"/>Goal Performance Flow</CardTitle>
         <CardDescription>Flow of opportunities from Goal to Outcome for {selectedGoalId ? `goal: ${activeStudentGoals.find(g => g.id === selectedGoalId)?.name || 'selected goal'}` : 'all active goals'}.</CardDescription>
       </CardHeader>
-      <CardContent className="h-[400px] w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <Sankey 
-            data={sankeyData} 
-            node={<CustomSankeyNode />} 
-            nodePadding={20} 
-            margin={{ top: 5, right: 150, bottom: 5, left: 150 }} 
-            link={{ stroke: 'hsl(var(--border))', strokeOpacity: 0.5 }}
-            iterations={32}
-          >
-            <RechartsTooltip formatter={(value: any, name: any) => [value.toLocaleString(undefined, {maximumFractionDigits: 1}), name.replace(/([A-Z])/g, ' $1').trim()]} />
-          </Sankey>
-        </ResponsiveContainer>
+      <CardContent>
+        <ScrollArea className="w-full" style={{ height: `${calculatedHeight}px` }}>
+            <ResponsiveContainer width="100%" height={calculatedHeight}>
+              <Sankey 
+                data={sankeyData} 
+                node={<CustomSankeyNode />} 
+                nodePadding={20} 
+                margin={{ top: 5, right: 150, bottom: 5, left: 150 }} 
+                link={{ stroke: 'hsl(var(--border))', strokeOpacity: 0.5 }}
+                iterations={32}
+              >
+                <RechartsTooltip formatter={(value: any, name: any) => [value.toLocaleString(undefined, {maximumFractionDigits: 1}), name.replace(/([A-Z])/g, ' $1').trim()]} />
+              </Sankey>
+            </ResponsiveContainer>
+        </ScrollArea>
       </CardContent>
     </Card>
   );
