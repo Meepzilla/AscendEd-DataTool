@@ -16,7 +16,7 @@ import { ScrollArea } from '../ui/scroll-area';
 
 const ConfirmationModal = lazy(() => import('@/components/modals/confirmation-modal'));
 const StudentCardsList = lazy(() => import('@/components/data-entry/StudentCardsList'));
-const DataEntryHeaderCard = lazy(() => import('@/components/data-entry/DataEntryHeaderCard'));
+const DataEntryHeaderCard = lazy(() => import('@/components/modals/DataEntryHeaderCard'));
 const SelectionModal = lazy(() => import('@/components/modals/selection-modal'));
 
 export default function DataEntryContent() {
@@ -93,17 +93,17 @@ export default function DataEntryContent() {
         setDataEntryFocusedStudentSlotIndex(0);
       }
     }
-  }, [activeStudents, studentFromContext, dataEntrySelectedStudentIds, setDataEntrySelectedStudentIds, setDataEntryFocusedStudentSlotIndex]);
+  }, [activeStudents, studentFromContext, dataEntrySelectedStudentIds.length, setDataEntrySelectedStudentIds, setDataEntryFocusedStudentSlotIndex]);
 
   useEffect(() => {
-    if (dataEntrySelectedStudentIds.length > 0 && dataEntryFocusedStudentSlotIndex >= 0 && dataEntryFocusedStudentSlotIndex < dataEntrySelectedStudentIds.length) {
+    const focusedStudentId = dataEntrySelectedStudentIds[dataEntryFocusedStudentSlotIndex];
+    if (focusedStudentId) {
         const studentCardId = `student-card-slot-${dataEntryFocusedStudentSlotIndex}`;
         const studentCardElement = document.getElementById(studentCardId);
         if (studentCardElement) {
             studentCardElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
         }
 
-        const focusedStudentId = dataEntrySelectedStudentIds[dataEntryFocusedStudentSlotIndex];
         const studentState = dataEntryStudentSessionStates[focusedStudentId];
         const focusedGoalIndex = dataEntryFocusedGoalIndexByStudentId[focusedStudentId] ?? 0;
         
@@ -123,7 +123,7 @@ export default function DataEntryContent() {
             }
         }
     }
-}, [dataEntryFocusedStudentSlotIndex, dataEntrySelectedStudentIds, dataEntryShowArchivedByStudentId]);
+  }, [dataEntryFocusedStudentSlotIndex, dataEntrySelectedStudentIds, dataEntryShowArchivedByStudentId, dataEntryFocusedGoalIndexByStudentId, dataEntryStudentSessionStates]);
 
 
   const handleStudentSelect = useCallback((studentId: string, index: number) => {
@@ -219,9 +219,12 @@ export default function DataEntryContent() {
     if (container) {
       const observer = new ResizeObserver(updateScrollability);
       observer.observe(container);
+      container.addEventListener('scroll', updateScrollability);
       updateScrollability(); // Initial check
+      
       return () => {
         observer.unobserve(container);
+        container.removeEventListener('scroll', updateScrollability);
       };
     }
   }, [dataEntrySelectedStudentIds, updateScrollability]);
@@ -296,7 +299,6 @@ export default function DataEntryContent() {
             ref={scrollContainerRef} 
             className="h-full w-full" 
             orientation="horizontal"
-            onScroll={updateScrollability}
           >
             <Suspense fallback={<div>Loading student cards...</div>}>
               <StudentCardsList
@@ -384,7 +386,5 @@ export default function DataEntryContent() {
     </ConfettiProvider>
   );
 }
-
-    
 
     
