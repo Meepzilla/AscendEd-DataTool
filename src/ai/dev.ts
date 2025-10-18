@@ -1,3 +1,4 @@
+'use client';
 // This file serves as the main entry point for the Genkit AI development environment.
 // It loads environment variables and imports all defined Genkit AI flows.
 
