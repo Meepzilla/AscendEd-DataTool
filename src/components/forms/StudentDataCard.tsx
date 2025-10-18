@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { Suspense, lazy } from 'react';
@@ -123,7 +122,7 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
           </div>
         </div>
       </CardHeader>
-      <ScrollArea className="flex-grow">
+      <ScrollArea className="h-[730px]">
         <CardContent className="p-3 space-y-3">
           <div>
             <Label htmlFor={`activity-${student.id}`}>Activity</Label>
