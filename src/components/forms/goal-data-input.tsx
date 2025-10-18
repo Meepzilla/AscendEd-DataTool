@@ -62,6 +62,13 @@ export default function GoalDataInputComponent({
     // This function is now only for logic, not for checking lock status
     let newData = { ...data, [field]: value };
 
+    // If a fluency dysfluency is incremented, also increment total syllables.
+    const isIncrementing = value > (data[field] || 0);
+    if (goal.type === 'FLUENCY_SYLLABLE_STUTTER' && isIncrementing && ['stutteredSyllables', 'blocks', 'repetitions', 'interjections'].includes(field)) {
+        const incrementAmount = value - (data[field] || 0);
+        newData.totalSyllables = (newData.totalSyllables || 0) + incrementAmount;
+    }
+
     if (field === 'numberOfTrials') {
       const newSize = Math.max(1, Number(value) || 1);
       const oldTrials = Array.isArray(data.trials) ? data.trials : [];
@@ -109,12 +116,12 @@ export default function GoalDataInputComponent({
         actualPerformancePct = totalOpportunities > 0 ? (correct / totalOpportunities) * 100 : 0;
         break;
       case 'FLUENCY_SYLLABLE_STUTTER':
-        const initialTotalSyllables = Number(data.totalSyllables || 0);
+        const totalSyllables = Number(data.totalSyllables || 0);
         const stutteredSyllables = Number(data.stutteredSyllables || 0);
         const blocks = Number(data.blocks || 0);
         const repetitions = Number(data.repetitions || 0);
-        const totalDysfluencies = stutteredSyllables + blocks + repetitions;
-        const totalSyllables = initialTotalSyllables + blocks + repetitions;
+        const interjections = Number(data.interjections || 0);
+        const totalDysfluencies = stutteredSyllables + blocks + repetitions + interjections;
         correct = Math.max(0, totalSyllables - totalDysfluencies);
         totalOpportunities = totalSyllables;
         actualPerformancePct = totalOpportunities > 0 ? (correct / totalOpportunities) * 100 : 0;
@@ -781,6 +788,8 @@ const FormItem: React.FC<{children: React.ReactNode, className?: string}> = ({ c
 const FormLabel: React.FC<{children: React.ReactNode, htmlFor?: string}> = ({ children, htmlFor }) => (
   <Label htmlFor={htmlFor} className="text-xs font-medium text-muted-foreground">{children}</Label>
 );
+
+    
 
     
 
