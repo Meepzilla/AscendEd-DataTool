@@ -480,5 +480,3 @@ export default function DataEntryContent() {
     </ConfettiProvider>
   );
 }
-
-    

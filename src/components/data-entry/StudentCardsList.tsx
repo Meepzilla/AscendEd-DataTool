@@ -29,7 +29,7 @@ interface StudentCardsListProps {
   handleInputChange: (studentId: string, field: 'activity' | 'notes', value: string) => void;
   handleGoalDataChange: (studentId: string, goalId: string, field: string, value: any) => void;
   handleMoveGoal: (studentId: string, goalId: string, direction: 'up' | 'down') => void;
-  handleLocalAiFetch: (studentId: string) => Promise<void>;
+  handleLocalAiFetch: (studentId: string) => void;
   addStudentSlot: () => void;
   isStudentAccessLocked: boolean;
 }
@@ -116,5 +116,3 @@ const StudentCardsList: React.FC<StudentCardsListProps> = ({
 };
 
 export default StudentCardsList;
-
-    
