@@ -315,6 +315,12 @@ export default function GoalDataInputComponent({
                 })}
               </div>
             </FormItem>
+             <div className="mt-1.5">
+                <FormLabel>Accuracy</FormLabel>
+                <p className="text-sm font-semibold text-primary h-8 flex items-center">
+                {calculateAccuracy()}
+                </p>
+            </div>
           </>
         );
       }
@@ -362,6 +368,12 @@ export default function GoalDataInputComponent({
                   <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={(e) => handleInteraction(e, () => handleChange('trialsRefused', (Number(data.trialsRefused) || 0) + 1))} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
                 </div>
               </FormItem>
+                 <div className="mt-1.5 col-span-2">
+                    <FormLabel>Accuracy</FormLabel>
+                    <p className="text-sm font-semibold text-primary h-8 flex items-center">
+                    {calculateAccuracy()}
+                    </p>
+                </div>
             </div>
              <FormItem>
               <FormLabel>Observation Notes</FormLabel>
@@ -396,6 +408,12 @@ export default function GoalDataInputComponent({
                   <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={(e) => handleInteraction(e, () => handleChange('stutteredSyllables', (Number(data.stutteredSyllables) || 0) + 1))} disabled={isArchived}><Plus className="h-3.5 w-3.5" /></Button>
                 </div>
               </FormItem>
+               <div className="mt-1.5 col-span-2">
+                <FormLabel>Fluency Percentage</FormLabel>
+                <p className="text-sm font-semibold text-primary h-8 flex items-center">
+                    {calculateAccuracy()}
+                </p>
+            </div>
             </div>
              <div className="grid grid-cols-2 gap-1">
                 <FormItem>
@@ -759,3 +777,5 @@ const FormItem: React.FC<{children: React.ReactNode, className?: string}> = ({ c
 const FormLabel: React.FC<{children: React.ReactNode, htmlFor?: string}> = ({ children, htmlFor }) => (
   <Label htmlFor={htmlFor} className="text-xs font-medium text-muted-foreground">{children}</Label>
 );
+
+    
