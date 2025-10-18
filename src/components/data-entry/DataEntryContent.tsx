@@ -229,7 +229,7 @@ export default function DataEntryContent() {
         }
       };
     }
-  }, [dataEntrySelectedStudentIds, updateScrollability]);
+  }, [dataEntrySelectedStudentIds.length, updateScrollability]);
 
 
   const handleScroll = (direction: 'left' | 'right') => {
@@ -388,7 +388,3 @@ export default function DataEntryContent() {
     </ConfettiProvider>
   );
 }
-
-    
-
-    
