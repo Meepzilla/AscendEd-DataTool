@@ -1,20 +1,20 @@
 
 'use client';
 
-import React, { lazy, useState, useEffect, useCallback, Suspense, useMemo, useRef } from 'react';
+import React, { lazy, useState, useEffect, useCallback, Suspense, useMemo } from 'react';
 import { useStudentData } from '@/hooks/use-student-data';
 import { Button } from '@/components/ui/button';
-import { Save, RotateCcw, PlusCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Save, RotateCcw, PlusCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
 import { Info } from 'lucide-react';
 import type { Student, StudentSessionState, SessionGoalData } from '@/lib/types';
 import TouchControls from '@/components/forms/touch-controls';
-import { cn } from '@/lib/utils';
 import { ConfettiProvider } from '@/hooks/use-confetti';
 import { ScrollArea } from '../ui/scroll-area';
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 import { getActivitySuggestions } from '@/ai/flows/activity-suggestions';
+import { cn } from '@/lib/utils';
 
 const ConfirmationModal = lazy(() => import('@/components/modals/confirmation-modal'));
 const StudentCardsList = lazy(() => import('@/components/data-entry/StudentCardsList'));
@@ -90,10 +90,6 @@ export default function DataEntryContent() {
   const [isResetConfirmationOpen, setIsResetConfirmationOpen] = useState(false);
   const [selectionModalType, setSelectionModalType] = useState<'student' | 'goal' | null>(null);
 
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
-
   useEffect(() => {
     setStudentSessionStates(prevStates => {
       const newStates = { ...prevStates };
@@ -101,10 +97,14 @@ export default function DataEntryContent() {
   
       students.forEach(student => {
         const existingState = newStates[student.id];
-        if (!existingState || JSON.stringify(existingState.originalGoalHeaders) !== JSON.stringify(student.goals)) {
+        // Deep comparison of goals can be heavy. A simpler check might be student.goals.length or stringify.
+        const goalsAreDifferent = !existingState || JSON.stringify(existingState.originalGoalHeaders) !== JSON.stringify(student.goals);
+
+        if (goalsAreDifferent) {
           stateChanged = true;
           const initialGoalData: Record<string, SessionGoalData['data']> = {};
           student.goals.forEach(goal => {
+            // Preserve existing data if goal still exists, otherwise initialize.
             initialGoalData[goal.id] = (existingState?.goalData?.[goal.id]) || JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type] || {}));
           });
           newStates[student.id] = {
@@ -411,6 +411,25 @@ export default function DataEntryContent() {
     });
   }, [students, toast, setSelectedStudentIds, setFocusedStudentSlotIndex]);
 
+  const removeStudentSlot = useCallback((indexToRemove: number) => {
+    setSelectedStudentIds(prev => {
+      const currentFocusedId = prev[focusedStudentSlotIndex];
+      const newSelectedIds = prev.filter((_, i) => i !== indexToRemove);
+
+      if (newSelectedIds.length === 0) {
+          setFocusedStudentSlotIndex(0);
+      } else {
+          let newFocusIndex = newSelectedIds.indexOf(currentFocusedId);
+          if (newFocusIndex === -1) {
+              newFocusIndex = Math.min(indexToRemove, newSelectedIds.length - 1);
+              newFocusIndex = Math.max(0, newFocusIndex);
+          }
+          setFocusedStudentSlotIndex(newFocusIndex);
+      }
+      return newSelectedIds;
+    });
+  }, [focusedStudentSlotIndex, setSelectedStudentIds, setFocusedStudentSlotIndex]);
+
   const availableStudentsForDropdown = useMemo(() => {
     const activeStudents = students.filter(s => !s.isArchived);
     return activeStudents.filter(s => !selectedStudentIds.includes(s.id));
@@ -442,58 +461,6 @@ export default function DataEntryContent() {
     setFocusedStudentSlotIndex(parseInt(indexStr, 10));
     setSelectionModalType(null);
   };
-
-  const updateScrollability = useCallback(() => {
-    const container = scrollContainerRef.current;
-    if (container) {
-      setCanScrollLeft(container.scrollLeft > 0);
-      setCanScrollRight(container.scrollLeft < container.scrollWidth - container.clientWidth);
-    }
-  }, []);
-
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (container) {
-      const observer = new ResizeObserver(updateScrollability);
-      observer.observe(container);
-      container.addEventListener('scroll', updateScrollability);
-      updateScrollability();
-      return () => {
-          observer.disconnect();
-          if (container) {
-            container.removeEventListener('scroll', updateScrollability);
-          }
-      };
-    }
-  }, [selectedStudentIds, updateScrollability]);
-
-
-  const handleScroll = (direction: 'left' | 'right') => {
-    const container = scrollContainerRef.current;
-    if (container) {
-      const scrollAmount = container.clientWidth * 0.8;
-      container.scrollBy({ left: direction === 'left' ? -scrollAmount : scrollAmount, behavior: 'smooth' });
-    }
-  };
-  
-  const removeStudentSlot = useCallback((indexToRemove: number) => {
-    setSelectedStudentIds(prev => {
-      const currentFocusedId = prev[focusedStudentSlotIndex];
-      const newSelectedIds = prev.filter((_, i) => i !== indexToRemove);
-
-      if (newSelectedIds.length === 0) {
-          setFocusedStudentSlotIndex(0);
-      } else {
-          let newFocusIndex = newSelectedIds.indexOf(currentFocusedId);
-          if (newFocusIndex === -1) {
-              newFocusIndex = Math.min(indexToRemove, newSelectedIds.length - 1);
-              newFocusIndex = Math.max(0, newFocusIndex);
-          }
-          setFocusedStudentSlotIndex(newFocusIndex);
-      }
-      return newSelectedIds;
-    });
-  }, [focusedStudentSlotIndex, setSelectedStudentIds, setFocusedStudentSlotIndex]);
   
   const activeStudentsInSlots = useMemo(() => selectedStudentIds
       .map(id => students.find(s => s.id === id))
@@ -544,23 +511,8 @@ export default function DataEntryContent() {
         </div>
 
         <div className="flex-grow min-h-0 relative group">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => handleScroll('left')}
-            className={cn(
-              "absolute left-0 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity",
-              !canScrollLeft && "hidden"
-            )}
-            title="Scroll Left"
-          >
-            <ChevronLeft className="h-6 w-6" />
-          </Button>
-
           <ScrollArea 
-            ref={scrollContainerRef} 
             className="h-full w-full" 
-            onScroll={updateScrollability}
           >
             <Suspense fallback={<div>Loading student cards...</div>}>
               <StudentCardsList
@@ -589,18 +541,6 @@ export default function DataEntryContent() {
               />
             </Suspense>
           </ScrollArea>
-           <Button
-            variant="outline"
-            size="icon"
-            onClick={() => handleScroll('right')}
-            className={cn(
-              "absolute right-0 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity",
-              !canScrollRight && "hidden"
-            )}
-            title="Scroll Right"
-          >
-            <ChevronRight className="h-6 w-6" />
-          </Button>
         </div>
         
         {selectedStudentIds.length > 0 && (
@@ -668,5 +608,7 @@ export default function DataEntryContent() {
     </ConfettiProvider>
   );
 }
+
+    
 
     
