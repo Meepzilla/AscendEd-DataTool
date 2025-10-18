@@ -27,7 +27,7 @@ interface StudentCardsListProps {
   handleStudentSelect: (studentId: string, index: number) => void;
   removeStudentSlot: (indexToRemove: number) => void;
   handleInputChange: (studentId: string, field: 'activity' | 'notes', value: string) => void;
-  handleGoalDataChange: (studentId: string, goalId: string, field: keyof SessionGoalData['data'], value: any) => void;
+  handleGoalDataChange: (studentId: string, goalId: string, field: string, value: any) => void;
   handleMoveGoal: (studentId: string, goalId: string, direction: 'up' | 'down') => void;
   handleLocalAiFetch: (studentId: string) => Promise<void>;
   addStudentSlot: () => void;
@@ -116,3 +116,5 @@ const StudentCardsList: React.FC<StudentCardsListProps> = ({
 };
 
 export default StudentCardsList;
+
+    
