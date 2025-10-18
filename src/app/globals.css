@@ -53,11 +53,11 @@ body {
   }
 
   .dark { /* Dark mode color variables */
-    --background: 220 40% 12%; /* Darker Blue */
+    --background: 220 50% 8%; /* Darker Blue */
     --foreground: 210 20% 85%; /* Dark mode main text color (like text-slate-200) */
-    --card: 220 35% 17%; /* Card background, adjusted for new background */
+    --card: 220 40% 13%; /* Card background, adjusted for new background */
     --card-foreground: 210 20% 85%; /* Text color on cards */
-    --popover: 220 35% 17%; /* Popover background, adjusted for new background */
+    --popover: 220 40% 13%; /* Popover background, adjusted for new background */
     --popover-foreground: 210 20% 85%; /* Text color on popovers */
     --primary: 35 75% 55%; /* Primary accent color (Golden Brown) */
     --primary-foreground: 35 20% 15%; /* Text color on primary background */
@@ -81,7 +81,7 @@ body {
     --chart-5: 340 75% 55%;
 
     /* Sidebar specific colors for dark theme */
-    --sidebar-background: 220 38% 15%; /* Sidebar background, adjusted for new background */
+    --sidebar-background: 220 45% 11%; /* Sidebar background, adjusted for new background */
     --sidebar-foreground: 210 20% 80%;
     --sidebar-primary: 35 75% 55%;
     --sidebar-primary-foreground: 35 20% 15%;
