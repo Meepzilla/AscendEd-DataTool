@@ -112,14 +112,7 @@ export function useKeyboardShortcutHandlers({
                         'incorrect': 'untouched',
                     };
                     currentTrials[currentTrialIndex] = nextStateCycle[currentState];
-                    
-                    let nextUntouchedIndex = currentTrials.findIndex((t, i) => t === 'untouched' && i > currentTrialIndex);
-                    if (nextUntouchedIndex === -1) {
-                        nextUntouchedIndex = currentTrials.findIndex(t => t === 'untouched');
-                    }
-                    const newFocusedIndex = nextUntouchedIndex !== -1 ? nextUntouchedIndex : currentTrialIndex;
-                    
-                    handleGoalDataChange(studentId, goal.id, 'trials', { ...goalData, trials: currentTrials, focusedTrialIndex: newFocusedIndex });
+                    handleGoalDataChange(studentId, goal.id, 'trials', { ...goalData, trials: currentTrials, focusedTrialIndex: currentTrialIndex });
                 }
                 return;
             }
