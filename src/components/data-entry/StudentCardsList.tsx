@@ -100,14 +100,16 @@ const StudentCardsList: React.FC<StudentCardsListProps> = ({
       })}
 
       {dataEntrySelectedStudentIds.length < activeStudents.length && dataEntrySelectedStudentIds.length < MAX_STUDENTS_DATA_ENTRY && (
-        <Button
-          variant="outline"
-          onClick={addStudentSlot}
-          className="flex-shrink-0 w-[300px] h-full flex items-center justify-center py-8 border-dashed hover:border-primary hover:text-primary"
-          title="Add another student data entry card (Alt+W)"
-        >
-          <PlusCircle className="mr-2 h-5 w-5" /> Add Student Slot
-        </Button>
+        <div className="flex-shrink-0 w-[300px] h-full flex items-center justify-center p-4">
+            <Button
+              variant="outline"
+              onClick={addStudentSlot}
+              className="w-full h-full border-dashed hover:border-primary hover:text-primary flex flex-col items-center justify-center"
+              title="Add another student data entry card (Alt+W)"
+            >
+              <PlusCircle className="mr-2 h-5 w-5" /> Add Student Slot
+            </Button>
+        </div>
       )}
     </div>
   );
