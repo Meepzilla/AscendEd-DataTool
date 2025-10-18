@@ -94,7 +94,6 @@ export function useKeyboardShortcutHandlers({
         if (!focusedInfo?.goal || focusedInfo.goal.isArchived) return;
 
         let { studentId, goal, goalData } = focusedInfo;
-        // Ensure goalData is not undefined. Initialize if it's missing.
         if (!goalData) {
             goalData = GOAL_TYPE_FIELDS[goal.type] || {};
         }
@@ -113,15 +112,24 @@ export function useKeyboardShortcutHandlers({
                         'incorrect': 'untouched',
                     };
                     currentTrials[currentTrialIndex] = nextStateCycle[currentState];
-                    handleGoalDataChange(studentId, goal.id, 'trials', { ...goalData, trials: currentTrials, focusedTrialIndex: currentTrialIndex });
+                    
+                    let nextUntouchedIndex = currentTrials.findIndex((t, i) => t === 'untouched' && i > currentTrialIndex);
+                    if (nextUntouchedIndex === -1) {
+                        nextUntouchedIndex = currentTrials.findIndex(t => t === 'untouched');
+                    }
+                    const newFocusedIndex = nextUntouchedIndex !== -1 ? nextUntouchedIndex : currentTrialIndex;
+                    
+                    handleGoalDataChange(studentId, goal.id, 'trials', { ...goalData, trials: currentTrials, focusedTrialIndex: newFocusedIndex });
                 }
                 return;
             }
              if (key === 'N' && !alt) { // Go to next trial
                  if (currentTrialIndex !== -1) {
-                    const nextUntouchedIndex = currentTrials.findIndex((t, i) => t === 'untouched' && i > currentTrialIndex);
-                    // If no more untouched trials after the current one, stay on the current one
-                    const newFocusedIndex = nextUntouchedIndex !== -1 ? nextUntouchedIndex : currentTrialIndex;
+                    let nextUntouchedIndex = currentTrials.findIndex((t, i) => t === 'untouched' && i > currentTrialIndex);
+                    if (nextUntouchedIndex === -1) { // Loop back to the start if no more untouched trials are after the current one
+                        nextUntouchedIndex = currentTrials.findIndex(t => t === 'untouched');
+                    }
+                    const newFocusedIndex = nextUntouchedIndex !== -1 ? nextUntouchedIndex : currentTrialIndex; // Stay if all are filled
                     handleGoalDataChange(studentId, goal.id, 'focusedTrialIndex', { ...goalData, focusedTrialIndex: newFocusedIndex });
                 }
                 return;
