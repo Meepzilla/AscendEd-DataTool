@@ -117,7 +117,7 @@ export default function DataEntryContent() {
         }
     }, 50); // Small delay to ensure DOM is updated after student focus changes
 
-  }, [dataEntrySelectedStudentIds, dataEntryFocusedStudentSlotIndex, dataEntryFocusedGoalIndexByStudentId, getCurrentFocusedGoalInfo]);
+  }, [dataEntrySelectedStudentIds, dataEntryFocusedStudentSlotIndex, dataEntryFocusedGoalIndexByStudentId]);
 
   const handleStudentSelect = useCallback((studentId: string, index: number) => {
     setDataEntrySelectedStudentIds((prev: string[]) => {
