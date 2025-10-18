@@ -94,28 +94,32 @@ export default function DataEntryContent() {
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
-  // Initialize student session states using useMemo to prevent unnecessary re-renders
-  useMemo(() => {
+  // Correct way to synchronize student session state with incoming student props
+  useEffect(() => {
     setStudentSessionStates(prevStates => {
       const newStates = { ...prevStates };
       let stateChanged = false;
       students.forEach(student => {
-        if (!newStates[student.id] || JSON.stringify(newStates[student.id].originalGoalHeaders) !== JSON.stringify(student.goals)) {
+        const existingState = newStates[student.id];
+        // Check if student is new, or if their goals have changed since last seen.
+        if (!existingState || JSON.stringify(existingState.originalGoalHeaders) !== JSON.stringify(student.goals)) {
           stateChanged = true;
           const initialGoalData: Record<string, SessionGoalData['data']> = {};
           student.goals.forEach(goal => {
-            initialGoalData[goal.id] = (newStates[student.id]?.goalData?.[goal.id]) || JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type] || {}));
+            // Preserve existing goal data if student's goals are just being re-ordered, otherwise initialize.
+            initialGoalData[goal.id] = (existingState?.goalData?.[goal.id]) || JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type] || {}));
           });
           newStates[student.id] = {
             studentId: student.id,
             studentName: student.name,
-            activity: newStates[student.id]?.activity || '',
-            notes: newStates[student.id]?.notes || '',
+            activity: existingState?.activity || '',
+            notes: existingState?.notes || '',
             originalGoalHeaders: student.goals,
             goalData: initialGoalData,
           };
         }
       });
+      // Only return a new object (and trigger a re-render) if something has actually changed.
       return stateChanged ? newStates : prevStates;
     });
   }, [students, setStudentSessionStates]);
