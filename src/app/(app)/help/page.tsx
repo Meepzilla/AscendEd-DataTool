@@ -41,7 +41,7 @@ const hotkeys: Hotkey[] = [
   { key: 'Alt + C', description: 'Decrement Correct', category: 'Data Entry' },
   { key: 'B', description: 'Increment Approximate / Blocks (Fluency)', category: 'Data Entry' },
   { key: 'Alt + B', description: 'Decrement Approximate', category: 'Data Entry' },
-  { key: 'N', description: 'Increment Incorrect / Mark Trial Incorrect & Next', category: 'Data Entry' },
+  { key: 'N', description: 'Increment Incorrect / Focus Next Trial', category: 'Data Entry' },
   { key: 'Alt + N', description: 'Decrement Incorrect', category: 'Data Entry' },
   { key: 'D', description: 'Increment Visual Prompt count', category: 'Data Entry' },
   { key: 'Alt + D', description: 'Decrement Visual Prompt count', category: 'Data Entry' },

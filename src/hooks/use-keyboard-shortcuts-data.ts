@@ -117,12 +117,12 @@ export function useKeyboardShortcutHandlers({
                 }
                 return;
             }
-            if (key === 'N' && !alt) { // Mark incorrect and go to next
+             if (key === 'N' && !alt) { // Go to next trial
                  if (currentTrialIndex !== -1) {
-                    currentTrials[currentTrialIndex] = 'incorrect';
                     const nextUntouchedIndex = currentTrials.findIndex((t, i) => t === 'untouched' && i > currentTrialIndex);
+                    // If no more untouched trials after the current one, stay on the current one
                     const newFocusedIndex = nextUntouchedIndex !== -1 ? nextUntouchedIndex : currentTrialIndex;
-                    handleGoalDataChange(studentId, goal.id, 'trials', { ...goalData, trials: currentTrials, focusedTrialIndex: newFocusedIndex });
+                    handleGoalDataChange(studentId, goal.id, 'focusedTrialIndex', { ...goalData, focusedTrialIndex: newFocusedIndex });
                 }
                 return;
             }
