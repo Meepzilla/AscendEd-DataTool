@@ -11,11 +11,13 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { useStudentData } from '@/hooks/use-student-data';
-import type { Goal } from '@/lib/types';
+import type { Goal, GoalType } from '@/lib/types';
 import { AssignedGoalEditSchema } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { Switch } from '@/components/ui/switch'; // Import Switch
-import { Label } from '@/components/ui/label'; // Import Label
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 
 type EditAssignedGoalFormData = z.infer<typeof AssignedGoalEditSchema>;
 
@@ -30,6 +32,9 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
   const { updateStudentGoal, loading: dataLoading } = useStudentData();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const sortedDataCaptureTypes = React.useMemo(() => Object.keys(GOAL_TYPE_FIELDS).sort((a, b) => a.localeCompare(b)), []);
+
 
   const form = useForm<EditAssignedGoalFormData>({
     resolver: zodResolver(AssignedGoalEditSchema),
@@ -38,6 +43,7 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
       smartGoal: '',
       sessionTargetValue: undefined,
       isArchived: false,
+      dataCaptureType: undefined,
     },
   });
 
@@ -48,6 +54,7 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
         smartGoal: goalToEdit.smartGoal,
         sessionTargetValue: goalToEdit.sessionTargetValue,
         isArchived: goalToEdit.isArchived || false,
+        dataCaptureType: goalToEdit.dataCaptureType || goalToEdit.type,
       });
     }
   }, [goalToEdit, isOpen, form]);
@@ -121,6 +128,34 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
 
           <FormField
             control={form.control}
+            name="dataCaptureType"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Data Capture Method</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a data capture method" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {sortedDataCaptureTypes.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type === 'AAC' ? 'AAC' : type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormDescription>
+                  This determines the type of data entry fields shown for this goal.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
             name="sessionTargetValue"
             render={({ field }) => (
               <FormItem>
@@ -137,7 +172,7 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
                   />
                 </FormControl>
                 <FormDescription>
-                  Target percentage (0-100) for accuracy/fluency goals, or a specific rating (e.g., 4 out of 5) for qualitative goals.
+                  Target percentage (0-100), or a specific rating for qualitative goals.
                 </FormDescription>
                 <FormMessage />
               </FormItem>

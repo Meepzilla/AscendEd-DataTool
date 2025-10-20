@@ -13,7 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useStudentData } from '@/hooks/use-student-data';
 import { GoalTemplateSchema, GoalType, type GoalTemplate } from '@/lib/types';
-import { GOAL_TYPES } from '@/lib/goal-constants';
+import { GOAL_TYPES, GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 import { generateSmartGoal } from '@/ai/flows/smart-goal-generation';
 import { Sparkles, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -39,6 +39,7 @@ export default function AddGoalTemplateModal() {
     defaultValues: {
       name: '',
       type: Object.keys(GOAL_TYPES)[0] as GoalType, 
+      dataCaptureType: Object.keys(GOAL_TYPE_FIELDS)[0] as GoalType,
       smartGoalPrompt: '',
       generatedSmartGoal: '',
       sessionTargetValue: undefined,
@@ -46,13 +47,16 @@ export default function AddGoalTemplateModal() {
   });
   
   const sortedGoalTypes = React.useMemo(() => Object.entries(GOAL_TYPES).sort(([, a], [, b]) => a.localeCompare(b)), []);
+  const sortedDataCaptureTypes = React.useMemo(() => Object.keys(GOAL_TYPE_FIELDS).sort((a, b) => a.localeCompare(b)), []);
 
 
   useEffect(() => {
     if (isAddGoalTemplateModalOpen) {
+      const defaultType = sortedGoalTypes[0] ? (sortedGoalTypes[0][1] as GoalType) : undefined;
       form.reset({
         name: '',
-        type: sortedGoalTypes[0] ? (sortedGoalTypes[0][1] as GoalType) : undefined,
+        type: defaultType,
+        dataCaptureType: defaultType,
         smartGoalPrompt: addGoalTemplateInitialPrompt || '',
         generatedSmartGoal: '',
         sessionTargetValue: undefined,
@@ -129,30 +133,56 @@ export default function AddGoalTemplateModal() {
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="type"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Goal Type</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a goal type" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {sortedGoalTypes.map(([key, value]) => (
-                      <SelectItem key={key} value={value}>
-                        {value === 'AAC' ? 'AAC' : value.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="type"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Clinical Goal Category</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a goal category" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {sortedGoalTypes.map(([key, value]) => (
+                        <SelectItem key={key} value={value}>
+                          {value === 'AAC' ? 'AAC' : value.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="dataCaptureType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Data Capture Method</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a data capture method" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {sortedDataCaptureTypes.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type === 'AAC' ? 'AAC' : type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
           <FormField
             control={form.control}

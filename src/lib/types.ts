@@ -17,6 +17,7 @@ export interface Goal {
   id:string;
   name: string;
   type: GoalType;
+  dataCaptureType?: GoalType; // NEW: Specifies which data entry UI to use
   smartGoal: string;
   sessionTargetValue?: number; // Target percentage (0-100) or specific count for some qualitative goals
   isArchived?: boolean; // New field for archiving
@@ -42,6 +43,7 @@ export interface GoalTemplate {
   id: string;
   name: string;
   type: GoalType;
+  dataCaptureType?: GoalType; // NEW: Specifies which data entry UI to use
   smartGoalPrompt: string;
   generatedSmartGoal: string;
   sessionTargetValue?: number; // Target percentage (0-100) or specific count
@@ -187,6 +189,7 @@ export const SignUpSchema = z.object({
 export const GoalTemplateSchema = z.object({
   name: z.string().min(3, "Template name is required."),
   type: z.string(), 
+  dataCaptureType: z.string().optional(), // NEW
   smartGoalPrompt: z.string().min(10, "SMART goal prompt is required."),
   generatedSmartGoal: z.string().optional(),
   sessionTargetValue: z.preprocess(
@@ -199,6 +202,7 @@ export const GoalTemplateSchema = z.object({
 export const AssignedGoalEditSchema = z.object({
   name: z.string().min(3, { message: "Goal name must be at least 3 characters." }),
   smartGoal: z.string().min(10, { message: "SMART goal text must be at least 10 characters." }),
+  dataCaptureType: z.string().optional(), // NEW
   sessionTargetValue: z.preprocess(
     (val) => (val === "" || val === undefined || val === null ? undefined : Number(val)),
     z.number().min(0, "Target must be 0 or greater.").max(100, "Target percentage cannot exceed 100 for most goals.").optional()

@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -21,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { GOAL_TYPES } from '@/lib/goal-constants';
+import { GOAL_TYPES, GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { generateUUID } from '@/lib/helpers';
@@ -66,11 +67,14 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
   // State for AI Goal Generation
   const [aiGoalName, setAiGoalName] = useState('');
   const [aiGoalType, setAiGoalType] = useState<GoalType>(Object.values(GOAL_TYPES)[0] as GoalType);
+  const [aiDataCaptureType, setAiDataCaptureType] = useState<GoalType>(Object.keys(GOAL_TYPE_FIELDS)[0] as GoalType);
   const [aiGoalPrompt, setAiGoalPrompt] = useState('');
   const [aiGeneratedSmartGoal, setAiGeneratedSmartGoal] = useState('');
   const [aiGoalSessionTarget, setAiGoalSessionTarget] = useState<number | undefined>(undefined);
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [isAssigningAiGoal, setIsAssigningAiGoal] = useState(false);
+  
+  const sortedDataCaptureTypes = React.useMemo(() => Object.keys(GOAL_TYPE_FIELDS).sort((a, b) => a.localeCompare(b)), []);
 
 
   useEffect(() => {
@@ -79,6 +83,7 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
       // Reset AI form fields when modal opens or student changes
       setAiGoalName('');
       setAiGoalType(Object.values(GOAL_TYPES)[0] as GoalType);
+      setAiDataCaptureType(Object.keys(GOAL_TYPE_FIELDS)[0] as GoalType);
       setAiGoalPrompt('');
       setAiGeneratedSmartGoal('');
       setAiGoalSessionTarget(undefined);
@@ -99,6 +104,7 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
       id: generateUUID(), 
       name: template.name,
       type: template.type,
+      dataCaptureType: template.dataCaptureType,
       smartGoal: template.generatedSmartGoal || `SMART goal for ${template.name}`, 
       sessionTargetValue: template.sessionTargetValue,
     };
@@ -164,6 +170,7 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
       id: generateUUID(),
       name: aiGoalName,
       type: aiGoalType,
+      dataCaptureType: aiDataCaptureType,
       smartGoal: aiGeneratedSmartGoal,
       sessionTargetValue: aiGoalSessionTarget,
     };
@@ -173,6 +180,7 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
       // Reset AI form fields after successful assignment
       setAiGoalName('');
       setAiGoalType(Object.values(GOAL_TYPES)[0] as GoalType);
+      setAiDataCaptureType(Object.keys(GOAL_TYPE_FIELDS)[0] as GoalType);
       setAiGoalPrompt('');
       setAiGeneratedSmartGoal('');
       setAiGoalSessionTarget(undefined);
@@ -250,24 +258,45 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
                 className="h-9"
               />
             </div>
-            <div>
-              <Label htmlFor="aiGoalTypeSelect" className="text-sm">Goal Type</Label>
-              <Select
-                value={aiGoalType}
-                onValueChange={(value) => setAiGoalType(value as GoalType)}
-                disabled={dataLoading || isAiGenerating || isAssigningAiGoal}
-              >
-                <SelectTrigger id="aiGoalTypeSelect" className="h-9">
-                  <SelectValue placeholder="Select goal type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.values(GOAL_TYPES).map(type => (
-                    <SelectItem key={type} value={type}>
-                      {type === 'AAC' ? 'AAC' : type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <Label htmlFor="aiGoalTypeSelect" className="text-sm">Clinical Category</Label>
+                <Select
+                  value={aiGoalType}
+                  onValueChange={(value) => setAiGoalType(value as GoalType)}
+                  disabled={dataLoading || isAiGenerating || isAssigningAiGoal}
+                >
+                  <SelectTrigger id="aiGoalTypeSelect" className="h-9">
+                    <SelectValue placeholder="Select goal type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.values(GOAL_TYPES).map(type => (
+                      <SelectItem key={type} value={type}>
+                        {type === 'AAC' ? 'AAC' : type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+               <div>
+                <Label htmlFor="aiDataCaptureTypeSelect" className="text-sm">Data Capture Method</Label>
+                <Select
+                  value={aiDataCaptureType}
+                  onValueChange={(value) => setAiDataCaptureType(value as GoalType)}
+                  disabled={dataLoading || isAiGenerating || isAssigningAiGoal}
+                >
+                  <SelectTrigger id="aiDataCaptureTypeSelect" className="h-9">
+                    <SelectValue placeholder="Select capture method" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sortedDataCaptureTypes.map(type => (
+                      <SelectItem key={type} value={type}>
+                        {type === 'AAC' ? 'AAC' : type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div>
               <Label htmlFor="aiGoalPromptText" className="text-sm">Brief Description/Prompt for AI</Label>

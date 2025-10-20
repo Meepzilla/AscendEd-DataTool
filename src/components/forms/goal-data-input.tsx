@@ -64,7 +64,7 @@ export default function GoalDataInputComponent({
 
     // If a fluency dysfluency is incremented, also increment total syllables.
     const isIncrementing = value > (data[field] || 0);
-    if (goal.type === 'FLUENCY_SYLLABLE_STUTTER' && isIncrementing && ['stutteredSyllables', 'blocks', 'repetitions', 'interjections'].includes(field)) {
+    if (goal.dataCaptureType === 'FLUENCY_SYLLABLE_STUTTER' && isIncrementing && ['stutteredSyllables', 'blocks', 'repetitions', 'interjections'].includes(field)) {
         const incrementAmount = value - (data[field] || 0);
         newData.totalSyllables = (newData.totalSyllables || 0) + incrementAmount;
     }
@@ -90,7 +90,7 @@ export default function GoalDataInputComponent({
   const calculateAccuracy = (): string => {
     let correct: number;
     let totalOpportunities: number;
-    const type = goal.type;
+    const type = goal.dataCaptureType || goal.type;
     let actualPerformancePct: number;
 
     switch (type) {
@@ -208,7 +208,8 @@ export default function GoalDataInputComponent({
 
 
   const renderInputFields = () => {
-    switch (goal.type) {
+    const captureType = goal.dataCaptureType || goal.type;
+    switch (captureType) {
       case 'AAC':
       case 'ARTICULATION':
         return (
@@ -486,6 +487,7 @@ export default function GoalDataInputComponent({
           </>
         );
       case 'QUALITATIVE_OBSERVATION':
+      case 'COGNITIVE':
         return (
           <>
             <FormItem>
@@ -789,9 +791,3 @@ const FormItem: React.FC<{children: React.ReactNode, className?: string}> = ({ c
 const FormLabel: React.FC<{children: React.ReactNode, htmlFor?: string}> = ({ children, htmlFor }) => (
   <Label htmlFor={htmlFor} className="text-xs font-medium text-muted-foreground">{children}</Label>
 );
-
-    
-
-    
-
-    
