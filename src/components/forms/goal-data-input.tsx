@@ -141,6 +141,7 @@ export default function GoalDataInputComponent({
       }
       case 'PROMPTING':
       case 'QUALITATIVE_OBSERVATION':
+      case 'COGNITIVE':
       default:
         return 'N/A';
     }
@@ -750,7 +751,7 @@ export default function GoalDataInputComponent({
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="px-2 py-1.5 h-auto text-xs justify-center w-full sm:w-auto"
+                        className="px-2 py-1.5 h-auto text-xs justify-center w-full"
                         style={{
                         borderColor: PROMPT_COLORS[pt],
                         color: PROMPT_COLORS[pt],
@@ -791,3 +792,5 @@ const FormItem: React.FC<{children: React.ReactNode, className?: string}> = ({ c
 const FormLabel: React.FC<{children: React.ReactNode, htmlFor?: string}> = ({ children, htmlFor }) => (
   <Label htmlFor={htmlFor} className="text-xs font-medium text-muted-foreground">{children}</Label>
 );
+
+    
