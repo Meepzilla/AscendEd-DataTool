@@ -13,7 +13,7 @@ This is a comprehensive Next.js application designed for educators and therapist
 - **Firebase Integration**: Securely syncs all data to the cloud using Firebase Authentication and Firestore, with a seamless fallback to local browser storage if offline or not configured.
 - **Responsive Design**: A modern, responsive interface that works on desktop and mobile devices.
 
-## Tech Stack
+## Tech Stack 
 
 - **Framework**: [Next.js](https://nextjs.org/) (App Router)
 - **UI Library**: [React](https://react.dev/)
@@ -67,3 +67,5 @@ The application should now be running at [http://localhost:3000](http://localhos
 - `npm run lint`: Runs the linter to check for code quality issues.
 - `npm run genkit:dev`: Starts the Genkit development server for AI flow testing.
 - `npm run genkit:watch`: Starts the Genkit server in watch mode.
+
+November 15, 2025 at 3:36 PM 
