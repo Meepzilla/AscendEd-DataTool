@@ -21,7 +21,7 @@ This is a comprehensive Next.js application designed for educators and therapist
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/)
 - **UI Components**: [ShadCN UI](https://ui.shadcn.com/)
 - **Charting**: [Recharts](https://recharts.org/)
-- **AI Integration**: [Genkit](https://firebase.google.com/docs/genkit)
+- **AI Integration**: [Genkit](https://genkit.dev/)
 - **Data Storage**: Browser local storage
 
 ## Getting Started

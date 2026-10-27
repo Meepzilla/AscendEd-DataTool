@@ -8,7 +8,7 @@ import type { User } from '@/lib/types';
 const LOCAL_USER: User = {
   uid: 'local-guest-user',
   email: 'guest@local.com',
-  displayName: 'Guest (Local Mode)',
+  displayName: 'Guest',
   isAnonymous: true,
   createdAt: new Date().toISOString(),
 };
