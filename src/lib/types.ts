@@ -1,5 +1,4 @@
 
-import type { Timestamp } from 'firebase/firestore';
 import type { ToastActionElement, ToastProps } from "@/components/ui/toast"
 
 
@@ -47,7 +46,7 @@ export interface GoalTemplate {
   smartGoalPrompt: string;
   generatedSmartGoal: string;
   sessionTargetValue?: number; // Target percentage (0-100) or specific count
-  createdAt: Timestamp | Date; 
+  createdAt: Date; 
   isDefault: boolean;
   userId?: string;
   isArchived?: boolean;
@@ -148,7 +147,7 @@ export interface User {
   email?: string | null;
   displayName?: string | null;
   isAnonymous: boolean;
-  createdAt?: Timestamp | Date | string; // Added from Firestore user doc
+  createdAt?: Date | string;
 }
 
 // Moved from DataEntryPage for use in context
@@ -169,22 +168,6 @@ export const StudentSchema = z.object({
   isArchived: z.boolean().optional(),
   updatedAt: z.string().optional(),
 });
-
-export const SignInSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address." }),
-  password: z.string().min(1, { message: "Password is required." }),
-});
-
-export const SignUpSchema = z.object({
-  displayName: z.string().min(2, { message: "Display name must be at least 2 characters." }),
-  email: z.string().email({ message: "Please enter a valid email address." }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters." }),
-  confirmPassword: z.string().min(6, { message: "Password must be at least 6 characters." }),
-}).refine(data => data.password === data.confirmPassword, {
-  message: "Passwords do not match.",
-  path: ["confirmPassword"],
-});
-
 
 export const GoalTemplateSchema = z.object({
   name: z.string().min(3, "Template name is required."),

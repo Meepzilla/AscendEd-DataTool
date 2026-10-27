@@ -35,7 +35,6 @@ export default function StudentProfilePage() {
     sessions,
     loading, 
     error,
-    isFirebaseDBAvailable,
     selectedStudent,
     setSelectedStudent,
     openEditStudentModal, 
@@ -100,7 +99,6 @@ export default function StudentProfilePage() {
         </CardHeader>
         <CardContent>
           <p>The student with ID "{studentIdDisplay}" could not be found. They may have been deleted or the ID is incorrect.</p>
-          {!isFirebaseDBAvailable && <p className="text-orange-500 font-semibold mt-2">(Operating in Local Mode)</p>}
           <Button onClick={() => router.push('/student-profile')} className="mt-4">Go to Student Selection</Button>
         </CardContent>
       </Card>
@@ -272,7 +270,6 @@ export default function StudentProfilePage() {
               </div>
               <CardDescription className="text-xs sm:text-sm">
                 Student ID: {currentStudent.id} | Joined: {formatDate(currentStudent.createdAt)}
-                {!isFirebaseDBAvailable && !loading && <span className="text-orange-500 font-semibold block">(Local Mode)</span>}
               </CardDescription>
             </div>
           </div>

@@ -7,8 +7,6 @@ import { useToast as useShadcnToast } from "@/hooks/use-toast";
 import { useErrorLog } from './use-error-log';
 import type { Student, Goal, GoalTemplate, SessionData, SessionGoalData, User } from '@/lib/types';
 import { useModalState } from './use-modal-state';
-import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, onSnapshot, serverTimestamp, Timestamp, writeBatch } from 'firebase/firestore';
-import { db as firestoreDbModule } from '@/lib/firebase/config';
 import { DEFAULT_GOAL_TEMPLATES } from '@/lib/goal-constants';
 import { generateUUID } from '@/lib/helpers';
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
@@ -45,7 +43,6 @@ interface StudentDataContextType {
   loading: boolean;
   sessionsLoading: boolean;
   error: Error | null;
-  isFirebaseDBAvailable: boolean;
   addErrorLog: (log: any) => void;
 
   addStudent: (name: string) => Promise<Student | null>;
@@ -98,18 +95,11 @@ interface StudentDataContextType {
 
 const StudentDataContext = createContext<StudentDataContextType | undefined>(undefined);
 
-const APP_ID = 'default-app-id';
-const getStudentsCollectionPath = (appId: string) => `artifacts/${appId}/public/data/students`;
-const getGoalTemplatesCollectionPath = (appId: string) => `artifacts/${appId}/public/data/goal_templates`;
-const getSessionsCollectionPath = (appId: string) => `artifacts/${appId}/public/data/sessions`;
-
 
 export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { currentUser, isFirebaseAvailable: isFirebaseAuthAvailable, loading: authLoading } = useAuth();
+  const { currentUser, loading: authLoading } = useAuth();
   const { toast } = useShadcnToast();
   const { addErrorLog } = useErrorLog();
-  
-  const isFirebaseDBAvailable = isFirebaseAuthAvailable && !!firestoreDbModule;
 
   const [students, setStudents] = useState<Student[]>([]);
   const [goalTemplates, setGoalTemplates] = useState<GoalTemplate[]>([]);
@@ -141,181 +131,95 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const addStudent = useCallback(async (name: string) => {
     if (!currentUser) return null;
     const newStudent: Omit<Student, 'id'> = { name, goals: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), userId: currentUser.uid, isArchived: false };
-    if (isFirebaseDBAvailable) {
-        try {
-            const docRef = await addDoc(collection(firestoreDbModule, getStudentsCollectionPath(APP_ID)), newStudent);
-            toast({ title: "Success", description: `Student "${name}" added.` });
-            return { id: docRef.id, ...newStudent };
-        } catch (e: any) { addErrorLog({ message: 'Firebase addStudent failed.', details: e.message, type: 'error' }); return null; }
-    } else {
-        const studentWithId = { ...newStudent, id: generateUUID()};
-        const newStudents = [...students, studentWithId].sort((a,b) => a.name.localeCompare(b.name));
-        setStudents(newStudents);
-        saveToLocal(studentsKey, newStudents);
-        toast({ title: "Success", description: "Student added locally." });
-        return studentWithId;
-    }
-  }, [currentUser, isFirebaseDBAvailable, students, studentsKey, toast, addErrorLog, saveToLocal]);
+    const studentWithId = { ...newStudent, id: generateUUID()};
+    const newStudents = [...students, studentWithId].sort((a,b) => a.name.localeCompare(b.name));
+    setStudents(newStudents);
+    saveToLocal(studentsKey, newStudents);
+    toast({ title: "Success", description: `Student "${name}" added.` });
+    return studentWithId;
+  }, [currentUser, students, studentsKey, toast, saveToLocal]);
 
   const updateStudent = useCallback(async (studentId: string, data: Partial<Student>) => {
       if (!currentUser) return;
       const updatedData = { ...data, updatedAt: new Date().toISOString() };
-      if (isFirebaseDBAvailable) {
-          try {
-              await updateDoc(doc(firestoreDbModule, getStudentsCollectionPath(APP_ID), studentId), { ...updatedData, userId: currentUser.uid });
-              toast({ title: "Success", description: "Student updated." });
-          } catch (e: any) { addErrorLog({ message: 'Firebase updateStudent failed.', details: e.message, type: 'error' }); }
-      } else {
-          const updatedStudents = students.map(s => s.id === studentId ? { ...s, ...updatedData } : s).sort((a,b) => a.name.localeCompare(b.name));
-          setStudents(updatedStudents);
-          saveToLocal(studentsKey, updatedStudents);
-          toast({ title: "Success", description: "Student updated locally." });
-      }
-  }, [currentUser, isFirebaseDBAvailable, students, studentsKey, toast, addErrorLog, saveToLocal]);
+      const updatedStudents = students.map(s => s.id === studentId ? { ...s, ...updatedData } : s).sort((a,b) => a.name.localeCompare(b.name));
+      setStudents(updatedStudents);
+      saveToLocal(studentsKey, updatedStudents);
+      toast({ title: "Success", description: "Student updated." });
+  }, [currentUser, students, studentsKey, toast, saveToLocal]);
 
   const deleteStudent = useCallback(async (studentId: string) => {
     if (!currentUser) return;
-    if (isFirebaseDBAvailable) {
-      try {
-          const batch = writeBatch(firestoreDbModule);
-          batch.delete(doc(firestoreDbModule, getStudentsCollectionPath(APP_ID), studentId));
-          const sessionsQuery = query(collection(firestoreDbModule, getSessionsCollectionPath(APP_ID)), where("studentId", "==", studentId), where("userId", "==", currentUser.uid));
-          const sessionsSnap = await getDocs(sessionsQuery);
-          sessionsSnap.docs.forEach(d => batch.delete(d.ref));
-          await batch.commit();
-          toast({ title: "Success", description: "Student and sessions deleted." });
-      } catch (e: any) { addErrorLog({ message: 'Firebase deleteStudent failed.', details: e.message, type: 'error' }); }
-    } else {
-        const newStudents = students.filter(s => s.id !== studentId);
-        setStudents(newStudents);
-        saveToLocal(studentsKey, newStudents);
-        const newSessions = sessions.filter(s => s.studentId !== studentId);
-        setSessions(newSessions);
-        saveToLocal(sessionsKey, newSessions);
-        toast({ title: "Success", description: "Student deleted locally." });
-    }
-  }, [currentUser, isFirebaseDBAvailable, students, sessions, studentsKey, sessionsKey, toast, addErrorLog, saveToLocal]);
+    const newStudents = students.filter(s => s.id !== studentId);
+    setStudents(newStudents);
+    saveToLocal(studentsKey, newStudents);
+    const newSessions = sessions.filter(s => s.studentId !== studentId);
+    setSessions(newSessions);
+    saveToLocal(sessionsKey, newSessions);
+    toast({ title: "Success", description: "Student and sessions deleted." });
+  }, [currentUser, students, sessions, studentsKey, sessionsKey, toast, saveToLocal]);
 
   const addGoalTemplate = useCallback(async (templateData: any) => {
     if (!currentUser) return null;
     const newTemplate = { ...templateData, userId: currentUser.uid, isDefault: false };
-     if (isFirebaseDBAvailable) {
-        try {
-            const docRef = await addDoc(collection(firestoreDbModule, getGoalTemplatesCollectionPath(APP_ID)), { ...newTemplate, createdAt: serverTimestamp() });
-            toast({ title: "Success", description: `Template "${templateData.name}" added.` });
-            return { id: docRef.id, ...newTemplate, createdAt: new Date() };
-        } catch (e: any) { addErrorLog({ message: 'Firebase addGoalTemplate failed.', details: e.message, type: 'error' }); return null; }
-    } else {
-        const templateWithId = { ...newTemplate, id: generateUUID(), createdAt: new Date() };
-        const newTemplates = [...goalTemplates, templateWithId].sort((a,b) => a.name.localeCompare(b.name));
-        setGoalTemplates(newTemplates);
-        saveToLocal(templatesKey, newTemplates);
-        toast({ title: "Success", description: "Template added locally." });
-        return templateWithId;
-    }
-  }, [currentUser, isFirebaseDBAvailable, goalTemplates, templatesKey, toast, addErrorLog, saveToLocal]);
+    const templateWithId = { ...newTemplate, id: generateUUID(), createdAt: new Date() };
+    const newTemplates = [...goalTemplates, templateWithId].sort((a,b) => a.name.localeCompare(b.name));
+    setGoalTemplates(newTemplates);
+    saveToLocal(templatesKey, newTemplates);
+    toast({ title: "Success", description: `Template "${templateData.name}" added.` });
+    return templateWithId;
+  }, [currentUser, goalTemplates, templatesKey, toast, saveToLocal]);
 
   const updateGoalTemplate = useCallback(async (templateId: string, data: any) => {
       if (!currentUser) return;
-      if(isFirebaseDBAvailable) {
-          try {
-              await updateDoc(doc(firestoreDbModule, getGoalTemplatesCollectionPath(APP_ID), templateId), { ...data, userId: currentUser.uid });
-              toast({ title: "Success", description: "Goal template updated." });
-          } catch (e: any) { addErrorLog({ message: 'Firebase updateGoalTemplate failed.', details: e.message, type: 'error' }); }
-      } else {
-          const updatedTemplates = goalTemplates.map(t => t.id === templateId ? { ...t, ...data } : t).sort((a,b) => a.name.localeCompare(b.name));
-          setGoalTemplates(updatedTemplates);
-          saveToLocal(templatesKey, updatedTemplates);
-          toast({ title: "Success", description: "Template updated locally." });
-      }
-  }, [currentUser, isFirebaseDBAvailable, goalTemplates, templatesKey, toast, addErrorLog, saveToLocal]);
+      const updatedTemplates = goalTemplates.map(t => t.id === templateId ? { ...t, ...data } : t).sort((a,b) => a.name.localeCompare(b.name));
+      setGoalTemplates(updatedTemplates);
+      saveToLocal(templatesKey, updatedTemplates);
+      toast({ title: "Success", description: "Goal template updated." });
+  }, [currentUser, goalTemplates, templatesKey, toast, saveToLocal]);
 
   const deleteGoalTemplate = useCallback(async (templateId: string) => {
     if (!currentUser) return;
-    if (isFirebaseDBAvailable) {
-      try {
-          await deleteDoc(doc(firestoreDbModule, getGoalTemplatesCollectionPath(APP_ID), templateId));
-          toast({ title: "Success", description: "Goal template deleted." });
-      } catch (e: any) { addErrorLog({ message: 'Firebase deleteGoalTemplate failed.', details: e.message, type: 'error' }); }
-    } else {
-        const newTemplates = goalTemplates.filter(t => t.id !== templateId);
-        setGoalTemplates(newTemplates);
-        saveToLocal(templatesKey, newTemplates);
-        toast({ title: "Success", description: "Template deleted locally." });
-    }
-  }, [currentUser, isFirebaseDBAvailable, goalTemplates, templatesKey, toast, addErrorLog, saveToLocal]);
+    const newTemplates = goalTemplates.filter(t => t.id !== templateId);
+    setGoalTemplates(newTemplates);
+    saveToLocal(templatesKey, newTemplates);
+    toast({ title: "Success", description: "Goal template deleted." });
+  }, [currentUser, goalTemplates, templatesKey, toast, saveToLocal]);
 
   const addSession = useCallback(async (sessionData: any) => {
     if (!currentUser) return null;
-    const newSession = { ...sessionData, userId: currentUser.uid };
-    if (isFirebaseDBAvailable) {
-        try {
-            const docRef = await addDoc(collection(firestoreDbModule, getSessionsCollectionPath(APP_ID)), newSession);
-            // Don't toast here; handled by consumer
-            return { sessionId: docRef.id, ...newSession };
-        } catch (e: any) { addErrorLog({ message: 'Firebase addSession failed.', details: e.message, type: 'error' }); return null; }
-    } else {
-        const sessionWithId = { ...newSession, sessionId: generateUUID() };
-        const newSessions = [sessionWithId, ...sessions].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        setSessions(newSessions);
-        saveToLocal(sessionsKey, newSessions);
-        // Don't toast here; handled by consumer
-        return sessionWithId;
-    }
-  }, [currentUser, isFirebaseDBAvailable, sessions, sessionsKey, addErrorLog, saveToLocal]);
+    const sessionWithId = { ...sessionData, userId: currentUser.uid, sessionId: generateUUID() };
+    const newSessions = [sessionWithId, ...sessions].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    setSessions(newSessions);
+    saveToLocal(sessionsKey, newSessions);
+    // Don't toast here; handled by consumer
+    return sessionWithId;
+  }, [currentUser, sessions, sessionsKey, saveToLocal]);
 
   const updateSession = useCallback(async (sessionId: string, data: any) => {
     if (!currentUser) return;
-    if (isFirebaseDBAvailable) {
-      try {
-          await updateDoc(doc(firestoreDbModule, getSessionsCollectionPath(APP_ID), sessionId), { ...data, userId: currentUser.uid });
-          toast({ title: "Success", description: "Session updated." });
-      } catch (e: any) { addErrorLog({ message: 'Firebase updateSession failed.', details: e.message, type: 'error' }); }
-    } else {
-        const newSessions = sessions.map(s => s.sessionId === sessionId ? { ...s, ...data } : s).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        setSessions(newSessions);
-        saveToLocal(sessionsKey, newSessions);
-        toast({ title: "Success", description: "Session updated locally." });
-    }
-  }, [currentUser, isFirebaseDBAvailable, sessions, sessionsKey, toast, addErrorLog, saveToLocal]);
+    const newSessions = sessions.map(s => s.sessionId === sessionId ? { ...s, ...data } : s).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    setSessions(newSessions);
+    saveToLocal(sessionsKey, newSessions);
+    toast({ title: "Success", description: "Session updated." });
+  }, [currentUser, sessions, sessionsKey, toast, saveToLocal]);
 
   const deleteSession = useCallback(async (sessionId: string) => {
     if (!currentUser) return;
-     if (isFirebaseDBAvailable) {
-        try {
-            await deleteDoc(doc(firestoreDbModule, getSessionsCollectionPath(APP_ID), sessionId));
-            toast({ title: "Success", description: "Session deleted." });
-        } catch (e: any) { addErrorLog({ message: 'Firebase deleteSession failed.', details: e.message, type: 'error' }); }
-    } else {
-        const newSessions = sessions.filter(s => s.sessionId !== sessionId);
-        setSessions(newSessions);
-        saveToLocal(sessionsKey, newSessions);
-        toast({ title: "Success", description: "Session deleted locally." });
-    }
-  }, [currentUser, isFirebaseDBAvailable, sessions, sessionsKey, toast, addErrorLog, saveToLocal]);
+    const newSessions = sessions.filter(s => s.sessionId !== sessionId);
+    setSessions(newSessions);
+    saveToLocal(sessionsKey, newSessions);
+    toast({ title: "Success", description: "Session deleted." });
+  }, [currentUser, sessions, sessionsKey, toast, saveToLocal]);
   
   const importSessions = useCallback(async (sessionsToImport: any) => {
     if (!currentUser) throw new Error("Not authenticated.");
-    if (isFirebaseDBAvailable) {
-        const sessionsQuery = query(collection(firestoreDbModule, getSessionsCollectionPath(APP_ID)), where("userId", "==", currentUser.uid));
-        const existingSessionsSnap = await getDocs(sessionsQuery);
-        const existingSessions = existingSessionsSnap.docs.map(d => d.data());
-        const uniqueSessions = sessionsToImport.filter((s:any) => !existingSessions.some((es:any) => es.studentId === s.studentId && new Date(es.date).toDateString() === new Date(s.date).toDateString() && es.time === s.time));
-        const batch = writeBatch(firestoreDbModule);
-        uniqueSessions.forEach((s:any) => {
-            const newDoc = doc(collection(firestoreDbModule, getSessionsCollectionPath(APP_ID)));
-            batch.set(newDoc, { ...s, userId: currentUser.uid });
-        });
-        await batch.commit();
-        return { newCount: uniqueSessions.length, duplicateCount: sessionsToImport.length - uniqueSessions.length };
-    } else {
-        const newSessions = sessionsToImport.map((s:any) => ({ ...s, sessionId: generateUUID(), userId: currentUser!.uid }));
-        const updatedSessions = [...sessions, ...newSessions].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        setSessions(updatedSessions);
-        saveToLocal(sessionsKey, updatedSessions);
-        return { newCount: newSessions.length, duplicateCount: 0 };
-    }
-  }, [currentUser, isFirebaseDBAvailable, sessions, sessionsKey, saveToLocal]);
+    const newSessions = sessionsToImport.map((s:any) => ({ ...s, sessionId: generateUUID(), userId: currentUser!.uid }));
+    const updatedSessions = [...sessions, ...newSessions].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    setSessions(updatedSessions);
+    saveToLocal(sessionsKey, updatedSessions);
+    return { newCount: newSessions.length, duplicateCount: 0 };
+  }, [currentUser, sessions, sessionsKey, saveToLocal]);
 
   // --- End Data Actions ---
 
@@ -336,51 +240,27 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       return;
     }
 
-    setLoading(true);
-    setSessionsLoading(true);
+    const localStudents = getFromLocalStorage(studentsKey, []);
+    setStudents(localStudents.sort((a: Student, b: Student) => a.name.localeCompare(b.name)));
+    const rawTemplates = getFromLocalStorage(templatesKey, []);
+    const localTemplates = rawTemplates.map((t: any) => ({...t, createdAt: new Date(t.createdAt)}));
+    const existingDefaultNames = new Set(localTemplates.filter((t: GoalTemplate) => t.isDefault).map((t: GoalTemplate) => t.name));
+    const missingDefaultTemplates = DEFAULT_GOAL_TEMPLATES.filter(
+        defaultTemplate => !existingDefaultNames.has(defaultTemplate.name)
+    ).map(t => ({ ...t, id: generateUUID(), createdAt: new Date(), userId: currentUser?.uid || 'local-user' }));
 
-    if (isFirebaseDBAvailable) {
-      const unsubStudents = onSnapshot(query(collection(firestoreDbModule, getStudentsCollectionPath(APP_ID)), where("userId", "==", currentUser.uid)), (snapshot) => {
-          const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Student)).sort((a,b) => a.name.localeCompare(b.name));
-          setStudents(data);
-          setLoading(false);
-      }, (err) => { setError(err); addErrorLog({ message: 'Failed to load students from Firebase.', details: err.message, type: 'error' }); });
-
-      const unsubTemplates = onSnapshot(query(collection(firestoreDbModule, getGoalTemplatesCollectionPath(APP_ID)), where("userId", "==", currentUser.uid)), async (snapshot) => {
-          const data = snapshot.docs.map(d => ({ id: d.id, ...d.data(), createdAt: (d.data().createdAt as Timestamp).toDate() } as GoalTemplate)).sort((a,b) => a.name.localeCompare(b.name));
-          setGoalTemplates(data);
-      }, (err) => { setError(err); addErrorLog({ message: 'Failed to load templates from Firebase.', details: err.message, type: 'error' }); });
-
-      const unsubSessions = onSnapshot(query(collection(firestoreDbModule, getSessionsCollectionPath(APP_ID)), where("userId", "==", currentUser.uid)), (snapshot) => {
-          const data = snapshot.docs.map(d => ({ sessionId: d.id, ...d.data() } as SessionData)).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-          setSessions(data);
-          setSessionsLoading(false);
-      }, (err) => { setError(err); addErrorLog({ message: 'Failed to load sessions from Firebase.', details: err.message, type: 'error' }); setSessionsLoading(false); });
-      
-      return () => { unsubStudents(); unsubTemplates(); unsubSessions(); };
+    if (missingDefaultTemplates.length > 0) {
+        const updatedTemplates = [...localTemplates, ...missingDefaultTemplates];
+        setGoalTemplates(updatedTemplates.sort((a: GoalTemplate, b: GoalTemplate) => a.name.localeCompare(b.name)));
+        saveToLocal(templatesKey, updatedTemplates);
     } else {
-      const localStudents = getFromLocalStorage(studentsKey, []);
-      setStudents(localStudents.sort((a: Student, b: Student) => a.name.localeCompare(b.name)));
-      const rawTemplates = getFromLocalStorage(templatesKey, []);
-      const localTemplates = rawTemplates.map((t: any) => ({...t, createdAt: new Date(t.createdAt)}));
-      const existingDefaultNames = new Set(localTemplates.filter((t: GoalTemplate) => t.isDefault).map((t: GoalTemplate) => t.name));
-      const missingDefaultTemplates = DEFAULT_GOAL_TEMPLATES.filter(
-          defaultTemplate => !existingDefaultNames.has(defaultTemplate.name)
-      ).map(t => ({ ...t, id: generateUUID(), createdAt: new Date(), userId: currentUser?.uid || 'local-user' }));
-
-      if (missingDefaultTemplates.length > 0) {
-          const updatedTemplates = [...localTemplates, ...missingDefaultTemplates];
-          setGoalTemplates(updatedTemplates.sort((a: GoalTemplate, b: GoalTemplate) => a.name.localeCompare(b.name)));
-          saveToLocal(templatesKey, updatedTemplates);
-      } else {
-          setGoalTemplates(localTemplates.sort((a: GoalTemplate, b: GoalTemplate) => a.name.localeCompare(b.name)));
-      }
-      const localSessions = getFromLocalStorage(sessionsKey, []);
-      setSessions(localSessions.sort((a: SessionData, b: SessionData) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-      setLoading(false);
-      setSessionsLoading(false);
+        setGoalTemplates(localTemplates.sort((a: GoalTemplate, b: GoalTemplate) => a.name.localeCompare(b.name)));
     }
-  }, [authLoading, currentUser, isFirebaseDBAvailable, studentsKey, templatesKey, sessionsKey, saveToLocal, addErrorLog]);
+    const localSessions = getFromLocalStorage(sessionsKey, []);
+    setSessions(localSessions.sort((a: SessionData, b: SessionData) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    setLoading(false);
+    setSessionsLoading(false);
+  }, [authLoading, currentUser, studentsKey, templatesKey, sessionsKey, saveToLocal]);
   
 
   const getSessionsForStudent = useCallback((studentId: string) => {
@@ -422,7 +302,6 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     loading,
     sessionsLoading,
     error,
-    isFirebaseDBAvailable,
     addErrorLog,
 
     // Data Actions

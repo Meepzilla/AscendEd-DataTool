@@ -10,7 +10,7 @@ This is a comprehensive Next.js application designed for educators and therapist
 - **Dynamic Data Entry**: A powerful and flexible data entry page to record session data for multiple students at once, with full keyboard hotkey support for speed.
 - **Session Management**: View, edit, and delete historical session data.
 - **Analysis & Reports**: Visualize student progress with dynamic charts and generate AI-powered technical summaries of performance.
-- **Firebase Integration**: Securely syncs all data to the cloud using Firebase Authentication and Firestore, with a seamless fallback to local browser storage if offline or not configured.
+- **Local Storage**: All data is stored in the browser's local storage on the device; nothing is synced to a cloud backend.
 - **Responsive Design**: A modern, responsive interface that works on desktop and mobile devices.
 
 ## Tech Stack 
@@ -22,7 +22,7 @@ This is a comprehensive Next.js application designed for educators and therapist
 - **UI Components**: [ShadCN UI](https://ui.shadcn.com/)
 - **Charting**: [Recharts](https://recharts.org/)
 - **AI Integration**: [Genkit](https://firebase.google.com/docs/genkit)
-- **Backend & Database**: [Firebase](https://firebase.google.com/) (Authentication & Firestore)
+- **Data Storage**: Browser local storage
 
 ## Getting Started
 
@@ -34,22 +34,7 @@ Follow these steps to get the application running locally.
 npm install
 ```
 
-### 2. Configure Environment Variables
-
-Create a `.env.local` file in the root of the project and add your Firebase project credentials. You can get these from the Firebase console.
-
-```
-NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_auth_domain
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_storage_bucket
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
-NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
-```
-
-**Note**: If you do not provide Firebase credentials, the application will run in a "local-only" mode, where all data is stored in your browser's local storage and will not be synced to the cloud.
-
-### 3. Run the Development Server
+### 2. Run the Development Server
 
 Start the Next.js development server:
 

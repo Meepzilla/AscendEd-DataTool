@@ -7,39 +7,23 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Settings, Wifi, WifiOff, PanelLeft } from 'lucide-react';
+import { Settings, PanelLeft } from 'lucide-react';
 
-const FIREBASE_ENABLED_KEY = 'firebase_enabled';
 const SIDEBAR_ENABLED_KEY = 'sidebar_enabled';
 
 export default function SettingsPage() {
-  const [isFirebaseEnabled, setIsFirebaseEnabled] = useState(false);
   const [isSidebarEnabled, setIsSidebarEnabled] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const storedFirebaseSetting = window.localStorage.getItem(FIREBASE_ENABLED_KEY);
-      setIsFirebaseEnabled(storedFirebaseSetting === null ? false : JSON.parse(storedFirebaseSetting));
-
       const storedSidebarSetting = window.localStorage.getItem(SIDEBAR_ENABLED_KEY);
       setIsSidebarEnabled(storedSidebarSetting === null ? true : JSON.parse(storedSidebarSetting));
       
       setIsLoading(false);
     }
   }, []);
-
-  const handleToggleFirebase = (enabled: boolean) => {
-    setIsFirebaseEnabled(enabled);
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(FIREBASE_ENABLED_KEY, JSON.stringify(enabled));
-      toast({
-        title: "Settings Updated",
-        description: `Firebase has been ${enabled ? 'enabled' : 'disabled'}. Please reload the application for the changes to take full effect.`,
-      });
-    }
-  };
 
   const handleToggleSidebar = (enabled: boolean) => {
     setIsSidebarEnabled(enabled);
@@ -69,7 +53,7 @@ export default function SettingsPage() {
             <div>
               <CardTitle className="text-3xl font-bold">Application Settings</CardTitle>
               <CardDescription>
-                Manage application behavior and connectivity.
+                Manage application behavior.
               </CardDescription>
             </div>
           </div>
@@ -99,35 +83,6 @@ export default function SettingsPage() {
                     id="sidebar-switch"
                     checked={isSidebarEnabled}
                     onCheckedChange={handleToggleSidebar}
-                />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Connectivity</CardTitle>
-          <CardDescription>
-            Control the application's connection to backend services.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-row items-center justify-between rounded-lg border p-4">
-            <div className="space-y-0.5">
-              <Label htmlFor="firebase-switch" className="text-base font-medium">
-                Enable Firebase Backend
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                When enabled, your data is synced to the cloud. When disabled, the app runs in local-only mode, storing data in your browser.
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-                {isFirebaseEnabled ? <Wifi className="h-5 w-5 text-green-500" /> : <WifiOff className="h-5 w-5 text-red-500" />}
-                <Switch
-                    id="firebase-switch"
-                    checked={isFirebaseEnabled}
-                    onCheckedChange={handleToggleFirebase}
                 />
             </div>
           </div>
