@@ -225,7 +225,7 @@ export default function StudentProfilePage() {
                 (deletingStudent.item as Student).isArchived ? "Unarchiving this student will make them visible in all active lists again. Are you sure?" : "Archiving a student will hide them from active lists. Their data will be preserved. Are you sure?"
             }
             onConfirm={() => {
-                updateStudent(deletingStudent.item!.id, { isArchived: !(deletingStudent.item as Student).isArchived })
+                updateStudent((deletingStudent.item as Student).id, { isArchived: !(deletingStudent.item as Student).isArchived })
             }}
             confirmText={
                 (deletingStudent.item as Student).isArchived ? 'Yes, Unarchive' : 'Yes, Archive'

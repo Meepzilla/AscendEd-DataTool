@@ -52,7 +52,7 @@ export default function GoalDataInputComponent({
     if (isArchived) return;
 
     if (isLocked) {
-      fire(e.currentTarget as any);
+      fire();
       return;
     }
     callback();

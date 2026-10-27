@@ -92,7 +92,7 @@ export default function AddGoalTemplateModal() {
 
   const onSubmit = async (data: AddGoalTemplateFormData) => {
     setIsSubmitting(true);
-    const newTemplate = await addGoalTemplate(data);
+    const newTemplate = await addGoalTemplate({ ...data, generatedSmartGoal: data.generatedSmartGoal ?? '' });
     setIsSubmitting(false);
     if (newTemplate) {
       closeAddGoalTemplateModal();
