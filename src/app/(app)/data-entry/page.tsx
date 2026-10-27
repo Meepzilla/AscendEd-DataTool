@@ -38,9 +38,9 @@ const DataEntryPageSkeleton = () => (
 );
 
 export default function DataEntryPage() {
-  const { studentsLoading } = useStudentData();
+  const { loading } = useStudentData();
 
-  if (studentsLoading) {
+  if (loading) {
     return (
       <Suspense fallback={<div>Loading...</div>}>
         <AppLoadingSkeleton />

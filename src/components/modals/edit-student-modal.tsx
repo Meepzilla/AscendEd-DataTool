@@ -212,7 +212,7 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
               <form 
                 onSubmit={form.handleSubmit(onSubmitName)} 
                 onKeyDown={(e) => {
-                  if (e.ctrlKey && e.key === 'Enter' && !e.nativeEvent.target?.closest('textarea')) {
+                  if (e.ctrlKey && e.key === 'Enter' && !(e.target as HTMLElement).closest('textarea')) {
                     e.preventDefault();
                     e.stopPropagation();
                     form.handleSubmit(onSubmitName)();

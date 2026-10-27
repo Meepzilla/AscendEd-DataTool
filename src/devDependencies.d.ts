@@ -4,5 +4,3 @@ declare module '@next/bundle-analyzer' {
   function withBundleAnalyzer(config: NextConfig): NextConfig;
   export = withBundleAnalyzer;
 }
-declare module 'papaparse';
-declare module 'canvas-confetti';

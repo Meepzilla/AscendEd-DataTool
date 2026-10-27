@@ -31,7 +31,6 @@ export default function GoalTemplatesPage() {
     openDeleteConfirmationModal,
     editingGoalTemplate, 
     deletingStudent,
-    addGoalTemplateInitialPrompt,
     updateGoalTemplate,
     closeDeleteConfirmationModal,
   } = useStudentData();
@@ -179,7 +178,7 @@ export default function GoalTemplatesPage() {
   return (
     <div className="space-y-6">
       <Suspense fallback={null}>
-        <AddGoalTemplateModal initialPrompt={addGoalTemplateInitialPrompt} />
+        <AddGoalTemplateModal />
         {editingGoalTemplate && <EditGoalTemplateModal templateToEdit={editingGoalTemplate} />}
         {deletingStudent && deletingStudent.type === 'goalTemplate' && (
           <ConfirmationModal

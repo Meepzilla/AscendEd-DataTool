@@ -24,19 +24,22 @@ export interface Goal {
   [key: string]: any;
 }
 
-export type GoalType =
-  | 'ARTICULATION'
-  | 'FLUENCY_SYLLABLE_STUTTER'
-  | 'QUALITATIVE_OBSERVATION'
-  | 'LANGUAGE_COMPREHENSION'
-  | 'LANGUAGE_EXPRESSION'
-  | 'PHONOLOGICAL_PROCESSES'
-  | 'FEEDING_SWALLOWING'
-  | 'SEQUENCED_TRIALS'
-  | 'PROMPTING'
-  | 'DISCRETE_TRIALS'
-  | 'COGNITIVE'
-  | 'AAC';
+export const GOAL_TYPE_VALUES = [
+  'ARTICULATION',
+  'FLUENCY_SYLLABLE_STUTTER',
+  'QUALITATIVE_OBSERVATION',
+  'LANGUAGE_COMPREHENSION',
+  'LANGUAGE_EXPRESSION',
+  'PHONOLOGICAL_PROCESSES',
+  'FEEDING_SWALLOWING',
+  'SEQUENCED_TRIALS',
+  'PROMPTING',
+  'DISCRETE_TRIALS',
+  'COGNITIVE',
+  'AAC',
+] as const;
+
+export type GoalType = typeof GOAL_TYPE_VALUES[number];
 
 export interface GoalTemplate {
   id: string;
@@ -171,8 +174,8 @@ export const StudentSchema = z.object({
 
 export const GoalTemplateSchema = z.object({
   name: z.string().min(3, "Template name is required."),
-  type: z.string(), 
-  dataCaptureType: z.string().optional(), // NEW
+  type: z.enum(GOAL_TYPE_VALUES), 
+  dataCaptureType: z.enum(GOAL_TYPE_VALUES).optional(), // NEW
   smartGoalPrompt: z.string().min(10, "SMART goal prompt is required."),
   generatedSmartGoal: z.string().optional(),
   sessionTargetValue: z.preprocess(
@@ -185,7 +188,7 @@ export const GoalTemplateSchema = z.object({
 export const AssignedGoalEditSchema = z.object({
   name: z.string().min(3, { message: "Goal name must be at least 3 characters." }),
   smartGoal: z.string().min(10, { message: "SMART goal text must be at least 10 characters." }),
-  dataCaptureType: z.string().optional(), // NEW
+  dataCaptureType: z.enum(GOAL_TYPE_VALUES).optional(), // NEW
   sessionTargetValue: z.preprocess(
     (val) => (val === "" || val === undefined || val === null ? undefined : Number(val)),
     z.number().min(0, "Target must be 0 or greater.").max(100, "Target percentage cannot exceed 100 for most goals.").optional()

@@ -8,7 +8,7 @@ import { Save, RotateCcw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
 import { Info, PlusCircle } from 'lucide-react';
-import type { Student, StudentSessionState, SessionGoalData } from '@/lib/types';
+import type { Student, StudentSessionState, SessionGoalData, GoalType } from '@/lib/types';
 import TouchControls from '@/components/forms/touch-controls';
 import { ConfettiProvider } from '@/hooks/use-confetti';
 import { ScrollArea } from '../ui/scroll-area';
@@ -190,7 +190,7 @@ export default function DataEntryContent() {
             goalId: goal.id,
             goalName: goal.name,
             goalType: goal.type,
-            data: state.goalData[goal.id] || JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type])),
+            data: state.goalData[goal.id] || JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type as GoalType])),
         }));
 
     if (sessionGoals.length === 0) {
