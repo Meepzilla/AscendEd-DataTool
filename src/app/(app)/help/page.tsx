@@ -146,7 +146,7 @@ export default function HelpPage() {
         </CardHeader>
         <CardContent className="space-y-3 text-muted-foreground">
             <p><strong className="text-foreground">Performance:</strong> The app now loads essential data first to be interactive quickly, while session history loads in the background.</p>
-            <p><strong className="text-foreground">Local Mode:</strong> If Firebase is not configured (e.g., missing API keys), the app runs in local mode. Data is stored in your browser and not synced to the cloud. You'll see indicators for this.</p>
+            <p><strong className="text-foreground">Data Storage:</strong> All data is stored in your browser's local storage on this device. It is not synced to the cloud, so clearing browser data will remove it.</p>
             <p><strong className="text-foreground">Error Log:</strong> If you encounter issues, check the Error Log (Alt+J or header icon) for recent application-level errors. For more detailed debugging, use your browser's developer console.</p>
             <p><strong className="text-foreground">AI Features:</strong> Make use of AI for SMART goal generation (in Goal Templates & Edit Student modal) and activity suggestions (in Data Entry) to enhance your planning.</p>
             <p><strong className="text-foreground">Ctrl+Enter:</strong> In many forms and on the Data Entry page, pressing Ctrl+Enter will act as a "confirm" or "save" action.</p>

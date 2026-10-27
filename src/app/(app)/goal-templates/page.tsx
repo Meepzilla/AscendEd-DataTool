@@ -9,7 +9,6 @@ import { PlusCircle, Edit, Trash2, Sparkles, Info, Loader2, BrainCircuit, Archiv
 import { formatDate } from '@/lib/helpers';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Timestamp } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 import { findRelevantGoals, type FindRelevantGoalsOutput } from '@/ai/flows/semantic-search-flow';
 import { useToast } from '@/hooks/use-toast';
@@ -27,7 +26,6 @@ export default function GoalTemplatesPage() {
     goalTemplates, 
     loading, 
     error,
-    isFirebaseDBAvailable,
     openAddGoalTemplateModal,
     openEditGoalTemplateModal,
     openDeleteConfirmationModal,
@@ -97,10 +95,9 @@ export default function GoalTemplatesPage() {
 
 
   const filteredAndSortedTemplates = useMemo(() => {
-    const getSafeTimestamp = (date: Date | Timestamp | string): number => {
+    const getSafeTimestamp = (date: Date | string): number => {
         if (date instanceof Date) return date.getTime();
         if (typeof date === 'string') return new Date(date).getTime();
-        if (date && typeof (date as Timestamp).toDate === 'function') return (date as Timestamp).toDate().getTime();
         return 0;
     };
 
@@ -176,7 +173,7 @@ export default function GoalTemplatesPage() {
   };
 
   if (error) {
-    return <div className="text-destructive p-4">Error loading goal templates from Firebase: {error.message}</div>;
+    return <div className="text-destructive p-4">Error loading goal templates: {error.message}</div>;
   }
 
   return (
@@ -218,7 +215,6 @@ export default function GoalTemplatesPage() {
               <CardTitle className="text-2xl font-bold flex items-center gap-2"><BrainCircuit className="h-7 w-7 text-primary"/>Goals</CardTitle>
               <CardDescription>
                 Manage your library of reusable goal templates.
-                {!isFirebaseDBAvailable && !loading && <span className="text-orange-500 font-semibold">(Local Mode: Data not saved to cloud)</span>}
               </CardDescription>
             </div>
             <Button onClick={() => openAddGoalTemplateModal()} size="sm">

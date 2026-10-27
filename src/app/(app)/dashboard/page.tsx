@@ -10,22 +10,18 @@ import { UserPlus, ListPlus, ClipboardList, BarChart2, Users, Target, Activity, 
 import { APP_NAME } from '@/lib/appConstants';
 import { formatDate } from '@/lib/helpers';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Timestamp } from 'firebase/firestore';
 
 const AppLoadingSkeleton = lazy(() => import('@/components/layout/AppLoadingSkeleton'));
 export default function DashboardPage() {
   const { students, goalTemplates, sessions, loading, sessionsLoading, openAddStudentModal } = useStudentData();
 
   // Helper to safely get a timestamp from different date types
-  const getSafeTimestamp = (date: Date | Timestamp | string): number => {
+  const getSafeTimestamp = (date: Date | string): number => {
     if (date instanceof Date) {
       return date.getTime();
     }
     if (typeof date === 'string') {
       return new Date(date).getTime();
-    }
-    if (date && typeof (date as Timestamp).toDate === 'function') {
-      return (date as Timestamp).toDate().getTime();
     }
     return 0; // Fallback for unexpected types
   };
@@ -67,7 +63,7 @@ export default function DashboardPage() {
         .map(template => ({
             id: `template-${template.id}`,
             type: 'template' as const,
-            timestamp: template.createdAt instanceof Date ? template.createdAt : (template.createdAt as Timestamp).toDate(),
+            timestamp: new Date(template.createdAt),
             text: <>{template.isDefault ? 'New default template' : 'New template'} "<strong>{template.name}</strong>" created.</>
         }));
 
