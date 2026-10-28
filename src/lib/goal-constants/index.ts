@@ -57,5 +57,35 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
   ...STORY_CHAMPS_TEMPLATES,
 ];
 
+/**
+ * Built-in templates whose goal type changed. Each device keeps its own copy of the default templates
+ * (only missing ones are added on load), so `applyDefaultTemplateUpdates` updates stored copies that
+ * still have the old type. Templates the user has already changed to another type are left alone, as
+ * are goals already assigned to students (their past sessions were recorded with the old type).
+ */
+export const DEFAULT_TEMPLATE_UPDATES: { name: string; fromType: GoalType }[] = [
+  { name: 'GLP: Use language for a variety of communicative functions', fromType: 'QUALITATIVE_OBSERVATION' },
+  { name: 'Retell a short story with 3 key elements', fromType: 'LANGUAGE_EXPRESSION' },
+];
+
+export function applyDefaultTemplateUpdates<T extends GoalTemplate>(templates: T[]): { templates: T[]; changed: boolean } {
+  let changed = false;
+  const updated = templates.map(template => {
+    const update = DEFAULT_TEMPLATE_UPDATES.find(u => u.name === template.name);
+    if (!template.isDefault || !update || template.type !== update.fromType) return template;
+    const current = DEFAULT_GOAL_TEMPLATES.find(t => t.name === update.name);
+    if (!current) return template;
+    changed = true;
+    return {
+      ...template,
+      type: current.type,
+      dataCaptureType: template.dataCaptureType && template.dataCaptureType !== update.fromType ? template.dataCaptureType : current.type,
+      smartGoalPrompt: current.smartGoalPrompt,
+      sessionTargetValue: current.sessionTargetValue,
+    };
+  });
+  return { templates: updated, changed };
+}
+
 // Goal types that record prompting in their own fields, so the general prompt level counters are hidden.
 export const GOAL_TYPES_WITHOUT_PROMPT_COUNTERS: GoalType[] = ['COMMUNICATION_FUNCTIONS', 'STORY_CHAMPS'];
