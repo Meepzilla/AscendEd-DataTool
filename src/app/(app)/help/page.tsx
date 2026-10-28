@@ -27,7 +27,7 @@ const hotkeys: Hotkey[] = [
   { key: 'Alt + J', description: 'Open Error Log Modal', category: 'Global Actions' },
   { key: 'Alt + M', description: 'Open Add Student Modal', category: 'Global Actions' },
   { key: 'Alt + K', description: 'Toggle Sidebar', category: 'Global Actions'},
-  { key: 'Ctrl + Enter', description: 'Confirm action / Save (contextual)', category: 'Global Actions'},
+  { key: 'Ctrl + Enter (Cmd + Enter on Mac/iPad)', description: 'Confirm action / Save (contextual)', category: 'Global Actions'},
   // Data Entry Specific
   { key: 'Alt + L', description: 'Toggle Student Access Lock', category: 'Data Entry' },
   { key: '1, 2, 3, or 4', description: 'Focus on Student Slot 1-4', category: 'Data Entry' },
@@ -39,9 +39,9 @@ const hotkeys: Hotkey[] = [
   { key: 'Alt + Q', description: 'Remove focused student slot', category: 'Data Entry'},
   { key: 'Alt + U', description: 'Open Select Student modal', category: 'Data Entry' },
   { key: 'Alt + T', description: 'Open Select Goal modal', category: 'Data Entry' },
-  { key: 'C', description: 'Increment Correct / Cycle Trial Status', category: 'Data Entry' },
-  { key: 'N', description: 'Increment Incorrect / Focus Next Trial', category: 'Data Entry' },
-  { key: 'B', description: 'Increment Approximate / Blocks (Fluency)', category: 'Data Entry' },
+  { key: 'C', description: 'Increment Correct (Discrete Trials: mark next trial correct; Behavior Frequency: add an occurrence)', category: 'Data Entry' },
+  { key: 'N', description: 'Increment Incorrect (Discrete Trials: mark next trial incorrect)', category: 'Data Entry' },
+  { key: 'B', description: 'Increment Approximate (Discrete Trials: mark next trial approximate) / Blocks (Fluency)', category: 'Data Entry' },
   { key: 'D', description: 'Increment Visual Prompt count', category: 'Data Entry' },
   { key: 'V', description: 'Increment Verbal Prompt count', category: 'Data Entry' },
   { key: 'G', description: 'Increment Gestural Prompt count', category: 'Data Entry' },
@@ -82,7 +82,7 @@ export default function HelpPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Keyboard className="text-primary"/>Keyboard Shortcuts (Hotkeys)</CardTitle>
-          <CardDescription>Speed up your workflow with these keyboard shortcuts.</CardDescription>
+          <CardDescription>Speed up your workflow with these keyboard shortcuts. On a Mac or iPad keyboard, Alt is the Option key. Data Entry keys apply to the focused goal of the focused student, and don't work while typing in a box or with a window open.</CardDescription>
         </CardHeader>
         <CardContent>
           <Accordion type="multiple" className="w-full" defaultValue={["Global Actions", "Data Entry"]}>
