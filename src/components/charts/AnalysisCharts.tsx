@@ -2,8 +2,9 @@
 'use client';
 
 import React, { useState, useMemo, lazy, Suspense } from 'react';
-import type { Student, SessionData, Goal, PromptType, GoalType, TrialStatus } from '@/lib/types';
-import { scoreStory, summarizeCommunicationFunctions, BEHAVIOR_GOAL_TYPES } from '@/lib/goal-constants';
+import type { Student, SessionData, Goal, PromptType } from '@/lib/types';
+import { BEHAVIOR_GOAL_TYPES } from '@/lib/goal-constants';
+import { goalResponses } from '@/lib/goal-measures';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertTriangle } from 'lucide-react';
@@ -56,63 +57,27 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
       if (currentGoal?.isArchived) return;
       if (selectedGoalId && goalData.goalId !== selectedGoalId) return;
       
-      let currentGoalCorrect = 0, currentGoalIncorrect = 0, currentGoalApproximate = 0;
       const data = { ...(goalData.data || {}) };
 
-      switch (goalData.goalType) {
-        case 'ARTICULATION':
-        case 'LANGUAGE_COMPREHENSION':
-        case 'LANGUAGE_EXPRESSION':
-        case 'PHONOLOGICAL_PROCESSES':
-        case 'AAC':
-            currentGoalCorrect = Number(data.correct || data.questionsCorrect || data.successfulResponses || data.correctProductions || 0);
-            currentGoalIncorrect = Number(data.incorrect || data.questionsIncorrect || data.unsuccessfulResponses || data.incorrectProductions || 0);
-            currentGoalApproximate = Number(data.approximate) || 0;
-            break;
-        case 'DISCRETE_TRIALS':
-             if (Array.isArray(data.trials)) {
-                currentGoalCorrect = data.trials.filter((t: TrialStatus) => t === 'correct').length;
-                currentGoalIncorrect = data.trials.filter((t: TrialStatus) => t === 'incorrect').length;
-                currentGoalApproximate = data.trials.filter((t: TrialStatus) => t === 'approximate').length;
-            }
-            break;
-        case 'SEQUENCED_TRIALS':
-            currentGoalCorrect = Number(data.successfulAttempts || 0);
-            currentGoalIncorrect = Number(data.failedAttempts || 0);
-            currentGoalApproximate = Number(data.approximate || 0);
-            break;
-        case 'FLUENCY_SYLLABLE_STUTTER':
-            const currentTotalSyllables = Number(data.totalSyllables) || 0;
-            const currentStutteredSyllables = Number(data.stutteredSyllables) || 0;
-            currentGoalCorrect = Math.max(0, currentTotalSyllables - currentStutteredSyllables);
-            currentGoalIncorrect = currentStutteredSyllables;
-            day.totalSyllables += currentTotalSyllables;
-            day.stutteredSyllables += currentStutteredSyllables;
-            day.blocks += Number(data.blocks) || 0;
-            day.repetitions += Number(data.repetitions) || 0;
-            day.prolongations += Number(data.prolongations) || 0;
-            day.interjections += Number(data.interjections) || 0;
-            break;
-        case 'FEEDING_SWALLOWING':
-            currentGoalCorrect = Number(data.trialsAccepted) || 0;
-            currentGoalIncorrect = Number(data.trialsRefused) || 0;
-            break;
-        case 'STORY_CHAMPS': {
-            // Story grammar points earned vs. missed.
-            const story = scoreStory(data);
-            currentGoalCorrect = story.points;
-            currentGoalIncorrect = story.maxPoints - story.points;
-            break;
-        }
-        case 'COMMUNICATION_FUNCTIONS': {
-            // Spontaneous uses count as correct, prompted uses as approximate.
-            const summary = summarizeCommunicationFunctions(data);
-            currentGoalCorrect = summary.spontaneous;
-            currentGoalApproximate = summary.prompted;
-            break;
-        }
+      if (goalData.goalType === 'FLUENCY_SYLLABLE_STUTTER') {
+          // Syllable counts feed the fluency charts, not the response totals.
+          day.totalSyllables += Number(data.totalSyllables) || 0;
+          day.stutteredSyllables += Number(data.stutteredSyllables) || 0;
+          day.blocks += Number(data.blocks) || 0;
+          day.repetitions += Number(data.repetitions) || 0;
+          day.prolongations += Number(data.prolongations) || 0;
+          day.interjections += Number(data.interjections) || 0;
       }
-      
+
+      // Response totals and accuracy count only trial-based goals (correct / incorrect / approximate
+      // responses). Other goal types are measured differently (story points, functions, syllables,
+      // ratings, behavior counts) and are reported on their own cards, so counting their points as
+      // "opportunities" or "incorrect" would inflate the totals.
+      const responses = goalResponses(goalData.goalType, data);
+      const currentGoalCorrect = responses?.correct ?? 0;
+      const currentGoalIncorrect = responses?.incorrect ?? 0;
+      const currentGoalApproximate = responses?.approximate ?? 0;
+
       day.totalCorrect += currentGoalCorrect;
       day.totalIncorrect += currentGoalIncorrect;
       day.totalApproximate += currentGoalApproximate;

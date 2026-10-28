@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const changelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-28',
+    title: 'Fixed: Editing Sessions and Report Totals',
+    description: 'Editing a saved session no longer shows "Application error". Reports\' Total Opportunities, Total Correct, Total Incorrect and accuracy now count only correct, incorrect and approximate responses from trial-based goals; Story Champs points, fluency syllables and communication function uses were being added as opportunities and errors (including for goals not worked on in a session). Those goals are reported on their own Goal by Goal cards.',
+    type: 'fix',
+    icon: Bug,
+  },
+  {
+    date: '2026-10-28',
     title: 'Reset Time to Now',
     description: 'Data Entry has a Reset Time to Now button next to the session times. It sets the date to today, the start time to now and the end time to 30 minutes later, for starting the next session after a break.',
     type: 'improvement',
