@@ -107,7 +107,7 @@ export default function AddGoalTemplateModal() {
       isOpen={isAddGoalTemplateModalOpen}
       onClose={closeAddGoalTemplateModal}
       title="Add New Goal Template"
-      description="Create a reusable template for common student goals. Use AI to help generate SMART goals."
+      description={`Create a reusable template for common student goals.${AI_ENABLED ? ' Use AI to help generate SMART goals.' : ''}`}
       size="lg"
     >
       <Form {...form}>
@@ -192,17 +192,19 @@ export default function AddGoalTemplateModal() {
             name="smartGoalPrompt"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>SMART Goal Prompt (for AI)</FormLabel>
+                <FormLabel>{AI_ENABLED ? 'SMART Goal Prompt (for AI)' : 'Goal Description'}</FormLabel>
                 <FormControl>
                   <Textarea
-                    placeholder="Describe the goal for the AI to make it SMART. E.g., 'Student will improve articulation of /r/ sound in words.'"
+                    placeholder={AI_ENABLED ? "Describe the goal for the AI to make it SMART. E.g., 'Student will improve articulation of /r/ sound in words.'" : "E.g., Student will produce /r/ in words with 80% accuracy."}
                     {...field}
                     rows={3}
                   />
                 </FormControl>
-                 <FormDescription>
-                  Provide a clear, concise prompt for the AI to generate a Specific, Measurable, Achievable, Relevant, and Time-bound goal.
-                </FormDescription>
+                 {AI_ENABLED && (
+                   <FormDescription>
+                    Provide a clear, concise prompt for the AI to generate a Specific, Measurable, Achievable, Relevant, and Time-bound goal.
+                  </FormDescription>
+                 )}
                 <FormMessage />
               </FormItem>
             )}
