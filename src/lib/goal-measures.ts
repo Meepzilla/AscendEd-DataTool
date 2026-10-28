@@ -1,6 +1,6 @@
 import type { Goal, GoalType, TrialStatus } from './types';
 import {
-  behaviorMeasure, goalDirection, scoreStory, summarizeCommunicationFunctions, BEHAVIOR_GOAL_TYPES,
+  behaviorMeasure, captureTypeOf, goalDirection, scoreStory, summarizeCommunicationFunctions, BEHAVIOR_GOAL_TYPES,
   COMMUNICATION_FUNCTIONS, GOAL_TYPES_WITHOUT_PROMPT_COUNTERS,
 } from './goal-constants';
 import { PROMPT_TYPES } from './promptConstants';
@@ -50,10 +50,13 @@ export function promptTotals(data: Record<string, any> = {}): Record<string, num
 }
 
 const RATING_TYPES: string[] = ['QUALITATIVE_OBSERVATION', 'COGNITIVE'];
+
+/** The goal fields measuring needs; goals are measured by the type their data was entered as. */
+type MeasuredGoal = Pick<Goal, 'type' | 'targetDirection' | 'dataCaptureType'>;
 const DEFAULT_RATING = 3;
 
-export function goalMeasureInfo(goal: Pick<Goal, 'type' | 'targetDirection'>): GoalMeasureInfo {
-  switch (goal.type) {
+export function goalMeasureInfo(goal: MeasuredGoal): GoalMeasureInfo {
+  switch (captureTypeOf(goal)) {
     case 'FLUENCY_SYLLABLE_STUTTER': return { label: '% fluent syllables', unit: '%', max: 100 };
     case 'STORY_CHAMPS': return { label: 'Story score', unit: '%', max: 100 };
     case 'COMMUNICATION_FUNCTIONS': return { label: 'Functions used spontaneously', unit: '', max: COMMUNICATION_FUNCTIONS.length };
@@ -76,17 +79,18 @@ export function goalMeasureInfo(goal: Pick<Goal, 'type' | 'targetDirection'>): G
  * A goal's measure for one session's data, or null when nothing was recorded for it (every session stores
  * all of a student's goals, so untouched goals are left out of charts rather than shown as 0%).
  */
-export function goalMeasure(goal: Pick<Goal, 'type' | 'targetDirection'>, data: Record<string, any> = {}): number | null {
-  if (BEHAVIOR_GOAL_TYPES.includes(goal.type as GoalType)) return behaviorMeasure(goal.type, data, goalDirection(goal));
+export function goalMeasure(goal: MeasuredGoal, data: Record<string, any> = {}): number | null {
+  const type = captureTypeOf(goal);
+  if (BEHAVIOR_GOAL_TYPES.includes(type)) return behaviorMeasure(type, data, goalDirection(goal));
 
-  const responses = goalResponses(goal.type, data);
+  const responses = goalResponses(type, data);
   if (responses) {
     const total = responses.correct + responses.incorrect + responses.approximate;
     return total > 0 ? (responses.correct / total) * 100 : null;
   }
   const prompts = promptTotals(data);
   const promptCount = Object.values(prompts).reduce((a, b) => a + b, 0);
-  switch (goal.type) {
+  switch (type) {
     case 'FLUENCY_SYLLABLE_STUTTER': {
       const total = Number(data.totalSyllables) || 0;
       const stuttered = Number(data.stutteredSyllables) || 0;
@@ -103,18 +107,19 @@ export function goalMeasure(goal: Pick<Goal, 'type' | 'targetDirection'>, data: 
     case 'PROMPTING':
       return promptCount > 0 ? (prompts.Independent / promptCount) * 100 : null;
   }
-  if (RATING_TYPES.includes(goal.type)) {
-    // The rating starts at 3, so a session counts only if the rating was changed or something else was recorded.
+  if (RATING_TYPES.includes(type)) {
+    // The rating starts at 3, so a session counts only if the goal was worked on (Data Entry marks it as
+    // recorded; older sessions: the rating was changed or something else was entered).
     const rating = Number(data.rating);
     if (!rating) return null;
-    const touched = rating !== DEFAULT_RATING || String(data.notes || '').trim() !== '' || promptCount > 0;
+    const touched = data.recorded === true || rating !== DEFAULT_RATING || String(data.notes || '').trim() !== '' || promptCount > 0;
     return touched ? rating : null;
   }
   return null;
 }
 
 /** Whether a session's measure meets the goal's target (at or below it for decrease goals). */
-export function meetsTarget(goal: Pick<Goal, 'type' | 'targetDirection'>, value: number, target: number): boolean {
+export function meetsTarget(goal: MeasuredGoal, value: number, target: number): boolean {
   return goalDirection(goal) === 'decrease' ? value <= target : value >= target;
 }
 
