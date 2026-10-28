@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const changelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-28',
+    title: 'Data Entry Keeps Unsaved Work',
+    description: 'Data Entry now keeps what you have entered when you switch to another page and come back, and even if the app is closed or reloaded: the selected students, counts, timers (which keep running), notes, activity, date and times, and the student access lock. Each student\'s unsaved data is cleared when their session is saved or reset. If the app reopens with unsaved data, a notice says it was restored.',
+    type: 'improvement',
+    icon: Pencil,
+  },
+  {
+    date: '2026-10-28',
     title: 'Reports: Goal by Goal',
     description: 'Reports now include a card for every goal, charted by the measure that fits its type (accuracy, % fluent, Story Champs score, communication functions used spontaneously, 1-5 rating, % independent, or the behavior measures) with the target line, sessions with data, latest, average and how many sessions met the target. Each card also breaks the data down for its goal type: correct/approximate/incorrect responses per session, prompt levels, story part scores and linking words, uses by communication function, dysfluency types, or ABC antecedents and functions, plus recent notes. Sessions where nothing was recorded for a goal are no longer charted as 0.',
     type: 'feature',

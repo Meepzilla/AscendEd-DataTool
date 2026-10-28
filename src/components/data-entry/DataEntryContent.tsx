@@ -1,8 +1,10 @@
 
 'use client';
 
-import React, { lazy, useState, useEffect, useCallback, Suspense, useMemo } from 'react';
+import React, { lazy, useState, useEffect, useCallback, Suspense, useMemo, useRef } from 'react';
 import { useStudentData } from '@/hooks/use-student-data';
+import { useAuth } from '@/hooks/use-auth';
+import { loadDataEntryDraft, saveDataEntryDraft, hasUnsavedEntry, type DataEntryDraft } from '@/lib/data-entry-draft';
 import { Button } from '@/components/ui/button';
 import { Save, RotateCcw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -23,6 +25,10 @@ const StudentCardsList = lazy(() => import('@/components/data-entry/StudentCards
 const DataEntryHeaderCard = lazy(() => import('@/components/data-entry/DataEntryHeaderCard'));
 const SelectionModal = lazy(() => import('@/components/modals/selection-modal'));
 
+// Whether Data Entry has been open since the app loaded. Switching pages keeps the module, so the
+// "restored" notice shows only when the app reopens with unsaved data, not every time the page is revisited.
+let openedSinceAppLoad = false;
+
 export default function DataEntryContent() {
   const {
     students,
@@ -33,26 +39,46 @@ export default function DataEntryContent() {
     getSessionsForStudent,
   } = useStudentData();
   const { toast } = useToast();
+  const { currentUser } = useAuth();
+  const uid = currentUser?.uid;
+
+  // Unsaved work from the last visit to this page (kept while switching pages, or if the app was closed).
+  // This component only renders in the browser, so the draft can seed the initial state directly.
+  const draftRef = useRef<DataEntryDraft | null | undefined>(undefined);
+  if (draftRef.current === undefined) draftRef.current = loadDataEntryDraft(uid);
+  const draft = draftRef.current;
+  const goalDefaults = useCallback((goalId: string) => {
+    for (const student of students) {
+      const goal = student.goals.find(g => g.id === goalId);
+      if (goal) return GOAL_TYPE_FIELDS[goal.type];
+    }
+    return undefined;
+  }, [students]);
+  // The draft's date and times are kept only when something was entered; otherwise the session starts now.
+  const [draftHadEntries] = useState(() => !!draft && Object.values(draft.students).some(s => hasUnsavedEntry(s, goalDefaults)));
   
-  const [sessionDate, setSessionDate] = useState<Date | undefined>(new Date());
-  const [sessionTime, setSessionTime] = useState<string>('');
-  const [sessionEndTime, setSessionEndTime] = useState<string>('');
+  const [sessionDate, setSessionDate] = useState<Date | undefined>(() =>
+    draftHadEntries && draft?.sessionDate ? new Date(draft.sessionDate) : new Date());
+  const [sessionTime, setSessionTime] = useState<string>(() => (draftHadEntries && draft?.sessionTime) || '');
+  const [sessionEndTime, setSessionEndTime] = useState<string>(() => (draftHadEntries && draft?.sessionEndTime) || '');
   
-  const [focusedGoalIndexByStudentId, setFocusedGoalIndexByStudentId] = useState<Record<string, number>>({});
+  const [focusedGoalIndexByStudentId, setFocusedGoalIndexByStudentId] = useState<Record<string, number>>(() => draft?.focusedGoalIndexByStudentId ?? {});
   const [visibleGoalCountByStudentId, setVisibleGoalCountByStudentId] = useState<Record<string, number>>({});
   const [showArchivedByStudentId, setShowArchivedByStudentId] = useState<Record<string, boolean>>({});
 
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingAll, setIsSavingAll] = useState(false);
-  const [isHeaderCardCollapsed, setIsHeaderCardCollapsed] = useState(false);
+  const [isHeaderCardCollapsed, setIsHeaderCardCollapsed] = useState(() => draft?.isHeaderCardCollapsed ?? false);
   const [isResetConfirmationOpen, setIsResetConfirmationOpen] = useState(false);
   const [selectionModalType, setSelectionModalType] = useState<'student' | 'goal' | null>(null);
-  const [isStudentAccessLocked, setIsStudentAccessLocked] = useState(false);
+  const [isStudentAccessLocked, setIsStudentAccessLocked] = useState(() => draft?.isStudentAccessLocked ?? false);
   
   // UI State moved from useStudentData
   const [studentSessionStates, setStudentSessionStates] = useState<Record<string, StudentSessionState>>({});
-  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
-  const [focusedStudentSlotIndex, setFocusedStudentSlotIndex] = useState<number>(0);
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>(() =>
+    (draft?.selectedStudentIds ?? []).filter(id => students.some(s => s.id === id && !s.isArchived)));
+  const [focusedStudentSlotIndex, setFocusedStudentSlotIndex] = useState<number>(() =>
+    Math.max(0, Math.min(draft?.focusedStudentSlotIndex ?? 0, selectedStudentIds.length - 1)));
   const [aiActivitySuggestions, setAiActivitySuggestions] = useState<Record<string, string[]>>({});
   const [isAiLoading, setIsAiLoading] = useState<Record<string, boolean>>({});
 
@@ -73,7 +99,9 @@ export default function DataEntryContent() {
 
             if (!existingState || existingGoalIds !== currentGoalIds) {
                 statesChanged = true;
-                const updatedGoalData = existingState?.goalData || {};
+                // A student's first state comes from the unsaved draft, if it has one.
+                const drafted = existingState ? undefined : draftRef.current?.students[student.id];
+                const updatedGoalData = existingState?.goalData || { ...(drafted?.goalData || {}) };
                 
                 studentGoals.forEach(goal => {
                     if (!updatedGoalData[goal.id]) {
@@ -84,8 +112,8 @@ export default function DataEntryContent() {
                 newStates[student.id] = {
                     studentId: student.id,
                     studentName: student.name,
-                    activity: existingState?.activity || '',
-                    notes: existingState?.notes || '',
+                    activity: existingState?.activity || drafted?.activity || '',
+                    notes: existingState?.notes || drafted?.notes || '',
                     originalGoalHeaders: studentGoals, 
                     goalData: updatedGoalData,
                 };
@@ -102,6 +130,38 @@ export default function DataEntryContent() {
     });
 }, [students]);
 
+
+  // Keep the draft up to date. Only students with unsaved entries are stored.
+  useEffect(() => {
+    const studentsWithEntries = Object.fromEntries(
+      Object.values(studentSessionStates)
+        .filter(state => hasUnsavedEntry(state, goalDefaults))
+        .map(state => [state.studentId, { activity: state.activity, notes: state.notes, goalData: state.goalData }]),
+    );
+    saveDataEntryDraft(uid, {
+      savedAt: new Date().toISOString(),
+      sessionDate: sessionDate?.toISOString(),
+      sessionTime,
+      sessionEndTime,
+      selectedStudentIds,
+      focusedStudentSlotIndex,
+      focusedGoalIndexByStudentId,
+      isStudentAccessLocked,
+      isHeaderCardCollapsed,
+      // Until every student's state is built (first render), keep the draft's entries.
+      students: Object.keys(studentSessionStates).length === 0 ? draftRef.current?.students ?? {} : studentsWithEntries,
+    });
+  }, [uid, studentSessionStates, sessionDate, sessionTime, sessionEndTime, selectedStudentIds, focusedStudentSlotIndex,
+      focusedGoalIndexByStudentId, isStudentAccessLocked, isHeaderCardCollapsed, goalDefaults]);
+
+  useEffect(() => {
+    if (draftHadEntries && !openedSinceAppLoad) {
+      toast({ title: 'Unsaved data restored', description: 'Your data entry from earlier is still here. Save it when you are ready.' });
+    }
+    openedSinceAppLoad = true;
+    // Only when the page opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (sessionTime === '') {
