@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const changelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-28',
+    title: 'Behavior Data: Interval, Latency, Reports and ABC Lists',
+    description: 'Two more behavior goal types. Interval recording (partial interval, whole interval or momentary time sampling) marks each interval + or −, with an interval timer that can beep at each interval, and reports the % of intervals with the behavior. Latency times from a cue to the response and reports the average. Reports now chart each behavior goal against its target (sessions meeting the target, latest and average), and ABC goals show antecedents, behaviors and possible functions. The ABC antecedent, behavior and consequence lists can be edited in Settings and are included in backups. Includes 6 new behavior templates.',
+    type: 'feature',
+    icon: BarChartHorizontalBig,
+  },
+  {
+    date: '2026-10-28',
     title: 'Behavior Data: Frequency, Duration and ABC',
     description: 'Three new goal types for behavior data. Frequency counts occurrences (with a rate per hour when you enter the observation time). Duration times episodes with a start/stop timer or entered by hand. ABC data records incidents as antecedent, behavior and consequence, and shows the most common antecedents and likely functions. Behavior goals can aim to decrease or increase. Includes 13 behavior templates, and 25 goal bank goals (including Behavior Replacement & Regulation) now use these types.',
     type: 'feature',

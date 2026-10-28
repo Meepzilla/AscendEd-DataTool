@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Settings, PanelLeft } from 'lucide-react';
 import BackupRestoreCard from '@/components/settings/BackupRestoreCard';
 import DisplaySizeSetting from '@/components/settings/DisplaySizeSetting';
+import AbcListsCard from '@/components/settings/AbcListsCard';
 
 const SIDEBAR_ENABLED_KEY = 'sidebar_enabled';
 
@@ -97,6 +98,8 @@ export default function SettingsPage() {
             </div>
         </CardContent>
       </Card>
+
+      <AbcListsCard />
     </div>
   );
 }

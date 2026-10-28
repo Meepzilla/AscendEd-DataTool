@@ -76,8 +76,10 @@ const calculateProgressForGoal = (goal: Goal, latestSessionForGoal: SessionData 
       break;
     case 'BEHAVIOR_FREQUENCY':
     case 'BEHAVIOR_DURATION':
-    case 'BEHAVIOR_ABC': {
-      // Progress toward a count, minutes or % target; decrease goals are met at or below it.
+    case 'BEHAVIOR_ABC':
+    case 'BEHAVIOR_INTERVAL':
+    case 'BEHAVIOR_LATENCY': {
+      // Progress toward a count, minutes, % or seconds target; decrease goals are met at or below it.
       const direction = goalDirection(goal);
       const value = behaviorMeasure(goal.type, goalSessionData, direction);
       if (value === null || goal.sessionTargetValue === undefined) return 0;

@@ -43,6 +43,8 @@ export const GOAL_TYPE_VALUES = [
   'BEHAVIOR_FREQUENCY',
   'BEHAVIOR_DURATION',
   'BEHAVIOR_ABC',
+  'BEHAVIOR_INTERVAL',
+  'BEHAVIOR_LATENCY',
 ] as const;
 
 export type GoalType = typeof GOAL_TYPE_VALUES[number];
