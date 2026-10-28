@@ -15,6 +15,7 @@ import { TrendingUp, ArrowUp, ArrowDown, Plus, Minus, ArchiveIcon, Pin, Check, X
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useConfetti } from '@/hooks/use-confetti';
+import { useLongPress, longPressStyle } from '@/hooks/use-long-press';
 
 interface GoalDataInputComponentProps {
   goal: Goal;
@@ -48,7 +49,7 @@ export default function GoalDataInputComponent({
   const { toast } = useToast();
   const { fire } = useConfetti();
 
-  const handleInteraction = (e: React.MouseEvent<HTMLButtonElement>, callback: () => void) => {
+  const handleInteraction = (e: React.SyntheticEvent<HTMLButtonElement>, callback: () => void) => {
     if (isArchived) return;
 
     if (isLocked) {
@@ -745,39 +746,19 @@ export default function GoalDataInputComponent({
             <div className="grid grid-cols-3 gap-1.5 mt-0.5">
               {PROMPT_TYPES.map(pt => {
                 const hotkey = Object.keys(PROMPT_HOTKEY_MAP).find(k => PROMPT_HOTKEY_MAP[k as keyof typeof PROMPT_HOTKEY_MAP] === pt);
+                const count = Number(data[pt] || 0);
                 return (
-                    <Button
-                        key={pt}
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="px-2 py-1.5 h-auto text-xs justify-center w-full"
-                        style={{
-                        borderColor: PROMPT_COLORS[pt],
-                        color: PROMPT_COLORS[pt],
-                        }}
-                        onClick={(e) => {
-                            handleInteraction(e, () => {
-                                const currentPromptCount = Number(data[pt] || 0);
-                                const newPromptValue = currentPromptCount + 1;
-                                onChange(pt, { ...data, [pt]: newPromptValue });
-                            })
-                        }}
-                        onContextMenu={(e) => {
-                            e.preventDefault();
-                            handleInteraction(e, () => {
-                                const currentPromptCount = Number(data[pt] || 0);
-                                const newPromptValue = Math.max(0, currentPromptCount - 1);
-                                onChange(pt, { ...data, [pt]: newPromptValue });
-                            })
-                        }}
-                        title={`Click to increment ${pt}, Right-click to decrement. ${hotkey ? `Hotkey: ${hotkey}` : ''}`}
-                        disabled={isArchived}
-                    >
-                        {PROMPT_ABBREVIATIONS[pt]}: {Number(data[pt] || 0)}
-                    </Button>
+                  <PromptCounterButton
+                    key={pt}
+                    promptType={pt}
+                    count={count}
+                    hotkey={hotkey}
+                    disabled={isArchived}
+                    onIncrement={(e) => handleInteraction(e, () => onChange(pt, { ...data, [pt]: count + 1 }))}
+                    onDecrement={(e) => handleInteraction(e, () => onChange(pt, { ...data, [pt]: Math.max(0, count - 1) }))}
+                  />
                 );
-            })}
+              })}
             </div>
           </FormItem>
         )}
@@ -785,6 +766,39 @@ export default function GoalDataInputComponent({
     </Card>
   );
 }
+
+interface PromptCounterButtonProps {
+  promptType: PromptType;
+  count: number;
+  hotkey?: string;
+  disabled?: boolean;
+  onIncrement: (e: React.SyntheticEvent<HTMLButtonElement>) => void;
+  onDecrement: (e: React.SyntheticEvent<HTMLButtonElement>) => void;
+}
+
+// Tap/click adds one prompt; press and hold (touch) or right-click (mouse) removes one.
+const PromptCounterButton: React.FC<PromptCounterButtonProps> = ({ promptType, count, hotkey, disabled, onIncrement, onDecrement }) => {
+  const longPressHandlers = useLongPress<HTMLButtonElement>(onDecrement);
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      className="px-2 py-1.5 h-auto text-xs justify-center w-full touch-manipulation"
+      style={{
+        borderColor: PROMPT_COLORS[promptType],
+        color: PROMPT_COLORS[promptType],
+        ...longPressStyle,
+      }}
+      onClick={onIncrement}
+      {...longPressHandlers}
+      title={`Tap or click to add a ${promptType} prompt. Press and hold, or right-click, to remove one.${hotkey ? ` Hotkey: ${hotkey}` : ''}`}
+      disabled={disabled}
+    >
+      {PROMPT_ABBREVIATIONS[promptType]}: {count}
+    </Button>
+  );
+};
 
 const FormItem: React.FC<{children: React.ReactNode, className?: string}> = ({ children, className }) => (
   <div className={`space-y-0.5 ${className}`}>{children}</div>
