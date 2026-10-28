@@ -20,7 +20,7 @@ import {
 import { GOAL_TYPES } from '@/lib/goal-constants';
 import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
-import { generateUUID } from '@/lib/helpers';
+import { generateUUID, templateMatchesSearch, formatGoalTarget, TEMPLATE_PICKER_LIMIT } from '@/lib/helpers';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '../ui/separator';
 import { cn } from '@/lib/utils';
@@ -139,7 +139,7 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
   };
 
   const filteredGoalTemplates = goalTemplates.filter(template => {
-    const nameMatch = template.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const nameMatch = templateMatchesSearch(template, searchTerm);
     const typeMatch = goalTypeFilter === 'ALL' || template.type === goalTypeFilter;
     const isAssigned = student.goals.some(g => g.name === template.name && g.type === template.type);
     return nameMatch && typeMatch && !isAssigned;
@@ -194,7 +194,7 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
               </p>
             ) : (
               <ul className="space-y-1.5">
-                {filteredGoalTemplates.map((template) => (
+                {filteredGoalTemplates.slice(0, TEMPLATE_PICKER_LIMIT).map((template) => (
                   <li key={template.id}>
                     <Button
                       variant={selectedTemplates.has(template.id) ? "default" : "outline"}
@@ -206,8 +206,9 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
                           <div className="flex-grow">
                               <p className="font-medium text-sm">{template.name}</p>
                               <Badge variant="secondary" className="mt-0.5 text-xs">{template.type}</Badge>
+                              {template.category && <Badge variant="outline" className="mt-0.5 ml-1 text-xs">{template.category}</Badge>}
                               {template.sessionTargetValue !== undefined && (
-                                <p className="text-xs text-muted-foreground mt-0.5">Target: {template.sessionTargetValue}%</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">Target: {formatGoalTarget(template.type, template.sessionTargetValue)}</p>
                               )}
                           </div>
                           {selectedTemplates.has(template.id) && <Check className="h-4 w-4 ml-2 text-primary-foreground" />}
@@ -216,6 +217,9 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
                   </li>
                 ))}
               </ul>
+            )}
+            {filteredGoalTemplates.length > TEMPLATE_PICKER_LIMIT && (
+              <p className="text-xs text-muted-foreground text-center py-2">Showing {TEMPLATE_PICKER_LIMIT} of {filteredGoalTemplates.length}. Search or filter to narrow the list.</p>
             )}
           </ScrollArea>
            <Button

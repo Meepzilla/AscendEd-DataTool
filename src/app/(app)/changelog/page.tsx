@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const changelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-28',
+    title: 'SLP Goal Bank: 903 New Goal Templates',
+    description: 'Added 903 goal templates from the SLP goal bank across 50 skill areas, each set up with the data collection type and session target that fit how the goal is measured. The Goals page can now filter by skill area, and the info button on a goal shows its purpose, activity ideas and tags. Searching templates now also matches the goal text.',
+    type: 'feature',
+    icon: ListPlus,
+  },
+  {
+    date: '2026-10-28',
     title: 'Display Size Setting',
     description: 'Settings now has a Display Size option (100%, 90%, 80%, 70%) that zooms the whole app out to fit more on screen. Tablets such as iPads start at 80%. Tapping a text box no longer zooms the page in on iPad.',
     type: 'improvement',
