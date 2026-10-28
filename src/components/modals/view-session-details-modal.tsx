@@ -62,12 +62,12 @@ export default function ViewSessionDetailsModal({ session, isOpen, onClose }: Vi
 
           <div>
             <h3 className="text-lg font-semibold mb-3 flex items-center gap-2"><Target className="h-5 w-5 text-primary"/>Goal Data</h3>
-            {session.goals.length === 0 ? (
+            {(session.goals ?? []).length === 0 ? (
               <p className="text-muted-foreground">No goal-specific data recorded for this session.</p>
             ) : (
               <div className="space-y-4">
-                {session.goals.map((goalData) => {
-                  const originalGoal = session.originalGoalHeaders.find(og => og.id === goalData.goalId);
+                {(session.goals ?? []).map((goalData) => {
+                  const originalGoal = session.originalGoalHeaders?.find(og => og.id === goalData.goalId);
                   return (
                     <Card key={goalData.goalId} className="overflow-hidden">
                       <CardHeader className="bg-card p-3">
@@ -78,7 +78,8 @@ export default function ViewSessionDetailsModal({ session, isOpen, onClose }: Vi
                         {originalGoal?.smartGoal && <CardDescription className="text-xs mt-1 line-clamp-2">{originalGoal.smartGoal}</CardDescription>}
                       </CardHeader>
                       <CardContent className="p-3 text-sm space-y-1">
-                        {Object.entries(goalData.data).map(([key, value]) => (
+                        {/* "recorded" is Data Entry's internal marker that the goal was worked on, not a data point. */}
+                        {Object.entries(goalData.data || {}).filter(([key]) => key !== 'recorded').map(([key, value]) => (
                           <div key={key} className="flex justify-between items-center">
                             <span className="text-muted-foreground capitalize">{key.replace(/([A-Z])/g, ' $1')}:</span>
                             <span className="font-medium text-foreground text-right">
@@ -86,7 +87,7 @@ export default function ViewSessionDetailsModal({ session, isOpen, onClose }: Vi
                             </span>
                           </div>
                         ))}
-                         {Object.keys(goalData.data).length === 0 && <p className="text-xs text-muted-foreground">No specific data points recorded for this goal.</p>}
+                         {Object.keys(goalData.data || {}).length === 0 && <p className="text-xs text-muted-foreground">No specific data points recorded for this goal.</p>}
                       </CardContent>
                     </Card>
                   );

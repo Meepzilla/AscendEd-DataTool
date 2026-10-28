@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, ReferenceLine, BarChart, Bar } from 'recharts';
 import {
-  goalDirection, summarizeAbc, scoreStory, STORY_PARTS, STORY_LINKING_WORDS, linkingWordField, COMMUNICATION_FUNCTIONS,
+  captureTypeOf, goalDirection, summarizeAbc, scoreStory, STORY_PARTS, STORY_LINKING_WORDS, linkingWordField, COMMUNICATION_FUNCTIONS,
   type AbcIncident,
 } from '@/lib/goal-constants';
 import { goalMeasure, goalMeasureInfo, goalResponses, goalNotes, meetsTarget, promptTotals, usesPromptCounters } from '@/lib/goal-measures';
@@ -81,11 +81,12 @@ const COUNT_SERIES = [{ key: 'count', label: 'Count', color: 'hsl(var(--chart-1)
 
 /** The breakdowns that fit the goal type, over the sessions in the date range. */
 const GoalBreakdowns: React.FC<{ goal: Goal; recorded: Recorded[] }> = ({ goal, recorded }) => {
+  const type = captureTypeOf(goal);
   const panels: React.ReactNode[] = [];
   const data = recorded.map(r => r.data);
   const sum = (get: (d: Record<string, any>) => number) => data.reduce((total, d) => total + get(d), 0);
 
-  if (goal.type === 'STORY_CHAMPS') {
+  if (type === 'STORY_CHAMPS') {
     panels.push(
       <HBars key="parts" title="Average score by story part (0-2)" max={2} series={[{ key: 'average', label: 'Average score', color: 'hsl(var(--chart-2))' }]}
         rows={STORY_PARTS.map(p => ({ name: p.label, average: round(sum(d => Math.min(2, Number(d[p.key]) || 0)) / data.length) }))} />,
@@ -93,7 +94,7 @@ const GoalBreakdowns: React.FC<{ goal: Goal; recorded: Recorded[] }> = ({ goal, 
         rows={tallyRows(STORY_LINKING_WORDS.map(w => [w, sum(d => Number(d[linkingWordField(w)]) || 0)]))} />,
     );
   }
-  if (goal.type === 'COMMUNICATION_FUNCTIONS') {
+  if (type === 'COMMUNICATION_FUNCTIONS') {
     panels.push(
       <HBars key="functions" title="Uses by function" series={[
         { key: 'spontaneous', label: 'Spontaneous', color: 'hsl(var(--chart-2))' },
@@ -104,14 +105,14 @@ const GoalBreakdowns: React.FC<{ goal: Goal; recorded: Recorded[] }> = ({ goal, 
           .filter(r => r.spontaneous + r.prompted > 0)} />,
     );
   }
-  if (goal.type === 'FLUENCY_SYLLABLE_STUTTER') {
+  if (type === 'FLUENCY_SYLLABLE_STUTTER') {
     panels.push(
       <HBars key="dysfluency" title="Dysfluency types" series={COUNT_SERIES}
         rows={tallyRows((['blocks', 'repetitions', 'prolongations', 'interjections'] as const)
           .map(k => [k.charAt(0).toUpperCase() + k.slice(1), sum(d => Number(d[k]) || 0)]))} />,
     );
   }
-  if (goal.type === 'BEHAVIOR_ABC') {
+  if (type === 'BEHAVIOR_ABC') {
     const abc = summarizeAbc({ incidents: data.flatMap(d => (Array.isArray(d.incidents) ? d.incidents : []) as AbcIncident[]) });
     panels.push(
       <HBars key="antecedents" title="Antecedents (before problem behavior)" series={COUNT_SERIES} rows={tallyRows(abc.antecedents.slice(0, 8))} />,
@@ -119,7 +120,7 @@ const GoalBreakdowns: React.FC<{ goal: Goal; recorded: Recorded[] }> = ({ goal, 
       <HBars key="functions" title="Possible functions" series={COUNT_SERIES} rows={tallyRows(abc.functions)} />,
     );
   }
-  if (usesPromptCounters(goal.type)) {
+  if (usesPromptCounters(type)) {
     const totals = promptTotals();
     data.forEach(d => Object.entries(promptTotals(d)).forEach(([k, v]) => { totals[k] += v; }));
     const rows = tallyRows(Object.entries(totals).map(([k, v]) => [PROMPT_LABELS[k] ?? k, v]));
@@ -131,18 +132,19 @@ const GoalBreakdowns: React.FC<{ goal: Goal; recorded: Recorded[] }> = ({ goal, 
 
 const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[] }> = ({ goal, sessions }) => {
   const info = goalMeasureInfo(goal);
+  const type = captureTypeOf(goal);
   const direction = goalDirection(goal);
   const target = goal.sessionTargetValue;
   const recorded = useMemo(() => recordedSessions(goal, sessions), [goal, sessions]);
 
-  const points = recorded.map(r => ({ label: r.label, value: r.value, ...(goalResponses(goal.type, r.data) ?? {}) }));
-  const hasResponses = goalResponses(goal.type) !== null && points.length > 0;
+  const points = recorded.map(r => ({ label: r.label, value: r.value, ...(goalResponses(type, r.data) ?? {}) }));
+  const hasResponses = goalResponses(type) !== null && points.length > 0;
   const values = recorded.map(r => r.value);
   const average = values.length ? round(values.reduce((a, b) => a + b, 0) / values.length) : null;
   const metCount = target === undefined ? null : values.filter(v => meetsTarget(goal, v, target)).length;
   const yMax = info.max ?? Math.ceil(Math.max(...values, target ?? 0, 1) * 1.1);
   const notes = recorded.map(r => ({ date: r.session.date, text: goalNotes(r.data) })).filter(n => n.text).slice(-3).reverse();
-  const storyWords = goal.type === 'STORY_CHAMPS' ? recorded.reduce((total, r) => total + scoreStory(r.data).linkingWords, 0) : null;
+  const storyWords = type === 'STORY_CHAMPS' ? recorded.reduce((total, r) => total + scoreStory(r.data).linkingWords, 0) : null;
 
   const stats = [
     { label: 'Sessions with data', value: String(points.length) },
@@ -156,8 +158,8 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[] }> = ({ goal
       <CardHeader>
         <CardTitle>{goal.name}</CardTitle>
         <CardDescription>
-          {goalTypeLabel(goal.type)} · {info.label} per session
-          {target !== undefined && ` · Target ${formatGoalTarget(goal.type, target, goal.targetDirection)}`}
+          {goalTypeLabel(type)} · {info.label} per session
+          {target !== undefined && ` · Target ${formatGoalTarget(type, target, goal.targetDirection)}`}
           {storyWords !== null && ` · ${storyWords} linking words`}
         </CardDescription>
       </CardHeader>
@@ -181,7 +183,7 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[] }> = ({ goal
                   <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} />
                   <YAxis domain={[0, yMax]} unit={info.unit === '%' ? '%' : undefined} tickLine={false} axisLine={false} tickMargin={8}
                     ticks={info.max !== undefined && info.max <= 10 ? Array.from({ length: info.max + 1 }, (_, i) => i) : undefined}
-                    allowDecimals={goal.type === 'BEHAVIOR_DURATION' || goal.type === 'BEHAVIOR_LATENCY'} />
+                    allowDecimals={type === 'BEHAVIOR_DURATION' || type === 'BEHAVIOR_LATENCY'} />
                   <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
                   {target !== undefined && (
                     <ReferenceLine y={target} stroke="hsl(var(--chart-5))" strokeDasharray="6 4"

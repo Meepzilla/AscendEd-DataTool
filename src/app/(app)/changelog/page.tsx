@@ -21,6 +21,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-28',
+    title: 'Fixed: Reports Missing Some Goals\' Data',
+    description: 'Goals entered with a different data collection type than their goal type (for example a language goal recorded as discrete trials) now show their data in Reports and the sidebar; they were being read as their goal type, so their sessions looked empty. Data Entry now also marks each goal you work on, so a rating left at 3 still counts as recorded.',
+    type: 'fix',
+    icon: Bug,
+  },
+  {
+    date: '2026-10-28',
     title: 'Fixed: Editing Sessions (More Cases), Update Notice, Error Details',
     description: 'Editing a saved session also works for sessions with an unreadable date or without their original goal list (e.g. imported), and the edit window no longer reloads itself while open. When a new version is downloaded, a notice offers to reload into it. If a page ever fails, it now shows what went wrong (with the app version) and a Try Again button instead of a blank screen. Settings shows the app version. Notices no longer appear twice. In the sidebar goal progress, goal names wrap instead of being cut off, articulation and language goals show their real progress (they showed 0%), progress uses the latest session where the goal was actually worked on, and goals turn green when their target is met.',
     type: 'fix',
