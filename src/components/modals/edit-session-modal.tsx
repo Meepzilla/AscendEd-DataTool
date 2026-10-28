@@ -13,6 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
+import { formatDate } from '@/lib/helpers';
 
 
 interface EditSessionModalProps {
@@ -24,6 +25,7 @@ const GoalDataInputComponent = React.lazy(() => import('@/components/forms/goal-
 export default function EditSessionModal({ sessionToEdit }: EditSessionModalProps) {
   const {
     sessions,
+    students,
     closeEditSessionModal,
     updateSession,
     loading: dataLoading
@@ -35,12 +37,19 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
 
   const [formData, setFormData] = useState<Partial<SessionData>>({});
 
+  // Older or imported sessions may lack the goal list they were recorded with; fall back to the student's goals.
+  const goalHeaders: Goal[] = currentSession?.originalGoalHeaders
+    ?? students.find(s => s.id === currentSession?.studentId)?.goals
+    ?? [];
+
   useEffect(() => {
     if (currentSession) {
+      // Ensure date is in 'YYYY-MM-DD' for DatePicker if it's from an ISO string (left empty if it can't be read).
+      const parsed = currentSession.date ? new Date(currentSession.date) : null;
       setFormData({
         ...currentSession,
-        // Ensure date is in 'YYYY-MM-DD' for DatePicker if it's from an ISO string
-        date: currentSession.date ? new Date(currentSession.date).toISOString().split('T')[0] : undefined,
+        goals: currentSession.goals ?? [],
+        date: parsed && !isNaN(parsed.getTime()) ? parsed.toISOString().split('T')[0] : undefined,
       });
     }
   }, [currentSession]);
@@ -113,7 +122,7 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
       isOpen={!!currentSession}
       onClose={closeEditSessionModal}
       title={`Edit Session for ${currentSession.studentName}`}
-      description={`Session on ${new Date(currentSession.date).toLocaleDateString()}`}
+      description={`Session on ${formatDate(currentSession.date)}`}
       size="xl"
     >
       <form
@@ -172,7 +181,7 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
                         <ScrollArea className="max-h-[300px] border rounded-md p-2">
                             <div className="space-y-3">
                                 {formData.goals.map((sessionGoal) => {
-                                    const originalGoal = currentSession.originalGoalHeaders.find(og => og.id === sessionGoal.goalId);
+                                    const originalGoal = goalHeaders.find(og => og.id === sessionGoal.goalId);
                                     if (!originalGoal) return null;
 
                                     return (

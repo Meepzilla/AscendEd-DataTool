@@ -8,7 +8,6 @@ import AppFooter from '@/components/layout/app-footer';
 import StudentSidebar from '@/components/layout/student-sidebar';
 import { SidebarProvider, SidebarInset, SidebarRail } from '@/components/ui/sidebar';
 import { useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts';
-import { Toaster } from '@/components/ui/toaster';
 
 function KeyboardShortcutInitializer() {
   useKeyboardShortcuts();
@@ -85,7 +84,6 @@ export default function AppLayout({
         </div>
         <AppFooter />
       </div>
-      <Toaster />
     </SidebarProvider>
   );
 }
