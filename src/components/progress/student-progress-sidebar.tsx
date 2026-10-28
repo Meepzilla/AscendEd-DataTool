@@ -3,7 +3,8 @@
 
 import React, { useMemo } from 'react';
 import type { Student, Goal, SessionData } from '@/lib/types';
-import { scoreStory, summarizeCommunicationFunctions, behaviorMeasure, goalDirection, progressTowardTarget } from '@/lib/goal-constants';
+import { goalDirection, progressTowardTarget } from '@/lib/goal-constants';
+import { goalMeasure, goalMeasureInfo } from '@/lib/goal-measures';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
@@ -12,97 +13,28 @@ import { TrendingUp, CheckCircle2, ListChecks, BarChart2 } from 'lucide-react';
 import { formatGoalTarget, studentProfilePath } from '@/lib/helpers';
 
 /**
- * Calculates the progress percentage for a single goal based on its latest session data.
- * @param goal The goal to calculate progress for.
- * @param latestSessionForGoal The single latest session that contains data for this goal.
- * @returns A progress percentage (0-100).
+ * Progress (0-100) toward a goal's session target, from the latest session that has data for it: the goal's
+ * measure (accuracy, story score, functions, rating, behavior measure...; see goal-measures) compared with
+ * the target, where decrease goals are met at or below it. Without a target, the measure's own scale is used.
  */
 const calculateProgressForGoal = (goal: Goal, latestSessionForGoal: SessionData | undefined): number => {
   if (goal.isArchived || !latestSessionForGoal) return 0;
+  const data = latestSessionForGoal.goals.find(g => g.goalId === goal.id)?.data;
+  if (!data) return 0;
 
-  const goalSessionData = latestSessionForGoal.goals.find(g => g.goalId === goal.id)?.data;
-  if (!goalSessionData) return 0;
-
-  let actualPerformancePct = 0;
-  let correct = 0;
-  let total = 0;
-
-  switch (goal.type) {
-    case 'ARTICULATION':
-    case 'LANGUAGE_COMPREHENSION':
-    case 'LANGUAGE_EXPRESSION':
-    case 'PHONOLOGICAL_PROCESSES':
-      correct = Number(goalSessionData.correct || goalSessionData.questionsCorrect || goalSessionData.successfulResponses || goalSessionData.correctProductions) || 0;
-      total = Number(goalSessionData.opportunities) || 0;
-      actualPerformancePct = total > 0 ? (correct / total) * 100 : 0;
-      break;
-    
-    case 'SEQUENCED_TRIALS': {
-      const successful = Number(goalSessionData.successfulAttempts || 0);
-      const failed = Number(goalSessionData.failedAttempts || 0);
-      total = successful + failed;
-      actualPerformancePct = total > 0 ? (successful / total) * 100 : 0;
-      break;
-    }
-
-    case 'FLUENCY_SYLLABLE_STUTTER': {
-      const totalSyllables = Number(goalSessionData.totalSyllables) || 0;
-      const stutteredSyllables = Number(goalSessionData.stutteredSyllables) || 0;
-      const fluentSyllables = Math.max(0, totalSyllables - stutteredSyllables);
-      actualPerformancePct = totalSyllables > 0 ? (fluentSyllables / totalSyllables) * 100 : 0;
-      break;
-    }
-    case 'FEEDING_SWALLOWING': {
-      const accepted = Number(goalSessionData.trialsAccepted || 0);
-      const refused = Number(goalSessionData.trialsRefused || 0);
-      total = accepted + refused;
-      actualPerformancePct = total > 0 ? (accepted / total) * 100 : 0;
-      break;
-    }
-    case 'QUALITATIVE_OBSERVATION': {
-      if (goal.sessionTargetValue !== undefined && goal.sessionTargetValue > 0 && goalSessionData.rating !== undefined) {
-        if (goalSessionData.rating !== undefined) {
-          actualPerformancePct = (Number(goalSessionData.rating) / 5) * 100;
-        } else {
-          actualPerformancePct = (goalSessionData.notes && String(goalSessionData.notes).trim() !== '') ? 100 : 0;
-        }
-      } else {
-        actualPerformancePct = (goalSessionData.notes && String(goalSessionData.notes).trim() !== '') ? 100 : 0;
-      }
-      break;
-    }
-    case 'STORY_CHAMPS':
-      actualPerformancePct = scoreStory(goalSessionData).percent;
-      break;
-    case 'BEHAVIOR_FREQUENCY':
-    case 'BEHAVIOR_DURATION':
-    case 'BEHAVIOR_ABC':
-    case 'BEHAVIOR_INTERVAL':
-    case 'BEHAVIOR_LATENCY': {
-      // Progress toward a count, minutes, % or seconds target; decrease goals are met at or below it.
-      const direction = goalDirection(goal);
-      const value = behaviorMeasure(goal.type, goalSessionData, direction);
-      if (value === null || goal.sessionTargetValue === undefined) return 0;
-      return progressTowardTarget(value, goal.sessionTargetValue, direction);
-    }
-    case 'COMMUNICATION_FUNCTIONS': {
-      // The target is a number of different functions used spontaneously, not a percentage.
-      const { functionsUsedSpontaneously, functionCount } = summarizeCommunicationFunctions(goalSessionData);
-      const targetCount = goal.sessionTargetValue && goal.sessionTargetValue > 0 ? goal.sessionTargetValue : functionCount;
-      return Math.min(100, (functionsUsedSpontaneously / targetCount) * 100);
-    }
-    default:
-      return 0;
+  // Qualitative observations without a rating target count as met once notes are written.
+  if (goal.type === 'QUALITATIVE_OBSERVATION' && !(goal.sessionTargetValue && goal.sessionTargetValue > 0)) {
+    return String(data.notes || '').trim() ? 100 : 0;
   }
 
-  actualPerformancePct = Math.min(Math.max(actualPerformancePct, 0), 100);
-
-  if (goal.sessionTargetValue !== undefined && goal.sessionTargetValue > 0 && goal.type !== 'QUALITATIVE_OBSERVATION') {
-    const progressTowardsTarget = (actualPerformancePct / goal.sessionTargetValue) * 100;
-    return Math.min(Math.max(progressTowardsTarget, 0), 100);
+  const value = goalMeasure(goal, data);
+  if (value === null) return 0;
+  const target = goal.sessionTargetValue;
+  if (target !== undefined && (target > 0 || goalDirection(goal) === 'decrease')) {
+    return progressTowardTarget(value, target, goalDirection(goal));
   }
-
-  return actualPerformancePct;
+  const max = goalMeasureInfo(goal).max;
+  return max ? Math.min(100, (value / max) * 100) : 0;
 };
 
 
@@ -124,12 +56,14 @@ export default function StudentProgressSidebar({ student, studentSessions }: {st
     const sortedSessions = [...studentSessions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     // Iterate through sorted sessions to find the latest one for each goal
+    // Every session stores all of the student's goals, so a goal's latest session is the latest one
+    // where something was recorded for it (not one where it wasn't worked on).
     for (const session of sortedSessions) {
       for (const goalData of session.goals) {
-        // Since sessions are sorted, the first time we see a goalId, it's from the latest session for that goal.
-        if (!latestSessionByGoalId.has(goalData.goalId)) {
-          latestSessionByGoalId.set(goalData.goalId, session);
-        }
+        if (latestSessionByGoalId.has(goalData.goalId)) continue;
+        const goal = activeGoals.find(g => g.id === goalData.goalId);
+        const recorded = goal && (goal.type === 'QUALITATIVE_OBSERVATION' || goalMeasure(goal, goalData.data || {}) !== null);
+        if (recorded) latestSessionByGoalId.set(goalData.goalId, session);
       }
     }
 
@@ -183,13 +117,12 @@ export default function StudentProgressSidebar({ student, studentSessions }: {st
                 : `${Math.round(goal.progress)}% (Actual)`;
             return (
               <div key={goal.id} className="p-2 rounded-md hover:bg-sidebar-accent transition-colors">
-                <div className="flex justify-between items-start gap-2 text-xs mb-1">
-                    <p className="font-medium text-sidebar-foreground whitespace-normal break-words min-w-0 pr-2" title={goal.name}>{goal.name}</p>
-                    <span className={`font-semibold whitespace-nowrap ${goal.progress >= (goal.sessionTargetValue ?? 100) ? 'text-green-500' : goal.progress > 0 ? 'text-primary' : 'text-muted-foreground'}`}>
-                        {displayValue}
-                    </span>
-                </div>
-                <Progress value={goal.progress} className="h-1.5" indicatorClassName={goal.progress >= (goal.sessionTargetValue ?? 100) ? 'bg-green-500' : goal.progress > 0 ? 'bg-primary' : 'bg-muted'}/>
+                {/* The goal name gets its own line so it can wrap in full; the progress and target go below it. */}
+                <p className="text-xs font-medium text-sidebar-foreground whitespace-normal break-words" title={goal.name}>{goal.name}</p>
+                <p className={`text-[11px] font-semibold mt-0.5 mb-1 whitespace-normal break-words ${goal.progress >= 100 ? 'text-green-500' : goal.progress > 0 ? 'text-primary' : 'text-muted-foreground'}`}>
+                    {displayValue}
+                </p>
+                <Progress value={goal.progress} className="h-1.5" indicatorClassName={goal.progress >= 100 ? 'bg-green-500' : goal.progress > 0 ? 'bg-primary' : 'bg-muted'}/>
               </div>
             );
           })}

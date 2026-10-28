@@ -117,7 +117,9 @@ export default function StudentSidebar() {
       <SidebarSeparator />
 
       <SidebarContent className="p-0">
-        <ScrollArea className="h-full">
+        {/* display: block on the scroll area's content wrapper (Radix makes it a table) keeps long content
+            to the sidebar's width so it wraps instead of being cut off at the edge. */}
+        <ScrollArea className="h-full [&_[data-radix-scroll-area-viewport]>div]:!block">
             {loading && (
               <div className="p-2 space-y-2">
                 {[1, 2, 3].map(i => <SidebarMenuSkeleton key={i} showIcon />)}
