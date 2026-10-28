@@ -4,6 +4,7 @@ import './globals.css'; // Import global CSS styles
 import { Toaster } from "@/components/ui/toaster"; // Import Toaster component for displaying notifications
 import AppProviders from '@/providers/app-providers'; // Import AppProviders for wrapping the application with context providers
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
+import { DISPLAY_SCALE_SCRIPT } from '@/lib/display-scale';
 
 // Initialize the Inter font with Latin subset and define a CSS variable for it.
 // This uses Next.js's built-in font optimization.
@@ -47,6 +48,8 @@ export default function RootLayout({
       </head>
       {/* Apply font-body CSS variable and antialiased class for smoother text rendering. */}
       <body className={`${inter.variable} font-body antialiased`}>
+        {/* Applies the Display Size setting (see Settings) before the page first paints. */}
+        <script dangerouslySetInnerHTML={{ __html: DISPLAY_SCALE_SCRIPT }} />
         {/* AppProviders wrap the entire application to provide global contexts (e.g., auth, data). */}
         <AppProviders>
           {children} {/* Renders the current page component or nested layouts */}

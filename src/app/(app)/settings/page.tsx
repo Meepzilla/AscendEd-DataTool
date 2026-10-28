@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Settings, PanelLeft } from 'lucide-react';
 import BackupRestoreCard from '@/components/settings/BackupRestoreCard';
+import DisplaySizeSetting from '@/components/settings/DisplaySizeSetting';
 
 const SIDEBAR_ENABLED_KEY = 'sidebar_enabled';
 
@@ -71,6 +72,7 @@ export default function SettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <DisplaySizeSetting />
           <div className="flex flex-row items-center justify-between rounded-lg border p-4">
             <div className="space-y-0.5">
               <Label htmlFor="sidebar-switch" className="text-base font-medium">
