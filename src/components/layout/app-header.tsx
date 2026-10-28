@@ -24,7 +24,7 @@ import {
   DropdownMenuLabel, 
   DropdownMenuSeparator 
 } from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import TouchControls from '../forms/touch-controls';
 import { useSidebar } from '@/components/ui/sidebar';
 
@@ -110,10 +110,6 @@ export default function AppHeader() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-8 w-8">
-                       <AvatarImage 
-                          src={`https://avatar.vercel.sh/${currentUser.uid}.png?text=${userInitial}`} 
-                          alt={currentUser.displayName || currentUser.email || 'User'}
-                        />
                       <AvatarFallback>{userInitial}</AvatarFallback>
                     </Avatar>
                   </Button>
