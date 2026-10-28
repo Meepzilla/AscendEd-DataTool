@@ -4,16 +4,23 @@ import { useEffect } from 'react';
 
 // Hides the "Powered by Netlify" badge the host adds to the live site, which covers the Save buttons
 // in the bottom corner. The badge isn't part of the app, so it is found by what it looks like: an element
-// the host adds to the page whose tag, id, class, link or text mentions Netlify.
+// the host adds to the top level of the page whose tag, id, class, link or text mentions Netlify, or that
+// floats above everything with a huge z-index.
 
 const NETLIFY = /netlify/i;
 const BADGE_TEXT = /powered by netlify/i;
+
+// The app's own floating layers (dialogs, menus, toasts) stay well below this; injected badges use the
+// largest z-index there is, often inside a closed shadow root where their text can't be read.
+const INJECTED_Z_INDEX = 100000;
 
 function isHostBadge(el: Element): boolean {
   const attrs = [el.tagName, el.id, String(el.getAttribute('class') ?? ''), el.getAttribute('src') ?? '', el.getAttribute('href') ?? ''].join(' ');
   if (NETLIFY.test(attrs)) return true;
   const text = el.shadowRoot?.textContent ?? el.textContent ?? '';
-  return text.length < 200 && BADGE_TEXT.test(text);
+  if (text.length < 200 && BADGE_TEXT.test(text)) return true;
+  const style = getComputedStyle(el);
+  return (style.position === 'fixed' || style.position === 'absolute') && Number(style.zIndex) >= INJECTED_Z_INDEX;
 }
 
 function hide(el: Element) {
