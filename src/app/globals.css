@@ -129,7 +129,14 @@ body {
   }
 }
 
-/* The host's "Powered by Netlify" badge covers the Save buttons; also hidden by HostBadgeHider. */
+/* The host's "Powered by Netlify" badge sits in the bottom-right corner of the screen. It is hidden when it
+   can be found (here and in HostBadgeHider); in case it can't, anything clickable that is anchored to the
+   bottom of the screen keeps this much space clear below it. */
+:root {
+  --host-badge-clearance: 48px;
+}
+
+/* Hide the badge when it can be identified. */
 body > [id*="netlify" i],
 body > [class*="netlify" i],
 body > iframe[src*="netlify" i] {
