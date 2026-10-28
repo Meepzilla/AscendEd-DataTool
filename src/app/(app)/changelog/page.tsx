@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const changelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-28',
+    title: 'Display Size Setting',
+    description: 'Settings now has a Display Size option (100%, 90%, 80%, 70%) that zooms the whole app out to fit more on screen. Tablets such as iPads start at 80%. Tapping a text box no longer zooms the page in on iPad.',
+    type: 'improvement',
+    icon: Minimize2,
+  },
+  {
+    date: '2026-10-28',
     title: 'Communication Functions Goal Type',
     description: 'A new goal type for tallying communicative functions (requesting, commenting, protesting, greeting, gaining attention, answering and asking questions, expressing feelings, directing others) as spontaneous or prompted. Progress is the number of different functions used spontaneously. Includes nine default goal templates; the GLP "variety of communicative functions" template now uses this type.',
     type: 'feature',
