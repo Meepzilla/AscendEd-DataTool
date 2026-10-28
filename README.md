@@ -60,7 +60,7 @@ Every build is signed with the same key (`android/app/ascended-debug.keystore`),
 
 ### Building locally
 
-Requires JDK 21 and the Android SDK (for example, through Android Studio).
+Requires Node.js 22 or later (needed by the Capacitor CLI), JDK 21, and the Android SDK (for example, through Android Studio).
 
 ```bash
 npm run android:sync          # static export into out/, copied into android/
