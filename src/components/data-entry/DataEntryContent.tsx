@@ -640,7 +640,7 @@ export default function DataEntryContent() {
         </div>
         
         {selectedStudentIds.length > 0 && (
-            <div className="sticky bottom-0 left-0 right-0 z-10 bg-background/95 backdrop-blur-sm mt-auto">
+            <div className="sticky bottom-0 left-0 right-0 z-10 bg-background mt-auto">
                 <div className="flex justify-between items-center gap-2 p-2 border-t">
                     <div className="hidden sm:block">
                       <TouchControls

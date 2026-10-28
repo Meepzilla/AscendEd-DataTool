@@ -69,7 +69,8 @@ export default function AppLayout({
   return (
     <SidebarProvider defaultOpen={isSidebarEnabled}>
       <KeyboardShortcutInitializer />
-      <div className="flex flex-col min-h-screen bg-background">
+      {/* flex-1 min-w-0: fill the width of the SidebarProvider's flex row instead of shrinking to the content. */}
+      <div className="flex flex-1 min-w-0 flex-col min-h-screen bg-background">
         <AppHeader />
         <div className="flex flex-1 overflow-hidden">
           {isSidebarEnabled ? (

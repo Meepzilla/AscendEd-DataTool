@@ -12,6 +12,10 @@ export const TABLET_DEFAULT_SCALE = 0.8;
  * to 0.8 (TABLET_DEFAULT_SCALE). `maximum-scale` stops iPad Safari from zooming in when a text box
  * is focused; iOS still allows pinch-zoom regardless.
  *
+ * The layout width is given explicitly (screen width / scale): iPad Safari keeps `width=device-width`
+ * as the layout width even when zoomed out, which left the app filling only part of the screen. The
+ * width is recalculated when the device rotates.
+ *
  * Next.js adds its own default viewport tag after the page loads, so this updates every viewport tag
  * and watches <head> to re-apply when one is added or reset. Kept self-contained so it can also run
  * as an inline script before the page first paints.
@@ -26,9 +30,12 @@ export function applyDisplayScale(scale?: number) {
       state.__displayScale = stored > 0 ? stored : isTablet ? 0.8 : 1;
     }
     const value = state.__displayScale;
-    const content = value === 1
-      ? 'width=device-width, initial-scale=1'
-      : `width=device-width, initial-scale=${value}, maximum-scale=${value}`;
+    let content = 'width=device-width, initial-scale=1';
+    if (value !== 1) {
+      const landscape = window.matchMedia('(orientation: landscape)').matches;
+      const deviceWidth = landscape ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height);
+      content = `width=${Math.round(deviceWidth / value)}, initial-scale=${value}, maximum-scale=${value}`;
+    }
 
     const metas = document.querySelectorAll('meta[name="viewport"]');
     if (metas.length === 0) {
@@ -44,6 +51,7 @@ export function applyDisplayScale(scale?: number) {
     if (!state.__displayScaleObserver) {
       state.__displayScaleObserver = new MutationObserver(() => applyDisplayScale());
       state.__displayScaleObserver.observe(document.head, { childList: true, subtree: true, attributes: true, attributeFilter: ['content'] });
+      window.matchMedia('(orientation: landscape)').addEventListener('change', () => applyDisplayScale());
     }
   } catch {
     // Keep the default viewport.
