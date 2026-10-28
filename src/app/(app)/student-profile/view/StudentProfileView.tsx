@@ -7,7 +7,7 @@ import { useStudentData } from '@/hooks/use-student-data';
 import type { Student, Goal } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Edit, Trash2, PlusCircle, Info, Target, Edit3, CheckSquare, TrendingUp, Archive, ArchiveRestore, Upload, Download, ArrowLeft } from 'lucide-react';
 import { formatDate } from '@/lib/helpers'; 
 import { Skeleton } from '@/components/ui/skeleton';
@@ -260,8 +260,7 @@ export default function StudentProfileView() {
                 </Button>
               </Link>
             <Avatar className="h-14 w-14 sm:h-16 sm:w-16">
-              <AvatarImage src={`https://avatar.vercel.sh/${currentStudent.id}.png?text=${currentStudent.name.substring(0,2).toUpperCase()}`} alt={currentStudent.name} data-ai-hint="abstract avatar"/>
-              <AvatarFallback>{currentStudent.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+              <AvatarFallback className="bg-primary/15 text-primary text-xl font-semibold">{currentStudent.name.substring(0, 2).toUpperCase()}</AvatarFallback>
             </Avatar>
             <div>
               <div className="flex items-center gap-2">

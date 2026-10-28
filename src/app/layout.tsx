@@ -33,9 +33,6 @@ export default function RootLayout({
     // Set the language of the document to English and enable dark mode by default.
     <html lang="en" className="dark">
       <head>
-        {/* Preconnect to Google Fonts servers to improve font loading performance */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         {/* Home Screen app tags. Written here rather than in `metadata`, which Next.js streams into the
             page after it loads; Safari reads these when the app is added to the Home Screen. */}
         <title>AscendEd - Student Goal Tracker</title>

@@ -12,28 +12,10 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  // Image optimization configuration.
-  // Defines a list of remote hostnames that Next.js is allowed to optimize images from.
-  // This enhances security and prevents arbitrary image optimization.
+  // The app loads no remote images, so none are allowed.
   images: {
     // A static export has no server to optimize images.
     unoptimized: isStaticBuild,
-    remotePatterns: [
-      // Pattern for 'placehold.co' hostname.
-      {
-        protocol: 'https',
-        hostname: 'placehold.co',
-        port: '',
-        pathname: '/**',
-      },
-      // Pattern for 'avatar.vercel.sh' hostname.
-      {
-        protocol: 'https',
-        hostname: 'avatar.vercel.sh',
-        port: '',
-        pathname: '/**',
-      },
-    ],
   },
   ...(isStaticBuild && {
     output: 'export',
