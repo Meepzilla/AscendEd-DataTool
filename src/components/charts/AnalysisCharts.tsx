@@ -20,7 +20,7 @@ const AiSummary = lazy(() => import('./analysis-charts/AiSummary'));
 const SyllableFluencyChart = lazy(() => import('./analysis-charts/SyllableFluencyChart'));
 const DysfluencyTypesChart = lazy(() => import('./analysis-charts/DysfluencyTypesChart'));
 const DataSummary = lazy(() => import('./analysis-charts/DataSummary'));
-const BehaviorCharts = lazy(() => import('./analysis-charts/BehaviorCharts'));
+const GoalCharts = lazy(() => import('./analysis-charts/GoalCharts'));
 
 
 // Helper to transform session data for charts
@@ -168,12 +168,13 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, select
   const activeStudentGoals = useMemo(() => selectedStudent?.goals.filter(g => !g.isArchived) || [], [selectedStudent]);
   const chartData = useMemo(() => transformSessionDataForChart(studentSessions, selectedStudent?.goals || [], selectedGoalId), [studentSessions, selectedStudent?.goals, selectedGoalId]);
   
-  // Behavior goals are charted by their own measures (counts, minutes, %, seconds) rather than accuracy.
-  const behaviorGoals = useMemo(
-    () => activeStudentGoals.filter(g => BEHAVIOR_GOAL_TYPES.includes(g.type) && (!selectedGoalId || g.id === selectedGoalId)),
+  // Every goal also gets its own card, charted by its own measure against its target. Behavior goals are
+  // measured in counts, minutes, % or seconds, so the accuracy overview is hidden when only they are in view.
+  const goalsInView = useMemo(
+    () => activeStudentGoals.filter(g => !selectedGoalId || g.id === selectedGoalId),
     [activeStudentGoals, selectedGoalId],
   );
-  const behaviorOnly = behaviorGoals.length > 0 && (!!selectedGoalId || behaviorGoals.length === activeStudentGoals.length);
+  const behaviorOnly = goalsInView.length > 0 && goalsInView.every(g => BEHAVIOR_GOAL_TYPES.includes(g.type));
 
   const hasPromptUsageData = useMemo(() => {
     return chartData.some(session => Object.keys(session).some(key => key !== 'totalPrompts' && key !== 'Independent' && session[key as keyof typeof session] > 0));
@@ -198,9 +199,10 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, select
     );
   }
 
-  const behaviorCharts = behaviorGoals.length > 0 && (
+  const goalCharts = goalsInView.length > 0 && (
     <Suspense fallback={<ChartSuspenseFallback />}>
-      <BehaviorCharts studentSessions={studentSessions} behaviorGoals={behaviorGoals} />
+      {!selectedGoalId && <h2 className="text-xl font-semibold">Goal by Goal</h2>}
+      <GoalCharts studentSessions={studentSessions} goals={goalsInView} />
     </Suspense>
   );
 
@@ -210,13 +212,14 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, select
         <Suspense fallback={<ChartSuspenseFallback />}>
           {AI_ENABLED && <AiSummary studentSessions={studentSessions} selectedStudent={selectedStudent} selectedGoalId={selectedGoalId} chartData={chartData} />}
         </Suspense>
-        {behaviorCharts}
+        {goalCharts}
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
+       {selectedGoalId && goalCharts}
        <Suspense fallback={<ChartSuspenseFallback />}>
             <DataSummary studentSessions={studentSessions} selectedStudent={selectedStudent} selectedGoalId={selectedGoalId} chartData={chartData} />
        </Suspense>
@@ -258,7 +261,7 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, select
         </Suspense>
        
       </div>
-      {behaviorCharts}
+      {!selectedGoalId && goalCharts}
     </div>
   );
 };
