@@ -27,6 +27,7 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import TouchControls from '../forms/touch-controls';
 import { useSidebar } from '@/components/ui/sidebar';
+import { useRepaintAfterOverlay } from '@/hooks/use-repaint-after-overlay';
 
 export default function AppHeader() {
   const { currentUser, signOut } = useAuth();
@@ -35,6 +36,8 @@ export default function AppHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const { toggleSidebar } = useSidebar();
+  const headerRef = React.useRef<HTMLElement>(null);
+  useRepaintAfterOverlay(headerRef);
 
   const userInitial = currentUser?.displayName?.charAt(0) || currentUser?.email?.charAt(0) || 'U';
   const isDataEntryPage = pathname.startsWith('/data-entry');
@@ -42,7 +45,7 @@ export default function AppHeader() {
 
   // Solid background: iPad Safari renders a backdrop blur hazy and soft when the page is zoomed out.
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-card">
+    <header ref={headerRef} className="sticky top-0 z-40 w-full border-b bg-card">
       <div className="flex h-16 items-center px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-2 sm:gap-4">
           <Sheet>
