@@ -21,7 +21,8 @@ export default function AppFooter() {
 
   return (
     <footer className="border-t bg-card text-card-foreground">
-      <div className="container mx-auto px-4 py-6 sm:px-6 lg:px-8">
+      {/* Bottom padding keeps the footer's links clear of the host's corner badge. */}
+      <div className="container mx-auto px-4 pt-6 pb-[calc(1.5rem+var(--host-badge-clearance))] sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row justify-between items-center text-sm text-muted-foreground">
           <p>&copy; {currentYear} {APP_NAME}. All rights reserved.</p>
           <div className="mt-4 md:mt-0">
