@@ -189,7 +189,7 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
                                         key={sessionGoal.goalId}
                                         id={`edit-session-goal-${sessionGoal.goalId}`}
                                         goal={originalGoal}
-                                        data={sessionGoal.data || GOAL_TYPE_FIELDS[originalGoal.type]}
+                                        data={sessionGoal.data || GOAL_TYPE_FIELDS[(originalGoal.dataCaptureType || originalGoal.type) as keyof typeof GOAL_TYPE_FIELDS]}
                                         onChange={(fieldName,newData) => handleGoalDataChange(sessionGoal.goalId, fieldName,newData)}
                                         isArchived={originalGoal.isArchived}
                                         />

@@ -3,7 +3,7 @@
 
 import React, { useState, useMemo, lazy, Suspense } from 'react';
 import type { Student, SessionData, Goal, PromptType } from '@/lib/types';
-import { BEHAVIOR_GOAL_TYPES } from '@/lib/goal-constants';
+import { BEHAVIOR_GOAL_TYPES, captureTypeOf } from '@/lib/goal-constants';
 import { goalResponses } from '@/lib/goal-measures';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -58,8 +58,9 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
       if (selectedGoalId && goalData.goalId !== selectedGoalId) return;
       
       const data = { ...(goalData.data || {}) };
+      const type = currentGoal ? captureTypeOf(currentGoal) : goalData.goalType;
 
-      if (goalData.goalType === 'FLUENCY_SYLLABLE_STUTTER') {
+      if (type === 'FLUENCY_SYLLABLE_STUTTER') {
           // Syllable counts feed the fluency charts, not the response totals.
           day.totalSyllables += Number(data.totalSyllables) || 0;
           day.stutteredSyllables += Number(data.stutteredSyllables) || 0;
@@ -73,7 +74,7 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
       // responses). Other goal types are measured differently (story points, functions, syllables,
       // ratings, behavior counts) and are reported on their own cards, so counting their points as
       // "opportunities" or "incorrect" would inflate the totals.
-      const responses = goalResponses(goalData.goalType, data);
+      const responses = goalResponses(type, data);
       const currentGoalCorrect = responses?.correct ?? 0;
       const currentGoalIncorrect = responses?.incorrect ?? 0;
       const currentGoalApproximate = responses?.approximate ?? 0;
@@ -139,7 +140,7 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, select
     () => activeStudentGoals.filter(g => !selectedGoalId || g.id === selectedGoalId),
     [activeStudentGoals, selectedGoalId],
   );
-  const behaviorOnly = goalsInView.length > 0 && goalsInView.every(g => BEHAVIOR_GOAL_TYPES.includes(g.type));
+  const behaviorOnly = goalsInView.length > 0 && goalsInView.every(g => BEHAVIOR_GOAL_TYPES.includes(captureTypeOf(g)));
 
   const hasPromptUsageData = useMemo(() => {
     return chartData.some(session => Object.keys(session).some(key => key !== 'totalPrompts' && key !== 'Independent' && session[key as keyof typeof session] > 0));
@@ -147,9 +148,9 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, select
   
   const hasFluencyData = useMemo(() => {
     if (selectedGoalId) {
-        return activeStudentGoals.some(g => g.id === selectedGoalId && g.type === 'FLUENCY_SYLLABLE_STUTTER');
+        return activeStudentGoals.some(g => g.id === selectedGoalId && captureTypeOf(g) === 'FLUENCY_SYLLABLE_STUTTER');
     }
-    return activeStudentGoals.some(g => g.type === 'FLUENCY_SYLLABLE_STUTTER');
+    return activeStudentGoals.some(g => captureTypeOf(g) === 'FLUENCY_SYLLABLE_STUTTER');
   }, [activeStudentGoals, selectedGoalId]);
 
 

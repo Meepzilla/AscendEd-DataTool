@@ -894,7 +894,7 @@ export default function GoalDataInputComponent({
                   {goal.sessionTargetValue !== undefined && (
                     <div className="text-xs text-muted-foreground flex items-center gap-0.5">
                         <TrendingUp className="h-3 w-3 text-green-600" />
-                        Target: {formatGoalTarget(goal.type, goal.sessionTargetValue, goal.targetDirection)}
+                        Target: {formatGoalTarget(goal.dataCaptureType || goal.type, goal.sessionTargetValue, goal.targetDirection)}
                     </div>
                   )}
                 </div>

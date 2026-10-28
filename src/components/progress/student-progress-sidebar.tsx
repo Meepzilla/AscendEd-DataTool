@@ -3,7 +3,7 @@
 
 import React, { useMemo } from 'react';
 import type { Student, Goal, SessionData } from '@/lib/types';
-import { goalDirection, progressTowardTarget } from '@/lib/goal-constants';
+import { captureTypeOf, goalDirection, progressTowardTarget } from '@/lib/goal-constants';
 import { goalMeasure, goalMeasureInfo } from '@/lib/goal-measures';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -23,7 +23,7 @@ const calculateProgressForGoal = (goal: Goal, latestSessionForGoal: SessionData 
   if (!data) return 0;
 
   // Qualitative observations without a rating target count as met once notes are written.
-  if (goal.type === 'QUALITATIVE_OBSERVATION' && !(goal.sessionTargetValue && goal.sessionTargetValue > 0)) {
+  if (captureTypeOf(goal) === 'QUALITATIVE_OBSERVATION' && !(goal.sessionTargetValue && goal.sessionTargetValue > 0)) {
     return String(data.notes || '').trim() ? 100 : 0;
   }
 
@@ -62,7 +62,7 @@ export default function StudentProgressSidebar({ student, studentSessions }: {st
       for (const goalData of session.goals) {
         if (latestSessionByGoalId.has(goalData.goalId)) continue;
         const goal = activeGoals.find(g => g.id === goalData.goalId);
-        const recorded = goal && (goal.type === 'QUALITATIVE_OBSERVATION' || goalMeasure(goal, goalData.data || {}) !== null);
+        const recorded = goal && (captureTypeOf(goal) === 'QUALITATIVE_OBSERVATION' || goalMeasure(goal, goalData.data || {}) !== null);
         if (recorded) latestSessionByGoalId.set(goalData.goalId, session);
       }
     }
@@ -110,9 +110,9 @@ export default function StudentProgressSidebar({ student, studentSessions }: {st
         <div className="space-y-2">
           <h4 className="text-xs font-semibold uppercase text-muted-foreground px-1">Active Goals Overview</h4>
           {activeGoalsWithProgressSliced.map(goal => {
-            const displayValue = goal.sessionTargetValue !== undefined && goal.type !== 'QUALITATIVE_OBSERVATION'
-              ? `${Math.round(goal.progress)}% (Target: ${formatGoalTarget(goal.type, goal.sessionTargetValue, goal.targetDirection)})`
-              : goal.type === 'QUALITATIVE_OBSERVATION'
+            const displayValue = goal.sessionTargetValue !== undefined && captureTypeOf(goal) !== 'QUALITATIVE_OBSERVATION'
+              ? `${Math.round(goal.progress)}% (Target: ${formatGoalTarget(captureTypeOf(goal), goal.sessionTargetValue, goal.targetDirection)})`
+              : captureTypeOf(goal) === 'QUALITATIVE_OBSERVATION'
                 ? (goal.progress === 100 ? 'Noted' : 'No Notes') // Or actual rating
                 : `${Math.round(goal.progress)}% (Actual)`;
             return (
