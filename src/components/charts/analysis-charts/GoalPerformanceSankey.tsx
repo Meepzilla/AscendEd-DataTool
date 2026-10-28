@@ -2,8 +2,8 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import type { Goal, SessionData, PromptType, GoalType, TrialStatus } from '@/lib/types';
-import { scoreStory, summarizeCommunicationFunctions } from '@/lib/goal-constants';
+import type { Goal, SessionData } from '@/lib/types';
+import { goalResponses } from '@/lib/goal-measures';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Sankey, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { Workflow } from 'lucide-react';
@@ -29,67 +29,12 @@ const transformDataForSankeyChart = (sessions: SessionData[], studentActiveGoals
       const originalGoal = studentActiveGoals.find(g => g.id === goalDataEntry.goalId);
       if (!originalGoal || originalGoal.isArchived) return;
 
-      let currentCorrect = 0, currentIncorrect = 0, currentApproximate = 0;
-      const data = goalDataEntry.data || {};
+      // Only trial-based goals have correct / incorrect / approximate responses to show here.
+      const responses = goalResponses(goalDataEntry.goalType, goalDataEntry.data || {});
+      const currentCorrect = responses?.correct ?? 0;
+      const currentIncorrect = responses?.incorrect ?? 0;
+      const currentApproximate = responses?.approximate ?? 0;
 
-      switch (originalGoal.type) {
-        case 'ARTICULATION':
-        case 'AAC':
-            currentCorrect = Number(data.correct) || 0;
-            currentIncorrect = Number(data.incorrect) || 0;
-            currentApproximate = Number(data.approximate) || 0;
-            break;
-        case 'LANGUAGE_COMPREHENSION':
-            currentCorrect = Number(data.questionsCorrect) || 0;
-            currentIncorrect = Number(data.questionsIncorrect) || 0;
-            currentApproximate = Number(data.approximate) || 0;
-            break;
-        case 'LANGUAGE_EXPRESSION':
-            currentCorrect = Number(data.successfulResponses) || 0;
-            currentIncorrect = Number(data.unsuccessfulResponses) || 0;
-            currentApproximate = Number(data.approximate) || 0;
-            break;
-        case 'PHONOLOGICAL_PROCESSES':
-            currentCorrect = Number(data.correctProductions) || 0;
-            currentIncorrect = Number(data.incorrectProductions) || 0;
-            currentApproximate = Number(data.approximate) || 0;
-            break;
-        case 'FLUENCY_SYLLABLE_STUTTER':
-            const totalSyllables = Number(data.totalSyllables) || 0;
-            const stutteredSyllables = Number(data.stutteredSyllables) || 0;
-            currentCorrect = Math.max(0, totalSyllables - stutteredSyllables);
-            currentIncorrect = stutteredSyllables;
-            break;
-        case 'FEEDING_SWALLOWING':
-            currentCorrect = Number(data.trialsAccepted) || 0;
-            currentIncorrect = Number(data.trialsRefused) || 0;
-            break;
-        case 'SEQUENCED_TRIALS':
-            currentCorrect = Number(data.successfulAttempts) || 0;
-            currentIncorrect = Number(data.failedAttempts) || 0;
-            currentApproximate = Number(data.approximate) || 0;
-            break;
-        case 'DISCRETE_TRIALS':
-            if (Array.isArray(data.trials)) {
-                currentCorrect = data.trials.filter((t: TrialStatus) => t === 'correct').length;
-                currentIncorrect = data.trials.filter((t: TrialStatus) => t === 'incorrect').length;
-                currentApproximate = data.trials.filter((t: TrialStatus) => t === 'approximate').length;
-            }
-            break;
-        case 'STORY_CHAMPS': {
-            const story = scoreStory(data);
-            currentCorrect = story.points;
-            currentIncorrect = story.maxPoints - story.points;
-            break;
-        }
-        case 'COMMUNICATION_FUNCTIONS': {
-            const summary = summarizeCommunicationFunctions(data);
-            currentCorrect = summary.spontaneous;
-            currentApproximate = summary.prompted;
-            break;
-        }
-      }
-      
       const totalOpportunities = currentCorrect + currentIncorrect + currentApproximate;
       if (totalOpportunities === 0) return;
 
