@@ -188,7 +188,7 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
             </Select>
           </div>
 
-          <ScrollArea className="flex-grow border rounded-md p-1.5 h-[200px]"> {/* Adjusted height and padding */}
+          <ScrollArea className="flex-grow border rounded-md p-1.5 h-[200px] [&_[data-radix-scroll-area-viewport]>div]:!block"> {/* Adjusted height and padding */}
             {filteredGoalTemplates.length === 0 ? (
               <p className="text-center text-sm text-muted-foreground py-8">
                 No available templates match criteria or all are assigned.
@@ -199,13 +199,13 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
                   <li key={template.id}>
                     <Button
                       variant={selectedTemplates.has(template.id) ? "default" : "outline"}
-                      className="w-full justify-start text-left h-auto py-1.5 px-2 text-sm"
+                      className="w-full justify-start text-left h-auto py-1.5 px-2 text-sm whitespace-normal"
                       onClick={() => handleToggleTemplateSelection(template.id)}
                       disabled={dataLoading || isAssigningTemplates || isAssigningCustom}
                     >
                       <div className="flex items-center justify-between w-full">
-                          <div className="flex-grow">
-                              <p className="font-medium text-sm">{template.name}</p>
+                          <div className="flex-grow min-w-0">
+                              <p className="font-medium text-sm break-words">{template.name}</p>
                               <Badge variant="secondary" className="mt-0.5 text-xs">{template.type}</Badge>
                               {template.category && <Badge variant="outline" className="mt-0.5 ml-1 text-xs">{template.category}</Badge>}
                               {template.sessionTargetValue !== undefined && (
