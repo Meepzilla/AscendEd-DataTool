@@ -32,7 +32,9 @@ let openedSinceAppLoad = false;
 const DEFAULT_SESSION_MINUTES = 30;
 // Student cards fill the screen height below the header card, down to the save bar.
 const MIN_STUDENT_CARD_HEIGHT = 420;
-const STUDENT_CARDS_PADDING = 40; // the cards list's padding plus room for its horizontal scrollbar
+const CARD_TO_SAVE_BAR = 32; // the cards list's bottom padding plus room for its horizontal scrollbar
+// Space kept below the save bar, so the host's corner badge (if it shows) doesn't cover the Save buttons.
+const SCREEN_BOTTOM_CLEARANCE = 48;
 
 export default function DataEntryContent() {
   const {
@@ -617,9 +619,9 @@ export default function DataEntryContent() {
 
   // Size the student cards to the space left on screen. Collapsing the date and time card frees space, so
   // the cards grow; the header and save bar are observed so any change in their height is picked up.
-  // The app sets CSS zoom on <body>, and browsers differ in whether element rects include it, so sizes are
-  // measured against a fixed full-height probe in the same zoomed context and converted with the
-  // rect-to-CSS-pixel ratio of the region itself.
+  // The app sets CSS zoom on <body>, and browsers differ in how element rects account for it (iPad Safari
+  // differs from Chrome), so every measurement is a rect of an element in the same zoomed context,
+  // converted to CSS pixels with the save bar's rect-to-CSS-pixel ratio.
   const rootRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const cardsRegionRef = useRef<HTMLDivElement>(null);
@@ -631,21 +633,41 @@ export default function DataEntryContent() {
       const root = rootRef.current;
       const region = cardsRegionRef.current;
       const probe = viewportProbeRef.current;
-      if (!root || !region || !probe || region.offsetHeight === 0) return;
-      const regionRect = region.getBoundingClientRect();
-      const ratio = regionRect.height / region.offsetHeight || 1; // rect units per CSS pixel
-      const pageTop = regionRect.top - document.body.getBoundingClientRect().top;
-      const saveBar = saveBarRef.current?.getBoundingClientRect().height ?? 0;
-      const available = (probe.getBoundingClientRect().height - pageTop - saveBar) / ratio - STUDENT_CARDS_PADDING;
+      if (!root || !region || !probe) return;
+      const card = root.querySelector<HTMLElement>('[id^="student-card-slot-"]');
+      const saveBar = saveBarRef.current;
+      if (!card || !saveBar || saveBar.offsetHeight === 0) return;
+      // Rect units per CSS pixel, from an element whose size isn't animating (the card animates height changes).
+      const saveBarRect = saveBar.getBoundingClientRect();
+      const ratio = saveBarRect.height / saveBar.offsetHeight || 1;
+      // Where the save bar ends with the page scrolled to the top: the card's top, its height, its padding and
+      // the bar itself. (The bar's own position isn't used: it is sticky, which can hide an overflow.)
+      const cardTop = (card.getBoundingClientRect().top - document.body.getBoundingClientRect().top) / ratio;
+      const screenBottom = probe.getBoundingClientRect().height / ratio;
+      const available = screenBottom - cardTop - CARD_TO_SAVE_BAR - saveBar.offsetHeight - SCREEN_BOTTOM_CLEARANCE;
       root.style.setProperty('--student-card-height', `${Math.max(MIN_STUDENT_CARD_HEIGHT, Math.floor(available))}px`);
     };
     update();
     const observer = new ResizeObserver(update);
-    [headerRef.current, saveBarRef.current].forEach(el => el && observer.observe(el));
+    // The region changes size when cards appear, and the full-height probe when the screen size changes
+    // (rotation, Safari's toolbars, the display size setting). The result doesn't depend on the card's
+    // height, so this can't loop.
+    [headerRef.current, saveBarRef.current, cardsRegionRef.current, viewportProbeRef.current].forEach(el => el && observer.observe(el));
+    // Cards load after the page, so also update when they are added (at most once a frame).
+    let frame = 0;
+    const cardsObserver = new MutationObserver(() => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(update);
+    });
+    if (cardsRegionRef.current) cardsObserver.observe(cardsRegionRef.current, { childList: true, subtree: true });
     window.addEventListener('resize', update);
+    window.visualViewport?.addEventListener('resize', update);
     return () => {
       observer.disconnect();
+      cardsObserver.disconnect();
+      cancelAnimationFrame(frame);
       window.removeEventListener('resize', update);
+      window.visualViewport?.removeEventListener('resize', update);
     };
   }, [hasSelectedStudents]);
 
