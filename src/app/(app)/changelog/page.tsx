@@ -19,8 +19,15 @@ interface ChangelogEntry {
 const changelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-28',
+    title: 'Reports: Goal by Goal',
+    description: 'Reports now include a card for every goal, charted by the measure that fits its type (accuracy, % fluent, Story Champs score, communication functions used spontaneously, 1-5 rating, % independent, or the behavior measures) with the target line, sessions with data, latest, average and how many sessions met the target. Each card also breaks the data down for its goal type: correct/approximate/incorrect responses per session, prompt levels, story part scores and linking words, uses by communication function, dysfluency types, or ABC antecedents and functions, plus recent notes. Sessions where nothing was recorded for a goal are no longer charted as 0.',
+    type: 'feature',
+    icon: BarChartHorizontalBig,
+  },
+  {
+    date: '2026-10-28',
     title: 'Behavior Data: Interval, Latency, Reports and ABC Lists',
-    description: 'Two more behavior goal types. Interval recording (partial interval, whole interval or momentary time sampling) marks each interval + or −, with an interval timer that can beep at each interval, and reports the % of intervals with the behavior. Latency times from a cue to the response and reports the average. Reports now chart each behavior goal against its target (sessions meeting the target, latest and average), and ABC goals show antecedents, behaviors and possible functions. The ABC antecedent, behavior and consequence lists can be edited in Settings and are included in backups. Includes 6 new behavior templates.',
+    description: 'Two more behavior goal types. Interval recording (partial interval, whole interval or momentary time sampling) marks each interval + or −, with an interval timer that can beep at each interval, and reports the % of intervals with the behavior. Latency times from a cue to the response and reports the average. The ABC antecedent, behavior and consequence lists can be edited in Settings and are included in backups. Includes 6 new behavior templates.',
     type: 'feature',
     icon: BarChartHorizontalBig,
   },
