@@ -8,6 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { TrendingUp, CheckCircle2, ListChecks, BarChart2 } from 'lucide-react';
+import { studentProfilePath } from '@/lib/helpers';
 
 /**
  * Calculates the progress percentage for a single goal based on its latest session data.
@@ -192,7 +193,7 @@ export default function StudentProgressSidebar({ student, studentSessions }: {st
           View Full Analysis
         </Button>
       </Link>
-      <Link href={`/student-profile/${student.id}`} passHref>
+      <Link href={studentProfilePath(student.id)} passHref>
         <Button variant="outline" size="sm" className="w-full border-sidebar-border hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
           <ListChecks className="mr-2 h-4 w-4" />
           Manage Goals

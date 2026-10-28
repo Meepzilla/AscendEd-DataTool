@@ -18,6 +18,20 @@ interface ChangelogEntry {
 
 const changelogEntries: ChangelogEntry[] = [
   {
+    date: '2026-10-28',
+    title: 'Backup & Restore',
+    description: 'Back up all students, goals, templates and sessions to a file from the Settings page, and restore it on the same or another device. Restoring can add to the data already on the device or replace it. The dashboard reminds you when there is no backup from the last 7 days.',
+    type: 'feature',
+    icon: DatabaseZap,
+  },
+  {
+    date: '2026-10-27',
+    title: 'Firebase Removed',
+    description: 'Firebase has been removed from the application. All data is now stored in your browser on this device. Email sign-in and sign-up, and the Firebase setting on the Settings page, have been removed.',
+    type: 'improvement',
+    icon: DatabaseZap,
+  },
+  {
     date: '2025-10-18',
     title: 'Student Deletion',
     description: 'You can now permanently delete a student and all their associated session data. A confirmation dialog has been added to prevent accidental deletion. This feature is accessible from the Student Profile page.',
@@ -146,7 +160,7 @@ const changelogEntries: ChangelogEntry[] = [
   {
     date: '2025-07-19',
     title: 'Robust Data Seeding for Goal Templates',
-    description: "Corrected the data seeding logic for both Firebase and local guest users to ensure the full set of 75 default goal templates are always available upon first use or after an update. This resolves issues where the goal template count appeared incorrect.",
+    description: "Corrected the data seeding logic to ensure the full set of 75 default goal templates are always available upon first use or after an update. This resolves issues where the goal template count appeared incorrect.",
     type: 'improvement',
     icon: DatabaseZap,
   },
@@ -174,7 +188,7 @@ const changelogEntries: ChangelogEntry[] = [
   {
     date: '2025-07-13',
     title: 'Robust Data Seeding & Syncing',
-    description: "Corrected the data seeding logic for both Firebase and local guest users to ensure the full set of 75 default goal templates are always available upon first use or after an update. This resolves issues where the goal template count appeared incorrect.",
+    description: "Corrected the data seeding logic to ensure the full set of 75 default goal templates are always available upon first use or after an update. This resolves issues where the goal template count appeared incorrect.",
     type: 'improvement',
     icon: DatabaseZap,
   },

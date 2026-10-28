@@ -35,6 +35,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Label } from '../ui/label';
 import { Switch } from '../ui/switch';
+import { studentProfilePath } from '@/lib/helpers';
 
 
 export default function StudentSidebar() {
@@ -63,10 +64,10 @@ export default function StudentSidebar() {
   const handleSelectStudent = (student: Student) => {
     setSelectedStudent(student);
     // Optional: Navigate to student profile or a default view when a student is selected
-    // router.push(`/student-profile/${student.id}`);
+    // router.push(studentProfilePath(student.id));
   };
   
-  const isStudentSelectedAndOnProfile = selectedStudent && pathname.includes(`/student-profile/${selectedStudent.id}`);
+  const isStudentSelectedAndOnProfile = selectedStudent && pathname.startsWith('/student-profile/view');
   const isDataEntryPage = pathname.startsWith('/data-entry');
 
   const studentSpecificSessions = useMemo(() => {
@@ -138,7 +139,7 @@ export default function StudentSidebar() {
                       onClick={() => handleSelectStudent(student)}
                     >
                       <Link
-                          href={`/student-profile/${student.id}`}
+                          href={studentProfilePath(student.id)}
                           className="flex items-center justify-between w-full"
                         >
                         <div className={cn("flex items-center gap-2 flex-grow min-w-0", student.isArchived && "opacity-60")}>

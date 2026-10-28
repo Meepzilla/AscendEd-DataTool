@@ -9,12 +9,12 @@ import { PlusCircle, Edit, Trash2, Sparkles, Info, Loader2, BrainCircuit, Archiv
 import { formatDate } from '@/lib/helpers';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Timestamp } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 import { findRelevantGoals, type FindRelevantGoalsOutput } from '@/ai/flows/semantic-search-flow';
 import { useToast } from '@/hooks/use-toast';
 import { useErrorLog } from '@/hooks/use-error-log';
 import GoalTemplateFilters, { type GoalTemplateSortOrder, type GridSize } from '@/components/goal-templates/GoalTemplateFilters';
+import { AI_ENABLED } from '@/lib/features';
 
 // Lazy load modals
 const AddGoalTemplateModal = lazy(() => import('@/components/modals/add-goal-template-modal'));
@@ -27,13 +27,11 @@ export default function GoalTemplatesPage() {
     goalTemplates, 
     loading, 
     error,
-    isFirebaseDBAvailable,
     openAddGoalTemplateModal,
     openEditGoalTemplateModal,
     openDeleteConfirmationModal,
     editingGoalTemplate, 
     deletingStudent,
-    addGoalTemplateInitialPrompt,
     updateGoalTemplate,
     closeDeleteConfirmationModal,
   } = useStudentData();
@@ -45,7 +43,7 @@ export default function GoalTemplatesPage() {
   const [filterType, setFilterType] = useState<string>('ALL');
   const [gridSize, setGridSize] = useState<GridSize>('md');
   const [sortOrder, setSortOrder] = useState<GoalTemplateSortOrder>('date-desc');
-  const [isAiSearchEnabled, setIsAiSearchEnabled] = useState(true);
+  const [isAiSearchEnabled, setIsAiSearchEnabled] = useState(AI_ENABLED);
   const [isAiSearching, setIsAiSearching] = useState(false);
   const [rankedGoals, setRankedGoals] = useState<FindRelevantGoalsOutput['rankedGoals'] | null>(null);
   const [showArchived, setShowArchived] = useState(false);
@@ -97,10 +95,9 @@ export default function GoalTemplatesPage() {
 
 
   const filteredAndSortedTemplates = useMemo(() => {
-    const getSafeTimestamp = (date: Date | Timestamp | string): number => {
+    const getSafeTimestamp = (date: Date | string): number => {
         if (date instanceof Date) return date.getTime();
         if (typeof date === 'string') return new Date(date).getTime();
-        if (date && typeof (date as Timestamp).toDate === 'function') return (date as Timestamp).toDate().getTime();
         return 0;
     };
 
@@ -176,13 +173,13 @@ export default function GoalTemplatesPage() {
   };
 
   if (error) {
-    return <div className="text-destructive p-4">Error loading goal templates from Firebase: {error.message}</div>;
+    return <div className="text-destructive p-4">Error loading goal templates: {error.message}</div>;
   }
 
   return (
     <div className="space-y-6">
       <Suspense fallback={null}>
-        <AddGoalTemplateModal initialPrompt={addGoalTemplateInitialPrompt} />
+        <AddGoalTemplateModal />
         {editingGoalTemplate && <EditGoalTemplateModal templateToEdit={editingGoalTemplate} />}
         {deletingStudent && deletingStudent.type === 'goalTemplate' && (
           <ConfirmationModal
@@ -218,7 +215,6 @@ export default function GoalTemplatesPage() {
               <CardTitle className="text-2xl font-bold flex items-center gap-2"><BrainCircuit className="h-7 w-7 text-primary"/>Goals</CardTitle>
               <CardDescription>
                 Manage your library of reusable goal templates.
-                {!isFirebaseDBAvailable && !loading && <span className="text-orange-500 font-semibold">(Local Mode: Data not saved to cloud)</span>}
               </CardDescription>
             </div>
             <Button onClick={() => openAddGoalTemplateModal()} size="sm">

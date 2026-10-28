@@ -18,6 +18,7 @@ import { generateSmartGoal } from '@/ai/flows/smart-goal-generation';
 import { Sparkles, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useErrorLog } from '@/hooks/use-error-log';
+import { AI_ENABLED } from '@/lib/features';
 
 type AddGoalTemplateFormData = z.infer<typeof GoalTemplateSchema>;
 
@@ -92,7 +93,7 @@ export default function AddGoalTemplateModal() {
 
   const onSubmit = async (data: AddGoalTemplateFormData) => {
     setIsSubmitting(true);
-    const newTemplate = await addGoalTemplate(data);
+    const newTemplate = await addGoalTemplate({ ...data, generatedSmartGoal: data.generatedSmartGoal ?? '' });
     setIsSubmitting(false);
     if (newTemplate) {
       closeAddGoalTemplateModal();
@@ -205,14 +206,16 @@ export default function AddGoalTemplateModal() {
             )}
           />
           
-          <Button type="button" variant="outline" onClick={handleGenerateSmartGoal} disabled={isAiGenerating || dataLoading}>
-            {isAiGenerating ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Sparkles className="mr-2 h-4 w-4 text-yellow-500" />
-            )}
-            Generate SMART Goal with AI
-          </Button>
+          {AI_ENABLED && (
+            <Button type="button" variant="outline" onClick={handleGenerateSmartGoal} disabled={isAiGenerating || dataLoading}>
+              {isAiGenerating ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="mr-2 h-4 w-4 text-yellow-500" />
+              )}
+              Generate SMART Goal with AI
+            </Button>
+          )}
 
           <FormField
             control={form.control}
