@@ -44,10 +44,37 @@ npm run dev
 
 The application should now be running at [http://localhost:3000](http://localhost:3000).
 
+## Android App
+
+The app can be packaged as an Android APK with [Capacitor](https://capacitorjs.com/). The Android app is built as a static export and runs fully offline, storing data on the device. The AI features need a server, so they are hidden in the Android app.
+
+### Getting the APK
+
+GitHub Actions builds the APK on every push to `master` and on pull requests (workflow: `.github/workflows/android-apk.yml`). To download it:
+
+1. Open the repository's **Actions** tab and select the latest **Android APK** run. You can also start one with **Run workflow**.
+2. Under **Artifacts**, download **AscendEd-apk** and unzip it to get `app-debug.apk`.
+3. Copy the APK to the Android device and open it. Android will ask you to allow installing apps from that source.
+
+Every build is signed with the same key (`android/app/ascended-debug.keystore`), so a new APK installs over the previous one and keeps the data on the device. Don't uninstall the app to update it: uninstalling deletes its data.
+
+### Building locally
+
+Requires JDK 21 and the Android SDK (for example, through Android Studio).
+
+```bash
+npm run android:sync          # static export into out/, copied into android/
+cd android && ./gradlew assembleDebug
+```
+
+The APK is written to `android/app/build/outputs/apk/debug/app-debug.apk`. You can also open the `android/` folder in Android Studio to run the app on an emulator or a connected device.
+
 ## Available Scripts
 
 - `npm run dev`: Starts the Next.js development server.
 - `npm run build`: Builds the application for production.
+- `npm run build:mobile`: Builds the static export for the Android app into `out/` (AI features hidden).
+- `npm run android:sync`: Runs `build:mobile` and copies the result into the Android project.
 - `npm run start`: Starts the production server.
 - `npm run lint`: Runs the linter to check for code quality issues.
 - `npm run genkit:dev`: Starts the Genkit development server for AI flow testing.

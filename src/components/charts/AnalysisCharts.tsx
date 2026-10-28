@@ -6,6 +6,7 @@ import type { Student, SessionData, Goal, PromptType, GoalType, TrialStatus } fr
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertTriangle } from 'lucide-react';
+import { AI_ENABLED } from '@/lib/features';
 
 // Lazy load the individual chart components
 const ProgressOverTimeChart = lazy(() => import('./analysis-charts/ProgressOverTimeChart'));
@@ -180,7 +181,7 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, select
             <DataSummary studentSessions={studentSessions} selectedStudent={selectedStudent} selectedGoalId={selectedGoalId} chartData={chartData} />
        </Suspense>
        <Suspense fallback={<ChartSuspenseFallback />}>
-            <AiSummary studentSessions={studentSessions} selectedStudent={selectedStudent} selectedGoalId={selectedGoalId} chartData={chartData} />
+            {AI_ENABLED && <AiSummary studentSessions={studentSessions} selectedStudent={selectedStudent} selectedGoalId={selectedGoalId} chartData={chartData} />}
         </Suspense>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Suspense fallback={<ChartSuspenseFallback />}>

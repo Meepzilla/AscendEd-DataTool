@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">AscendEd</string>
+    <string name="title_activity_main">AscendEd</string>
+    <string name="package_name">us.or.k12.lesd.ascended</string>
+    <string name="custom_url_scheme">us.or.k12.lesd.ascended</string>
+</resources>
