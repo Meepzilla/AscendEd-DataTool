@@ -20,6 +20,10 @@ import { AI_ENABLED } from '@/lib/features';
 const AddGoalTemplateModal = lazy(() => import('@/components/modals/add-goal-template-modal'));
 const EditGoalTemplateModal = lazy(() => import('@/components/modals/edit-goal-template-modal'));
 const ConfirmationModal = lazy(() => import('@/components/modals/confirmation-modal'));
+const GoalBankDetailsDialog = lazy(() => import('@/components/goal-templates/GoalBankDetailsDialog'));
+
+// Templates rendered at first and per "Show more": the goal bank has over 1,000.
+const PAGE_SIZE = 60;
 
 
 export default function GoalTemplatesPage() {
@@ -41,6 +45,9 @@ export default function GoalTemplatesPage() {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('ALL');
+  const [filterCategory, setFilterCategory] = useState<string>('ALL');
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [detailsTemplate, setDetailsTemplate] = useState<GoalTemplate | null>(null);
   const [gridSize, setGridSize] = useState<GridSize>('md');
   const [sortOrder, setSortOrder] = useState<GoalTemplateSortOrder>('date-desc');
   const [isAiSearchEnabled, setIsAiSearchEnabled] = useState(AI_ENABLED);
@@ -103,9 +110,12 @@ export default function GoalTemplatesPage() {
 
     let templates = [...goalTemplates].filter(template => showArchived || !template.isArchived);
 
-    // Apply type filter first
+    // Apply type and skill area filters first
     if (filterType !== 'ALL') {
       templates = templates.filter(template => template.type === filterType);
+    }
+    if (filterCategory !== 'ALL') {
+      templates = templates.filter(template => template.category === filterCategory);
     }
     
     if (isAiSearchEnabled) {
@@ -121,7 +131,7 @@ export default function GoalTemplatesPage() {
         if (searchTerm.trim()) {
             const searchWords = searchTerm.toLowerCase().split(' ').filter(word => word);
             templates = templates.filter(template => {
-                const templateText = `${template.name.toLowerCase()} ${template.smartGoalPrompt?.toLowerCase() || ''}`;
+                const templateText = `${template.name} ${template.smartGoalPrompt || ''} ${template.generatedSmartGoal || ''} ${template.category || ''}`.toLowerCase();
                 return searchWords.every(word => templateText.includes(word));
             });
         }
@@ -152,7 +162,17 @@ export default function GoalTemplatesPage() {
     });
 
     return templates;
-  }, [goalTemplates, filterType, rankedGoals, searchTerm, sortOrder, isAiSearchEnabled, showArchived]);
+  }, [goalTemplates, filterType, filterCategory, rankedGoals, searchTerm, sortOrder, isAiSearchEnabled, showArchived]);
+
+  const categories = useMemo(
+    () => Array.from(new Set(goalTemplates.map(t => t.category).filter((c): c is string => !!c))).sort((a, b) => a.localeCompare(b)),
+    [goalTemplates]
+  );
+
+  // Start again from the top when the list changes.
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [filterType, filterCategory, searchTerm, sortOrder, showArchived, rankedGoals]);
 
   const gridClasses = {
     sm: 'grid-cols-1 sm:grid-cols-2',
@@ -180,6 +200,7 @@ export default function GoalTemplatesPage() {
     <div className="space-y-6">
       <Suspense fallback={null}>
         <AddGoalTemplateModal />
+        <GoalBankDetailsDialog template={detailsTemplate} onClose={() => setDetailsTemplate(null)} />
         {editingGoalTemplate && <EditGoalTemplateModal templateToEdit={editingGoalTemplate} />}
         {deletingStudent && deletingStudent.type === 'goalTemplate' && (
           <ConfirmationModal
@@ -228,6 +249,9 @@ export default function GoalTemplatesPage() {
             setSearchTerm={setSearchTerm}
             filterType={filterType}
             setFilterType={setFilterType}
+            filterCategory={filterCategory}
+            setFilterCategory={setFilterCategory}
+            categories={categories}
             sortOrder={sortOrder}
             setSortOrder={setSortOrder}
             gridSize={gridSize}
@@ -262,7 +286,7 @@ export default function GoalTemplatesPage() {
 
           {!loading && !isAiSearching && filteredAndSortedTemplates.length > 0 && (
             <div className={cn("grid gap-4", gridClasses[gridSize])}>
-              {filteredAndSortedTemplates.map((template) => {
+              {filteredAndSortedTemplates.slice(0, visibleCount).map((template) => {
                 const relevanceScore = relevanceScoreMap.get(template.id);
                 return (
                   <Card key={template.id} className={cn("flex flex-col justify-between hover:shadow-md transition-shadow", template.isArchived && "opacity-60 bg-muted/30")}>
@@ -281,9 +305,12 @@ export default function GoalTemplatesPage() {
                           }
                         </div>
                       </div>
-                      <Badge variant="secondary" className="mt-1 w-fit">
-                        {template.type === 'AAC' ? 'AAC' : template.type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
-                      </Badge>
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        <Badge variant="secondary" className="w-fit">
+                          {template.type === 'AAC' ? 'AAC' : template.type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+                        </Badge>
+                        {template.category && <Badge variant="outline" className="w-fit">{template.category}</Badge>}
+                      </div>
                     </CardHeader>
                     <CardContent className="flex-grow space-y-2 text-sm">
                       <div>
@@ -308,6 +335,11 @@ export default function GoalTemplatesPage() {
                         Created: {template.createdAt ? formatDate(template.createdAt) : 'N/A'}
                       </p>
                       <div className="flex gap-1">
+                        {template.bankId && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDetailsTemplate(template)} title="Purpose & activity ideas">
+                            <Info className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditGoalTemplateModal(template)}>
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -325,6 +357,12 @@ export default function GoalTemplatesPage() {
                   </Card>
                 );
               })}
+            </div>
+          )}
+          {!loading && !isAiSearching && filteredAndSortedTemplates.length > visibleCount && (
+            <div className="flex flex-col items-center gap-1 pt-4">
+              <p className="text-xs text-muted-foreground">Showing {visibleCount} of {filteredAndSortedTemplates.length} templates</p>
+              <Button variant="outline" onClick={() => setVisibleCount(c => c + PAGE_SIZE)}>Show More</Button>
             </div>
           )}
         </CardContent>

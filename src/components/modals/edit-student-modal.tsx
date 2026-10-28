@@ -25,7 +25,7 @@ import {
 import { GOAL_TYPES, GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { generateUUID } from '@/lib/helpers';
+import { generateUUID, templateMatchesSearch, TEMPLATE_PICKER_LIMIT } from '@/lib/helpers';
 import { generateSmartGoal } from '@/ai/flows/smart-goal-generation';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
@@ -119,7 +119,7 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
   };
 
   const filteredGoalTemplates = goalTemplates.filter(template => {
-    const nameMatch = template.name.toLowerCase().includes(templateSearchTerm.toLowerCase());
+    const nameMatch = templateMatchesSearch(template, templateSearchTerm);
     const typeMatch = templateGoalTypeFilter === 'ALL' || template.type === templateGoalTypeFilter;
     // Check if this template (by name and type) is already effectively assigned to the student
     const alreadyAssigned = currentStudent?.goals.some(g => g.name === template.name && g.type === template.type);
@@ -426,7 +426,7 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
                 <p className="text-sm text-muted-foreground text-center py-4">No matching templates found or all assigned.</p>
               ) : (
                 <ul className="space-y-1">
-                  {filteredGoalTemplates.map(template => (
+                  {filteredGoalTemplates.slice(0, TEMPLATE_PICKER_LIMIT).map(template => (
                     <li key={template.id} className="flex items-center p-1.5 hover:bg-muted/50 rounded-md text-sm gap-2">
                       <Button 
                         variant="ghost" 
@@ -440,10 +440,14 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
                       <div className="truncate flex-grow min-w-0">
                         <span title={template.name}>{template.name}</span>
                         <Badge variant="secondary" className="ml-2">{template.type}</Badge>
+                        {template.category && <Badge variant="outline" className="ml-1">{template.category}</Badge>}
                       </div>
                     </li>
                   ))}
                 </ul>
+              )}
+              {filteredGoalTemplates.length > TEMPLATE_PICKER_LIMIT && (
+                <p className="text-xs text-muted-foreground text-center py-2">Showing {TEMPLATE_PICKER_LIMIT} of {filteredGoalTemplates.length}. Search or filter to narrow the list.</p>
               )}
             </ScrollArea>
           </div>

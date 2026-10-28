@@ -45,6 +45,18 @@ npm run dev
 
 The application should now be running at [http://localhost:3000](http://localhost:3000).
 
+## Goal Bank
+
+The built-in goal templates include the SLP goal bank (903 goals). `scripts/import-goal-bank.py` turns the bank's CSV export into templates. For each goal it picks the data collection type (which data entry screen the goal uses) and the session target, based on the goal's skill area and how its text says success is measured. `docs/goal-bank-review.csv` lists every goal with its type, target and the reason.
+
+To update the bank, export it to CSV with the same columns and run:
+
+```bash
+python3 scripts/import-goal-bank.py path/to/SLP_Goal_Bank.csv
+```
+
+This regenerates `src/lib/goal-constants/goal-bank.json` (the templates), `public/goal-bank/details.json` (purpose, activity ideas and tags, loaded when a goal's details are opened) and the review CSV. Devices add new templates automatically, matched by name.
+
 ## iPad and Web App (Home Screen)
 
 The same offline build can be hosted as a website and added to an iPad's Home Screen, where it opens full-screen like an app. A service worker stores the whole app on the device, so after the first visit it works without internet. Student data stays in the device's browser storage; the website only serves the app's code. AI features are hidden, as in the Android app.
