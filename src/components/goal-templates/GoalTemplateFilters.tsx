@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { GOAL_TYPES } from '@/lib/goal-constants';
-import { ListFilter, Search, ArrowUpDown, Grid, BrainCircuit, Sparkles, Loader2, Archive } from 'lucide-react';
+import { ListFilter, Search, ArrowUpDown, Grid, BrainCircuit, Sparkles, Loader2, Archive, Layers } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AI_ENABLED } from '@/lib/features';
 
@@ -19,6 +19,9 @@ interface GoalTemplateFiltersProps {
   setSearchTerm: (value: string) => void;
   filterType: string;
   setFilterType: (value: string) => void;
+  filterCategory: string;
+  setFilterCategory: (value: string) => void;
+  categories: string[];
   sortOrder: GoalTemplateSortOrder;
   setSortOrder: (value: GoalTemplateSortOrder) => void;
   gridSize: GridSize;
@@ -37,6 +40,9 @@ const GoalTemplateFilters: React.FC<GoalTemplateFiltersProps> = ({
   setSearchTerm,
   filterType,
   setFilterType,
+  filterCategory,
+  setFilterCategory,
+  categories,
   sortOrder,
   setSortOrder,
   gridSize,
@@ -94,6 +100,20 @@ const GoalTemplateFilters: React.FC<GoalTemplateFiltersProps> = ({
           ))}
         </SelectContent>
       </Select>
+      {categories.length > 0 && (
+        <Select value={filterCategory} onValueChange={setFilterCategory}>
+          <SelectTrigger className="w-full sm:w-[220px]">
+            <Layers className="mr-2 h-4 w-4 text-muted-foreground" />
+            <SelectValue placeholder="Filter by skill area" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All Skill Areas</SelectItem>
+            {categories.map(category => (
+              <SelectItem key={category} value={category}>{category}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
       <Select value={sortOrder} onValueChange={(value) => setSortOrder(value as GoalTemplateSortOrder)}>
         <SelectTrigger className="w-full sm:w-[180px]">
           <ArrowUpDown className="mr-2 h-4 w-4 text-muted-foreground" />

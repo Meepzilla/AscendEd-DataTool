@@ -14,6 +14,8 @@ import { AAC_FIELDS, AAC_TEMPLATES } from './aac';
 import { COGNITIVE_FIELDS, COGNITIVE_TEMPLATES } from './cognitive';
 import { COMMUNICATION_FIELDS, COMMUNICATION_TEMPLATES } from './communication';
 import { STORY_CHAMPS_FIELDS, STORY_CHAMPS_TEMPLATES } from './story-champs';
+// The SLP goal bank, generated from the goal bank CSV by scripts/import-goal-bank.py.
+import goalBank from './goal-bank.json';
 
 export * from './communication';
 export * from './story-champs';
@@ -55,6 +57,7 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
   ...COGNITIVE_TEMPLATES,
   ...COMMUNICATION_TEMPLATES,
   ...STORY_CHAMPS_TEMPLATES,
+  ...(goalBank as Omit<GoalTemplate, 'id' | 'createdAt' | 'userId'>[]),
 ];
 
 /**

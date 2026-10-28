@@ -50,6 +50,15 @@ export function formatGoalTarget(type: string, target: number): string {
   return `${target}%`;
 }
 
+/** Whether every word of `search` appears in a goal template's name, goal text or skill area. */
+export function templateMatchesSearch(template: { name: string; generatedSmartGoal?: string; category?: string }, search: string): boolean {
+  const text = `${template.name} ${template.generatedSmartGoal || ''} ${template.category || ''}`.toLowerCase();
+  return search.toLowerCase().split(/\s+/).filter(Boolean).every(word => text.includes(word));
+}
+
+// Template pickers render at most this many matches; the goal bank has over 1,000 templates.
+export const TEMPLATE_PICKER_LIMIT = 100;
+
 /** "1 student", "2 students". */
 export function plural(count: number, word: string): string {
   return `${count} ${word}${count === 1 ? '' : 's'}`;
