@@ -10,13 +10,11 @@ type ConfettiContextType = {
 
 const ConfettiContext = createContext<ConfettiContextType | null>(null);
 
-export const useConfetti = () => {
-  const context = useContext(ConfettiContext);
-  if (!context) {
-    throw new Error('useConfetti must be used within a ConfettiProvider');
-  }
-  return context;
-};
+// Outside a ConfettiProvider (e.g. editing a saved session, where goal inputs are reused) there is
+// nothing to celebrate, so fire does nothing instead of crashing the page.
+const NO_CONFETTI: ConfettiContextType = { fire: () => {} };
+
+export const useConfetti = () => useContext(ConfettiContext) ?? NO_CONFETTI;
 
 export const ConfettiProvider = ({ children }: { children: ReactNode }) => {
   const fire = useCallback(() => {
