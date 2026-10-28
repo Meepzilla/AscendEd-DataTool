@@ -18,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useConfetti } from '@/hooks/use-confetti';
 import { useLongPress, longPressStyle } from '@/hooks/use-long-press';
 import TallyButton from './TallyButton';
-import { FrequencyInput, DurationInput, AbcInput } from './behavior-inputs';
+import { FrequencyInput, DurationInput, AbcInput, IntervalInput, LatencyInput } from './behavior-inputs';
 import {
   COMMUNICATION_FUNCTIONS, summarizeCommunicationFunctions,
   STORY_PARTS, STORY_PART_SCORE_LABELS, STORY_LINKING_WORDS, linkingWordField, scoreStory,
@@ -820,7 +820,9 @@ export default function GoalDataInputComponent({
         );
       case 'BEHAVIOR_FREQUENCY':
       case 'BEHAVIOR_DURATION':
-      case 'BEHAVIOR_ABC': {
+      case 'BEHAVIOR_ABC':
+      case 'BEHAVIOR_INTERVAL':
+      case 'BEHAVIOR_LATENCY': {
         const behaviorProps = {
           data,
           // Several fields at once: handleChange treats an object as the goal's whole data.
@@ -828,9 +830,12 @@ export default function GoalDataInputComponent({
           interact: handleInteraction,
           disabled: isArchived,
           isLocked,
+          goalId: goal.id,
         };
         if (captureType === 'BEHAVIOR_FREQUENCY') return <FrequencyInput {...behaviorProps} />;
         if (captureType === 'BEHAVIOR_DURATION') return <DurationInput {...behaviorProps} />;
+        if (captureType === 'BEHAVIOR_INTERVAL') return <IntervalInput {...behaviorProps} />;
+        if (captureType === 'BEHAVIOR_LATENCY') return <LatencyInput {...behaviorProps} />;
         return <AbcInput {...behaviorProps} />;
       }
       default:
@@ -875,7 +880,7 @@ export default function GoalDataInputComponent({
                 <CardTitle className="text-sm font-semibold">
                     <div className="flex justify-between items-start">
                         <span className="whitespace-normal break-words mr-1">{goal.name}</span>
-                        <Badge variant="outline" className="whitespace-nowrap text-xs px-1.5 py-0.5 shrink-0">
+                        <Badge variant="outline" className="text-xs px-1.5 py-0.5 shrink-0 max-w-[45%] text-center leading-tight">
                             {goalTypeLabel(goal.type)}
                         </Badge>
                     </div>

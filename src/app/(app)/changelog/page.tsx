@@ -19,6 +19,27 @@ interface ChangelogEntry {
 const changelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-28',
+    title: 'Data Entry Keeps Unsaved Work',
+    description: 'Data Entry now keeps what you have entered when you switch to another page and come back, and even if the app is closed or reloaded: the selected students, counts, timers (which keep running), notes, activity, date and times, and the student access lock. Each student\'s unsaved data is cleared when their session is saved or reset. If the app reopens with unsaved data, a notice says it was restored. New sessions now default to 30 minutes long (end time 30 minutes after the start), and the default start and end times now show in the time fields. Student cards now fill the screen height down to the save buttons, and grow taller when the date and time card is collapsed; their contents no longer get cut off on the right with larger text.',
+    type: 'improvement',
+    icon: Pencil,
+  },
+  {
+    date: '2026-10-28',
+    title: 'Reports: Goal by Goal',
+    description: 'Reports now include a card for every goal, charted by the measure that fits its type (accuracy, % fluent, Story Champs score, communication functions used spontaneously, 1-5 rating, % independent, or the behavior measures) with the target line, sessions with data, latest, average and how many sessions met the target. Each card also breaks the data down for its goal type: correct/approximate/incorrect responses per session, prompt levels, story part scores and linking words, uses by communication function, dysfluency types, or ABC antecedents and functions, plus recent notes. Sessions where nothing was recorded for a goal are no longer charted as 0.',
+    type: 'feature',
+    icon: BarChartHorizontalBig,
+  },
+  {
+    date: '2026-10-28',
+    title: 'Behavior Data: Interval, Latency, Reports and ABC Lists',
+    description: 'Two more behavior goal types. Interval recording (partial interval, whole interval or momentary time sampling) marks each interval + or −, with an interval timer that can beep at each interval, and reports the % of intervals with the behavior. Latency times from a cue to the response and reports the average. The ABC antecedent, behavior and consequence lists can be edited in Settings and are included in backups. Includes 6 new behavior templates.',
+    type: 'feature',
+    icon: BarChartHorizontalBig,
+  },
+  {
+    date: '2026-10-28',
     title: 'Behavior Data: Frequency, Duration and ABC',
     description: 'Three new goal types for behavior data. Frequency counts occurrences (with a rate per hour when you enter the observation time). Duration times episodes with a start/stop timer or entered by hand. ABC data records incidents as antecedent, behavior and consequence, and shows the most common antecedents and likely functions. Behavior goals can aim to decrease or increase. Includes 13 behavior templates, and 25 goal bank goals (including Behavior Replacement & Regulation) now use these types.',
     type: 'feature',

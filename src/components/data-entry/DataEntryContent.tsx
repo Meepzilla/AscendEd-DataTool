@@ -1,8 +1,10 @@
 
 'use client';
 
-import React, { lazy, useState, useEffect, useCallback, Suspense, useMemo } from 'react';
+import React, { lazy, useState, useEffect, useCallback, Suspense, useMemo, useRef } from 'react';
 import { useStudentData } from '@/hooks/use-student-data';
+import { useAuth } from '@/hooks/use-auth';
+import { loadDataEntryDraft, saveDataEntryDraft, hasUnsavedEntry, type DataEntryDraft } from '@/lib/data-entry-draft';
 import { Button } from '@/components/ui/button';
 import { Save, RotateCcw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -23,6 +25,15 @@ const StudentCardsList = lazy(() => import('@/components/data-entry/StudentCards
 const DataEntryHeaderCard = lazy(() => import('@/components/data-entry/DataEntryHeaderCard'));
 const SelectionModal = lazy(() => import('@/components/modals/selection-modal'));
 
+// Whether Data Entry has been open since the app loaded. Switching pages keeps the module, so the
+// "restored" notice shows only when the app reopens with unsaved data, not every time the page is revisited.
+let openedSinceAppLoad = false;
+
+const DEFAULT_SESSION_MINUTES = 30;
+// Student cards fill the screen height below the header card, down to the save bar.
+const MIN_STUDENT_CARD_HEIGHT = 420;
+const STUDENT_CARDS_PADDING = 40; // the cards list's padding plus room for its horizontal scrollbar
+
 export default function DataEntryContent() {
   const {
     students,
@@ -33,26 +44,46 @@ export default function DataEntryContent() {
     getSessionsForStudent,
   } = useStudentData();
   const { toast } = useToast();
+  const { currentUser } = useAuth();
+  const uid = currentUser?.uid;
+
+  // Unsaved work from the last visit to this page (kept while switching pages, or if the app was closed).
+  // This component only renders in the browser, so the draft can seed the initial state directly.
+  const draftRef = useRef<DataEntryDraft | null | undefined>(undefined);
+  if (draftRef.current === undefined) draftRef.current = loadDataEntryDraft(uid);
+  const draft = draftRef.current;
+  const goalDefaults = useCallback((goalId: string) => {
+    for (const student of students) {
+      const goal = student.goals.find(g => g.id === goalId);
+      if (goal) return GOAL_TYPE_FIELDS[goal.type];
+    }
+    return undefined;
+  }, [students]);
+  // The draft's date and times are kept only when something was entered; otherwise the session starts now.
+  const [draftHadEntries] = useState(() => !!draft && Object.values(draft.students).some(s => hasUnsavedEntry(s, goalDefaults)));
   
-  const [sessionDate, setSessionDate] = useState<Date | undefined>(new Date());
-  const [sessionTime, setSessionTime] = useState<string>('');
-  const [sessionEndTime, setSessionEndTime] = useState<string>('');
+  const [sessionDate, setSessionDate] = useState<Date | undefined>(() =>
+    draftHadEntries && draft?.sessionDate ? new Date(draft.sessionDate) : new Date());
+  const [sessionTime, setSessionTime] = useState<string>(() => (draftHadEntries && draft?.sessionTime) || '');
+  const [sessionEndTime, setSessionEndTime] = useState<string>(() => (draftHadEntries && draft?.sessionEndTime) || '');
   
-  const [focusedGoalIndexByStudentId, setFocusedGoalIndexByStudentId] = useState<Record<string, number>>({});
+  const [focusedGoalIndexByStudentId, setFocusedGoalIndexByStudentId] = useState<Record<string, number>>(() => draft?.focusedGoalIndexByStudentId ?? {});
   const [visibleGoalCountByStudentId, setVisibleGoalCountByStudentId] = useState<Record<string, number>>({});
   const [showArchivedByStudentId, setShowArchivedByStudentId] = useState<Record<string, boolean>>({});
 
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingAll, setIsSavingAll] = useState(false);
-  const [isHeaderCardCollapsed, setIsHeaderCardCollapsed] = useState(false);
+  const [isHeaderCardCollapsed, setIsHeaderCardCollapsed] = useState(() => draft?.isHeaderCardCollapsed ?? false);
   const [isResetConfirmationOpen, setIsResetConfirmationOpen] = useState(false);
   const [selectionModalType, setSelectionModalType] = useState<'student' | 'goal' | null>(null);
-  const [isStudentAccessLocked, setIsStudentAccessLocked] = useState(false);
+  const [isStudentAccessLocked, setIsStudentAccessLocked] = useState(() => draft?.isStudentAccessLocked ?? false);
   
   // UI State moved from useStudentData
   const [studentSessionStates, setStudentSessionStates] = useState<Record<string, StudentSessionState>>({});
-  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
-  const [focusedStudentSlotIndex, setFocusedStudentSlotIndex] = useState<number>(0);
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>(() =>
+    (draft?.selectedStudentIds ?? []).filter(id => students.some(s => s.id === id && !s.isArchived)));
+  const [focusedStudentSlotIndex, setFocusedStudentSlotIndex] = useState<number>(() =>
+    Math.max(0, Math.min(draft?.focusedStudentSlotIndex ?? 0, selectedStudentIds.length - 1)));
   const [aiActivitySuggestions, setAiActivitySuggestions] = useState<Record<string, string[]>>({});
   const [isAiLoading, setIsAiLoading] = useState<Record<string, boolean>>({});
 
@@ -73,7 +104,9 @@ export default function DataEntryContent() {
 
             if (!existingState || existingGoalIds !== currentGoalIds) {
                 statesChanged = true;
-                const updatedGoalData = existingState?.goalData || {};
+                // A student's first state comes from the unsaved draft, if it has one.
+                const drafted = existingState ? undefined : draftRef.current?.students[student.id];
+                const updatedGoalData = existingState?.goalData || { ...(drafted?.goalData || {}) };
                 
                 studentGoals.forEach(goal => {
                     if (!updatedGoalData[goal.id]) {
@@ -84,8 +117,8 @@ export default function DataEntryContent() {
                 newStates[student.id] = {
                     studentId: student.id,
                     studentName: student.name,
-                    activity: existingState?.activity || '',
-                    notes: existingState?.notes || '',
+                    activity: existingState?.activity || drafted?.activity || '',
+                    notes: existingState?.notes || drafted?.notes || '',
                     originalGoalHeaders: studentGoals, 
                     goalData: updatedGoalData,
                 };
@@ -103,12 +136,46 @@ export default function DataEntryContent() {
 }, [students]);
 
 
+  // Keep the draft up to date. Only students with unsaved entries are stored.
+  useEffect(() => {
+    const studentsWithEntries = Object.fromEntries(
+      Object.values(studentSessionStates)
+        .filter(state => hasUnsavedEntry(state, goalDefaults))
+        .map(state => [state.studentId, { activity: state.activity, notes: state.notes, goalData: state.goalData }]),
+    );
+    saveDataEntryDraft(uid, {
+      savedAt: new Date().toISOString(),
+      sessionDate: sessionDate?.toISOString(),
+      sessionTime,
+      sessionEndTime,
+      selectedStudentIds,
+      focusedStudentSlotIndex,
+      focusedGoalIndexByStudentId,
+      isStudentAccessLocked,
+      isHeaderCardCollapsed,
+      // Until every student's state is built (first render), keep the draft's entries.
+      students: Object.keys(studentSessionStates).length === 0 ? draftRef.current?.students ?? {} : studentsWithEntries,
+    });
+  }, [uid, studentSessionStates, sessionDate, sessionTime, sessionEndTime, selectedStudentIds, focusedStudentSlotIndex,
+      focusedGoalIndexByStudentId, isStudentAccessLocked, isHeaderCardCollapsed, goalDefaults]);
+
+  useEffect(() => {
+    if (draftHadEntries && !openedSinceAppLoad) {
+      toast({ title: 'Unsaved data restored', description: 'Your data entry from earlier is still here. Save it when you are ready.' });
+    }
+    openedSinceAppLoad = true;
+    // Only when the page opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (sessionTime === '') {
+      // Sessions default to starting now and lasting 30 minutes. Time inputs need 24-hour "HH:mm".
+      const toTimeValue = (d: Date) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
       const now = new Date();
-      setSessionTime(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-      now.setHours(now.getHours() + 1);
-      setSessionEndTime(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      setSessionTime(toTimeValue(now));
+      now.setMinutes(now.getMinutes() + DEFAULT_SESSION_MINUTES);
+      setSessionEndTime(toTimeValue(now));
     }
   }, [setSessionTime, setSessionEndTime, sessionTime]);
 
@@ -548,6 +615,40 @@ export default function DataEntryContent() {
     localHandleGoalDataChange,
   ]);
 
+  // Size the student cards to the space left on screen. Collapsing the date and time card frees space, so
+  // the cards grow; the header and save bar are observed so any change in their height is picked up.
+  // The app sets CSS zoom on <body>, and browsers differ in whether element rects include it, so sizes are
+  // measured against a fixed full-height probe in the same zoomed context and converted with the
+  // rect-to-CSS-pixel ratio of the region itself.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const cardsRegionRef = useRef<HTMLDivElement>(null);
+  const saveBarRef = useRef<HTMLDivElement>(null);
+  const viewportProbeRef = useRef<HTMLDivElement>(null);
+  const hasSelectedStudents = selectedStudentIds.length > 0;
+  useEffect(() => {
+    const update = () => {
+      const root = rootRef.current;
+      const region = cardsRegionRef.current;
+      const probe = viewportProbeRef.current;
+      if (!root || !region || !probe || region.offsetHeight === 0) return;
+      const regionRect = region.getBoundingClientRect();
+      const ratio = regionRect.height / region.offsetHeight || 1; // rect units per CSS pixel
+      const pageTop = regionRect.top - document.body.getBoundingClientRect().top;
+      const saveBar = saveBarRef.current?.getBoundingClientRect().height ?? 0;
+      const available = (probe.getBoundingClientRect().height - pageTop - saveBar) / ratio - STUDENT_CARDS_PADDING;
+      root.style.setProperty('--student-card-height', `${Math.max(MIN_STUDENT_CARD_HEIGHT, Math.floor(available))}px`);
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    [headerRef.current, saveBarRef.current].forEach(el => el && observer.observe(el));
+    window.addEventListener('resize', update);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', update);
+    };
+  }, [hasSelectedStudents]);
+
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
     return () => {
@@ -558,7 +659,8 @@ export default function DataEntryContent() {
 
   return (
     <ConfettiProvider>
-      <div className="flex flex-col h-full">
+      <div ref={rootRef} className="flex flex-col h-full">
+        <div ref={viewportProbeRef} aria-hidden className="pointer-events-none invisible fixed inset-y-0 left-0 w-px" />
         <GoalFocusManager
           focusedStudentSlotIndex={focusedStudentSlotIndex}
           studentId={selectedStudentIds[focusedStudentSlotIndex]}
@@ -589,7 +691,7 @@ export default function DataEntryContent() {
           )}
         </Suspense>
         
-        <div className="flex-shrink-0">
+        <div ref={headerRef} className="flex-shrink-0">
           <Suspense fallback={<Card><CardContent>Loading header...</CardContent></Card>}>
             <DataEntryHeaderCard
               isHeaderCardCollapsed={isHeaderCardCollapsed}
@@ -606,7 +708,7 @@ export default function DataEntryContent() {
           </Suspense>
         </div>
 
-        <div className="flex-grow min-h-0 relative group">
+        <div ref={cardsRegionRef} className="flex-grow min-h-0 relative group">
           <ScrollArea 
             className="h-full w-full" 
           >
@@ -641,7 +743,7 @@ export default function DataEntryContent() {
         </div>
         
         {selectedStudentIds.length > 0 && (
-            <div className="sticky bottom-0 left-0 right-0 z-10 bg-background mt-auto">
+            <div ref={saveBarRef} className="sticky bottom-0 left-0 right-0 z-10 bg-background mt-auto">
                 <div className="flex justify-between items-center gap-2 p-2 border-t">
                     <div className="hidden sm:block">
                       <TouchControls

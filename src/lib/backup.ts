@@ -1,8 +1,10 @@
 import { z } from 'zod';
 import type { GoalTemplate, SessionData, Student } from './types';
+import { AbcListsSchema, type AbcLists } from './abc-lists';
 
 // A backup holds everything stored on the device: students (with their goals),
-// goal templates, and sessions. It is a JSON file the user saves and can restore later.
+// goal templates, sessions, and edited settings that belong with the data (the ABC data lists).
+// It is a JSON file the user saves and can restore later.
 
 export const BACKUP_VERSION = 1;
 const BACKUP_APP = 'AscendEd';
@@ -14,11 +16,16 @@ export interface BackupData {
   sessions: SessionData[];
 }
 
+export interface BackupSettings {
+  abcLists?: AbcLists; // only when edited on the device
+}
+
 export interface AppBackup {
   app: typeof BACKUP_APP;
   version: number;
   exportedAt: string;
   data: BackupData;
+  settings?: BackupSettings;
 }
 
 export type RestoreMode = 'merge' | 'replace';
@@ -33,10 +40,14 @@ const BackupSchema = z.object({
     goalTemplates: z.array(z.object({ id: z.string(), name: z.string(), type: z.string() }).passthrough()),
     sessions: z.array(z.object({ sessionId: z.string(), studentId: z.string(), date: z.string() }).passthrough()),
   }),
+  // Settings that don't validate are dropped rather than rejecting the whole backup.
+  settings: z.object({ abcLists: AbcListsSchema.optional().catch(undefined) }).optional().catch(undefined),
 });
 
-export function createBackup(data: BackupData): AppBackup {
-  return { app: BACKUP_APP, version: BACKUP_VERSION, exportedAt: new Date().toISOString(), data };
+export function createBackup(data: BackupData, settings: BackupSettings = {}): AppBackup {
+  const backup: AppBackup = { app: BACKUP_APP, version: BACKUP_VERSION, exportedAt: new Date().toISOString(), data };
+  if (settings.abcLists) backup.settings = settings;
+  return backup;
 }
 
 export function backupFileName(date = new Date()): string {
