@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { RotateCcw, ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, Trash2, LayoutGrid, Minimize2, UserX, UserPlus, ArrowRightLeft, Lightbulb, Download, ListPlus, Workflow, Shuffle, CheckSquare, ListChecks, DatabaseZap, UserSearch, Upload, Sparkles, BrainCircuit, PanelLeft, ArrowLeft, MessagesSquare, BookOpen } from 'lucide-react';
 import { APP_NAME } from '@/lib/appConstants';
+import { AI_ENABLED } from '@/lib/features';
 
 interface ChangelogEntry {
   version?: string; // Optional version number
@@ -14,13 +15,14 @@ interface ChangelogEntry {
   description: string;
   type: 'feature' | 'improvement' | 'fix' | 'hotkey';
   icon: React.ElementType;
+  aiFeature?: boolean; // Only listed in builds with AI features turned on
 }
 
-const changelogEntries: ChangelogEntry[] = [
+const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-28',
     title: 'Fixed: Editing Sessions (More Cases), Update Notice, Error Details',
-    description: 'Editing a saved session also works for sessions with an unreadable date or without their original goal list (e.g. imported), and the edit window no longer reloads itself while open. When a new version is downloaded, a notice offers to reload into it. If a page ever fails, it now shows what went wrong (with the app version) and a Try Again button instead of a blank screen. Settings shows the app version. Notices no longer appear twice. In the sidebar's goal progress, goal names wrap instead of being cut off, articulation and language goals show their real progress (they showed 0%), progress uses the latest session where the goal was actually worked on, and goals turn green when their target is met.',
+    description: 'Editing a saved session also works for sessions with an unreadable date or without their original goal list (e.g. imported), and the edit window no longer reloads itself while open. When a new version is downloaded, a notice offers to reload into it. If a page ever fails, it now shows what went wrong (with the app version) and a Try Again button instead of a blank screen. Settings shows the app version. Notices no longer appear twice. In the sidebar goal progress, goal names wrap instead of being cut off, articulation and language goals show their real progress (they showed 0%), progress uses the latest session where the goal was actually worked on, and goals turn green when their target is met.',
     type: 'fix',
     icon: Bug,
   },
@@ -160,6 +162,7 @@ const changelogEntries: ChangelogEntry[] = [
   {
     date: '2025-10-17',
     title: 'AI-Powered Semantic Search for Goals',
+    aiFeature: true,
     description: 'The Goal Templates page now features an AI-powered semantic search. Simply type your query and press Enter to find the most relevant goals based on meaning, not just keywords. Each result is ranked with a relevance score, and you can even generate a new goal template directly from your search query if you don\'t find what you\'re looking for.',
     type: 'feature',
     icon: Sparkles,
@@ -433,6 +436,7 @@ const changelogEntries: ChangelogEntry[] = [
   {
     date: '2025-06-17',
     title: 'AI Technical Summary Prompt Enhancement',
+    aiFeature: true,
     description: 'Updated the prompt for AI-generated technical summaries on the Analysis Report page to guide the AI towards more insightful and concise observations based on student data.',
     type: 'improvement',
     icon: Lightbulb,
@@ -583,6 +587,8 @@ const getIconForType = (type: ChangelogEntry['type']): React.ElementType => {
     default: return GitMerge;
   }
 };
+
+const changelogEntries = allChangelogEntries.filter(entry => AI_ENABLED || !entry.aiFeature);
 
 export default function ChangelogPage() {
   return (

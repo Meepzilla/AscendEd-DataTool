@@ -196,10 +196,10 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
             name="smartGoalPrompt"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>SMART Goal Prompt (for AI)</FormLabel>
+                <FormLabel>{AI_ENABLED ? 'SMART Goal Prompt (for AI)' : 'Goal Description'}</FormLabel>
                 <FormControl>
                   <Textarea
-                    placeholder="Describe the goal for the AI to make it SMART."
+                    placeholder={AI_ENABLED ? "Describe the goal for the AI to make it SMART. E.g., 'Student will improve articulation of /r/ sound in words.'" : "E.g., Student will produce /r/ in words with 80% accuracy."}
                     {...field}
                     rows={3}
                   />
