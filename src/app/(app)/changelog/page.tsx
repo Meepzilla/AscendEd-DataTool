@@ -20,7 +20,7 @@ const changelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-28',
     title: 'Data Entry Keeps Unsaved Work',
-    description: 'Data Entry now keeps what you have entered when you switch to another page and come back, and even if the app is closed or reloaded: the selected students, counts, timers (which keep running), notes, activity, date and times, and the student access lock. Each student\'s unsaved data is cleared when their session is saved or reset. If the app reopens with unsaved data, a notice says it was restored.',
+    description: 'Data Entry now keeps what you have entered when you switch to another page and come back, and even if the app is closed or reloaded: the selected students, counts, timers (which keep running), notes, activity, date and times, and the student access lock. Each student\'s unsaved data is cleared when their session is saved or reset. If the app reopens with unsaved data, a notice says it was restored. New sessions now default to 30 minutes long (end time 30 minutes after the start), and the default start and end times now show in the time fields.',
     type: 'improvement',
     icon: Pencil,
   },

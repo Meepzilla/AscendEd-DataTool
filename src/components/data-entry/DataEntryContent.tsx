@@ -29,6 +29,8 @@ const SelectionModal = lazy(() => import('@/components/modals/selection-modal'))
 // "restored" notice shows only when the app reopens with unsaved data, not every time the page is revisited.
 let openedSinceAppLoad = false;
 
+const DEFAULT_SESSION_MINUTES = 30;
+
 export default function DataEntryContent() {
   const {
     students,
@@ -165,10 +167,12 @@ export default function DataEntryContent() {
 
   useEffect(() => {
     if (sessionTime === '') {
+      // Sessions default to starting now and lasting 30 minutes. Time inputs need 24-hour "HH:mm".
+      const toTimeValue = (d: Date) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
       const now = new Date();
-      setSessionTime(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-      now.setHours(now.getHours() + 1);
-      setSessionEndTime(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      setSessionTime(toTimeValue(now));
+      now.setMinutes(now.getMinutes() + DEFAULT_SESSION_MINUTES);
+      setSessionEndTime(toTimeValue(now));
     }
   }, [setSessionTime, setSessionEndTime, sessionTime]);
 
