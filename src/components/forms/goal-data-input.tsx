@@ -880,7 +880,7 @@ export default function GoalDataInputComponent({
                 <CardTitle className="text-sm font-semibold">
                     <div className="flex justify-between items-start">
                         <span className="whitespace-normal break-words mr-1">{goal.name}</span>
-                        <Badge variant="outline" className="whitespace-nowrap text-xs px-1.5 py-0.5 shrink-0">
+                        <Badge variant="outline" className="text-xs px-1.5 py-0.5 shrink-0 max-w-[45%] text-center leading-tight">
                             {goalTypeLabel(goal.type)}
                         </Badge>
                     </div>
