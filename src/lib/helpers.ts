@@ -42,9 +42,16 @@ export function formatTime(date: Date | string): string {
 
 /**
  * A goal's session target as shown to the user: a percentage for most goal types, a 1-5 rating for
- * qualitative observations, and a number of different functions for communication functions.
+ * qualitative observations, a number of different functions for communication functions, and for
+ * behavior goals a count, minutes or % with "≤" (decrease goals, the default) or "≥" (increase goals).
  */
-export function formatGoalTarget(type: string, target: number): string {
+export function formatGoalTarget(type: string, target: number, direction?: 'increase' | 'decrease'): string {
+  if (type.startsWith('BEHAVIOR_')) {
+    const sign = (direction ?? 'decrease') === 'decrease' ? '≤' : '≥';
+    if (type === 'BEHAVIOR_FREQUENCY') return `${sign} ${target} per session`;
+    if (type === 'BEHAVIOR_DURATION') return `${sign} ${target} min`;
+    return direction === 'increase' ? `≥ ${target}% replacement skill` : `≤ ${plural(target, 'incident')}`;
+  }
   if (type === 'COMMUNICATION_FUNCTIONS') return plural(target, 'function');
   if (type.startsWith('QUALITATIVE')) return String(target);
   return `${target}%`;
@@ -58,6 +65,35 @@ export function templateMatchesSearch(template: { name: string; generatedSmartGo
 
 // Template pickers render at most this many matches; the goal bank has over 1,000 templates.
 export const TEMPLATE_PICKER_LIMIT = 100;
+
+/**
+ * A stored goal data value as readable text: lists are joined, ABC incidents read
+ * "time: antecedent → behavior → consequence", other objects as "key: value" pairs.
+ */
+export function formatDataValue(value: unknown): string {
+  if (value === null || value === undefined || value === '') return '—';
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  if (Array.isArray(value)) {
+    if (value.length === 0) return '—';
+    return value.map(item => {
+      if (item && typeof item === 'object' && 'behavior' in item) {
+        const i = item as { time?: string; antecedent?: string; behavior?: string; consequence?: string; note?: string };
+        const time = i.time ? new Date(i.time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + ': ' : '';
+        return `${time}${[i.antecedent || '?', i.behavior, i.consequence || '?'].join(' → ')}${i.note ? ` (${i.note})` : ''}`;
+      }
+      return formatDataValue(item);
+    }).join('; ');
+  }
+  if (typeof value === 'object') {
+    return Object.entries(value as Record<string, unknown>).map(([k, v]) => `${k}: ${formatDataValue(v)}`).join(', ');
+  }
+  return String(value);
+}
+
+/** A goal type as shown to the user, e.g. "Behavior Frequency", "AAC", "Behavior ABC". */
+export function goalTypeLabel(type: string): string {
+  return type.split('_').map(word => (word === 'AAC' || word === 'ABC') ? word : word.charAt(0) + word.slice(1).toLowerCase()).join(' ');
+}
 
 /** "1 student", "2 students". */
 export function plural(count: number, word: string): string {

@@ -10,6 +10,7 @@ import { GOAL_TYPES } from '@/lib/goal-constants';
 import { ListFilter, Search, ArrowUpDown, Grid, BrainCircuit, Sparkles, Loader2, Archive, Layers } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AI_ENABLED } from '@/lib/features';
+import { goalTypeLabel } from '@/lib/helpers';
 
 export type GoalTemplateSortOrder = 'relevance' | 'date-desc' | 'date-asc' | 'name-asc' | 'name-desc';
 export type GridSize = 'sm' | 'md' | 'lg';
@@ -95,7 +96,7 @@ const GoalTemplateFilters: React.FC<GoalTemplateFiltersProps> = ({
           <SelectItem value="ALL">All Types</SelectItem>
           {sortedGoalTypes.map(type => (
             <SelectItem key={type} value={type}>
-              {type === 'AAC' ? 'AAC' : type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+              {goalTypeLabel(type)}
             </SelectItem>
           ))}
         </SelectContent>

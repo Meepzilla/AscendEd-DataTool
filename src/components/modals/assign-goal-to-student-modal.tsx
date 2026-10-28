@@ -20,7 +20,7 @@ import {
 import { GOAL_TYPES } from '@/lib/goal-constants';
 import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
-import { generateUUID, templateMatchesSearch, formatGoalTarget, TEMPLATE_PICKER_LIMIT } from '@/lib/helpers';
+import { generateUUID, templateMatchesSearch, formatGoalTarget, TEMPLATE_PICKER_LIMIT, goalTypeLabel } from '@/lib/helpers';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '../ui/separator';
 import { cn } from '@/lib/utils';
@@ -78,6 +78,7 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
           type: template.type,
           smartGoal: template.generatedSmartGoal || `SMART goal for ${template.name}`,
           sessionTargetValue: template.sessionTargetValue,
+          targetDirection: template.targetDirection,
         });
       }
     });
@@ -180,7 +181,7 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
                 <SelectItem value="ALL">All Types</SelectItem>
                 {sortedGoalTypes.map(type => (
                   <SelectItem key={type} value={type}>
-                    {type === 'AAC' ? 'AAC' : type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+                    {goalTypeLabel(type)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -208,7 +209,7 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
                               <Badge variant="secondary" className="mt-0.5 text-xs">{template.type}</Badge>
                               {template.category && <Badge variant="outline" className="mt-0.5 ml-1 text-xs">{template.category}</Badge>}
                               {template.sessionTargetValue !== undefined && (
-                                <p className="text-xs text-muted-foreground mt-0.5">Target: {formatGoalTarget(template.type, template.sessionTargetValue)}</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">Target: {formatGoalTarget(template.type, template.sessionTargetValue, template.targetDirection)}</p>
                               )}
                           </div>
                           {selectedTemplates.has(template.id) && <Check className="h-4 w-4 ml-2 text-primary-foreground" />}
@@ -266,7 +267,7 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
                 <SelectContent>
                   {sortedGoalTypes.map(type => (
                     <SelectItem key={type} value={type} className="text-sm">
-                      {type === 'AAC' ? 'AAC' : type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+                      {goalTypeLabel(type)}
                     </SelectItem>
                   ))}
                 </SelectContent>

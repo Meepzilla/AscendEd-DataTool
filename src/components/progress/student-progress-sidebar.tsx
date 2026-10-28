@@ -3,7 +3,7 @@
 
 import React, { useMemo } from 'react';
 import type { Student, Goal, SessionData } from '@/lib/types';
-import { scoreStory, summarizeCommunicationFunctions } from '@/lib/goal-constants';
+import { scoreStory, summarizeCommunicationFunctions, behaviorMeasure, goalDirection, progressTowardTarget } from '@/lib/goal-constants';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
@@ -74,6 +74,15 @@ const calculateProgressForGoal = (goal: Goal, latestSessionForGoal: SessionData 
     case 'STORY_CHAMPS':
       actualPerformancePct = scoreStory(goalSessionData).percent;
       break;
+    case 'BEHAVIOR_FREQUENCY':
+    case 'BEHAVIOR_DURATION':
+    case 'BEHAVIOR_ABC': {
+      // Progress toward a count, minutes or % target; decrease goals are met at or below it.
+      const direction = goalDirection(goal);
+      const value = behaviorMeasure(goal.type, goalSessionData, direction);
+      if (value === null || goal.sessionTargetValue === undefined) return 0;
+      return progressTowardTarget(value, goal.sessionTargetValue, direction);
+    }
     case 'COMMUNICATION_FUNCTIONS': {
       // The target is a number of different functions used spontaneously, not a percentage.
       const { functionsUsedSpontaneously, functionCount } = summarizeCommunicationFunctions(goalSessionData);
@@ -166,7 +175,7 @@ export default function StudentProgressSidebar({ student, studentSessions }: {st
           <h4 className="text-xs font-semibold uppercase text-muted-foreground px-1">Active Goals Overview</h4>
           {activeGoalsWithProgressSliced.map(goal => {
             const displayValue = goal.sessionTargetValue !== undefined && goal.type !== 'QUALITATIVE_OBSERVATION'
-              ? `${Math.round(goal.progress)}% (Target: ${formatGoalTarget(goal.type, goal.sessionTargetValue)})`
+              ? `${Math.round(goal.progress)}% (Target: ${formatGoalTarget(goal.type, goal.sessionTargetValue, goal.targetDirection)})`
               : goal.type === 'QUALITATIVE_OBSERVATION'
                 ? (goal.progress === 100 ? 'Noted' : 'No Notes') // Or actual rating
                 : `${Math.round(goal.progress)}% (Actual)`;

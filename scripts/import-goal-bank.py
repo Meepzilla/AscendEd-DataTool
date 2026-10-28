@@ -18,6 +18,9 @@ import sys
 from collections import Counter
 
 TEMPLATES_OUT = 'src/lib/goal-constants/goal-bank.json'
+# Every type change between imports, so devices that stored the old version can be updated
+# (see applyDefaultTemplateUpdates). Cumulative: entries are only ever added.
+TYPE_UPDATES_OUT = 'src/lib/goal-constants/goal-bank-type-updates.json'
 DETAILS_OUT = 'public/goal-bank/details.json'
 REVIEW_OUT = 'docs/goal-bank-review.csv'
 MAX_NAME = 90
@@ -28,6 +31,7 @@ TYPE_LABELS = {
     'LANGUAGE_EXPRESSION': 'Language Expression', 'AAC': 'AAC', 'DISCRETE_TRIALS': 'Discrete Trials',
     'FEEDING_SWALLOWING': 'Feeding Swallowing', 'QUALITATIVE_OBSERVATION': 'Qualitative Observation',
     'COGNITIVE': 'Cognitive', 'COMMUNICATION_FUNCTIONS': 'Communication Functions', 'STORY_CHAMPS': 'Story Champs',
+    'BEHAVIOR_FREQUENCY': 'Behavior Frequency', 'BEHAVIOR_DURATION': 'Behavior Duration', 'BEHAVIOR_ABC': 'Behavior ABC',
 }
 
 RECEPTIVE_AREAS = {'Receptive Language', 'Auditory Discrimination', 'Reading Comprehension & Symbols', 'Nonverbal, Figurative & Inference', 'Figurative Language'}
@@ -49,6 +53,20 @@ FUNCTION_WORDS = ['reject', 'request', 'be social', 'share information', 'commen
 
 def has(text, *patterns):
     return any(re.search(p, text) for p in patterns)
+
+
+def classify_behavior(area, text):
+    """Behavior data goals: returns (goal type, direction, reason) or None."""
+    t = text.lower()
+    if area == 'Behavior Replacement & Regulation':
+        return 'BEHAVIOR_ABC', 'increase', 'Replacement skill vs problem behavior per triggering incident (ABC data); target is % of incidents with the replacement skill'
+    if has(t, r'(parallel play|joint attention|sustain engagement|cooperative play|attend to structured)[^.]*?for (\[x\]|x|___|\d+)( number of)? minutes'):
+        return 'BEHAVIOR_DURATION', 'increase', 'Measured as time engaged (duration); target is minutes'
+    if has(t, r'decreasing the use of [^.]*? to (\[x\]|x|___|\d+) occurrences', r'no more than (___|\[x\]|x|\d+) (number of )?redirections'):
+        return 'BEHAVIOR_FREQUENCY', 'decrease', 'Counts occurrences to reduce (frequency); target is the most allowed per session'
+    if has(t, r'request (\[x\]|x|___|\d+) preferred items or actions per session', r'make (\d+) appropriate communicative utterances'):
+        return 'BEHAVIOR_FREQUENCY', 'increase', 'Counts occurrences per session (frequency); target is the number per session'
+    return None
 
 
 def classify(area, text):
@@ -111,6 +129,14 @@ def classify(area, text):
 
 def target_for(goal_type, text):
     t = text.lower()
+    if goal_type == 'BEHAVIOR_DURATION':
+        m = re.search(r'for (\d+) (?:consecutive )?minutes', t)
+        return int(m.group(1)) if m else 5
+    if goal_type == 'BEHAVIOR_FREQUENCY':
+        m = re.search(r'(?:make|request|to|no more than) (\d+) ', t)
+        if m:
+            return int(m.group(1))
+        return 3 if 'redirection' in t else 2 if 'occurrences' in t else 5
     if goal_type == 'COMMUNICATION_FUNCTIONS':
         m = re.search(r'at least (\d+) times', t)
         return int(m.group(1)) if m else 3
@@ -123,6 +149,21 @@ def target_for(goal_type, text):
     if m and int(m.group(2)) > 0:
         return round(int(m.group(1)) / int(m.group(2)) * 100)
     return 80
+
+
+def target_label(goal_type, target, direction):
+    sign = '≤' if direction == 'decrease' else '≥'
+    if goal_type == 'BEHAVIOR_FREQUENCY':
+        return f'{sign} {target} per session'
+    if goal_type == 'BEHAVIOR_DURATION':
+        return f'{sign} {target} min'
+    if goal_type == 'BEHAVIOR_ABC':
+        return f'≥ {target}% replacement skill' if direction == 'increase' else f'≤ {target} incidents'
+    if goal_type == 'COMMUNICATION_FUNCTIONS':
+        return f'{target} functions'
+    if goal_type in ('QUALITATIVE_OBSERVATION', 'COGNITIVE'):
+        return f'{target} (1-5 rating)'
+    return f'{target}%'
 
 
 def make_name(text):
@@ -178,6 +219,14 @@ def main():
     if len(sys.argv) != 2:
         sys.exit('Usage: python3 scripts/import-goal-bank.py path/to/SLP_Goal_Bank.csv')
     rows = list(csv.DictReader(open(sys.argv[1], newline='', encoding='utf-8-sig')))
+    try:
+        previous_types = {t['name']: t['type'] for t in json.load(open(TEMPLATES_OUT))}
+    except FileNotFoundError:
+        previous_types = {}
+    try:
+        type_updates = json.load(open(TYPE_UPDATES_OUT))
+    except FileNotFoundError:
+        type_updates = []
     existing = set(re.findall(r"name: '((?:[^'\\]|\\.)*)'", ''.join(
         open(f'src/lib/goal-constants/{f}.ts').read() for f in
         ['articulation', 'fluency', 'language', 'observation', 'phonological', 'trials', 'feeding', 'aac', 'cognitive', 'communication', 'story-champs'])))
@@ -188,7 +237,11 @@ def main():
     templates, details, review = [], {}, []
     for i, r in enumerate(rows, 1):
         text = re.sub(r'\s+', ' ', r['Goal text']).strip()
-        goal_type, reason = classify(r['Skill area'], text)
+        behavior = classify_behavior(r['Skill area'], text)
+        if behavior:
+            goal_type, direction, reason = behavior
+        else:
+            (goal_type, reason), direction = classify(r['Skill area'], text), None
         name = make_name(text)
         siblings = [g for g in groups[name] if g != r['Goal text']]
         if siblings:
@@ -203,24 +256,29 @@ def main():
         used.add(name)
         bank_id = f'bank-{i:04d}'
         target = target_for(goal_type, text)
+        old_type = previous_types.get(name)
+        if old_type and old_type != goal_type and {'name': name, 'fromType': old_type} not in type_updates:
+            type_updates.append({'name': name, 'fromType': old_type})
         templates.append({
             'name': name, 'type': goal_type, 'isDefault': True, 'sessionTargetValue': target,
+            **({'targetDirection': direction} if direction else {}),
             'smartGoalPrompt': first_sentence(r['Purpose']) if r['Purpose'].strip() else text,
             'generatedSmartGoal': text, 'category': r['Skill area'], 'source': r['Set'], 'bankId': bank_id,
         })
         tags = {k: r[k] for k in ['Communication function', 'Modality', 'Context', 'Partner', 'Independence', 'Supports', 'Complexity'] if r[k].strip()}
         details[bank_id] = {'purpose': r['Purpose'].strip(), 'activityIdeas': [a.strip() for a in (r['Activity idea 1'], r['Activity idea 2']) if a.strip()], 'tags': tags}
         review.append({'Set': r['Set'], 'Skill area': r['Skill area'], 'Template name': name, 'Data type': TYPE_LABELS[goal_type],
-                       'Target': f'{target} functions' if goal_type == 'COMMUNICATION_FUNCTIONS' else (f'{target} (1-5 rating)' if goal_type in ('QUALITATIVE_OBSERVATION', 'COGNITIVE') else f'{target}%'),
+                       'Target': target_label(goal_type, target, direction),
                        'Why': reason, 'Goal text': text})
 
     json.dump(templates, open(TEMPLATES_OUT, 'w'), ensure_ascii=False, indent=0)
+    json.dump(type_updates, open(TYPE_UPDATES_OUT, 'w'), ensure_ascii=False, indent=1)
     json.dump(details, open(DETAILS_OUT, 'w'), ensure_ascii=False, separators=(',', ':'))
     with open(REVIEW_OUT, 'w', newline='', encoding='utf-8-sig') as fh:
         w = csv.DictWriter(fh, fieldnames=list(review[0].keys()))
         w.writeheader()
         w.writerows(review)
-    print(f'{len(templates)} templates')
+    print(f'{len(templates)} templates, {len(type_updates)} recorded type changes')
     for k, v in Counter(t['type'] for t in templates).most_common():
         print(f'  {v:4}  {TYPE_LABELS[k]}')
 

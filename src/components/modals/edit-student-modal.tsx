@@ -25,7 +25,7 @@ import {
 import { GOAL_TYPES, GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { generateUUID, templateMatchesSearch, TEMPLATE_PICKER_LIMIT } from '@/lib/helpers';
+import { generateUUID, templateMatchesSearch, TEMPLATE_PICKER_LIMIT, goalTypeLabel } from '@/lib/helpers';
 import { generateSmartGoal } from '@/ai/flows/smart-goal-generation';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
@@ -108,6 +108,7 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
       dataCaptureType: template.dataCaptureType,
       smartGoal: template.generatedSmartGoal || `SMART goal for ${template.name}`, 
       sessionTargetValue: template.sessionTargetValue,
+      targetDirection: template.targetDirection,
     };
     assignGoalToStudent(currentStudent.id, newGoal);
   };
@@ -275,7 +276,7 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
                       <SelectContent>
                         {Object.values(GOAL_TYPES).map(type => (
                           <SelectItem key={type} value={type}>
-                            {type === 'AAC' ? 'AAC' : type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+                            {goalTypeLabel(type)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -294,7 +295,7 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
                       <SelectContent>
                         {sortedDataCaptureTypes.map(type => (
                           <SelectItem key={type} value={type}>
-                            {type === 'AAC' ? 'AAC' : type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+                            {goalTypeLabel(type)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -415,7 +416,7 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
                   <SelectItem value="ALL">All Types</SelectItem>
                   {Object.values(GOAL_TYPES).map(type => (
                     <SelectItem key={type} value={type}>
-                      {type === 'AAC' ? 'AAC' : type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+                      {goalTypeLabel(type)}
                     </SelectItem>
                   ))}
                 </SelectContent>
