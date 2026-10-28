@@ -21,6 +21,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-28',
+    title: 'Fixed: Goal Names Cut Off When Assigning Goals',
+    description: 'In Edit Student and Assign Goal, long goal names ran past the edge of the goal lists. They now wrap onto more lines so the whole name can be read.',
+    type: 'fix',
+    icon: Bug,
+  },
+  {
+    date: '2026-10-28',
     title: 'Larger + and - Buttons in Data Entry',
     description: 'The + and - buttons on the Data Entry goal cards are larger (36px instead of 28px) so they are easier to tap on a tablet, and the number boxes next to them match their height.',
     type: 'improvement',
