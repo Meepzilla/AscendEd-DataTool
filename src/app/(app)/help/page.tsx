@@ -127,6 +127,8 @@ export default function HelpPage() {
           <div>
             <h3 className="font-semibold text-foreground text-lg mb-1">Data Entry</h3>
             <p>Record session data for one or more students. Select students, enter activity details, and log performance for each assigned goal. The 'Qualitative Observation' goal type has been enhanced to include prompt level tracking, making it a flexible tool for various data collection scenarios. A new 'Feeding/Swallowing' goal type is also available for tracking trials. Use the hotkeys listed above for rapid data input. AI can also suggest activities based on goals and progress.</p>
+             <p className="mt-1"><strong className="text-foreground">Communication Functions:</strong> Tally each communicative function (requesting, commenting, protesting, greeting, and more) as spontaneous (S) or prompted (P). Tap a button to add a use; press and hold, or right-click, to remove one. Progress is the number of different functions used spontaneously, compared with the goal&apos;s target number of functions.</p>
+             <p className="mt-1"><strong className="text-foreground">Story Champs:</strong> Score each story part (Character, Setting, Problem, Feeling, Action, Ending, End Feeling) 0 = missing, 1 = partial, 2 = complete, and tally linking words (because, then, when, so, after, but). The story score is the percentage of the 14 possible points.</p>
              <p className="mt-1"><strong className="text-foreground">Note:</strong> Clicking a student's icon on their card or pressing Alt+E (when a student card is focused) will open the "Edit Student" modal, where you can manage their goals directly, assign new templates, or create custom goals with AI assistance.</p>
           </div>
           <div>

@@ -40,6 +40,16 @@ export function formatTime(date: Date | string): string {
   });
 }
 
+/**
+ * A goal's session target as shown to the user: a percentage for most goal types, a 1-5 rating for
+ * qualitative observations, and a number of different functions for communication functions.
+ */
+export function formatGoalTarget(type: string, target: number): string {
+  if (type === 'COMMUNICATION_FUNCTIONS') return plural(target, 'function');
+  if (type.startsWith('QUALITATIVE')) return String(target);
+  return `${target}%`;
+}
+
 /** "1 student", "2 students". */
 export function plural(count: number, word: string): string {
   return `${count} ${word}${count === 1 ? '' : 's'}`;

@@ -12,7 +12,7 @@ import type { Student, StudentSessionState, SessionGoalData, GoalType } from '@/
 import TouchControls from '@/components/forms/touch-controls';
 import { ConfettiProvider } from '@/hooks/use-confetti';
 import { ScrollArea } from '../ui/scroll-area';
-import { GOAL_TYPE_FIELDS, GOAL_TYPES } from '@/lib/goal-constants';
+import { GOAL_TYPE_FIELDS, GOAL_TYPES, GOAL_TYPES_WITHOUT_PROMPT_COUNTERS } from '@/lib/goal-constants';
 import { PROMPT_HOTKEY_MAP } from '@/lib/promptConstants';
 import GoalFocusManager from './GoalFocusManager';
 import { getActivitySuggestions as getAiActivitySuggestions } from '@/ai/flows/activity-suggestions';
@@ -517,7 +517,7 @@ export default function DataEntryContent() {
 
                 // Prompt hotkeys
                 const promptType = PROMPT_HOTKEY_MAP[key as keyof typeof PROMPT_HOTKEY_MAP];
-                if(promptType) {
+                if(promptType && !GOAL_TYPES_WITHOUT_PROMPT_COUNTERS.includes(focusedGoal.type)) {
                     increment(promptType);
                     if (promptType === 'Independent') {
                         if (['ARTICULATION', 'AAC'].includes(focusedGoal.type)) increment('correct');

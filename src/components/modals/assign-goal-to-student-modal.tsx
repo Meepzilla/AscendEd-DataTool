@@ -297,7 +297,7 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
                   />
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Target percentage (0-100) or a specific rating.
+                Target percentage (0-100) for accuracy/fluency goals, a rating for qualitative goals (e.g. 4 out of 5), or the number of different functions for communication functions goals.
               </p>
             </div>
           </div>

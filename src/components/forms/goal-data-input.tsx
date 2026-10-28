@@ -11,11 +11,17 @@ import { Slider } from '@/components/ui/slider';
 import { PROMPT_TYPES, PROMPT_COLORS, PROMPT_ABBREVIATIONS, PROMPT_HOTKEY_MAP } from '@/lib/promptConstants';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { formatGoalTarget } from '@/lib/helpers';
 import { TrendingUp, ArrowUp, ArrowDown, Plus, Minus, ArchiveIcon, Pin, Check, X, CircleHelp, RotateCcw, Undo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useConfetti } from '@/hooks/use-confetti';
 import { useLongPress, longPressStyle } from '@/hooks/use-long-press';
+import {
+  COMMUNICATION_FUNCTIONS, summarizeCommunicationFunctions,
+  STORY_PARTS, STORY_PART_SCORE_LABELS, STORY_LINKING_WORDS, linkingWordField, scoreStory,
+  GOAL_TYPES_WITHOUT_PROMPT_COUNTERS,
+} from '@/lib/goal-constants';
 
 interface GoalDataInputComponentProps {
   goal: Goal;
@@ -139,6 +145,14 @@ export default function GoalDataInputComponent({
         const validTrials = trials.filter((t: TrialStatus) => t !== 'untouched').length;
         actualPerformancePct = validTrials > 0 ? (correct / validTrials) * 100 : 0;
         return `${actualPerformancePct.toFixed(1)}% (${correct}/${validTrials})`;
+      }
+      case 'COMMUNICATION_FUNCTIONS': {
+        const summary = summarizeCommunicationFunctions(data);
+        return `${summary.functionsUsedSpontaneously} of ${summary.functionCount} used spontaneously (${summary.spontaneous} spontaneous, ${summary.prompted} prompted)`;
+      }
+      case 'STORY_CHAMPS': {
+        const story = scoreStory(data);
+        return `${story.percent.toFixed(1)}% (${story.points}/${story.maxPoints} points)`;
       }
       case 'PROMPTING':
       case 'QUALITATIVE_OBSERVATION':
@@ -674,12 +688,140 @@ export default function GoalDataInputComponent({
             </div>
           </>
         );
+      case 'COMMUNICATION_FUNCTIONS': {
+        const tally = (field: string, delta: number) => (e: React.SyntheticEvent<HTMLButtonElement>) =>
+          handleInteraction(e, () => handleChange(field, Math.max(0, (Number(data[field]) || 0) + delta)));
+        return (
+          <>
+            <FormItem>
+              <div className="grid grid-cols-[1fr_auto_auto] items-center gap-x-1.5 gap-y-1">
+                <FormLabel>Function</FormLabel>
+                <FormLabel>Spontaneous</FormLabel>
+                <FormLabel>Prompted</FormLabel>
+                {COMMUNICATION_FUNCTIONS.map(({ key, label }) => (
+                  <React.Fragment key={key}>
+                    <span className="text-xs">{label}</span>
+                    <TallyButton
+                      label="S"
+                      count={Number(data[`${key}Spontaneous`]) || 0}
+                      title={`${label}, spontaneous`}
+                      className="border-green-600 text-green-700 dark:text-green-400"
+                      disabled={isArchived}
+                      onIncrement={tally(`${key}Spontaneous`, 1)}
+                      onDecrement={tally(`${key}Spontaneous`, -1)}
+                    />
+                    <TallyButton
+                      label="P"
+                      count={Number(data[`${key}Prompted`]) || 0}
+                      title={`${label}, prompted`}
+                      className="border-yellow-600 text-yellow-700 dark:text-yellow-400"
+                      disabled={isArchived}
+                      onIncrement={tally(`${key}Prompted`, 1)}
+                      onDecrement={tally(`${key}Prompted`, -1)}
+                    />
+                  </React.Fragment>
+                ))}
+              </div>
+              <p className="text-[11px] text-muted-foreground">Tap to add a use. Press and hold (or right-click) to remove one.</p>
+            </FormItem>
+            <div className="mt-1.5">
+              <FormLabel>Functions Used</FormLabel>
+              <p className="text-sm font-semibold text-primary">{calculateAccuracy()}</p>
+            </div>
+            <FormItem>
+              <FormLabel>Notes</FormLabel>
+              <Textarea
+                value={data.notes || ''}
+                onChange={(e) => handleChange('notes', e.target.value)}
+                placeholder="e.g., Context, communication modes used"
+                rows={1}
+                className="text-sm"
+                disabled={isArchived || isLocked}
+              />
+            </FormItem>
+          </>
+        );
+      }
+      case 'STORY_CHAMPS':
+        return (
+          <>
+            <FormItem>
+              <FormLabel>Story Parts (0 Missing · 1 Partial · 2 Complete)</FormLabel>
+              <div className="grid grid-cols-[1fr_auto] items-center gap-x-2 gap-y-1">
+                {STORY_PARTS.map(({ key, label }) => {
+                  const score = Number(data[key]) || 0;
+                  return (
+                    <React.Fragment key={key}>
+                      <span className="text-xs">{label}</span>
+                      <div className="flex gap-1" role="radiogroup" aria-label={label}>
+                        {[0, 1, 2].map(value => (
+                          <Button
+                            key={value}
+                            type="button"
+                            size="sm"
+                            variant={score === value ? 'default' : 'outline'}
+                            role="radio"
+                            aria-checked={score === value}
+                            className="h-7 w-8 px-0 text-xs touch-manipulation"
+                            title={`${label}: ${STORY_PART_SCORE_LABELS[value]}`}
+                            onClick={(e) => handleInteraction(e, () => handleChange(key, value))}
+                            disabled={isArchived}
+                          >
+                            {value}
+                          </Button>
+                        ))}
+                      </div>
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+            </FormItem>
+            <div className="mt-1.5">
+              <FormLabel>Story Score</FormLabel>
+              <p className="text-sm font-semibold text-primary">{calculateAccuracy()}</p>
+            </div>
+            <FormItem>
+              <FormLabel>Linking Words</FormLabel>
+              <div className="grid grid-cols-3 gap-1.5">
+                {STORY_LINKING_WORDS.map(word => {
+                  const field = linkingWordField(word);
+                  const change = (delta: number) => (e: React.SyntheticEvent<HTMLButtonElement>) =>
+                    handleInteraction(e, () => handleChange(field, Math.max(0, (Number(data[field]) || 0) + delta)));
+                  return (
+                    <TallyButton
+                      key={word}
+                      label={word}
+                      count={Number(data[field]) || 0}
+                      title={`Linking word "${word}"`}
+                      className="w-full"
+                      disabled={isArchived}
+                      onIncrement={change(1)}
+                      onDecrement={change(-1)}
+                    />
+                  );
+                })}
+              </div>
+              <p className="text-[11px] text-muted-foreground">Tap to count a linking word. Press and hold (or right-click) to remove one.</p>
+            </FormItem>
+            <FormItem>
+              <FormLabel>Story / Notes</FormLabel>
+              <Textarea
+                value={data.notes || ''}
+                onChange={(e) => handleChange('notes', e.target.value)}
+                placeholder="e.g., Story used, retell or personal story, supports given"
+                rows={1}
+                className="text-sm"
+                disabled={isArchived || isLocked}
+              />
+            </FormItem>
+          </>
+        );
       default:
         return <p className="text-muted-foreground text-xs">No specific data fields for this goal type.</p>;
     }
   };
 
-  const showPromptCounters = true;
+  const showPromptCounters = !GOAL_TYPES_WITHOUT_PROMPT_COUNTERS.includes((goal.dataCaptureType || goal.type) as GoalType);
 
 
   return (
@@ -730,7 +872,7 @@ export default function GoalDataInputComponent({
                   {goal.sessionTargetValue !== undefined && (
                     <div className="text-xs text-muted-foreground flex items-center gap-0.5">
                         <TrendingUp className="h-3 w-3 text-green-600" />
-                        Target: {goal.sessionTargetValue}{goal.type !== 'QUALITATIVE_OBSERVATION' ? '%' : ''}
+                        Target: {formatGoalTarget(goal.type, goal.sessionTargetValue)}
                     </div>
                   )}
                 </div>
@@ -796,6 +938,37 @@ const PromptCounterButton: React.FC<PromptCounterButtonProps> = ({ promptType, c
       disabled={disabled}
     >
       {PROMPT_ABBREVIATIONS[promptType]}: {count}
+    </Button>
+  );
+};
+
+interface TallyButtonProps {
+  label: string;
+  count: number;
+  title: string;
+  className?: string;
+  disabled?: boolean;
+  onIncrement: (e: React.SyntheticEvent<HTMLButtonElement>) => void;
+  onDecrement: (e: React.SyntheticEvent<HTMLButtonElement>) => void;
+}
+
+// A counter button: tap/click adds one; press and hold (touch) or right-click (mouse) removes one.
+const TallyButton: React.FC<TallyButtonProps> = ({ label, count, title, className, disabled, onIncrement, onDecrement }) => {
+  const longPressHandlers = useLongPress<HTMLButtonElement>(onDecrement);
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      className={cn("h-7 min-w-[3.25rem] px-2 text-xs justify-center touch-manipulation", className)}
+      style={longPressStyle}
+      onClick={onIncrement}
+      {...longPressHandlers}
+      title={`${title}: tap or click to add one; press and hold, or right-click, to remove one.`}
+      aria-label={`${title}: ${count}`}
+      disabled={disabled}
+    >
+      {label}: {count}
     </Button>
   );
 };
