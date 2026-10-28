@@ -4,6 +4,7 @@
 import React, { lazy, useState, useEffect, useCallback, Suspense, useMemo, useRef } from 'react';
 import { useStudentData } from '@/hooks/use-student-data';
 import { useAuth } from '@/hooks/use-auth';
+import { defaultSessionTimes } from '@/lib/session-time';
 import { loadDataEntryDraft, saveDataEntryDraft, hasUnsavedEntry, type DataEntryDraft } from '@/lib/data-entry-draft';
 import { Button } from '@/components/ui/button';
 import { Save, RotateCcw } from 'lucide-react';
@@ -29,7 +30,6 @@ const SelectionModal = lazy(() => import('@/components/modals/selection-modal'))
 // "restored" notice shows only when the app reopens with unsaved data, not every time the page is revisited.
 let openedSinceAppLoad = false;
 
-const DEFAULT_SESSION_MINUTES = 30;
 // Student cards fill the screen height below the header card, down to the save bar.
 const MIN_STUDENT_CARD_HEIGHT = 420;
 const CARD_TO_SAVE_BAR = 32; // the cards list's bottom padding plus room for its horizontal scrollbar
@@ -170,12 +170,9 @@ export default function DataEntryContent() {
 
   useEffect(() => {
     if (sessionTime === '') {
-      // Sessions default to starting now and lasting 30 minutes. Time inputs need 24-hour "HH:mm".
-      const toTimeValue = (d: Date) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-      const now = new Date();
-      setSessionTime(toTimeValue(now));
-      now.setMinutes(now.getMinutes() + DEFAULT_SESSION_MINUTES);
-      setSessionEndTime(toTimeValue(now));
+      const { start, end } = defaultSessionTimes();
+      setSessionTime(start);
+      setSessionEndTime(end);
     }
   }, [setSessionTime, setSessionEndTime, sessionTime]);
 
