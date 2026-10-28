@@ -135,7 +135,9 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
           </div>
         </div>
       </CardHeader>
-      <ScrollArea className="h-[730px]">
+      {/* The scroll area's content wrapper is display: table by default, which lets wide content (e.g. with larger
+          text on iPad) stretch past the card and get cut off; display: block keeps it to the card's width. */}
+      <ScrollArea className="h-[730px] [&_[data-radix-scroll-area-viewport]>div]:!block">
         <CardContent className="p-3 space-y-3">
           <div>
             <Label htmlFor={`activity-${student.id}`}>Activity</Label>
