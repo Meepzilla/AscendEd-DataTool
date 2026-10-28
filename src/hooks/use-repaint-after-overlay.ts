@@ -1,32 +1,31 @@
 'use client';
 
-import { useEffect, type RefObject } from 'react';
+import { useEffect } from 'react';
 
 const OVERLAY = '[role="dialog"], [role="alertdialog"]';
 
 /**
- * Redraws an element after a dialog closes. iPad Safari draws the sticky header as its own layer and can
- * keep the picture it had under a dialog's dimmed backdrop after the dialog is gone, leaving the header
- * hazy until the app is reloaded. Briefly changing the layer makes Safari draw it again.
+ * Redraws the page after a dialog closes. iPad Safari can keep showing a dialog's dimmed backdrop over
+ * parts of the page that did not change while it was open (such as the top bar), leaving them hazy until
+ * the app is reloaded. Briefly changing the page's opacity makes Safari draw all of it again.
  */
-export function useRepaintAfterOverlay(ref: RefObject<HTMLElement | null>) {
+export function useRepaintAfterOverlay() {
   useEffect(() => {
     let overlayOpen = !!document.querySelector(OVERLAY);
     let frame = 0;
     const repaint = () => {
-      const el = ref.current;
-      if (!el) return;
-      el.style.transform = 'translateZ(0)';
+      const body = document.body;
+      body.style.opacity = '0.999';
       cancelAnimationFrame(frame);
-      // Two frames, so the changed layer is drawn before it is put back.
+      // Two frames, so the changed page is drawn before it is put back.
       frame = requestAnimationFrame(() => {
-        frame = requestAnimationFrame(() => { el.style.transform = ''; });
+        frame = requestAnimationFrame(() => { body.style.opacity = ''; });
       });
     };
     const observer = new MutationObserver(() => {
       const open = !!document.querySelector(OVERLAY);
       if (overlayOpen && !open) {
-        // Again after the backdrop's fade-out animation has finished.
+        // Again once the dialog's closing animation has finished.
         repaint();
         window.setTimeout(repaint, 400);
       }
@@ -34,5 +33,5 @@ export function useRepaintAfterOverlay(ref: RefObject<HTMLElement | null>) {
     });
     observer.observe(document.body, { childList: true, subtree: true });
     return () => { observer.disconnect(); cancelAnimationFrame(frame); };
-  }, [ref]);
+  }, []);
 }

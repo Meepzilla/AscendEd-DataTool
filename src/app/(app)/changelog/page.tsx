@@ -22,7 +22,7 @@ const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-28',
     title: 'Fixed: Hazy Top Bar After Closing a Window',
-    description: 'On iPad, the top bar could stay dimmed after a pop-up window such as Edit Student was closed, until the app was reloaded. The top bar is now redrawn whenever a pop-up window closes.',
+    description: 'On iPad, the top bar could stay dimmed after a pop-up window such as Edit Student was closed (for example after adding a goal from Data Entry), until the app was reloaded. The dimmed background behind pop-up windows now disappears at once instead of fading, and the whole screen is redrawn when a pop-up window closes.',
     type: 'fix',
     icon: Bug,
   },
