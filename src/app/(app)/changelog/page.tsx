@@ -20,14 +20,14 @@ const changelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-28',
     title: 'Communication Functions Goal Type',
-    description: 'A new goal type for tallying communicative functions (requesting, commenting, protesting, greeting, gaining attention, answering and asking questions, expressing feelings, directing others) as spontaneous or prompted. Progress is the number of different functions used spontaneously. Includes three default goal templates.',
+    description: 'A new goal type for tallying communicative functions (requesting, commenting, protesting, greeting, gaining attention, answering and asking questions, expressing feelings, directing others) as spontaneous or prompted. Progress is the number of different functions used spontaneously. Includes nine default goal templates; the GLP "variety of communicative functions" template now uses this type.',
     type: 'feature',
     icon: MessagesSquare,
   },
   {
     date: '2026-10-28',
     title: 'Story Champs Goal Type',
-    description: 'A new goal type for Story Champs narrative data: score Character, Setting, Problem, Feeling, Action, Ending and End Feeling as 0 (missing), 1 (partial) or 2 (complete), and tally linking words. The story score is the percentage of 14 possible points. Includes three default goal templates.',
+    description: 'A new goal type for Story Champs narrative data: score Character, Setting, Problem, Feeling, Action, Ending and End Feeling as 0 (missing), 1 (partial) or 2 (complete), and tally linking words. The story score is the percentage of 14 possible points. Includes eight default goal templates; "Retell a short story with 3 key elements" now uses this type.',
     type: 'feature',
     icon: BookOpen,
   },

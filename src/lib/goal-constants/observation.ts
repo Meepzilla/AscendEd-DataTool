@@ -19,5 +19,4 @@ export const OBSERVATION_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'use
   // Gestalt Language Processing (GLP) Goals
   { name: 'GLP: Increase inventory of mitigable gestalts', type: 'QUALITATIVE_OBSERVATION', smartGoalPrompt: 'Student will demonstrate use of new, mitigable gestalts during play-based activities.', isDefault: true, sessionTargetValue: 4, generatedSmartGoal: '' },
   { name: 'GLP: Mitigate gestalts into smaller units', type: 'QUALITATIVE_OBSERVATION', smartGoalPrompt: 'Student will begin to break down longer gestalts into smaller, more flexible units.', isDefault: true, sessionTargetValue: 4, generatedSmartGoal: '' },
-  { name: 'GLP: Use language for a variety of communicative functions', type: 'QUALITATIVE_OBSERVATION', smartGoalPrompt: 'Student will use language for at least 3 different communicative functions (e.g., commenting, requesting, protesting).', isDefault: true, sessionTargetValue: 4, generatedSmartGoal: '' },
 ];
