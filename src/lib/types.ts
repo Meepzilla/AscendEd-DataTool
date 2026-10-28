@@ -1,5 +1,4 @@
 
-import type { Timestamp } from 'firebase/firestore';
 import type { ToastActionElement, ToastProps } from "@/components/ui/toast"
 
 
@@ -25,19 +24,22 @@ export interface Goal {
   [key: string]: any;
 }
 
-export type GoalType =
-  | 'ARTICULATION'
-  | 'FLUENCY_SYLLABLE_STUTTER'
-  | 'QUALITATIVE_OBSERVATION'
-  | 'LANGUAGE_COMPREHENSION'
-  | 'LANGUAGE_EXPRESSION'
-  | 'PHONOLOGICAL_PROCESSES'
-  | 'FEEDING_SWALLOWING'
-  | 'SEQUENCED_TRIALS'
-  | 'PROMPTING'
-  | 'DISCRETE_TRIALS'
-  | 'COGNITIVE'
-  | 'AAC';
+export const GOAL_TYPE_VALUES = [
+  'ARTICULATION',
+  'FLUENCY_SYLLABLE_STUTTER',
+  'QUALITATIVE_OBSERVATION',
+  'LANGUAGE_COMPREHENSION',
+  'LANGUAGE_EXPRESSION',
+  'PHONOLOGICAL_PROCESSES',
+  'FEEDING_SWALLOWING',
+  'SEQUENCED_TRIALS',
+  'PROMPTING',
+  'DISCRETE_TRIALS',
+  'COGNITIVE',
+  'AAC',
+] as const;
+
+export type GoalType = typeof GOAL_TYPE_VALUES[number];
 
 export interface GoalTemplate {
   id: string;
@@ -47,7 +49,7 @@ export interface GoalTemplate {
   smartGoalPrompt: string;
   generatedSmartGoal: string;
   sessionTargetValue?: number; // Target percentage (0-100) or specific count
-  createdAt: Timestamp | Date; 
+  createdAt: Date; 
   isDefault: boolean;
   userId?: string;
   isArchived?: boolean;
@@ -148,7 +150,7 @@ export interface User {
   email?: string | null;
   displayName?: string | null;
   isAnonymous: boolean;
-  createdAt?: Timestamp | Date | string; // Added from Firestore user doc
+  createdAt?: Date | string;
 }
 
 // Moved from DataEntryPage for use in context
@@ -170,26 +172,10 @@ export const StudentSchema = z.object({
   updatedAt: z.string().optional(),
 });
 
-export const SignInSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address." }),
-  password: z.string().min(1, { message: "Password is required." }),
-});
-
-export const SignUpSchema = z.object({
-  displayName: z.string().min(2, { message: "Display name must be at least 2 characters." }),
-  email: z.string().email({ message: "Please enter a valid email address." }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters." }),
-  confirmPassword: z.string().min(6, { message: "Password must be at least 6 characters." }),
-}).refine(data => data.password === data.confirmPassword, {
-  message: "Passwords do not match.",
-  path: ["confirmPassword"],
-});
-
-
 export const GoalTemplateSchema = z.object({
   name: z.string().min(3, "Template name is required."),
-  type: z.string(), 
-  dataCaptureType: z.string().optional(), // NEW
+  type: z.enum(GOAL_TYPE_VALUES), 
+  dataCaptureType: z.enum(GOAL_TYPE_VALUES).optional(), // NEW
   smartGoalPrompt: z.string().min(10, "SMART goal prompt is required."),
   generatedSmartGoal: z.string().optional(),
   sessionTargetValue: z.preprocess(
@@ -202,7 +188,7 @@ export const GoalTemplateSchema = z.object({
 export const AssignedGoalEditSchema = z.object({
   name: z.string().min(3, { message: "Goal name must be at least 3 characters." }),
   smartGoal: z.string().min(10, { message: "SMART goal text must be at least 10 characters." }),
-  dataCaptureType: z.string().optional(), // NEW
+  dataCaptureType: z.enum(GOAL_TYPE_VALUES).optional(), // NEW
   sessionTargetValue: z.preprocess(
     (val) => (val === "" || val === undefined || val === null ? undefined : Number(val)),
     z.number().min(0, "Target must be 0 or greater.").max(100, "Target percentage cannot exceed 100 for most goals.").optional()

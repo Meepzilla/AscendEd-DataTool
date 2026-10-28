@@ -1,18 +1,15 @@
 
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-import { Timestamp } from "firebase/firestore";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function formatDate(date: Date | Timestamp | string): string {
+export function formatDate(date: Date | string): string {
   if (!date) return 'Invalid Date';
   let d: Date;
-  if (date instanceof Timestamp) {
-    d = date.toDate();
-  } else if (typeof date === 'string') {
+  if (typeof date === 'string') {
     d = new Date(date);
   } else {
     d = date;
@@ -27,11 +24,9 @@ export function formatDate(date: Date | Timestamp | string): string {
   });
 }
 
-export function formatTime(date: Date | Timestamp | string): string {
+export function formatTime(date: Date | string): string {
    let d: Date;
-  if (date instanceof Timestamp) {
-    d = date.toDate();
-  } else if (typeof date === 'string') {
+  if (typeof date === 'string') {
     d = new Date(date);
   } else {
     d = date;
@@ -43,6 +38,15 @@ export function formatTime(date: Date | Timestamp | string): string {
     minute: '2-digit',
     hour12: true,
   });
+}
+
+/** "1 student", "2 students". */
+export function plural(count: number, word: string): string {
+  return `${count} ${word}${count === 1 ? '' : 's'}`;
+}
+
+export function studentProfilePath(studentId: string): string {
+  return `/student-profile/view?id=${encodeURIComponent(studentId)}`;
 }
 
 export function generateUUID(): string {
@@ -61,23 +65,6 @@ export function generateUUID(): string {
  */
 export function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-/**
- * Placeholder for client-side Firebase configuration value.
- * In a real app, this would be securely managed.
- * Example: populated from a script tag or environment variable accessible on the client.
- */
-export function getFirebaseConfigFromGlobals(): any {
-  if (typeof window !== 'undefined' && (window as any).__firebase_config) {
-    try {
-      return JSON.parse((window as any).__firebase_config);
-    } catch (error) {
-      console.error("Error parsing __firebase_config:", error);
-      return null;
-    }
-  }
-  return null;
 }
 
 export function getAppIdFromGlobals(): string | null {

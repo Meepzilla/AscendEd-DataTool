@@ -23,7 +23,7 @@ export const GOAL_TYPE_FIELDS: Record<GoalType, Record<string, any>> = {
   ...TRIALS_FIELDS,
   ...AAC_FIELDS,
   ...COGNITIVE_FIELDS,
-};
+} as Record<GoalType, Record<string, any>>;
 
 // Dynamically generate the GOAL_TYPES object from the keys of GOAL_TYPE_FIELDS.
 // This ensures that GOAL_TYPES is always in sync with the defined fields.
