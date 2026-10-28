@@ -14,11 +14,15 @@ import { AAC_FIELDS, AAC_TEMPLATES } from './aac';
 import { COGNITIVE_FIELDS, COGNITIVE_TEMPLATES } from './cognitive';
 import { COMMUNICATION_FIELDS, COMMUNICATION_TEMPLATES } from './communication';
 import { STORY_CHAMPS_FIELDS, STORY_CHAMPS_TEMPLATES } from './story-champs';
+import { BEHAVIOR_FIELDS, BEHAVIOR_TEMPLATES } from './behavior';
 // The SLP goal bank, generated from the goal bank CSV by scripts/import-goal-bank.py.
 import goalBank from './goal-bank.json';
+// Goal bank templates whose type changed since an earlier import (written by the importer).
+import goalBankTypeUpdates from './goal-bank-type-updates.json';
 
 export * from './communication';
 export * from './story-champs';
+export * from './behavior';
 
 // Combine all field definitions from individual files.
 export const GOAL_TYPE_FIELDS: Record<GoalType, Record<string, any>> = {
@@ -32,6 +36,7 @@ export const GOAL_TYPE_FIELDS: Record<GoalType, Record<string, any>> = {
   ...COGNITIVE_FIELDS,
   ...COMMUNICATION_FIELDS,
   ...STORY_CHAMPS_FIELDS,
+  ...BEHAVIOR_FIELDS,
 } as Record<GoalType, Record<string, any>>;
 
 // Dynamically generate the GOAL_TYPES object from the keys of GOAL_TYPE_FIELDS.
@@ -57,6 +62,7 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
   ...COGNITIVE_TEMPLATES,
   ...COMMUNICATION_TEMPLATES,
   ...STORY_CHAMPS_TEMPLATES,
+  ...BEHAVIOR_TEMPLATES,
   ...(goalBank as Omit<GoalTemplate, 'id' | 'createdAt' | 'userId'>[]),
 ];
 
@@ -69,13 +75,14 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
 export const DEFAULT_TEMPLATE_UPDATES: { name: string; fromType: GoalType }[] = [
   { name: 'GLP: Use language for a variety of communicative functions', fromType: 'QUALITATIVE_OBSERVATION' },
   { name: 'Retell a short story with 3 key elements', fromType: 'LANGUAGE_EXPRESSION' },
+  ...(goalBankTypeUpdates as { name: string; fromType: GoalType }[]),
 ];
 
 export function applyDefaultTemplateUpdates<T extends GoalTemplate>(templates: T[]): { templates: T[]; changed: boolean } {
   let changed = false;
   const updated = templates.map(template => {
-    const update = DEFAULT_TEMPLATE_UPDATES.find(u => u.name === template.name);
-    if (!template.isDefault || !update || template.type !== update.fromType) return template;
+    const update = DEFAULT_TEMPLATE_UPDATES.find(u => u.name === template.name && u.fromType === template.type);
+    if (!template.isDefault || !update) return template;
     const current = DEFAULT_GOAL_TEMPLATES.find(t => t.name === update.name);
     if (!current) return template;
     changed = true;
@@ -85,10 +92,11 @@ export function applyDefaultTemplateUpdates<T extends GoalTemplate>(templates: T
       dataCaptureType: template.dataCaptureType && template.dataCaptureType !== update.fromType ? template.dataCaptureType : current.type,
       smartGoalPrompt: current.smartGoalPrompt,
       sessionTargetValue: current.sessionTargetValue,
+      targetDirection: current.targetDirection,
     };
   });
   return { templates: updated, changed };
 }
 
 // Goal types that record prompting in their own fields, so the general prompt level counters are hidden.
-export const GOAL_TYPES_WITHOUT_PROMPT_COUNTERS: GoalType[] = ['COMMUNICATION_FUNCTIONS', 'STORY_CHAMPS'];
+export const GOAL_TYPES_WITHOUT_PROMPT_COUNTERS: GoalType[] = ['COMMUNICATION_FUNCTIONS', 'STORY_CHAMPS', 'BEHAVIOR_FREQUENCY', 'BEHAVIOR_DURATION', 'BEHAVIOR_ABC'];

@@ -5,7 +5,7 @@ import React from 'react';
 import GenericModal from './generic-modal';
 import { Button } from '@/components/ui/button';
 import type { SessionData, Goal } from '@/lib/types';
-import { formatDate, formatTime } from '@/lib/helpers';
+import { formatDate, formatTime, formatDataValue, goalTypeLabel } from '@/lib/helpers';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Activity, CalendarDays, Clock, FileText, Target, CheckSquare, Info } from 'lucide-react';
@@ -73,7 +73,7 @@ export default function ViewSessionDetailsModal({ session, isOpen, onClose }: Vi
                       <CardHeader className="bg-card p-3">
                         <div className="flex justify-between items-center">
                            <h4 className="font-semibold text-md text-primary">{goalData.goalName}</h4>
-                           <Badge variant="secondary">{goalData.goalType.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}</Badge>
+                           <Badge variant="secondary">{goalTypeLabel(goalData.goalType)}</Badge>
                         </div>
                         {originalGoal?.smartGoal && <CardDescription className="text-xs mt-1 line-clamp-2">{originalGoal.smartGoal}</CardDescription>}
                       </CardHeader>
@@ -82,7 +82,7 @@ export default function ViewSessionDetailsModal({ session, isOpen, onClose }: Vi
                           <div key={key} className="flex justify-between items-center">
                             <span className="text-muted-foreground capitalize">{key.replace(/([A-Z])/g, ' $1')}:</span>
                             <span className="font-medium text-foreground text-right">
-                                {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : String(value)}
+                                {formatDataValue(value)}
                             </span>
                           </div>
                         ))}

@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const changelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-28',
+    title: 'Behavior Data: Frequency, Duration and ABC',
+    description: 'Three new goal types for behavior data. Frequency counts occurrences (with a rate per hour when you enter the observation time). Duration times episodes with a start/stop timer or entered by hand. ABC data records incidents as antecedent, behavior and consequence, and shows the most common antecedents and likely functions. Behavior goals can aim to decrease or increase. Includes 13 behavior templates, and 25 goal bank goals (including Behavior Replacement & Regulation) now use these types.',
+    type: 'feature',
+    icon: ListChecks,
+  },
+  {
+    date: '2026-10-28',
     title: 'SLP Goal Bank: 903 New Goal Templates',
     description: 'Added 903 goal templates from the SLP goal bank across 50 skill areas, each set up with the data collection type and session target that fit how the goal is measured. The Goals page can now filter by skill area, and the info button on a goal shows its purpose, activity ideas and tags. Searching templates now also matches the goal text.',
     type: 'feature',
