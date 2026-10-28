@@ -21,6 +21,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-28',
+    title: 'Larger + and - Buttons in Data Entry',
+    description: 'The + and - buttons on the Data Entry goal cards are larger (36px instead of 28px) so they are easier to tap on a tablet, and the number boxes next to them match their height.',
+    type: 'improvement',
+    icon: PlusCircle,
+  },
+  {
+    date: '2026-10-28',
     title: 'Write Narrative on Reports',
     description: 'Reports has a Write Narrative button that writes a progress summary of the data in view (student, goal and date range) for each goal: sessions with data, average and range, the most recent result against the target, how often the target was met, the trend over the period, and details that fit the goal type (responses and prompting, story parts, communication functions, dysfluencies, behavior rate, ABC patterns) plus recent notes. It is built from the data with fixed sentence patterns, can be edited, and can be copied or saved as a text file.',
     type: 'feature',
