@@ -17,6 +17,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
 import type { DateRange } from "react-day-picker";
 
+// Dynamically imported modals. Declared once here: created inside the component, each render made a new
+// component type, so an open modal was thrown away and loaded again whenever the page re-rendered.
+const EditSessionModal = lazy(() => import('@/components/modals/edit-session-modal'));
+const ConfirmationModal = lazy(() => import('@/components/modals/confirmation-modal'));
+const ViewSessionDetailsModal = lazy(() => import('@/components/modals/view-session-details-modal'));
+
 export default function ManageSessionsPage() {
   const { 
     sessions, 
@@ -34,19 +40,14 @@ export default function ManageSessionsPage() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [viewingSessionDetails, setViewingSessionDetails] = useState<SessionData | null>(null);
 
-  // Dynamically imported modals
-  const EditSessionModal = lazy(() => import('@/components/modals/edit-session-modal'));
-  const ConfirmationModal = lazy(() => import('@/components/modals/confirmation-modal'));
-  const ViewSessionDetailsModal = lazy(() => import('@/components/modals/view-session-details-modal'));
-
 
   const filteredSessions = useMemo(() => {
     return sessions
       .filter(session => {
         const studentMatch = selectedStudentId === 'ALL' || session.studentId === selectedStudentId;
         const searchMatch = searchTerm === '' || 
-                            session.activity.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            session.notes.toLowerCase().includes(searchTerm.toLowerCase());
+                            (session.activity || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            (session.notes || '').toLowerCase().includes(searchTerm.toLowerCase());
         
         let dateMatch = true;
         if (dateRange?.from) {
@@ -61,7 +62,7 @@ export default function ManageSessionsPage() {
         
         return studentMatch && searchMatch && dateMatch;
       })
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime() || b.time.localeCompare(a.time)); // Sort by date then time
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime() || (b.time || '').localeCompare(a.time || '')); // Sort by date then time
   }, [sessions, selectedStudentId, searchTerm, dateRange]);
 
   if (studentsLoading && students.length === 0) { // Only show global skeleton if students are also loading

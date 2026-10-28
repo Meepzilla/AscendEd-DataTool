@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const changelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-28',
+    title: 'Fixed: Editing Sessions (More Cases), Update Notice, Error Details',
+    description: 'Editing a saved session also works for sessions with an unreadable date or without their original goal list (e.g. imported), and the edit window no longer reloads itself while open. When a new version is downloaded, a notice offers to reload into it. If a page ever fails, it now shows what went wrong (with the app version) and a Try Again button instead of a blank screen. Settings shows the app version. Notices no longer appear twice.',
+    type: 'fix',
+    icon: Bug,
+  },
+  {
+    date: '2026-10-28',
     title: 'Fixed: Editing Sessions and Report Totals',
     description: 'Editing a saved session no longer shows "Application error". Reports\' Total Opportunities, Total Correct, Total Incorrect and accuracy now count only correct, incorrect and approximate responses from trial-based goals; Story Champs points, fluency syllables and communication function uses were being added as opportunities and errors (including for goals not worked on in a session). Those goals are reported on their own Goal by Goal cards.',
     type: 'fix',
