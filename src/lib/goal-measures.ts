@@ -1,0 +1,125 @@
+import type { Goal, GoalType, TrialStatus } from './types';
+import {
+  behaviorMeasure, goalDirection, scoreStory, summarizeCommunicationFunctions, BEHAVIOR_GOAL_TYPES,
+  COMMUNICATION_FUNCTIONS, GOAL_TYPES_WITHOUT_PROMPT_COUNTERS,
+} from './goal-constants';
+import { PROMPT_TYPES } from './promptConstants';
+
+// The one number each goal is measured by in a session, so every goal type can be charted against its
+// target: accuracy % for trial-based goals, story score %, number of functions used spontaneously,
+// a 1-5 rating, % independent, and the behavior measures (count, minutes, %, seconds).
+
+export interface GoalMeasureInfo {
+  label: string;
+  unit: string; // appended to values, e.g. '%', ' min'
+  max?: number; // fixed top of the chart scale, when there is one
+}
+
+/** Correct, incorrect and approximate responses for the trial-based goal types; null for other types. */
+export function goalResponses(type: string, data: Record<string, any> = {}): { correct: number; incorrect: number; approximate: number } | null {
+  const n = (v: unknown) => Number(v) || 0;
+  switch (type) {
+    case 'ARTICULATION':
+    case 'AAC':
+      return { correct: n(data.correct), incorrect: n(data.incorrect), approximate: n(data.approximate) };
+    case 'LANGUAGE_COMPREHENSION':
+      return { correct: n(data.questionsCorrect), incorrect: n(data.questionsIncorrect), approximate: n(data.approximate) };
+    case 'LANGUAGE_EXPRESSION':
+      return { correct: n(data.successfulResponses), incorrect: n(data.unsuccessfulResponses), approximate: n(data.approximate) };
+    case 'PHONOLOGICAL_PROCESSES':
+      return { correct: n(data.correctProductions), incorrect: n(data.incorrectProductions), approximate: n(data.approximate) };
+    case 'SEQUENCED_TRIALS':
+      return { correct: n(data.successfulAttempts), incorrect: n(data.failedAttempts), approximate: n(data.approximate) };
+    case 'FEEDING_SWALLOWING':
+      return { correct: n(data.trialsAccepted), incorrect: n(data.trialsRefused), approximate: 0 };
+    case 'DISCRETE_TRIALS': {
+      const trials: TrialStatus[] = Array.isArray(data.trials) ? data.trials : [];
+      const count = (status: TrialStatus) => trials.filter(t => t === status).length;
+      return { correct: count('correct'), incorrect: count('incorrect'), approximate: count('approximate') };
+    }
+    default:
+      return null;
+  }
+}
+
+export function promptTotals(data: Record<string, any> = {}): Record<string, number> {
+  return Object.fromEntries(PROMPT_TYPES.map(p => [p, Number(data[p]) || 0]));
+}
+
+const RATING_TYPES: string[] = ['QUALITATIVE_OBSERVATION', 'COGNITIVE'];
+const DEFAULT_RATING = 3;
+
+export function goalMeasureInfo(goal: Pick<Goal, 'type' | 'targetDirection'>): GoalMeasureInfo {
+  switch (goal.type) {
+    case 'FLUENCY_SYLLABLE_STUTTER': return { label: '% fluent syllables', unit: '%', max: 100 };
+    case 'STORY_CHAMPS': return { label: 'Story score', unit: '%', max: 100 };
+    case 'COMMUNICATION_FUNCTIONS': return { label: 'Functions used spontaneously', unit: '', max: COMMUNICATION_FUNCTIONS.length };
+    case 'QUALITATIVE_OBSERVATION':
+    case 'COGNITIVE': return { label: 'Rating (1-5)', unit: '', max: 5 };
+    case 'PROMPTING': return { label: '% independent', unit: '%', max: 100 };
+    case 'BEHAVIOR_FREQUENCY': return { label: 'Occurrences', unit: '' };
+    case 'BEHAVIOR_DURATION': return { label: 'Total minutes', unit: ' min' };
+    case 'BEHAVIOR_INTERVAL': return { label: '% of intervals', unit: '%', max: 100 };
+    case 'BEHAVIOR_LATENCY': return { label: 'Average latency (seconds)', unit: ' s' };
+    case 'BEHAVIOR_ABC':
+      return goalDirection(goal) === 'decrease'
+        ? { label: 'Problem behavior incidents', unit: '' }
+        : { label: '% of incidents with replacement skill', unit: '%', max: 100 };
+    default: return { label: 'Accuracy', unit: '%', max: 100 };
+  }
+}
+
+/**
+ * A goal's measure for one session's data, or null when nothing was recorded for it (every session stores
+ * all of a student's goals, so untouched goals are left out of charts rather than shown as 0%).
+ */
+export function goalMeasure(goal: Pick<Goal, 'type' | 'targetDirection'>, data: Record<string, any> = {}): number | null {
+  if (BEHAVIOR_GOAL_TYPES.includes(goal.type as GoalType)) return behaviorMeasure(goal.type, data, goalDirection(goal));
+
+  const responses = goalResponses(goal.type, data);
+  if (responses) {
+    const total = responses.correct + responses.incorrect + responses.approximate;
+    return total > 0 ? (responses.correct / total) * 100 : null;
+  }
+  const prompts = promptTotals(data);
+  const promptCount = Object.values(prompts).reduce((a, b) => a + b, 0);
+  switch (goal.type) {
+    case 'FLUENCY_SYLLABLE_STUTTER': {
+      const total = Number(data.totalSyllables) || 0;
+      const stuttered = Number(data.stutteredSyllables) || 0;
+      return total > 0 ? (Math.max(0, total - stuttered) / total) * 100 : null;
+    }
+    case 'STORY_CHAMPS': {
+      const story = scoreStory(data);
+      return story.points > 0 || story.linkingWords > 0 ? story.percent : null;
+    }
+    case 'COMMUNICATION_FUNCTIONS': {
+      const summary = summarizeCommunicationFunctions(data);
+      return summary.spontaneous + summary.prompted > 0 ? summary.functionsUsedSpontaneously : null;
+    }
+    case 'PROMPTING':
+      return promptCount > 0 ? (prompts.Independent / promptCount) * 100 : null;
+  }
+  if (RATING_TYPES.includes(goal.type)) {
+    // The rating starts at 3, so a session counts only if the rating was changed or something else was recorded.
+    const rating = Number(data.rating);
+    if (!rating) return null;
+    const touched = rating !== DEFAULT_RATING || String(data.notes || '').trim() !== '' || promptCount > 0;
+    return touched ? rating : null;
+  }
+  return null;
+}
+
+/** Whether a session's measure meets the goal's target (at or below it for decrease goals). */
+export function meetsTarget(goal: Pick<Goal, 'type' | 'targetDirection'>, value: number, target: number): boolean {
+  return goalDirection(goal) === 'decrease' ? value <= target : value >= target;
+}
+
+export function usesPromptCounters(type: string): boolean {
+  return !GOAL_TYPES_WITHOUT_PROMPT_COUNTERS.includes(type as GoalType);
+}
+
+/** A session's free-text notes for a goal, whichever field the goal type uses. */
+export function goalNotes(data: Record<string, any> = {}): string {
+  return [data.notes, data.details, data.observationNotes].map(v => String(v ?? '').trim()).filter(Boolean).join(' · ');
+}

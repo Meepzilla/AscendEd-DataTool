@@ -128,3 +128,10 @@ body {
     zoom: 0.9;
   }
 }
+
+/* The host's "Powered by Netlify" badge covers the Save buttons; also hidden by HostBadgeHider. */
+body > [id*="netlify" i],
+body > [class*="netlify" i],
+body > iframe[src*="netlify" i] {
+  display: none !important;
+}
