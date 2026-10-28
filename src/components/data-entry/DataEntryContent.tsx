@@ -642,7 +642,6 @@ export default function DataEntryContent() {
       // the bar itself. (The bar's own position isn't used: it is sticky, which can hide an overflow.)
       const cardTop = (card.getBoundingClientRect().top - document.body.getBoundingClientRect().top) / ratio;
       const screenBottom = probe.getBoundingClientRect().height / ratio;
-      // The save bar's height includes the space it keeps clear for the host's corner badge.
       const available = screenBottom - cardTop - CARD_TO_SAVE_BAR - saveBar.offsetHeight;
       root.style.setProperty('--student-card-height', `${Math.max(MIN_STUDENT_CARD_HEIGHT, Math.floor(available))}px`);
     };
@@ -764,8 +763,9 @@ export default function DataEntryContent() {
         </div>
         
         {selectedStudentIds.length > 0 && (
-            <div ref={saveBarRef} className="sticky bottom-0 left-0 right-0 z-10 bg-background mt-auto pb-[var(--host-badge-clearance)]">
-                <div className="flex justify-between items-center gap-2 p-2 border-t">
+            <div ref={saveBarRef} className="sticky bottom-0 left-0 right-0 z-10 bg-background mt-auto">
+                {/* Right padding keeps the buttons to the left of the host's corner badge, on the same row. */}
+                <div className="flex justify-between items-center gap-2 p-2 pr-[var(--host-badge-width)] border-t">
                     <div className="hidden sm:block">
                       <TouchControls
                         activeStudentsInSlots={activeStudentsInSlots}
