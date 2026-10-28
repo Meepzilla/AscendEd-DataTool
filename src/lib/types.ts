@@ -55,6 +55,9 @@ export interface GoalTemplate {
   isDefault: boolean;
   userId?: string;
   isArchived?: boolean;
+  category?: string; // Skill area (goal bank templates)
+  source?: string; // Goal bank set the template came from
+  bankId?: string; // Key into public/goal-bank/details.json (purpose, activity ideas, tags)
 }
 
 export interface SessionData {
