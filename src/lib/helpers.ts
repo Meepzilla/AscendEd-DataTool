@@ -40,6 +40,11 @@ export function formatTime(date: Date | string): string {
   });
 }
 
+/** "1 student", "2 students". */
+export function plural(count: number, word: string): string {
+  return `${count} ${word}${count === 1 ? '' : 's'}`;
+}
+
 export function studentProfilePath(studentId: string): string {
   return `/student-profile/view?id=${encodeURIComponent(studentId)}`;
 }
