@@ -40,8 +40,9 @@ export default function AppHeader() {
   const isDataEntryPage = pathname.startsWith('/data-entry');
 
 
+  // Solid background: iPad Safari renders a backdrop blur hazy and soft when the page is zoomed out.
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-card/80 backdrop-blur-md">
+    <header className="sticky top-0 z-40 w-full border-b bg-card">
       <div className="flex h-16 items-center px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-2 sm:gap-4">
           <Sheet>
