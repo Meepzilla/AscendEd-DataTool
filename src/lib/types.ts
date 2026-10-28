@@ -37,6 +37,8 @@ export const GOAL_TYPE_VALUES = [
   'DISCRETE_TRIALS',
   'COGNITIVE',
   'AAC',
+  'COMMUNICATION_FUNCTIONS',
+  'STORY_CHAMPS',
 ] as const;
 
 export type GoalType = typeof GOAL_TYPE_VALUES[number];

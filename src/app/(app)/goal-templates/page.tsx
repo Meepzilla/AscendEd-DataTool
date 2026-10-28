@@ -6,7 +6,7 @@ import type { GoalTemplate } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { PlusCircle, Edit, Trash2, Sparkles, Info, Loader2, BrainCircuit, Archive, ArchiveRestore } from 'lucide-react';
-import { formatDate } from '@/lib/helpers';
+import { formatDate, formatGoalTarget } from '@/lib/helpers';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -299,7 +299,7 @@ export default function GoalTemplatesPage() {
                        {template.sessionTargetValue !== undefined && (
                           <div>
                               <p className="font-medium text-muted-foreground">Session Target:</p>
-                              <p className="text-foreground">{template.sessionTargetValue}{template.type.startsWith('QUALITATIVE') ? '' : '%'}</p>
+                              <p className="text-foreground">{formatGoalTarget(template.type, template.sessionTargetValue)}</p>
                           </div>
                       )}
                     </CardContent>

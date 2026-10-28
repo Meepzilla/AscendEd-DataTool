@@ -3,12 +3,13 @@
 
 import React, { useMemo } from 'react';
 import type { Student, Goal, SessionData } from '@/lib/types';
+import { scoreStory, summarizeCommunicationFunctions } from '@/lib/goal-constants';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { TrendingUp, CheckCircle2, ListChecks, BarChart2 } from 'lucide-react';
-import { studentProfilePath } from '@/lib/helpers';
+import { formatGoalTarget, studentProfilePath } from '@/lib/helpers';
 
 /**
  * Calculates the progress percentage for a single goal based on its latest session data.
@@ -69,6 +70,15 @@ const calculateProgressForGoal = (goal: Goal, latestSessionForGoal: SessionData 
         actualPerformancePct = (goalSessionData.notes && String(goalSessionData.notes).trim() !== '') ? 100 : 0;
       }
       break;
+    }
+    case 'STORY_CHAMPS':
+      actualPerformancePct = scoreStory(goalSessionData).percent;
+      break;
+    case 'COMMUNICATION_FUNCTIONS': {
+      // The target is a number of different functions used spontaneously, not a percentage.
+      const { functionsUsedSpontaneously, functionCount } = summarizeCommunicationFunctions(goalSessionData);
+      const targetCount = goal.sessionTargetValue && goal.sessionTargetValue > 0 ? goal.sessionTargetValue : functionCount;
+      return Math.min(100, (functionsUsedSpontaneously / targetCount) * 100);
     }
     default:
       return 0;
@@ -156,7 +166,7 @@ export default function StudentProgressSidebar({ student, studentSessions }: {st
           <h4 className="text-xs font-semibold uppercase text-muted-foreground px-1">Active Goals Overview</h4>
           {activeGoalsWithProgressSliced.map(goal => {
             const displayValue = goal.sessionTargetValue !== undefined && goal.type !== 'QUALITATIVE_OBSERVATION'
-              ? `${Math.round(goal.progress)}% (Target: ${goal.sessionTargetValue}%)`
+              ? `${Math.round(goal.progress)}% (Target: ${formatGoalTarget(goal.type, goal.sessionTargetValue)})`
               : goal.type === 'QUALITATIVE_OBSERVATION'
                 ? (goal.progress === 100 ? 'Noted' : 'No Notes') // Or actual rating
                 : `${Math.round(goal.progress)}% (Actual)`;
