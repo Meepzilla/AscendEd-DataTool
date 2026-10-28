@@ -44,9 +44,32 @@ npm run dev
 
 The application should now be running at [http://localhost:3000](http://localhost:3000).
 
+## iPad and Web App (Home Screen)
+
+The same offline build can be hosted as a website and added to an iPad's Home Screen, where it opens full-screen like an app. A service worker stores the whole app on the device, so after the first visit it works without internet. Student data stays in the device's browser storage; the website only serves the app's code. AI features are hidden, as in the Android app.
+
+### Hosting on Netlify
+
+`netlify.toml` holds the build settings (`npm run build:static`, publishing `out/`). Netlify's free plan works with private repositories.
+
+1. Sign in at [netlify.com](https://www.netlify.com/) (signing in with GitHub is easiest).
+2. Choose **Add new project → Import an existing project → GitHub**, and allow Netlify access to this repository.
+3. Pick this repository and the `master` branch. The build settings are filled in from `netlify.toml`; click **Deploy**.
+4. Optionally rename the site under **Project configuration → Change project name** (for example `ascended-lesd.netlify.app`).
+
+Every push to `master` then redeploys the site automatically.
+
+### Installing on an iPad
+
+1. Open the site in **Safari**.
+2. Tap **Share → Add to Home Screen → Add**.
+3. Open AscendEd from the Home Screen once while online and wait a few seconds so the app is stored for offline use.
+
+Updates download in the background and apply the next time the app is opened. Deleting the Home Screen icon deletes the app's data, and data entered in the Home Screen app is separate from data entered in Safari itself.
+
 ## Android App
 
-The app can be packaged as an Android APK with [Capacitor](https://capacitorjs.com/). The Android app is built as a static export and runs fully offline, storing data on the device. The AI features need a server, so they are hidden in the Android app.
+The app can be packaged as an Android APK with [Capacitor](https://capacitorjs.com/). The Android app uses the same static build as the iPad/web app and runs fully offline, storing data on the device. The AI features need a server, so they are hidden in the Android app.
 
 ### Getting the APK
 
@@ -58,7 +81,7 @@ GitHub Actions builds the APK on every push to `master` and on pull requests (wo
 
 Every build is signed with the same key (`android/app/ascended-debug.keystore`), so a new APK installs over the previous one and keeps the data on the device. Don't uninstall the app to update it: uninstalling deletes its data.
 
-### Building locally
+### Building the APK locally
 
 Requires Node.js 22 or later (needed by the Capacitor CLI), JDK 21, and the Android SDK (for example, through Android Studio).
 
@@ -73,8 +96,8 @@ The APK is written to `android/app/build/outputs/apk/debug/app-debug.apk`. You c
 
 - `npm run dev`: Starts the Next.js development server.
 - `npm run build`: Builds the application for production.
-- `npm run build:mobile`: Builds the static export for the Android app into `out/` (AI features hidden).
-- `npm run android:sync`: Runs `build:mobile` and copies the result into the Android project.
+- `npm run build:static`: Builds the offline static export into `out/` (AI features hidden, service worker generated), used for Netlify and the Android app.
+- `npm run android:sync`: Runs `build:static` and copies the result into the Android project.
 - `npm run start`: Starts the production server.
 - `npm run lint`: Runs the linter to check for code quality issues.
 - `npm run genkit:dev`: Starts the Genkit development server for AI flow testing.
