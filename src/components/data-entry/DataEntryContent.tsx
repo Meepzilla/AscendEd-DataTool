@@ -12,7 +12,7 @@ import type { Student, StudentSessionState, SessionGoalData, GoalType } from '@/
 import TouchControls from '@/components/forms/touch-controls';
 import { ConfettiProvider } from '@/hooks/use-confetti';
 import { ScrollArea } from '../ui/scroll-area';
-import { GOAL_TYPE_FIELDS, GOAL_TYPES, GOAL_TYPES_WITHOUT_PROMPT_COUNTERS } from '@/lib/goal-constants';
+import { GOAL_TYPE_FIELDS, GOAL_TYPES, GOAL_TYPES_WITHOUT_PROMPT_COUNTERS, finalizeBehaviorData } from '@/lib/goal-constants';
 import { PROMPT_HOTKEY_MAP } from '@/lib/promptConstants';
 import GoalFocusManager from './GoalFocusManager';
 import { getActivitySuggestions as getAiActivitySuggestions } from '@/ai/flows/activity-suggestions';
@@ -190,7 +190,8 @@ export default function DataEntryContent() {
             goalId: goal.id,
             goalName: goal.name,
             goalType: goal.type,
-            data: state.goalData[goal.id] || JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type as GoalType])),
+            // Stops a running behavior timer and stores totals.
+            data: finalizeBehaviorData(goal.type, state.goalData[goal.id] || JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[goal.type as GoalType]))),
         }));
 
     if (sessionGoals.length === 0) {
@@ -237,7 +238,7 @@ export default function DataEntryContent() {
             simulatedCount++;
             continue;
         }
-        const sessionGoals = state.originalGoalHeaders.filter((g: any) => !g.isArchived).map((g: any) => ({ goalId: g.id, goalName: g.name, goalType: g.type, data: state.goalData[g.id] || {} }));
+        const sessionGoals = state.originalGoalHeaders.filter((g: any) => !g.isArchived).map((g: any) => ({ goalId: g.id, goalName: g.name, goalType: g.type, data: finalizeBehaviorData(g.type, state.goalData[g.id] || {}) }));
         if (sessionGoals.length === 0) continue;
         const session = { studentId: state.studentId, studentName: state.studentName, date: sessionDate.toISOString(), time: sessionTime, endTime: sessionEndTime, activity: state.activity, notes: state.notes, goals: sessionGoals, originalGoalHeaders: state.originalGoalHeaders };
         const savedSession = await addSession(session);

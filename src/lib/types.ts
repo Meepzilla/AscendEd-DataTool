@@ -19,6 +19,7 @@ export interface Goal {
   dataCaptureType?: GoalType; // NEW: Specifies which data entry UI to use
   smartGoal: string;
   sessionTargetValue?: number; // Target percentage (0-100) or specific count for some qualitative goals
+  targetDirection?: TargetDirection; // Defaults by goal type; see goalDirection()
   isArchived?: boolean; // New field for archiving
   // Additional fields based on goal type might be present
   [key: string]: any;
@@ -39,9 +40,15 @@ export const GOAL_TYPE_VALUES = [
   'AAC',
   'COMMUNICATION_FUNCTIONS',
   'STORY_CHAMPS',
+  'BEHAVIOR_FREQUENCY',
+  'BEHAVIOR_DURATION',
+  'BEHAVIOR_ABC',
 ] as const;
 
 export type GoalType = typeof GOAL_TYPE_VALUES[number];
+
+/** Whether a goal aims to raise its measure (most goals) or lower it (most behavior goals). */
+export type TargetDirection = 'increase' | 'decrease';
 
 export interface GoalTemplate {
   id: string;
@@ -58,6 +65,7 @@ export interface GoalTemplate {
   category?: string; // Skill area (goal bank templates)
   source?: string; // Goal bank set the template came from
   bankId?: string; // Key into public/goal-bank/details.json (purpose, activity ideas, tags)
+  targetDirection?: TargetDirection;
 }
 
 export interface SessionData {
@@ -181,6 +189,7 @@ export const GoalTemplateSchema = z.object({
   name: z.string().min(3, "Template name is required."),
   type: z.enum(GOAL_TYPE_VALUES), 
   dataCaptureType: z.enum(GOAL_TYPE_VALUES).optional(), // NEW
+  targetDirection: z.enum(['increase', 'decrease']).optional(),
   smartGoalPrompt: z.string().min(10, "SMART goal prompt is required."),
   generatedSmartGoal: z.string().optional(),
   sessionTargetValue: z.preprocess(
@@ -194,6 +203,7 @@ export const AssignedGoalEditSchema = z.object({
   name: z.string().min(3, { message: "Goal name must be at least 3 characters." }),
   smartGoal: z.string().min(10, { message: "SMART goal text must be at least 10 characters." }),
   dataCaptureType: z.enum(GOAL_TYPE_VALUES).optional(), // NEW
+  targetDirection: z.enum(['increase', 'decrease']).optional(),
   sessionTargetValue: z.preprocess(
     (val) => (val === "" || val === undefined || val === null ? undefined : Number(val)),
     z.number().min(0, "Target must be 0 or greater.").max(100, "Target percentage cannot exceed 100 for most goals.").optional()

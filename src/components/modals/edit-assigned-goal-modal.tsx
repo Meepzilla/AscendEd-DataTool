@@ -18,6 +18,8 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
+import TargetDirectionField from './TargetDirectionField';
+import { goalTypeLabel } from '@/lib/helpers';
 
 type EditAssignedGoalFormData = z.infer<typeof AssignedGoalEditSchema>;
 
@@ -53,6 +55,7 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
         name: goalToEdit.name,
         smartGoal: goalToEdit.smartGoal,
         sessionTargetValue: goalToEdit.sessionTargetValue,
+        targetDirection: goalToEdit.targetDirection,
         isArchived: goalToEdit.isArchived || false,
         dataCaptureType: goalToEdit.dataCaptureType || goalToEdit.type,
       });
@@ -141,7 +144,7 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
                   <SelectContent>
                     {sortedDataCaptureTypes.map((type) => (
                       <SelectItem key={type} value={type}>
-                        {type === 'AAC' ? 'AAC' : type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+                        {goalTypeLabel(type)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -153,6 +156,8 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
               </FormItem>
             )}
           />
+
+          <TargetDirectionField control={form.control} goalType={form.watch('dataCaptureType') || goalToEdit?.type} />
 
           <FormField
             control={form.control}

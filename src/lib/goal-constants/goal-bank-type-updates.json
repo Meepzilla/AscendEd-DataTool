@@ -1,0 +1,102 @@
+[
+ {
+  "name": "Request an alternative task location instead of engaging in elopement",
+  "fromType": "DISCRETE_TRIALS"
+ },
+ {
+  "name": "Request a timed pause or delay ('two more minutes') using functional communication",
+  "fromType": "DISCRETE_TRIALS"
+ },
+ {
+  "name": "Indicate the specific body part and sensation using a visual chart or AAC system",
+  "fromType": "DISCRETE_TRIALS"
+ },
+ {
+  "name": "Communicate feelings ('frustrated', 'confused') using a designated visual tool or AAC…",
+  "fromType": "DISCRETE_TRIALS"
+ },
+ {
+  "name": "Use a functional attention-getting behavior (such as tapping a shoulder, raising a hand…",
+  "fromType": "DISCRETE_TRIALS"
+ },
+ {
+  "name": "Accept losing or waiting a turn by using coping phrases or self-regulation visuals",
+  "fromType": "DISCRETE_TRIALS"
+ },
+ {
+  "name": "Select a functional alternative from a visual menu rather than displaying protest…",
+  "fromType": "DISCRETE_TRIALS"
+ },
+ {
+  "name": "Request noise-canceling headphones or lighting adjustments",
+  "fromType": "DISCRETE_TRIALS"
+ },
+ {
+  "name": "Communicate the need to access a calming corner or sensory tool before behavioral…",
+  "fromType": "DISCRETE_TRIALS"
+ },
+ {
+  "name": "Request mediation or assistance from a trusted adult",
+  "fromType": "DISCRETE_TRIALS"
+ },
+ {
+  "name": "Negotiate terms (such as asking for fewer items or choosing the order of completion)…",
+  "fromType": "DISCRETE_TRIALS"
+ },
+ {
+  "name": "Identify the specific environmental trigger and request an adjustment",
+  "fromType": "DISCRETE_TRIALS"
+ },
+ {
+  "name": "State the specific support required (such as physical rest, water, or postural shift)…",
+  "fromType": "DISCRETE_TRIALS"
+ },
+ {
+  "name": "Communicate a boundary using verbal speech, a gesture, or an AAC button",
+  "fromType": "DISCRETE_TRIALS"
+ },
+ {
+  "name": "Express an emotional state using an emotion rating scale or visual board before reaching…",
+  "fromType": "DISCRETE_TRIALS"
+ },
+ {
+  "name": "Spontaneously request [X] preferred items or actions per session using their primary mode…",
+  "fromType": "DISCRETE_TRIALS"
+ },
+ {
+  "name": "Engage in parallel or cooperative play with a peer using shared objects for [X] minutes",
+  "fromType": "LANGUAGE_EXPRESSION"
+ },
+ {
+  "name": "Use an appropriate self-regulation strategy or replacement word when frustrated…",
+  "fromType": "LANGUAGE_EXPRESSION"
+ },
+ {
+  "name": "Make 10 appropriate communicative utterances/selections during a 15-minute group activity…",
+  "fromType": "DISCRETE_TRIALS"
+ },
+ {
+  "name": "Complete a _____ (sustained, selective, alternating, divided) attention…",
+  "fromType": "COGNITIVE"
+ },
+ {
+  "name": "Demonstrate adequate attention to classroom/therapy tasks with no more than ___ number of…",
+  "fromType": "COGNITIVE"
+ },
+ {
+  "name": "Attend to structured learning/vocational tasks for x number of minutes when given no more…",
+  "fromType": "COGNITIVE"
+ },
+ {
+  "name": "Demonstrate parallel play with peers for X minutes",
+  "fromType": "DISCRETE_TRIALS"
+ },
+ {
+  "name": "Demonstrate joint attention for X minutes",
+  "fromType": "DISCRETE_TRIALS"
+ },
+ {
+  "name": "Sustain engagement for [X] minutes with regulation supports in place",
+  "fromType": "DISCRETE_TRIALS"
+ }
+]
