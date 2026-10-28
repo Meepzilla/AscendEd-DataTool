@@ -30,6 +30,9 @@ const SelectionModal = lazy(() => import('@/components/modals/selection-modal'))
 let openedSinceAppLoad = false;
 
 const DEFAULT_SESSION_MINUTES = 30;
+// Student cards fill the screen height below the header card, down to the save bar.
+const MIN_STUDENT_CARD_HEIGHT = 420;
+const STUDENT_CARDS_PADDING = 40; // the cards list's padding plus room for its horizontal scrollbar
 
 export default function DataEntryContent() {
   const {
@@ -612,6 +615,40 @@ export default function DataEntryContent() {
     localHandleGoalDataChange,
   ]);
 
+  // Size the student cards to the space left on screen. Collapsing the date and time card frees space, so
+  // the cards grow; the header and save bar are observed so any change in their height is picked up.
+  // The app sets CSS zoom on <body>, and browsers differ in whether element rects include it, so sizes are
+  // measured against a fixed full-height probe in the same zoomed context and converted with the
+  // rect-to-CSS-pixel ratio of the region itself.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const cardsRegionRef = useRef<HTMLDivElement>(null);
+  const saveBarRef = useRef<HTMLDivElement>(null);
+  const viewportProbeRef = useRef<HTMLDivElement>(null);
+  const hasSelectedStudents = selectedStudentIds.length > 0;
+  useEffect(() => {
+    const update = () => {
+      const root = rootRef.current;
+      const region = cardsRegionRef.current;
+      const probe = viewportProbeRef.current;
+      if (!root || !region || !probe || region.offsetHeight === 0) return;
+      const regionRect = region.getBoundingClientRect();
+      const ratio = regionRect.height / region.offsetHeight || 1; // rect units per CSS pixel
+      const pageTop = regionRect.top - document.body.getBoundingClientRect().top;
+      const saveBar = saveBarRef.current?.getBoundingClientRect().height ?? 0;
+      const available = (probe.getBoundingClientRect().height - pageTop - saveBar) / ratio - STUDENT_CARDS_PADDING;
+      root.style.setProperty('--student-card-height', `${Math.max(MIN_STUDENT_CARD_HEIGHT, Math.floor(available))}px`);
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    [headerRef.current, saveBarRef.current].forEach(el => el && observer.observe(el));
+    window.addEventListener('resize', update);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', update);
+    };
+  }, [hasSelectedStudents]);
+
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
     return () => {
@@ -622,7 +659,8 @@ export default function DataEntryContent() {
 
   return (
     <ConfettiProvider>
-      <div className="flex flex-col h-full">
+      <div ref={rootRef} className="flex flex-col h-full">
+        <div ref={viewportProbeRef} aria-hidden className="pointer-events-none invisible fixed inset-y-0 left-0 w-px" />
         <GoalFocusManager
           focusedStudentSlotIndex={focusedStudentSlotIndex}
           studentId={selectedStudentIds[focusedStudentSlotIndex]}
@@ -653,7 +691,7 @@ export default function DataEntryContent() {
           )}
         </Suspense>
         
-        <div className="flex-shrink-0">
+        <div ref={headerRef} className="flex-shrink-0">
           <Suspense fallback={<Card><CardContent>Loading header...</CardContent></Card>}>
             <DataEntryHeaderCard
               isHeaderCardCollapsed={isHeaderCardCollapsed}
@@ -670,7 +708,7 @@ export default function DataEntryContent() {
           </Suspense>
         </div>
 
-        <div className="flex-grow min-h-0 relative group">
+        <div ref={cardsRegionRef} className="flex-grow min-h-0 relative group">
           <ScrollArea 
             className="h-full w-full" 
           >
@@ -705,7 +743,7 @@ export default function DataEntryContent() {
         </div>
         
         {selectedStudentIds.length > 0 && (
-            <div className="sticky bottom-0 left-0 right-0 z-10 bg-background mt-auto">
+            <div ref={saveBarRef} className="sticky bottom-0 left-0 right-0 z-10 bg-background mt-auto">
                 <div className="flex justify-between items-center gap-2 p-2 border-t">
                     <div className="hidden sm:block">
                       <TouchControls

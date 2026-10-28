@@ -89,7 +89,7 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
     <Card
       id={`student-card-slot-${slotIndex}`}
       className={cn(
-        'relative flex flex-col transition-all duration-300 ease-in-out shadow-md flex-shrink-0 h-full w-[350px] sm:w-[450px]',
+        'relative flex flex-col transition-all duration-300 ease-in-out shadow-md flex-shrink-0 h-[var(--student-card-height,800px)] w-[350px] sm:w-[450px]',
         isStudentFocused && 'ring-2 ring-primary ring-offset-2 shadow-xl'
       )}
       onClick={() => setDataEntryFocusedStudentSlotIndex(slotIndex)}
@@ -137,7 +137,7 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
       </CardHeader>
       {/* The scroll area's content wrapper is display: table by default, which lets wide content (e.g. with larger
           text on iPad) stretch past the card and get cut off; display: block keeps it to the card's width. */}
-      <ScrollArea className="h-[730px] [&_[data-radix-scroll-area-viewport]>div]:!block">
+      <ScrollArea className="flex-1 min-h-0 [&_[data-radix-scroll-area-viewport]>div]:!block">
         <CardContent className="p-3 space-y-3">
           <div>
             <Label htmlFor={`activity-${student.id}`}>Activity</Label>
