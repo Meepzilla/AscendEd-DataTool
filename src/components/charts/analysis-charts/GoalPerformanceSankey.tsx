@@ -4,6 +4,7 @@
 import React, { useMemo } from 'react';
 import type { Goal, SessionData } from '@/lib/types';
 import { goalResponses } from '@/lib/goal-measures';
+import { captureTypeOf } from '@/lib/goal-constants';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Sankey, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { Workflow } from 'lucide-react';
@@ -30,7 +31,7 @@ const transformDataForSankeyChart = (sessions: SessionData[], studentActiveGoals
       if (!originalGoal || originalGoal.isArchived) return;
 
       // Only trial-based goals have correct / incorrect / approximate responses to show here.
-      const responses = goalResponses(goalDataEntry.goalType, goalDataEntry.data || {});
+      const responses = goalResponses(captureTypeOf(originalGoal), goalDataEntry.data || {});
       const currentCorrect = responses?.correct ?? 0;
       const currentIncorrect = responses?.incorrect ?? 0;
       const currentApproximate = responses?.approximate ?? 0;

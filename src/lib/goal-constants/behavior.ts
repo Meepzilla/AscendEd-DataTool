@@ -92,9 +92,17 @@ export const BEHAVIOR_FIELDS: Record<string, Record<string, any>> = {
   BEHAVIOR_LATENCY: { latencies: [], cueGivenAt: null, averageSeconds: null, trialCount: 0, notes: '' },
 };
 
+/**
+ * The type a goal's data is entered and measured as: its data capture type when one is set (a goal can be
+ * entered with another type's inputs), otherwise its own type.
+ */
+export function captureTypeOf(goal: { type: string; dataCaptureType?: string }): GoalType {
+  return (goal.dataCaptureType || goal.type) as GoalType;
+}
+
 /** Behavior goals usually aim to reduce something; other goal types aim to increase. */
-export function goalDirection(goal: { type: string; targetDirection?: TargetDirection }): TargetDirection {
-  return goal.targetDirection ?? (BEHAVIOR_GOAL_TYPES.includes(goal.type as GoalType) ? 'decrease' : 'increase');
+export function goalDirection(goal: { type: string; dataCaptureType?: string; targetDirection?: TargetDirection }): TargetDirection {
+  return goal.targetDirection ?? (BEHAVIOR_GOAL_TYPES.includes(captureTypeOf(goal)) ? 'decrease' : 'increase');
 }
 
 export function summarizeFrequency(data: Record<string, any> = {}) {
