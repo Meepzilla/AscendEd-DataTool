@@ -3,6 +3,7 @@
 
 import React, { useMemo } from 'react';
 import type { Goal, SessionData, PromptType, GoalType, TrialStatus } from '@/lib/types';
+import { scoreStory, summarizeCommunicationFunctions } from '@/lib/goal-constants';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Sankey, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { Workflow } from 'lucide-react';
@@ -75,6 +76,18 @@ const transformDataForSankeyChart = (sessions: SessionData[], studentActiveGoals
                 currentApproximate = data.trials.filter((t: TrialStatus) => t === 'approximate').length;
             }
             break;
+        case 'STORY_CHAMPS': {
+            const story = scoreStory(data);
+            currentCorrect = story.points;
+            currentIncorrect = story.maxPoints - story.points;
+            break;
+        }
+        case 'COMMUNICATION_FUNCTIONS': {
+            const summary = summarizeCommunicationFunctions(data);
+            currentCorrect = summary.spontaneous;
+            currentApproximate = summary.prompted;
+            break;
+        }
       }
       
       const totalOpportunities = currentCorrect + currentIncorrect + currentApproximate;
