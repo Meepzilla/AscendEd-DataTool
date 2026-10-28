@@ -21,13 +21,16 @@ export function goalResponses(type: string, data: Record<string, any> = {}): { c
   switch (type) {
     case 'ARTICULATION':
     case 'AAC':
-      return { correct: n(data.correct), incorrect: n(data.incorrect), approximate: n(data.approximate) };
     case 'LANGUAGE_COMPREHENSION':
-      return { correct: n(data.questionsCorrect), incorrect: n(data.questionsIncorrect), approximate: n(data.approximate) };
     case 'LANGUAGE_EXPRESSION':
-      return { correct: n(data.successfulResponses), incorrect: n(data.unsuccessfulResponses), approximate: n(data.approximate) };
     case 'PHONOLOGICAL_PROCESSES':
-      return { correct: n(data.correctProductions), incorrect: n(data.incorrectProductions), approximate: n(data.approximate) };
+      // These types name their counts differently; a goal can also be entered with another type's
+      // inputs (its data capture type), so any of the names is accepted.
+      return {
+        correct: n(data.correct || data.questionsCorrect || data.successfulResponses || data.correctProductions),
+        incorrect: n(data.incorrect || data.questionsIncorrect || data.unsuccessfulResponses || data.incorrectProductions),
+        approximate: n(data.approximate),
+      };
     case 'SEQUENCED_TRIALS':
       return { correct: n(data.successfulAttempts), incorrect: n(data.failedAttempts), approximate: n(data.approximate) };
     case 'FEEDING_SWALLOWING':

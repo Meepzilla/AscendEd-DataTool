@@ -4,7 +4,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, Trash2, LayoutGrid, Minimize2, UserX, UserPlus, ArrowRightLeft, Lightbulb, Download, ListPlus, Workflow, Shuffle, CheckSquare, ListChecks, DatabaseZap, UserSearch, Upload, Sparkles, BrainCircuit, PanelLeft, ArrowLeft, MessagesSquare, BookOpen } from 'lucide-react';
+import { RotateCcw, ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, Trash2, LayoutGrid, Minimize2, UserX, UserPlus, ArrowRightLeft, Lightbulb, Download, ListPlus, Workflow, Shuffle, CheckSquare, ListChecks, DatabaseZap, UserSearch, Upload, Sparkles, BrainCircuit, PanelLeft, ArrowLeft, MessagesSquare, BookOpen } from 'lucide-react';
 import { APP_NAME } from '@/lib/appConstants';
 
 interface ChangelogEntry {
@@ -17,6 +17,20 @@ interface ChangelogEntry {
 }
 
 const changelogEntries: ChangelogEntry[] = [
+  {
+    date: '2026-10-28',
+    title: 'Fixed: Editing Sessions and Report Totals',
+    description: 'Editing a saved session no longer shows "Application error". Reports\' Total Opportunities, Total Correct, Total Incorrect and accuracy now count only correct, incorrect and approximate responses from trial-based goals; Story Champs points, fluency syllables and communication function uses were being added as opportunities and errors (including for goals not worked on in a session). Those goals are reported on their own Goal by Goal cards.',
+    type: 'fix',
+    icon: Bug,
+  },
+  {
+    date: '2026-10-28',
+    title: 'Reset Time to Now',
+    description: 'Data Entry has a Reset Time to Now button next to the session times. It sets the date to today, the start time to now and the end time to 30 minutes later, for starting the next session after a break.',
+    type: 'improvement',
+    icon: RotateCcw,
+  },
   {
     date: '2026-10-28',
     title: 'Data Entry Keeps Unsaved Work',
