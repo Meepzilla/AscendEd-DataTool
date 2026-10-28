@@ -6,7 +6,7 @@ import type { GoalTemplate } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { PlusCircle, Edit, Trash2, Sparkles, Info, Loader2, BrainCircuit, Archive, ArchiveRestore } from 'lucide-react';
-import { formatDate, formatGoalTarget } from '@/lib/helpers';
+import { formatDate, formatGoalTarget, goalTypeLabel } from '@/lib/helpers';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -307,7 +307,7 @@ export default function GoalTemplatesPage() {
                       </div>
                       <div className="mt-1 flex flex-wrap gap-1">
                         <Badge variant="secondary" className="w-fit">
-                          {template.type === 'AAC' ? 'AAC' : template.type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+                          {goalTypeLabel(template.type)}
                         </Badge>
                         {template.category && <Badge variant="outline" className="w-fit">{template.category}</Badge>}
                       </div>
@@ -326,7 +326,7 @@ export default function GoalTemplatesPage() {
                        {template.sessionTargetValue !== undefined && (
                           <div>
                               <p className="font-medium text-muted-foreground">Session Target:</p>
-                              <p className="text-foreground">{formatGoalTarget(template.type, template.sessionTargetValue)}</p>
+                              <p className="text-foreground">{formatGoalTarget(template.type, template.sessionTargetValue, template.targetDirection)}</p>
                           </div>
                       )}
                     </CardContent>

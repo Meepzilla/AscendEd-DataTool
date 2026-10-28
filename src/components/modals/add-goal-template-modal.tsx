@@ -19,6 +19,8 @@ import { Sparkles, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useErrorLog } from '@/hooks/use-error-log';
 import { AI_ENABLED } from '@/lib/features';
+import TargetDirectionField from './TargetDirectionField';
+import { goalTypeLabel } from '@/lib/helpers';
 
 type AddGoalTemplateFormData = z.infer<typeof GoalTemplateSchema>;
 
@@ -150,7 +152,7 @@ export default function AddGoalTemplateModal() {
                     <SelectContent>
                       {sortedGoalTypes.map(([key, value]) => (
                         <SelectItem key={key} value={value}>
-                          {value === 'AAC' ? 'AAC' : value.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+                          {goalTypeLabel(value)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -174,7 +176,7 @@ export default function AddGoalTemplateModal() {
                     <SelectContent>
                       {sortedDataCaptureTypes.map((type) => (
                         <SelectItem key={type} value={type}>
-                          {type === 'AAC' ? 'AAC' : type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+                          {goalTypeLabel(type)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -235,6 +237,8 @@ export default function AddGoalTemplateModal() {
               </FormItem>
             )}
           />
+
+          <TargetDirectionField control={form.control} goalType={form.watch('dataCaptureType') || form.watch('type')} />
 
           <FormField
             control={form.control}

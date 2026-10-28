@@ -11,12 +11,14 @@ import { Slider } from '@/components/ui/slider';
 import { PROMPT_TYPES, PROMPT_COLORS, PROMPT_ABBREVIATIONS, PROMPT_HOTKEY_MAP } from '@/lib/promptConstants';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { formatGoalTarget } from '@/lib/helpers';
+import { formatGoalTarget, goalTypeLabel } from '@/lib/helpers';
 import { TrendingUp, ArrowUp, ArrowDown, Plus, Minus, ArchiveIcon, Pin, Check, X, CircleHelp, RotateCcw, Undo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useConfetti } from '@/hooks/use-confetti';
 import { useLongPress, longPressStyle } from '@/hooks/use-long-press';
+import TallyButton from './TallyButton';
+import { FrequencyInput, DurationInput, AbcInput } from './behavior-inputs';
 import {
   COMMUNICATION_FUNCTIONS, summarizeCommunicationFunctions,
   STORY_PARTS, STORY_PART_SCORE_LABELS, STORY_LINKING_WORDS, linkingWordField, scoreStory,
@@ -816,6 +818,21 @@ export default function GoalDataInputComponent({
             </FormItem>
           </>
         );
+      case 'BEHAVIOR_FREQUENCY':
+      case 'BEHAVIOR_DURATION':
+      case 'BEHAVIOR_ABC': {
+        const behaviorProps = {
+          data,
+          // Several fields at once: handleChange treats an object as the goal's whole data.
+          update: (fields: Record<string, any>) => handleChange(Object.keys(fields)[0], { ...data, ...fields }),
+          interact: handleInteraction,
+          disabled: isArchived,
+          isLocked,
+        };
+        if (captureType === 'BEHAVIOR_FREQUENCY') return <FrequencyInput {...behaviorProps} />;
+        if (captureType === 'BEHAVIOR_DURATION') return <DurationInput {...behaviorProps} />;
+        return <AbcInput {...behaviorProps} />;
+      }
       default:
         return <p className="text-muted-foreground text-xs">No specific data fields for this goal type.</p>;
     }
@@ -859,7 +876,7 @@ export default function GoalDataInputComponent({
                     <div className="flex justify-between items-start">
                         <span className="whitespace-normal break-words mr-1">{goal.name}</span>
                         <Badge variant="outline" className="whitespace-nowrap text-xs px-1.5 py-0.5 shrink-0">
-                            {goal.type === 'AAC' ? 'AAC' : goal.type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+                            {goalTypeLabel(goal.type)}
                         </Badge>
                     </div>
                 </CardTitle>
@@ -872,7 +889,7 @@ export default function GoalDataInputComponent({
                   {goal.sessionTargetValue !== undefined && (
                     <div className="text-xs text-muted-foreground flex items-center gap-0.5">
                         <TrendingUp className="h-3 w-3 text-green-600" />
-                        Target: {formatGoalTarget(goal.type, goal.sessionTargetValue)}
+                        Target: {formatGoalTarget(goal.type, goal.sessionTargetValue, goal.targetDirection)}
                     </div>
                   )}
                 </div>
@@ -938,37 +955,6 @@ const PromptCounterButton: React.FC<PromptCounterButtonProps> = ({ promptType, c
       disabled={disabled}
     >
       {PROMPT_ABBREVIATIONS[promptType]}: {count}
-    </Button>
-  );
-};
-
-interface TallyButtonProps {
-  label: string;
-  count: number;
-  title: string;
-  className?: string;
-  disabled?: boolean;
-  onIncrement: (e: React.SyntheticEvent<HTMLButtonElement>) => void;
-  onDecrement: (e: React.SyntheticEvent<HTMLButtonElement>) => void;
-}
-
-// A counter button: tap/click adds one; press and hold (touch) or right-click (mouse) removes one.
-const TallyButton: React.FC<TallyButtonProps> = ({ label, count, title, className, disabled, onIncrement, onDecrement }) => {
-  const longPressHandlers = useLongPress<HTMLButtonElement>(onDecrement);
-  return (
-    <Button
-      type="button"
-      variant="outline"
-      size="sm"
-      className={cn("h-7 min-w-[3.25rem] px-2 text-xs justify-center touch-manipulation", className)}
-      style={longPressStyle}
-      onClick={onIncrement}
-      {...longPressHandlers}
-      title={`${title}: tap or click to add one; press and hold, or right-click, to remove one.`}
-      aria-label={`${title}: ${count}`}
-      disabled={disabled}
-    >
-      {label}: {count}
     </Button>
   );
 };
