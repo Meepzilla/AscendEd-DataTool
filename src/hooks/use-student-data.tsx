@@ -11,6 +11,7 @@ import { DEFAULT_GOAL_TEMPLATES, applyDefaultTemplateUpdates } from '@/lib/goal-
 import { generateUUID } from '@/lib/helpers';
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 import { createBackup, mergeBackupData, type AppBackup, type RestoreMode, type RestoreSummary } from '@/lib/backup';
+import { loadAbcLists, loadCustomAbcLists, mergeAbcLists, saveAbcLists } from '@/lib/abc-lists';
 
 const LOCAL_STORAGE_STUDENTS_BASE_KEY = 'ascended_students_v2';
 const LOCAL_STORAGE_GOAL_TEMPLATES_BASE_KEY = 'ascended_goal_templates_v2';
@@ -223,7 +224,10 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return { newCount: newSessions.length, duplicateCount: 0 };
   }, [currentUser, sessions, sessionsKey, saveToLocal]);
 
-  const exportBackup = useCallback(() => createBackup({ students, goalTemplates, sessions }), [students, goalTemplates, sessions]);
+  const exportBackup = useCallback(
+    () => createBackup({ students, goalTemplates, sessions }, { abcLists: loadCustomAbcLists() ?? undefined }),
+    [students, goalTemplates, sessions],
+  );
 
   /**
    * Restores a backup. 'replace' swaps all data on this device for the backup's; 'merge' adds the
@@ -252,6 +256,8 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     saveToLocal(studentsKey, nextStudents);
     saveToLocal(templatesKey, nextTemplates);
     saveToLocal(sessionsKey, nextSessions);
+    const abcLists = backup.settings?.abcLists;
+    if (abcLists) saveAbcLists(mode === 'replace' ? abcLists : mergeAbcLists(loadAbcLists(), abcLists));
     return summary;
   }, [currentUser, students, goalTemplates, sessions, studentsKey, templatesKey, sessionsKey, saveToLocal]);
 

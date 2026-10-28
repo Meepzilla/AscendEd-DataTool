@@ -3,7 +3,7 @@
 
 import React, { useState, useMemo, lazy, Suspense } from 'react';
 import type { Student, SessionData, Goal, PromptType, GoalType, TrialStatus } from '@/lib/types';
-import { scoreStory, summarizeCommunicationFunctions } from '@/lib/goal-constants';
+import { scoreStory, summarizeCommunicationFunctions, BEHAVIOR_GOAL_TYPES } from '@/lib/goal-constants';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertTriangle } from 'lucide-react';
@@ -20,6 +20,7 @@ const AiSummary = lazy(() => import('./analysis-charts/AiSummary'));
 const SyllableFluencyChart = lazy(() => import('./analysis-charts/SyllableFluencyChart'));
 const DysfluencyTypesChart = lazy(() => import('./analysis-charts/DysfluencyTypesChart'));
 const DataSummary = lazy(() => import('./analysis-charts/DataSummary'));
+const BehaviorCharts = lazy(() => import('./analysis-charts/BehaviorCharts'));
 
 
 // Helper to transform session data for charts
@@ -167,6 +168,13 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, select
   const activeStudentGoals = useMemo(() => selectedStudent?.goals.filter(g => !g.isArchived) || [], [selectedStudent]);
   const chartData = useMemo(() => transformSessionDataForChart(studentSessions, selectedStudent?.goals || [], selectedGoalId), [studentSessions, selectedStudent?.goals, selectedGoalId]);
   
+  // Behavior goals are charted by their own measures (counts, minutes, %, seconds) rather than accuracy.
+  const behaviorGoals = useMemo(
+    () => activeStudentGoals.filter(g => BEHAVIOR_GOAL_TYPES.includes(g.type) && (!selectedGoalId || g.id === selectedGoalId)),
+    [activeStudentGoals, selectedGoalId],
+  );
+  const behaviorOnly = behaviorGoals.length > 0 && (!!selectedGoalId || behaviorGoals.length === activeStudentGoals.length);
+
   const hasPromptUsageData = useMemo(() => {
     return chartData.some(session => Object.keys(session).some(key => key !== 'totalPrompts' && key !== 'Independent' && session[key as keyof typeof session] > 0));
   }, [chartData]);
@@ -187,6 +195,23 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, select
       <Card><CardContent className="p-8 text-center text-muted-foreground">
         <AlertTriangle className="h-10 w-10 mx-auto mb-3 text-amber-500"/><p className="text-lg">No session data found for {selectedStudent?.name || 'the selected student'} within the selected date range.</p><p>Try adjusting the filters or record new session data.</p>
       </CardContent></Card>
+    );
+  }
+
+  const behaviorCharts = behaviorGoals.length > 0 && (
+    <Suspense fallback={<ChartSuspenseFallback />}>
+      <BehaviorCharts studentSessions={studentSessions} behaviorGoals={behaviorGoals} />
+    </Suspense>
+  );
+
+  if (behaviorOnly) {
+    return (
+      <div className="space-y-6">
+        <Suspense fallback={<ChartSuspenseFallback />}>
+          {AI_ENABLED && <AiSummary studentSessions={studentSessions} selectedStudent={selectedStudent} selectedGoalId={selectedGoalId} chartData={chartData} />}
+        </Suspense>
+        {behaviorCharts}
+      </div>
     );
   }
 
@@ -233,6 +258,7 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, select
         </Suspense>
        
       </div>
+      {behaviorCharts}
     </div>
   );
 };

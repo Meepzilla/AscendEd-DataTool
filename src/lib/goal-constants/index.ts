@@ -14,7 +14,7 @@ import { AAC_FIELDS, AAC_TEMPLATES } from './aac';
 import { COGNITIVE_FIELDS, COGNITIVE_TEMPLATES } from './cognitive';
 import { COMMUNICATION_FIELDS, COMMUNICATION_TEMPLATES } from './communication';
 import { STORY_CHAMPS_FIELDS, STORY_CHAMPS_TEMPLATES } from './story-champs';
-import { BEHAVIOR_FIELDS, BEHAVIOR_TEMPLATES } from './behavior';
+import { BEHAVIOR_FIELDS, BEHAVIOR_GOAL_TYPES, BEHAVIOR_TEMPLATES } from './behavior';
 // The SLP goal bank, generated from the goal bank CSV by scripts/import-goal-bank.py.
 import goalBank from './goal-bank.json';
 // Goal bank templates whose type changed since an earlier import (written by the importer).
@@ -99,4 +99,4 @@ export function applyDefaultTemplateUpdates<T extends GoalTemplate>(templates: T
 }
 
 // Goal types that record prompting in their own fields, so the general prompt level counters are hidden.
-export const GOAL_TYPES_WITHOUT_PROMPT_COUNTERS: GoalType[] = ['COMMUNICATION_FUNCTIONS', 'STORY_CHAMPS', 'BEHAVIOR_FREQUENCY', 'BEHAVIOR_DURATION', 'BEHAVIOR_ABC'];
+export const GOAL_TYPES_WITHOUT_PROMPT_COUNTERS: GoalType[] = ['COMMUNICATION_FUNCTIONS', 'STORY_CHAMPS', ...BEHAVIOR_GOAL_TYPES];
