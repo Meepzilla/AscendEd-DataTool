@@ -100,6 +100,12 @@ export default function SettingsPage() {
       </Card>
 
       <AbcListsCard />
+
+      {/* Which version this device is running (it updates when the app is reopened after a new release). */}
+      <p className="text-center text-xs text-muted-foreground">
+        AscendEd version {process.env.NEXT_PUBLIC_APP_VERSION}
+        {process.env.NEXT_PUBLIC_BUILD_TIME && ` · built ${new Date(process.env.NEXT_PUBLIC_BUILD_TIME).toLocaleString()}`}
+      </p>
     </div>
   );
 }
