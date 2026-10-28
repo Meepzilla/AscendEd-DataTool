@@ -133,7 +133,7 @@ export default function ManageSessionsPage() {
 
           <ScrollArea className="h-[500px] border rounded-md"> {/* Adjust height as needed */}
             <Table>
-              <TableHeader className="sticky top-0 bg-muted/80 backdrop-blur-sm">
+              <TableHeader className="sticky top-0 bg-muted">
                 <TableRow>
                   <TableHead>Student</TableHead>
                   <TableHead>Date</TableHead>
