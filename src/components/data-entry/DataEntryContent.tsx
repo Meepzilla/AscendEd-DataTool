@@ -33,8 +33,6 @@ const DEFAULT_SESSION_MINUTES = 30;
 // Student cards fill the screen height below the header card, down to the save bar.
 const MIN_STUDENT_CARD_HEIGHT = 420;
 const CARD_TO_SAVE_BAR = 32; // the cards list's bottom padding plus room for its horizontal scrollbar
-// Space kept below the save bar, so the host's corner badge (if it shows) doesn't cover the Save buttons.
-const SCREEN_BOTTOM_CLEARANCE = 48;
 
 export default function DataEntryContent() {
   const {
@@ -644,7 +642,8 @@ export default function DataEntryContent() {
       // the bar itself. (The bar's own position isn't used: it is sticky, which can hide an overflow.)
       const cardTop = (card.getBoundingClientRect().top - document.body.getBoundingClientRect().top) / ratio;
       const screenBottom = probe.getBoundingClientRect().height / ratio;
-      const available = screenBottom - cardTop - CARD_TO_SAVE_BAR - saveBar.offsetHeight - SCREEN_BOTTOM_CLEARANCE;
+      // The save bar's height includes the space it keeps clear for the host's corner badge.
+      const available = screenBottom - cardTop - CARD_TO_SAVE_BAR - saveBar.offsetHeight;
       root.style.setProperty('--student-card-height', `${Math.max(MIN_STUDENT_CARD_HEIGHT, Math.floor(available))}px`);
     };
     update();
@@ -765,7 +764,7 @@ export default function DataEntryContent() {
         </div>
         
         {selectedStudentIds.length > 0 && (
-            <div ref={saveBarRef} className="sticky bottom-0 left-0 right-0 z-10 bg-background mt-auto">
+            <div ref={saveBarRef} className="sticky bottom-0 left-0 right-0 z-10 bg-background mt-auto pb-[var(--host-badge-clearance)]">
                 <div className="flex justify-between items-center gap-2 p-2 border-t">
                     <div className="hidden sm:block">
                       <TouchControls
