@@ -3,6 +3,7 @@
 
 import React, { useState, useMemo, lazy, Suspense } from 'react';
 import type { Student, SessionData, Goal, PromptType, GoalType, TrialStatus } from '@/lib/types';
+import { scoreStory, summarizeCommunicationFunctions } from '@/lib/goal-constants';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertTriangle } from 'lucide-react';
@@ -95,6 +96,20 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
             currentGoalCorrect = Number(data.trialsAccepted) || 0;
             currentGoalIncorrect = Number(data.trialsRefused) || 0;
             break;
+        case 'STORY_CHAMPS': {
+            // Story grammar points earned vs. missed.
+            const story = scoreStory(data);
+            currentGoalCorrect = story.points;
+            currentGoalIncorrect = story.maxPoints - story.points;
+            break;
+        }
+        case 'COMMUNICATION_FUNCTIONS': {
+            // Spontaneous uses count as correct, prompted uses as approximate.
+            const summary = summarizeCommunicationFunctions(data);
+            currentGoalCorrect = summary.spontaneous;
+            currentGoalApproximate = summary.prompted;
+            break;
+        }
       }
       
       day.totalCorrect += currentGoalCorrect;

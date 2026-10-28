@@ -7,7 +7,7 @@ import { useToast as useShadcnToast } from "@/hooks/use-toast";
 import { useErrorLog } from './use-error-log';
 import type { Student, Goal, GoalTemplate, SessionData, SessionGoalData, User } from '@/lib/types';
 import { useModalState } from './use-modal-state';
-import { DEFAULT_GOAL_TEMPLATES } from '@/lib/goal-constants';
+import { DEFAULT_GOAL_TEMPLATES, applyDefaultTemplateUpdates } from '@/lib/goal-constants';
 import { generateUUID } from '@/lib/helpers';
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 import { createBackup, mergeBackupData, type AppBackup, type RestoreMode, type RestoreSummary } from '@/lib/backup';
@@ -277,13 +277,15 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const localStudents = getFromLocalStorage(studentsKey, []);
     setStudents(localStudents.sort((a: Student, b: Student) => a.name.localeCompare(b.name)));
     const rawTemplates = getFromLocalStorage(templatesKey, []);
-    const localTemplates = rawTemplates.map((t: any) => ({...t, createdAt: new Date(t.createdAt)}));
+    const { templates: localTemplates, changed: templatesUpdated } = applyDefaultTemplateUpdates<GoalTemplate>(
+        rawTemplates.map((t: any) => ({...t, createdAt: new Date(t.createdAt)}))
+    );
     const existingDefaultNames = new Set(localTemplates.filter((t: GoalTemplate) => t.isDefault).map((t: GoalTemplate) => t.name));
     const missingDefaultTemplates = DEFAULT_GOAL_TEMPLATES.filter(
         defaultTemplate => !existingDefaultNames.has(defaultTemplate.name)
     ).map(t => ({ ...t, id: generateUUID(), createdAt: new Date(), userId: currentUser?.uid || 'local-user' }));
 
-    if (missingDefaultTemplates.length > 0) {
+    if (missingDefaultTemplates.length > 0 || templatesUpdated) {
         const updatedTemplates = [...localTemplates, ...missingDefaultTemplates];
         setGoalTemplates(updatedTemplates.sort((a: GoalTemplate, b: GoalTemplate) => a.name.localeCompare(b.name)));
         saveToLocal(templatesKey, updatedTemplates);

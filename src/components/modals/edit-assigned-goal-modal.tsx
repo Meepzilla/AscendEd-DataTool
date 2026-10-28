@@ -172,7 +172,7 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
                   />
                 </FormControl>
                 <FormDescription>
-                  Target percentage (0-100), or a specific rating for qualitative goals.
+                  Target percentage (0-100) for accuracy/fluency goals, a rating for qualitative goals (e.g. 4 out of 5), or the number of different functions for communication functions goals.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
