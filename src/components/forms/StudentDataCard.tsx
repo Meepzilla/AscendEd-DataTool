@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
+import { AI_ENABLED } from '@/lib/features';
 
 const GoalDataInputComponent = lazy(() => import('@/components/forms/goal-data-input'));
 
@@ -228,26 +229,28 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
               disabled={isStudentAccessLocked}
             />
           </div>
-          <div className="border-t pt-3 space-y-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleLocalAiFetch(student.id)}
-              disabled={isAiLoading[student.id] || allStudentGoals.filter(g => !g.isArchived).length === 0}
-              className="w-full"
-            >
-              {isAiLoading[student.id] ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <Lightbulb className="mr-2 h-4 w-4" />}
-              Get AI Activity Suggestions
-            </Button>
-            {dataEntryAiActivitySuggestions[student.id] && dataEntryAiActivitySuggestions[student.id].length > 0 && (
-              <div className="p-2 border rounded-md bg-accent/30">
-                <h4 className="text-xs font-semibold mb-1">Suggested Activities:</h4>
-                <ul className="list-disc list-inside text-xs space-y-0.5">
-                  {dataEntryAiActivitySuggestions[student.id].map((sugg, i) => <li key={i}>{sugg}</li>)}
-                </ul>
-              </div>
-            )}
-          </div>
+          {AI_ENABLED && (
+            <div className="border-t pt-3 space-y-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleLocalAiFetch(student.id)}
+                disabled={isAiLoading[student.id] || allStudentGoals.filter(g => !g.isArchived).length === 0}
+                className="w-full"
+              >
+                {isAiLoading[student.id] ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <Lightbulb className="mr-2 h-4 w-4" />}
+                Get AI Activity Suggestions
+              </Button>
+              {dataEntryAiActivitySuggestions[student.id] && dataEntryAiActivitySuggestions[student.id].length > 0 && (
+                <div className="p-2 border rounded-md bg-accent/30">
+                  <h4 className="text-xs font-semibold mb-1">Suggested Activities:</h4>
+                  <ul className="list-disc list-inside text-xs space-y-0.5">
+                    {dataEntryAiActivitySuggestions[student.id].map((sugg, i) => <li key={i}>{sugg}</li>)}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </ScrollArea>
     </Card>

@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useEffect, useState, lazy, Suspense } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useStudentData } from '@/hooks/use-student-data';
 import type { Student, Goal } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -24,9 +24,9 @@ import { cn } from '@/lib/utils';
 const ImportDataModal = lazy(() => import('@/components/modals/import-data-modal'));
 
 
-export default function StudentProfilePage() {
-  const params = useParams();
-  const studentIdFromParams = params.studentId as string | undefined;
+export default function StudentProfileView() {
+  const searchParams = useSearchParams();
+  const studentIdFromParams = searchParams.get('id') ?? undefined;
   const router = useRouter();
   const { toast } = useToast();
   

@@ -31,6 +31,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { useErrorLog } from '@/hooks/use-error-log';
 import { cn } from '@/lib/utils';
+import { AI_ENABLED } from '@/lib/features';
 
 type EditStudentFormData = z.infer<typeof StudentSchema>;
 
@@ -242,119 +243,123 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
             </Form>
           </div>
 
-          <Separator className="my-6" />
+          {AI_ENABLED && (
+            <>
+              <Separator className="my-6" />
 
-          {/* Create & Assign New Goal with AI Section */}
-          <div className="space-y-3">
-            <h3 className="text-lg font-medium border-b pb-2 mb-3 text-primary">Create & Assign New Goal with AI</h3>
-            <div>
-              <Label htmlFor="aiGoalName" className="text-sm">New Goal Name / Topic</Label>
-              <Input
-                id="aiGoalName"
-                value={aiGoalName}
-                onChange={(e) => setAiGoalName(e.target.value)}
-                placeholder="e.g., Articulate /k/ in sentences"
-                disabled={dataLoading || isAiGenerating || isAssigningAiGoal}
-                className="h-9"
-              />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <div>
-                <Label htmlFor="aiGoalTypeSelect" className="text-sm">Clinical Category</Label>
-                <Select
-                  value={aiGoalType}
-                  onValueChange={(value) => setAiGoalType(value as GoalType)}
-                  disabled={dataLoading || isAiGenerating || isAssigningAiGoal}
+              {/* Create & Assign New Goal with AI Section */}
+              <div className="space-y-3">
+                <h3 className="text-lg font-medium border-b pb-2 mb-3 text-primary">Create & Assign New Goal with AI</h3>
+                <div>
+                  <Label htmlFor="aiGoalName" className="text-sm">New Goal Name / Topic</Label>
+                  <Input
+                    id="aiGoalName"
+                    value={aiGoalName}
+                    onChange={(e) => setAiGoalName(e.target.value)}
+                    placeholder="e.g., Articulate /k/ in sentences"
+                    disabled={dataLoading || isAiGenerating || isAssigningAiGoal}
+                    className="h-9"
+                  />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <Label htmlFor="aiGoalTypeSelect" className="text-sm">Clinical Category</Label>
+                    <Select
+                      value={aiGoalType}
+                      onValueChange={(value) => setAiGoalType(value as GoalType)}
+                      disabled={dataLoading || isAiGenerating || isAssigningAiGoal}
+                    >
+                      <SelectTrigger id="aiGoalTypeSelect" className="h-9">
+                        <SelectValue placeholder="Select goal type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.values(GOAL_TYPES).map(type => (
+                          <SelectItem key={type} value={type}>
+                            {type === 'AAC' ? 'AAC' : type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                   <div>
+                    <Label htmlFor="aiDataCaptureTypeSelect" className="text-sm">Data Capture Method</Label>
+                    <Select
+                      value={aiDataCaptureType}
+                      onValueChange={(value) => setAiDataCaptureType(value as GoalType)}
+                      disabled={dataLoading || isAiGenerating || isAssigningAiGoal}
+                    >
+                      <SelectTrigger id="aiDataCaptureTypeSelect" className="h-9">
+                        <SelectValue placeholder="Select capture method" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {sortedDataCaptureTypes.map(type => (
+                          <SelectItem key={type} value={type}>
+                            {type === 'AAC' ? 'AAC' : type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="aiGoalPromptText" className="text-sm">Brief Description/Prompt for AI</Label>
+                  <Textarea
+                    id="aiGoalPromptText"
+                    value={aiGoalPrompt}
+                    onChange={(e) => setAiGoalPrompt(e.target.value)}
+                    placeholder="E.g., Student will correctly use past tense -ed verbs in spontaneous sentences."
+                    rows={2}
+                    disabled={dataLoading || isAiGenerating || isAssigningAiGoal}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleGenerateAiSmartGoal}
+                  disabled={isAiGenerating || !aiGoalPrompt.trim() || dataLoading || isAssigningAiGoal}
+                  className="w-full sm:w-auto h-9"
                 >
-                  <SelectTrigger id="aiGoalTypeSelect" className="h-9">
-                    <SelectValue placeholder="Select goal type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.values(GOAL_TYPES).map(type => (
-                      <SelectItem key={type} value={type}>
-                        {type === 'AAC' ? 'AAC' : type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-               <div>
-                <Label htmlFor="aiDataCaptureTypeSelect" className="text-sm">Data Capture Method</Label>
-                <Select
-                  value={aiDataCaptureType}
-                  onValueChange={(value) => setAiDataCaptureType(value as GoalType)}
-                  disabled={dataLoading || isAiGenerating || isAssigningAiGoal}
+                  {isAiGenerating ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
+                  Generate SMART Goal Text
+                </Button>
+                {aiGeneratedSmartGoal && (
+                  <div>
+                    <Label htmlFor="aiGeneratedSmartGoalText" className="text-sm">Generated SMART Goal (Editable)</Label>
+                    <Textarea
+                      id="aiGeneratedSmartGoalText"
+                      value={aiGeneratedSmartGoal}
+                      onChange={(e) => setAiGeneratedSmartGoal(e.target.value)}
+                      rows={3}
+                      className="bg-muted/40"
+                      disabled={dataLoading || isAiGenerating || isAssigningAiGoal}
+                    />
+                  </div>
+                )}
+                <div>
+                  <Label htmlFor="aiGoalSessionTargetInput" className="text-sm">Session Target (Optional %)</Label>
+                  <Input
+                    id="aiGoalSessionTargetInput"
+                    type="number"
+                    value={aiGoalSessionTarget ?? ''}
+                    onChange={(e) => setAiGoalSessionTarget(e.target.value === '' ? undefined : Number(e.target.value))}
+                    placeholder="e.g., 80"
+                    min="0" max="100"
+                    disabled={dataLoading || isAiGenerating || isAssigningAiGoal}
+                    className="h-9"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  onClick={handleAssignAiGeneratedGoal}
+                  disabled={!aiGoalName.trim() || !aiGeneratedSmartGoal.trim() || dataLoading || isAiGenerating || isAssigningAiGoal}
+                  className="w-full sm:w-auto h-9"
                 >
-                  <SelectTrigger id="aiDataCaptureTypeSelect" className="h-9">
-                    <SelectValue placeholder="Select capture method" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sortedDataCaptureTypes.map(type => (
-                      <SelectItem key={type} value={type}>
-                        {type === 'AAC' ? 'AAC' : type.replace(/_/g, ' ').toLocaleLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  {isAssigningAiGoal ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <PlusCircleIcon className="h-4 w-4 mr-2" />}
+                  Assign AI Generated Goal
+                </Button>
               </div>
-            </div>
-            <div>
-              <Label htmlFor="aiGoalPromptText" className="text-sm">Brief Description/Prompt for AI</Label>
-              <Textarea
-                id="aiGoalPromptText"
-                value={aiGoalPrompt}
-                onChange={(e) => setAiGoalPrompt(e.target.value)}
-                placeholder="E.g., Student will correctly use past tense -ed verbs in spontaneous sentences."
-                rows={2}
-                disabled={dataLoading || isAiGenerating || isAssigningAiGoal}
-              />
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleGenerateAiSmartGoal}
-              disabled={isAiGenerating || !aiGoalPrompt.trim() || dataLoading || isAssigningAiGoal}
-              className="w-full sm:w-auto h-9"
-            >
-              {isAiGenerating ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
-              Generate SMART Goal Text
-            </Button>
-            {aiGeneratedSmartGoal && (
-              <div>
-                <Label htmlFor="aiGeneratedSmartGoalText" className="text-sm">Generated SMART Goal (Editable)</Label>
-                <Textarea
-                  id="aiGeneratedSmartGoalText"
-                  value={aiGeneratedSmartGoal}
-                  onChange={(e) => setAiGeneratedSmartGoal(e.target.value)}
-                  rows={3}
-                  className="bg-muted/40"
-                  disabled={dataLoading || isAiGenerating || isAssigningAiGoal}
-                />
-              </div>
-            )}
-            <div>
-              <Label htmlFor="aiGoalSessionTargetInput" className="text-sm">Session Target (Optional %)</Label>
-              <Input
-                id="aiGoalSessionTargetInput"
-                type="number"
-                value={aiGoalSessionTarget ?? ''}
-                onChange={(e) => setAiGoalSessionTarget(e.target.value === '' ? undefined : Number(e.target.value))}
-                placeholder="e.g., 80"
-                min="0" max="100"
-                disabled={dataLoading || isAiGenerating || isAssigningAiGoal}
-                className="h-9"
-              />
-            </div>
-            <Button
-              type="button"
-              onClick={handleAssignAiGeneratedGoal}
-              disabled={!aiGoalName.trim() || !aiGeneratedSmartGoal.trim() || dataLoading || isAiGenerating || isAssigningAiGoal}
-              className="w-full sm:w-auto h-9"
-            >
-              {isAssigningAiGoal ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <PlusCircleIcon className="h-4 w-4 mr-2" />}
-              Assign AI Generated Goal
-            </Button>
-          </div>
+            </>
+          )}
         </div>
 
         {/* Column 2: Manage Assigned Goals (Templates & Current) */}

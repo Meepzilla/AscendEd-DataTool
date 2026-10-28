@@ -40,6 +40,10 @@ export function formatTime(date: Date | string): string {
   });
 }
 
+export function studentProfilePath(studentId: string): string {
+  return `/student-profile/view?id=${encodeURIComponent(studentId)}`;
+}
+
 export function generateUUID(): string {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
     const r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);

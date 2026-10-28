@@ -10,7 +10,6 @@ import { useModalState } from './use-modal-state';
 import { DEFAULT_GOAL_TEMPLATES } from '@/lib/goal-constants';
 import { generateUUID } from '@/lib/helpers';
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
-import { getActivitySuggestions as getAiActivitySuggestions } from '@/ai/flows/activity-suggestions';
 
 const LOCAL_STORAGE_STUDENTS_BASE_KEY = 'ascended_students_v2';
 const LOCAL_STORAGE_GOAL_TEMPLATES_BASE_KEY = 'ascended_goal_templates_v2';

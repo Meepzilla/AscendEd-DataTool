@@ -14,6 +14,7 @@ import { findRelevantGoals, type FindRelevantGoalsOutput } from '@/ai/flows/sema
 import { useToast } from '@/hooks/use-toast';
 import { useErrorLog } from '@/hooks/use-error-log';
 import GoalTemplateFilters, { type GoalTemplateSortOrder, type GridSize } from '@/components/goal-templates/GoalTemplateFilters';
+import { AI_ENABLED } from '@/lib/features';
 
 // Lazy load modals
 const AddGoalTemplateModal = lazy(() => import('@/components/modals/add-goal-template-modal'));
@@ -42,7 +43,7 @@ export default function GoalTemplatesPage() {
   const [filterType, setFilterType] = useState<string>('ALL');
   const [gridSize, setGridSize] = useState<GridSize>('md');
   const [sortOrder, setSortOrder] = useState<GoalTemplateSortOrder>('date-desc');
-  const [isAiSearchEnabled, setIsAiSearchEnabled] = useState(true);
+  const [isAiSearchEnabled, setIsAiSearchEnabled] = useState(AI_ENABLED);
   const [isAiSearching, setIsAiSearching] = useState(false);
   const [rankedGoals, setRankedGoals] = useState<FindRelevantGoalsOutput['rankedGoals'] | null>(null);
   const [showArchived, setShowArchived] = useState(false);

@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { GOAL_TYPES } from '@/lib/goal-constants';
 import { ListFilter, Search, ArrowUpDown, Grid, BrainCircuit, Sparkles, Loader2, Archive } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { AI_ENABLED } from '@/lib/features';
 
 export type GoalTemplateSortOrder = 'relevance' | 'date-desc' | 'date-asc' | 'name-asc' | 'name-desc';
 export type GridSize = 'sm' | 'md' | 'lg';
@@ -117,16 +118,18 @@ const GoalTemplateFilters: React.FC<GoalTemplateFiltersProps> = ({
           <SelectItem value="lg">Large</SelectItem>
         </SelectContent>
       </Select>
-       <div className="flex items-center space-x-2 border p-2 rounded-md">
-        <Switch
-          id="ai-search-toggle"
-          checked={isAiSearchEnabled}
-          onCheckedChange={setIsAiSearchEnabled}
-        />
-        <Label htmlFor="ai-search-toggle" className="flex items-center gap-1.5 text-sm cursor-pointer">
-          <BrainCircuit className="h-4 w-4" /> AI Search
-        </Label>
-      </div>
+      {AI_ENABLED && (
+        <div className="flex items-center space-x-2 border p-2 rounded-md">
+          <Switch
+            id="ai-search-toggle"
+            checked={isAiSearchEnabled}
+            onCheckedChange={setIsAiSearchEnabled}
+          />
+          <Label htmlFor="ai-search-toggle" className="flex items-center gap-1.5 text-sm cursor-pointer">
+            <BrainCircuit className="h-4 w-4" /> AI Search
+          </Label>
+        </div>
+      )}
       <div className="flex items-center space-x-2 border p-2 rounded-md">
         <Switch
           id="show-archived-toggle"
