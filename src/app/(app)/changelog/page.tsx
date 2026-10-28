@@ -21,6 +21,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-28',
+    title: 'Fixed: Data Entry Hotkeys',
+    description: 'The data hotkeys (C, N, B, prompt keys D/V/G/P/F/I, and fluency B/R/H/J) erased the focused goal\'s data instead of adding to it; they now add one each press, even in quick succession. Alt (Option) shortcuts now work on Mac and iPad keyboards, Cmd+Enter saves like Ctrl+Enter, and Cmd/Ctrl+C no longer counts a correct response. On Discrete Trials goals C, N and B mark the next trial correct, incorrect or approximate, and on Behavior Frequency goals C adds an occurrence. Hotkeys follow each goal\'s data collection type and pause while a window is open.',
+    type: 'fix',
+    icon: KeyboardIcon,
+  },
+  {
+    date: '2026-10-28',
     title: 'Fixed: Reports Missing Some Goals\' Data',
     description: 'Goals entered with a different data collection type than their goal type (for example a language goal recorded as discrete trials) now show their data in Reports and the sidebar; they were being read as their goal type, so their sessions looked empty. Data Entry now also marks each goal you work on, so a rating left at 3 still counts as recorded.',
     type: 'fix',

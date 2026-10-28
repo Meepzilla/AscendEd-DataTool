@@ -73,7 +73,7 @@ export default function GoalDataInputComponent({
 
     // If a fluency dysfluency is incremented, also increment total syllables.
     const isIncrementing = value > (data[field] || 0);
-    if (goal.dataCaptureType === 'FLUENCY_SYLLABLE_STUTTER' && isIncrementing && ['stutteredSyllables', 'blocks', 'repetitions', 'interjections'].includes(field)) {
+    if ((goal.dataCaptureType || goal.type) === 'FLUENCY_SYLLABLE_STUTTER' && isIncrementing && ['stutteredSyllables', 'blocks', 'repetitions', 'interjections'].includes(field)) {
         const incrementAmount = value - (data[field] || 0);
         newData.totalSyllables = (newData.totalSyllables || 0) + incrementAmount;
     }
