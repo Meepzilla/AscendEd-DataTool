@@ -204,7 +204,7 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
       title={`Edit Student: ${currentStudent.name}`}
       size="3xl" 
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 [&>*]:min-w-0">
         {/* Column 1: Student Info & AI Goal Creation */}
         <div className="space-y-4">
           {/* Student Information Section */}
@@ -372,7 +372,7 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
             {currentStudent.goals.length === 0 ? (
               <p className="text-sm text-muted-foreground">No goals assigned yet.</p>
             ) : (
-              <ScrollArea className="h-60 border rounded-md p-2">
+              <ScrollArea className="h-60 border rounded-md p-2 [&_[data-radix-scroll-area-viewport]>div]:!block">
                 <ul className="space-y-1">
                   {currentStudent.goals.map(goal => (
                     <li key={goal.id} className="flex items-center p-1.5 bg-muted/50 rounded-md text-sm gap-2">
@@ -384,8 +384,8 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
                                 <XIcon className="h-4 w-4 text-destructive" />
                             </Button>
                         </div>
-                        <div className={cn("truncate flex-grow", goal.isArchived && "opacity-60")}>
-                            <span title={goal.name}>{goal.name}</span>
+                        <div className={cn("flex-grow min-w-0 break-words", goal.isArchived && "opacity-60")}>
+                            <span>{goal.name}</span>
                             <Badge variant="outline" className="ml-1">{goal.type}</Badge>
                             {goal.isArchived && <Badge variant="destructive" className="ml-1">Archived</Badge>}
                         </div>
@@ -422,13 +422,13 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
                 </SelectContent>
               </Select>
             </div>
-            <ScrollArea className="h-60 border rounded-md p-2">
+            <ScrollArea className="h-60 border rounded-md p-2 [&_[data-radix-scroll-area-viewport]>div]:!block">
               {filteredGoalTemplates.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">No matching templates found or all assigned.</p>
               ) : (
                 <ul className="space-y-1">
                   {filteredGoalTemplates.slice(0, TEMPLATE_PICKER_LIMIT).map(template => (
-                    <li key={template.id} className="flex items-center p-1.5 hover:bg-muted/50 rounded-md text-sm gap-2">
+                    <li key={template.id} className="flex items-start p-1.5 hover:bg-muted/50 rounded-md text-sm gap-2">
                       <Button 
                         variant="ghost" 
                         size="icon" 
@@ -438,8 +438,8 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
                       >
                         <PlusCircleIcon className="h-4 w-4 text-primary" />
                       </Button>
-                      <div className="truncate flex-grow min-w-0">
-                        <span title={template.name}>{template.name}</span>
+                      <div className="flex-grow min-w-0 break-words">
+                        <span>{template.name}</span>
                         <Badge variant="secondary" className="ml-2">{template.type}</Badge>
                         {template.category && <Badge variant="outline" className="ml-1">{template.category}</Badge>}
                       </div>
