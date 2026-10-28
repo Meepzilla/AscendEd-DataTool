@@ -133,7 +133,8 @@ body {
    can be found (here and in HostBadgeHider); in case it can't, anything clickable that is anchored to the
    bottom of the screen keeps this much space clear below it. */
 :root {
-  --host-badge-clearance: 48px;
+  --host-badge-clearance: 48px; /* its height, for things above it */
+  --host-badge-width: 260px; /* its width, for things beside it */
 }
 
 /* Hide the badge when it can be identified. */
