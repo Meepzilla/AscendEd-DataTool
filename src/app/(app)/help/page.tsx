@@ -146,7 +146,8 @@ export default function HelpPage() {
         </CardHeader>
         <CardContent className="space-y-3 text-muted-foreground">
             <p><strong className="text-foreground">Performance:</strong> The app now loads essential data first to be interactive quickly, while session history loads in the background.</p>
-            <p><strong className="text-foreground">Data Storage:</strong> All data is stored in your browser's local storage on this device. It is not synced to the cloud, so clearing browser data will remove it.</p>
+            <p><strong className="text-foreground">Data Storage:</strong> All data is stored on this device only. It is not synced to the cloud, so clearing browser data or removing the app will remove it.</p>
+            <p><strong className="text-foreground">Backup &amp; Restore:</strong> In Settings, use Back Up Now to save all data to a file (keep it in Files, Google Drive, or email it to yourself). Restore from Backup loads that file on this or another device, either adding to the data already there or replacing it. The dashboard reminds you when there is no backup from the last week.</p>
             <p><strong className="text-foreground">Error Log:</strong> If you encounter issues, check the Error Log (Alt+J or header icon) for recent application-level errors. For more detailed debugging, use your browser's developer console.</p>
             <p><strong className="text-foreground">AI Features:</strong> Make use of AI for SMART goal generation (in Goal Templates & Edit Student modal) and activity suggestions (in Data Entry) to enhance your planning.</p>
             <p><strong className="text-foreground">Ctrl+Enter:</strong> In many forms and on the Data Entry page, pressing Ctrl+Enter will act as a "confirm" or "save" action.</p>

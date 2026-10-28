@@ -10,6 +10,7 @@ import { useModalState } from './use-modal-state';
 import { DEFAULT_GOAL_TEMPLATES } from '@/lib/goal-constants';
 import { generateUUID } from '@/lib/helpers';
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
+import { createBackup, mergeBackupData, type AppBackup, type RestoreMode, type RestoreSummary } from '@/lib/backup';
 
 const LOCAL_STORAGE_STUDENTS_BASE_KEY = 'ascended_students_v2';
 const LOCAL_STORAGE_GOAL_TEMPLATES_BASE_KEY = 'ascended_goal_templates_v2';
@@ -60,6 +61,8 @@ interface StudentDataContextType {
   deleteSession: (sessionId: string) => Promise<void>;
   getSessionsForStudent: (studentId: string) => SessionData[];
   importSessions: (sessionsToImport: Omit<SessionData, 'sessionId'>[]) => Promise<{ newCount: number; duplicateCount: number; }>;
+  exportBackup: () => AppBackup;
+  restoreBackup: (backup: AppBackup, mode: RestoreMode) => RestoreSummary;
 
   // Modal State & Actions
   isAddStudentModalOpen: boolean;
@@ -220,6 +223,38 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return { newCount: newSessions.length, duplicateCount: 0 };
   }, [currentUser, sessions, sessionsKey, saveToLocal]);
 
+  const exportBackup = useCallback(() => createBackup({ students, goalTemplates, sessions }), [students, goalTemplates, sessions]);
+
+  /**
+   * Restores a backup. 'replace' swaps all data on this device for the backup's; 'merge' adds the
+   * backup's records that aren't already here. Returns how many records were added (merge) or loaded (replace).
+   */
+  const restoreBackup = useCallback((backup: AppBackup, mode: RestoreMode): RestoreSummary => {
+    if (!currentUser) throw new Error("Not authenticated.");
+    const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name);
+    const byDateDesc = (a: SessionData, b: SessionData) => new Date(b.date).getTime() - new Date(a.date).getTime();
+
+    let next = backup.data;
+    let summary: RestoreSummary = { students: next.students.length, goalTemplates: next.goalTemplates.length, sessions: next.sessions.length };
+    if (mode === 'merge') {
+      const result = mergeBackupData({ students, goalTemplates, sessions }, backup.data);
+      next = result.merged;
+      summary = result.added;
+    }
+
+    const nextStudents = [...next.students].sort(byName);
+    const nextTemplates = [...next.goalTemplates].sort(byName);
+    const nextSessions = [...next.sessions].sort(byDateDesc);
+    setStudents(nextStudents);
+    setGoalTemplates(nextTemplates);
+    setSessions(nextSessions);
+    setSelectedStudent(null);
+    saveToLocal(studentsKey, nextStudents);
+    saveToLocal(templatesKey, nextTemplates);
+    saveToLocal(sessionsKey, nextSessions);
+    return summary;
+  }, [currentUser, students, goalTemplates, sessions, studentsKey, templatesKey, sessionsKey, saveToLocal]);
+
   // --- End Data Actions ---
 
   useEffect(() => {
@@ -309,6 +344,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     addGoalTemplate, updateGoalTemplate, deleteGoalTemplate,
     addSession, updateSession, deleteSession,
     getSessionsForStudent, importSessions,
+    exportBackup, restoreBackup,
 
     // Modal State & Actions
     ...modalState,

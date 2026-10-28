@@ -11,6 +11,7 @@ This is a comprehensive Next.js application designed for educators and therapist
 - **Session Management**: View, edit, and delete historical session data.
 - **Analysis & Reports**: Visualize student progress with dynamic charts and generate AI-powered technical summaries of performance.
 - **Local Storage**: All data is stored in the browser's local storage on the device; nothing is synced to a cloud backend.
+- **Backup & Restore**: Save all data to a JSON backup file from Settings, and restore it on the same or another device (merge or replace). The dashboard reminds you when a backup is more than a week old.
 - **Responsive Design**: A modern, responsive interface that works on desktop and mobile devices.
 
 ## Tech Stack 

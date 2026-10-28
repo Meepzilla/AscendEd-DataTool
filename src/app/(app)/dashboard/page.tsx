@@ -10,6 +10,7 @@ import { UserPlus, ListPlus, ClipboardList, BarChart2, Users, Target, Activity, 
 import { APP_NAME } from '@/lib/appConstants';
 import { formatDate } from '@/lib/helpers';
 import { Skeleton } from '@/components/ui/skeleton';
+import BackupReminder from '@/components/settings/BackupReminder';
 
 const AppLoadingSkeleton = lazy(() => import('@/components/layout/AppLoadingSkeleton'));
 export default function DashboardPage() {
@@ -96,6 +97,8 @@ export default function DashboardPage() {
         <h1 className="text-3xl font-bold tracking-tight text-foreground">Welcome to {APP_NAME}</h1>
         <p className="text-muted-foreground">Your central hub for student goal management and progress tracking.</p>
       </div>
+
+      <BackupReminder />
 
       {/* Quick Actions */}
       <section aria-labelledby="quick-actions-title">

@@ -18,6 +18,13 @@ interface ChangelogEntry {
 
 const changelogEntries: ChangelogEntry[] = [
   {
+    date: '2026-10-28',
+    title: 'Backup & Restore',
+    description: 'Back up all students, goals, templates and sessions to a file from the Settings page, and restore it on the same or another device. Restoring can add to the data already on the device or replace it. The dashboard reminds you when there is no backup from the last 7 days.',
+    type: 'feature',
+    icon: DatabaseZap,
+  },
+  {
     date: '2026-10-27',
     title: 'Firebase Removed',
     description: 'Firebase has been removed from the application. All data is now stored in your browser on this device. Email sign-in and sign-up, and the Firebase setting on the Settings page, have been removed.',
