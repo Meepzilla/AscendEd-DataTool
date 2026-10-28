@@ -7,8 +7,8 @@
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
     "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
     "build": "next build",
-    "build:mobile": "BUILD_TARGET=mobile NEXT_PUBLIC_AI_ENABLED=false next build",
-    "android:sync": "npm run build:mobile && cap sync android",
+    "build:static": "BUILD_TARGET=static NEXT_PUBLIC_AI_ENABLED=false next build && node scripts/generate-service-worker.mjs",
+    "android:sync": "npm run build:static && cap sync android",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit"

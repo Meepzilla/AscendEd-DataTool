@@ -1,4 +1,4 @@
-// Replaces the modules in src/ai/flows/ in builds with no server (the Android app), where
+// Replaces the modules in src/ai/flows/ in builds with no server (`npm run build:static`), where
 // server actions can't run. The UI hides AI features in those builds (see AI_ENABLED), so
 // these are never expected to be called.
 
