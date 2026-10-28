@@ -21,6 +21,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-28',
+    title: 'Write Narrative on Reports',
+    description: 'Reports has a Write Narrative button that writes a progress summary of the data in view (student, goal and date range) for each goal: sessions with data, average and range, the most recent result against the target, how often the target was met, the trend over the period, and details that fit the goal type (responses and prompting, story parts, communication functions, dysfluencies, behavior rate, ABC patterns) plus recent notes. It is built from the data with fixed sentence patterns, can be edited, and can be copied or saved as a text file.',
+    type: 'feature',
+    icon: ScrollText,
+  },
+  {
+    date: '2026-10-28',
     title: 'Fixed: Data Entry Hotkeys',
     description: 'The data hotkeys (C, N, B, prompt keys D/V/G/P/F/I, and fluency B/R/H/J) erased the focused goal\'s data instead of adding to it; they now add one each press, even in quick succession. Alt (Option) shortcuts now work on Mac and iPad keyboards, Cmd+Enter saves like Ctrl+Enter, and Cmd/Ctrl+C no longer counts a correct response. On Discrete Trials goals C, N and B mark the next trial correct, incorrect or approximate, and on Behavior Frequency goals C adds an occurrence. Hotkeys follow each goal\'s data collection type and pause while a window is open.',
     type: 'fix',
