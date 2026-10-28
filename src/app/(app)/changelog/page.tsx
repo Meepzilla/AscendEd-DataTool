@@ -20,7 +20,7 @@ const changelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-28',
     title: 'Fixed: Editing Sessions (More Cases), Update Notice, Error Details',
-    description: 'Editing a saved session also works for sessions with an unreadable date or without their original goal list (e.g. imported), and the edit window no longer reloads itself while open. When a new version is downloaded, a notice offers to reload into it. If a page ever fails, it now shows what went wrong (with the app version) and a Try Again button instead of a blank screen. Settings shows the app version. Notices no longer appear twice.',
+    description: 'Editing a saved session also works for sessions with an unreadable date or without their original goal list (e.g. imported), and the edit window no longer reloads itself while open. When a new version is downloaded, a notice offers to reload into it. If a page ever fails, it now shows what went wrong (with the app version) and a Try Again button instead of a blank screen. Settings shows the app version. Notices no longer appear twice. In the sidebar's goal progress, goal names wrap instead of being cut off, articulation and language goals show their real progress (they showed 0%), progress uses the latest session where the goal was actually worked on, and goals turn green when their target is met.',
     type: 'fix',
     icon: Bug,
   },
