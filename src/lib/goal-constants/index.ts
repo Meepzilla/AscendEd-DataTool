@@ -2,8 +2,8 @@
 // for better organization and maintainability. It serves as the new single
 // source of truth for goal-related constants in the application.
 
-import type { GoalTemplate, GoalType } from '../types';
-import { ARTICULATION_FIELDS, ARTICULATION_TEMPLATES } from './articulation';
+import type { Goal, GoalTemplate, GoalType, Student } from '../types';
+import { ARTICULATION_FIELDS, ARTICULATION_TEMPLATES, ARTICULATION_TEMPLATE_RENAMES } from './articulation';
 import { FLUENCY_FIELDS, FLUENCY_TEMPLATES } from './fluency';
 import { LANGUAGE_FIELDS, LANGUAGE_TEMPLATES } from './language';
 import { OBSERVATION_FIELDS, OBSERVATION_TEMPLATES } from './observation';
@@ -96,6 +96,48 @@ export function applyDefaultTemplateUpdates<T extends GoalTemplate>(templates: T
     };
   });
   return { templates: updated, changed };
+}
+
+/**
+ * Renames stored copies of built-in templates whose names changed (see ARTICULATION_TEMPLATE_RENAMES).
+ * Runs before missing default templates are added, so a renamed template is not added a second time.
+ * Description text is only replaced where it is still the original built-in wording.
+ */
+export function applyDefaultTemplateRenames<T extends GoalTemplate>(templates: T[]): { templates: T[]; changed: boolean } {
+  let changed = false;
+  const defaultNames = new Set(templates.filter(t => t.isDefault).map(t => t.name));
+  const renamed = templates.flatMap(template => {
+    const rename = template.isDefault && ARTICULATION_TEMPLATE_RENAMES.find(r => r.from === template.name);
+    if (!rename) return [template];
+    changed = true;
+    // Already there under the new name (e.g. restored from a backup): drop the old copy.
+    if (defaultNames.has(rename.to)) return [];
+    const current = DEFAULT_GOAL_TEMPLATES.find(t => t.name === rename.to);
+    return [{
+      ...template,
+      name: rename.to,
+      smartGoalPrompt: template.smartGoalPrompt === rename.fromPrompt && current ? current.smartGoalPrompt : template.smartGoalPrompt,
+    }];
+  });
+  return { templates: renamed, changed };
+}
+
+/** Renames goals assigned to students from a renamed built-in template (their sessions keep the goal id). */
+export function applyAssignedGoalRenames<T extends Student>(students: T[]): { students: T[]; changed: boolean } {
+  let changed = false;
+  const renameGoal = (goal: Goal): Goal => {
+    const rename = ARTICULATION_TEMPLATE_RENAMES.find(r => r.from === goal.name);
+    if (!rename) return goal;
+    changed = true;
+    const current = DEFAULT_GOAL_TEMPLATES.find(t => t.name === rename.to);
+    return {
+      ...goal,
+      name: rename.to,
+      smartGoal: goal.smartGoal === rename.fromPrompt && current ? current.smartGoalPrompt : goal.smartGoal,
+    };
+  };
+  const updated = students.map(student => ({ ...student, goals: (student.goals || []).map(renameGoal) }));
+  return { students: changed ? updated : students, changed };
 }
 
 // Goal types that record prompting in their own fields, so the general prompt level counters are hidden.

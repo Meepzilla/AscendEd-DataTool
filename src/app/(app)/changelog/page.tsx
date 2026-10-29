@@ -20,6 +20,13 @@ interface ChangelogEntry {
 
 const allChangelogEntries: ChangelogEntry[] = [
   {
+    date: '2026-10-29',
+    title: 'Articulation Goals Use IPA',
+    description: 'Articulation goal templates now name their target sounds in the International Phonetic Alphabet, with the familiar spelling as a hint where the symbol is not a plain letter, e.g. /ʃ/ ("sh"), /θ/ (voiceless "th"), /ɹ/ ("r"), /tʃ/ ("ch"). Templates were added so every English consonant has goals for each word position it occurs in (initial, medial, final). Existing articulation templates and goals already assigned to students are renamed on each device; descriptions you edited are kept.',
+    type: 'improvement',
+    icon: ListPlus,
+  },
+  {
     date: '2026-10-28',
     title: 'Fixed: Hazy Top Bar After Closing a Window',
     description: 'On iPad, the top bar could stay dimmed after a pop-up window such as Edit Student was closed (for example after adding a goal from Data Entry), until the app was reloaded. The dimmed background behind pop-up windows now disappears at once instead of fading, and the whole screen is redrawn when a pop-up window closes.',
