@@ -21,6 +21,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-29',
+    title: 'Goal Library Cleanup',
+    description: '10 built-in goals that repeated another built-in goal word for word in meaning (e.g. "Identify the opposite" and "Identify antonyms", three versions of "Follow 2-step directions") are archived once on each device and no longer added; they can be restored with Show Archived, and students who already have one keep it. In Find Duplicates you can now keep more than one goal in a group: tick each goal to keep and archive the rest; goals kept together are not shown as duplicates again. Shortened goal names ("…") are only matched by their full goal text, so goals that differ after the cut-off are no longer flagged.',
+    type: 'improvement',
+    icon: ListChecks,
+  },
+  {
+    date: '2026-10-29',
     title: 'Clean Up and Find Goals Faster',
     description: 'Goals page: Find Duplicates lists goals with the same or nearly the same wording side by side; pick the one to keep and archive the rest (archived goals are hidden from goal lists and can be restored; students who already have one keep it), or mark a group as not duplicates. Each goal card also has an Assign to Students button to give that goal to one or more students at once. In Edit Student and Assign Goals, the goal list now has Skill Area as well as Type filters, searches the full goal text, hides archived goals, and lists the goals you assigned most recently first.',
     type: 'feature',
