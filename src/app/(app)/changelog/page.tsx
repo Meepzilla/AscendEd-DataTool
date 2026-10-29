@@ -21,6 +21,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-29',
+    title: 'Read the Full Goal',
+    description: 'Many goal bank goals have shortened names that end in "…". Tap a goal\'s name (dotted underline) on a Data Entry card, or in Edit Student\'s goal lists, to read the whole goal; in Assign Goals, tap the ⓘ button next to a template.',
+    type: 'improvement',
+    icon: BookOpen,
+  },
+  {
+    date: '2026-10-29',
     title: 'Articulation Goals Use IPA',
     description: 'Articulation goal templates now name their target sounds in the International Phonetic Alphabet, with the familiar spelling as a hint where the symbol is not a plain letter, e.g. /ʃ/ ("sh"), /θ/ (voiceless "th"), /ɹ/ ("r"), /tʃ/ ("ch"). Templates were added so every English consonant has goals for each word position it occurs in (initial, medial, final). Existing articulation templates and goals already assigned to students are renamed on each device; descriptions you edited are kept.',
     type: 'improvement',
