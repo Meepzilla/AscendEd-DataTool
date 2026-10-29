@@ -13,7 +13,7 @@ import { useStudentData } from '@/hooks/use-student-data';
 import type { Student, Goal, GoalTemplate, GoalType } from '@/lib/types';
 import { StudentSchema } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { XIcon, PlusCircleIcon, SearchIcon, Sparkles, Loader2, Archive, ArchiveRestore } from 'lucide-react';
+import { XIcon, PlusCircleIcon, Sparkles, Loader2, Archive, ArchiveRestore } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Select,
@@ -25,7 +25,7 @@ import {
 import { GOAL_TYPES, GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { generateUUID, templateMatchesSearch, TEMPLATE_PICKER_LIMIT, goalTypeLabel } from '@/lib/helpers';
+import { generateUUID, TEMPLATE_PICKER_LIMIT, goalTypeLabel } from '@/lib/helpers';
 import { generateSmartGoal } from '@/ai/flows/smart-goal-generation';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
@@ -33,6 +33,9 @@ import { useErrorLog } from '@/hooks/use-error-log';
 import { cn } from '@/lib/utils';
 import { AI_ENABLED } from '@/lib/features';
 import GoalTextPopover from '@/components/forms/GoalTextPopover';
+import TemplatePickerFilters from '@/components/goal-templates/TemplatePickerFilters';
+import { useTemplatePicker } from '@/hooks/use-template-picker';
+import { goalFromTemplate, recordRecentTemplates } from '@/lib/goal-templates';
 
 type EditStudentFormData = z.infer<typeof StudentSchema>;
 
@@ -50,6 +53,7 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
     goalTemplates,
     assignGoalToStudent,
     removeGoalFromStudent,
+    currentUser,
   } = useStudentData();
   const { toast } = useToast();
   const { addErrorLog } = useErrorLog();
@@ -63,8 +67,7 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
     defaultValues: { name: '' },
   });
 
-  const [templateSearchTerm, setTemplateSearchTerm] = useState('');
-  const [templateGoalTypeFilter, setTemplateGoalTypeFilter] = useState<string>('ALL');
+  const picker = useTemplatePicker(goalTemplates, currentStudent, currentUser?.uid);
 
   // State for AI Goal Generation
   const [aiGoalName, setAiGoalName] = useState('');
@@ -102,16 +105,8 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
 
   const handleAssignTemplateGoal = (template: GoalTemplate) => {
     if (!currentStudent) return;
-    const newGoal: Goal = {
-      id: generateUUID(), 
-      name: template.name,
-      type: template.type,
-      dataCaptureType: template.dataCaptureType,
-      smartGoal: template.generatedSmartGoal || `SMART goal for ${template.name}`, 
-      sessionTargetValue: template.sessionTargetValue,
-      targetDirection: template.targetDirection,
-    };
-    assignGoalToStudent(currentStudent.id, newGoal);
+    assignGoalToStudent(currentStudent.id, goalFromTemplate(template));
+    recordRecentTemplates(currentUser?.uid, [template.id]);
   };
   
   const handleToggleArchiveGoal = async (goal: Goal) => {
@@ -119,15 +114,6 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
       await updateStudentGoal(currentStudent.id, goal.id, { isArchived: !goal.isArchived });
     }
   };
-
-  const filteredGoalTemplates = goalTemplates.filter(template => {
-    const nameMatch = templateMatchesSearch(template, templateSearchTerm);
-    const typeMatch = templateGoalTypeFilter === 'ALL' || template.type === templateGoalTypeFilter;
-    // Check if this template (by name and type) is already effectively assigned to the student
-    const alreadyAssigned = currentStudent?.goals.some(g => g.name === template.name && g.type === template.type);
-    return nameMatch && typeMatch && !alreadyAssigned;
-  }).sort((a,b) => a.name.localeCompare(b.name));
-
 
   const isGoalEffectivelyAssigned = (template: GoalTemplate): boolean => {
     if (!currentStudent) return false;
@@ -399,36 +385,13 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
 
           <div className="space-y-2">
             <h4 className="text-md font-medium">Available Goal Templates to Assign</h4>
-            <div className="flex gap-2 items-center">
-              <div className="relative flex-grow">
-                <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  placeholder="Search templates..." 
-                  value={templateSearchTerm} 
-                  onChange={(e) => setTemplateSearchTerm(e.target.value)}
-                  className="pl-9 h-9"
-                />
-              </div>
-              <Select value={templateGoalTypeFilter} onValueChange={setTemplateGoalTypeFilter}>
-                <SelectTrigger className="w-[180px] h-9">
-                  <SelectValue placeholder="Filter by type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">All Types</SelectItem>
-                  {Object.values(GOAL_TYPES).map(type => (
-                    <SelectItem key={type} value={type}>
-                      {goalTypeLabel(type)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <TemplatePickerFilters picker={picker} />
             <ScrollArea className="h-60 border rounded-md p-2 [&_[data-radix-scroll-area-viewport]>div]:!block">
-              {filteredGoalTemplates.length === 0 ? (
+              {picker.templates.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">No matching templates found or all assigned.</p>
               ) : (
                 <ul className="space-y-1">
-                  {filteredGoalTemplates.slice(0, TEMPLATE_PICKER_LIMIT).map(template => (
+                  {picker.templates.slice(0, TEMPLATE_PICKER_LIMIT).map(template => (
                     <li key={template.id} className="flex items-start p-1.5 hover:bg-muted/50 rounded-md text-sm gap-2">
                       <Button 
                         variant="ghost" 
@@ -441,6 +404,7 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
                       </Button>
                       <div className="flex-grow min-w-0 break-words">
                         <GoalTextPopover name={template.name} smartGoal={template.generatedSmartGoal} description={template.smartGoalPrompt} />
+                        {picker.isRecent(template) && <Badge variant="default" className="ml-2">Recent</Badge>}
                         <Badge variant="secondary" className="ml-2">{template.type}</Badge>
                         {template.category && <Badge variant="outline" className="ml-1">{template.category}</Badge>}
                       </div>
@@ -448,8 +412,8 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
                   ))}
                 </ul>
               )}
-              {filteredGoalTemplates.length > TEMPLATE_PICKER_LIMIT && (
-                <p className="text-xs text-muted-foreground text-center py-2">Showing {TEMPLATE_PICKER_LIMIT} of {filteredGoalTemplates.length}. Search or filter to narrow the list.</p>
+              {picker.templates.length > TEMPLATE_PICKER_LIMIT && (
+                <p className="text-xs text-muted-foreground text-center py-2">Showing {TEMPLATE_PICKER_LIMIT} of {picker.templates.length}. Search or filter to narrow the list.</p>
               )}
             </ScrollArea>
           </div>
