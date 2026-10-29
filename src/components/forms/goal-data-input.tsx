@@ -24,6 +24,7 @@ import {
   STORY_PARTS, STORY_PART_SCORE_LABELS, STORY_LINKING_WORDS, linkingWordField, scoreStory,
   GOAL_TYPES_WITHOUT_PROMPT_COUNTERS,
 } from '@/lib/goal-constants';
+import GoalTextPopover from './GoalTextPopover';
 
 interface GoalDataInputComponentProps {
   goal: Goal;
@@ -879,7 +880,7 @@ export default function GoalDataInputComponent({
             <div className="flex-grow min-w-0" onClick={isLocked ? undefined : onSetFocus}>
                 <CardTitle className="text-sm font-semibold">
                     <div className="flex justify-between items-start">
-                        <span className="whitespace-normal break-words mr-1">{goal.name}</span>
+                        <GoalTextPopover name={goal.name} smartGoal={goal.smartGoal} className="whitespace-normal break-words mr-1" />
                         <Badge variant="outline" className="text-xs px-1.5 py-0.5 shrink-0 max-w-[45%] text-center leading-tight">
                             {goalTypeLabel(goal.type)}
                         </Badge>
