@@ -32,6 +32,7 @@ import { Separator } from '@/components/ui/separator';
 import { useErrorLog } from '@/hooks/use-error-log';
 import { cn } from '@/lib/utils';
 import { AI_ENABLED } from '@/lib/features';
+import GoalTextPopover from '@/components/forms/GoalTextPopover';
 
 type EditStudentFormData = z.infer<typeof StudentSchema>;
 
@@ -385,7 +386,7 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
                             </Button>
                         </div>
                         <div className={cn("flex-grow min-w-0 break-words", goal.isArchived && "opacity-60")}>
-                            <span>{goal.name}</span>
+                            <GoalTextPopover name={goal.name} smartGoal={goal.smartGoal} />
                             <Badge variant="outline" className="ml-1">{goal.type}</Badge>
                             {goal.isArchived && <Badge variant="destructive" className="ml-1">Archived</Badge>}
                         </div>
@@ -439,7 +440,7 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
                         <PlusCircleIcon className="h-4 w-4 text-primary" />
                       </Button>
                       <div className="flex-grow min-w-0 break-words">
-                        <span>{template.name}</span>
+                        <GoalTextPopover name={template.name} smartGoal={template.generatedSmartGoal} description={template.smartGoalPrompt} />
                         <Badge variant="secondary" className="ml-2">{template.type}</Badge>
                         {template.category && <Badge variant="outline" className="ml-1">{template.category}</Badge>}
                       </div>

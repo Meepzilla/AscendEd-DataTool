@@ -7,7 +7,7 @@ import { useToast as useShadcnToast } from "@/hooks/use-toast";
 import { useErrorLog } from './use-error-log';
 import type { Student, Goal, GoalTemplate, SessionData, SessionGoalData, User } from '@/lib/types';
 import { useModalState } from './use-modal-state';
-import { DEFAULT_GOAL_TEMPLATES, applyDefaultTemplateUpdates } from '@/lib/goal-constants';
+import { DEFAULT_GOAL_TEMPLATES, applyAssignedGoalRenames, applyDefaultTemplateRenames, applyDefaultTemplateUpdates } from '@/lib/goal-constants';
 import { generateUUID } from '@/lib/helpers';
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 import { createBackup, mergeBackupData, type AppBackup, type RestoreMode, type RestoreSummary } from '@/lib/backup';
@@ -280,12 +280,15 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       return;
     }
 
-    const localStudents = getFromLocalStorage(studentsKey, []);
+    const { students: localStudents, changed: goalsRenamed } = applyAssignedGoalRenames<Student>(getFromLocalStorage(studentsKey, []));
+    if (goalsRenamed) saveToLocal(studentsKey, localStudents);
     setStudents(localStudents.sort((a: Student, b: Student) => a.name.localeCompare(b.name)));
     const rawTemplates = getFromLocalStorage(templatesKey, []);
-    const { templates: localTemplates, changed: templatesUpdated } = applyDefaultTemplateUpdates<GoalTemplate>(
+    const { templates: renamedTemplates, changed: templatesRenamed } = applyDefaultTemplateRenames<GoalTemplate>(
         rawTemplates.map((t: any) => ({...t, createdAt: new Date(t.createdAt)}))
     );
+    const { templates: localTemplates, changed: typesUpdated } = applyDefaultTemplateUpdates<GoalTemplate>(renamedTemplates);
+    const templatesUpdated = templatesRenamed || typesUpdated;
     const existingDefaultNames = new Set(localTemplates.filter((t: GoalTemplate) => t.isDefault).map((t: GoalTemplate) => t.name));
     const missingDefaultTemplates = DEFAULT_GOAL_TEMPLATES.filter(
         defaultTemplate => !existingDefaultNames.has(defaultTemplate.name)
