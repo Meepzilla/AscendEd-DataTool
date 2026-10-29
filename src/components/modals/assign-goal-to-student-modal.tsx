@@ -24,6 +24,7 @@ import { generateUUID, templateMatchesSearch, formatGoalTarget, TEMPLATE_PICKER_
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '../ui/separator';
 import { cn } from '@/lib/utils';
+import GoalTextPopover from '@/components/forms/GoalTextPopover';
 
 interface AssignGoalToStudentModalProps {
   student: Student;
@@ -196,10 +197,10 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
             ) : (
               <ul className="space-y-1.5">
                 {filteredGoalTemplates.slice(0, TEMPLATE_PICKER_LIMIT).map((template) => (
-                  <li key={template.id}>
+                  <li key={template.id} className="flex items-start gap-1">
                     <Button
                       variant={selectedTemplates.has(template.id) ? "default" : "outline"}
-                      className="w-full justify-start text-left h-auto py-1.5 px-2 text-sm whitespace-normal"
+                      className="flex-1 min-w-0 justify-start text-left h-auto py-1.5 px-2 text-sm whitespace-normal"
                       onClick={() => handleToggleTemplateSelection(template.id)}
                       disabled={dataLoading || isAssigningTemplates || isAssigningCustom}
                     >
@@ -215,6 +216,7 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
                           {selectedTemplates.has(template.id) && <Check className="h-4 w-4 ml-2 text-primary-foreground" />}
                       </div>
                     </Button>
+                    <GoalTextPopover iconOnly name={template.name} smartGoal={template.generatedSmartGoal} description={template.smartGoalPrompt} />
                   </li>
                 ))}
               </ul>
