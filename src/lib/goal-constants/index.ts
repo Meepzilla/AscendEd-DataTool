@@ -49,6 +49,25 @@ export const GOAL_TYPES = Object.keys(GOAL_TYPE_FIELDS).reduce(
   {} as Record<string, GoalType>
 );
 
+/**
+ * Built-in templates that duplicate another built-in one (the same skill measured the same way, worded
+ * differently). They are no longer added, and stored copies are archived once on each device (still
+ * restorable with Show Archived; goals already assigned to students are copies and are unaffected).
+ */
+export const RETIRED_DEFAULT_TEMPLATES: { name: string; duplicateOf: string }[] = [
+  { name: 'Follow the directions (2-step)', duplicateOf: 'Follow 2-step directions' },
+  { name: 'Follow the 2-step directions', duplicateOf: 'Follow 2-step directions' },
+  { name: 'Follow the directions (3-step)', duplicateOf: 'Follow 3-step directions' },
+  { name: 'Follow the 3-step directions', duplicateOf: 'Follow 3-step directions' },
+  { name: 'Follow the 1-step direction', duplicateOf: 'Follow a 1-step direction' },
+  { name: 'Use correct subject-verb agreement', duplicateOf: 'Use correct subject-verb agreement in sentences' },
+  { name: 'Identify the different word and explain the differences', duplicateOf: 'Identify the different word and explain the differences (a list)' },
+  { name: 'Identify the opposite', duplicateOf: 'Identify antonyms' },
+  { name: 'Use the appropriate volume based on the setting', duplicateOf: 'Use an appropriate volume based on the social situation they are in' },
+  { name: 'Answer “yes or no” if the phrase or sentence uses the tense accurately (present)', duplicateOf: 'Answer “yes or no” if the phrase or sentence uses the verb tense accurately (present)' },
+];
+const RETIRED_NAMES = new Set(RETIRED_DEFAULT_TEMPLATES.map(r => r.name));
+
 // Combine all default templates from individual files into a single array.
 export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'userId'>[] = [
   ...ARTICULATION_TEMPLATES,
@@ -64,7 +83,7 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
   ...STORY_CHAMPS_TEMPLATES,
   ...BEHAVIOR_TEMPLATES,
   ...(goalBank as Omit<GoalTemplate, 'id' | 'createdAt' | 'userId'>[]),
-];
+].filter(template => !RETIRED_NAMES.has(template.name));
 
 /**
  * Built-in templates whose goal type changed. Each device keeps its own copy of the default templates
@@ -94,6 +113,20 @@ export function applyDefaultTemplateUpdates<T extends GoalTemplate>(templates: T
       sessionTargetValue: current.sessionTargetValue,
       targetDirection: current.targetDirection,
     };
+  });
+  return { templates: updated, changed };
+}
+
+/**
+ * Archives stored copies of retired built-in templates, once: they are marked `retired`, so a template the
+ * user restores afterwards stays restored.
+ */
+export function applyDefaultTemplateRetirements<T extends GoalTemplate>(templates: T[]): { templates: T[]; changed: boolean } {
+  let changed = false;
+  const updated = templates.map(template => {
+    if (!template.isDefault || template.retired || !RETIRED_NAMES.has(template.name)) return template;
+    changed = true;
+    return { ...template, isArchived: true, retired: true };
   });
   return { templates: updated, changed };
 }

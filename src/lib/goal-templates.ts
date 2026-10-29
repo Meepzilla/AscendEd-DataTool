@@ -86,10 +86,17 @@ export function findDuplicateGroups<T extends Pick<GoalTemplate, 'id' | 'name' |
   // Only names that share a word can be similar, so compare within each word's list.
   const byWord = new Map<string, number[]>();
   tokens.forEach((set, i) => set.forEach(w => byWord.set(w, [...(byWord.get(w) || []), i])));
+  // A shortened name ("…") may have been cut before the words that tell two goals apart, so those are
+  // only matched by an identical name or by their full goal text (below).
+  const shortened = active.map(t => /(…|\.\.\.)$/.test(t.name.trim()));
   tokens.forEach((a, i) => {
     const candidates = new Set<number>();
     a.forEach(w => byWord.get(w)!.forEach(j => { if (j > i) candidates.add(j); }));
-    candidates.forEach(j => { if (similarNames(a, tokens[j])) join(i, j); });
+    candidates.forEach(j => {
+      if (shortened[i] || shortened[j]) {
+        if (active[i].name.trim().toLowerCase() === active[j].name.trim().toLowerCase()) join(i, j);
+      } else if (similarNames(a, tokens[j])) join(i, j);
+    });
   });
 
   // The same full goal under different names.
