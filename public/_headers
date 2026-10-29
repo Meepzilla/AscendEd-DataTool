@@ -1,0 +1,12 @@
+# Cloudflare Pages response headers (the same rules as netlify.toml).
+
+# The browser must always check for a new service worker, or updates would never arrive.
+/sw.js
+  Cache-Control: no-cache
+
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Keep the app out of search engines.
+/*
+  X-Robots-Tag: noindex

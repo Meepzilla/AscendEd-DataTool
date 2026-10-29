@@ -39,3 +39,6 @@ next-env.d.ts
 
 .genkit/*
 .env*
+
+# Cloudflare local state
+.wrangler/

@@ -1,0 +1,11 @@
+// Cloudflare hosting for the installable web app: publishes the static build (npm run build:static) in out/.
+// There is no server code; Cloudflare serves the files as they are, with the headers in public/_headers.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ascended-datatool",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./out",
+    "not_found_handling": "404-page"
+  }
+}
