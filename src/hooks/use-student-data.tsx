@@ -8,7 +8,7 @@ import { useErrorLog } from './use-error-log';
 import type { Student, Goal, GoalTemplate, SessionData, SessionGoalData, User } from '@/lib/types';
 import { useModalState } from './use-modal-state';
 import { goalFromTemplate, hasTemplateGoal, recordRecentTemplates } from '@/lib/goal-templates';
-import { DEFAULT_GOAL_TEMPLATES, applyAssignedGoalRenames, applyDefaultTemplateRenames, applyDefaultTemplateUpdates } from '@/lib/goal-constants';
+import { DEFAULT_GOAL_TEMPLATES, applyAssignedGoalRenames, applyDefaultTemplateRenames, applyDefaultTemplateRetirements, applyDefaultTemplateUpdates } from '@/lib/goal-constants';
 import { generateUUID } from '@/lib/helpers';
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 import { createBackup, mergeBackupData, type AppBackup, type RestoreMode, type RestoreSummary } from '@/lib/backup';
@@ -319,8 +319,9 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const { templates: renamedTemplates, changed: templatesRenamed } = applyDefaultTemplateRenames<GoalTemplate>(
         rawTemplates.map((t: any) => ({...t, createdAt: new Date(t.createdAt)}))
     );
-    const { templates: localTemplates, changed: typesUpdated } = applyDefaultTemplateUpdates<GoalTemplate>(renamedTemplates);
-    const templatesUpdated = templatesRenamed || typesUpdated;
+    const { templates: updatedTypes, changed: typesUpdated } = applyDefaultTemplateUpdates<GoalTemplate>(renamedTemplates);
+    const { templates: localTemplates, changed: templatesRetired } = applyDefaultTemplateRetirements<GoalTemplate>(updatedTypes);
+    const templatesUpdated = templatesRenamed || typesUpdated || templatesRetired;
     const existingDefaultNames = new Set(localTemplates.filter((t: GoalTemplate) => t.isDefault).map((t: GoalTemplate) => t.name));
     const missingDefaultTemplates = DEFAULT_GOAL_TEMPLATES.filter(
         defaultTemplate => !existingDefaultNames.has(defaultTemplate.name)
