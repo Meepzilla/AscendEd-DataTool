@@ -7,6 +7,7 @@ import { useToast as useShadcnToast } from "@/hooks/use-toast";
 import { useErrorLog } from './use-error-log';
 import type { Student, Goal, GoalTemplate, SessionData, SessionGoalData, User } from '@/lib/types';
 import { useModalState } from './use-modal-state';
+import { goalFromTemplate, hasTemplateGoal, recordRecentTemplates } from '@/lib/goal-templates';
 import { DEFAULT_GOAL_TEMPLATES, applyAssignedGoalRenames, applyDefaultTemplateRenames, applyDefaultTemplateUpdates } from '@/lib/goal-constants';
 import { generateUUID } from '@/lib/helpers';
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
@@ -56,6 +57,10 @@ interface StudentDataContextType {
   addGoalTemplate: (templateData: Omit<GoalTemplate, 'id' | 'createdAt' | 'userId' | 'isDefault'>) => Promise<GoalTemplate | null>;
   updateGoalTemplate: (templateId: string, data: Partial<GoalTemplate>) => Promise<void>;
   deleteGoalTemplate: (templateId: string) => Promise<void>;
+  /** Archives several templates in one save (hidden from pickers; goals already assigned are kept). */
+  archiveGoalTemplates: (templateIds: string[]) => Promise<void>;
+  /** Gives each listed student a goal from the template, skipping students who already have it. */
+  assignTemplateToStudents: (template: GoalTemplate, studentIds: string[]) => Promise<{ assigned: number; skipped: number }>;
 
   addSession: (sessionData: Omit<SessionData, 'sessionId'>) => Promise<SessionData | null>;
   updateSession: (sessionId: string, data: Partial<SessionData>) => Promise<void>;
@@ -188,6 +193,33 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     saveToLocal(templatesKey, newTemplates);
     toast({ title: "Success", description: "Goal template deleted." });
   }, [currentUser, goalTemplates, templatesKey, toast, saveToLocal]);
+
+  const archiveGoalTemplates = useCallback(async (templateIds: string[]) => {
+    if (!currentUser || templateIds.length === 0) return;
+    const ids = new Set(templateIds);
+    const updatedTemplates = goalTemplates.map(t => ids.has(t.id) ? { ...t, isArchived: true } : t);
+    setGoalTemplates(updatedTemplates);
+    saveToLocal(templatesKey, updatedTemplates);
+    toast({ title: "Templates archived", description: `${templateIds.length} template${templateIds.length === 1 ? '' : 's'} archived. Turn on Show Archived on the Goals page to see or restore them.` });
+  }, [currentUser, goalTemplates, templatesKey, toast, saveToLocal]);
+
+  const assignTemplateToStudents = useCallback(async (template: GoalTemplate, studentIds: string[]) => {
+    if (!currentUser) return { assigned: 0, skipped: 0 };
+    const ids = new Set(studentIds);
+    let assigned = 0, skipped = 0;
+    const updatedStudents = students.map(s => {
+      if (!ids.has(s.id)) return s;
+      if (hasTemplateGoal(s, template)) { skipped++; return s; }
+      assigned++;
+      return { ...s, goals: [...s.goals, goalFromTemplate(template)], updatedAt: new Date().toISOString() };
+    });
+    if (assigned > 0) {
+      setStudents(updatedStudents);
+      saveToLocal(studentsKey, updatedStudents);
+      recordRecentTemplates(currentUser.uid, [template.id]);
+    }
+    return { assigned, skipped };
+  }, [currentUser, students, studentsKey, saveToLocal]);
 
   const addSession = useCallback(async (sessionData: any) => {
     if (!currentUser) return null;
@@ -352,7 +384,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     // Data Actions
     addStudent, updateStudent, deleteStudent,
     assignGoalToStudent, removeGoalFromStudent, updateStudentGoal,
-    addGoalTemplate, updateGoalTemplate, deleteGoalTemplate,
+    addGoalTemplate, updateGoalTemplate, deleteGoalTemplate, archiveGoalTemplates, assignTemplateToStudents,
     addSession, updateSession, deleteSession,
     getSessionsForStudent, importSessions,
     exportBackup, restoreBackup,

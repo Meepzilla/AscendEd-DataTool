@@ -21,6 +21,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-29',
+    title: 'Clean Up and Find Goals Faster',
+    description: 'Goals page: Find Duplicates lists goals with the same or nearly the same wording side by side; pick the one to keep and archive the rest (archived goals are hidden from goal lists and can be restored; students who already have one keep it), or mark a group as not duplicates. Each goal card also has an Assign to Students button to give that goal to one or more students at once. In Edit Student and Assign Goals, the goal list now has Skill Area as well as Type filters, searches the full goal text, hides archived goals, and lists the goals you assigned most recently first.',
+    type: 'feature',
+    icon: ListChecks,
+  },
+  {
+    date: '2026-10-29',
     title: 'Read the Full Goal',
     description: 'Many goal bank goals have shortened names that end in "…". Tap a goal\'s name (dotted underline) on a Data Entry card, or in Edit Student\'s goal lists, to read the whole goal; in Assign Goals, tap the ⓘ button next to a template.',
     type: 'improvement',

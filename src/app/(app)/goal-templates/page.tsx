@@ -5,7 +5,7 @@ import { useStudentData } from '@/hooks/use-student-data';
 import type { GoalTemplate } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { PlusCircle, Edit, Trash2, Sparkles, Info, Loader2, BrainCircuit, Archive, ArchiveRestore } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Sparkles, Info, Loader2, BrainCircuit, Archive, ArchiveRestore, UserPlus, CopyCheck } from 'lucide-react';
 import { formatDate, formatGoalTarget, goalTypeLabel } from '@/lib/helpers';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +21,8 @@ const AddGoalTemplateModal = lazy(() => import('@/components/modals/add-goal-tem
 const EditGoalTemplateModal = lazy(() => import('@/components/modals/edit-goal-template-modal'));
 const ConfirmationModal = lazy(() => import('@/components/modals/confirmation-modal'));
 const GoalBankDetailsDialog = lazy(() => import('@/components/goal-templates/GoalBankDetailsDialog'));
+const AssignTemplateDialog = lazy(() => import('@/components/goal-templates/AssignTemplateDialog'));
+const DuplicateFinderDialog = lazy(() => import('@/components/goal-templates/DuplicateFinderDialog'));
 
 // Templates rendered at first and per "Show more": the goal bank has over 1,000.
 const PAGE_SIZE = 60;
@@ -54,6 +56,8 @@ export default function GoalTemplatesPage() {
   const [isAiSearching, setIsAiSearching] = useState(false);
   const [rankedGoals, setRankedGoals] = useState<FindRelevantGoalsOutput['rankedGoals'] | null>(null);
   const [showArchived, setShowArchived] = useState(false);
+  const [assigningTemplate, setAssigningTemplate] = useState<GoalTemplate | null>(null);
+  const [isDuplicateFinderOpen, setIsDuplicateFinderOpen] = useState(false);
 
   const handleSemanticSearch = useCallback(async () => {
     if (!searchTerm.trim() || goalTemplates.length === 0) {
@@ -201,6 +205,8 @@ export default function GoalTemplatesPage() {
       <Suspense fallback={null}>
         <AddGoalTemplateModal />
         <GoalBankDetailsDialog template={detailsTemplate} onClose={() => setDetailsTemplate(null)} />
+        {assigningTemplate && <AssignTemplateDialog template={assigningTemplate} onClose={() => setAssigningTemplate(null)} />}
+        {isDuplicateFinderOpen && <DuplicateFinderDialog open onClose={() => setIsDuplicateFinderOpen(false)} />}
         {editingGoalTemplate && <EditGoalTemplateModal templateToEdit={editingGoalTemplate} />}
         {deletingStudent && deletingStudent.type === 'goalTemplate' && (
           <ConfirmationModal
@@ -238,9 +244,14 @@ export default function GoalTemplatesPage() {
                 Manage your library of reusable goal templates.
               </CardDescription>
             </div>
-            <Button onClick={() => openAddGoalTemplateModal()} size="sm">
-              <PlusCircle className="mr-2 h-4 w-4" /> Add New Template
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={() => setIsDuplicateFinderOpen(true)} size="sm" variant="outline">
+                <CopyCheck className="mr-2 h-4 w-4" /> Find Duplicates
+              </Button>
+              <Button onClick={() => openAddGoalTemplateModal()} size="sm">
+                <PlusCircle className="mr-2 h-4 w-4" /> Add New Template
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -335,6 +346,11 @@ export default function GoalTemplatesPage() {
                         Created: {template.createdAt ? formatDate(template.createdAt) : 'N/A'}
                       </p>
                       <div className="flex gap-1">
+                        {!template.isArchived && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setAssigningTemplate(template)} title="Assign to students">
+                            <UserPlus className="h-4 w-4 text-primary" />
+                          </Button>
+                        )}
                         {template.bankId && (
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDetailsTemplate(template)} title="Purpose & activity ideas">
                             <Info className="h-4 w-4" />
