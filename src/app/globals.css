@@ -3,6 +3,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* The app fills the screen exactly and scrolls inside its content area (see the (app) layout), so the
+   menu bar is part of the normal layout rather than pinned with position: sticky, which iPad Safari could
+   leave drawn hazy after a dialog closed. */
+html, body {
+  height: 100%;
+}
+
 /* Apply Inter font to the body element */
 body {
   font-family: var(--font-inter), sans-serif;
