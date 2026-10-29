@@ -5,10 +5,10 @@ import path from 'path';
 // and the installable web app (see `npm run build:static`).
 const isStaticBuild = process.env.BUILD_TARGET === 'static';
 
-// Shown in Settings so it is easy to tell which version a device is running. Netlify sets COMMIT_REF and
-// GitHub Actions sets GITHUB_SHA; local builds show "dev".
+// Shown in Settings so it is easy to tell which version a device is running. Cloudflare Pages sets
+// CF_PAGES_COMMIT_SHA, Netlify sets COMMIT_REF and GitHub Actions sets GITHUB_SHA; local builds show "dev".
 const appVersionEnv = {
-  NEXT_PUBLIC_APP_VERSION: (process.env.COMMIT_REF || process.env.GITHUB_SHA || 'dev').slice(0, 7),
+  NEXT_PUBLIC_APP_VERSION: (process.env.CF_PAGES_COMMIT_SHA || process.env.COMMIT_REF || process.env.GITHUB_SHA || 'dev').slice(0, 7),
   NEXT_PUBLIC_BUILD_TIME: new Date().toISOString(),
 };
 

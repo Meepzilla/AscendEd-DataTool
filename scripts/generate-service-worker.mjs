@@ -17,7 +17,8 @@ async function listFiles(dir) {
 
 const files = (await listFiles(OUT_DIR))
   .map((file) => path.relative(OUT_DIR, file).split(path.sep).join('/'))
-  .filter((file) => file !== 'sw.js')
+  // The host's settings files (Cloudflare's _headers and _redirects) are not served to visitors.
+  .filter((file) => !['sw.js', '_headers', '_redirects'].includes(file))
   .sort();
 
 const hash = createHash('sha256');
