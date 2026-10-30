@@ -60,7 +60,7 @@ export default function NarrativeDialog(props: NarrativeInput & { disabled?: boo
         <FileText className="mr-2 h-4 w-4" /> Write Narrative
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Progress Narrative</DialogTitle>
             <DialogDescription>
@@ -83,7 +83,7 @@ export default function NarrativeDialog(props: NarrativeInput & { disabled?: boo
             </div>
             <p className="text-xs text-muted-foreground">Changing these rewrites the text; you&apos;ll be asked first if you&apos;ve edited it.</p>
           </div>
-          <Textarea value={text} onChange={(e) => setText(e.target.value)} className="min-h-[50vh] text-sm leading-relaxed" aria-label="Narrative text" />
+          <Textarea value={text} onChange={(e) => setText(e.target.value)} className="min-h-[30vh] sm:min-h-[45vh] text-sm leading-relaxed" aria-label="Narrative text" />
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="ghost" onClick={generate} title="Start over from the data (discards edits)">
               <RotateCcw className="mr-2 h-4 w-4" /> Regenerate

@@ -1,14 +1,14 @@
 
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAuth } from './use-auth';
 import { useToast as useShadcnToast } from "@/hooks/use-toast";
 import { useErrorLog } from './use-error-log';
 import type { Student, Goal, GoalTemplate, SessionData, SessionGoalData, User } from '@/lib/types';
 import { useModalState } from './use-modal-state';
 import { goalFromTemplate, hasTemplateGoal, recordRecentTemplates } from '@/lib/goal-templates';
-import { DEFAULT_GOAL_TEMPLATES, applyAssignedGoalRenames, applyDefaultTemplateRenames, applyDefaultTemplateRetirements, applyDefaultTemplateUpdates } from '@/lib/goal-constants';
+import { DEFAULT_GOAL_TEMPLATES, defaultTemplateKey, applyAssignedGoalRenames, applyDefaultTemplateRenames, applyDefaultTemplateRetirements, applyDefaultTemplateUpdates } from '@/lib/goal-constants';
 import { generateUUID } from '@/lib/helpers';
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 import { createBackup, mergeBackupData, type AppBackup, type RestoreMode, type RestoreSummary } from '@/lib/backup';
@@ -23,14 +23,16 @@ const getLocalStorageKey = (base: string, uid: string | undefined): string | nul
     return `${base}_${uid}`;
 };
 
-const getFromLocalStorage = (key: string | null, defaultValue: any) => {
+/** Stored data, the default when there is none yet, or undefined when it is there but can't be read. */
+const readFromLocalStorage = (key: string | null, defaultValue: any) => {
     if (typeof window === 'undefined' || !key) return defaultValue;
     try {
         const item = window.localStorage.getItem(key);
-        return item ? JSON.parse(item) : defaultValue;
+        const value = item ? JSON.parse(item) : defaultValue;
+        return Array.isArray(defaultValue) && !Array.isArray(value) ? undefined : value;
     } catch (error) {
         console.warn(`Error reading from localStorage key "${key}":`, error);
-        return defaultValue;
+        return undefined;
     }
 };
 
@@ -125,136 +127,178 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   }, [selectedStudent, students]);
 
   // --- Start Data Actions ---
+  //
+  // Every change reads the latest records from refs (not the values captured when the callback was made),
+  // so changes made one after another, like Save All saving several sessions in a loop, all keep each other.
+  // Each change is written to storage first and only shown once it is stored: if the device's storage is
+  // full, nothing is changed, an error is shown, and the action reports that it failed.
 
-    const saveToLocal = useCallback((key: string | null, data: any) => {
-        if (typeof window !== 'undefined' && key) {
-            window.localStorage.setItem(key, JSON.stringify(data));
+  const studentsRef = useRef<Student[]>([]);
+  const templatesRef = useRef<GoalTemplate[]>([]);
+  const sessionsRef = useRef<SessionData[]>([]);
+  // Keys whose stored data couldn't be read: they are never written over, so the data can still be recovered.
+  const unreadableKeys = useRef<Set<string>>(new Set());
+
+    const saveToLocal = useCallback((key: string | null, data: any): boolean => {
+        if (typeof window === 'undefined' || !key) return false;
+        if (unreadableKeys.current.has(key)) {
+            toast({ title: "Couldn't save", description: "This device's saved data couldn't be read, so it wasn't overwritten. Restore a backup in Settings.", variant: "destructive" });
+            return false;
         }
-    }, []);
+        try {
+            window.localStorage.setItem(key, JSON.stringify(data));
+            return true;
+        } catch (error) {
+            console.error(`Error writing localStorage key "${key}":`, error);
+            addErrorLog({ message: `Saving failed: ${error instanceof Error ? error.message : String(error)}`, source: 'storage', type: 'error' });
+            toast({
+              title: "Couldn't save",
+              description: "This device's storage is full or unavailable, so the change was not saved. Back up your data in Settings, then delete old sessions to make room.",
+              variant: "destructive",
+            });
+            return false;
+        }
+    }, [toast, addErrorLog]);
 
     const studentsKey = getLocalStorageKey(LOCAL_STORAGE_STUDENTS_BASE_KEY, currentUser?.uid);
     const templatesKey = getLocalStorageKey(LOCAL_STORAGE_GOAL_TEMPLATES_BASE_KEY, currentUser?.uid);
     const sessionsKey = getLocalStorageKey(LOCAL_STORAGE_SESSIONS_BASE_KEY, currentUser?.uid);
 
+  const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name);
+  const byDateDesc = (a: SessionData, b: SessionData) => new Date(b.date).getTime() - new Date(a.date).getTime();
+
+  /** Stores a new list and, only if that worked, shows it. */
+  const commitStudents = useCallback((next: Student[]) => {
+    if (!saveToLocal(studentsKey, next)) return false;
+    studentsRef.current = next;
+    setStudents(next);
+    return true;
+  }, [saveToLocal, studentsKey]);
+  const commitTemplates = useCallback((next: GoalTemplate[]) => {
+    if (!saveToLocal(templatesKey, next)) return false;
+    templatesRef.current = next;
+    setGoalTemplates(next);
+    return true;
+  }, [saveToLocal, templatesKey]);
+  const commitSessions = useCallback((next: SessionData[]) => {
+    if (!saveToLocal(sessionsKey, next)) return false;
+    sessionsRef.current = next;
+    setSessions(next);
+    return true;
+  }, [saveToLocal, sessionsKey]);
+
   const addStudent = useCallback(async (name: string) => {
     if (!currentUser) return null;
     const newStudent: Omit<Student, 'id'> = { name, goals: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), userId: currentUser.uid, isArchived: false };
     const studentWithId = { ...newStudent, id: generateUUID()};
-    const newStudents = [...students, studentWithId].sort((a,b) => a.name.localeCompare(b.name));
-    setStudents(newStudents);
-    saveToLocal(studentsKey, newStudents);
+    if (!commitStudents([...studentsRef.current, studentWithId].sort(byName))) return null;
     toast({ title: "Success", description: `Student "${name}" added.` });
     return studentWithId;
-  }, [currentUser, students, studentsKey, toast, saveToLocal]);
+  }, [currentUser, toast, commitStudents]);
 
   const updateStudent = useCallback(async (studentId: string, data: Partial<Student>) => {
       if (!currentUser) return;
       const updatedData = { ...data, updatedAt: new Date().toISOString() };
-      const updatedStudents = students.map(s => s.id === studentId ? { ...s, ...updatedData } : s).sort((a,b) => a.name.localeCompare(b.name));
-      setStudents(updatedStudents);
-      saveToLocal(studentsKey, updatedStudents);
+      if (!commitStudents(studentsRef.current.map(s => s.id === studentId ? { ...s, ...updatedData } : s).sort(byName))) return;
       toast({ title: "Success", description: "Student updated." });
-  }, [currentUser, students, studentsKey, toast, saveToLocal]);
+  }, [currentUser, toast, commitStudents]);
 
   const deleteStudent = useCallback(async (studentId: string) => {
     if (!currentUser) return;
-    const newStudents = students.filter(s => s.id !== studentId);
-    setStudents(newStudents);
-    saveToLocal(studentsKey, newStudents);
-    const newSessions = sessions.filter(s => s.studentId !== studentId);
-    setSessions(newSessions);
-    saveToLocal(sessionsKey, newSessions);
+    // Sessions first: if that fails, the student (and so the sessions' owner) is still there.
+    if (!commitSessions(sessionsRef.current.filter(s => s.studentId !== studentId))) return;
+    if (!commitStudents(studentsRef.current.filter(s => s.id !== studentId))) return;
     toast({ title: "Success", description: "Student and sessions deleted." });
-  }, [currentUser, students, sessions, studentsKey, sessionsKey, toast, saveToLocal]);
+  }, [currentUser, toast, commitStudents, commitSessions]);
 
   const addGoalTemplate = useCallback(async (templateData: any) => {
     if (!currentUser) return null;
-    const newTemplate = { ...templateData, userId: currentUser.uid, isDefault: false };
-    const templateWithId = { ...newTemplate, id: generateUUID(), createdAt: new Date() };
-    const newTemplates = [...goalTemplates, templateWithId].sort((a,b) => a.name.localeCompare(b.name));
-    setGoalTemplates(newTemplates);
-    saveToLocal(templatesKey, newTemplates);
+    const templateWithId = { ...templateData, userId: currentUser.uid, isDefault: false, id: generateUUID(), createdAt: new Date() };
+    if (!commitTemplates([...templatesRef.current, templateWithId].sort(byName))) return null;
     toast({ title: "Success", description: `Template "${templateData.name}" added.` });
     return templateWithId;
-  }, [currentUser, goalTemplates, templatesKey, toast, saveToLocal]);
+  }, [currentUser, toast, commitTemplates]);
 
   const updateGoalTemplate = useCallback(async (templateId: string, data: any) => {
       if (!currentUser) return;
-      const updatedTemplates = goalTemplates.map(t => t.id === templateId ? { ...t, ...data } : t).sort((a,b) => a.name.localeCompare(b.name));
-      setGoalTemplates(updatedTemplates);
-      saveToLocal(templatesKey, updatedTemplates);
+      if (!commitTemplates(templatesRef.current.map(t => t.id === templateId ? { ...t, ...data } : t).sort(byName))) return;
       toast({ title: "Success", description: "Goal template updated." });
-  }, [currentUser, goalTemplates, templatesKey, toast, saveToLocal]);
+  }, [currentUser, toast, commitTemplates]);
 
   const deleteGoalTemplate = useCallback(async (templateId: string) => {
     if (!currentUser) return;
-    const newTemplates = goalTemplates.filter(t => t.id !== templateId);
-    setGoalTemplates(newTemplates);
-    saveToLocal(templatesKey, newTemplates);
+    if (!commitTemplates(templatesRef.current.filter(t => t.id !== templateId))) return;
     toast({ title: "Success", description: "Goal template deleted." });
-  }, [currentUser, goalTemplates, templatesKey, toast, saveToLocal]);
+  }, [currentUser, toast, commitTemplates]);
 
   const archiveGoalTemplates = useCallback(async (templateIds: string[]) => {
     if (!currentUser || templateIds.length === 0) return;
     const ids = new Set(templateIds);
-    const updatedTemplates = goalTemplates.map(t => ids.has(t.id) ? { ...t, isArchived: true } : t);
-    setGoalTemplates(updatedTemplates);
-    saveToLocal(templatesKey, updatedTemplates);
+    if (!commitTemplates(templatesRef.current.map(t => ids.has(t.id) ? { ...t, isArchived: true } : t))) return;
     toast({ title: "Templates archived", description: `${templateIds.length} template${templateIds.length === 1 ? '' : 's'} archived. Turn on Show Archived on the Goals page to see or restore them.` });
-  }, [currentUser, goalTemplates, templatesKey, toast, saveToLocal]);
+  }, [currentUser, toast, commitTemplates]);
 
   const assignTemplateToStudents = useCallback(async (template: GoalTemplate, studentIds: string[]) => {
     if (!currentUser) return { assigned: 0, skipped: 0 };
     const ids = new Set(studentIds);
     let assigned = 0, skipped = 0;
-    const updatedStudents = students.map(s => {
+    const updatedStudents = studentsRef.current.map(s => {
       if (!ids.has(s.id)) return s;
       if (hasTemplateGoal(s, template)) { skipped++; return s; }
       assigned++;
       return { ...s, goals: [...s.goals, goalFromTemplate(template)], updatedAt: new Date().toISOString() };
     });
     if (assigned > 0) {
-      setStudents(updatedStudents);
-      saveToLocal(studentsKey, updatedStudents);
+      if (!commitStudents(updatedStudents)) return { assigned: 0, skipped };
       recordRecentTemplates(currentUser.uid, [template.id]);
     }
     return { assigned, skipped };
-  }, [currentUser, students, studentsKey, saveToLocal]);
+  }, [currentUser, commitStudents]);
 
   const addSession = useCallback(async (sessionData: any) => {
     if (!currentUser) return null;
     const sessionWithId = { ...sessionData, userId: currentUser.uid, sessionId: generateUUID() };
-    const newSessions = [sessionWithId, ...sessions].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    setSessions(newSessions);
-    saveToLocal(sessionsKey, newSessions);
+    if (!commitSessions([sessionWithId, ...sessionsRef.current].sort(byDateDesc))) return null;
     // Don't toast here; handled by consumer
     return sessionWithId;
-  }, [currentUser, sessions, sessionsKey, saveToLocal]);
+  }, [currentUser, commitSessions]);
 
   const updateSession = useCallback(async (sessionId: string, data: any) => {
     if (!currentUser) return;
-    const newSessions = sessions.map(s => s.sessionId === sessionId ? { ...s, ...data } : s).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    setSessions(newSessions);
-    saveToLocal(sessionsKey, newSessions);
+    if (!commitSessions(sessionsRef.current.map(s => s.sessionId === sessionId ? { ...s, ...data } : s).sort(byDateDesc))) return;
     toast({ title: "Success", description: "Session updated." });
-  }, [currentUser, sessions, sessionsKey, toast, saveToLocal]);
+  }, [currentUser, toast, commitSessions]);
 
   const deleteSession = useCallback(async (sessionId: string) => {
     if (!currentUser) return;
-    const newSessions = sessions.filter(s => s.sessionId !== sessionId);
-    setSessions(newSessions);
-    saveToLocal(sessionsKey, newSessions);
+    if (!commitSessions(sessionsRef.current.filter(s => s.sessionId !== sessionId))) return;
     toast({ title: "Success", description: "Session deleted." });
-  }, [currentUser, sessions, sessionsKey, toast, saveToLocal]);
+  }, [currentUser, toast, commitSessions]);
   
+  /**
+   * Adds imported sessions, skipping any that match a session already here (or earlier in the same file):
+   * the same student, date and start time. Importing the same file twice therefore adds nothing.
+   */
   const importSessions = useCallback(async (sessionsToImport: any) => {
     if (!currentUser) throw new Error("Not authenticated.");
-    const newSessions = sessionsToImport.map((s:any) => ({ ...s, sessionId: generateUUID(), userId: currentUser!.uid }));
-    const updatedSessions = [...sessions, ...newSessions].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    setSessions(updatedSessions);
-    saveToLocal(sessionsKey, updatedSessions);
-    return { newCount: newSessions.length, duplicateCount: 0 };
-  }, [currentUser, sessions, sessionsKey, saveToLocal]);
+    const sessionKey = (s: { studentId?: string; date?: string; time?: string }) => {
+      const day = new Date(s.date ?? '');
+      return `${s.studentId}|${Number.isNaN(day.getTime()) ? s.date : day.toDateString()}|${s.time ?? ''}`;
+    };
+    const seen = new Set(sessionsRef.current.map(sessionKey));
+    const newSessions: SessionData[] = [];
+    let duplicateCount = 0;
+    for (const s of sessionsToImport) {
+      const key = sessionKey(s);
+      if (seen.has(key)) { duplicateCount++; continue; }
+      seen.add(key);
+      newSessions.push({ ...s, sessionId: generateUUID(), userId: currentUser!.uid });
+    }
+    if (newSessions.length > 0 && !commitSessions([...sessionsRef.current, ...newSessions].sort(byDateDesc))) {
+      throw new Error("The device's storage is full, so the sessions couldn't be saved.");
+    }
+    return { newCount: newSessions.length, duplicateCount };
+  }, [currentUser, commitSessions]);
 
   const exportBackup = useCallback(
     () => createBackup({ students, goalTemplates, sessions }, { abcLists: loadCustomAbcLists() ?? undefined }),
@@ -264,16 +308,16 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   /**
    * Restores a backup. 'replace' swaps all data on this device for the backup's; 'merge' adds the
    * backup's records that aren't already here. Returns how many records were added (merge) or loaded (replace).
+   * If storage fills up part way, what was already written is put back so the three lists stay consistent.
    */
   const restoreBackup = useCallback((backup: AppBackup, mode: RestoreMode): RestoreSummary => {
     if (!currentUser) throw new Error("Not authenticated.");
-    const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name);
-    const byDateDesc = (a: SessionData, b: SessionData) => new Date(b.date).getTime() - new Date(a.date).getTime();
+    const current = { students: studentsRef.current, goalTemplates: templatesRef.current, sessions: sessionsRef.current };
 
     let next = backup.data;
-    let summary: RestoreSummary = { students: next.students.length, goalTemplates: next.goalTemplates.length, sessions: next.sessions.length };
+    let summary: RestoreSummary = { students: next.students.length, goalTemplates: next.goalTemplates.length, sessions: next.sessions.length, goals: 0 };
     if (mode === 'merge') {
-      const result = mergeBackupData({ students, goalTemplates, sessions }, backup.data);
+      const result = mergeBackupData(current, backup.data);
       next = result.merged;
       summary = result.added;
     }
@@ -281,17 +325,28 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const nextStudents = [...next.students].sort(byName);
     const nextTemplates = [...next.goalTemplates].sort(byName);
     const nextSessions = [...next.sessions].sort(byDateDesc);
+    const writes: [string | null, unknown, unknown][] = [
+      [studentsKey, nextStudents, current.students],
+      [templatesKey, nextTemplates, current.goalTemplates],
+      [sessionsKey, nextSessions, current.sessions],
+    ];
+    for (let i = 0; i < writes.length; i++) {
+      if (!saveToLocal(writes[i][0], writes[i][1])) {
+        writes.slice(0, i).forEach(([key, , previous]) => saveToLocal(key, previous));
+        throw new Error("The backup couldn't be saved on this device (storage is full). Nothing was changed.");
+      }
+    }
+    studentsRef.current = nextStudents;
+    templatesRef.current = nextTemplates;
+    sessionsRef.current = nextSessions;
     setStudents(nextStudents);
     setGoalTemplates(nextTemplates);
     setSessions(nextSessions);
     setSelectedStudent(null);
-    saveToLocal(studentsKey, nextStudents);
-    saveToLocal(templatesKey, nextTemplates);
-    saveToLocal(sessionsKey, nextSessions);
     const abcLists = backup.settings?.abcLists;
     if (abcLists) saveAbcLists(mode === 'replace' ? abcLists : mergeAbcLists(loadAbcLists(), abcLists));
     return summary;
-  }, [currentUser, students, goalTemplates, sessions, studentsKey, templatesKey, sessionsKey, saveToLocal]);
+  }, [currentUser, studentsKey, templatesKey, sessionsKey, saveToLocal]);
 
   // --- End Data Actions ---
 
@@ -312,33 +367,55 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       return;
     }
 
-    const { students: localStudents, changed: goalsRenamed } = applyAssignedGoalRenames<Student>(getFromLocalStorage(studentsKey, []));
+    // A list that can't be read is kept as it is in storage (never written over) and reported.
+    unreadableKeys.current.clear();
+    const read = (key: string | null) => {
+      const value = readFromLocalStorage(key, []);
+      if (value !== undefined) return value;
+      if (key) unreadableKeys.current.add(key);
+      return [];
+    };
+    const rawStudents = read(studentsKey);
+    const rawTemplates = read(templatesKey);
+    const rawSessions = read(sessionsKey);
+    if (unreadableKeys.current.size > 0) {
+      setError(new Error('Some saved data could not be read.'));
+      toast({
+        title: "Some saved data couldn't be read",
+        description: "It has been left as it is, and changes to it won't be saved. Restore a backup in Settings, or export the error log for help.",
+        variant: "destructive",
+      });
+    }
+
+    const { students: renamedStudents, changed: goalsRenamed } = applyAssignedGoalRenames<Student>(rawStudents);
+    const localStudents = [...renamedStudents].sort(byName);
     if (goalsRenamed) saveToLocal(studentsKey, localStudents);
-    setStudents(localStudents.sort((a: Student, b: Student) => a.name.localeCompare(b.name)));
-    const rawTemplates = getFromLocalStorage(templatesKey, []);
+    studentsRef.current = localStudents;
+    setStudents(localStudents);
+
     const { templates: renamedTemplates, changed: templatesRenamed } = applyDefaultTemplateRenames<GoalTemplate>(
         rawTemplates.map((t: any) => ({...t, createdAt: new Date(t.createdAt)}))
     );
     const { templates: updatedTypes, changed: typesUpdated } = applyDefaultTemplateUpdates<GoalTemplate>(renamedTemplates);
     const { templates: localTemplates, changed: templatesRetired } = applyDefaultTemplateRetirements<GoalTemplate>(updatedTypes);
     const templatesUpdated = templatesRenamed || typesUpdated || templatesRetired;
-    const existingDefaultNames = new Set(localTemplates.filter((t: GoalTemplate) => t.isDefault).map((t: GoalTemplate) => t.name));
+    // Built-in templates are matched by the name they were added under (defaultKey), so one the user renamed
+    // isn't added again under its original name.
+    const existingDefaultNames = new Set(localTemplates.filter((t: GoalTemplate) => t.isDefault).map(defaultTemplateKey));
     const missingDefaultTemplates = DEFAULT_GOAL_TEMPLATES.filter(
         defaultTemplate => !existingDefaultNames.has(defaultTemplate.name)
-    ).map(t => ({ ...t, id: generateUUID(), createdAt: new Date(), userId: currentUser?.uid || 'local-user' }));
+    ).map(t => ({ ...t, defaultKey: t.name, id: generateUUID(), createdAt: new Date(), userId: currentUser?.uid || 'local-user' }));
+    const nextTemplates = [...localTemplates, ...missingDefaultTemplates].sort(byName);
+    if (missingDefaultTemplates.length > 0 || templatesUpdated) saveToLocal(templatesKey, nextTemplates);
+    templatesRef.current = nextTemplates;
+    setGoalTemplates(nextTemplates);
 
-    if (missingDefaultTemplates.length > 0 || templatesUpdated) {
-        const updatedTemplates = [...localTemplates, ...missingDefaultTemplates];
-        setGoalTemplates(updatedTemplates.sort((a: GoalTemplate, b: GoalTemplate) => a.name.localeCompare(b.name)));
-        saveToLocal(templatesKey, updatedTemplates);
-    } else {
-        setGoalTemplates(localTemplates.sort((a: GoalTemplate, b: GoalTemplate) => a.name.localeCompare(b.name)));
-    }
-    const localSessions = getFromLocalStorage(sessionsKey, []);
-    setSessions(localSessions.sort((a: SessionData, b: SessionData) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    const localSessions = [...rawSessions].sort(byDateDesc);
+    sessionsRef.current = localSessions;
+    setSessions(localSessions);
     setLoading(false);
     setSessionsLoading(false);
-  }, [authLoading, currentUser, studentsKey, templatesKey, sessionsKey, saveToLocal]);
+  }, [authLoading, currentUser, studentsKey, templatesKey, sessionsKey, saveToLocal, toast]);
   
 
   const getSessionsForStudent = useCallback((studentId: string) => {

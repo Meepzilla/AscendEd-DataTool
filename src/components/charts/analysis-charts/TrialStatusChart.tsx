@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { CheckSquare, Check, X, CircleHelp } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { captureTypeOf } from '@/lib/goal-constants';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface TrialSequenceChartProps {
@@ -26,14 +27,18 @@ const TrialStatusSequenceChart: React.FC<TrialSequenceChartProps> = ({ studentSe
       session.goals.forEach(goalData => {
         if (selectedGoalId && goalData.goalId !== selectedGoalId) return;
 
-        if (goalData.goalType === 'DISCRETE_TRIALS' && Array.isArray(goalData.data.trials)) {
-          trialsForSession.push(...goalData.data.trials);
-        } else if (goalData.goalType === 'SEQUENCED_TRIALS') {
-          // For sequenced trials, reconstruct the sequence from counts.
+        // Goals are charted by the type their data was entered as; archived goals are left out.
+        const goal = selectedStudent.goals.find(g => g.id === goalData.goalId);
+        if (goal?.isArchived) return;
+        const type = goal ? captureTypeOf(goal) : goalData.goalType;
+        if (type !== 'DISCRETE_TRIALS' && type !== 'SEQUENCED_TRIALS') return;
+        if (Array.isArray(goalData.data.trials)) trialsForSession.push(...goalData.data.trials);
+        if (type === 'SEQUENCED_TRIALS') {
+          // Sequenced trials entered as counts (before the trial grid): rebuild a sequence from them.
           const successful = Number(goalData.data.successfulAttempts) || 0;
           const failed = Number(goalData.data.failedAttempts) || 0;
           const approximate = Number(goalData.data.approximate) || 0;
-          
+
           for(let i = 0; i < successful; i++) trialsForSession.push('correct');
           for(let i = 0; i < approximate; i++) trialsForSession.push('approximate');
           for(let i = 0; i < failed; i++) trialsForSession.push('incorrect');
