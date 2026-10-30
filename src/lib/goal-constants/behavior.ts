@@ -204,19 +204,26 @@ export function summarizeIntervals(data: Record<string, any> = {}, now = Date.no
 
 const roundTenth = (n: number) => Math.round(n * 10) / 10;
 
+/** The middle value (the average of the two middle values for an even count), or null for none. */
+export function median(values: number[]): number | null {
+  if (values.length === 0) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
 export function summarizeLatency(data: Record<string, any> = {}, now = Date.now()) {
   const latencies: (number | null)[] = (Array.isArray(data.latencies) ? data.latencies : [])
     .map((v: unknown) => (v === null || v === undefined || v === '' ? null : Number(v)))
     .map((v: number | null) => (v === null || !Number.isFinite(v) ? null : v));
   const responded = latencies.filter((v): v is number => v !== null).sort((a, b) => a - b);
-  const mid = Math.floor(responded.length / 2);
   return {
     latencies,
     trialCount: latencies.length,
     respondedCount: responded.length,
     noResponseCount: latencies.length - responded.length,
     averageSeconds: responded.length ? responded.reduce((sum, v) => sum + v, 0) / responded.length : null,
-    medianSeconds: responded.length ? (responded.length % 2 ? responded[mid] : (responded[mid - 1] + responded[mid]) / 2) : null,
+    medianSeconds: median(responded),
     shortestSeconds: responded.length ? responded[0] : null,
     longestSeconds: responded.length ? responded[responded.length - 1] : null,
     timing: !!data.cueGivenAt,

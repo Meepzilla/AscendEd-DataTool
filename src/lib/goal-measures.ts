@@ -31,14 +31,19 @@ export function goalResponses(type: string, data: Record<string, any> = {}): { c
         incorrect: n(data.incorrect || data.questionsIncorrect || data.unsuccessfulResponses || data.incorrectProductions),
         approximate: n(data.approximate),
       };
-    case 'SEQUENCED_TRIALS':
-      return { correct: n(data.successfulAttempts), incorrect: n(data.failedAttempts), approximate: n(data.approximate) };
     case 'FEEDING_SWALLOWING':
       return { correct: n(data.trialsAccepted), incorrect: n(data.trialsRefused), approximate: 0 };
+    case 'SEQUENCED_TRIALS':
     case 'DISCRETE_TRIALS': {
+      // Sequenced trials are entered on the trial grid; counts are from sessions entered before that.
       const trials: TrialStatus[] = Array.isArray(data.trials) ? data.trials : [];
       const count = (status: TrialStatus) => trials.filter(t => t === status).length;
-      return { correct: count('correct'), incorrect: count('incorrect'), approximate: count('approximate') };
+      const counted = type === 'SEQUENCED_TRIALS';
+      return {
+        correct: count('correct') + (counted ? n(data.successfulAttempts) : 0),
+        incorrect: count('incorrect') + (counted ? n(data.failedAttempts) : 0),
+        approximate: count('approximate') + (counted ? n(data.approximate) : 0),
+      };
     }
     default:
       return null;
@@ -81,7 +86,12 @@ export function goalMeasureInfo(goal: MeasuredGoal): GoalMeasureInfo {
  */
 export function goalMeasure(goal: MeasuredGoal, data: Record<string, any> = {}): number | null {
   const type = captureTypeOf(goal);
-  if (BEHAVIOR_GOAL_TYPES.includes(type)) return behaviorMeasure(type, data, goalDirection(goal));
+  if (BEHAVIOR_GOAL_TYPES.includes(type)) {
+    // A behavior goal left untouched in a session reads as 0; it counts only if Data Entry marked it as
+    // worked on (so an observed 0 is kept) or something was recorded.
+    const value = behaviorMeasure(type, data, goalDirection(goal));
+    return value !== null && (data.recorded === true || value !== 0) ? value : null;
+  }
 
   const responses = goalResponses(type, data);
   if (responses) {
@@ -93,8 +103,9 @@ export function goalMeasure(goal: MeasuredGoal, data: Record<string, any> = {}):
   switch (type) {
     case 'FLUENCY_SYLLABLE_STUTTER': {
       const total = Number(data.totalSyllables) || 0;
-      const stuttered = Number(data.stutteredSyllables) || 0;
-      return total > 0 ? (Math.max(0, total - stuttered) / total) * 100 : null;
+      // The same dysfluencies Data Entry counts (prolongations are tallied but not subtracted there either).
+      const dysfluent = ['stutteredSyllables', 'blocks', 'repetitions', 'interjections'].reduce((sum, field) => sum + (Number(data[field]) || 0), 0);
+      return total > 0 ? (Math.max(0, total - dysfluent) / total) * 100 : null;
     }
     case 'STORY_CHAMPS': {
       const story = scoreStory(data);

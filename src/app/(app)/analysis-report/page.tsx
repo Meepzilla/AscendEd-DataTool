@@ -123,7 +123,7 @@ export default function AnalysisReportPage() {
             // Flatten the goal-specific data into separate columns
             const flattenedGoalData = Object.entries(goalData.data).reduce((acc, [key, value]) => {
                 const formattedKey = `Goal Data: ${key.replace(/([A-Z])/g, ' $1').trim()}`;
-                acc[formattedKey] = Array.isArray(value) ? JSON.stringify(value) : value;
+                acc[formattedKey] = value !== null && typeof value === 'object' ? JSON.stringify(value) : value;
                 return acc;
             }, {} as Record<string, any>);
 
@@ -131,7 +131,9 @@ export default function AnalysisReportPage() {
         });
     });
 
-    const csv = Papa.unparse(dataToExport);
+    // Every column any row has (goal types have different data fields), not just the first row's.
+    const fields = [...new Set(dataToExport.flatMap(row => Object.keys(row)))];
+    const csv = Papa.unparse(dataToExport, { columns: fields });
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);

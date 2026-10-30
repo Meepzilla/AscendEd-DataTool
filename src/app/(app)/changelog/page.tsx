@@ -4,7 +4,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { RotateCcw, ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, Trash2, LayoutGrid, Minimize2, UserX, UserPlus, ArrowRightLeft, Lightbulb, Download, ListPlus, Workflow, Shuffle, CheckSquare, ListChecks, DatabaseZap, UserSearch, Upload, Sparkles, BrainCircuit, PanelLeft, ArrowLeft, MessagesSquare, BookOpen } from 'lucide-react';
+import { RotateCcw, ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, Trash2, LayoutGrid, Minimize2, UserX, UserPlus, ArrowRightLeft, Lightbulb, Download, ListPlus, Workflow, Shuffle, CheckSquare, ListChecks, DatabaseZap, UserSearch, Upload, Sparkles, BrainCircuit, PanelLeft, ArrowLeft, MessagesSquare, BookOpen, Lock } from 'lucide-react';
 import { APP_NAME } from '@/lib/appConstants';
 import { AI_ENABLED } from '@/lib/features';
 
@@ -19,6 +19,27 @@ interface ChangelogEntry {
 }
 
 const allChangelogEntries: ChangelogEntry[] = [
+  {
+    date: '2026-10-30',
+    title: 'Student Access Lock Needs a PIN',
+    description: 'Turning off the Student Access Lock on Data Entry now asks for a PIN, chosen the first time you turn the lock on (4 to 8 digits, kept only on this device). The L hotkey works the same way. If the PIN is forgotten, Forgot PIN? unlocks only by discarding the unsaved entries on Data Entry, and you choose a new PIN next time.',
+    type: 'improvement',
+    icon: Lock,
+  },
+  {
+    date: '2026-10-30',
+    title: 'Fixed: Data Safety and Report Accuracy',
+    description: 'Save All now saves every student\'s session (some could be lost when saving several at once). If the device\'s storage is full, saving says so instead of failing silently, and restoring a backup changes nothing unless all of it fits. Editing a session no longer moves its date back a day. Data Entry moves to today\'s date when the app is reopened on a later day with nothing entered (a past date you chose is kept), and keeps up with goals edited while it is open. Sequenced Trials are scored from the trial boxes, and their C/N/B hotkeys fill the next box. Behavior goals not worked on in a session are no longer charted as 0. Fluency % counts blocks, repetitions and interjections, the same as Data Entry. Report dates stay in order across years, and days with no trial data are gaps instead of 0%. CSV export includes every goal type\'s columns, and importing it keeps prompt levels and skips sessions already on the device. Merging a backup adds goals that only the backup has to students already on the device. Built-in goals you renamed stay renamed after updates. Also: the Independent button records a correct response (like the I hotkey); clearing Number of Trials no longer erases trials; student edit buttons show on touch screens; the narrative window scrolls on small screens; the Android app no longer copies student data to cloud backups; and the web app can\'t be shown inside another site.',
+    type: 'fix',
+    icon: Bug,
+  },
+  {
+    date: '2026-10-30',
+    title: 'Better Progress Narratives',
+    description: 'Write Narrative now starts with an overview of where every goal stands (target met several sessions in a row, improving, steady, moving away from the target, too few sessions, no data). Trends use every session (a line fitted through all of them) instead of comparing the first and second half, and it says when the target was met in the last sessions in a row. Duration, interval and latency goals get their own details (episodes and longest episode, intervals scored, median time to respond and no-response trials). Choose Detailed (a paragraph per goal) or Brief (one line per goal), and turn on Suggested next steps for a data-based suggestion per goal, such as raising a target that was met 3 sessions in a row.',
+    type: 'improvement',
+    icon: ScrollText,
+  },
   {
     date: '2026-10-30',
     title: 'Fixed: Time Picker on Phones in Landscape',

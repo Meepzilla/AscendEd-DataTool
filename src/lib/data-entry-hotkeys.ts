@@ -5,7 +5,7 @@ import { GOAL_TYPES_WITHOUT_PROMPT_COUNTERS, alignTimes } from './goal-constants
 // Data Entry hotkeys that record data for the focused goal (see Help → Hotkeys):
 //   C = correct, N = incorrect, B = approximate (Blocks for fluency); R/H/J = fluency repetitions,
 //   prolongations, interjections; D/V/G/P/F/I = prompt levels (I also counts a correct response).
-// Discrete trials: C/N/B fill the next unscored trial. Behavior frequency: C adds an occurrence.
+// Discrete and sequenced trials: C/N/B fill the next unscored trial. Behavior frequency: C adds an occurrence.
 
 /**
  * The key a hotkey event stands for, as an upper-case letter or digit ("A", "1") or "ENTER". Uses the
@@ -35,11 +35,13 @@ const COUNT_FIELDS: Partial<Record<GoalType, { correct: string; incorrect: strin
   LANGUAGE_COMPREHENSION: { correct: 'questionsCorrect', incorrect: 'questionsIncorrect', approximate: 'approximate' },
   LANGUAGE_EXPRESSION: { correct: 'successfulResponses', incorrect: 'unsuccessfulResponses', approximate: 'approximate' },
   PHONOLOGICAL_PROCESSES: { correct: 'correctProductions', incorrect: 'incorrectProductions', approximate: 'approximate' },
-  SEQUENCED_TRIALS: { correct: 'successfulAttempts', incorrect: 'failedAttempts', approximate: 'approximate' },
   FEEDING_SWALLOWING: { correct: 'trialsAccepted', incorrect: 'trialsRefused' },
 };
 
 const FLUENCY_KEYS: Record<string, string> = { B: 'blocks', R: 'repetitions', H: 'prolongations', J: 'interjections' };
+
+// Goal types entered on the trial grid.
+const TRIAL_GRID_TYPES: GoalType[] = ['DISCRETE_TRIALS', 'SEQUENCED_TRIALS'];
 
 const add = (data: Record<string, any>, field: string, amount = 1) => ({ ...data, [field]: (Number(data[field]) || 0) + amount });
 
@@ -53,7 +55,7 @@ function fillNextTrial(data: Record<string, any>, status: TrialStatus): Record<s
 
 /** Records a "correct" response for the goal type (C, and I for independent). */
 function addCorrect(type: GoalType, data: Record<string, any>): Record<string, any> | null {
-  if (type === 'DISCRETE_TRIALS') return fillNextTrial(data, 'correct');
+  if (TRIAL_GRID_TYPES.includes(type)) return fillNextTrial(data, 'correct');
   if (type === 'BEHAVIOR_FREQUENCY') {
     const count = Number(data.count) || 0;
     return { ...data, count: count + 1, occurrenceTimes: [...alignTimes(data.occurrenceTimes, count), new Date().toISOString()] };
@@ -70,7 +72,7 @@ export function applyGoalHotkey(type: GoalType, key: string, data: Record<string
   if (key === 'C') return addCorrect(type, data);
 
   if (key === 'N') {
-    if (type === 'DISCRETE_TRIALS') return fillNextTrial(data, 'incorrect');
+    if (TRIAL_GRID_TYPES.includes(type)) return fillNextTrial(data, 'incorrect');
     const fields = COUNT_FIELDS[type];
     return fields ? add(data, fields.incorrect) : null;
   }
@@ -83,7 +85,7 @@ export function applyGoalHotkey(type: GoalType, key: string, data: Record<string
   }
 
   if (key === 'B') {
-    if (type === 'DISCRETE_TRIALS') return fillNextTrial(data, 'approximate');
+    if (TRIAL_GRID_TYPES.includes(type)) return fillNextTrial(data, 'approximate');
     const approximate = COUNT_FIELDS[type]?.approximate;
     return approximate ? add(data, approximate) : null;
   }

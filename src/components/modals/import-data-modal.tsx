@@ -71,7 +71,7 @@ export default function ImportDataModal({ onClose, onImport }: ImportDataModalPr
                   studentName: row['Student Name'],
                   date: row['Date'],
                   time: row['Start Time'],
-                  endTime: row['End Time'] || undefined,
+                  endTime: row['End Time'] && row['End Time'] !== 'N/A' ? row['End Time'] : undefined,
                   activity: row['Activity'],
                   notes: row['Session Notes'],
                   goals: [],
@@ -86,9 +86,13 @@ export default function ImportDataModal({ onClose, onImport }: ImportDataModalPr
                 for (const key in row) {
                   if (key.startsWith('Goal Data: ')) {
                     const dataKeyRaw = key.replace('Goal Data: ', '');
-                    const camelCaseKey = dataKeyRaw.replace(/\s(.)/g, ($1) => $1.toUpperCase()).replace(/\s/g, '').replace(/^(.)/, ($1) => $1.toLowerCase());
+                    // Export spaced the key out before each capital ("Partial Physical", "total Syllables"), keeping
+                    // the first letter's case, so joining the words back gives the original key.
+                    const camelCaseKey = dataKeyRaw.replace(/\s+(.)/g, (_match: string, letter: string) => letter.toUpperCase()).trim();
                     
                     let value = row[key];
+                    // Columns from other goal types are empty for this goal.
+                    if (value === undefined || value === null || value === '') continue;
                     // Try to parse if it looks like JSON (for arrays like in discrete trials)
                     try {
                         const parsed = JSON.parse(value);

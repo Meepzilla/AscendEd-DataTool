@@ -62,7 +62,7 @@ export default function StudentProgressSidebar({ student, studentSessions }: {st
       for (const goalData of session.goals) {
         if (latestSessionByGoalId.has(goalData.goalId)) continue;
         const goal = activeGoals.find(g => g.id === goalData.goalId);
-        const recorded = goal && (captureTypeOf(goal) === 'QUALITATIVE_OBSERVATION' || goalMeasure(goal, goalData.data || {}) !== null);
+        const recorded = goal && goalMeasure(goal, goalData.data || {}) !== null;
         if (recorded) latestSessionByGoalId.set(goalData.goalId, session);
       }
     }
