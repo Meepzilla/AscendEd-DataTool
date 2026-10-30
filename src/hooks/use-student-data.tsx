@@ -9,7 +9,7 @@ import type { Student, Goal, GoalTemplate, SessionData, SessionGoalData, User } 
 import { useModalState } from './use-modal-state';
 import { goalFromTemplate, hasTemplateGoal, recordRecentTemplates } from '@/lib/goal-templates';
 import { DEFAULT_GOAL_TEMPLATES, defaultTemplateKey, applyAssignedGoalRenames, applyDefaultTemplateRenames, applyDefaultTemplateRetirements, applyDefaultTemplateUpdates } from '@/lib/goal-constants';
-import { generateUUID } from '@/lib/helpers';
+import { compareSessionsOldestFirst, generateUUID } from '@/lib/helpers';
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 import { createBackup, mergeBackupData, type AppBackup, type RestoreMode, type RestoreSummary } from '@/lib/backup';
 import { loadAbcLists, loadCustomAbcLists, mergeAbcLists, saveAbcLists } from '@/lib/abc-lists';
@@ -165,7 +165,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const sessionsKey = getLocalStorageKey(LOCAL_STORAGE_SESSIONS_BASE_KEY, currentUser?.uid);
 
   const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name);
-  const byDateDesc = (a: SessionData, b: SessionData) => new Date(b.date).getTime() - new Date(a.date).getTime();
+  const byDateDesc = (a: SessionData, b: SessionData) => compareSessionsOldestFirst(b, a);
 
   /** Stores a new list and, only if that worked, shows it. */
   const commitStudents = useCallback((next: Student[]) => {
@@ -221,7 +221,9 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const updateGoalTemplate = useCallback(async (templateId: string, data: any) => {
       if (!currentUser) return;
-      if (!commitTemplates(templatesRef.current.map(t => t.id === templateId ? { ...t, ...data } : t).sort(byName))) return;
+      // A built-in template keeps the name it was added under (defaultKey) when it is renamed.
+      const update = (t: GoalTemplate) => ({ ...t, ...(t.isDefault && !t.defaultKey ? { defaultKey: t.name } : {}), ...data });
+      if (!commitTemplates(templatesRef.current.map(t => t.id === templateId ? update(t) : t).sort(byName))) return;
       toast({ title: "Success", description: "Goal template updated." });
   }, [currentUser, toast, commitTemplates]);
 
@@ -378,7 +380,9 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setSelectedStudent(null);
     const abcLists = backup.settings?.abcLists;
     try {
-      if (abcLists) saveAbcLists(mode === 'replace' ? abcLists : mergeAbcLists(loadAbcLists(), abcLists));
+      // Replace also clears custom lists when the backup has none (it was made with the built-in lists).
+      if (mode === 'replace') saveAbcLists(abcLists ?? null);
+      else if (abcLists) saveAbcLists(mergeAbcLists(loadAbcLists(), abcLists));
     } catch (error) {
       // The student data is restored; only the custom ABC lists didn't fit.
       addErrorLog({ message: `Restoring ABC lists failed: ${error instanceof Error ? error.message : String(error)}`, source: 'storage', type: 'error' });
@@ -435,8 +439,16 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         rawTemplates.map((t: any) => ({...t, createdAt: new Date(t.createdAt)}))
     );
     const { templates: updatedTypes, changed: typesUpdated } = applyDefaultTemplateUpdates<GoalTemplate>(renamedTemplates);
-    const { templates: localTemplates, changed: templatesRetired } = applyDefaultTemplateRetirements<GoalTemplate>(updatedTypes);
-    const templatesUpdated = templatesRenamed || typesUpdated || templatesRetired;
+    const { templates: retiredTemplates, changed: templatesRetired } = applyDefaultTemplateRetirements<GoalTemplate>(updatedTypes);
+    // Built-in templates stored before defaultKey existed get it now (their current name), so renaming one later
+    // doesn't bring the original back.
+    let keysAdded = false;
+    const localTemplates = retiredTemplates.map(t => {
+      if (!t.isDefault || t.defaultKey) return t;
+      keysAdded = true;
+      return { ...t, defaultKey: t.name };
+    });
+    const templatesUpdated = templatesRenamed || typesUpdated || templatesRetired || keysAdded;
     // Built-in templates are matched by the name they were added under (defaultKey), so one the user renamed
     // isn't added again under its original name.
     const existingDefaultNames = new Set(localTemplates.filter((t: GoalTemplate) => t.isDefault).map(defaultTemplateKey));

@@ -13,7 +13,7 @@ import type { SessionData, Goal, SessionGoalData } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
+import { GOAL_TYPE_FIELDS, captureTypeOf, finalizeBehaviorData } from '@/lib/goal-constants';
 import { formatDate } from '@/lib/helpers';
 import { format, parse } from 'date-fns';
 
@@ -74,7 +74,8 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
   const handleGoalDataChange = (goalId: string, updatedFieldName: string, goalData: SessionGoalData['data']) => {
     setFormData(prev => {
       const updatedGoals = prev.goals?.map(g =>
-        g.goalId === goalId ? { ...g, data: goalData } : g
+        // Marked as worked on, as Data Entry does, so an edited 0 or a rating left at 3 still counts in reports.
+        g.goalId === goalId ? { ...g, data: { ...goalData, recorded: true } } : g
       ) || [];
       return { ...prev, goals: updatedGoals };
     });
@@ -99,8 +100,15 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
     }
     const finalDateISO = localDateTime.toISOString();
 
+    // Like saving in Data Entry: a behavior timer left running is stopped and its time stored.
+    const goals = formData.goals?.map(g => {
+        const goal = goalHeaders.find(h => h.id === g.goalId);
+        return goal ? { ...g, data: finalizeBehaviorData(captureTypeOf(goal), g.data || {}) } : g;
+    });
+
     const dataToUpdate: Partial<SessionData> = {
         ...formData,
+        goals,
         date: finalDateISO,
     };
 

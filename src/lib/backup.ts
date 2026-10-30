@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { GoalTemplate, SessionData, Student } from './types';
 import { AbcListsSchema, type AbcLists } from './abc-lists';
+import { defaultTemplateKey } from './goal-constants';
 
 // A backup holds everything stored on the device: students (with their goals),
 // goal templates, sessions, and edited settings that belong with the data (the ABC data lists).
@@ -115,8 +116,9 @@ export function mergeBackupData(current: BackupData, incoming: BackupData): { me
   });
 
   const templateIds = new Set(current.goalTemplates.map(t => t.id));
-  const defaultNames = new Set(current.goalTemplates.filter(t => t.isDefault).map(t => t.name));
-  const newTemplates = incoming.goalTemplates.filter(t => !templateIds.has(t.id) && !(t.isDefault && defaultNames.has(t.name)));
+  // Built-in templates are matched by the name they were added under, so a renamed one isn't added twice.
+  const defaultNames = new Set(current.goalTemplates.filter(t => t.isDefault).map(defaultTemplateKey));
+  const newTemplates = incoming.goalTemplates.filter(t => !templateIds.has(t.id) && !(t.isDefault && defaultNames.has(defaultTemplateKey(t))));
 
   const sessionIds = new Set(current.sessions.map(s => s.sessionId));
   const newSessions = incoming.sessions.filter(s => !sessionIds.has(s.sessionId));

@@ -14,7 +14,7 @@ import type { DateRange } from "react-day-picker";
 import { useSearchParams, useRouter } from 'next/navigation';
 import { downloadSessionsCsv } from '@/lib/session-csv';
 import { useToast } from '@/hooks/use-toast';
-import { formatDate } from '@/lib/helpers';
+import { compareSessionsOldestFirst, formatDate } from '@/lib/helpers';
 import { AI_ENABLED } from '@/lib/features';
 import NarrativeDialog from '@/components/charts/NarrativeDialog';
 
@@ -46,6 +46,8 @@ export default function AnalysisReportPage() {
       // If the state is not in sync with the URL, update it.
       if (selectedStudentId !== studentIdFromQuery) {
         setSelectedStudentId(studentIdFromQuery);
+        // The goal filter was for the previous student's goals.
+        setSelectedGoalId(undefined);
       }
     } 
     // Case 2: URL has no student ID, we're not loading, students exist, and no student is selected yet.
@@ -69,7 +71,7 @@ export default function AnalysisReportPage() {
         toDate.setHours(23, 59, 59, 999);
         filtered = filtered.filter(s => new Date(s.date) <= toDate);
     }
-    return filtered.sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    return filtered.sort(compareSessionsOldestFirst);
   }, [sessions, selectedStudentId, dateRange]);
 
   const handleStudentChange = (value: string) => {

@@ -4,8 +4,8 @@ import {
   median, summarizeDuration, summarizeFrequency, summarizeIntervals, summarizeLatency,
   COMMUNICATION_FUNCTIONS, STORY_PARTS, STORY_LINKING_WORDS, linkingWordField, type AbcIncident,
 } from './goal-constants';
-import { goalMeasure, goalMeasureInfo, goalNotes, goalResponses, meetsTarget, promptTotals, usesPromptCounters } from './goal-measures';
-import { formatDate, formatGoalTarget, goalTypeLabel, plural } from './helpers';
+import { goalMeasure, goalMeasureInfo, goalNotes, goalResponses, meetsTarget, promptTotals, usesPromptCounters, withoutRunningTimers } from './goal-measures';
+import { compareSessionsOldestFirst, formatDate, formatGoalTarget, goalTypeLabel, plural } from './helpers';
 import { timePatterns, TIMING_MEASURE_LABELS, WEEKDAY_NAMES } from './behavior-timing';
 
 // A written summary of a student's data for a date range, built from fixed sentence patterns (no AI).
@@ -122,21 +122,11 @@ function fitTrend(goal: Goal, values: number[]): GoalAnalysis['trend'] {
   return { kind: better ? 'improving' : 'declining', from, to };
 }
 
-/**
- * A saved session's data with any timer that was left running cleared. Saving stops timers, but a running
- * one would otherwise keep counting until the day the report is written (e.g. a duration "episode" of weeks).
- */
-function savedData(data: Record<string, any>): Record<string, any> {
-  return data.runningSince || data.cueGivenAt || data.timerStartedAt
-    ? { ...data, runningSince: null, cueGivenAt: null, timerStartedAt: null }
-    : data;
-}
-
 function analyzeGoal(goal: Goal, number: number, sessions: SessionData[]): GoalAnalysis {
   const withData = sessions
     .map(session => {
       const data = session.goals?.find(g => g.goalId === goal.id)?.data;
-      return { session, data: data ? savedData(data) : undefined };
+      return { session, data: data ? withoutRunningTimers(data) : undefined };
     })
     .filter((r): r is { session: SessionData; data: Record<string, any> } => !!r.data)
     .map(r => ({ ...r, value: goalMeasure(goal, r.data) }));
@@ -179,8 +169,10 @@ function trendSentence(name: string, a: GoalAnalysis): string {
  */
 function nextStep(a: GoalAnalysis): string | null {
   const hasTarget = a.target !== undefined;
+  // For a decrease goal (less behavior is better) a harder target is a lower one, and "short of it" is above it.
+  const decrease = goalDirection(a.goal) === 'decrease';
   if (a.status === 'no data') return 'Collect data on this goal to monitor progress.';
-  if (a.status === 'met') return `The target was met in ${a.streak} sessions in a row; consider raising the target or moving to the next step for this skill.`;
+  if (a.status === 'met') return `The target was met in ${a.streak} sessions in a row; consider ${decrease ? 'lowering' : 'raising'} the target or moving to the next step for this skill.`;
   if (a.status === 'too few') return 'More sessions are needed before a trend can be judged.';
   // A goal whose latest session met the target isn't told it is moving away from it, whatever the trend.
   if (a.status === 'declining' && a.latestMet) {
@@ -190,7 +182,7 @@ function nextStep(a: GoalAnalysis): string | null {
     return `Performance is moving away from the goal; consider reviewing supports or activities${hasTarget ? ', or the target' : ''}.`;
   }
   if (a.status === 'stable' && hasTarget && a.latestMet === false && a.values.length >= 5) {
-    return 'Progress has levelled off below the target; consider adjusting the approach or the level of support.';
+    return `Progress has levelled off ${decrease ? 'above' : 'below'} the target; consider adjusting the approach or the level of support.`;
   }
   if (a.latestMet) return `The target was met in the most recent session; keep monitoring until it is met in ${MASTERY_STREAK} sessions in a row.`;
   if (a.status === 'improving') return `Progress is moving ${hasTarget ? 'toward the target' : 'in the right direction'}; continue the current approach and keep monitoring.`;
@@ -426,7 +418,7 @@ export interface NarrativeInput {
 export function buildNarrative({ student, goals, sessions, rangeLabel, options = {} }: NarrativeInput): string {
   const settings: Required<NarrativeOptions> = { style: options.style ?? 'detailed', nextSteps: options.nextSteps ?? false };
   const name = student.name.trim().split(/\s+/)[0] || student.name;
-  const sorted = [...sessions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const sorted = [...sessions].sort(compareSessionsOldestFirst);
   const period = rangeLabel
     ?? (sorted.length ? `${formatDate(sorted[0].date)} to ${formatDate(sorted[sorted.length - 1].date)}` : 'the selected period');
 
@@ -435,7 +427,12 @@ export function buildNarrative({ student, goals, sessions, rangeLabel, options =
   }
 
   const analyses = goals.map((goal, i) => analyzeGoal(goal, i + 1, sorted));
-  const intro = `This summary covers ${plural(sorted.length, 'session')} with ${name} from ${period}, for ${plural(goals.length, 'goal')}.`;
+  // Sessions where something was recorded for at least one of these goals (not every session in the range).
+  const sessionsWithData = sorted.filter(session => goals.some(goal => {
+    const data = session.goals?.find(g => g.goalId === goal.id)?.data;
+    return !!data && goalMeasure(goal, withoutRunningTimers(data)) !== null;
+  })).length;
+  const intro = `This summary covers ${plural(sessionsWithData, 'session')} with ${name} from ${period}, for ${plural(goals.length, 'goal')}.`;
   const body = settings.style === 'brief'
     ? [analyses.map(a => briefLine(a, settings)).join('\n')]
     : analyses.map(a => goalParagraph(name, a, settings));
