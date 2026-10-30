@@ -44,9 +44,18 @@ export default function AppHeader() {
   useEffect(() => { setIsMenuOpen(false); }, [pathname]);
 
 
-  // Solid background: iPad Safari renders a backdrop blur hazy and soft when the page is zoomed out.
+  // The menu bar is pinned to the top of the screen with a solid background. iPadOS 26 blurs the top edge of
+  // a page (under the status bar in the Home Screen app, under the tab bar in Safari) unless a fixed bar
+  // touches that edge; it then takes that bar's color instead, so the menu bar stays sharp. The bar reaches
+  // up behind the status bar (padding by the safe-area inset, converted for the body's zoom), and a spacer of
+  // the bar's own height keeps the page below it. (No backdrop blur: iPad Safari draws it hazy when zoomed out.)
   return (
-    <header className="relative z-40 w-full shrink-0 border-b bg-card">
+    <>
+    <div aria-hidden className="h-[65px] w-full shrink-0" />
+    <header
+      className="fixed inset-x-0 top-0 z-40 border-b bg-card"
+      style={{ paddingTop: 'calc(env(safe-area-inset-top) / var(--body-zoom))' }}
+    >
       <div className="flex h-16 items-center px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-2 sm:gap-4">
           <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
@@ -151,5 +160,6 @@ export default function AppHeader() {
       {editingStudent && <EditStudentModal studentToEdit={editingStudent} />}
       <ErrorLogModal /> 
     </header>
+    </>
   );
 }

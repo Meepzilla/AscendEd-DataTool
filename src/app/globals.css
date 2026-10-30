@@ -20,10 +20,14 @@ html {
   background-color: hsl(var(--background));
 }
 
-/* Apply Inter font to the body element */
+/* Apply Inter font to the body element. --body-zoom is also used to convert device lengths (safe-area insets)
+   inside the zoomed body, e.g. the menu bar's top padding. */
+:root {
+  --body-zoom: 0.75;
+}
 body {
   font-family: var(--font-inter), sans-serif;
-  zoom: 0.75;
+  zoom: var(--body-zoom);
 }
 
 /* Define CSS variables for theming, primarily using HSL color format */
@@ -141,8 +145,8 @@ body {
 }
 
 @media screen and (max-width: 768px) and (orientation: landscape) {
-  body {
-    zoom: 0.9;
+  :root {
+    --body-zoom: 0.9;
   }
 }
 
