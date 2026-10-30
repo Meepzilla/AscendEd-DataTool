@@ -15,6 +15,12 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 import { formatDate } from '@/lib/helpers';
+import { format, parse } from 'date-fns';
+
+// The form keeps the date as a local 'yyyy-MM-dd' (an ISO date string would be read as UTC midnight and show
+// the day before west of UTC).
+const toLocalDay = (date: Date) => format(date, 'yyyy-MM-dd');
+const fromLocalDay = (day: string) => parse(day, 'yyyy-MM-dd', new Date());
 
 
 interface EditSessionModalProps {
@@ -45,12 +51,12 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
 
   useEffect(() => {
     if (currentSession) {
-      // Ensure date is in 'YYYY-MM-DD' for DatePicker if it's from an ISO string (left empty if it can't be read).
+      // Left empty if the date can't be read.
       const parsed = currentSession.date ? new Date(currentSession.date) : null;
       setFormData({
         ...currentSession,
         goals: currentSession.goals ?? [],
-        date: parsed && !isNaN(parsed.getTime()) ? parsed.toISOString().split('T')[0] : undefined,
+        date: parsed && !isNaN(parsed.getTime()) ? toLocalDay(parsed) : undefined,
       });
     }
   }, [currentSession]);
@@ -61,8 +67,7 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
   };
 
   const handleDateChange = (date: Date | undefined) => {
-    // Store date as 'YYYY-MM-DD' string in formData for consistency with initial setup
-    setFormData(prev => ({ ...prev, date: date ? date.toISOString().split('T')[0] : undefined }));
+    setFormData(prev => ({ ...prev, date: date ? toLocalDay(date) : undefined }));
   };
 
   const handleGoalDataChange = (goalId: string, updatedFieldName: string, goalData: SessionGoalData['data']) => {
@@ -82,29 +87,16 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
     }
     setIsSubmitting(true);
 
-    // Reconstruct full ISO date string for submission.
-    // formData.date is 'YYYY-MM-DD'. new Date('YYYY-MM-DD') parses as local midnight.
-    // We need to combine this with formData.time correctly.
-    let finalDateISO = '';
-    const datePart = formData.date; // YYYY-MM-DD
-
-    if (formData.time) {
-        const [hours, minutes] = formData.time.split(':');
-        // Create date object with local date and time, then convert to ISO string (which will be UTC)
-        const localDateTime = new Date(datePart);
-        localDateTime.setHours(Number(hours), Number(minutes), 0, 0);
-        
-        if (!isNaN(localDateTime.getTime())) {
-            finalDateISO = localDateTime.toISOString();
-        } else {
-            // Fallback if time parsing fails, just use date (midnight UTC)
-            finalDateISO = new Date(datePart).toISOString();
-        }
-    } else {
-        // If no time, use date (midnight UTC)
-        finalDateISO = new Date(datePart).toISOString();
+    // The local day at the session's start time (midnight when no time was entered).
+    const localDateTime = fromLocalDay(formData.date);
+    const [hours, minutes] = (formData.time || '').split(':').map(Number);
+    if (Number.isFinite(hours) && Number.isFinite(minutes)) localDateTime.setHours(hours, minutes, 0, 0);
+    if (isNaN(localDateTime.getTime())) {
+        toast({ title: "Error", description: "The session date couldn't be read.", variant: "destructive" });
+        setIsSubmitting(false);
+        return;
     }
-
+    const finalDateISO = localDateTime.toISOString();
 
     const dataToUpdate: Partial<SessionData> = {
         ...formData,
@@ -143,7 +135,7 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
                     <div>
                         <Label htmlFor="sessionDateEdit">Session Date</Label>
                         <DatePicker
-                            date={formData.date ? new Date(formData.date) : undefined}
+                            date={formData.date ? fromLocalDay(formData.date) : undefined}
                             setDate={handleDateChange}
                         />
                     </div>
