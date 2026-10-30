@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Edit, Trash2, PlusCircle, Info, Target, Edit3, CheckSquare, TrendingUp, Archive, ArchiveRestore, Upload, Download, ArrowLeft } from 'lucide-react';
-import { formatDate, formatGoalTarget, goalTypeLabel } from '@/lib/helpers'; 
+import { formatDate, formatGoalTarget, goalTypeLabel } from '@/lib/helpers';
+import { captureTypeOf } from '@/lib/goal-constants';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
@@ -280,7 +281,7 @@ export default function StudentProfileView() {
                         {goal.sessionTargetValue !== undefined && (
                           <Badge variant="outline">
                             <TrendingUp className="mr-1.5 h-3.5 w-3.5 text-green-600" />
-                            Target: {formatGoalTarget(goal.type, goal.sessionTargetValue, goal.targetDirection)}
+                            Target: {formatGoalTarget(captureTypeOf(goal), goal.sessionTargetValue, goal.targetDirection)}
                           </Badge>
                         )}
                         {goal.isArchived && <Badge variant="outline" className="border-orange-500 text-orange-600">Archived</Badge>}

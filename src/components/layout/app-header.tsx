@@ -54,7 +54,12 @@ export default function AppHeader() {
     <div aria-hidden className="h-[65px] w-full shrink-0" />
     <header
       className="fixed inset-x-0 top-0 z-40 border-b bg-card"
-      style={{ paddingTop: 'calc(env(safe-area-inset-top) / var(--body-zoom))' }}
+      style={{
+        paddingTop: 'calc(env(safe-area-inset-top) / var(--body-zoom))',
+        // Clear of the notch on a phone in landscape (fixed, so <html>'s padding doesn't apply).
+        paddingLeft: 'calc(env(safe-area-inset-left) / var(--body-zoom))',
+        paddingRight: 'calc(env(safe-area-inset-right) / var(--body-zoom))',
+      }}
     >
       <div className="flex h-16 items-center px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-2 sm:gap-4">
@@ -67,7 +72,16 @@ export default function AppHeader() {
             </SheetTrigger>
             {/* The links scroll and Add Student stays below them, so a short screen (a phone in landscape) can
                 reach every page. */}
-            <SheetContent side="left" className="w-72 p-0 flex flex-col">
+            <SheetContent
+              side="left"
+              className="w-72 p-0 flex flex-col"
+              // Clear of the status bar, notch and home indicator (the menu covers the whole screen height).
+              style={{
+                paddingTop: 'calc(env(safe-area-inset-top) / var(--body-zoom))',
+                paddingBottom: 'calc(env(safe-area-inset-bottom) / var(--body-zoom))',
+                paddingLeft: 'calc(env(safe-area-inset-left) / var(--body-zoom))',
+              }}
+            >
               <SheetHeader>
                 <SheetTitle className="sr-only">Main Menu</SheetTitle>
               </SheetHeader>

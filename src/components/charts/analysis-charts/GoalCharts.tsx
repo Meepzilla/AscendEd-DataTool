@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, ReferenceLine, BarChart, Bar } from 'recharts';
 import {
-  BEHAVIOR_GOAL_TYPES, captureTypeOf, goalDirection, summarizeAbc, scoreStory, STORY_PARTS, STORY_LINKING_WORDS, linkingWordField, COMMUNICATION_FUNCTIONS,
+  BEHAVIOR_GOAL_TYPES, captureTypeOf, summarizeLatency, goalDirection, summarizeAbc, scoreStory, STORY_PARTS, STORY_LINKING_WORDS, linkingWordField, COMMUNICATION_FUNCTIONS,
   type AbcIncident,
 } from '@/lib/goal-constants';
 import { goalMeasure, goalMeasureInfo, goalResponses, goalNotes, meetsTarget, promptTotals, usesPromptCounters, withoutRunningTimers } from '@/lib/goal-measures';
@@ -32,15 +32,20 @@ interface Recorded {
   label: string;
 }
 
-/** The sessions where something was recorded for the goal, with its measure and a chart label. */
-export function recordedSessions(goal: Goal, sessions: SessionData[]): Recorded[] {
+/**
+ * The sessions where something was recorded for the goal, with its measure and a chart label. With
+ * `unanswered`, latency sessions where the student never responded (no time to measure) are included too, with
+ * a value of NaN, for the charts that count trials rather than chart the measure.
+ */
+export function recordedSessions(goal: Goal, sessions: SessionData[], unanswered = false): Recorded[] {
   const seen: Record<string, number> = {};
   const recorded: Recorded[] = [];
   for (const session of sessions) {
     const stored = session.goals.find(g => g.goalId === goal.id)?.data;
     if (!stored) continue;
     const data = withoutRunningTimers(stored);
-    const value = goalMeasure(goal, data);
+    let value = goalMeasure(goal, data);
+    if (value === null && unanswered && captureTypeOf(goal) === 'BEHAVIOR_LATENCY' && summarizeLatency(data).trialCount > 0) value = NaN;
     if (value === null) continue;
     const day = new Date(session.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     seen[day] = (seen[day] || 0) + 1;
@@ -138,6 +143,7 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[] }> = ({ goal
   const direction = goalDirection(goal);
   const target = goal.sessionTargetValue;
   const recorded = useMemo(() => recordedSessions(goal, sessions), [goal, sessions]);
+  const behaviorRecorded = useMemo(() => recordedSessions(goal, sessions, true), [goal, sessions]);
 
   const points = recorded.map(r => ({ label: r.label, value: r.value, ...(goalResponses(type, r.data) ?? {}) }));
   const hasResponses = goalResponses(type) !== null && points.length > 0;
@@ -221,7 +227,7 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[] }> = ({ goal
           </div>
         )}
         {recorded.length > 0 && <GoalBreakdowns goal={goal} recorded={recorded} />}
-        {recorded.length > 0 && BEHAVIOR_GOAL_TYPES.includes(type) && <BehaviorTimeCharts type={type} recorded={recorded} />}
+        {behaviorRecorded.length > 0 && BEHAVIOR_GOAL_TYPES.includes(type) && <BehaviorTimeCharts type={type} recorded={behaviorRecorded} />}
         {notes.length > 0 && (
           <div>
             <p className="text-sm font-medium mb-1">Recent notes</p>

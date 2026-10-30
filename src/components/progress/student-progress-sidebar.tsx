@@ -31,7 +31,8 @@ const calculateProgressForGoal = (goal: Goal, latestSessionForGoal: SessionData 
   if (value === null) return 0;
   const target = goal.sessionTargetValue;
   if (target !== undefined && (target > 0 || goalDirection(goal) === 'decrease')) {
-    return progressTowardTarget(value, target, goalDirection(goal));
+    // The value as shown (to 0.1), as meetsTarget compares it.
+    return progressTowardTarget(Math.round(value * 10) / 10, target, goalDirection(goal));
   }
   // No target: how far along the scale, from the bottom (or for a decrease goal, from the top).
   const max = goalMeasureInfo(goal).max;
@@ -115,11 +116,13 @@ export default function StudentProgressSidebar({ student, studentSessions }: {st
           {activeGoalsWithProgressSliced.map(goal => {
             // Observation goals without a rating target are only noted or not (see calculateProgressForGoal).
             const notesOnly = captureTypeOf(goal) === 'QUALITATIVE_OBSERVATION' && !(goal.sessionTargetValue && goal.sessionTargetValue > 0);
+            // Short of the target never rounds up to 100%.
+            const shown = goal.progress >= 100 ? 100 : Math.min(99, Math.round(goal.progress));
             const displayValue = notesOnly
               ? (goal.progress === 100 ? 'Noted' : 'No Notes')
               : goal.sessionTargetValue !== undefined
-                ? `${Math.round(goal.progress)}% (Target: ${formatGoalTarget(captureTypeOf(goal), goal.sessionTargetValue, goal.targetDirection)})`
-                : `${Math.round(goal.progress)}% (Actual)`;
+                ? `${shown}% (Target: ${formatGoalTarget(captureTypeOf(goal), goal.sessionTargetValue, goal.targetDirection)})`
+                : `${shown}% (Actual)`;
             return (
               <div key={goal.id} className="p-2 rounded-md hover:bg-sidebar-accent transition-colors">
                 {/* The goal name gets its own line so it can wrap in full; the progress and target go below it. */}

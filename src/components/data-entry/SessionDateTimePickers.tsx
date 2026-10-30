@@ -16,6 +16,8 @@ interface SessionDateTimePickersProps {
   setDataEntrySessionTime: (time: string) => void;
   dataEntrySessionEndTime: string;
   setDataEntrySessionEndTime: (time: string) => void;
+  /** Reset Time to Now (today, now, and the date and times follow "now" again). */
+  onResetToNow?: () => void;
   /** Student Access Lock: the date and times can't be changed. */
   locked?: boolean;
 }
@@ -27,10 +29,12 @@ const SessionDateTimePickers: React.FC<SessionDateTimePickersProps> = ({
   setDataEntrySessionTime,
   dataEntrySessionEndTime,
   setDataEntrySessionEndTime,
+  onResetToNow,
   locked = false,
 }) => {
   // Starts the session now: today's date, the current time, and the default length.
   const resetToNow = () => {
+    if (onResetToNow) return onResetToNow();
     const now = new Date();
     const { start, end } = defaultSessionTimes(now);
     setDataEntrySessionDate(now);
