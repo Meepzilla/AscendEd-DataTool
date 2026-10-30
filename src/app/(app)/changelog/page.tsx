@@ -21,6 +21,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-30',
+    title: 'Fixed: Time Picker on Phones in Landscape',
+    description: 'Start and End Time (Data Entry and Edit Session) now use the app\'s own time picker instead of the phone\'s clock pop-up, which on Android in landscape was cut off below its Set button. Tap the time, choose the hour, the minute (in 5-minute steps, or −/+ for a single minute) and AM/PM, then Done; Now sets the current time.',
+    type: 'fix',
+    icon: Bug,
+  },
+  {
+    date: '2026-10-30',
     title: 'Behavior Reports: When It Happens',
     description: 'Data Entry now records the time of each behavior occurrence (each Count tap, each duration episode start, each latency trial, and when interval recording starts; ABC incidents already had times). Each behavior goal on the Reports page has a new "When it happens" section: time of day, day of week (average per session), and minutes into the session, with the peak time; a per-session trend that fits the goal (rate per hour, average episode length, or trials with no response); and an occurrence log with the date and time of everything recorded. Sessions saved before times were recorded use the session\'s start time (marked ~). The written narrative also says when the behavior happens most.',
     type: 'feature',
