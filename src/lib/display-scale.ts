@@ -9,8 +9,8 @@ export const TABLET_DEFAULT_SCALE = 0.8;
 /**
  * Applies the display scale to the viewport meta tag(s): `scale` when given, otherwise the stored
  * setting or the device default. Tablets (touch screens at least 600px on their short side) default
- * to 0.8 (TABLET_DEFAULT_SCALE). `maximum-scale` stops iPad Safari from zooming in when a text box
- * is focused; iOS still allows pinch-zoom regardless.
+ * to 0.8 (TABLET_DEFAULT_SCALE). On iPad/iPhone, `maximum-scale` stops Safari from zooming in when a text
+ * box is focused; iOS still allows pinch-zoom regardless.
  *
  * The layout width is given explicitly (screen width / scale): iPad Safari keeps `width=device-width`
  * as the layout width even when zoomed out, which left the app filling only part of the screen. The
@@ -34,8 +34,12 @@ export function applyDisplayScale(scale?: number) {
     if (value !== 1) {
       const landscape = window.matchMedia('(orientation: landscape)').matches;
       const deviceWidth = landscape ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height);
-      // No maximum-scale: pinch-zoom stays available (Android honors it and would block zooming in).
       content = `width=${Math.round(deviceWidth / value)}, initial-scale=${value}`;
+      // iPad/iPhone only: without maximum-scale, Safari zooms in when a text box is focused and keeps that zoom
+      // (even across reloads), drawing the header blurry. iOS still allows pinch-zoom with it. Android honors
+      // it and would block pinch-zoom, so it is left off there. (iPadOS reports itself as a Mac with touch.)
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 0);
+      if (isIOS) content += `, maximum-scale=${value}`;
     }
 
     const metas = document.querySelectorAll('meta[name="viewport"]');
