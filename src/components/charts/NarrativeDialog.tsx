@@ -18,10 +18,19 @@ export default function NarrativeDialog(props: NarrativeInput & { disabled?: boo
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
+  const [generated, setGenerated] = useState('');
   const [style, setStyle] = useState<NarrativeStyle>('detailed');
   const [nextSteps, setNextSteps] = useState(false);
 
-  const generate = () => setText(buildNarrative({ ...input, options: { style, nextSteps } }));
+  const generate = () => {
+    const narrative = buildNarrative({ ...input, options: { style, nextSteps } });
+    setText(narrative);
+    setGenerated(narrative);
+  };
+  // Changing the format rewrites the text, so edits are only discarded after asking.
+  const confirmDiscard = () => text === generated || window.confirm('Discard your edits and rewrite the narrative in the new format?');
+  const changeStyle = (value: NarrativeStyle) => { if (value !== style && confirmDiscard()) setStyle(value); };
+  const changeNextSteps = (value: boolean) => { if (confirmDiscard()) setNextSteps(value); };
   useEffect(() => {
     if (open) generate();
     // Regenerate when the dialog opens or the format changes; edits are kept otherwise.
@@ -62,17 +71,17 @@ export default function NarrativeDialog(props: NarrativeInput & { disabled?: boo
             <div className="flex gap-1" role="radiogroup" aria-label="Narrative length">
               {(['detailed', 'brief'] as const).map(option => (
                 <Button key={option} type="button" size="sm" role="radio" aria-checked={style === option}
-                  variant={style === option ? 'default' : 'outline'} onClick={() => setStyle(option)}
+                  variant={style === option ? 'default' : 'outline'} onClick={() => changeStyle(option)}
                   title={option === 'detailed' ? 'A paragraph per goal' : 'One line per goal'}>
                   {option === 'detailed' ? 'Detailed' : 'Brief'}
                 </Button>
               ))}
             </div>
             <div className="flex items-center gap-2">
-              <Switch id="narrative-next-steps" checked={nextSteps} onCheckedChange={setNextSteps} />
+              <Switch id="narrative-next-steps" checked={nextSteps} onCheckedChange={changeNextSteps} />
               <Label htmlFor="narrative-next-steps" className="text-sm">Suggested next steps</Label>
             </div>
-            <p className="text-xs text-muted-foreground">Changing these rewrites the text (edits are lost).</p>
+            <p className="text-xs text-muted-foreground">Changing these rewrites the text; you&apos;ll be asked first if you&apos;ve edited it.</p>
           </div>
           <Textarea value={text} onChange={(e) => setText(e.target.value)} className="min-h-[50vh] text-sm leading-relaxed" aria-label="Narrative text" />
           <DialogFooter className="gap-2 sm:gap-0">
