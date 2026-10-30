@@ -55,7 +55,8 @@ export function formatGoalTarget(type: string, target: number, direction?: 'incr
     return direction === 'increase' ? `≥ ${target}% replacement skill` : `≤ ${plural(target, 'incident')}`;
   }
   if (type === 'COMMUNICATION_FUNCTIONS') return plural(target, 'function');
-  if (type.startsWith('QUALITATIVE')) return String(target);
+  // Observation and cognitive goals are rated 1-5.
+  if (type.startsWith('QUALITATIVE') || type === 'COGNITIVE') return `${target} out of 5`;
   return `${target}%`;
 }
 
@@ -139,4 +140,20 @@ export function getInitialAuthTokenFromGlobals(): string | null {
     return (window as any).__initial_auth_token;
   }
   return null;
+}
+
+/**
+ * When a session started, for ordering: its day at its start time when one was entered (Data Entry stamps
+ * every session saved from one sitting with the same date, so two sessions on a day differ only by time).
+ */
+export function sessionTimestamp(session: { date: string; time?: string }): number {
+  const date = new Date(session.date);
+  const match = /^(\d{1,2}):(\d{2})/.exec(session.time || '');
+  if (Number.isNaN(date.getTime()) || !match) return date.getTime();
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), Number(match[1]), Number(match[2])).getTime();
+}
+
+/** Orders sessions oldest first (by sessionTimestamp, then the stored date). */
+export function compareSessionsOldestFirst(a: { date: string; time?: string }, b: { date: string; time?: string }): number {
+  return sessionTimestamp(a) - sessionTimestamp(b) || new Date(a.date).getTime() - new Date(b.date).getTime();
 }

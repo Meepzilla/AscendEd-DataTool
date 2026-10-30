@@ -12,9 +12,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
 import type { DateRange } from "react-day-picker";
 import { useSearchParams, useRouter } from 'next/navigation';
-import Papa from 'papaparse';
+import { downloadSessionsCsv } from '@/lib/session-csv';
 import { useToast } from '@/hooks/use-toast';
-import { formatDate } from '@/lib/helpers';
+import { compareSessionsOldestFirst, formatDate } from '@/lib/helpers';
 import { AI_ENABLED } from '@/lib/features';
 import NarrativeDialog from '@/components/charts/NarrativeDialog';
 
@@ -46,6 +46,8 @@ export default function AnalysisReportPage() {
       // If the state is not in sync with the URL, update it.
       if (selectedStudentId !== studentIdFromQuery) {
         setSelectedStudentId(studentIdFromQuery);
+        // The goal filter was for the previous student's goals.
+        setSelectedGoalId(undefined);
       }
     } 
     // Case 2: URL has no student ID, we're not loading, students exist, and no student is selected yet.
@@ -69,7 +71,7 @@ export default function AnalysisReportPage() {
         toDate.setHours(23, 59, 59, 999);
         filtered = filtered.filter(s => new Date(s.date) <= toDate);
     }
-    return filtered.sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    return filtered.sort(compareSessionsOldestFirst);
   }, [sessions, selectedStudentId, dateRange]);
 
   const handleStudentChange = (value: string) => {
@@ -88,61 +90,7 @@ export default function AnalysisReportPage() {
       return;
     }
 
-    const dataToExport = studentSessions.flatMap(session => {
-        // If a session has no goals, export a single row for the session itself.
-        if (!session.goals || session.goals.length === 0) {
-            return [{
-                'Session ID': session.sessionId,
-                'Student ID': session.studentId,
-                'Student Name': session.studentName,
-                'Date': formatDate(session.date),
-                'Start Time': session.time,
-                'End Time': session.endTime || 'N/A',
-                'Activity': session.activity,
-                'Session Notes': session.notes,
-                'Goal Name': 'N/A (No goals recorded)',
-            }];
-        }
-
-        // Otherwise, create a row for each goal in the session.
-        return session.goals.map(goalData => {
-            const baseData: Record<string, any> = {
-                'Session ID': session.sessionId,
-                'Student ID': session.studentId,
-                'Student Name': session.studentName,
-                'Date': formatDate(session.date),
-                'Start Time': session.time,
-                'End Time': session.endTime || 'N/A',
-                'Activity': session.activity,
-                'Session Notes': session.notes,
-                'Goal ID': goalData.goalId,
-                'Goal Name': goalData.goalName,
-                'Goal Type': goalData.goalType,
-            };
-
-            // Flatten the goal-specific data into separate columns
-            const flattenedGoalData = Object.entries(goalData.data).reduce((acc, [key, value]) => {
-                const formattedKey = `Goal Data: ${key.replace(/([A-Z])/g, ' $1').trim()}`;
-                acc[formattedKey] = value !== null && typeof value === 'object' ? JSON.stringify(value) : value;
-                return acc;
-            }, {} as Record<string, any>);
-
-            return { ...baseData, ...flattenedGoalData };
-        });
-    });
-
-    // Every column any row has (goal types have different data fields), not just the first row's.
-    const fields = [...new Set(dataToExport.flatMap(row => Object.keys(row)))];
-    const csv = Papa.unparse(dataToExport, { columns: fields });
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    const safeStudentName = selectedStudent.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-    link.setAttribute('download', `sessions_${safeStudentName}_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    downloadSessionsCsv(studentSessions, selectedStudent.name);
   };
 
   if (studentsLoading && students.length === 0) {

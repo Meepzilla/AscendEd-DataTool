@@ -25,7 +25,7 @@ import {
   GOAL_TYPES_WITHOUT_PROMPT_COUNTERS,
 } from '@/lib/goal-constants';
 import { goalResponses } from '@/lib/goal-measures';
-import { applyGoalHotkey } from '@/lib/data-entry-hotkeys';
+import { applyGoalHotkey, removeCorrect } from '@/lib/data-entry-hotkeys';
 import GoalTextPopover from './GoalTextPopover';
 
 interface GoalDataInputComponentProps {
@@ -74,11 +74,11 @@ export default function GoalDataInputComponent({
     // This function is now only for logic, not for checking lock status
     let newData = { ...data, [field]: value };
 
-    // If a fluency dysfluency is incremented, also increment total syllables.
-    const isIncrementing = value > (data[field] || 0);
-    if ((goal.dataCaptureType || goal.type) === 'FLUENCY_SYLLABLE_STUTTER' && isIncrementing && ['stutteredSyllables', 'blocks', 'repetitions', 'interjections'].includes(field)) {
-        const incrementAmount = value - (data[field] || 0);
-        newData.totalSyllables = (newData.totalSyllables || 0) + incrementAmount;
+    // A dysfluent syllable is also a syllable, so changing a dysfluency count changes total syllables by the
+    // same amount (up or down, so a mistaken tap taken back leaves the total as it was).
+    if ((goal.dataCaptureType || goal.type) === 'FLUENCY_SYLLABLE_STUTTER' && ['stutteredSyllables', 'blocks', 'repetitions', 'interjections'].includes(field)) {
+        const change = (Number(value) || 0) - (Number(data[field]) || 0);
+        newData.totalSyllables = Math.max(0, (Number(newData.totalSyllables) || 0) + change);
     }
 
     // A cleared or partly typed count leaves the trials as they are until a number is entered.
@@ -319,6 +319,12 @@ export default function GoalDataInputComponent({
                 </div>
               </div>
             </FormItem>
+            {captureType === 'SEQUENCED_TRIALS' && (Number(data.successfulAttempts) || Number(data.failedAttempts) || Number(data.approximate)) ? (
+              // Sessions entered before sequenced trials used the trial boxes kept counts; they still count.
+              <p className="text-xs text-muted-foreground">
+                Also counted (entered before the trial boxes): {Number(data.successfulAttempts) || 0} correct, {Number(data.approximate) || 0} approximate, {Number(data.failedAttempts) || 0} incorrect.
+              </p>
+            ) : null}
             <FormItem>
               <FormLabel>Trial Sequence (Click to cycle)</FormLabel>
               <div className="flex flex-wrap gap-2 items-center">
@@ -922,7 +928,12 @@ export default function GoalDataInputComponent({
                     disabled={isArchived}
                     // Independent also records a correct response, the same as its hotkey.
                     onIncrement={(e) => handleInteraction(e, () => onChange(pt, (pt === 'Independent' && applyGoalHotkey((goal.dataCaptureType || goal.type) as GoalType, 'I', data)) || { ...data, [pt]: count + 1 }))}
-                    onDecrement={(e) => handleInteraction(e, () => onChange(pt, { ...data, [pt]: Math.max(0, count - 1) }))}
+                    // Removing an Independent prompt also takes back the correct response it added.
+                    onDecrement={(e) => handleInteraction(e, () => {
+                      if (count === 0) return;
+                      const lowered = { ...data, [pt]: count - 1 };
+                      onChange(pt, pt === 'Independent' ? removeCorrect((goal.dataCaptureType || goal.type) as GoalType, lowered) : lowered);
+                    })}
                   />
                 );
               })}

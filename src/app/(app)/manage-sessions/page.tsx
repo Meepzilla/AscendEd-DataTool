@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Edit, Trash2, Search, Info, Eye, FileText } from 'lucide-react';
-import { formatDate, formatTime } from '@/lib/helpers';
+import { compareSessionsOldestFirst, formatDate, formatTime } from '@/lib/helpers';
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
@@ -62,7 +62,7 @@ export default function ManageSessionsPage() {
         
         return studentMatch && searchMatch && dateMatch;
       })
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime() || (b.time || '').localeCompare(a.time || '')); // Sort by date then time
+      .sort((a, b) => compareSessionsOldestFirst(b, a)); // Newest first
   }, [sessions, selectedStudentId, searchTerm, dateRange]);
 
   if (studentsLoading && students.length === 0) { // Only show global skeleton if students are also loading

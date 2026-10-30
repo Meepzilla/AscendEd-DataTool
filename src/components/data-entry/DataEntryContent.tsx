@@ -75,6 +75,8 @@ export default function DataEntryContent() {
 
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingAll, setIsSavingAll] = useState(false);
+  // Set at once (state updates later), so a second save started meanwhile is ignored.
+  const savingRef = useRef(false);
   const [isHeaderCardCollapsed, setIsHeaderCardCollapsed] = useState(() => draft?.isHeaderCardCollapsed ?? false);
   const [isResetConfirmationOpen, setIsResetConfirmationOpen] = useState(false);
   const [selectionModalType, setSelectionModalType] = useState<'student' | 'goal' | null>(null);
@@ -195,7 +197,8 @@ export default function DataEntryContent() {
   // A past date picked on purpose (to enter an old session) is left alone.
   const sessionStatesRef = useRef(studentSessionStates);
   sessionStatesRef.current = studentSessionStates;
-  const pastDateChosenRef = useRef(false);
+  // A restored draft from another day keeps its date: it is the date of the work entered.
+  const pastDateChosenRef = useRef(!!sessionDate && draftHadEntries && sessionDate.toDateString() !== new Date().toDateString());
   const chooseSessionDate = useCallback((date: Date | undefined) => {
     pastDateChosenRef.current = !!date && date.toDateString() !== new Date().toDateString();
     setSessionDate(date);
@@ -205,7 +208,9 @@ export default function DataEntryContent() {
       if (document.visibilityState !== 'visible') return;
       const now = new Date();
       if (pastDateChosenRef.current || !sessionDate || sessionDate.toDateString() === now.toDateString()) return;
-      if (Object.values(sessionStatesRef.current).some(state => hasUnsavedEntry(state, goalDefaults))) return;
+      // Until the students' states are built (first render), what's entered isn't known yet.
+      const states = Object.values(sessionStatesRef.current);
+      if (states.length === 0 || states.some(state => hasUnsavedEntry(state, goalDefaults))) return;
       const { start, end } = defaultSessionTimes(now);
       setSessionDate(now);
       setSessionTime(start);
@@ -290,7 +295,14 @@ export default function DataEntryContent() {
         toast({ title: "Simulated Save", description: `Access is locked. Session for ${state.studentName} not saved.` });
         return;
     }
-    
+    // Nothing entered: saving would only add an empty session (e.g. Save tapped twice, or Ctrl+Enter held).
+    if (!hasUnsavedEntry(state, goalDefaults)) {
+        toast({ title: "Nothing to save", description: `Nothing has been entered for ${state.studentName} yet.` });
+        return;
+    }
+    if (savingRef.current) return;
+    savingRef.current = true;
+
     setIsSaving(true);
     const sessionGoals: SessionGoalData[] = state.originalGoalHeaders
         .filter((goal: any) => !goal.isArchived)
@@ -304,6 +316,7 @@ export default function DataEntryContent() {
 
     if (sessionGoals.length === 0) {
         toast({ title: "Info", description: `Cannot save for ${state.studentName}, no active goals with data.`, variant: "default" });
+        savingRef.current = false;
         setIsSaving(false);
         return;
     }
@@ -325,6 +338,7 @@ export default function DataEntryContent() {
         toast({ title: "Success", description: `Session for ${state.studentName} saved.` });
         resetSessionStateForStudent(focusedStudentId);
     }
+    savingRef.current = false;
     setIsSaving(false);
   }
 
@@ -337,16 +351,19 @@ export default function DataEntryContent() {
         toast({ title: "Error", description: "No students selected to save sessions for.", variant: "destructive" });
         return;
     }
+    if (savingRef.current) return;
+    savingRef.current = true;
     setIsSavingAll(true);
     let savedCount = 0, errorCount = 0, simulatedCount = 0;
     for (const studentId of selectedStudentIds) {
         const state = studentSessionStates[studentId];
-        if (!state) continue;
+        // Students with nothing entered get no (empty) session.
+        if (!state || !hasUnsavedEntry(state, goalDefaults)) continue;
         if (isStudentAccessLocked) {
             simulatedCount++;
             continue;
         }
-        const sessionGoals = state.originalGoalHeaders.filter((g: any) => !g.isArchived).map((g: any) => ({ goalId: g.id, goalName: g.name, goalType: g.type, data: finalizeBehaviorData(captureTypeOf(g), state.goalData[g.id] || {}) }));
+        const sessionGoals = state.originalGoalHeaders.filter((g: any) => !g.isArchived).map((g: any) => ({ goalId: g.id, goalName: g.name, goalType: g.type, data: finalizeBehaviorData(captureTypeOf(g), state.goalData[g.id] || JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[captureTypeOf(g)] || {}))) }));
         if (sessionGoals.length === 0) continue;
         const session = { studentId: state.studentId, studentName: state.studentName, date: sessionDate.toISOString(), time: sessionTime, endTime: sessionEndTime, activity: state.activity, notes: state.notes, goals: sessionGoals, originalGoalHeaders: state.originalGoalHeaders };
         const savedSession = await addSession(session);
@@ -360,6 +377,8 @@ export default function DataEntryContent() {
     if (savedCount > 0) toast({ title: "Success", description: `Saved ${savedCount} session(s).` });
     if (simulatedCount > 0) toast({ title: "Simulated Save", description: `${simulatedCount} session(s) not saved due to lock.` });
     if (errorCount > 0) toast({ title: "Error", description: `Failed to save ${errorCount} session(s).`, variant: "destructive" });
+    if (savedCount + simulatedCount + errorCount === 0) toast({ title: "Nothing to save", description: "Nothing has been entered for these students yet." });
+    savingRef.current = false;
     setIsSavingAll(false);
   }
 
@@ -460,6 +479,10 @@ export default function DataEntryContent() {
   }, [activeStudents, selectedStudentIds, toast, setSelectedStudentIds, setFocusedStudentSlotIndex]);
 
   const removeStudentSlot = useCallback((indexToRemove: number) => {
+    if (isStudentAccessLocked) {
+      toast({ title: 'Access Locked', description: 'Student access is locked. Unlock to make changes.' });
+      return;
+    }
     setSelectedStudentIds(prev => {
       const currentFocusedId = prev[focusedStudentSlotIndex];
       const newSelectedIds = prev.filter((_, i) => i !== indexToRemove);
@@ -476,13 +499,17 @@ export default function DataEntryContent() {
       }
       return newSelectedIds;
     });
-  }, [focusedStudentSlotIndex, setSelectedStudentIds, setFocusedStudentSlotIndex]);
+  }, [focusedStudentSlotIndex, setSelectedStudentIds, setFocusedStudentSlotIndex, isStudentAccessLocked, toast]);
 
   const availableStudentsForDropdown = useMemo(() => {
     return activeStudents.filter(s => !selectedStudentIds.includes(s.id));
   }, [activeStudents, selectedStudentIds]);
 
   const handleOpenResetConfirmation = () => {
+    if (isStudentAccessLocked) {
+      toast({ title: 'Access Locked', description: 'Student access is locked. Unlock to make changes.' });
+      return;
+    }
     if (selectedStudentIds.length === 0) {
       toast({ title: "Info", description: "No students selected to reset data for.", variant: "default" });
       return;
@@ -548,7 +575,7 @@ export default function DataEntryContent() {
     // Ctrl+Enter saves (Cmd+Enter on Apple keyboards), even while typing in a field.
     if ((event.ctrlKey || event.metaKey) && key === 'ENTER') {
       event.preventDefault();
-      handleSave();
+      if (!event.repeat) handleSave();
       return;
     }
     // Other Ctrl/Cmd combinations are the browser's (copy, paste...), and typing or an open dialog
@@ -779,8 +806,9 @@ export default function DataEntryContent() {
         
         {selectedStudentIds.length > 0 && (
             <div ref={saveBarRef} className="sticky bottom-0 left-0 right-0 z-10 bg-background mt-auto">
-                {/* Right padding keeps the buttons to the left of the host's corner badge, on the same row. */}
-                <div className="flex justify-between items-center gap-2 p-2 pr-[var(--host-badge-width)] border-t">
+                {/* On wider screens, right padding keeps the buttons to the left of the host's corner badge (a phone
+                    has no room for it, so the buttons use the full width and wrap). */}
+                <div className="flex flex-wrap justify-between items-center gap-2 p-2 md:pr-[var(--host-badge-width)] border-t">
                     <div className="hidden sm:block">
                       <TouchControls
                         activeStudentsInSlots={activeStudentsInSlots}
@@ -809,14 +837,14 @@ export default function DataEntryContent() {
                       />
                     </div>
 
-                    <div className="flex gap-2 ml-auto">
-                        <Button variant="outline" onClick={handleOpenResetConfirmation} disabled={isSaving || isSavingAll} size="lg">
+                    <div className="flex flex-wrap justify-end gap-2 ml-auto">
+                        <Button variant="outline" onClick={handleOpenResetConfirmation} disabled={isSaving || isSavingAll} size="lg" aria-label="Reset Focused">
                         <RotateCcw className="mr-2 h-5 w-5" />
-                        Reset Focused
+                        Reset<span className="hidden sm:inline">&nbsp;Focused</span>
                         </Button>
-                        <Button onClick={handleSave} disabled={isSaving || isSavingAll} size="lg">
+                        <Button onClick={handleSave} disabled={isSaving || isSavingAll} size="lg" aria-label="Save Focused">
                           <Save className="mr-2 h-5 w-5" />
-                          {isSaving ? 'Saving...' : 'Save Focused'}
+                          {isSaving ? 'Saving...' : <>Save<span className="hidden sm:inline">&nbsp;Focused</span></>}
                         </Button>
                         <Button onClick={handleSaveAll} disabled={isSaving || isSavingAll} size="lg">
                           <Save className="mr-2 h-5 w-5" />

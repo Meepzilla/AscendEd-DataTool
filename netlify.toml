@@ -19,12 +19,12 @@
     Cache-Control = "public, max-age=31536000, immutable"
 
 # Keep the app out of search engines, and out of other sites' frames (so a page can't overlay it to
-# trick taps); don't send the app's address to links it opens.
+# trick taps); don't send the app's address to links it opens; the page may only send data to this site.
 [[headers]]
   for = "/*"
   [headers.values]
     X-Robots-Tag = "noindex"
-    Content-Security-Policy = "frame-ancestors 'none'"
+    Content-Security-Policy = "frame-ancestors 'none'; connect-src 'self'; object-src 'none'; base-uri 'self'"
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "no-referrer"

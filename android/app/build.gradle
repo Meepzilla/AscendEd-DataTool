@@ -27,9 +27,20 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        // The private key for the builds teachers install, given by the build (GitHub secrets), never committed.
+        // A release build can't be debugged, so student data can't be read off a phone over USB.
+        if (System.getenv('ANDROID_KEYSTORE_FILE')) {
+            release {
+                storeFile file(System.getenv('ANDROID_KEYSTORE_FILE'))
+                storePassword System.getenv('ANDROID_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('ANDROID_KEY_ALIAS')
+                keyPassword System.getenv('ANDROID_KEY_PASSWORD')
+            }
+        }
     }
     buildTypes {
         release {
+            if (System.getenv('ANDROID_KEYSTORE_FILE')) signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

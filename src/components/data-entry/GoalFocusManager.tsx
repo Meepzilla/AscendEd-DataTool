@@ -20,34 +20,22 @@ const GoalFocusManager = ({
   showArchived,
 }: GoalFocusManagerProps) => {
 
-  useEffect(() => {
-    if (studentId) {
-      // Scroll student card into view
-      const studentCardId = `student-card-slot-${focusedStudentSlotIndex}`;
-      const studentCardElement = document.getElementById(studentCardId);
-      if (studentCardElement) {
-        studentCardElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-      }
+  // Scrolls only when the focus moves (to another student or goal), not on every entry: entering data in a
+  // goal that isn't focused would otherwise scroll the focused one back into view under the teacher's finger.
+  const visibleGoals = studentState?.originalGoalHeaders?.filter(g => !g.isArchived || showArchived) ?? [];
+  const focusedGoalId = focusedGoalIndex !== undefined ? visibleGoals[focusedGoalIndex]?.id : undefined;
 
-      // Scroll focused goal into view
-      if (studentState?.originalGoalHeaders && focusedGoalIndex !== undefined) {
-        const visibleGoals = studentState.originalGoalHeaders.filter(g => !g.isArchived || showArchived);
-        if (visibleGoals.length > focusedGoalIndex) {
-          const focusedGoal = visibleGoals[focusedGoalIndex];
-          if (focusedGoal) {
-            const goalElementId = `goal-input-${studentId}-${focusedGoal.id}`;
-            // Use a timeout to ensure the element is available after any state updates
-            setTimeout(() => {
-              const goalElement = document.getElementById(goalElementId);
-              if (goalElement) {
-                goalElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-              }
-            }, 50);
-          }
-        }
-      }
-    }
-  }, [focusedStudentSlotIndex, studentId, focusedGoalIndex, studentState, showArchived]);
+  useEffect(() => {
+    if (!studentId) return;
+    document.getElementById(`student-card-slot-${focusedStudentSlotIndex}`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    if (!focusedGoalId) return;
+    // A timeout lets the goal's element render after any state updates.
+    const timer = setTimeout(() => {
+      document.getElementById(`goal-input-${studentId}-${focusedGoalId}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [focusedStudentSlotIndex, studentId, focusedGoalId]);
 
   // This component doesn't render anything, it just manages side effects.
   return null;
