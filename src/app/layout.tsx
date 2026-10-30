@@ -40,6 +40,9 @@ export default function RootLayout({
         <title>AscendEd - Student Goal Tracker</title>
         <link rel="manifest" href="/manifest.webmanifest" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        {/* The browser tab icon: the app's check-mark logo. */}
+        <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48 64x64" />
+        <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-title" content="AscendEd" />
