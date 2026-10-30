@@ -69,6 +69,7 @@ export interface GoalTemplate {
   bankId?: string; // Key into public/goal-bank/details.json (purpose, activity ideas, tags)
   targetDirection?: TargetDirection;
   retired?: boolean; // Built-in duplicate archived once by the app (see RETIRED_DEFAULT_TEMPLATES)
+  defaultKey?: string; // Built-in templates: the name they were added under, kept if the user renames them
 }
 
 export interface SessionData {

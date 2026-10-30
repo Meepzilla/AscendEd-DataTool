@@ -11,13 +11,15 @@ import { Save, RotateCcw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
 import { Info, PlusCircle } from 'lucide-react';
-import type { Student, StudentSessionState, SessionGoalData, GoalType } from '@/lib/types';
+import type { Goal, Student, StudentSessionState, SessionGoalData, GoalType } from '@/lib/types';
 import TouchControls from '@/components/forms/touch-controls';
 import { ConfettiProvider } from '@/hooks/use-confetti';
 import { ScrollArea } from '../ui/scroll-area';
 import { GOAL_TYPE_FIELDS, GOAL_TYPES, GOAL_TYPES_WITHOUT_PROMPT_COUNTERS, captureTypeOf, finalizeBehaviorData } from '@/lib/goal-constants';
 import { applyGoalHotkey, hotkeyChar, hotkeysBlocked } from '@/lib/data-entry-hotkeys';
 import GoalFocusManager from './GoalFocusManager';
+import AccessLockDialog, { type AccessLockDialogMode } from './AccessLockDialog';
+import { clearAccessPin, hasAccessPin } from '@/lib/access-pin';
 import { getActivitySuggestions as getAiActivitySuggestions } from '@/ai/flows/activity-suggestions';
 
 
@@ -77,6 +79,13 @@ export default function DataEntryContent() {
   const [isResetConfirmationOpen, setIsResetConfirmationOpen] = useState(false);
   const [selectionModalType, setSelectionModalType] = useState<'student' | 'goal' | null>(null);
   const [isStudentAccessLocked, setIsStudentAccessLocked] = useState(() => draft?.isStudentAccessLocked ?? false);
+  // Turning the lock off takes the teacher's PIN; the first time it's turned on, the PIN is chosen.
+  const [accessLockDialog, setAccessLockDialog] = useState<AccessLockDialogMode>(null);
+  const requestAccessLock = useCallback((locked: boolean) => {
+    if (!locked) setAccessLockDialog('unlock');
+    else if (hasAccessPin(uid)) setIsStudentAccessLocked(true);
+    else setAccessLockDialog('set');
+  }, [uid]);
   
   // UI State moved from useStudentData
   const [studentSessionStates, setStudentSessionStates] = useState<Record<string, StudentSessionState>>({});
@@ -99,17 +108,22 @@ export default function DataEntryContent() {
             const existingState = prevStates[student.id];
             const studentGoals = student.goals || [];
             
-            const existingGoalIds = existingState?.originalGoalHeaders.map(g => g.id).join(',');
-            const currentGoalIds = studentGoals.map(g => g.id).join(',');
+            // Rebuilt when goals are added or removed, and when a goal is edited mid-session (its name, type,
+            // data capture type, target or archived state), so the cards and the save use the current goal.
+            const goalSignature = (goals: Goal[]) => JSON.stringify(goals.map(g => [g.id, g.name, g.type, g.dataCaptureType, g.isArchived, g.sessionTargetValue, g.targetDirection]));
 
-            if (!existingState || existingGoalIds !== currentGoalIds) {
+            if (!existingState || goalSignature(existingState.originalGoalHeaders) !== goalSignature(studentGoals)) {
                 statesChanged = true;
                 // A student's first state comes from the unsaved draft, if it has one.
                 const drafted = existingState ? undefined : draftRef.current?.students[student.id];
-                const updatedGoalData = existingState?.goalData || { ...(drafted?.goalData || {}) };
+                const updatedGoalData = { ...(existingState?.goalData || drafted?.goalData || {}) };
+                const previousGoals = new Map((existingState?.originalGoalHeaders || []).map(g => [g.id, g]));
                 
                 studentGoals.forEach(goal => {
-                    if (!updatedGoalData[goal.id]) {
+                    const previous = previousGoals.get(goal.id);
+                    // Data entered with another type's inputs doesn't fit the new ones, so that goal starts over.
+                    const typeChanged = previous && captureTypeOf(previous) !== captureTypeOf(goal);
+                    if (!updatedGoalData[goal.id] || typeChanged) {
                         updatedGoalData[goal.id] = JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[captureTypeOf(goal)] || {}));
                     }
                 });
@@ -175,6 +189,36 @@ export default function DataEntryContent() {
       setSessionEndTime(end);
     }
   }, [setSessionTime, setSessionEndTime, sessionTime]);
+
+  // The page can stay open for days (the app is left on Data Entry). When it comes back to the foreground on a
+  // later day with nothing entered, the session moves to today and now, so it isn't saved under an old date.
+  // A past date picked on purpose (to enter an old session) is left alone.
+  const sessionStatesRef = useRef(studentSessionStates);
+  sessionStatesRef.current = studentSessionStates;
+  const pastDateChosenRef = useRef(false);
+  const chooseSessionDate = useCallback((date: Date | undefined) => {
+    pastDateChosenRef.current = !!date && date.toDateString() !== new Date().toDateString();
+    setSessionDate(date);
+  }, []);
+  useEffect(() => {
+    const refreshDate = () => {
+      if (document.visibilityState !== 'visible') return;
+      const now = new Date();
+      if (pastDateChosenRef.current || !sessionDate || sessionDate.toDateString() === now.toDateString()) return;
+      if (Object.values(sessionStatesRef.current).some(state => hasUnsavedEntry(state, goalDefaults))) return;
+      const { start, end } = defaultSessionTimes(now);
+      setSessionDate(now);
+      setSessionTime(start);
+      setSessionEndTime(end);
+    };
+    refreshDate();
+    document.addEventListener('visibilitychange', refreshDate);
+    window.addEventListener('focus', refreshDate);
+    return () => {
+      document.removeEventListener('visibilitychange', refreshDate);
+      window.removeEventListener('focus', refreshDate);
+    };
+  }, [sessionDate, goalDefaults]);
 
   useEffect(() => {
     if (selectedStudentIds.length === 0 && activeStudents.length > 0) {
@@ -534,7 +578,7 @@ export default function DataEntryContent() {
           if (focusedStudent) openEditStudentModal(focusedStudent);
           break;
         }
-        case 'L': setIsStudentAccessLocked(p => !p); break;
+        case 'L': requestAccessLock(!isStudentAccessLocked); break;
         default: handled = false;
       }
       if (handled) event.preventDefault();
@@ -567,7 +611,8 @@ export default function DataEntryContent() {
     removeStudentSlot,
     openEditStudentModal,
     activeStudentsInSlots,
-    setIsStudentAccessLocked,
+    requestAccessLock,
+    isStudentAccessLocked,
     handleSave,
     applyHotkeyToGoal,
   ]);
@@ -645,6 +690,19 @@ export default function DataEntryContent() {
           studentState={studentSessionStates[selectedStudentIds[focusedStudentSlotIndex]]}
           showArchived={showArchivedByStudentId[selectedStudentIds[focusedStudentSlotIndex]]}
         />
+        <AccessLockDialog
+          uid={uid}
+          mode={accessLockDialog}
+          onClose={() => setAccessLockDialog(null)}
+          onDone={() => { setIsStudentAccessLocked(accessLockDialog === 'set'); setAccessLockDialog(null); }}
+          onForgot={() => {
+            Object.keys(studentSessionStates).forEach(resetSessionStateForStudent);
+            clearAccessPin(uid);
+            setIsStudentAccessLocked(false);
+            setAccessLockDialog(null);
+            toast({ title: 'Unlocked', description: 'Unsaved entries were discarded and the PIN was removed.' });
+          }}
+        />
         <Suspense fallback={null}>
           {isResetConfirmationOpen && (
             <ConfirmationModal
@@ -674,13 +732,13 @@ export default function DataEntryContent() {
               isHeaderCardCollapsed={isHeaderCardCollapsed}
               setIsHeaderCardCollapsed={setIsHeaderCardCollapsed}
               dataEntrySessionDate={sessionDate}
-              setDataEntrySessionDate={setSessionDate}
+              setDataEntrySessionDate={chooseSessionDate}
               dataEntrySessionTime={sessionTime}
               setDataEntrySessionTime={setSessionTime}
               dataEntrySessionEndTime={sessionEndTime}
               setDataEntrySessionEndTime={setSessionEndTime}
               isStudentAccessLocked={isStudentAccessLocked}
-              setIsStudentAccessLocked={setIsStudentAccessLocked}
+              setIsStudentAccessLocked={requestAccessLock}
             />
           </Suspense>
         </div>

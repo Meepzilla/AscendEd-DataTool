@@ -150,7 +150,7 @@ export default function StudentSidebar() {
                         </div>
                         
                         {sidebarState !== 'collapsed' && (
-                          <div className="flex-shrink-0 opacity-0 group-hover/menu-item:opacity-100 focus-within:opacity-100 transition-opacity">
+                          <div className="flex-shrink-0 opacity-0 group-hover/menu-item:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
                             <Button 
                               variant="ghost" 
                               size="icon" 

@@ -32,7 +32,7 @@ const ProgressOverTimeChart: React.FC<ProgressOverTimeChartProps> = ({ chartData
             <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} allowDuplicatedCategory={false} />
             <YAxis unit="%" domain={[0, 100]} tickLine={false} axisLine={false} tickMargin={8} />
             <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
-            <Line type="monotone" dataKey="accuracy" stroke="var(--color-accuracy)" strokeWidth={2} dot={true} />
+            <Line type="monotone" dataKey="accuracy" stroke="var(--color-accuracy)" strokeWidth={2} dot={true} connectNulls />
             <ChartLegend content={<ChartLegendContent />} />
           </LineChart>
         </ChartContainer>

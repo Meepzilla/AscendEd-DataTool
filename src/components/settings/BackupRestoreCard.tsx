@@ -37,13 +37,20 @@ export default function BackupRestoreCard() {
 
   const handleRestore = (mode: RestoreMode) => {
     if (!pendingBackup) return;
-    const summary = restoreBackup(pendingBackup, mode);
+    let summary;
+    try {
+      summary = restoreBackup(pendingBackup, mode);
+    } catch (error) {
+      // Storage full: nothing was changed.
+      toast({ title: "Couldn't restore the backup", description: error instanceof Error ? error.message : String(error), variant: 'destructive' });
+      return;
+    }
     setPendingBackup(null);
     setIsConfirmingReplace(false);
     toast({
       title: mode === 'merge' ? 'Backup added' : 'Backup restored',
       description: mode === 'merge'
-        ? `Added ${plural(summary.students, 'student')}, ${plural(summary.sessions, 'session')} and ${plural(summary.goalTemplates, 'template')} that weren't already on this device.`
+        ? `Added ${plural(summary.students, 'student')}, ${plural(summary.sessions, 'session')} and ${plural(summary.goalTemplates, 'template')} that weren't already on this device${summary.goals ? `, and ${plural(summary.goals, 'goal')} to students already here` : ''}.`
         : `Loaded ${plural(summary.students, 'student')}, ${plural(summary.sessions, 'session')} and ${plural(summary.goalTemplates, 'template')}.`,
     });
   };

@@ -85,6 +85,9 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
   ...(goalBank as Omit<GoalTemplate, 'id' | 'createdAt' | 'userId'>[]),
 ].filter(template => !RETIRED_NAMES.has(template.name));
 
+/** The name a built-in template was added under (its current name for templates stored before defaultKey). */
+export const defaultTemplateKey = (template: Pick<GoalTemplate, 'name' | 'defaultKey'>) => template.defaultKey ?? template.name;
+
 /**
  * Built-in templates whose goal type changed. Each device keeps its own copy of the default templates
  * (only missing ones are added on load), so `applyDefaultTemplateUpdates` updates stored copies that
@@ -100,7 +103,7 @@ export const DEFAULT_TEMPLATE_UPDATES: { name: string; fromType: GoalType }[] = 
 export function applyDefaultTemplateUpdates<T extends GoalTemplate>(templates: T[]): { templates: T[]; changed: boolean } {
   let changed = false;
   const updated = templates.map(template => {
-    const update = DEFAULT_TEMPLATE_UPDATES.find(u => u.name === template.name && u.fromType === template.type);
+    const update = DEFAULT_TEMPLATE_UPDATES.find(u => u.name === defaultTemplateKey(template) && u.fromType === template.type);
     if (!template.isDefault || !update) return template;
     const current = DEFAULT_GOAL_TEMPLATES.find(t => t.name === update.name);
     if (!current) return template;
@@ -124,7 +127,7 @@ export function applyDefaultTemplateUpdates<T extends GoalTemplate>(templates: T
 export function applyDefaultTemplateRetirements<T extends GoalTemplate>(templates: T[]): { templates: T[]; changed: boolean } {
   let changed = false;
   const updated = templates.map(template => {
-    if (!template.isDefault || template.retired || !RETIRED_NAMES.has(template.name)) return template;
+    if (!template.isDefault || template.retired || !RETIRED_NAMES.has(defaultTemplateKey(template))) return template;
     changed = true;
     return { ...template, isArchived: true, retired: true };
   });
@@ -138,17 +141,19 @@ export function applyDefaultTemplateRetirements<T extends GoalTemplate>(template
  */
 export function applyDefaultTemplateRenames<T extends GoalTemplate>(templates: T[]): { templates: T[]; changed: boolean } {
   let changed = false;
-  const defaultNames = new Set(templates.filter(t => t.isDefault).map(t => t.name));
+  const defaultNames = new Set(templates.filter(t => t.isDefault).map(defaultTemplateKey));
   const renamed = templates.flatMap(template => {
-    const rename = template.isDefault && ARTICULATION_TEMPLATE_RENAMES.find(r => r.from === template.name);
+    const rename = template.isDefault && ARTICULATION_TEMPLATE_RENAMES.find(r => r.from === defaultTemplateKey(template));
     if (!rename) return [template];
     changed = true;
     // Already there under the new name (e.g. restored from a backup): drop the old copy.
     if (defaultNames.has(rename.to)) return [];
     const current = DEFAULT_GOAL_TEMPLATES.find(t => t.name === rename.to);
+    // A template the user renamed keeps their name; only the built-in key moves to the new name.
     return [{
       ...template,
-      name: rename.to,
+      name: template.name === rename.from ? rename.to : template.name,
+      defaultKey: rename.to,
       smartGoalPrompt: template.smartGoalPrompt === rename.fromPrompt && current ? current.smartGoalPrompt : template.smartGoalPrompt,
     }];
   });

@@ -29,10 +29,13 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
   const dailyData: Record<string, any> = {};
 
   sessions.forEach(session => {
-    const sessionDate = new Date(session.date).toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    const when = new Date(session.date);
+    const sessionDate = when.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
     if (!dailyData[sessionDate]) {
       dailyData[sessionDate] = {
-        date: new Date(sessionDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        date: when.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        // The label has no year, so days are ordered by this instead.
+        dayStart: new Date(when.getFullYear(), when.getMonth(), when.getDate()).getTime(),
         sessionCount: 0,
         totalCorrect: 0,
         totalIncorrect: 0,
@@ -93,12 +96,13 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
     });
   });
 
-  return Object.values(dailyData).map(day => {
-    const accuracy = day.totalOpportunities > 0 ? (day.totalCorrect / day.totalOpportunities) * 100 : 0;
+  return Object.values(dailyData).sort((a, b) => a.dayStart - b.dayStart).map(day => {
+    // No accuracy (a gap in the line, not 0%) on days with no trial-based responses.
+    const accuracy = day.totalOpportunities > 0 ? parseFloat(((day.totalCorrect / day.totalOpportunities) * 100).toFixed(1)) : null;
     const totalPrompts = Object.entries(day.promptCounts).reduce((sum, [key, value]) => key !== 'Independent' ? sum + (value as number) : sum, 0);
     return {
       date: day.date,
-      accuracy: parseFloat(accuracy.toFixed(1)),
+      accuracy,
       correct: day.totalCorrect,
       incorrect: day.totalIncorrect,
       approximate: day.totalApproximate,
@@ -112,7 +116,7 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
       prolongations: day.prolongations,
       interjections: day.interjections,
     };
-  }).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  });
 };
 
 export interface AnalysisChartsProps {

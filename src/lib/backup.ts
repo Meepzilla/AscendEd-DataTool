@@ -89,6 +89,8 @@ export interface RestoreSummary {
   students: number;
   goalTemplates: number;
   sessions: number;
+  /** Goals added to students already on the device. */
+  goals: number;
 }
 
 /**
@@ -100,6 +102,18 @@ export function mergeBackupData(current: BackupData, incoming: BackupData): { me
   const studentIds = new Set(current.students.map(s => s.id));
   const newStudents = incoming.students.filter(s => !studentIds.has(s.id));
 
+  // A student on both keeps the device's version, plus any goals only the backup has (so sessions
+  // recorded for those goals still have them).
+  const incomingById = new Map(incoming.students.map(s => [s.id, s]));
+  let addedGoals = 0;
+  const students = current.students.map(student => {
+    const goalIds = new Set((student.goals || []).map(g => g.id));
+    const extra = (incomingById.get(student.id)?.goals || []).filter(g => !goalIds.has(g.id));
+    if (extra.length === 0) return student;
+    addedGoals += extra.length;
+    return { ...student, goals: [...(student.goals || []), ...extra] };
+  });
+
   const templateIds = new Set(current.goalTemplates.map(t => t.id));
   const defaultNames = new Set(current.goalTemplates.filter(t => t.isDefault).map(t => t.name));
   const newTemplates = incoming.goalTemplates.filter(t => !templateIds.has(t.id) && !(t.isDefault && defaultNames.has(t.name)));
@@ -109,10 +123,10 @@ export function mergeBackupData(current: BackupData, incoming: BackupData): { me
 
   return {
     merged: {
-      students: [...current.students, ...newStudents],
+      students: [...students, ...newStudents],
       goalTemplates: [...current.goalTemplates, ...newTemplates],
       sessions: [...current.sessions, ...newSessions],
     },
-    added: { students: newStudents.length, goalTemplates: newTemplates.length, sessions: newSessions.length },
+    added: { students: newStudents.length, goalTemplates: newTemplates.length, sessions: newSessions.length, goals: addedGoals },
   };
 }

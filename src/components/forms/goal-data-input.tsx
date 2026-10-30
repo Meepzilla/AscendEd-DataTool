@@ -24,6 +24,8 @@ import {
   STORY_PARTS, STORY_PART_SCORE_LABELS, STORY_LINKING_WORDS, linkingWordField, scoreStory,
   GOAL_TYPES_WITHOUT_PROMPT_COUNTERS,
 } from '@/lib/goal-constants';
+import { goalResponses } from '@/lib/goal-measures';
+import { applyGoalHotkey } from '@/lib/data-entry-hotkeys';
 import GoalTextPopover from './GoalTextPopover';
 
 interface GoalDataInputComponentProps {
@@ -79,8 +81,9 @@ export default function GoalDataInputComponent({
         newData.totalSyllables = (newData.totalSyllables || 0) + incrementAmount;
     }
 
-    if (field === 'numberOfTrials') {
-      const newSize = Math.max(1, Number(value) || 1);
+    // A cleared or partly typed count leaves the trials as they are until a number is entered.
+    if (field === 'numberOfTrials' && Number(value) >= 1) {
+      const newSize = Math.min(100, Math.floor(Number(value)));
       const oldTrials = Array.isArray(data.trials) ? data.trials : [];
       const newTrials = Array(newSize).fill('untouched');
       for (let i = 0; i < Math.min(oldTrials.length, newSize); i++) {
@@ -135,11 +138,9 @@ export default function GoalDataInputComponent({
         totalOpportunities = correct + Number(data.trialsRefused || 0);
         break;
       case 'SEQUENCED_TRIALS': {
-        const successful = Number(data.successfulAttempts || 0);
-        const failed = Number(data.failedAttempts || 0);
-        const approx = Number(data.approximate || 0);
-        totalOpportunities = successful + failed + approx;
-        correct = successful;
+        const responses = goalResponses('SEQUENCED_TRIALS', data)!;
+        correct = responses.correct;
+        totalOpportunities = responses.correct + responses.incorrect + responses.approximate;
         break;
       }
       case 'DISCRETE_TRIALS': {
@@ -919,7 +920,8 @@ export default function GoalDataInputComponent({
                     count={count}
                     hotkey={hotkey}
                     disabled={isArchived}
-                    onIncrement={(e) => handleInteraction(e, () => onChange(pt, { ...data, [pt]: count + 1 }))}
+                    // Independent also records a correct response, the same as its hotkey.
+                    onIncrement={(e) => handleInteraction(e, () => onChange(pt, (pt === 'Independent' && applyGoalHotkey((goal.dataCaptureType || goal.type) as GoalType, 'I', data)) || { ...data, [pt]: count + 1 }))}
                     onDecrement={(e) => handleInteraction(e, () => onChange(pt, { ...data, [pt]: Math.max(0, count - 1) }))}
                   />
                 );
