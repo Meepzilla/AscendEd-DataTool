@@ -1,6 +1,6 @@
 import type { GoalType, TrialStatus } from './types';
 import { PROMPT_HOTKEY_MAP } from './promptConstants';
-import { GOAL_TYPES_WITHOUT_PROMPT_COUNTERS } from './goal-constants';
+import { GOAL_TYPES_WITHOUT_PROMPT_COUNTERS, alignTimes } from './goal-constants';
 
 // Data Entry hotkeys that record data for the focused goal (see Help → Hotkeys):
 //   C = correct, N = incorrect, B = approximate (Blocks for fluency); R/H/J = fluency repetitions,
@@ -54,7 +54,10 @@ function fillNextTrial(data: Record<string, any>, status: TrialStatus): Record<s
 /** Records a "correct" response for the goal type (C, and I for independent). */
 function addCorrect(type: GoalType, data: Record<string, any>): Record<string, any> | null {
   if (type === 'DISCRETE_TRIALS') return fillNextTrial(data, 'correct');
-  if (type === 'BEHAVIOR_FREQUENCY') return add(data, 'count');
+  if (type === 'BEHAVIOR_FREQUENCY') {
+    const count = Number(data.count) || 0;
+    return { ...data, count: count + 1, occurrenceTimes: [...alignTimes(data.occurrenceTimes, count), new Date().toISOString()] };
+  }
   const fields = COUNT_FIELDS[type];
   return fields ? add(data, fields.correct) : null;
 }

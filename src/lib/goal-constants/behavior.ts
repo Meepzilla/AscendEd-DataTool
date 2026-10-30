@@ -79,18 +79,30 @@ export interface IntervalSetup {
 export const DEFAULT_INTERVAL_SETUP: IntervalSetup = { method: 'partial', intervalSeconds: 60, intervalCount: 10 };
 export const MAX_INTERVALS = 120;
 
+// Times are ISO timestamps recorded as data is entered, for time-of-day and within-session reports (see
+// behavior-timing.ts); null where the time isn't known (entered by hand).
 export const BEHAVIOR_FIELDS: Record<string, Record<string, any>> = {
-  BEHAVIOR_FREQUENCY: { count: 0, observationMinutes: '', notes: '' },
-  // episodeSeconds: length of each episode; runningSince: epoch ms while the timer runs (so it keeps time while the
-  // device is locked or the app is in the background).
-  BEHAVIOR_DURATION: { episodeSeconds: [], runningSince: null, observationMinutes: '', totalSeconds: 0, episodeCount: 0, notes: '' },
+  // occurrenceTimes: when each counted occurrence was recorded.
+  BEHAVIOR_FREQUENCY: { count: 0, occurrenceTimes: [], observationMinutes: '', notes: '' },
+  // episodeSeconds: length of each episode, episodeStarts: when each began; runningSince: epoch ms while the timer
+  // runs (so it keeps time while the device is locked or the app is in the background).
+  BEHAVIOR_DURATION: { episodeSeconds: [], episodeStarts: [], runningSince: null, observationMinutes: '', totalSeconds: 0, episodeCount: 0, notes: '' },
   BEHAVIOR_ABC: { incidents: [], incidentCount: 0, notes: '' },
   // An empty setup field means "not chosen yet": the goal's last setup on this device, else the default.
-  // intervals: true (+), false (−) or null (not scored), one per interval; timerStartedAt: epoch ms.
-  BEHAVIOR_INTERVAL: { method: '', intervalSeconds: '', intervalCount: '', intervals: [], timerStartedAt: null, scoredCount: 0, percentIntervals: null, notes: '' },
-  // latencies: seconds per trial, null when there was no response; cueGivenAt: epoch ms while timing a trial.
-  BEHAVIOR_LATENCY: { latencies: [], cueGivenAt: null, averageSeconds: null, trialCount: 0, notes: '' },
+  // intervals: true (+), false (−) or null (not scored), one per interval; timerStartedAt: epoch ms while the
+  // timer runs; startedAt: when the first interval began (kept after saving).
+  BEHAVIOR_INTERVAL: { method: '', intervalSeconds: '', intervalCount: '', intervals: [], timerStartedAt: null, startedAt: null, scoredCount: 0, percentIntervals: null, notes: '' },
+  // latencies: seconds per trial, null when there was no response; trialTimes: when each cue was given;
+  // cueGivenAt: epoch ms while timing a trial.
+  BEHAVIOR_LATENCY: { latencies: [], trialTimes: [], cueGivenAt: null, averageSeconds: null, trialCount: 0, notes: '' },
 };
+
+/** A list of recorded times padded (with null, "time unknown") or cut to match its values. */
+export function alignTimes(times: unknown, length: number): (string | null)[] {
+  const list: (string | null)[] = Array.isArray(times) ? times.slice(0, length) : [];
+  while (list.length < length) list.push(null);
+  return list;
+}
 
 /**
  * The type a goal's data is entered and measured as: its data capture type when one is set (a goal can be
@@ -242,9 +254,13 @@ export function progressTowardTarget(value: number, target: number, direction: T
 export function finalizeBehaviorData(type: string, data: Record<string, any>, now = Date.now()): Record<string, any> {
   if (type === 'BEHAVIOR_DURATION') {
     const episodes: number[] = Array.isArray(data.episodeSeconds) ? [...data.episodeSeconds] : [];
-    if (data.runningSince) episodes.push(Math.max(0, Math.round((now - Number(data.runningSince)) / 1000)));
+    const starts = alignTimes(data.episodeStarts, episodes.length);
+    if (data.runningSince) {
+      episodes.push(Math.max(0, Math.round((now - Number(data.runningSince)) / 1000)));
+      starts.push(new Date(Number(data.runningSince)).toISOString());
+    }
     const summary = summarizeDuration({ ...data, episodeSeconds: episodes, runningSince: null });
-    return { ...data, episodeSeconds: episodes, runningSince: null, totalSeconds: summary.totalSeconds, episodeCount: summary.episodeCount };
+    return { ...data, episodeSeconds: episodes, episodeStarts: starts, runningSince: null, totalSeconds: summary.totalSeconds, episodeCount: summary.episodeCount };
   }
   if (type === 'BEHAVIOR_ABC') {
     return { ...data, incidentCount: Array.isArray(data.incidents) ? data.incidents.length : 0 };

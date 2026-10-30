@@ -20,6 +20,20 @@ interface ChangelogEntry {
 
 const allChangelogEntries: ChangelogEntry[] = [
   {
+    date: '2026-10-30',
+    title: 'Behavior Reports: When It Happens',
+    description: 'Data Entry now records the time of each behavior occurrence (each Count tap, each duration episode start, each latency trial, and when interval recording starts; ABC incidents already had times). Each behavior goal on the Reports page has a new "When it happens" section: time of day, day of week (average per session), and minutes into the session, with the peak time; a per-session trend that fits the goal (rate per hour, average episode length, or trials with no response); and an occurrence log with the date and time of everything recorded. Sessions saved before times were recorded use the session\'s start time (marked ~). The written narrative also says when the behavior happens most.',
+    type: 'feature',
+    icon: BarChartHorizontalBig,
+  },
+  {
+    date: '2026-10-29',
+    title: 'Fixed: Hazy Top Bar (New Layout)',
+    description: 'The app now fills the screen exactly, with the top bar as a fixed part of the layout and only the page below it scrolling, instead of a bar pinned over a scrolling page. On iPad, the pinned bar could stay dimmed after a pop-up window or goal pop-up closed until the app was reloaded. The footer now scrolls with the page, and each page opens scrolled to the top.',
+    type: 'fix',
+    icon: Bug,
+  },
+  {
     date: '2026-10-29',
     title: 'Goal Library Cleanup',
     description: '10 built-in goals that repeated another built-in goal word for word in meaning (e.g. "Identify the opposite" and "Identify antonyms", three versions of "Follow 2-step directions") are archived once on each device and no longer added; they can be restored with Show Archived, and students who already have one keep it. In Find Duplicates you can now keep more than one goal in a group: tick each goal to keep and archive the rest; goals kept together are not shown as duplicates again. Shortened goal names ("…") are only matched by their full goal text, so goals that differ after the cut-off are no longer flagged.',
