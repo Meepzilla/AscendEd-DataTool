@@ -45,9 +45,10 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
   const [formData, setFormData] = useState<Partial<SessionData>>({});
 
   // Older or imported sessions may lack the goal list they were recorded with; fall back to the student's goals.
-  const goalHeaders: Goal[] = currentSession?.originalGoalHeaders
-    ?? students.find(s => s.id === currentSession?.studentId)?.goals
-    ?? [];
+  // (Imported sessions have an empty list.)
+  const goalHeaders: Goal[] = currentSession?.originalGoalHeaders?.length
+    ? currentSession.originalGoalHeaders
+    : students.find(s => s.id === currentSession?.studentId)?.goals ?? [];
 
   useEffect(() => {
     if (currentSession) {

@@ -195,7 +195,8 @@ export default function DataEntryContent() {
   // A past date picked on purpose (to enter an old session) is left alone.
   const sessionStatesRef = useRef(studentSessionStates);
   sessionStatesRef.current = studentSessionStates;
-  const pastDateChosenRef = useRef(false);
+  // A restored draft from another day keeps its date: it is the date of the work entered.
+  const pastDateChosenRef = useRef(!!sessionDate && draftHadEntries && sessionDate.toDateString() !== new Date().toDateString());
   const chooseSessionDate = useCallback((date: Date | undefined) => {
     pastDateChosenRef.current = !!date && date.toDateString() !== new Date().toDateString();
     setSessionDate(date);
@@ -205,7 +206,9 @@ export default function DataEntryContent() {
       if (document.visibilityState !== 'visible') return;
       const now = new Date();
       if (pastDateChosenRef.current || !sessionDate || sessionDate.toDateString() === now.toDateString()) return;
-      if (Object.values(sessionStatesRef.current).some(state => hasUnsavedEntry(state, goalDefaults))) return;
+      // Until the students' states are built (first render), what's entered isn't known yet.
+      const states = Object.values(sessionStatesRef.current);
+      if (states.length === 0 || states.some(state => hasUnsavedEntry(state, goalDefaults))) return;
       const { start, end } = defaultSessionTimes(now);
       setSessionDate(now);
       setSessionTime(start);
@@ -779,8 +782,9 @@ export default function DataEntryContent() {
         
         {selectedStudentIds.length > 0 && (
             <div ref={saveBarRef} className="sticky bottom-0 left-0 right-0 z-10 bg-background mt-auto">
-                {/* Right padding keeps the buttons to the left of the host's corner badge, on the same row. */}
-                <div className="flex justify-between items-center gap-2 p-2 pr-[var(--host-badge-width)] border-t">
+                {/* On wider screens, right padding keeps the buttons to the left of the host's corner badge (a phone
+                    has no room for it, so the buttons use the full width and wrap). */}
+                <div className="flex flex-wrap justify-between items-center gap-2 p-2 md:pr-[var(--host-badge-width)] border-t">
                     <div className="hidden sm:block">
                       <TouchControls
                         activeStudentsInSlots={activeStudentsInSlots}
@@ -809,14 +813,14 @@ export default function DataEntryContent() {
                       />
                     </div>
 
-                    <div className="flex gap-2 ml-auto">
-                        <Button variant="outline" onClick={handleOpenResetConfirmation} disabled={isSaving || isSavingAll} size="lg">
+                    <div className="flex flex-wrap justify-end gap-2 ml-auto">
+                        <Button variant="outline" onClick={handleOpenResetConfirmation} disabled={isSaving || isSavingAll} size="lg" aria-label="Reset Focused">
                         <RotateCcw className="mr-2 h-5 w-5" />
-                        Reset Focused
+                        Reset<span className="hidden sm:inline">&nbsp;Focused</span>
                         </Button>
-                        <Button onClick={handleSave} disabled={isSaving || isSavingAll} size="lg">
+                        <Button onClick={handleSave} disabled={isSaving || isSavingAll} size="lg" aria-label="Save Focused">
                           <Save className="mr-2 h-5 w-5" />
-                          {isSaving ? 'Saving...' : 'Save Focused'}
+                          {isSaving ? 'Saving...' : <>Save<span className="hidden sm:inline">&nbsp;Focused</span></>}
                         </Button>
                         <Button onClick={handleSaveAll} disabled={isSaving || isSavingAll} size="lg">
                           <Save className="mr-2 h-5 w-5" />
