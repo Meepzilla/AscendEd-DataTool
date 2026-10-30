@@ -21,6 +21,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-30',
+    title: 'Better Progress Narratives',
+    description: 'Write Narrative now starts with an overview of where every goal stands (target met several sessions in a row, improving, steady, moving away from the target, too few sessions, no data). Trends use every session (a line fitted through all of them) instead of comparing the first and second half, and it says when the target was met in the last sessions in a row. Duration, interval and latency goals get their own details (episodes and longest episode, intervals scored, median time to respond and no-response trials). Choose Detailed (a paragraph per goal) or Brief (one line per goal), and turn on Suggested next steps for a data-based suggestion per goal, such as raising a target that was met 3 sessions in a row.',
+    type: 'improvement',
+    icon: ScrollText,
+  },
+  {
+    date: '2026-10-30',
     title: 'Fixed: Time Picker on Phones in Landscape',
     description: 'Start and End Time (Data Entry and Edit Session) now use the app\'s own time picker instead of the phone\'s clock pop-up, which on Android in landscape was cut off below its Set button. Tap the time, choose the hour, the minute (in 5-minute steps, or −/+ for a single minute) and AM/PM, then Done; Now sets the current time.',
     type: 'fix',
