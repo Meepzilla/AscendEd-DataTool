@@ -4,6 +4,7 @@ import './globals.css'; // Import global CSS styles
 import { Toaster } from "@/components/ui/toaster"; // Import Toaster component for displaying notifications
 import AppProviders from '@/providers/app-providers'; // Import AppProviders for wrapping the application with context providers
 import HostBadgeHider from '@/components/HostBadgeHider';
+import ZoomCompensation from '@/components/ZoomCompensation';
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
 import { DISPLAY_SCALE_SCRIPT } from '@/lib/display-scale';
 
@@ -62,6 +63,7 @@ export default function RootLayout({
           <Toaster /> {/* Renders toast notifications across the application */}
           <ServiceWorkerRegistration />
           <HostBadgeHider />
+          <ZoomCompensation />
         </AppProviders>
       </body>
     </html>

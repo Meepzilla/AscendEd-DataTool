@@ -311,11 +311,11 @@ export default function GoalDataInputComponent({
                   disabled={isArchived || isLocked}
                 />
                  <div className="flex flex-wrap gap-1">
-                    <Button size="sm" className="h-7 px-2 text-xs bg-green-500 hover:bg-green-600" onClick={(e) => handleFillNextTrial('correct', e)} disabled={isArchived || isLocked}>Correct</Button>
-                    <Button size="sm" className="h-7 px-2 text-xs bg-yellow-500 hover:bg-yellow-600" onClick={(e) => handleFillNextTrial('approximate', e)} disabled={isArchived || isLocked}>Approx.</Button>
-                    <Button size="sm" className="h-7 px-2 text-xs bg-red-500 hover:bg-red-600" onClick={(e) => handleFillNextTrial('incorrect', e)} disabled={isArchived || isLocked}>Incorrect</Button>
-                    <Button size="icon" variant="outline" className="h-7 w-7" onClick={(e) => handleUndoLastTrial(e)} disabled={isArchived || isLocked} title="Undo Last"><Undo2 className="h-3.5 w-3.5" /></Button>
-                    <Button size="icon" variant="outline" className="h-7 w-7" onClick={(e) => handleClearTrials(e)} disabled={isArchived || isLocked} title="Reset All"><RotateCcw className="h-3.5 w-3.5" /></Button>
+                    <Button type="button" size="sm" className="h-7 px-2 text-xs bg-green-500 hover:bg-green-600" onClick={(e) => handleFillNextTrial('correct', e)} disabled={isArchived || isLocked}>Correct</Button>
+                    <Button type="button" size="sm" className="h-7 px-2 text-xs bg-yellow-500 hover:bg-yellow-600" onClick={(e) => handleFillNextTrial('approximate', e)} disabled={isArchived || isLocked}>Approx.</Button>
+                    <Button type="button" size="sm" className="h-7 px-2 text-xs bg-red-500 hover:bg-red-600" onClick={(e) => handleFillNextTrial('incorrect', e)} disabled={isArchived || isLocked}>Incorrect</Button>
+                    <Button type="button" size="icon" variant="outline" className="h-7 w-7" onClick={(e) => handleUndoLastTrial(e)} disabled={isArchived || isLocked} title="Undo Last"><Undo2 className="h-3.5 w-3.5" /></Button>
+                    <Button type="button" size="icon" variant="outline" className="h-7 w-7" onClick={(e) => handleClearTrials(e)} disabled={isArchived || isLocked} title="Reset All"><RotateCcw className="h-3.5 w-3.5" /></Button>
                 </div>
               </div>
             </FormItem>
@@ -874,12 +874,12 @@ export default function GoalDataInputComponent({
         <div className="flex justify-between items-start">
             <div className="flex items-center space-y-0.5 shrink-0 mr-1">
                 {onMoveUp && (
-                    <Button variant="ghost" size="icon" className="h-5 w-5 p-0" onClick={(e) => handleInteraction(e, onMoveUp!)} disabled={!canMoveUp || isArchived} title="Move goal up">
+                    <Button type="button" variant="ghost" size="icon" className="h-5 w-5 p-0" onClick={(e) => handleInteraction(e, onMoveUp!)} disabled={!canMoveUp || isArchived} title="Move goal up">
                         <ArrowUp className="h-3.5 w-3.5" />
                     </Button>
                 )}
                 {onMoveDown && (
-                     <Button variant="ghost" size="icon" className="h-5 w-5 p-0" onClick={(e) => handleInteraction(e, onMoveDown!)} disabled={!canMoveDown || isArchived} title="Move goal down">
+                     <Button type="button" variant="ghost" size="icon" className="h-5 w-5 p-0" onClick={(e) => handleInteraction(e, onMoveDown!)} disabled={!canMoveDown || isArchived} title="Move goal down">
                         <ArrowDown className="h-3.5 w-3.5" />
                     </Button>
                 )}
@@ -895,7 +895,7 @@ export default function GoalDataInputComponent({
                 </CardTitle>
                 <div className="mt-1 flex items-center gap-2">
                   {!isFocused && onSetFocus && (
-                    <Button variant="link" size="sm" onClick={isLocked ? undefined : onSetFocus} className="h-auto p-0 text-xs" disabled={isLocked}>
+                    <Button type="button" variant="link" size="sm" onClick={isLocked ? undefined : onSetFocus} className="h-auto p-0 text-xs" disabled={isLocked}>
                       <Pin className="mr-1 h-3 w-3" /> Set Focus
                     </Button>
                   )}
@@ -927,7 +927,17 @@ export default function GoalDataInputComponent({
                     hotkey={hotkey}
                     disabled={isArchived}
                     // Independent also records a correct response, the same as its hotkey.
-                    onIncrement={(e) => handleInteraction(e, () => onChange(pt, (pt === 'Independent' && applyGoalHotkey((goal.dataCaptureType || goal.type) as GoalType, 'I', data)) || { ...data, [pt]: count + 1 }))}
+                    onIncrement={(e) => handleInteraction(e, () => {
+                      const type = (goal.dataCaptureType || goal.type) as GoalType;
+                      if (pt !== 'Independent') return onChange(pt, { ...data, [pt]: count + 1 });
+                      const next = applyGoalHotkey(type, 'I', data);
+                      if (next) return onChange(pt, next);
+                      if (type === 'DISCRETE_TRIALS' || type === 'SEQUENCED_TRIALS') {
+                        toast({ title: 'All Trials Filled', description: 'Every trial is scored, so there is no trial to mark correct.' });
+                        return;
+                      }
+                      onChange(pt, { ...data, [pt]: count + 1 });
+                    })}
                     // Removing an Independent prompt also takes back the correct response it added.
                     onDecrement={(e) => handleInteraction(e, () => {
                       if (count === 0) return;

@@ -7,19 +7,40 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, UploadCloud, FileCheck2, AlertTriangle } from 'lucide-react';
 import Papa from 'papaparse';
-import type { SessionData, SessionGoalData } from '@/lib/types';
+import type { GoalType, SessionData, SessionGoalData } from '@/lib/types';
+import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
+
+/** A session read from the file, with the Session ID it had (kept, so a later backup merge matches it). */
+export type ImportedSession = Omit<SessionData, 'sessionId'> & { sourceSessionId?: string };
+
+/**
+ * A CSV cell as the value it was exported from: lists and objects were written as JSON, numbers and true/false as
+ * text. Fields that are text in the goal type's starting values (a target sound, notes) stay text, so "5" or
+ * "[1,2]" typed into them comes back unchanged.
+ */
+function cellValue(raw: string, goalType: string, key: string): unknown {
+  const defaults = GOAL_TYPE_FIELDS[goalType as GoalType] as Record<string, unknown> | undefined;
+  if (defaults && typeof defaults[key] === 'string') return raw;
+  const text = raw.trim();
+  if (text.startsWith('[') || text.startsWith('{')) {
+    try { return JSON.parse(text); } catch { return raw; }
+  }
+  if (text === 'true' || text === 'false') return text === 'true';
+  if (text === 'null') return null;
+  return text !== '' && !Number.isNaN(Number(text)) ? Number(text) : raw;
+}
 import { useDropzone } from 'react-dropzone';
 
 interface ImportDataModalProps {
   onClose: () => void;
-  onImport: (sessions: Omit<SessionData, 'sessionId'>[]) => Promise<{ newCount: number; duplicateCount: number; unmatchedCount: number }>;
+  onImport: (sessions: ImportedSession[]) => Promise<{ newCount: number; duplicateCount: number; unmatchedCount: number; addedGoalCount: number }>;
 }
 
 export default function ImportDataModal({ onClose, onImport }: ImportDataModalProps) {
   const [file, setFile] = useState<File | null>(null);
   const [isParsing, setIsParsing] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
-  const [parsedSessions, setParsedSessions] = useState<Omit<SessionData, 'sessionId'>[]>([]);
+  const [parsedSessions, setParsedSessions] = useState<ImportedSession[]>([]);
   const { toast } = useToast();
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -50,7 +71,7 @@ export default function ImportDataModal({ onClose, onImport }: ImportDataModalPr
             }
 
             // Group rows by Session ID
-            const sessionsMap = new Map<string, Omit<SessionData, 'sessionId'>>();
+            const sessionsMap = new Map<string, ImportedSession>();
 
             for (const row of rows) {
               const sessionId = row['Session ID'];
@@ -76,6 +97,7 @@ export default function ImportDataModal({ onClose, onImport }: ImportDataModalPr
                   notes: row['Session Notes'],
                   goals: [],
                   originalGoalHeaders: [], // Not in the file; Edit Session uses the student's goals instead.
+                  sourceSessionId: sessionId,
                 };
                 sessionsMap.set(sessionId, sessionEntry);
               }
@@ -93,16 +115,7 @@ export default function ImportDataModal({ onClose, onImport }: ImportDataModalPr
                     let value = row[key];
                     // Columns from other goal types are empty for this goal.
                     if (value === undefined || value === null || value === '') continue;
-                    // Try to parse if it looks like JSON (for arrays like in discrete trials)
-                    try {
-                        const parsed = JSON.parse(value);
-                        value = parsed;
-                    } catch (e) {
-                        // Not JSON, keep as string or try to convert to number
-                        if (!isNaN(Number(value)) && value.trim() !== '') {
-                            value = Number(value);
-                        }
-                    }
+                    value = cellValue(String(value), row['Goal Type'], camelCaseKey);
                     goalData[camelCaseKey] = value;
                   }
                 }
@@ -162,11 +175,12 @@ export default function ImportDataModal({ onClose, onImport }: ImportDataModalPr
     }
     setIsImporting(true);
     try {
-      const { newCount, duplicateCount, unmatchedCount } = await onImport(parsedSessions);
+      const { newCount, duplicateCount, unmatchedCount, addedGoalCount } = await onImport(parsedSessions);
       toast({
         title: "Import Complete",
         description: `Imported ${newCount} new sessions. ${duplicateCount} already on this device were skipped.`
-          + (unmatchedCount ? ` ${unmatchedCount} for students not on this device were skipped (add the student with the same name, then import again).` : ''),
+          + (unmatchedCount ? ` ${unmatchedCount} for students not on this device were skipped (add the student with the same name, then import again).` : '')
+          + (addedGoalCount ? ` ${addedGoalCount} goal(s) in the file weren't on the student here, so they were added to the student (archive any you don't need).` : ''),
         variant: newCount === 0 && unmatchedCount > 0 ? 'destructive' : 'default',
       });
       onClose();

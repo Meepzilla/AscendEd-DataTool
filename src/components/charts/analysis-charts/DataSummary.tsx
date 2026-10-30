@@ -53,7 +53,8 @@ const DataSummary: React.FC<DataSummaryProps> = ({ studentSessions, selectedStud
 
   const stats = [
     { label: 'Total Sessions', value: summaryStats.sessionCount, icon: Sigma },
-    { label: 'Avg. Accuracy', value: `${summaryStats.avgAccuracy}%`, icon: Percent },
+    // All trials pooled (each goal card shows its average per session). None for goals that aren't trial-based.
+    { label: 'Overall Accuracy (all trials)', value: summaryStats.totalOpportunities > 0 ? `${summaryStats.avgAccuracy}%` : '—', icon: Percent },
     { label: 'Total Opportunities', value: summaryStats.totalOpportunities, icon: Target },
     { label: 'Total Correct', value: summaryStats.totalCorrect, icon: CheckCircle, color: 'text-green-500' },
     { label: 'Total Incorrect', value: summaryStats.totalIncorrect, icon: XCircle, color: 'text-red-500' },
