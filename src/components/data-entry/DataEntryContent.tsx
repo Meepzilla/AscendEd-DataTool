@@ -62,7 +62,7 @@ export default function DataEntryContent() {
     return undefined;
   }, [students]);
   // The draft's date and times are kept only when something was entered; otherwise the session starts now.
-  const [draftHadEntries] = useState(() => !!draft && Object.values(draft.students).some(s => hasUnsavedEntry(s, goalDefaults)));
+  const [draftHadEntries] = useState(() => !!draft && draft.selectedStudentIds.some(id => hasUnsavedEntry(draft.students[id], goalDefaults)));
   
   const [sessionDate, setSessionDate] = useState<Date | undefined>(() =>
     draftHadEntries && draft?.sessionDate ? new Date(draft.sessionDate) : new Date());
@@ -156,7 +156,7 @@ export default function DataEntryContent() {
   useEffect(() => {
     const studentsWithEntries = Object.fromEntries(
       Object.values(studentSessionStates)
-        .filter(state => hasUnsavedEntry(state, goalDefaults))
+        .filter(state => selectedStudentIds.includes(state.studentId) && hasUnsavedEntry(state, goalDefaults))
         .map(state => [state.studentId, { activity: state.activity, notes: state.notes, goalData: state.goalData }]),
     );
     saveDataEntryDraft(uid, {
@@ -192,26 +192,68 @@ export default function DataEntryContent() {
     }
   }, [setSessionTime, setSessionEndTime, sessionTime]);
 
-  // The page can stay open for days (the app is left on Data Entry). When it comes back to the foreground on a
-  // later day with nothing entered, the session moves to today and now, so it isn't saved under an old date.
-  // A past date picked on purpose (to enter an old session) is left alone.
+  // The session's date and times follow "now" unless the teacher set them. The page can stay open all day
+  // (or for days): when data entry starts for a new session (the first entry after everything was saved), the
+  // date moves to today and the times to now; when the app comes back to the foreground on a later day with
+  // nothing entered, the date moves to today. A past date or a time chosen in the pickers is kept: the date
+  // until it is changed back (or Reset Time to Now), the times until that session is saved. Unsaved entries
+  // restored from another day keep their date and times until they are saved.
   const sessionStatesRef = useRef(studentSessionStates);
   sessionStatesRef.current = studentSessionStates;
-  // A restored draft from another day keeps its date: it is the date of the work entered.
-  const pastDateChosenRef = useRef(!!sessionDate && draftHadEntries && sessionDate.toDateString() !== new Date().toDateString());
+  const selectedIdsRef = useRef(selectedStudentIds);
+  selectedIdsRef.current = selectedStudentIds;
+  const pastDateChosenRef = useRef(false);
+  const timeChosenRef = useRef(false);
   const chooseSessionDate = useCallback((date: Date | undefined) => {
     pastDateChosenRef.current = !!date && date.toDateString() !== new Date().toDateString();
     setSessionDate(date);
   }, []);
+  const chooseSessionTime = useCallback((time: string) => { timeChosenRef.current = true; setSessionTime(time); }, []);
+  const chooseSessionEndTime = useCallback((time: string) => { timeChosenRef.current = true; setSessionEndTime(time); }, []);
+  const resetSessionToNow = useCallback(() => {
+    pastDateChosenRef.current = false;
+    timeChosenRef.current = false;
+    const now = new Date();
+    const { start, end } = defaultSessionTimes(now);
+    setSessionDate(now);
+    setSessionTime(start);
+    setSessionEndTime(end);
+  }, []);
+  // Whether any student on screen has something entered that isn't saved.
+  const anyUnsaved = selectedStudentIds.some(id => hasUnsavedEntry(studentSessionStates[id], goalDefaults));
+  const statesBuilt = Object.keys(studentSessionStates).length > 0;
+  const prevUnsavedRef = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (!statesBuilt) return;
+    const previous = prevUnsavedRef.current;
+    prevUnsavedRef.current = anyUnsaved;
+    // The first look (restored entries included) only records the state.
+    if (previous === null || previous === anyUnsaved) return;
+    if (!anyUnsaved) {
+      // Everything saved (or reset): the times chosen were for that session.
+      timeChosenRef.current = false;
+      return;
+    }
+    // A new session's first entry.
+    if (pastDateChosenRef.current) return;
+    const now = new Date();
+    setSessionDate(now);
+    if (!timeChosenRef.current) {
+      const { start, end } = defaultSessionTimes(now);
+      setSessionTime(start);
+      setSessionEndTime(end);
+    }
+  }, [anyUnsaved, statesBuilt]);
   useEffect(() => {
     const refreshDate = () => {
       if (document.visibilityState !== 'visible') return;
       const now = new Date();
       if (pastDateChosenRef.current || !sessionDate || sessionDate.toDateString() === now.toDateString()) return;
       // Until the students' states are built (first render), what's entered isn't known yet.
-      const states = Object.values(sessionStatesRef.current);
-      if (states.length === 0 || states.some(state => hasUnsavedEntry(state, goalDefaults))) return;
+      const states = sessionStatesRef.current;
+      if (Object.keys(states).length === 0 || selectedIdsRef.current.some(id => hasUnsavedEntry(states[id], goalDefaults))) return;
       const { start, end } = defaultSessionTimes(now);
+      timeChosenRef.current = false;
       setSessionDate(now);
       setSessionTime(start);
       setSessionEndTime(end);
@@ -239,7 +281,7 @@ export default function DataEntryContent() {
   }, [students, studentFromContext, selectedStudentIds.length, setSelectedStudentIds, setFocusedStudentSlotIndex, activeStudents]);
   
 
-  const handleStudentSelect = useCallback((studentId: string, index: number) => {
+  const applyStudentSelect = useCallback((studentId: string, index: number) => {
     setSelectedStudentIds((prev: string[]) => {
       const newSelection = [...prev];
       newSelection[index] = studentId;
@@ -468,6 +510,10 @@ export default function DataEntryContent() {
   }, [showArchivedByStudentId, setStudentSessionStates]);
 
   const addStudentSlot = useCallback(() => {
+    if (isStudentAccessLocked) {
+      toast({ title: 'Access Locked', description: 'Student access is locked. Unlock to make changes.' });
+      return;
+    }
     const availableStudent = activeStudents.find(s => !selectedStudentIds.includes(s.id));
     if (availableStudent) {
       const newIndex = selectedStudentIds.length;
@@ -476,13 +522,9 @@ export default function DataEntryContent() {
     } else {
       toast({ title: "Info", description: "No more unique available students to add.", variant: "default" });
     }
-  }, [activeStudents, selectedStudentIds, toast, setSelectedStudentIds, setFocusedStudentSlotIndex]);
+  }, [activeStudents, selectedStudentIds, toast, setSelectedStudentIds, setFocusedStudentSlotIndex, isStudentAccessLocked]);
 
-  const removeStudentSlot = useCallback((indexToRemove: number) => {
-    if (isStudentAccessLocked) {
-      toast({ title: 'Access Locked', description: 'Student access is locked. Unlock to make changes.' });
-      return;
-    }
+  const applyRemoveStudentSlot = useCallback((indexToRemove: number) => {
     setSelectedStudentIds(prev => {
       const currentFocusedId = prev[focusedStudentSlotIndex];
       const newSelectedIds = prev.filter((_, i) => i !== indexToRemove);
@@ -499,7 +541,40 @@ export default function DataEntryContent() {
       }
       return newSelectedIds;
     });
-  }, [focusedStudentSlotIndex, setSelectedStudentIds, setFocusedStudentSlotIndex, isStudentAccessLocked, toast]);
+  }, [focusedStudentSlotIndex, setSelectedStudentIds, setFocusedStudentSlotIndex]);
+
+  // Removing a slot or switching it to another student would hide the slot's unsaved entries (they'd stay in
+  // the background and come back later), so that asks first and the entries are discarded if confirmed.
+  const [pendingSlotChange, setPendingSlotChange] = useState<{ studentId: string; studentName: string; apply: () => void } | null>(null);
+  const guardSlotChange = useCallback((index: number, apply: () => void) => {
+    if (isStudentAccessLocked) {
+      toast({ title: 'Access Locked', description: 'Student access is locked. Unlock to make changes.' });
+      return;
+    }
+    const outgoingId = selectedStudentIds[index];
+    const state = outgoingId ? studentSessionStates[outgoingId] : undefined;
+    if (state && hasUnsavedEntry(state, goalDefaults)) {
+      setPendingSlotChange({ studentId: outgoingId, studentName: state.studentName, apply });
+      return;
+    }
+    apply();
+  }, [isStudentAccessLocked, selectedStudentIds, studentSessionStates, goalDefaults, toast]);
+  const handleStudentSelect = useCallback((studentId: string, index: number) => {
+    if (selectedStudentIds[index] === studentId) return;
+    guardSlotChange(index, () => applyStudentSelect(studentId, index));
+  }, [guardSlotChange, applyStudentSelect, selectedStudentIds]);
+  const removeStudentSlot = useCallback((indexToRemove: number) => {
+    guardSlotChange(indexToRemove, () => applyRemoveStudentSlot(indexToRemove));
+  }, [guardSlotChange, applyRemoveStudentSlot]);
+
+  // Editing the student (name, goals) from Data Entry is also covered by the Student Access Lock.
+  const openEditStudentModalUnlocked = useCallback((student: Student) => {
+    if (isStudentAccessLocked) {
+      toast({ title: 'Access Locked', description: 'Student access is locked. Unlock to make changes.' });
+      return;
+    }
+    openEditStudentModal(student);
+  }, [isStudentAccessLocked, openEditStudentModal, toast]);
 
   const availableStudentsForDropdown = useMemo(() => {
     return activeStudents.filter(s => !selectedStudentIds.includes(s.id));
@@ -602,7 +677,7 @@ export default function DataEntryContent() {
         case 'T': setSelectionModalType('goal'); break;
         case 'E': {
           const focusedStudent = activeStudentsInSlots[focusedStudentSlotIndex];
-          if (focusedStudent) openEditStudentModal(focusedStudent);
+          if (focusedStudent) openEditStudentModalUnlocked(focusedStudent);
           break;
         }
         case 'L': requestAccessLock(!isStudentAccessLocked); break;
@@ -636,7 +711,7 @@ export default function DataEntryContent() {
     setFocusedGoalIndexByStudentId,
     addStudentSlot,
     removeStudentSlot,
-    openEditStudentModal,
+    openEditStudentModalUnlocked,
     activeStudentsInSlots,
     requestAccessLock,
     isStudentAccessLocked,
@@ -731,6 +806,20 @@ export default function DataEntryContent() {
           }}
         />
         <Suspense fallback={null}>
+          {pendingSlotChange && (
+            <ConfirmationModal
+              isOpen={!!pendingSlotChange}
+              onClose={() => setPendingSlotChange(null)}
+              onConfirm={() => {
+                resetSessionStateForStudent(pendingSlotChange.studentId);
+                pendingSlotChange.apply();
+                setPendingSlotChange(null);
+              }}
+              title={`Discard ${pendingSlotChange.studentName}'s unsaved data?`}
+              description={`${pendingSlotChange.studentName} has data entered that hasn't been saved. Save it first, or continue to discard it.`}
+              confirmText="Discard and Continue"
+            />
+          )}
           {isResetConfirmationOpen && (
             <ConfirmationModal
               isOpen={isResetConfirmationOpen}
@@ -761,9 +850,10 @@ export default function DataEntryContent() {
               dataEntrySessionDate={sessionDate}
               setDataEntrySessionDate={chooseSessionDate}
               dataEntrySessionTime={sessionTime}
-              setDataEntrySessionTime={setSessionTime}
+              setDataEntrySessionTime={chooseSessionTime}
               dataEntrySessionEndTime={sessionEndTime}
-              setDataEntrySessionEndTime={setSessionEndTime}
+              setDataEntrySessionEndTime={chooseSessionEndTime}
+              onResetToNow={resetSessionToNow}
               isStudentAccessLocked={isStudentAccessLocked}
               setIsStudentAccessLocked={requestAccessLock}
             />
@@ -790,7 +880,7 @@ export default function DataEntryContent() {
                   dataEntryAiActivitySuggestions={aiActivitySuggestions}
                   isAiLoading={isAiLoading}
                   setDataEntryFocusedStudentSlotIndex={setFocusedStudentSlotIndex}
-                  openEditStudentModal={openEditStudentModal}
+                  openEditStudentModal={openEditStudentModalUnlocked}
                   handleStudentSelect={handleStudentSelect}
                   removeStudentSlot={removeStudentSlot}
                   handleInputChange={handleInputChange}

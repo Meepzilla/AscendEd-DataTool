@@ -4,7 +4,7 @@
 import React, { useState, useMemo, lazy, Suspense } from 'react';
 import type { Student, SessionData, Goal, PromptType } from '@/lib/types';
 import { BEHAVIOR_GOAL_TYPES, captureTypeOf } from '@/lib/goal-constants';
-import { goalResponses } from '@/lib/goal-measures';
+import { goalMeasure, goalResponses, withoutRunningTimers } from '@/lib/goal-measures';
 import { PROMPT_TYPES } from '@/lib/promptConstants';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -38,6 +38,7 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
         // The label has no year, so days are ordered by this instead.
         dayStart: new Date(when.getFullYear(), when.getMonth(), when.getDate()).getTime(),
         sessionCount: 0,
+        goalsRecorded: 0,
         totalCorrect: 0,
         totalIncorrect: 0,
         totalApproximate: 0,
@@ -64,6 +65,7 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
       
       const data = { ...(goalData.data || {}) };
       const type = captureTypeOf(currentGoal);
+      if (goalMeasure(currentGoal, withoutRunningTimers(data)) !== null) day.goalsRecorded += 1;
 
       if (type === 'FLUENCY_SYLLABLE_STUTTER') {
           // Syllable counts feed the fluency charts, not the response totals.
@@ -98,7 +100,8 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
     });
   });
 
-  return Object.values(dailyData).sort((a, b) => a.dayStart - b.dayStart).map(day => {
+  // Only days when a goal in view was worked on (other days would chart as zeros).
+  return Object.values(dailyData).filter(day => day.goalsRecorded > 0).sort((a, b) => a.dayStart - b.dayStart).map(day => {
     // No accuracy (a gap in the line, not 0%) on days with no trial-based responses.
     const accuracy = day.totalOpportunities > 0 ? parseFloat(((day.totalCorrect / day.totalOpportunities) * 100).toFixed(1)) : null;
     const totalPrompts = Object.entries(day.promptCounts).reduce((sum, [key, value]) => key !== 'Independent' ? sum + (value as number) : sum, 0);
@@ -147,6 +150,8 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, select
     [activeStudentGoals, selectedGoalId],
   );
   const behaviorOnly = goalsInView.length > 0 && goalsInView.every(g => BEHAVIOR_GOAL_TYPES.includes(captureTypeOf(g)));
+  // Accuracy and response counts only apply to trial-based goals (correct / incorrect / approximate).
+  const hasTrialGoals = goalsInView.some(g => goalResponses(captureTypeOf(g)) !== null);
 
   const hasPromptUsageData = useMemo(() => {
     // Any prompt level recorded (besides Independent).
@@ -200,12 +205,16 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, select
             {AI_ENABLED && <AiSummary studentSessions={studentSessions} selectedStudent={selectedStudent} selectedGoalId={selectedGoalId} chartData={chartData} />}
         </Suspense>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Suspense fallback={<ChartSuspenseFallback />}>
-          <ProgressOverTimeChart chartData={chartData} selectedGoalId={selectedGoalId} activeStudentGoals={activeStudentGoals} />
-        </Suspense>
-        <Suspense fallback={<ChartSuspenseFallback />}>
-          <ResponseCountsChart chartData={chartData} selectedGoalId={selectedGoalId} activeStudentGoals={activeStudentGoals} />
-        </Suspense>
+        {hasTrialGoals && (
+          <>
+            <Suspense fallback={<ChartSuspenseFallback />}>
+              <ProgressOverTimeChart chartData={chartData} selectedGoalId={selectedGoalId} activeStudentGoals={activeStudentGoals} />
+            </Suspense>
+            <Suspense fallback={<ChartSuspenseFallback />}>
+              <ResponseCountsChart chartData={chartData} selectedGoalId={selectedGoalId} activeStudentGoals={activeStudentGoals} />
+            </Suspense>
+          </>
+        )}
         {hasFluencyData && (
           <>
             <Suspense fallback={<ChartSuspenseFallback />}>
@@ -216,9 +225,11 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, select
             </Suspense>
           </>
         )}
-        <Suspense fallback={<ChartSuspenseFallback />}>
-          <OpportunitiesChart chartData={chartData} selectedGoalId={selectedGoalId} activeStudentGoals={activeStudentGoals} />
-        </Suspense>
+        {hasTrialGoals && (
+          <Suspense fallback={<ChartSuspenseFallback />}>
+            <OpportunitiesChart chartData={chartData} selectedGoalId={selectedGoalId} activeStudentGoals={activeStudentGoals} />
+          </Suspense>
+        )}
         <Suspense fallback={<ChartSuspenseFallback />}>
           <PerformanceScatterPlot chartData={chartData} />
         </Suspense>

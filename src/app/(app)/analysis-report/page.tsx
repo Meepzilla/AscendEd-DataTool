@@ -71,7 +71,9 @@ export default function AnalysisReportPage() {
         toDate.setHours(23, 59, 59, 999);
         filtered = filtered.filter(s => new Date(s.date) <= toDate);
     }
-    return filtered.sort(compareSessionsOldestFirst);
+    // Stored sessions are newest first, so sessions with the same date and start time are in reverse saved order;
+    // reversing first keeps them in saved order (the last saved is the latest, as in the sidebar).
+    return filtered.reverse().sort(compareSessionsOldestFirst);
   }, [sessions, selectedStudentId, dateRange]);
 
   const handleStudentChange = (value: string) => {

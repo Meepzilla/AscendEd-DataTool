@@ -112,9 +112,10 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
         date: finalDateISO,
     };
 
-    await updateSession(currentSession.sessionId, dataToUpdate);
+    const saved = await updateSession(currentSession.sessionId, dataToUpdate);
     setIsSubmitting(false);
-    closeEditSessionModal();
+    // If it couldn't be saved (storage full), the edits stay open so they aren't lost.
+    if (saved) closeEditSessionModal();
   };
 
   if (!currentSession) return null;
