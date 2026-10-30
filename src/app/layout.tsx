@@ -19,6 +19,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: '#0a111f',
+  // Edge to edge, with safe-area padding in globals.css (see display-scale.ts).
+  viewportFit: 'cover',
 };
 
 /**
