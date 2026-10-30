@@ -68,7 +68,7 @@ interface StudentDataContextType {
   updateSession: (sessionId: string, data: Partial<SessionData>) => Promise<void>;
   deleteSession: (sessionId: string) => Promise<void>;
   getSessionsForStudent: (studentId: string) => SessionData[];
-  importSessions: (sessionsToImport: Omit<SessionData, 'sessionId'>[]) => Promise<{ newCount: number; duplicateCount: number; }>;
+  importSessions: (sessionsToImport: Omit<SessionData, 'sessionId'>[]) => Promise<{ newCount: number; duplicateCount: number; unmatchedCount: number; }>;
   exportBackup: () => AppBackup;
   restoreBackup: (backup: AppBackup, mode: RestoreMode) => RestoreSummary;
 
@@ -278,26 +278,40 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   /**
    * Adds imported sessions, skipping any that match a session already here (or earlier in the same file):
    * the same student, date and start time. Importing the same file twice therefore adds nothing.
+   * Ids differ between devices, so each session's student is found by id, then by name, and its goals by id,
+   * then by name and type; sessions for students not on this device are skipped (unmatchedCount).
    */
-  const importSessions = useCallback(async (sessionsToImport: any) => {
+  const importSessions = useCallback(async (sessionsToImport: Omit<SessionData, 'sessionId'>[]) => {
     if (!currentUser) throw new Error("Not authenticated.");
     const sessionKey = (s: { studentId?: string; date?: string; time?: string }) => {
       const day = new Date(s.date ?? '');
       return `${s.studentId}|${Number.isNaN(day.getTime()) ? s.date : day.toDateString()}|${s.time ?? ''}`;
     };
+    const nameKey = (name?: string) => (name || '').trim().toLowerCase();
+    const findStudent = (s: Omit<SessionData, 'sessionId'>) =>
+      studentsRef.current.find(st => st.id === s.studentId) ?? studentsRef.current.find(st => nameKey(st.name) === nameKey(s.studentName));
     const seen = new Set(sessionsRef.current.map(sessionKey));
     const newSessions: SessionData[] = [];
     let duplicateCount = 0;
+    let unmatchedCount = 0;
     for (const s of sessionsToImport) {
-      const key = sessionKey(s);
+      const student = findStudent(s);
+      if (!student) { unmatchedCount++; continue; }
+      const goals = (s.goals || []).map(g => {
+        const goal = student.goals.find(sg => sg.id === g.goalId)
+          ?? student.goals.find(sg => nameKey(sg.name) === nameKey(g.goalName) && sg.type === g.goalType);
+        return goal ? { ...g, goalId: goal.id, goalName: goal.name } : g;
+      });
+      const session = { ...s, studentId: student.id, studentName: student.name, goals };
+      const key = sessionKey(session);
       if (seen.has(key)) { duplicateCount++; continue; }
       seen.add(key);
-      newSessions.push({ ...s, sessionId: generateUUID(), userId: currentUser!.uid });
+      newSessions.push({ ...session, sessionId: generateUUID(), userId: currentUser!.uid });
     }
     if (newSessions.length > 0 && !commitSessions([...sessionsRef.current, ...newSessions].sort(byDateDesc))) {
       throw new Error("The device's storage is full, so the sessions couldn't be saved.");
     }
-    return { newCount: newSessions.length, duplicateCount };
+    return { newCount: newSessions.length, duplicateCount, unmatchedCount };
   }, [currentUser, commitSessions]);
 
   const exportBackup = useCallback(
@@ -314,6 +328,13 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     if (!currentUser) throw new Error("Not authenticated.");
     const current = { students: studentsRef.current, goalTemplates: templatesRef.current, sessions: sessionsRef.current };
 
+    const keys = [studentsKey, templatesKey, sessionsKey];
+    const damaged = keys.filter((key): key is string => !!key && unreadableKeys.current.has(key));
+    if (mode === 'merge' && damaged.length > 0) {
+      // Merging would keep this device's lists, but part of them couldn't be read.
+      throw new Error("Some of this device's data couldn't be read, so the backup can't be added to it. Use Replace to restore the backup instead.");
+    }
+
     let next = backup.data;
     let summary: RestoreSummary = { students: next.students.length, goalTemplates: next.goalTemplates.length, sessions: next.sessions.length, goals: 0 };
     if (mode === 'merge') {
@@ -325,17 +346,29 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const nextStudents = [...next.students].sort(byName);
     const nextTemplates = [...next.goalTemplates].sort(byName);
     const nextSessions = [...next.sessions].sort(byDateDesc);
-    const writes: [string | null, unknown, unknown][] = [
-      [studentsKey, nextStudents, current.students],
-      [templatesKey, nextTemplates, current.goalTemplates],
-      [sessionsKey, nextSessions, current.sessions],
+    // Replacing is how damaged data is recovered, so those lists may be overwritten now. If storage fills
+    // part way, each list is put back exactly as it was stored (damaged ones too).
+    const stored = keys.map(key => (key ? window.localStorage.getItem(key) : null));
+    damaged.forEach(key => unreadableKeys.current.delete(key));
+    const writes: [string | null, unknown][] = [
+      [studentsKey, nextStudents],
+      [templatesKey, nextTemplates],
+      [sessionsKey, nextSessions],
     ];
     for (let i = 0; i < writes.length; i++) {
       if (!saveToLocal(writes[i][0], writes[i][1])) {
-        writes.slice(0, i).forEach(([key, , previous]) => saveToLocal(key, previous));
+        keys.slice(0, i).forEach((key, j) => {
+          if (!key) return;
+          try {
+            if (stored[j] === null) window.localStorage.removeItem(key);
+            else window.localStorage.setItem(key, stored[j]!);
+          } catch { /* the earlier value fit before, so it fits again */ }
+        });
+        damaged.forEach(key => unreadableKeys.current.add(key));
         throw new Error("The backup couldn't be saved on this device (storage is full). Nothing was changed.");
       }
     }
+    if (damaged.length > 0) setError(null);
     studentsRef.current = nextStudents;
     templatesRef.current = nextTemplates;
     sessionsRef.current = nextSessions;
@@ -344,9 +377,14 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setSessions(nextSessions);
     setSelectedStudent(null);
     const abcLists = backup.settings?.abcLists;
-    if (abcLists) saveAbcLists(mode === 'replace' ? abcLists : mergeAbcLists(loadAbcLists(), abcLists));
+    try {
+      if (abcLists) saveAbcLists(mode === 'replace' ? abcLists : mergeAbcLists(loadAbcLists(), abcLists));
+    } catch (error) {
+      // The student data is restored; only the custom ABC lists didn't fit.
+      addErrorLog({ message: `Restoring ABC lists failed: ${error instanceof Error ? error.message : String(error)}`, source: 'storage', type: 'error' });
+    }
     return summary;
-  }, [currentUser, studentsKey, templatesKey, sessionsKey, saveToLocal]);
+  }, [currentUser, studentsKey, templatesKey, sessionsKey, saveToLocal, addErrorLog]);
 
   // --- End Data Actions ---
 

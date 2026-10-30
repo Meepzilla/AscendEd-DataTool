@@ -12,7 +12,7 @@ import { useDropzone } from 'react-dropzone';
 
 interface ImportDataModalProps {
   onClose: () => void;
-  onImport: (sessions: Omit<SessionData, 'sessionId'>[]) => Promise<{ newCount: number; duplicateCount: number }>;
+  onImport: (sessions: Omit<SessionData, 'sessionId'>[]) => Promise<{ newCount: number; duplicateCount: number; unmatchedCount: number }>;
 }
 
 export default function ImportDataModal({ onClose, onImport }: ImportDataModalProps) {
@@ -75,7 +75,7 @@ export default function ImportDataModal({ onClose, onImport }: ImportDataModalPr
                   activity: row['Activity'],
                   notes: row['Session Notes'],
                   goals: [],
-                  originalGoalHeaders: [], // This will be ignored on import
+                  originalGoalHeaders: [], // Not in the file; Edit Session uses the student's goals instead.
                 };
                 sessionsMap.set(sessionId, sessionEntry);
               }
@@ -162,10 +162,12 @@ export default function ImportDataModal({ onClose, onImport }: ImportDataModalPr
     }
     setIsImporting(true);
     try {
-      const { newCount, duplicateCount } = await onImport(parsedSessions);
+      const { newCount, duplicateCount, unmatchedCount } = await onImport(parsedSessions);
       toast({
         title: "Import Complete",
-        description: `Successfully imported ${newCount} new sessions. ${duplicateCount} duplicate sessions were skipped.`,
+        description: `Imported ${newCount} new sessions. ${duplicateCount} already on this device were skipped.`
+          + (unmatchedCount ? ` ${unmatchedCount} for students not on this device were skipped (add the student with the same name, then import again).` : ''),
+        variant: newCount === 0 && unmatchedCount > 0 ? 'destructive' : 'default',
       });
       onClose();
     } catch (error: any) {

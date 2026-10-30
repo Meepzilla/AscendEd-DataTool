@@ -1,7 +1,7 @@
 
 'use client';
 
-import React from 'react'; 
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -39,20 +39,26 @@ export default function AppHeader() {
   const userInitial = currentUser?.displayName?.charAt(0) || currentUser?.email?.charAt(0) || 'U';
   const isDataEntryPage = pathname.startsWith('/data-entry');
 
+  // The phone menu closes once a page is chosen.
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  useEffect(() => { setIsMenuOpen(false); }, [pathname]);
+
 
   // Solid background: iPad Safari renders a backdrop blur hazy and soft when the page is zoomed out.
   return (
     <header className="relative z-40 w-full shrink-0 border-b bg-card">
       <div className="flex h-16 items-center px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-2 sm:gap-4">
-          <Sheet>
+          <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="md:hidden">
                 <Menu className="h-6 w-6" />
                 <span className="sr-only">Toggle Menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0">
+            {/* The links scroll and Add Student stays below them, so a short screen (a phone in landscape) can
+                reach every page. */}
+            <SheetContent side="left" className="w-72 p-0 flex flex-col">
               <SheetHeader>
                 <SheetTitle className="sr-only">Main Menu</SheetTitle>
               </SheetHeader>
@@ -64,10 +70,13 @@ export default function AppHeader() {
                   <span className="text-xl font-bold">{APP_NAME}</span>
                 </Link>
               </div>
-              <AppNavigation isMobile={true} />
-              <div className="p-2 absolute bottom-0 w-full">
+              {/* Also closes when the current page's link is tapped (the address doesn't change then). */}
+              <div className="flex-1 min-h-0" onClick={e => { if ((e.target as HTMLElement).closest('a')) setIsMenuOpen(false); }}>
+                <AppNavigation isMobile={true} />
+              </div>
+              <div className="p-2 shrink-0">
                 <Separator className="my-2" />
-                <Button variant="outline" className="w-full" onClick={openAddStudentModal}>
+                <Button variant="outline" className="w-full" onClick={() => { setIsMenuOpen(false); openAddStudentModal(); }}>
                     <UserPlus className="mr-2 h-4 w-4" />
                     Add Student
                 </Button>
