@@ -75,6 +75,8 @@ export default function DataEntryContent() {
 
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingAll, setIsSavingAll] = useState(false);
+  // Set at once (state updates later), so a second save started meanwhile is ignored.
+  const savingRef = useRef(false);
   const [isHeaderCardCollapsed, setIsHeaderCardCollapsed] = useState(() => draft?.isHeaderCardCollapsed ?? false);
   const [isResetConfirmationOpen, setIsResetConfirmationOpen] = useState(false);
   const [selectionModalType, setSelectionModalType] = useState<'student' | 'goal' | null>(null);
@@ -293,7 +295,14 @@ export default function DataEntryContent() {
         toast({ title: "Simulated Save", description: `Access is locked. Session for ${state.studentName} not saved.` });
         return;
     }
-    
+    // Nothing entered: saving would only add an empty session (e.g. Save tapped twice, or Ctrl+Enter held).
+    if (!hasUnsavedEntry(state, goalDefaults)) {
+        toast({ title: "Nothing to save", description: `Nothing has been entered for ${state.studentName} yet.` });
+        return;
+    }
+    if (savingRef.current) return;
+    savingRef.current = true;
+
     setIsSaving(true);
     const sessionGoals: SessionGoalData[] = state.originalGoalHeaders
         .filter((goal: any) => !goal.isArchived)
@@ -307,6 +316,7 @@ export default function DataEntryContent() {
 
     if (sessionGoals.length === 0) {
         toast({ title: "Info", description: `Cannot save for ${state.studentName}, no active goals with data.`, variant: "default" });
+        savingRef.current = false;
         setIsSaving(false);
         return;
     }
@@ -328,6 +338,7 @@ export default function DataEntryContent() {
         toast({ title: "Success", description: `Session for ${state.studentName} saved.` });
         resetSessionStateForStudent(focusedStudentId);
     }
+    savingRef.current = false;
     setIsSaving(false);
   }
 
@@ -340,16 +351,19 @@ export default function DataEntryContent() {
         toast({ title: "Error", description: "No students selected to save sessions for.", variant: "destructive" });
         return;
     }
+    if (savingRef.current) return;
+    savingRef.current = true;
     setIsSavingAll(true);
     let savedCount = 0, errorCount = 0, simulatedCount = 0;
     for (const studentId of selectedStudentIds) {
         const state = studentSessionStates[studentId];
-        if (!state) continue;
+        // Students with nothing entered get no (empty) session.
+        if (!state || !hasUnsavedEntry(state, goalDefaults)) continue;
         if (isStudentAccessLocked) {
             simulatedCount++;
             continue;
         }
-        const sessionGoals = state.originalGoalHeaders.filter((g: any) => !g.isArchived).map((g: any) => ({ goalId: g.id, goalName: g.name, goalType: g.type, data: finalizeBehaviorData(captureTypeOf(g), state.goalData[g.id] || {}) }));
+        const sessionGoals = state.originalGoalHeaders.filter((g: any) => !g.isArchived).map((g: any) => ({ goalId: g.id, goalName: g.name, goalType: g.type, data: finalizeBehaviorData(captureTypeOf(g), state.goalData[g.id] || JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[captureTypeOf(g)] || {}))) }));
         if (sessionGoals.length === 0) continue;
         const session = { studentId: state.studentId, studentName: state.studentName, date: sessionDate.toISOString(), time: sessionTime, endTime: sessionEndTime, activity: state.activity, notes: state.notes, goals: sessionGoals, originalGoalHeaders: state.originalGoalHeaders };
         const savedSession = await addSession(session);
@@ -363,6 +377,8 @@ export default function DataEntryContent() {
     if (savedCount > 0) toast({ title: "Success", description: `Saved ${savedCount} session(s).` });
     if (simulatedCount > 0) toast({ title: "Simulated Save", description: `${simulatedCount} session(s) not saved due to lock.` });
     if (errorCount > 0) toast({ title: "Error", description: `Failed to save ${errorCount} session(s).`, variant: "destructive" });
+    if (savedCount + simulatedCount + errorCount === 0) toast({ title: "Nothing to save", description: "Nothing has been entered for these students yet." });
+    savingRef.current = false;
     setIsSavingAll(false);
   }
 
@@ -463,6 +479,10 @@ export default function DataEntryContent() {
   }, [activeStudents, selectedStudentIds, toast, setSelectedStudentIds, setFocusedStudentSlotIndex]);
 
   const removeStudentSlot = useCallback((indexToRemove: number) => {
+    if (isStudentAccessLocked) {
+      toast({ title: 'Access Locked', description: 'Student access is locked. Unlock to make changes.' });
+      return;
+    }
     setSelectedStudentIds(prev => {
       const currentFocusedId = prev[focusedStudentSlotIndex];
       const newSelectedIds = prev.filter((_, i) => i !== indexToRemove);
@@ -479,13 +499,17 @@ export default function DataEntryContent() {
       }
       return newSelectedIds;
     });
-  }, [focusedStudentSlotIndex, setSelectedStudentIds, setFocusedStudentSlotIndex]);
+  }, [focusedStudentSlotIndex, setSelectedStudentIds, setFocusedStudentSlotIndex, isStudentAccessLocked, toast]);
 
   const availableStudentsForDropdown = useMemo(() => {
     return activeStudents.filter(s => !selectedStudentIds.includes(s.id));
   }, [activeStudents, selectedStudentIds]);
 
   const handleOpenResetConfirmation = () => {
+    if (isStudentAccessLocked) {
+      toast({ title: 'Access Locked', description: 'Student access is locked. Unlock to make changes.' });
+      return;
+    }
     if (selectedStudentIds.length === 0) {
       toast({ title: "Info", description: "No students selected to reset data for.", variant: "default" });
       return;
@@ -551,7 +575,7 @@ export default function DataEntryContent() {
     // Ctrl+Enter saves (Cmd+Enter on Apple keyboards), even while typing in a field.
     if ((event.ctrlKey || event.metaKey) && key === 'ENTER') {
       event.preventDefault();
-      handleSave();
+      if (!event.repeat) handleSave();
       return;
     }
     // Other Ctrl/Cmd combinations are the browser's (copy, paste...), and typing or an open dialog

@@ -64,6 +64,19 @@ function addCorrect(type: GoalType, data: Record<string, any>): Record<string, a
   return fields ? add(data, fields.correct) : null;
 }
 
+/** Takes back one correct response (the one Independent added): the last correct trial, or one from the count. */
+export function removeCorrect(type: GoalType, data: Record<string, any>): Record<string, any> {
+  if (TRIAL_GRID_TYPES.includes(type)) {
+    const trials: TrialStatus[] = Array.isArray(data.trials) ? [...data.trials] : [];
+    const last = trials.lastIndexOf('correct');
+    if (last === -1) return data;
+    trials[last] = 'untouched';
+    return { ...data, trials };
+  }
+  const field = COUNT_FIELDS[type]?.correct;
+  return field && Number(data[field]) > 0 ? { ...data, [field]: Number(data[field]) - 1 } : data;
+}
+
 /**
  * The goal's data after a hotkey, or null when the key does nothing for this goal type.
  * `type` is the type the goal's data is entered as (its data capture type).

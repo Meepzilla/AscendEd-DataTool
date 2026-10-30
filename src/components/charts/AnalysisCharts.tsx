@@ -5,6 +5,7 @@ import React, { useState, useMemo, lazy, Suspense } from 'react';
 import type { Student, SessionData, Goal, PromptType } from '@/lib/types';
 import { BEHAVIOR_GOAL_TYPES, captureTypeOf } from '@/lib/goal-constants';
 import { goalResponses } from '@/lib/goal-measures';
+import { PROMPT_TYPES } from '@/lib/promptConstants';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertTriangle } from 'lucide-react';
@@ -56,12 +57,13 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
     day.sessionCount += 1;
 
     session.goals.forEach(goalData => {
+      // Only the student's active goals (not archived or removed ones), as the goal cards show.
       const currentGoal = studentGoals.find(g => g.id === goalData.goalId);
-      if (currentGoal?.isArchived) return;
+      if (!currentGoal || currentGoal.isArchived) return;
       if (selectedGoalId && goalData.goalId !== selectedGoalId) return;
       
       const data = { ...(goalData.data || {}) };
-      const type = currentGoal ? captureTypeOf(currentGoal) : goalData.goalType;
+      const type = captureTypeOf(currentGoal);
 
       if (type === 'FLUENCY_SYLLABLE_STUTTER') {
           // Syllable counts feed the fluency charts, not the response totals.
@@ -147,7 +149,8 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, select
   const behaviorOnly = goalsInView.length > 0 && goalsInView.every(g => BEHAVIOR_GOAL_TYPES.includes(captureTypeOf(g)));
 
   const hasPromptUsageData = useMemo(() => {
-    return chartData.some(session => Object.keys(session).some(key => key !== 'totalPrompts' && key !== 'Independent' && session[key as keyof typeof session] > 0));
+    // Any prompt level recorded (besides Independent).
+    return chartData.some(day => PROMPT_TYPES.some(p => p !== 'Independent' && Number(day[p]) > 0));
   }, [chartData]);
   
   const hasFluencyData = useMemo(() => {

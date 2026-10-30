@@ -10,7 +10,7 @@ import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { TrendingUp, CheckCircle2, ListChecks, BarChart2 } from 'lucide-react';
-import { formatGoalTarget, studentProfilePath } from '@/lib/helpers';
+import { compareSessionsOldestFirst, formatGoalTarget, studentProfilePath } from '@/lib/helpers';
 
 /**
  * Progress (0-100) toward a goal's session target, from the latest session that has data for it: the goal's
@@ -33,8 +33,11 @@ const calculateProgressForGoal = (goal: Goal, latestSessionForGoal: SessionData 
   if (target !== undefined && (target > 0 || goalDirection(goal) === 'decrease')) {
     return progressTowardTarget(value, target, goalDirection(goal));
   }
+  // No target: how far along the scale, from the bottom (or for a decrease goal, from the top).
   const max = goalMeasureInfo(goal).max;
-  return max ? Math.min(100, (value / max) * 100) : 0;
+  if (!max) return 0;
+  const share = Math.min(100, (value / max) * 100);
+  return goalDirection(goal) === 'decrease' ? 100 - share : share;
 };
 
 
@@ -53,7 +56,7 @@ export default function StudentProgressSidebar({ student, studentSessions }: {st
     const latestSessionByGoalId = new Map<string, SessionData>();
 
     // Sort sessions once by date, descending. A copy is made to avoid mutating props.
-    const sortedSessions = [...studentSessions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const sortedSessions = [...studentSessions].sort((a, b) => compareSessionsOldestFirst(b, a));
 
     // Iterate through sorted sessions to find the latest one for each goal
     // Every session stores all of the student's goals, so a goal's latest session is the latest one
@@ -110,10 +113,12 @@ export default function StudentProgressSidebar({ student, studentSessions }: {st
         <div className="space-y-2">
           <h4 className="text-xs font-semibold uppercase text-muted-foreground px-1">Active Goals Overview</h4>
           {activeGoalsWithProgressSliced.map(goal => {
-            const displayValue = goal.sessionTargetValue !== undefined && captureTypeOf(goal) !== 'QUALITATIVE_OBSERVATION'
-              ? `${Math.round(goal.progress)}% (Target: ${formatGoalTarget(captureTypeOf(goal), goal.sessionTargetValue, goal.targetDirection)})`
-              : captureTypeOf(goal) === 'QUALITATIVE_OBSERVATION'
-                ? (goal.progress === 100 ? 'Noted' : 'No Notes') // Or actual rating
+            // Observation goals without a rating target are only noted or not (see calculateProgressForGoal).
+            const notesOnly = captureTypeOf(goal) === 'QUALITATIVE_OBSERVATION' && !(goal.sessionTargetValue && goal.sessionTargetValue > 0);
+            const displayValue = notesOnly
+              ? (goal.progress === 100 ? 'Noted' : 'No Notes')
+              : goal.sessionTargetValue !== undefined
+                ? `${Math.round(goal.progress)}% (Target: ${formatGoalTarget(captureTypeOf(goal), goal.sessionTargetValue, goal.targetDirection)})`
                 : `${Math.round(goal.progress)}% (Actual)`;
             return (
               <div key={goal.id} className="p-2 rounded-md hover:bg-sidebar-accent transition-colors">

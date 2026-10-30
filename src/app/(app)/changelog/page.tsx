@@ -21,6 +21,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-30',
+    title: 'Fixed: Second App Review',
+    description: 'Data Entry: unsaved work restored from another day keeps its date (it no longer moves to today); Save All and Save Focused skip students with nothing entered, so no empty sessions; tapping a goal no longer scrolls the card away; the Student Access Lock also locks the date, times, Reset Focused and removing students. On phones, the Save buttons fit on screen and the menu closes after choosing a page and scrolls to Settings and Help in landscape. The student sidebar fills the height below the header on tablets. Restoring a backup (Replace) now works when saved data was damaged. CSV import matches students and goals by name when the file came from another device, and skips sessions for students not on this device; the student profile export includes every column; imported sessions can be edited. Built-in goals you renamed no longer come back as duplicates. Reports: sessions on the same day are ordered by start time everywhere; "met target" is the same on the goal card and in the narrative; suggested next steps for decrease goals say "lowering" and "above"; cognitive targets show "4 out of 5"; observation goals with a target show their progress in the sidebar; switching students resets the goal filter; a timer left running in Edit Session no longer keeps counting; removed goals no longer count in overall accuracy; a tie no longer names a busiest day. Also: removing an Independent prompt takes back its correct response; taking back a dysfluency lowers total syllables; Edit Student asks before removing a goal; pinch-zoom works on Android tablets; old app files are cleared after updates; the Android app can be built as a release build.',
+    type: 'fix',
+    icon: Bug,
+  },
+  {
+    date: '2026-10-30',
     title: 'Student Access Lock Needs a PIN',
     description: 'Turning off the Student Access Lock on Data Entry now asks for a PIN, chosen the first time you turn the lock on (4 to 8 digits, kept only on this device). The L hotkey works the same way. If the PIN is forgotten, Forgot PIN? unlocks only by discarding the unsaved entries on Data Entry, and you choose a new PIN next time.',
     type: 'improvement',

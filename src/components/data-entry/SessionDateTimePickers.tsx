@@ -16,6 +16,8 @@ interface SessionDateTimePickersProps {
   setDataEntrySessionTime: (time: string) => void;
   dataEntrySessionEndTime: string;
   setDataEntrySessionEndTime: (time: string) => void;
+  /** Student Access Lock: the date and times can't be changed. */
+  locked?: boolean;
 }
 
 const SessionDateTimePickers: React.FC<SessionDateTimePickersProps> = ({
@@ -25,6 +27,7 @@ const SessionDateTimePickers: React.FC<SessionDateTimePickersProps> = ({
   setDataEntrySessionTime,
   dataEntrySessionEndTime,
   setDataEntrySessionEndTime,
+  locked = false,
 }) => {
   // Starts the session now: today's date, the current time, and the default length.
   const resetToNow = () => {
@@ -36,7 +39,8 @@ const SessionDateTimePickers: React.FC<SessionDateTimePickersProps> = ({
   };
 
   return (
-    <div className="grid grid-cols-2 gap-x-4 gap-y-2 items-center">
+    // A disabled fieldset disables every button in it (the pickers open from buttons).
+    <fieldset disabled={locked} className="grid grid-cols-2 gap-x-4 gap-y-2 items-center disabled:opacity-60" title={locked ? 'Unlock Student Access to change the date or time' : undefined}>
       <div className="w-full">
         <Label htmlFor="sessionDate" className="block text-sm font-medium mb-1">Session Date</Label>
         <DatePicker date={dataEntrySessionDate} setDate={setDataEntrySessionDate} />
@@ -60,7 +64,7 @@ const SessionDateTimePickers: React.FC<SessionDateTimePickersProps> = ({
           <RotateCcw className="mr-2 h-4 w-4" /> Reset Time to Now
         </Button>
       </div>
-    </div>
+    </fieldset>
   );
 };
 

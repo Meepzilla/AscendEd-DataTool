@@ -35,6 +35,13 @@ self.addEventListener('activate', (event) => {
     for (const key of await caches.keys()) {
       if (key.startsWith('ascended-pages-') && key !== PAGES_CACHE) await caches.delete(key);
     }
+    // Chunks from earlier versions that this one doesn't use, so storage doesn't grow with every deploy. (A tab
+    // still running an earlier version fetches anything it needs from the network; the app asks to reload.)
+    const current = new Set(PRECACHE_URLS.filter(isStaticAsset));
+    const staticCache = await caches.open(STATIC_CACHE);
+    for (const request of await staticCache.keys()) {
+      if (!current.has(new URL(request.url).pathname)) await staticCache.delete(request);
+    }
     await self.clients.claim();
   })());
 });

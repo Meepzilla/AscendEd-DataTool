@@ -200,8 +200,9 @@ export function timePatterns(type: string, sessions: { session: Pick<SessionData
   const peak = (buckets: TimingBucket[]) => {
     const withData = buckets.filter(b => b.value > 0);
     if (withData.length === 0) return null;
-    // For latency the "peak" is the slowest time; for the others the most behavior.
-    return withData.reduce((best, b) => (b.value > best.value ? b : best));
+    // For latency the "peak" is the slowest time; for the others the most behavior. A tie has no peak.
+    const best = withData.reduce((top, b) => (b.value > top.value ? b : top));
+    return withData.filter(b => b.value === best.value).length > 1 ? null : best;
   };
 
   const exactCount = all.filter(e => e.exact).length;

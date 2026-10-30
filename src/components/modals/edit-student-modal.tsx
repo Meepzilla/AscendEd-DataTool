@@ -61,6 +61,8 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
   const currentStudent = students.find(s => s.id === studentToEdit?.id) || null;
 
   const [isSubmittingName, setIsSubmittingName] = useState(false);
+  // The goal whose Remove (X) was tapped, waiting for confirmation.
+  const [goalToRemove, setGoalToRemove] = useState<string | null>(null);
   
   const form = useForm<EditStudentFormData>({
     resolver: zodResolver(StudentSchema),
@@ -367,15 +369,27 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
                             <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => handleToggleArchiveGoal(goal)} title={goal.isArchived ? "Unarchive Goal" : "Archive Goal"}>
                                 {goal.isArchived ? <ArchiveRestore className="h-4 w-4 text-green-600" /> : <Archive className="h-4 w-4 text-orange-600" />}
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => removeGoalFromStudent(currentStudent.id, goal.id)} title="Remove Goal Assignment">
+                            <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => setGoalToRemove(goal.id)} title="Remove Goal Assignment">
                                 <XIcon className="h-4 w-4 text-destructive" />
                             </Button>
                         </div>
+                        {goalToRemove === goal.id ? (
+                          // Removing hides the goal's recorded sessions from reports; archiving keeps them.
+                          <div className="flex-grow min-w-0 space-y-1">
+                            <p className="text-xs">Remove <strong>{goal.name}</strong>? Its recorded data will no longer show in reports. Archive keeps it.</p>
+                            <div className="flex flex-wrap gap-1">
+                              <Button type="button" size="sm" variant="destructive" className="h-7" onClick={() => { setGoalToRemove(null); removeGoalFromStudent(currentStudent.id, goal.id); }}>Remove</Button>
+                              {!goal.isArchived && <Button type="button" size="sm" variant="outline" className="h-7" onClick={() => { setGoalToRemove(null); handleToggleArchiveGoal(goal); }}>Archive instead</Button>}
+                              <Button type="button" size="sm" variant="ghost" className="h-7" onClick={() => setGoalToRemove(null)}>Cancel</Button>
+                            </div>
+                          </div>
+                        ) : (
                         <div className={cn("flex-grow min-w-0 break-words", goal.isArchived && "opacity-60")}>
                             <GoalTextPopover name={goal.name} smartGoal={goal.smartGoal} />
                             <Badge variant="outline" className="ml-1">{goal.type}</Badge>
                             {goal.isArchived && <Badge variant="destructive" className="ml-1">Archived</Badge>}
                         </div>
+                        )}
                     </li>
                   ))}
                 </ul>
