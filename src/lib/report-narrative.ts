@@ -1,7 +1,7 @@
 import type { Goal, SessionData, Student } from './types';
 import {
   BEHAVIOR_GOAL_TYPES, INTERVAL_METHODS, captureTypeOf, goalDirection, summarizeAbc, summarizeCommunicationFunctions,
-  summarizeDuration, summarizeFrequency, summarizeIntervals, summarizeLatency,
+  median, summarizeDuration, summarizeFrequency, summarizeIntervals, summarizeLatency,
   COMMUNICATION_FUNCTIONS, STORY_PARTS, STORY_LINKING_WORDS, linkingWordField, type AbcIncident,
 } from './goal-constants';
 import { goalMeasure, goalMeasureInfo, goalNotes, goalResponses, meetsTarget, promptTotals, usesPromptCounters } from './goal-measures';
@@ -96,6 +96,8 @@ interface GoalAnalysis {
   streak: number;
   trend: { kind: TrendKind; from: number; to: number };
   status: GoalStatus;
+  /** Latency data with trials but no measure (no response in any trial). */
+  unmeasured: Record<string, any>[];
 }
 
 /**
@@ -110,19 +112,38 @@ function fitTrend(goal: Goal, values: number[]): GoalAnalysis['trend'] {
   let num = 0, den = 0;
   values.forEach((y, x) => { num += (x - meanX) * (y - meanY); den += (x - meanX) ** 2; });
   const slope = den ? num / den : 0;
-  const from = meanY - slope * meanX;
-  const to = meanY + slope * meanX;
+  // The line's ends are kept within the values actually recorded, so it never reports e.g. -2 occurrences
+  // or 108% (a steep line through few sessions can overshoot).
+  const clamp = (v: number) => Math.min(Math.max(...values), Math.max(Math.min(...values), v));
+  const from = clamp(meanY - slope * meanX);
+  const to = clamp(meanY + slope * meanX);
   if (Math.abs(to - from) < trendThreshold(goal, values)) return { kind: 'stable', from, to };
   const better = goalDirection(goal) === 'decrease' ? to < from : to > from;
   return { kind: better ? 'improving' : 'declining', from, to };
 }
 
+/**
+ * A saved session's data with any timer that was left running cleared. Saving stops timers, but a running
+ * one would otherwise keep counting until the day the report is written (e.g. a duration "episode" of weeks).
+ */
+function savedData(data: Record<string, any>): Record<string, any> {
+  return data.runningSince || data.cueGivenAt || data.timerStartedAt
+    ? { ...data, runningSince: null, cueGivenAt: null, timerStartedAt: null }
+    : data;
+}
+
 function analyzeGoal(goal: Goal, number: number, sessions: SessionData[]): GoalAnalysis {
-  const recorded = sessions
-    .map(session => ({ session, data: session.goals?.find(g => g.goalId === goal.id)?.data }))
+  const withData = sessions
+    .map(session => {
+      const data = session.goals?.find(g => g.goalId === goal.id)?.data;
+      return { session, data: data ? savedData(data) : undefined };
+    })
     .filter((r): r is { session: SessionData; data: Record<string, any> } => !!r.data)
-    .map(r => ({ ...r, value: goalMeasure(goal, r.data) }))
-    .filter((r): r is typeof r & { value: number } => r.value !== null);
+    .map(r => ({ ...r, value: goalMeasure(goal, r.data) }));
+  const recorded = withData.filter((r): r is typeof r & { value: number } => r.value !== null);
+  const unmeasured = captureTypeOf(goal) === 'BEHAVIOR_LATENCY'
+    ? withData.filter(r => r.value === null && summarizeLatency(r.data).trialCount > 0).map(r => r.data)
+    : [];
   const values = recorded.map(r => r.value);
   const target = goal.sessionTargetValue;
   const met = values.map(v => target !== undefined && meetsTarget(goal, v, target));
@@ -134,7 +155,7 @@ function analyzeGoal(goal: Goal, number: number, sessions: SessionData[]): GoalA
     : target !== undefined && streak >= MASTERY_STREAK ? 'met'
     : trend.kind;
   return {
-    goal, number, recorded, values, target, streak, trend, status,
+    goal, number, recorded, values, target, streak, trend, status, unmeasured,
     average: avg(values),
     low: values.length ? Math.min(...values) : 0,
     high: values.length ? Math.max(...values) : 0,
@@ -152,17 +173,27 @@ function trendSentence(name: string, a: GoalAnalysis): string {
   return `Across all sessions, the trend went ${span}, ${kind === 'improving' ? 'showing progress toward the goal' : 'moving away from the goal'}.`;
 }
 
-/** A data-based suggestion for the goal, worded as something to consider. */
+/**
+ * A data-based suggestion for the goal, worded as something to consider. Goals without a target are
+ * described against the goal's direction only, never "the target".
+ */
 function nextStep(a: GoalAnalysis): string | null {
+  const hasTarget = a.target !== undefined;
   if (a.status === 'no data') return 'Collect data on this goal to monitor progress.';
   if (a.status === 'met') return `The target was met in ${a.streak} sessions in a row; consider raising the target or moving to the next step for this skill.`;
   if (a.status === 'too few') return 'More sessions are needed before a trend can be judged.';
-  if (a.status === 'declining') return 'Performance is moving away from the target; consider reviewing supports, activities or the target.';
-  if (a.status === 'stable' && a.target !== undefined && a.latestMet === false && a.values.length >= 5) {
+  // A goal whose latest session met the target isn't told it is moving away from it, whatever the trend.
+  if (a.status === 'declining' && a.latestMet) {
+    return 'The target was met in the most recent session, but the overall trend is moving away from the goal; keep monitoring.';
+  }
+  if (a.status === 'declining') {
+    return `Performance is moving away from the goal; consider reviewing supports or activities${hasTarget ? ', or the target' : ''}.`;
+  }
+  if (a.status === 'stable' && hasTarget && a.latestMet === false && a.values.length >= 5) {
     return 'Progress has levelled off below the target; consider adjusting the approach or the level of support.';
   }
   if (a.latestMet) return `The target was met in the most recent session; keep monitoring until it is met in ${MASTERY_STREAK} sessions in a row.`;
-  if (a.status === 'improving') return 'Progress is moving toward the target; continue the current approach and keep monitoring.';
+  if (a.status === 'improving') return `Progress is moving ${hasTarget ? 'toward the target' : 'in the right direction'}; continue the current approach and keep monitoring.`;
   return null;
 }
 
@@ -229,11 +260,19 @@ function detailSentences(name: string, goal: Goal, data: Record<string, any>[]):
     const episodes = sum(durations.map(d => d.episodeCount));
     const totalMinutes = sum(durations.map(d => d.totalMinutes));
     const longest = Math.max(0, ...durations.map(d => d.longestSeconds));
-    const observed = sum(data.map(d => Number(d.observationMinutes) || 0));
-    if (episodes > 0) {
+    if (episodes === 1) {
+      lines.push(`1 episode was timed, lasting ${round(totalMinutes)} min.`);
+    } else if (episodes > 1) {
       lines.push(`${plural(episodes, 'episode')} were timed, averaging ${round(totalMinutes / episodes)} min each (longest ${round(longest / 60)} min).`);
     }
-    if (observed > 0) lines.push(`The behavior took up ${pct(Math.min(100, (totalMinutes / observed) * 100))} of ${round(observed)} observed minutes.`);
+    // Only sessions with an observation time count toward the percentage, on both sides of the division.
+    const observedSessions = data.map((d, i) => ({ minutes: Number(d.observationMinutes) || 0, behavior: durations[i].totalMinutes })).filter(s => s.minutes > 0);
+    const observed = sum(observedSessions.map(s => s.minutes));
+    if (observed > 0) {
+      const behavior = sum(observedSessions.map(s => s.behavior));
+      const scope = observedSessions.length < data.length ? ` (in the ${plural(observedSessions.length, 'session')} with an observation time)` : '';
+      lines.push(`The behavior took up ${pct(Math.min(100, (behavior / observed) * 100))} of ${round(observed)} observed minutes${scope}.`);
+    }
   }
 
   if (type === 'BEHAVIOR_INTERVAL') {
@@ -250,8 +289,12 @@ function detailSentences(name: string, goal: Goal, data: Record<string, any>[]):
     const noResponse = sum(latencies.map(l => l.noResponseCount));
     const times = latencies.flatMap(l => l.latencies.filter((v): v is number => v !== null)).sort((a, b) => a - b);
     if (trials > 0) {
-      const median = times.length ? (times.length % 2 ? times[(times.length - 1) / 2] : (times[times.length / 2 - 1] + times[times.length / 2]) / 2) : null;
-      lines.push(`Across ${plural(trials, 'trial')}, ${name} responded in ${times.length}${median !== null ? ` (median ${round(median)} seconds, fastest ${round(times[0])})` : ''}${noResponse ? ` and did not respond in ${noResponse}` : ''}.`);
+      const middle = median(times);
+      if (times.length === 0) {
+        lines.push(`${name} did not respond in any of the ${plural(trials, 'trial')}.`);
+      } else {
+        lines.push(`${name} responded in ${times.length} of ${plural(trials, 'trial')} (median ${round(middle!)} seconds, fastest ${round(times[0])} seconds)${noResponse ? ` and did not respond in ${noResponse}` : ''}.`);
+      }
     }
   }
 
@@ -297,7 +340,12 @@ function targetSentence(a: GoalAnalysis): string | null {
 
 function goalParagraph(name: string, a: GoalAnalysis, options: Required<NarrativeOptions>): string {
   const heading = goalHeading(a);
-  if (!a.latest) return `${heading}\nNo data were recorded for this goal during this period.${options.nextSteps ? `\nSuggested next step: ${nextStep(a)}` : ''}`;
+  if (!a.latest) {
+    // Latency trials with no response at all have no time to average, but they are still data.
+    const unanswered = a.unmeasured.length ? detailSentences(name, a.goal, a.unmeasured) : [];
+    const text = unanswered.length ? unanswered.join(' ') : 'No data were recorded for this goal during this period.';
+    return `${heading}\n${text}${options.nextSteps && !unanswered.length ? `\nSuggested next step: ${nextStep(a)}` : ''}`;
+  }
 
   const goal = a.goal;
   const type = captureTypeOf(goal);
@@ -327,7 +375,7 @@ function goalParagraph(name: string, a: GoalAnalysis, options: Required<Narrativ
   return `${heading}\n${sentences.join(' ')}${step ? `\nSuggested next step: ${step}` : ''}`;
 }
 
-const TREND_WORDS: Record<TrendKind, string> = { improving: 'improving', declining: 'moving away from the target', stable: 'steady', 'too few': 'too few sessions for a trend' };
+const TREND_WORDS: Record<TrendKind, string> = { improving: 'improving', declining: 'moving away from the goal', stable: 'steady', 'too few': 'too few sessions for a trend' };
 
 /** One line per goal: average, latest against the target, and the trend. */
 function briefLine(a: GoalAnalysis, options: Required<NarrativeOptions>): string {
@@ -348,10 +396,10 @@ function briefLine(a: GoalAnalysis, options: Required<NarrativeOptions>): string
 function overview(analyses: GoalAnalysis[]): string | null {
   if (analyses.length < 2) return null;
   const groups: [GoalStatus, string][] = [
-    ['met', 'met the target in at least 3 sessions in a row'],
+    ['met', `met the target in at least ${MASTERY_STREAK} sessions in a row`],
     ['improving', 'are improving'],
     ['stable', 'are steady'],
-    ['declining', 'are moving away from the target'],
+    ['declining', 'are moving away from the goal'],
     ['too few', 'have too few sessions to show a trend'],
     ['no data', 'had no data'],
   ];
