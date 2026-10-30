@@ -32,6 +32,36 @@ export default function AppLayout({
     mainRef.current?.scrollTo(0, 0);
   }, [pathname]);
 
+  // The window itself never needs to scroll (the app fills the screen and <main> scrolls), but iPad Safari can
+  // still move it: focusing a field or closing a dialog scrolls the page up under Safari's floating tab bar,
+  // whose blur then covers the menu bar ("hazy"), and Safari restores that position on reload. So the window is
+  // put back at the top whenever it moves, except while a text field is focused (the on-screen keyboard
+  // scrolls the page to keep the field in view; it is put back once the field loses focus).
+  useEffect(() => {
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+    const typing = () => {
+      const el = document.activeElement as HTMLElement | null;
+      return !!el && (['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName) || el.isContentEditable);
+    };
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const settle = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        if (!typing() && (window.scrollY !== 0 || window.scrollX !== 0)) window.scrollTo(0, 0);
+      }, 150);
+    };
+    settle();
+    window.addEventListener('scroll', settle, { passive: true });
+    document.addEventListener('focusout', settle);
+    window.addEventListener('pageshow', settle);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('scroll', settle);
+      document.removeEventListener('focusout', settle);
+      window.removeEventListener('pageshow', settle);
+    };
+  }, []);
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const storedSetting = window.localStorage.getItem(SIDEBAR_ENABLED_KEY);
