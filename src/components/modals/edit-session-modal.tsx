@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react';
 import GenericModal from './generic-modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { TimePicker } from '@/components/ui/time-picker';
 import { Textarea } from '@/components/ui/textarea';
 import { DatePicker } from '@/components/ui/date-picker';
 import { useStudentData } from '@/hooks/use-student-data';
@@ -148,21 +149,11 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
                     </div>
                     <div>
                         <Label htmlFor="sessionTimeEdit">Start Time</Label>
-                        <Input
-                            id="sessionTimeEdit"
-                            type="time"
-                            value={formData.time || ''}
-                            onChange={(e) => handleInputChange('time', e.target.value)}
-                        />
+                        <TimePicker id="sessionTimeEdit" value={formData.time || ''} onChange={(v) => handleInputChange('time', v)} />
                     </div>
                      <div>
                         <Label htmlFor="sessionEndTimeEdit">End Time</Label>
-                        <Input
-                            id="sessionEndTimeEdit"
-                            type="time"
-                            value={formData.endTime || ''}
-                            onChange={(e) => handleInputChange('endTime', e.target.value)}
-                        />
+                        <TimePicker id="sessionEndTimeEdit" value={formData.endTime || ''} onChange={(v) => handleInputChange('endTime', v)} />
                     </div>
                 </div>
 
