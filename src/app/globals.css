@@ -10,6 +10,16 @@ html, body {
   height: 100%;
 }
 
+/* The page is drawn edge to edge (viewport-fit=cover, see display-scale.ts). In the Home Screen app iPadOS puts
+   the status bar (clock, battery) over the top of the page with a blur, which made the menu bar look hazy, so
+   the content is kept inside the safe area; the strips around it show the app's background. The padding is on
+   <html>, which isn't zoomed (body is), so it matches the device's insets exactly. */
+html {
+  box-sizing: border-box;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  background-color: hsl(var(--background));
+}
+
 /* Apply Inter font to the body element */
 body {
   font-family: var(--font-inter), sans-serif;

@@ -16,6 +16,9 @@ export const TABLET_DEFAULT_SCALE = 0.8;
  * as the layout width even when zoomed out, which left the app filling only part of the screen. The
  * width is recalculated when the device rotates.
  *
+ * `viewport-fit=cover` with safe-area padding (globals.css) keeps the menu bar below the status bar in the
+ * Home Screen app, where iPadOS otherwise draws the page under the status bar's blur.
+ *
  * Next.js adds its own default viewport tag after the page loads, so this updates every viewport tag
  * and watches <head> to re-apply when one is added or reset. Kept self-contained so it can also run
  * as an inline script before the page first paints.
@@ -41,6 +44,9 @@ export function applyDisplayScale(scale?: number) {
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 0);
       if (isIOS) content += `, maximum-scale=${value}`;
     }
+    // The page draws edge to edge and keeps its content out of the status bar and home indicator itself
+    // (padding by the safe-area insets in globals.css), so the menu bar never sits under the status bar's blur.
+    content += ', viewport-fit=cover';
 
     const metas = document.querySelectorAll('meta[name="viewport"]');
     if (metas.length === 0) {
