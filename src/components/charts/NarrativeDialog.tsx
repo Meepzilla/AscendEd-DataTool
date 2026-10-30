@@ -6,7 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { buildNarrative, type NarrativeInput } from '@/lib/report-narrative';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { buildNarrative, type NarrativeInput, type NarrativeStyle } from '@/lib/report-narrative';
 import { saveTextFile } from '@/lib/save-file';
 
 // The "Write Narrative" button on Reports: a written summary of the data in view (student, goals and
@@ -16,13 +18,15 @@ export default function NarrativeDialog(props: NarrativeInput & { disabled?: boo
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
+  const [style, setStyle] = useState<NarrativeStyle>('detailed');
+  const [nextSteps, setNextSteps] = useState(false);
 
-  const generate = () => setText(buildNarrative(input));
+  const generate = () => setText(buildNarrative({ ...input, options: { style, nextSteps } }));
   useEffect(() => {
     if (open) generate();
-    // Regenerate only when the dialog opens; edits are kept while it stays open.
+    // Regenerate when the dialog opens or the format changes; edits are kept otherwise.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, style, nextSteps]);
 
   const copy = async () => {
     try {
@@ -54,6 +58,22 @@ export default function NarrativeDialog(props: NarrativeInput & { disabled?: boo
               Written from the data shown on this page (student, goals and date range). Review and edit it before using it.
             </DialogDescription>
           </DialogHeader>
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex gap-1" role="radiogroup" aria-label="Narrative length">
+              {(['detailed', 'brief'] as const).map(option => (
+                <Button key={option} type="button" size="sm" role="radio" aria-checked={style === option}
+                  variant={style === option ? 'default' : 'outline'} onClick={() => setStyle(option)}
+                  title={option === 'detailed' ? 'A paragraph per goal' : 'One line per goal'}>
+                  {option === 'detailed' ? 'Detailed' : 'Brief'}
+                </Button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch id="narrative-next-steps" checked={nextSteps} onCheckedChange={setNextSteps} />
+              <Label htmlFor="narrative-next-steps" className="text-sm">Suggested next steps</Label>
+            </div>
+            <p className="text-xs text-muted-foreground">Changing these rewrites the text (edits are lost).</p>
+          </div>
           <Textarea value={text} onChange={(e) => setText(e.target.value)} className="min-h-[50vh] text-sm leading-relaxed" aria-label="Narrative text" />
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="ghost" onClick={generate} title="Start over from the data (discards edits)">
