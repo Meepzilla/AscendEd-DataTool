@@ -27,10 +27,10 @@ const TrialStatusSequenceChart: React.FC<TrialSequenceChartProps> = ({ studentSe
       session.goals.forEach(goalData => {
         if (selectedGoalId && goalData.goalId !== selectedGoalId) return;
 
-        // Goals are charted by the type their data was entered as; archived goals are left out.
+        // Goals are charted by the type their data was entered as; archived and removed goals are left out.
         const goal = selectedStudent.goals.find(g => g.id === goalData.goalId);
-        if (goal?.isArchived) return;
-        const type = goal ? captureTypeOf(goal) : goalData.goalType;
+        if (!goal || goal.isArchived) return;
+        const type = captureTypeOf(goal);
         if (type !== 'DISCRETE_TRIALS' && type !== 'SEQUENCED_TRIALS') return;
         if (Array.isArray(goalData.data.trials)) trialsForSession.push(...goalData.data.trials);
         if (type === 'SEQUENCED_TRIALS') {

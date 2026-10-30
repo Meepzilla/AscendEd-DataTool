@@ -19,6 +19,8 @@ interface DataEntryHeaderCardProps {
   setDataEntrySessionTime: (time: string) => void;
   dataEntrySessionEndTime: string;
   setDataEntrySessionEndTime: (time: string) => void;
+  /** Reset Time to Now (today, now, and the date and times follow "now" again). */
+  onResetToNow?: () => void;
   isStudentAccessLocked: boolean;
   setIsStudentAccessLocked: (locked: boolean) => void;
 }
@@ -32,6 +34,7 @@ const DataEntryHeaderCard: React.FC<DataEntryHeaderCardProps> = ({
   setDataEntrySessionTime,
   dataEntrySessionEndTime,
   setDataEntrySessionEndTime,
+  onResetToNow,
   isStudentAccessLocked,
   setIsStudentAccessLocked,
 }) => {
@@ -68,6 +71,7 @@ const DataEntryHeaderCard: React.FC<DataEntryHeaderCardProps> = ({
               setDataEntrySessionTime={setDataEntrySessionTime}
               dataEntrySessionEndTime={dataEntrySessionEndTime}
               setDataEntrySessionEndTime={setDataEntrySessionEndTime}
+              onResetToNow={onResetToNow}
               locked={isStudentAccessLocked}
             />
             <StudentAccessToggle

@@ -106,8 +106,12 @@ export function applyGoalHotkey(type: GoalType, key: string, data: Record<string
   const promptType = PROMPT_HOTKEY_MAP[key as keyof typeof PROMPT_HOTKEY_MAP];
   if (promptType && !GOAL_TYPES_WITHOUT_PROMPT_COUNTERS.includes(type)) {
     const withPrompt = add(data, promptType);
-    // An independent response is also a correct one.
-    return promptType === 'Independent' ? addCorrect(type, withPrompt) ?? withPrompt : withPrompt;
+    // An independent response is also a correct one. On the trial grid it needs a trial to fill: with every trial
+    // scored it does nothing, so each Independent tally stands for a correct trial that removing it can take back.
+    if (promptType !== 'Independent') return withPrompt;
+    const withCorrect = addCorrect(type, withPrompt);
+    if (!withCorrect && TRIAL_GRID_TYPES.includes(type)) return null;
+    return withCorrect ?? withPrompt;
   }
   return null;
 }

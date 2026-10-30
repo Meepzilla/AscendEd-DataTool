@@ -30,6 +30,16 @@ body {
   zoom: var(--body-zoom);
 }
 
+/* Menus and popovers (Radix positions them with a transform on this wrapper) in browsers that measure zoomed
+   elements in screen pixels (see ZoomCompensation): the wrapper undoes the body's zoom so it is placed in screen
+   pixels, and its content zooms back to the app's size. */
+html.zoomed-rects [data-radix-popper-content-wrapper] {
+  zoom: calc(1 / var(--body-zoom));
+}
+html.zoomed-rects [data-radix-popper-content-wrapper] > * {
+  zoom: var(--body-zoom);
+}
+
 /* Define CSS variables for theming, primarily using HSL color format */
 @layer base {
   :root { /* Light mode color variables */

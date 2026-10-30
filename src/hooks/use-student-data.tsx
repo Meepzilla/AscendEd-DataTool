@@ -11,6 +11,7 @@ import { goalFromTemplate, hasTemplateGoal, recordRecentTemplates } from '@/lib/
 import { DEFAULT_GOAL_TEMPLATES, defaultTemplateKey, applyAssignedGoalRenames, applyDefaultTemplateRenames, applyDefaultTemplateRetirements, applyDefaultTemplateUpdates } from '@/lib/goal-constants';
 import { compareSessionsOldestFirst, generateUUID } from '@/lib/helpers';
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
+import type { ImportedSession } from '@/components/modals/import-data-modal';
 import { createBackup, mergeBackupData, type AppBackup, type RestoreMode, type RestoreSummary } from '@/lib/backup';
 import { loadAbcLists, loadCustomAbcLists, mergeAbcLists, saveAbcLists } from '@/lib/abc-lists';
 
@@ -65,10 +66,11 @@ interface StudentDataContextType {
   assignTemplateToStudents: (template: GoalTemplate, studentIds: string[]) => Promise<{ assigned: number; skipped: number }>;
 
   addSession: (sessionData: Omit<SessionData, 'sessionId'>) => Promise<SessionData | null>;
-  updateSession: (sessionId: string, data: Partial<SessionData>) => Promise<void>;
+  /** False when it couldn't be saved (the error was shown). */
+  updateSession: (sessionId: string, data: Partial<SessionData>) => Promise<boolean>;
   deleteSession: (sessionId: string) => Promise<void>;
   getSessionsForStudent: (studentId: string) => SessionData[];
-  importSessions: (sessionsToImport: Omit<SessionData, 'sessionId'>[]) => Promise<{ newCount: number; duplicateCount: number; unmatchedCount: number; }>;
+  importSessions: (sessionsToImport: ImportedSession[]) => Promise<{ newCount: number; duplicateCount: number; unmatchedCount: number; addedGoalCount: number }>;
   exportBackup: () => AppBackup;
   restoreBackup: (backup: AppBackup, mode: RestoreMode) => RestoreSummary;
 
@@ -266,9 +268,10 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   }, [currentUser, commitSessions]);
 
   const updateSession = useCallback(async (sessionId: string, data: any) => {
-    if (!currentUser) return;
-    if (!commitSessions(sessionsRef.current.map(s => s.sessionId === sessionId ? { ...s, ...data } : s).sort(byDateDesc))) return;
+    if (!currentUser) return false;
+    if (!commitSessions(sessionsRef.current.map(s => s.sessionId === sessionId ? { ...s, ...data } : s).sort(byDateDesc))) return false;
     toast({ title: "Success", description: "Session updated." });
+    return true;
   }, [currentUser, toast, commitSessions]);
 
   const deleteSession = useCallback(async (sessionId: string) => {
@@ -278,43 +281,58 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   }, [currentUser, toast, commitSessions]);
   
   /**
-   * Adds imported sessions, skipping any that match a session already here (or earlier in the same file):
-   * the same student, date and start time. Importing the same file twice therefore adds nothing.
-   * Ids differ between devices, so each session's student is found by id, then by name, and its goals by id,
-   * then by name and type; sessions for students not on this device are skipped (unmatchedCount).
+   * Adds imported sessions. Ids differ between devices, so each session's student is found by id, then by name,
+   * and its goals by id, then by name and type; a goal the student doesn't have is added to them (otherwise its
+   * data would be stored but never shown). Sessions for students not on this device are skipped (unmatchedCount).
+   * A session keeps the Session ID it had in the file, so a later backup merge recognizes it. It is skipped as
+   * already here (duplicateCount) when that id is on this device, or when a session of the same student, day and
+   * start time with the same data is (sessions imported before ids were kept). Importing a file twice adds nothing.
    */
-  const importSessions = useCallback(async (sessionsToImport: Omit<SessionData, 'sessionId'>[]) => {
+  const importSessions = useCallback(async (sessionsToImport: ImportedSession[]) => {
     if (!currentUser) throw new Error("Not authenticated.");
-    const sessionKey = (s: { studentId?: string; date?: string; time?: string }) => {
+    const contentKey = (s: { studentId?: string; date?: string; time?: string; notes?: string; goals?: SessionGoalData[] }) => {
       const day = new Date(s.date ?? '');
-      return `${s.studentId}|${Number.isNaN(day.getTime()) ? s.date : day.toDateString()}|${s.time ?? ''}`;
+      const goals = (s.goals || []).map(g => [g.goalId, g.data]).sort((x, y) => String(x[0]).localeCompare(String(y[0])));
+      return JSON.stringify([s.studentId, Number.isNaN(day.getTime()) ? s.date : day.toDateString(), s.time ?? '', s.notes ?? '', goals]);
     };
     const nameKey = (name?: string) => (name || '').trim().toLowerCase();
-    const findStudent = (s: Omit<SessionData, 'sessionId'>) =>
-      studentsRef.current.find(st => st.id === s.studentId) ?? studentsRef.current.find(st => nameKey(st.name) === nameKey(s.studentName));
-    const seen = new Set(sessionsRef.current.map(sessionKey));
+    const students = studentsRef.current.map(st => ({ ...st, goals: [...(st.goals || [])] }));
+    const findStudent = (s: ImportedSession) =>
+      students.find(st => st.id === s.studentId) ?? students.find(st => nameKey(st.name) === nameKey(s.studentName));
+    const ids = new Set(sessionsRef.current.map(s => s.sessionId));
+    const contents = new Set(sessionsRef.current.map(contentKey));
     const newSessions: SessionData[] = [];
     let duplicateCount = 0;
     let unmatchedCount = 0;
-    for (const s of sessionsToImport) {
-      const student = findStudent(s);
+    let addedGoalCount = 0;
+    for (const { sourceSessionId, ...s } of sessionsToImport) {
+      const student = findStudent(s as ImportedSession);
       if (!student) { unmatchedCount++; continue; }
       const goals = (s.goals || []).map(g => {
-        const goal = student.goals.find(sg => sg.id === g.goalId)
+        let goal = student.goals.find(sg => sg.id === g.goalId)
           ?? student.goals.find(sg => nameKey(sg.name) === nameKey(g.goalName) && sg.type === g.goalType);
-        return goal ? { ...g, goalId: goal.id, goalName: goal.name } : g;
+        if (!goal) {
+          goal = { id: g.goalId || generateUUID(), name: g.goalName, type: g.goalType, smartGoal: '' };
+          student.goals.push(goal);
+          addedGoalCount++;
+        }
+        return { ...g, goalId: goal.id, goalName: goal.name };
       });
       const session = { ...s, studentId: student.id, studentName: student.name, goals };
-      const key = sessionKey(session);
-      if (seen.has(key)) { duplicateCount++; continue; }
-      seen.add(key);
-      newSessions.push({ ...session, sessionId: generateUUID(), userId: currentUser!.uid });
+      if ((sourceSessionId && ids.has(sourceSessionId)) || contents.has(contentKey(session))) { duplicateCount++; continue; }
+      const sessionId = sourceSessionId && !ids.has(sourceSessionId) ? sourceSessionId : generateUUID();
+      ids.add(sessionId);
+      contents.add(contentKey(session));
+      newSessions.push({ ...session, sessionId, userId: currentUser!.uid });
+    }
+    if (addedGoalCount > 0 && !commitStudents(students.sort(byName))) {
+      throw new Error("The device's storage is full, so the sessions couldn't be saved.");
     }
     if (newSessions.length > 0 && !commitSessions([...sessionsRef.current, ...newSessions].sort(byDateDesc))) {
       throw new Error("The device's storage is full, so the sessions couldn't be saved.");
     }
-    return { newCount: newSessions.length, duplicateCount, unmatchedCount };
-  }, [currentUser, commitSessions]);
+    return { newCount: newSessions.length, duplicateCount, unmatchedCount, addedGoalCount };
+  }, [currentUser, commitSessions, commitStudents]);
 
   const exportBackup = useCallback(
     () => createBackup({ students, goalTemplates, sessions }, { abcLists: loadCustomAbcLists() ?? undefined }),

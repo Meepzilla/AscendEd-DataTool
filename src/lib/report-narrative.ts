@@ -59,8 +59,9 @@ function formatValue(goal: Goal, value: number): string {
     case 'BEHAVIOR_LATENCY': return `${v} seconds`;
     case 'QUALITATIVE_OBSERVATION':
     case 'COGNITIVE': return `${v} out of 5`;
-    case 'BEHAVIOR_ABC': return goalDirection(goal) === 'decrease' ? String(v) : pct(v);
-    default: return pct(v);
+    // To 0.1 like the goal cards (and the target check), so 79.6% isn't shown as a met 80%.
+    case 'BEHAVIOR_ABC': return goalDirection(goal) === 'decrease' ? String(v) : `${v}%`;
+    default: return `${v}%`;
   }
 }
 
@@ -98,6 +99,10 @@ interface GoalAnalysis {
   status: GoalStatus;
   /** Latency data with trials but no measure (no response in any trial). */
   unmeasured: Record<string, any>[];
+  /** Dates of the sessions in `unmeasured`. */
+  unmeasuredDates: string[];
+  /** The most recent session is one of those (so `latest` is the most recent session with a measure). */
+  latestUnanswered: boolean;
 }
 
 /**
@@ -131,14 +136,20 @@ function analyzeGoal(goal: Goal, number: number, sessions: SessionData[]): GoalA
     .filter((r): r is { session: SessionData; data: Record<string, any> } => !!r.data)
     .map(r => ({ ...r, value: goalMeasure(goal, r.data) }));
   const recorded = withData.filter((r): r is typeof r & { value: number } => r.value !== null);
-  const unmeasured = captureTypeOf(goal) === 'BEHAVIOR_LATENCY'
-    ? withData.filter(r => r.value === null && summarizeLatency(r.data).trialCount > 0).map(r => r.data)
+  // Latency sessions where the student never responded have no time to average, but they are data (and a
+  // target can't have been met in them).
+  const unmeasuredRows = captureTypeOf(goal) === 'BEHAVIOR_LATENCY'
+    ? withData.filter(r => r.value === null && summarizeLatency(r.data).trialCount > 0)
     : [];
+  const unmeasured = unmeasuredRows.map(r => r.data);
+  const lastRow = [...recorded, ...unmeasuredRows].sort((x, y) => compareSessionsOldestFirst(x.session, y.session)).pop();
+  const latestUnanswered = !!lastRow && lastRow.value === null;
   const values = recorded.map(r => r.value);
   const target = goal.sessionTargetValue;
   const met = values.map(v => target !== undefined && meetsTarget(goal, v, target));
   let streak = 0;
   for (let i = met.length - 1; i >= 0 && met[i]; i--) streak++;
+  if (latestUnanswered) streak = 0;
   const trend = fitTrend(goal, values);
   const last = recorded[recorded.length - 1];
   const status: GoalStatus = recorded.length === 0 ? 'no data'
@@ -146,12 +157,14 @@ function analyzeGoal(goal: Goal, number: number, sessions: SessionData[]): GoalA
     : trend.kind;
   return {
     goal, number, recorded, values, target, streak, trend, status, unmeasured,
+    unmeasuredDates: unmeasuredRows.map(r => r.session.date),
+    latestUnanswered,
     average: avg(values),
     low: values.length ? Math.min(...values) : 0,
     high: values.length ? Math.max(...values) : 0,
     latest: last ? { date: last.session.date, value: last.value } : null,
     metCount: met.filter(Boolean).length,
-    latestMet: target === undefined || !last ? null : met[met.length - 1],
+    latestMet: target === undefined || !last ? null : latestUnanswered ? false : met[met.length - 1],
   };
 }
 
@@ -172,7 +185,14 @@ function nextStep(a: GoalAnalysis): string | null {
   // For a decrease goal (less behavior is better) a harder target is a lower one, and "short of it" is above it.
   const decrease = goalDirection(a.goal) === 'decrease';
   if (a.status === 'no data') return 'Collect data on this goal to monitor progress.';
-  if (a.status === 'met') return `The target was met in ${a.streak} sessions in a row; consider ${decrease ? 'lowering' : 'raising'} the target or moving to the next step for this skill.`;
+  if (a.status === 'met') {
+    // A target already at the end of the scale (0 incidents, 100%, a rating of 5) can't be made harder.
+    const max = goalMeasureInfo(a.goal).max;
+    const atLimit = a.target !== undefined && (decrease ? a.target <= 0 : max !== undefined && a.target >= max);
+    return atLimit
+      ? `The target was met in ${a.streak} sessions in a row; consider moving to the next step for this skill or reducing support.`
+      : `The target was met in ${a.streak} sessions in a row; consider ${decrease ? 'lowering' : 'raising'} the target or moving to the next step for this skill.`;
+  }
   if (a.status === 'too few') return 'More sessions are needed before a trend can be judged.';
   // A goal whose latest session met the target isn't told it is moving away from it, whatever the trend.
   if (a.status === 'declining' && a.latestMet) {
@@ -324,7 +344,8 @@ function goalHeading(a: GoalAnalysis): string {
 
 function targetSentence(a: GoalAnalysis): string | null {
   if (a.target === undefined || !a.latest) return null;
-  const sessions = a.values.length;
+  // Latency sessions without any response count as sessions where the target wasn't met.
+  const sessions = a.values.length + a.unmeasured.length;
   const streak = a.streak >= 2 ? `, including the last ${a.streak} sessions in a row` : '';
   const latest = sessions > 1 && a.streak < 2 ? `, and ${a.latestMet ? 'was' : 'was not'} met in the most recent session` : '';
   return `The target was met in ${a.metCount} of ${plural(sessions, 'session')}${streak}${latest}.`;
@@ -349,13 +370,17 @@ function goalParagraph(name: string, a: GoalAnalysis, options: Required<Narrativ
   } else {
     const range = round(a.low) === round(a.high) ? 'the same in every session' : `range ${formatValue(goal, a.low)} to ${formatValue(goal, a.high)}`;
     sentences.push(`Across ${a.values.length} sessions with data, ${measure} averaged ${formatValue(goal, a.average)} (${range}).`);
-    sentences.push(`In the most recent session (${formatDate(a.latest.date)}), ${measure} was ${formatValue(goal, a.latest.value)}.`);
+    sentences.push(`In the most recent session${a.latestUnanswered ? ' with a response' : ''} (${formatDate(a.latest.date)}), ${measure} was ${formatValue(goal, a.latest.value)}.`);
   }
   const targetText = targetSentence(a);
   if (targetText) sentences.push(targetText);
   const trend = trendSentence(name, a);
   if (trend) sentences.push(trend);
-  sentences.push(...detailSentences(name, goal, a.recorded.map(r => r.data)));
+  if (a.unmeasured.length) {
+    const n = a.unmeasured.length;
+    sentences.push(`In ${n === 1 ? '1 more session' : `${n} more sessions`} (${a.unmeasuredDates.map(d => formatDate(d)).join(', ')}), ${name} did not respond in any trial; ${n === 1 ? 'it is' : 'they are'} not included in the average time.`);
+  }
+  sentences.push(...detailSentences(name, goal, [...a.recorded.map(r => r.data), ...a.unmeasured]));
   if (BEHAVIOR_GOAL_TYPES.includes(type)) {
     const timing = timingSentence(type, a.recorded);
     if (timing) sentences.push(timing);
@@ -430,7 +455,9 @@ export function buildNarrative({ student, goals, sessions, rangeLabel, options =
   // Sessions where something was recorded for at least one of these goals (not every session in the range).
   const sessionsWithData = sorted.filter(session => goals.some(goal => {
     const data = session.goals?.find(g => g.goalId === goal.id)?.data;
-    return !!data && goalMeasure(goal, withoutRunningTimers(data)) !== null;
+    if (!data) return false;
+    const saved = withoutRunningTimers(data);
+    return goalMeasure(goal, saved) !== null || (captureTypeOf(goal) === 'BEHAVIOR_LATENCY' && summarizeLatency(saved).trialCount > 0);
   })).length;
   const intro = `This summary covers ${plural(sessionsWithData, 'session')} with ${name} from ${period}, for ${plural(goals.length, 'goal')}.`;
   const body = settings.style === 'brief'
