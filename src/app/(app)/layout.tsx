@@ -1,7 +1,7 @@
 
 'use client';
-import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useEffect, useRef, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import AppHeader from '@/components/layout/app-header';
 import AppFooter from '@/components/layout/app-footer';
@@ -23,7 +23,14 @@ export default function AppLayout({
 }) {
   const { currentUser, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  const mainRef = useRef<HTMLElement>(null);
   const [isSidebarEnabled, setIsSidebarEnabled] = useState(true);
+
+  // Pages scroll inside <main>, not the window, so start each page at the top.
+  useEffect(() => {
+    mainRef.current?.scrollTo(0, 0);
+  }, [pathname]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -66,23 +73,27 @@ export default function AppLayout({
   }
 
   return (
-    <SidebarProvider defaultOpen={isSidebarEnabled}>
+    <SidebarProvider defaultOpen={isSidebarEnabled} className="h-full min-h-0">
       <KeyboardShortcutInitializer />
-      {/* flex-1 min-w-0: fill the width of the SidebarProvider's flex row instead of shrinking to the content. */}
-      <div className="flex flex-1 min-w-0 flex-col min-h-screen bg-background">
+      {/* The app fills the screen exactly: the header stays at the top as part of the layout and only <main>
+          scrolls (iPad Safari could leave a position: sticky header drawn hazy after a dialog closed).
+          flex-1 min-w-0: fill the width of the SidebarProvider's flex row instead of shrinking to the content. */}
+      <div className="flex flex-1 min-w-0 flex-col h-full min-h-0 bg-background">
         <AppHeader />
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1 min-h-0 overflow-hidden">
           {isSidebarEnabled ? (
             <>
               <StudentSidebar />
               <SidebarRail />
             </>
           ) : null}
-          <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-            {children}
+          <main ref={mainRef} className="flex flex-1 min-w-0 min-h-0 flex-col overflow-y-auto">
+            <div className="flex-1 p-4 sm:p-6 lg:p-8">
+              {children}
+            </div>
+            <AppFooter />
           </main>
         </div>
-        <AppFooter />
       </div>
     </SidebarProvider>
   );

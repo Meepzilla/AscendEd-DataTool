@@ -1,10 +1,11 @@
 import type { Goal, SessionData, Student } from './types';
 import {
-  captureTypeOf, goalDirection, summarizeAbc, summarizeCommunicationFunctions, summarizeFrequency,
+  BEHAVIOR_GOAL_TYPES, captureTypeOf, goalDirection, summarizeAbc, summarizeCommunicationFunctions, summarizeFrequency,
   COMMUNICATION_FUNCTIONS, STORY_PARTS, STORY_LINKING_WORDS, linkingWordField, type AbcIncident,
 } from './goal-constants';
 import { goalMeasure, goalMeasureInfo, goalNotes, goalResponses, meetsTarget, promptTotals, usesPromptCounters } from './goal-measures';
 import { formatDate, formatGoalTarget, goalTypeLabel, plural } from './helpers';
+import { timePatterns, TIMING_MEASURE_LABELS, WEEKDAY_NAMES } from './behavior-timing';
 
 // A written summary of a student's data for a date range, built from fixed sentence patterns (no AI):
 // per goal, the measure's average, range, latest value against the target, how often the target was met,
@@ -146,6 +147,21 @@ function detailSentences(name: string, goal: Goal, data: Record<string, any>[]):
   return lines;
 }
 
+/** When the behavior happened most (or, for latency, when responses were slowest), if there is enough data. */
+function timingSentence(type: string, recorded: { session: SessionData; data: Record<string, any> }[]): string | null {
+  const patterns = timePatterns(type, recorded);
+  if (patterns.eventCount < 3 || !patterns.peakHour) return null;
+  const unit = TIMING_MEASURE_LABELS[patterns.measure].unit;
+  const latency = patterns.measure === 'seconds';
+  const day = patterns.peakWeekday && patterns.byWeekday.filter(d => d.value > 0).length > 1
+    ? ` and on ${WEEKDAY_NAMES[patterns.peakWeekday.name]}s (${patterns.peakWeekday.value}${unit}${latency ? '' : ' per session'})`
+    : '';
+  const basis = patterns.exactShare < 0.5 ? ' (mostly based on session start times)' : '';
+  return latency
+    ? `Responses were slowest around ${patterns.peakHour.name} (${patterns.peakHour.value}${unit} on average)${day}${basis}.`
+    : `The behavior was recorded most around ${patterns.peakHour.name} (${patterns.peakHour.value}${unit})${day}${basis}.`;
+}
+
 function goalParagraph(name: string, goal: Goal, index: number, sessions: SessionData[]): string {
   const type = captureTypeOf(goal);
   const target = goal.sessionTargetValue;
@@ -180,6 +196,10 @@ function goalParagraph(name: string, goal: Goal, index: number, sessions: Sessio
   const trend = trendSentence(name, goal, values);
   if (trend) sentences.push(trend);
   sentences.push(...detailSentences(name, goal, recorded.map(r => r.data)));
+  if (BEHAVIOR_GOAL_TYPES.includes(type)) {
+    const timing = timingSentence(type, recorded);
+    if (timing) sentences.push(timing);
+  }
 
   const notes = recorded.map(r => ({ date: r.session.date, text: goalNotes(r.data) })).filter(n => n.text).slice(-2);
   if (notes.length) sentences.push(`Session notes: ${notes.map(n => `${formatDate(n.date)}: "${n.text}"`).join('; ')}.`);

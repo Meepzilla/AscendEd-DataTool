@@ -6,15 +6,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, ReferenceLine, BarChart, Bar } from 'recharts';
 import {
-  captureTypeOf, goalDirection, summarizeAbc, scoreStory, STORY_PARTS, STORY_LINKING_WORDS, linkingWordField, COMMUNICATION_FUNCTIONS,
+  BEHAVIOR_GOAL_TYPES, captureTypeOf, goalDirection, summarizeAbc, scoreStory, STORY_PARTS, STORY_LINKING_WORDS, linkingWordField, COMMUNICATION_FUNCTIONS,
   type AbcIncident,
 } from '@/lib/goal-constants';
 import { goalMeasure, goalMeasureInfo, goalResponses, goalNotes, meetsTarget, promptTotals, usesPromptCounters } from '@/lib/goal-measures';
 import { formatDate, formatGoalTarget, goalTypeLabel } from '@/lib/helpers';
+import BehaviorTimeCharts from './BehaviorTimeCharts';
 
 // A report card for each goal: its measure per session against the target, summary numbers, and a
 // breakdown that fits the goal type (responses, prompt levels, story parts, communication functions,
-// dysfluency types, ABC antecedents and functions), plus recent notes.
+// dysfluency types, ABC antecedents and functions), when behavior happens (behavior goals), plus recent notes.
 
 interface GoalChartsProps {
   studentSessions: SessionData[]; // oldest first
@@ -219,6 +220,7 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[] }> = ({ goal
           </div>
         )}
         {recorded.length > 0 && <GoalBreakdowns goal={goal} recorded={recorded} />}
+        {recorded.length > 0 && BEHAVIOR_GOAL_TYPES.includes(type) && <BehaviorTimeCharts type={type} recorded={recorded} />}
         {notes.length > 0 && (
           <div>
             <p className="text-sm font-medium mb-1">Recent notes</p>
