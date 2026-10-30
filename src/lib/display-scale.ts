@@ -34,7 +34,8 @@ export function applyDisplayScale(scale?: number) {
     if (value !== 1) {
       const landscape = window.matchMedia('(orientation: landscape)').matches;
       const deviceWidth = landscape ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height);
-      content = `width=${Math.round(deviceWidth / value)}, initial-scale=${value}, maximum-scale=${value}`;
+      // No maximum-scale: pinch-zoom stays available (Android honors it and would block zooming in).
+      content = `width=${Math.round(deviceWidth / value)}, initial-scale=${value}`;
     }
 
     const metas = document.querySelectorAll('meta[name="viewport"]');

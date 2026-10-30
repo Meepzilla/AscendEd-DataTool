@@ -9,7 +9,7 @@ import {
   BEHAVIOR_GOAL_TYPES, captureTypeOf, goalDirection, summarizeAbc, scoreStory, STORY_PARTS, STORY_LINKING_WORDS, linkingWordField, COMMUNICATION_FUNCTIONS,
   type AbcIncident,
 } from '@/lib/goal-constants';
-import { goalMeasure, goalMeasureInfo, goalResponses, goalNotes, meetsTarget, promptTotals, usesPromptCounters } from '@/lib/goal-measures';
+import { goalMeasure, goalMeasureInfo, goalResponses, goalNotes, meetsTarget, promptTotals, usesPromptCounters, withoutRunningTimers } from '@/lib/goal-measures';
 import { formatDate, formatGoalTarget, goalTypeLabel } from '@/lib/helpers';
 import BehaviorTimeCharts from './BehaviorTimeCharts';
 
@@ -37,8 +37,9 @@ export function recordedSessions(goal: Goal, sessions: SessionData[]): Recorded[
   const seen: Record<string, number> = {};
   const recorded: Recorded[] = [];
   for (const session of sessions) {
-    const data = session.goals.find(g => g.goalId === goal.id)?.data;
-    if (!data) continue;
+    const stored = session.goals.find(g => g.goalId === goal.id)?.data;
+    if (!stored) continue;
+    const data = withoutRunningTimers(stored);
     const value = goalMeasure(goal, data);
     if (value === null) continue;
     const day = new Date(session.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });

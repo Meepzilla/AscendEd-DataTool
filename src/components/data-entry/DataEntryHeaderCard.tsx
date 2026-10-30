@@ -68,6 +68,7 @@ const DataEntryHeaderCard: React.FC<DataEntryHeaderCardProps> = ({
               setDataEntrySessionTime={setDataEntrySessionTime}
               dataEntrySessionEndTime={dataEntrySessionEndTime}
               setDataEntrySessionEndTime={setDataEntrySessionEndTime}
+              locked={isStudentAccessLocked}
             />
             <StudentAccessToggle
                 isStudentAccessLocked={isStudentAccessLocked}

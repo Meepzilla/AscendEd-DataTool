@@ -13,7 +13,7 @@ import { formatDate, formatGoalTarget, goalTypeLabel } from '@/lib/helpers';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import Papa from 'papaparse';
+import { downloadSessionsCsv } from '@/lib/session-csv';
 import { useToast } from '@/hooks/use-toast';
 
 import AssignGoalToStudentModal from '@/components/modals/assign-goal-to-student-modal';
@@ -119,43 +119,7 @@ export default function StudentProfileView() {
       return;
     }
 
-    const dataToExport = studentSessions.flatMap(session => {
-      if (!session.goals || session.goals.length === 0) {
-        return [{
-          'Session ID': session.sessionId, 'Student ID': session.studentId, 'Student Name': session.studentName,
-          'Date': formatDate(session.date), 'Start Time': session.time, 'End Time': session.endTime || 'N/A',
-          'Activity': session.activity, 'Session Notes': session.notes, 'Goal Name': 'N/A (No goals recorded)',
-        }];
-      }
-
-      return session.goals.map(goalData => {
-        const baseData: Record<string, any> = {
-          'Session ID': session.sessionId, 'Student ID': session.studentId, 'Student Name': session.studentName,
-          'Date': formatDate(session.date), 'Start Time': session.time, 'End Time': session.endTime || 'N/A',
-          'Activity': session.activity, 'Session Notes': session.notes, 'Goal ID': goalData.goalId,
-          'Goal Name': goalData.goalName, 'Goal Type': goalData.goalType,
-        };
-
-        const flattenedGoalData = Object.entries(goalData.data).reduce((acc, [key, value]) => {
-          const formattedKey = `Goal Data: ${key.replace(/([A-Z])/g, ' $1').trim()}`;
-          acc[formattedKey] = Array.isArray(value) ? JSON.stringify(value) : value;
-          return acc;
-        }, {} as Record<string, any>);
-
-        return { ...baseData, ...flattenedGoalData };
-      });
-    });
-
-    const csv = Papa.unparse(dataToExport);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    const safeStudentName = currentStudent.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-    link.setAttribute('download', `sessions_${safeStudentName}_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    downloadSessionsCsv(studentSessions, currentStudent.name);
   };
 
   const handleOpenEditAssignedGoalModal = (goal: Goal) => {

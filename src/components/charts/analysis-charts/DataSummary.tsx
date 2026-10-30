@@ -2,6 +2,7 @@
 
 import React, { useMemo } from 'react';
 import type { Student } from '@/lib/types';
+import { goalMeasure, withoutRunningTimers } from '@/lib/goal-measures';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Sigma, Percent, CheckCircle, XCircle, HelpCircle, Target } from 'lucide-react';
 
@@ -14,6 +15,7 @@ interface DataSummaryProps {
 
 const DataSummary: React.FC<DataSummaryProps> = ({ studentSessions, selectedStudent, selectedGoalId, chartData }) => {
 
+  const selectedGoal = selectedGoalId ? selectedStudent?.goals.find(g => g.id === selectedGoalId) : undefined;
   const summaryStats = useMemo(() => {
     if (!chartData || chartData.length === 0) {
       return {
@@ -34,14 +36,20 @@ const DataSummary: React.FC<DataSummaryProps> = ({ studentSessions, selectedStud
     const avgAccuracy = totalOpportunities > 0 ? (totalCorrect / totalOpportunities) * 100 : 0;
 
     return {
-      sessionCount: studentSessions.length,
+      // With one goal selected, the sessions where something was recorded for it.
+      sessionCount: selectedGoal
+        ? studentSessions.filter(session => {
+            const data = session.goals?.find((g: { goalId: string }) => g.goalId === selectedGoal.id)?.data;
+            return !!data && goalMeasure(selectedGoal, withoutRunningTimers(data)) !== null;
+          }).length
+        : studentSessions.length,
       avgAccuracy: parseFloat(avgAccuracy.toFixed(1)),
       totalCorrect,
       totalIncorrect,
       totalApproximate,
       totalOpportunities,
     };
-  }, [chartData, studentSessions]);
+  }, [chartData, studentSessions, selectedGoal]);
 
   const stats = [
     { label: 'Total Sessions', value: summaryStats.sessionCount, icon: Sigma },

@@ -356,7 +356,7 @@ export default function GoalTemplatesPage() {
                             <Info className="h-4 w-4" />
                           </Button>
                         )}
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditGoalTemplateModal(template)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditGoalTemplateModal(template)} title="Edit Template" aria-label="Edit Template">
                           <Edit className="h-4 w-4" />
                         </Button>
                         {template.isDefault ? (
@@ -364,7 +364,7 @@ export default function GoalTemplatesPage() {
                              {template.isArchived ? <ArchiveRestore className="h-4 w-4 text-green-600"/> : <Archive className="h-4 w-4 text-orange-600"/>}
                           </Button>
                         ) : (
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openDeleteConfirmationModal(template, 'goalTemplate')}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openDeleteConfirmationModal(template, 'goalTemplate')} title="Delete Template" aria-label="Delete Template">
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         )}

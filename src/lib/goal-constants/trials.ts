@@ -10,7 +10,10 @@ export const TRIALS_FIELDS: Record<string, Record<string, any>> = {
     notes: '',
     Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, Imitation: 0,
   },
+  // Entered on the trial grid like discrete trials (sessions from before kept counts in the fields below).
   SEQUENCED_TRIALS: {
+    numberOfTrials: 5,
+    trials: Array(5).fill('untouched'),
     successfulAttempts: 0,
     failedAttempts: 0,
     approximate: 0,

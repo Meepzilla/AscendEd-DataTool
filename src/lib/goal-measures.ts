@@ -81,6 +81,16 @@ export function goalMeasureInfo(goal: MeasuredGoal): GoalMeasureInfo {
 }
 
 /**
+ * A saved session's data with any timer that was left running cleared. Saving stops timers, but a running
+ * one would otherwise keep counting until the day the report is viewed (e.g. a duration "episode" of weeks).
+ */
+export function withoutRunningTimers(data: Record<string, any>): Record<string, any> {
+  return data.runningSince || data.cueGivenAt || data.timerStartedAt
+    ? { ...data, runningSince: null, cueGivenAt: null, timerStartedAt: null }
+    : data;
+}
+
+/**
  * A goal's measure for one session's data, or null when nothing was recorded for it (every session stores
  * all of a student's goals, so untouched goals are left out of charts rather than shown as 0%).
  */
@@ -89,7 +99,7 @@ export function goalMeasure(goal: MeasuredGoal, data: Record<string, any> = {}):
   if (BEHAVIOR_GOAL_TYPES.includes(type)) {
     // A behavior goal left untouched in a session reads as 0; it counts only if Data Entry marked it as
     // worked on (so an observed 0 is kept) or something was recorded.
-    const value = behaviorMeasure(type, data, goalDirection(goal));
+    const value = behaviorMeasure(type, withoutRunningTimers(data), goalDirection(goal));
     return value !== null && (data.recorded === true || value !== 0) ? value : null;
   }
 
@@ -129,9 +139,13 @@ export function goalMeasure(goal: MeasuredGoal, data: Record<string, any> = {}):
   return null;
 }
 
-/** Whether a session's measure meets the goal's target (at or below it for decrease goals). */
+/**
+ * Whether a session's measure meets the goal's target (at or below it for decrease goals). The measure is
+ * compared as it is shown (to 0.1), so a value shown as "5" never reads as missing a target of 5.
+ */
 export function meetsTarget(goal: MeasuredGoal, value: number, target: number): boolean {
-  return goalDirection(goal) === 'decrease' ? value <= target : value >= target;
+  const shown = Math.round(value * 10) / 10;
+  return goalDirection(goal) === 'decrease' ? shown <= target : shown >= target;
 }
 
 export function usesPromptCounters(type: string): boolean {
