@@ -5,40 +5,25 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { useAuth } from './use-auth';
 import { useToast as useShadcnToast } from "@/hooks/use-toast";
 import { useErrorLog } from './use-error-log';
-import type { Student, Goal, GoalTemplate, SessionData, SessionGoalData } from '@/lib/types';
+import type { Student, Goal, GoalTemplate, SessionData } from '@/lib/types';
 import { useModalState } from './use-modal-state';
-import { goalFromTemplate, hasTemplateGoal, linkGoalsToTemplates, recordRecentTemplates } from '@/lib/goal-templates';
-import { DEFAULT_GOAL_TEMPLATES, defaultTemplateKey, applyAssignedGoalRenames, applyDefaultTemplateRenames, applyDefaultTemplateRetirements, applyDefaultTemplateUpdates } from '@/lib/goal-constants';
-import { compareSessionsOldestFirst, generateUUID } from '@/lib/helpers';
+import { useDataStorage } from './use-data-storage';
+import { goalFromTemplate, hasTemplateGoal, recordRecentTemplates } from '@/lib/goal-templates';
+import { generateUUID } from '@/lib/helpers';
 import * as secureStore from '@/lib/secure-store';
-import { reviveGoalTypes } from '@/lib/legacy-goal-types';
-import type { ImportedSession } from '@/components/modals/import-data-modal';
-import { createBackup, mergeBackupData, type AppBackup, type RestoreMode, type RestoreSummary } from '@/lib/backup';
-import { loadAbcLists, loadCustomAbcLists, mergeAbcLists, saveAbcLists } from '@/lib/abc-lists';
-import { getStudentGroups, saveStudentGroups } from '@/lib/student-groups';
+import { byDateDesc, byName, readList } from '@/lib/data-store';
+import { prepareLoadedData } from '@/lib/data-migrations';
+import { planSessionImport, type ImportedSession } from '@/lib/session-import';
+import { createBackup, type AppBackup, type RestoreMode, type RestoreSummary } from '@/lib/backup';
+import { planRestore, restoreBackupSettings } from '@/lib/restore';
+import { loadCustomAbcLists } from '@/lib/abc-lists';
+import { getStudentGroups } from '@/lib/student-groups';
 import { mergeProblem, mergeSessions } from '@/lib/session-merge';
 
-const LOCAL_STORAGE_STUDENTS_BASE_KEY = 'ascended_students_v2';
-const LOCAL_STORAGE_GOAL_TEMPLATES_BASE_KEY = 'ascended_goal_templates_v2';
-const LOCAL_STORAGE_SESSIONS_BASE_KEY = 'ascended_sessions_v2';
-
-const getLocalStorageKey = (base: string, uid: string | undefined): string | null => {
-    if (!uid) return null;
-    return `${base}_${uid}`;
-};
-
-/** Stored data, the default when there is none yet, or undefined when it is there but can't be read. */
-const readFromLocalStorage = (key: string | null, defaultValue: any) => {
-    if (typeof window === 'undefined' || !key) return defaultValue;
-    try {
-        const item = secureStore.getItem(key);
-        const value = item ? JSON.parse(item, reviveGoalTypes) : defaultValue;
-        return Array.isArray(defaultValue) && !Array.isArray(value) ? undefined : value;
-    } catch (error) {
-        console.warn(`Error reading from localStorage key "${key}":`, error);
-        return undefined;
-    }
-};
+// All student data for the app (students, goal templates, sessions) and the actions that change it. Storage
+// lives in use-data-storage.ts and lib/data-store.ts; what happens on load, import and restore is worked out in
+// lib/data-migrations.ts, lib/session-import.ts and lib/restore.ts (plain functions, unit tested); this file
+// keeps the lists in React state and saves each change.
 
 interface StudentDataContextType {
   students: Student[];
@@ -144,46 +129,8 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const studentsRef = useRef<Student[]>([]);
   const templatesRef = useRef<GoalTemplate[]>([]);
   const sessionsRef = useRef<SessionData[]>([]);
-  // Keys whose stored data couldn't be read: they are never written over, so the data can still be recovered.
-  const unreadableKeys = useRef<Set<string>>(new Set());
-
-    const saveToLocal = useCallback((key: string | null, data: any): boolean => {
-        if (typeof window === 'undefined' || !key) return false;
-        if (unreadableKeys.current.has(key)) {
-            toast({ title: "Couldn't save", description: "This device's saved data couldn't be read, so it wasn't overwritten. Restore a backup in Settings.", variant: "destructive" });
-            return false;
-        }
-        try {
-            secureStore.setItem(key, JSON.stringify(data));
-            return true;
-        } catch (error) {
-            console.error(`Error writing localStorage key "${key}":`, error);
-            addErrorLog({ message: `Saving failed: ${error instanceof Error ? error.message : String(error)}`, source: 'storage', type: 'error' });
-            toast({
-              title: "Couldn't save",
-              description: "This device's storage is full or unavailable, so the change was not saved. Back up your data in Settings, then delete old sessions to make room.",
-              variant: "destructive",
-            });
-            return false;
-        }
-    }, [toast, addErrorLog]);
-
-    // With passcode protection, data is encrypted into storage in the background; a write that fails there
-    // is reported the same way.
-    useEffect(() => {
-        secureStore.setWriteErrorHandler(error => {
-            addErrorLog({ message: `Saving (encrypted) failed: ${error instanceof Error ? error.message : String(error)}`, source: 'storage', type: 'error' });
-            toast({ title: "Couldn't save", description: "This device's storage is full or unavailable, so the latest change was not saved. Back up your data in Settings.", variant: "destructive" });
-        });
-        return () => secureStore.setWriteErrorHandler(null);
-    }, [toast, addErrorLog]);
-
-    const studentsKey = getLocalStorageKey(LOCAL_STORAGE_STUDENTS_BASE_KEY, currentUser?.uid);
-    const templatesKey = getLocalStorageKey(LOCAL_STORAGE_GOAL_TEMPLATES_BASE_KEY, currentUser?.uid);
-    const sessionsKey = getLocalStorageKey(LOCAL_STORAGE_SESSIONS_BASE_KEY, currentUser?.uid);
-
-  const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name);
-  const byDateDesc = (a: SessionData, b: SessionData) => compareSessionsOldestFirst(b, a);
+  const { keys, save: saveToLocal, unreadableKeys } = useDataStorage(currentUser?.uid);
+  const { students: studentsKey, templates: templatesKey, sessions: sessionsKey } = keys;
 
   /** Stores a new list and, only if that worked, shows it. */
   const commitStudents = useCallback((next: Student[]) => {
@@ -324,58 +271,18 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     toast({ title: "Success", description: "Session deleted." });
   }, [currentUser, toast, commitSessions]);
   
-  /**
-   * Adds imported sessions. Ids differ between devices, so each session's student is found by id, then by name,
-   * and its goals by id, then by name and type; a goal the student doesn't have is added to them (otherwise its
-   * data would be stored but never shown). Sessions for students not on this device are skipped (unmatchedCount).
-   * A session keeps the Session ID it had in the file, so a later backup merge recognizes it. It is skipped as
-   * already here (duplicateCount) when that id is on this device, or when a session of the same student, day and
-   * start time with the same data is (sessions imported before ids were kept). Importing a file twice adds nothing.
-   */
+  /** Adds sessions imported from a CSV file (see planSessionImport for how they are matched). */
   const importSessions = useCallback(async (sessionsToImport: ImportedSession[]) => {
     if (!currentUser) throw new Error("Not authenticated.");
-    const contentKey = (s: { studentId?: string; date?: string; time?: string; notes?: string; goals?: SessionGoalData[] }) => {
-      const day = new Date(s.date ?? '');
-      const goals = (s.goals || []).map(g => [g.goalId, g.data]).sort((x, y) => String(x[0]).localeCompare(String(y[0])));
-      return JSON.stringify([s.studentId, Number.isNaN(day.getTime()) ? s.date : day.toDateString(), s.time ?? '', s.notes ?? '', goals]);
-    };
-    const nameKey = (name?: string) => (name || '').trim().toLowerCase();
-    const students = studentsRef.current.map(st => ({ ...st, goals: [...(st.goals || [])] }));
-    const findStudent = (s: ImportedSession) =>
-      students.find(st => st.id === s.studentId) ?? students.find(st => nameKey(st.name) === nameKey(s.studentName));
-    const ids = new Set(sessionsRef.current.map(s => s.sessionId));
-    const contents = new Set(sessionsRef.current.map(contentKey));
-    const newSessions: SessionData[] = [];
-    let duplicateCount = 0;
-    let unmatchedCount = 0;
-    let addedGoalCount = 0;
-    for (const { sourceSessionId, ...s } of sessionsToImport) {
-      const student = findStudent(s as ImportedSession);
-      if (!student) { unmatchedCount++; continue; }
-      const goals = (s.goals || []).map(g => {
-        let goal = student.goals.find(sg => sg.id === g.goalId)
-          ?? student.goals.find(sg => nameKey(sg.name) === nameKey(g.goalName) && sg.type === g.goalType);
-        if (!goal) {
-          goal = { id: g.goalId || generateUUID(), name: g.goalName, type: g.goalType, smartGoal: '' };
-          student.goals.push(goal);
-          addedGoalCount++;
-        }
-        return { ...g, goalId: goal.id, goalName: goal.name };
-      });
-      const session = { ...s, studentId: student.id, studentName: student.name, goals };
-      if ((sourceSessionId && ids.has(sourceSessionId)) || contents.has(contentKey(session))) { duplicateCount++; continue; }
-      const sessionId = sourceSessionId && !ids.has(sourceSessionId) ? sourceSessionId : generateUUID();
-      ids.add(sessionId);
-      contents.add(contentKey(session));
-      newSessions.push({ ...session, sessionId, userId: currentUser!.uid });
-    }
-    if (addedGoalCount > 0 && !commitStudents(students.sort(byName))) {
+    const plan = planSessionImport(studentsRef.current, sessionsRef.current, sessionsToImport, currentUser.uid);
+    if (plan.addedGoalCount > 0 && !commitStudents(plan.students)) {
       throw new Error("The device's storage is full, so the sessions couldn't be saved.");
     }
-    if (newSessions.length > 0 && !commitSessions([...sessionsRef.current, ...newSessions].sort(byDateDesc))) {
+    if (plan.newCount > 0 && !commitSessions(plan.sessions)) {
       throw new Error("The device's storage is full, so the sessions couldn't be saved.");
     }
-    return { newCount: newSessions.length, duplicateCount, unmatchedCount, addedGoalCount };
+    const { newCount, duplicateCount, unmatchedCount, addedGoalCount } = plan;
+    return { newCount, duplicateCount, unmatchedCount, addedGoalCount };
   }, [currentUser, commitSessions, commitStudents]);
 
   const exportBackup = useCallback(
@@ -399,17 +306,8 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       throw new Error("Some of this device's data couldn't be read, so the backup can't be added to it. Use Replace to restore the backup instead.");
     }
 
-    let next = backup.data;
-    let summary: RestoreSummary = { students: next.students.length, goalTemplates: next.goalTemplates.length, sessions: next.sessions.length, goals: 0 };
-    if (mode === 'merge') {
-      const result = mergeBackupData(current, backup.data);
-      next = result.merged;
-      summary = result.added;
-    }
-
-    const nextStudents = [...next.students].sort(byName);
-    const nextTemplates = [...next.goalTemplates].sort(byName);
-    const nextSessions = [...next.sessions].sort(byDateDesc);
+    const { next, summary } = planRestore(current, backup, mode);
+    const { students: nextStudents, goalTemplates: nextTemplates, sessions: nextSessions } = next;
     // Replacing is how damaged data is recovered, so those lists may be overwritten now. If storage fills
     // part way, each list is put back exactly as it was stored (damaged ones too).
     const stored = keys.map(key => (key ? secureStore.snapshotItem(key) : null));
@@ -439,24 +337,11 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setGoalTemplates(nextTemplates);
     setSessions(nextSessions);
     setSelectedStudent(null);
-    const abcLists = backup.settings?.abcLists;
-    try {
-      // Replace also clears custom lists when the backup has none (it was made with the built-in lists).
-      if (mode === 'replace') saveAbcLists(abcLists ?? null);
-      else if (abcLists) saveAbcLists(mergeAbcLists(loadAbcLists(), abcLists));
-    } catch (error) {
-      // The student data is restored; only the custom ABC lists didn't fit.
-      addErrorLog({ message: `Restoring ABC lists failed: ${error instanceof Error ? error.message : String(error)}`, source: 'storage', type: 'error' });
-    }
-    // Saved groups: replace uses the backup's; merge adds groups this device doesn't have.
-    const groups = backup.settings?.studentGroups;
-    if (mode === 'replace') saveStudentGroups(currentUser?.uid, groups ?? []);
-    else if (groups?.length) {
-      const existing = getStudentGroups(currentUser?.uid);
-      saveStudentGroups(currentUser?.uid, [...existing, ...groups.filter(g => !existing.some(e => e.id === g.id))]);
-    }
+    // Custom ABC lists and saved groups. The student data is restored even if the ABC lists don't fit.
+    restoreBackupSettings(backup, mode, currentUser?.uid, error =>
+      addErrorLog({ message: `Restoring ABC lists failed: ${error instanceof Error ? error.message : String(error)}`, source: 'storage', type: 'error' }));
     return summary;
-  }, [currentUser, studentsKey, templatesKey, sessionsKey, saveToLocal, addErrorLog]);
+  }, [currentUser, studentsKey, templatesKey, sessionsKey, saveToLocal, addErrorLog, unreadableKeys]);
 
   // --- End Data Actions ---
 
@@ -479,15 +364,15 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
     // A list that can't be read is kept as it is in storage (never written over) and reported.
     unreadableKeys.current.clear();
-    const read = (key: string | null) => {
-      const value = readFromLocalStorage(key, []);
+    const read = <T,>(key: string | null): T[] => {
+      const value = readList<T>(key);
       if (value !== undefined) return value;
       if (key) unreadableKeys.current.add(key);
       return [];
     };
-    const rawStudents = read(studentsKey);
-    const rawTemplates = read(templatesKey);
-    const rawSessions = read(sessionsKey);
+    const rawStudents = read<Student>(studentsKey);
+    const rawTemplates = read<GoalTemplate>(templatesKey);
+    const rawSessions = read<SessionData>(sessionsKey);
     if (unreadableKeys.current.size > 0) {
       setError(new Error('Some saved data could not be read.'));
       toast({
@@ -497,44 +382,19 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       });
     }
 
-    const { students: renamedStudents, changed: goalsRenamed } = applyAssignedGoalRenames<Student>(rawStudents);
-    const localStudents = [...renamedStudents].sort(byName);
-    if (goalsRenamed) saveToLocal(studentsKey, localStudents);
-    studentsRef.current = localStudents;
-    setStudents(localStudents);
+    // Renamed and updated built-in goals and templates, and the built-in templates this device doesn't have yet.
+    const prepared = prepareLoadedData(rawStudents, rawTemplates, currentUser.uid);
+    if (prepared.studentsChanged) saveToLocal(studentsKey, prepared.students);
+    studentsRef.current = prepared.students;
+    setStudents(prepared.students);
 
-    const { templates: renamedTemplates, changed: templatesRenamed } = applyDefaultTemplateRenames<GoalTemplate>(
-        rawTemplates.map((t: any) => ({...t, createdAt: new Date(t.createdAt)}))
-    );
-    const { templates: updatedTypes, changed: typesUpdated } = applyDefaultTemplateUpdates<GoalTemplate>(renamedTemplates);
-    const { templates: retiredTemplates, changed: templatesRetired } = applyDefaultTemplateRetirements<GoalTemplate>(updatedTypes);
-    // Built-in templates stored before defaultKey existed get it now (their current name), so renaming one later
-    // doesn't bring the original back.
-    let keysAdded = false;
-    const localTemplates = retiredTemplates.map(t => {
-      if (!t.isDefault || t.defaultKey) return t;
-      keysAdded = true;
-      return { ...t, defaultKey: t.name };
-    });
-    const templatesUpdated = templatesRenamed || typesUpdated || templatesRetired || keysAdded;
-    // Built-in templates are matched by the name they were added under (defaultKey), so one the user renamed
-    // isn't added again under its original name.
-    const existingDefaultNames = new Set(localTemplates.filter((t: GoalTemplate) => t.isDefault).map(defaultTemplateKey));
-    const missingDefaultTemplates = DEFAULT_GOAL_TEMPLATES.filter(
-        defaultTemplate => !existingDefaultNames.has(defaultTemplate.name)
-    ).map(t => ({ ...t, defaultKey: t.name, id: generateUUID(), createdAt: new Date(), userId: currentUser?.uid || 'local-user' }));
-    const nextTemplates = [...localTemplates, ...missingDefaultTemplates].sort(byName);
-    if (missingDefaultTemplates.length > 0 || templatesUpdated) saveToLocal(templatesKey, nextTemplates);
-    templatesRef.current = nextTemplates;
-    setGoalTemplates(nextTemplates);
+    if (prepared.templatesChanged) saveToLocal(templatesKey, prepared.templates);
+    templatesRef.current = prepared.templates;
+    setGoalTemplates(prepared.templates);
 
-    // Goals assigned before they kept their template's id get it now (see linkGoalsToTemplates).
-    const { students: linkedStudents, changed: goalsLinked } = linkGoalsToTemplates(localStudents, nextTemplates);
-    if (goalsLinked) {
-      if (saveToLocal(studentsKey, linkedStudents)) {
-        studentsRef.current = linkedStudents;
-        setStudents(linkedStudents);
-      }
+    if (prepared.linkedStudents && saveToLocal(studentsKey, prepared.linkedStudents)) {
+      studentsRef.current = prepared.linkedStudents;
+      setStudents(prepared.linkedStudents);
     }
 
     const localSessions = [...rawSessions].sort(byDateDesc);
@@ -542,7 +402,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setSessions(localSessions);
     setLoading(false);
     setSessionsLoading(false);
-  }, [authLoading, currentUser, studentsKey, templatesKey, sessionsKey, saveToLocal, toast]);
+  }, [authLoading, currentUser, studentsKey, templatesKey, sessionsKey, saveToLocal, toast, unreadableKeys]);
   
 
   const getSessionsForStudent = useCallback((studentId: string) => {
