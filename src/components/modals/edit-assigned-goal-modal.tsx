@@ -199,7 +199,7 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
                   <Input type="date" {...field} value={(field.value as string | undefined) ?? ''} className="w-full sm:w-56" />
                 </FormControl>
                 <FormDescription>
-                  When the goal&apos;s criteria should be met by (for example, the IEP&apos;s annual review date). Shown with the target on the progress report.
+                  When the goal&apos;s criteria should be met by (for example, the IEP&apos;s annual review date). It fills in &quot;[date]&quot; in the goal text and is shown with the target on the progress report.
                 </FormDescription>
                 <FormMessage />
               </FormItem>

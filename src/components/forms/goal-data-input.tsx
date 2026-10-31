@@ -11,7 +11,7 @@ import { Slider } from '@/components/ui/slider';
 import { PROMPT_TYPES, PROMPT_COLORS, PROMPT_ABBREVIATIONS, PROMPT_HOTKEY_MAP } from '@/lib/promptConstants';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { formatGoalTarget, goalTypeLabel } from '@/lib/helpers';
+import { formatGoalTarget, goalStatement, goalTypeLabel } from '@/lib/helpers';
 import { TrendingUp, ArrowUp, ArrowDown, Plus, Minus, ArchiveIcon, Pin, Check, X, CircleHelp, RotateCcw, Undo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -888,7 +888,7 @@ export default function GoalDataInputComponent({
             <div className="flex-grow min-w-0" onClick={isLocked ? undefined : onSetFocus}>
                 <CardTitle className="text-sm font-semibold">
                     <div className="flex justify-between items-start">
-                        <GoalTextPopover name={goal.name} smartGoal={goal.smartGoal} className="whitespace-normal break-words mr-1" />
+                        <GoalTextPopover name={goal.name} smartGoal={goalStatement(goal)} className="whitespace-normal break-words mr-1" />
                         <Badge variant="outline" className="text-xs px-1.5 py-0.5 shrink-0 max-w-[45%] text-center leading-tight">
                             {goalTypeLabel(goal.type)}
                         </Badge>
