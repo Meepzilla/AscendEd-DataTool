@@ -11,7 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { MISSED_REASON_LABELS, MISSED_REASON_SHORT } from '@/lib/attendance';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Edit, Trash2, Search, Info, Eye, FileText } from 'lucide-react';
+import { Edit, Trash2, Search, Info, Eye, FileText, Merge } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { mergeProblem } from '@/lib/session-merge';
+import MergeSessionsDialog from '@/components/sessions/MergeSessionsDialog';
 import { compareSessionsOldestFirst, formatDate, formatTime } from '@/lib/helpers';
 
 import { Skeleton } from '@/components/ui/skeleton';
@@ -34,7 +37,18 @@ export default function ManageSessionsPage() {
     openDeleteSessionModal,
     editingSession, // For EditSessionModal
     deletingSession, // For ConfirmationModal
+    mergeSessionRecords,
   } = useStudentData();
+  // Sessions ticked to merge (records of one session saved in parts).
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isMergeOpen, setIsMergeOpen] = useState(false);
+  const selectedSessions = useMemo(() => sessions.filter(s => selectedIds.has(s.sessionId)), [sessions, selectedIds]);
+  const mergeBlocked = mergeProblem(selectedSessions);
+  const toggleSelected = (id: string, on: boolean) => setSelectedIds(prev => {
+    const next = new Set(prev);
+    if (on) next.add(id); else next.delete(id);
+    return next;
+  });
 
   const [selectedStudentId, setSelectedStudentId] = useState<string>('ALL');
   const [searchTerm, setSearchTerm] = useState(''); // Search by activity or notes
@@ -84,6 +98,15 @@ export default function ManageSessionsPage() {
             deleteActionType="session"
           />
         )}
+        <MergeSessionsDialog
+          sessions={selectedSessions}
+          open={isMergeOpen && !mergeBlocked}
+          onCancel={() => setIsMergeOpen(false)}
+          onConfirm={async () => {
+            if (await mergeSessionRecords([...selectedIds])) setSelectedIds(new Set());
+            setIsMergeOpen(false);
+          }}
+        />
         {viewingSessionDetails && (
           <ViewSessionDetailsModal
               session={viewingSessionDetails}
@@ -101,7 +124,13 @@ export default function ManageSessionsPage() {
                 <CardTitle role="heading" aria-level={1} className="text-2xl font-bold flex items-center gap-2">
                     <FileText className="h-7 w-7 text-primary"/>Manage Sessions
                 </CardTitle>
-                <CardDescription>View, edit, or delete past session records. Filter by student, date, or keywords.</CardDescription>
+                <CardDescription>View, edit, or delete past session records. Filter by student, date, or keywords. To merge a session saved in parts, tick its records and choose Merge Selected.</CardDescription>
+            </div>
+            <div className="flex flex-col items-start gap-1 sm:items-end">
+              <Button size="sm" variant="outline" disabled={!!mergeBlocked} onClick={() => setIsMergeOpen(true)}>
+                <Merge className="mr-2 h-4 w-4" />Merge Selected{selectedIds.size ? ` (${selectedIds.size})` : ''}
+              </Button>
+              {selectedIds.size > 0 && mergeBlocked && <p className="text-xs text-muted-foreground" role="status">{mergeBlocked}</p>}
             </div>
             {/* Optional: Button to navigate to Data Entry Page */}
             {/* <Link href="/data-entry"><Button size="sm"><PlusCircle className="mr-2 h-4 w-4" /> New Session</Button></Link> */}
@@ -137,6 +166,7 @@ export default function ManageSessionsPage() {
             <Table>
               <TableHeader className="sticky top-0 bg-muted [&_th]:text-foreground">
                 <TableRow>
+                  <TableHead className="w-10"><span className="sr-only">Select to merge</span></TableHead>
                   <TableHead>Student</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Start Time</TableHead>
@@ -149,6 +179,7 @@ export default function ManageSessionsPage() {
                 {sessionsLoading ? (
                     [...Array(10)].map((_, i) => (
                         <TableRow key={`skel-${i}`}>
+                            <TableCell />
                             <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                             <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                             <TableCell><Skeleton className="h-5 w-16" /></TableCell>
@@ -163,14 +194,22 @@ export default function ManageSessionsPage() {
                     ))
                 ) : filteredSessions.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
                       <Info className="mx-auto h-10 w-10 mb-2" />
                       No sessions found matching your criteria.
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredSessions.map((session) => (
-                    <TableRow key={session.sessionId}>
+                    <TableRow key={session.sessionId} data-state={selectedIds.has(session.sessionId) ? 'selected' : undefined}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedIds.has(session.sessionId)}
+                          onCheckedChange={v => toggleSelected(session.sessionId, v === true)}
+                          aria-label={`Select ${session.studentName}'s session on ${formatDate(session.date)} at ${session.time} to merge`}
+                          disabled={!!session.missed}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">{session.studentName}</TableCell>
                       <TableCell>{formatDate(session.date)}</TableCell>
                       <TableCell>{session.time}</TableCell>
