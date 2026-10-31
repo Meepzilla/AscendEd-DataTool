@@ -18,6 +18,7 @@ import CsvExportWarning from '@/components/CsvExportWarning';
 import { useToast } from '@/hooks/use-toast';
 import { compareSessionsOldestFirst, formatDate } from '@/lib/helpers';
 import NarrativeDialog from '@/components/charts/NarrativeDialog';
+import { attendanceSummary, attendanceText, isMissed } from '@/lib/attendance';
 
 // Dynamically import the heavy charting component
 const AnalysisCharts = lazy(() => import('@/components/charts/AnalysisCharts'));
@@ -62,7 +63,7 @@ export default function AnalysisReportPage() {
     }
   }, [searchParams, activeStudents, studentsLoading, selectedStudentId, router]);
   
-  const studentSessions = useMemo(() => {
+  const periodSessions = useMemo(() => {
     if (!selectedStudentId) return [];
     let filtered = sessions.filter(s => s.studentId === selectedStudentId);
     if (dateRange?.from) {
@@ -77,6 +78,9 @@ export default function AnalysisReportPage() {
     // reversing first keeps them in saved order (the last saved is the latest, as in the sidebar).
     return filtered.reverse().sort(compareSessionsOldestFirst);
   }, [sessions, selectedStudentId, dateRange]);
+  // Charts and the narrative use the sessions that took place; missed sessions are shown as attendance.
+  const studentSessions = useMemo(() => periodSessions.filter(s => !isMissed(s)), [periodSessions]);
+  const attendance = useMemo(() => attendanceSummary(periodSessions), [periodSessions]);
 
   const handleStudentChange = (value: string) => {
     setSelectedStudentId(value);
@@ -85,7 +89,7 @@ export default function AnalysisReportPage() {
   };
 
   const handleExportData = () => {
-    if (!selectedStudent || studentSessions.length === 0) {
+    if (!selectedStudent || periodSessions.length === 0) {
       toast({
         title: "No Data to Export",
         description: "There is no session data for the selected student in the specified date range.",
@@ -133,7 +137,7 @@ export default function AnalysisReportPage() {
                 <Button onClick={() => setIsImportModalOpen(true)} size="sm" variant="outline">
                     <Upload className="mr-2 h-4 w-4" /> Import Data
                 </Button>
-                <Button onClick={handleExportData} size="sm" variant="outline" disabled={studentSessions.length === 0}>
+                <Button onClick={handleExportData} size="sm" variant="outline" disabled={periodSessions.length === 0}>
                     <Download className="mr-2 h-4 w-4" /> Export Data
                 </Button>
                 {selectedStudent && (
@@ -141,7 +145,7 @@ export default function AnalysisReportPage() {
                     studentName={selectedStudent.name}
                     open={isCsvWarningOpen}
                     onCancel={() => setIsCsvWarningOpen(false)}
-                    onConfirm={() => { setIsCsvWarningOpen(false); downloadSessionsCsv(studentSessions, selectedStudent.name); }}
+                    onConfirm={() => { setIsCsvWarningOpen(false); downloadSessionsCsv(periodSessions, selectedStudent.name); }}
                   />
                 )}
              </div>
@@ -174,6 +178,11 @@ export default function AnalysisReportPage() {
             )}
             <DatePickerWithRange date={dateRange} setDate={setDateRange} className="w-full md:w-auto"/>
           </div>
+          {selectedStudent && attendance.missed > 0 && (
+            <p className="text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">Attendance:</span> {attendanceText(attendance)}. Missed sessions aren&apos;t included in the charts.
+            </p>
+          )}
         </CardContent>
       </Card>
 

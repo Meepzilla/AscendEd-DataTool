@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { MISSED_REASON_LABELS, MISSED_REASON_SHORT } from '@/lib/attendance';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Edit, Trash2, Search, Info, Eye, FileText } from 'lucide-react';
@@ -174,7 +175,13 @@ export default function ManageSessionsPage() {
                       <TableCell>{formatDate(session.date)}</TableCell>
                       <TableCell>{session.time}</TableCell>
                       <TableCell>{session.endTime || 'N/A'}</TableCell>
-                      <TableCell className="truncate max-w-xs" title={session.activity}>{session.activity}</TableCell>
+                      <TableCell className="truncate max-w-xs" title={session.missed ? MISSED_REASON_LABELS[session.missed.reason] : session.activity}>
+                        {session.missed ? (
+                          <span className="inline-block rounded-full border border-orange-400/50 bg-orange-400/10 px-2 py-0.5 text-xs font-semibold text-orange-300">
+                            Missed: {MISSED_REASON_SHORT[session.missed.reason]}
+                          </span>
+                        ) : session.activity}
+                      </TableCell>
                       <TableCell className="text-right space-x-1">
                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setViewingSessionDetails(session)} title="View Details">
                           <Eye className="h-4 w-4" />
