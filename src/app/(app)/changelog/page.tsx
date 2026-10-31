@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-31',
+    title: 'Only the App\'s Own Scripts Can Run',
+    description: 'Every page now tells the browser to run only the app\'s own code: its script files and the exact scripts built into each page. Any other script, such as one injected into the page or loaded from another website, is blocked. This protects student data on the device from code that isn\'t part of the app.',
+    type: 'improvement',
+    icon: ShieldCheck,
+  },
+  {
+    date: '2026-10-31',
     title: 'AI Features Removed',
     description: 'The AI features (SMART goal generation, AI goal search, activity suggestions and AI summaries) and the AI libraries they used have been removed from the app entirely. They were already turned off in the website and Android app; now no AI code is included at all, so student data has no path to an AI service. Goal search on the Goals page searches the words in goal names, goal text and skill areas, and the progress narrative on the Reports page is written from your data on the device.',
     type: 'improvement',
