@@ -12,6 +12,8 @@ import { PROMPT_TYPES, PROMPT_COLORS, PROMPT_ABBREVIATIONS, PROMPT_HOTKEY_MAP } 
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { formatGoalTarget, goalStatement, goalTypeLabel } from '@/lib/helpers';
+import TaskAnalysisInput from './TaskAnalysisInput';
+import { taskSteps } from '@/lib/task-analysis';
 import { TrendingUp, ArrowUp, ArrowDown, Plus, Minus, ArchiveIcon, Pin, Check, X, CircleHelp, RotateCcw, Undo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -829,6 +831,18 @@ export default function GoalDataInputComponent({
               />
             </FormItem>
           </>
+        );
+      case 'TASK_ANALYSIS':
+        return (
+          <TaskAnalysisInput
+            steps={taskSteps(goal)}
+            data={data}
+            update={next => handleChange('steps', next)}
+            interact={handleInteraction}
+            disabled={isArchived}
+            isLocked={isLocked}
+            goalId={goal.id}
+          />
         );
       case 'BEHAVIOR_FREQUENCY':
       case 'BEHAVIOR_DURATION':

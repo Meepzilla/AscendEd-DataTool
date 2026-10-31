@@ -12,6 +12,7 @@ export function goalFromTemplate(template: GoalTemplate): Goal {
     smartGoal: template.generatedSmartGoal || `SMART goal for ${template.name}`,
     sessionTargetValue: template.sessionTargetValue,
     targetDirection: template.targetDirection,
+    ...(template.taskSteps?.length ? { taskSteps: [...template.taskSteps] } : {}),
   };
 }
 

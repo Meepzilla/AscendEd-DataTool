@@ -1,3 +1,4 @@
+import { taskAnalysisSummary } from './task-analysis';
 import type { Goal, GoalType, TrialStatus } from './types';
 import {
   behaviorMeasure, captureTypeOf, goalDirection, scoreStory, summarizeCommunicationFunctions, BEHAVIOR_GOAL_TYPES,
@@ -68,6 +69,7 @@ export function goalMeasureInfo(goal: MeasuredGoal): GoalMeasureInfo {
     case 'QUALITATIVE_OBSERVATION':
     case 'COGNITIVE': return { label: 'Rating (1-5)', unit: '', max: 5 };
     case 'PROMPTING': return { label: '% independent', unit: '%', max: 100 };
+    case 'TASK_ANALYSIS': return { label: '% of steps independent', unit: '%', max: 100 };
     case 'BEHAVIOR_FREQUENCY': return { label: 'Occurrences', unit: '' };
     case 'BEHAVIOR_DURATION': return { label: 'Total minutes', unit: ' min' };
     case 'BEHAVIOR_INTERVAL': return { label: '% of intervals', unit: '%', max: 100 };
@@ -127,6 +129,8 @@ export function goalMeasure(goal: MeasuredGoal, data: Record<string, any> = {}):
     }
     case 'PROMPTING':
       return promptCount > 0 ? (prompts.Independent / promptCount) * 100 : null;
+    case 'TASK_ANALYSIS':
+      return taskAnalysisSummary(data).percent;
   }
   if (RATING_TYPES.includes(type)) {
     // The rating starts at 3, so a session counts only if the goal was worked on (Data Entry marks it as
