@@ -8,7 +8,6 @@ import { captureTypeOf } from '@/lib/goal-constants';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Sankey, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { Workflow } from 'lucide-react';
-import { PROMPT_TYPES } from '@/lib/promptConstants';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface SankeyNode { name: string; color?: string; }
@@ -82,7 +81,7 @@ const transformDataForSankeyChart = (sessions: SessionData[], studentActiveGoals
   return { nodes, links: aggregatedLinks };
 };
 
-const CustomSankeyNode = ({ x, y, width, height, index, payload, containerWidth }: any) => {
+const CustomSankeyNode = ({ x, y, width, height, payload }: any) => {
     if (!payload || typeof payload.name === 'undefined') return null;
   
     const nodeName = String(payload.name);
@@ -93,7 +92,7 @@ const CustomSankeyNode = ({ x, y, width, height, index, payload, containerWidth 
     const isLastColumn = payload.sourceLinks.length > 0 && payload.targetLinks.length === 0;
   
     let foreignObjectX = width + 6;
-    let foreignObjectWidth = 140; // Max width for the label text
+    const foreignObjectWidth = 140; // Max width for the label text
     let textAlign: 'left' | 'right' = 'left';
     
     if (isFirstColumn) {

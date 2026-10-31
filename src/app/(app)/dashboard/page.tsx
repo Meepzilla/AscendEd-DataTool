@@ -2,8 +2,7 @@
 'use client';
 
 import React, { lazy, Suspense } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useStudentData } from '@/hooks/use-student-data';
 import Link from 'next/link';
 import { UserPlus, ListPlus, ClipboardList, BarChart2, Users, Target, Activity, CheckSquare } from 'lucide-react';
@@ -65,7 +64,7 @@ export default function DashboardPage() {
             id: `template-${template.id}`,
             type: 'template' as const,
             timestamp: new Date(template.createdAt),
-            text: <>{template.isDefault ? 'New default template' : 'New template'} "<strong>{template.name}</strong>" created.</>
+            text: <>{template.isDefault ? 'New default template' : 'New template'} &ldquo;<strong>{template.name}</strong>&rdquo; created.</>
         }));
 
     const sessionActivities = [...sessions]

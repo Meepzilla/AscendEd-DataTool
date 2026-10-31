@@ -102,7 +102,7 @@ export default function StudentProfileView() {
           <CardTitle className="flex items-center gap-2"><Info className="text-destructive"/>Student Not Found</CardTitle>
         </CardHeader>
         <CardContent>
-          <p>The student with ID "{studentIdDisplay}" could not be found. They may have been deleted or the ID is incorrect.</p>
+          <p>The student with ID &ldquo;{studentIdDisplay}&rdquo; could not be found. They may have been deleted or the ID is incorrect.</p>
           <Button onClick={() => router.push('/student-profile')} className="mt-4">Go to Student Selection</Button>
         </CardContent>
       </Card>
@@ -281,7 +281,7 @@ export default function StudentProfileView() {
         </CardHeader>
         <CardContent>
           {currentStudent.goals.length === 0 ? (
-            <p className="text-muted-foreground">No goals assigned to this student yet. Click "Assign / Create Goal" to add one.</p>
+            <p className="text-muted-foreground">No goals assigned to this student yet. Click &ldquo;Assign / Create Goal&rdquo; to add one.</p>
           ) : (
             <ul className="space-y-4">
               {currentStudent.goals.map((goal) => (

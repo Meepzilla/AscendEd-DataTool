@@ -3,7 +3,7 @@
 
 import React, { useState, useMemo, useEffect, lazy, Suspense } from 'react';
 import { useStudentData } from '@/hooks/use-student-data';
-import type { SessionData, Student } from '@/lib/types';
+import type { SessionData } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -15,7 +15,7 @@ import { Edit, Trash2, Search, Info, Eye, FileText, Merge } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { mergeProblem } from '@/lib/session-merge';
 import MergeSessionsDialog from '@/components/sessions/MergeSessionsDialog';
-import { compareSessionsOldestFirst, formatDate, formatTime } from '@/lib/helpers';
+import { compareSessionsOldestFirst, formatDate } from '@/lib/helpers';
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';

@@ -1,6 +1,6 @@
 name: Checks
 
-# Runs on every pull request and push to master: the type check, the unit tests and the offline build the
+# Runs on every pull request and push to master: the type check, lint, the unit tests and the offline build the
 # live site is made from. A pull request shows these as one check that must pass.
 on:
   push:
@@ -24,6 +24,9 @@ jobs:
 
       - name: Type check
         run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
 
       - name: Unit tests
         run: npm test

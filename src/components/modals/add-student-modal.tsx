@@ -8,7 +8,6 @@ import { z } from 'zod';
 import GenericModal from './generic-modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useStudentData } from '@/hooks/use-student-data';
 import { StudentSchema } from '@/lib/types'; // Assuming you have Zod schemas defined in types.ts

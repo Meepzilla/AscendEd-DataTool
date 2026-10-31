@@ -5,7 +5,7 @@ import React from 'react';
 import GenericModal from './generic-modal';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useErrorLog, type AppErrorLogEntry } from '@/hooks/use-error-log'; // Import from new hook
+import { useErrorLog } from '@/hooks/use-error-log'; // Import from new hook
 import { AlertTriangle, Info, Trash2 } from 'lucide-react';
 
 // ErrorLogModalProps is no longer needed as isOpen/onClose are handled by useErrorLog
