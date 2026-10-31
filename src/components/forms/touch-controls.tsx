@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Users, Target, ChevronUp, ChevronDown } from 'lucide-react';
+import { Users, Target, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import SelectionModal from '@/components/modals/selection-modal';
 import { cn } from '@/lib/utils';
@@ -19,6 +19,10 @@ interface TouchControlsProps {
   showArchivedByStudentId: Record<string, boolean>;
   selectionModalType: 'student' | 'goal' | null;
   setSelectionModalType: (type: 'student' | 'goal' | null) => void;
+  /** Scrolls the student cards sideways (Data Entry); the arrows are shown when it is given. */
+  scrollCards?: (direction: -1 | 1) => void;
+  canScrollLeft?: boolean;
+  canScrollRight?: boolean;
 }
 
 
@@ -32,6 +36,9 @@ export default function TouchControls({
   showArchivedByStudentId,
   selectionModalType,
   setSelectionModalType,
+  scrollCards,
+  canScrollLeft = false,
+  canScrollRight = false,
 }: TouchControlsProps) {
   const { state: sidebarState } = useSidebar();
 
@@ -84,6 +91,19 @@ export default function TouchControls({
     return undefined;
   }, [focusedStudentId, visibleGoals, focusedGoalIndexByStudentId]);
 
+  const scrollArrows = (compact: boolean) => scrollCards && (
+    <div className={cn('flex gap-1', !compact && 'w-full')}>
+      <Button type="button" variant={compact ? 'ghost' : 'outline'} size={compact ? 'icon' : 'sm'} className={cn(!compact && 'flex-1')}
+        onClick={() => scrollCards(-1)} disabled={!canScrollLeft} aria-label="Scroll students left" title="Scroll students left">
+        <ChevronLeft className="h-5 w-5" />
+      </Button>
+      <Button type="button" variant={compact ? 'ghost' : 'outline'} size={compact ? 'icon' : 'sm'} className={cn(!compact && 'flex-1')}
+        onClick={() => scrollCards(1)} disabled={!canScrollRight} aria-label="Scroll students right" title="Scroll students right">
+        <ChevronRight className="h-5 w-5" />
+      </Button>
+    </div>
+  );
+
   if (sidebarState === 'collapsed') {
     return (
         <div className="flex flex-col gap-2 items-center">
@@ -109,6 +129,7 @@ export default function TouchControls({
             >
                 <Target className="h-5 w-5" />
             </Button>
+            {scrollArrows(true)}
         </div>
     );
   }
@@ -143,6 +164,7 @@ export default function TouchControls({
           <Target className="mr-2 h-4 w-4" />
           <span>Goal</span>
         </Button>
+        {scrollArrows(false)}
       </div>
       
       <SelectionModal
