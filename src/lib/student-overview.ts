@@ -97,3 +97,36 @@ export function formatMinutes(minutes: number): string {
   const m = Math.round(minutes % 60);
   return h ? `${h} h${m ? ` ${m} min` : ''}` : `${m} min`;
 }
+
+export interface PeriodService {
+  /** Minutes delivered in the period (held sessions' start to end times). */
+  delivered: number;
+  /** Held sessions without both times, so not counted. */
+  untimed: number;
+  required: number | null;
+  per: ServicePer;
+  /** Weeks or months in the period (for per week/month requirements). */
+  periods: number;
+  /** Minutes the requirement adds up to over the period (per week/month); the yearly total for per year. */
+  expected: number | null;
+}
+
+/** Service minutes over a reporting period (Progress Report), against the IEP's requirement. */
+export function periodService(sessions: SessionData[], iep: StudentIep | undefined, from: Date, to: Date): PeriodService {
+  const held = sessions.filter(s => !s.missed);
+  const delivered = held.reduce((sum, s) => sum + sessionMinutes(s), 0);
+  const per = iep?.servicePer ?? 'week';
+  const required = iep?.serviceMinutes && iep.serviceMinutes > 0 ? iep.serviceMinutes : null;
+  // Whole days, first and last included.
+  const day = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const days = Math.max(1, Math.round((day(to) - day(from)) / 86_400_000) + 1);
+  const periods = per === 'week' ? days / 7 : per === 'month' ? days / 30.44 : 1;
+  return {
+    delivered,
+    untimed: held.filter(s => sessionMinutes(s) === 0).length,
+    required,
+    per,
+    periods: Math.round(periods * 10) / 10,
+    expected: required === null ? null : Math.round(required * periods),
+  };
+}

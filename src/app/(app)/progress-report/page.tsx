@@ -20,6 +20,7 @@ import { buildProgressReport, type ProgressStatus } from '@/lib/report-narrative
 import { getOrganizationName } from '@/lib/organization';
 import { attendanceSummary, attendanceText } from '@/lib/attendance';
 import { schoolYearStart } from '@/lib/school-year';
+import { periodService } from '@/lib/student-overview';
 import ProgressReportDocument, { type ProgressReportEdits } from '@/components/reports/ProgressReportDocument';
 
 // Reports → Progress Report: a printable IEP goal progress report for one student and reporting period. The
@@ -70,6 +71,7 @@ function ProgressReportPage() {
   });
   const [showCharts, setShowCharts] = useState(true);
   const [showNextSteps, setShowNextSteps] = useState(false);
+  const [showService, setShowService] = useState(false);
   const [edits, setEdits] = useState<ProgressReportEdits>({ status: {}, comment: {} });
   const [portalReady, setPortalReady] = useState(false);
 
@@ -126,12 +128,20 @@ function ProgressReportPage() {
     window.print();
   };
 
-  const settings = { preparedBy, organization, reportDate, showCharts, showNextSteps };
+  const settings = { preparedBy, organization, reportDate, showCharts, showNextSteps, showService };
+  // Service minutes over the period (from the range, or the sessions' first to last day for All data).
+  const service = useMemo(() => {
+    if (!student || periodSessions.length === 0 && !range?.from) return undefined;
+    const from = range?.from ?? new Date(periodSessions[0].date);
+    const to = range?.to ?? (range?.from ? range.from : new Date(periodSessions[periodSessions.length - 1].date));
+    return periodService(periodSessions, student.iep, from, to);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [student, periodSessions, period, customRange]);
   // Saved with the student's goal (also editable in the goal's Edit window), so it carries over to later reports.
   const onTargetDate = (goalId: string, date: string) => {
     if (studentId) updateStudentGoal(studentId, goalId, { targetDate: date || undefined });
   };
-  const documentProps = { studentName: student?.name ?? '', periodLabel, sessionCount, attendance, goals: report, settings, edits };
+  const documentProps = { studentName: student?.name ?? '', periodLabel, sessionCount, attendance, service, goals: report, settings, edits };
 
   if (loading && students.length === 0) return <p className="text-muted-foreground">Loading…</p>;
 
@@ -216,6 +226,10 @@ function ProgressReportPage() {
             <div className="flex items-center gap-2">
               <Switch id="report-next-steps" checked={showNextSteps} onCheckedChange={setShowNextSteps} />
               <Label htmlFor="report-next-steps">Suggested next steps</Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch id="report-service-switch" checked={showService} onCheckedChange={setShowService} />
+              <Label htmlFor="report-service-switch">Service minutes</Label>
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
