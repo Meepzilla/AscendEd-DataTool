@@ -3,6 +3,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { APP_NAME } from '@/lib/appConstants';
 import { formatDate, formatDateOnly, plural } from '@/lib/helpers';
 import { PROGRESS_STATUS_LABELS, type GoalProgress, type ProgressStatus } from '@/lib/report-narrative';
+import { AIM_STATUS_LABELS } from '@/lib/aim-line';
 import { cn } from '@/lib/utils';
 import ProgressReportChart from './ProgressReportChart';
 
@@ -132,6 +133,8 @@ export default function ProgressReportDocument({ studentName, periodLabel, sessi
               <p className="text-xs text-muted-foreground">
                 {g.typeLabel}{g.targetLabel ? ` · Target ${g.targetLabel}` : ''}
                 {g.goal.targetDate && !onTargetDate ? ` by ${formatDateOnly(g.goal.targetDate)}` : ''}
+                {g.baseline ? ` · Baseline ${g.baseline}${g.goal.baselineDate ? ` (${formatDateOnly(g.goal.baselineDate)})` : ''}` : ''}
+                {g.targetLabel ? ` · Mastery: target met in ${plural(g.mastery, 'session')} in a row` : ''}
               </p>
               {onTargetDate && (
                 <label className="mt-1 flex items-center gap-2 text-xs print:hidden">
@@ -166,13 +169,14 @@ export default function ProgressReportDocument({ studentName, periodLabel, sessi
           {g.goal.smartGoal && <p className="mt-2 italic">{g.goal.smartGoal}</p>}
 
           {g.sessionCount > 0 && (
-            <dl className="mt-3 grid grid-cols-3 gap-2 rounded-md bg-muted/60 p-3 sm:grid-cols-5">
+            <dl className="mt-3 flex flex-wrap gap-x-8 gap-y-2 rounded-md bg-muted/60 p-3">
               {[
                 ['Sessions', String(g.sessionCount)],
                 ['Average', g.average ?? '—'],
                 ['Range', g.range ?? '—'],
                 ['Latest', g.latest ? `${g.latest}${g.latestDate ? ` (${formatDate(g.latestDate)})` : ''}` : '—'],
                 ['Target met', g.target !== undefined ? `${g.metCount} of ${g.sessionCount}` : '—'],
+                ...(g.aimStatus ? [['Aim line', AIM_STATUS_LABELS[g.aimStatus]]] : []),
               ].map(([term, value]) => (
                 <div key={term}>
                   <dt className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{term}</dt>

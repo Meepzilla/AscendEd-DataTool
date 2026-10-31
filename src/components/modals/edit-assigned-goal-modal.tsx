@@ -57,6 +57,9 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
         smartGoal: goalToEdit.smartGoal,
         sessionTargetValue: goalToEdit.sessionTargetValue,
         targetDate: goalToEdit.targetDate ?? '',
+        baseline: goalToEdit.baseline ?? ('' as unknown as number),
+        baselineDate: goalToEdit.baselineDate ?? '',
+        masterySessions: goalToEdit.masterySessions ?? ('' as unknown as number),
         targetDirection: goalToEdit.targetDirection,
         isArchived: goalToEdit.isArchived || false,
         dataCaptureType: goalToEdit.dataCaptureType || goalToEdit.type,
@@ -202,6 +205,57 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
               </FormItem>
             )}
           />
+
+          {/* Progress monitoring: the aim line runs from the baseline to the target at the target date; mastery is
+              the target met in a number of sessions in a row. Shown on Reports and the progress report. */}
+          <div className="grid gap-4 sm:grid-cols-3">
+            <FormField
+              control={form.control}
+              name="baseline"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Baseline (Optional)</FormLabel>
+                  <FormControl>
+                    <Input type="number" min="0" placeholder="e.g., 40" {...field} value={field.value ?? ''}
+                      onChange={e => field.onChange(e.target.value === '' ? '' : Number(e.target.value))} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="baselineDate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Baseline Date (Optional)</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} value={(field.value as string | undefined) ?? ''} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="masterySessions"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Mastery: Sessions in a Row</FormLabel>
+                  <FormControl>
+                    <Input type="number" min="1" max="20" placeholder="3" {...field} value={field.value ?? ''}
+                      onChange={e => field.onChange(e.target.value === '' ? '' : Number(e.target.value))} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          <p className="-mt-2 text-sm text-muted-foreground">
+            The baseline is where the student started, in the goal&apos;s measure (e.g. 40 for 40%). With a target and a
+            target date it draws an aim line on the charts and shows whether the student is on track. The goal counts as
+            mastered when the target is met in the set number of sessions in a row (3 if left blank).
+          </p>
 
           <FormField
             control={form.control}
