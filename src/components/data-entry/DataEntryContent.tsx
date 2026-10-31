@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { defaultSessionTimes } from '@/lib/session-time';
 import { loadDataEntryDraft, saveDataEntryDraft, hasUnsavedEntry, type DataEntryDraft } from '@/lib/data-entry-draft';
 import { Button } from '@/components/ui/button';
-import { Save, RotateCcw } from 'lucide-react';
+import { Save, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
 import { Info, PlusCircle } from 'lucide-react';
@@ -717,7 +717,7 @@ export default function DataEntryContent() {
   const viewportProbeRef = useRef<HTMLDivElement>(null);
   const hasSelectedStudents = selectedStudentIds.length > 0;
 
-  // The arrows under Student and Goal in the save bar scroll the student cards sideways, one card at a time
+  // The arrows in the middle of the save bar scroll the student cards sideways, one card at a time
   // (the next card that is partly or fully out of view is lined up with the left edge).
   const [cardScroll, setCardScroll] = useState({ left: false, right: false });
   const cardsViewport = () => cardsRegionRef.current?.querySelector<HTMLElement>('[data-radix-scroll-area-viewport]') ?? null;
@@ -919,10 +919,11 @@ export default function DataEntryContent() {
         
         {selectedStudentIds.length > 0 && (
             <div ref={saveBarRef} className="sticky bottom-0 left-0 right-0 z-10 bg-background mt-auto">
-                {/* On wider screens, right padding keeps the buttons to the left of the host's corner badge (a phone
-                    has no room for it, so the buttons use the full width and wrap). */}
-                <div className="flex flex-wrap justify-between items-center gap-2 p-2 md:pr-[var(--host-badge-width)] border-t">
-                    <div className="hidden sm:block">
+                {/* Student and Goal at the left, the scroll arrows in the middle (on the Student button's line), and the
+                    save buttons at the right. On large screens, right padding keeps the buttons clear of the preview
+                    host's corner badge (usually hidden; smaller screens need the room for the buttons). */}
+                <div className="flex flex-wrap justify-between items-center gap-2 p-2 xl:pr-[var(--host-badge-width)] border-t">
+                    <div className="hidden sm:block self-start">
                       <TouchControls
                         activeStudentsInSlots={activeStudentsInSlots}
                         studentSessionStates={studentSessionStates}
@@ -933,13 +934,10 @@ export default function DataEntryContent() {
                         showArchivedByStudentId={showArchivedByStudentId}
                         selectionModalType={selectionModalType}
                         setSelectionModalType={setSelectionModalType}
-                        scrollCards={scrollCards}
-                        canScrollLeft={cardScroll.left}
-                        canScrollRight={cardScroll.right}
                       />
                     </div>
                     
-                    <div className="sm:hidden">
+                    <div className="sm:hidden self-start">
                        <TouchControls
                         activeStudentsInSlots={activeStudentsInSlots}
                         studentSessionStates={studentSessionStates}
@@ -950,10 +948,17 @@ export default function DataEntryContent() {
                         showArchivedByStudentId={showArchivedByStudentId}
                         selectionModalType={selectionModalType}
                         setSelectionModalType={setSelectionModalType}
-                        scrollCards={scrollCards}
-                        canScrollLeft={cardScroll.left}
-                        canScrollRight={cardScroll.right}
                       />
+                    </div>
+
+                    {/* Takes the space between the two groups, with the arrows centred in it. */}
+                    <div className="flex flex-1 justify-center gap-1 self-start" role="group" aria-label="Scroll students">
+                      <Button type="button" variant="outline" size="sm" className="w-14" onClick={() => scrollCards(-1)} disabled={!cardScroll.left} aria-label="Scroll students left" title="Scroll students left">
+                        <ChevronLeft className="h-5 w-5" />
+                      </Button>
+                      <Button type="button" variant="outline" size="sm" className="w-14" onClick={() => scrollCards(1)} disabled={!cardScroll.right} aria-label="Scroll students right" title="Scroll students right">
+                        <ChevronRight className="h-5 w-5" />
+                      </Button>
                     </div>
 
                     <div className="flex flex-wrap justify-end gap-2 ml-auto">
