@@ -9,7 +9,6 @@ import { PROMPT_TYPES } from '@/lib/promptConstants';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertTriangle } from 'lucide-react';
-import { AI_ENABLED } from '@/lib/features';
 
 // Lazy load the individual chart components
 const ProgressOverTimeChart = lazy(() => import('./analysis-charts/ProgressOverTimeChart'));
@@ -18,7 +17,6 @@ const OpportunitiesChart = lazy(() => import('./analysis-charts/OpportunitiesCha
 const PerformanceScatterPlot = lazy(() => import('./analysis-charts/PerformanceScatterPlot'));
 const PromptUsageChart = lazy(() => import('./analysis-charts/PromptUsageChart'));
 const GoalPerformanceSankey = lazy(() => import('./analysis-charts/GoalPerformanceSankey'));
-const AiSummary = lazy(() => import('./analysis-charts/AiSummary'));
 const SyllableFluencyChart = lazy(() => import('./analysis-charts/SyllableFluencyChart'));
 const DysfluencyTypesChart = lazy(() => import('./analysis-charts/DysfluencyTypesChart'));
 const DataSummary = lazy(() => import('./analysis-charts/DataSummary'));
@@ -187,9 +185,6 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, select
   if (behaviorOnly) {
     return (
       <div className="space-y-6">
-        <Suspense fallback={<ChartSuspenseFallback />}>
-          {AI_ENABLED && <AiSummary studentSessions={studentSessions} selectedStudent={selectedStudent} selectedGoalId={selectedGoalId} chartData={chartData} />}
-        </Suspense>
         {goalCharts}
       </div>
     );
@@ -201,9 +196,6 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, select
        <Suspense fallback={<ChartSuspenseFallback />}>
             <DataSummary studentSessions={studentSessions} selectedStudent={selectedStudent} selectedGoalId={selectedGoalId} chartData={chartData} />
        </Suspense>
-       <Suspense fallback={<ChartSuspenseFallback />}>
-            {AI_ENABLED && <AiSummary studentSessions={studentSessions} selectedStudent={selectedStudent} selectedGoalId={selectedGoalId} chartData={chartData} />}
-        </Suspense>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {hasTrialGoals && (
           <>

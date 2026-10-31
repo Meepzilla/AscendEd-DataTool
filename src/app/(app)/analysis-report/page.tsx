@@ -15,7 +15,6 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { downloadSessionsCsv } from '@/lib/session-csv';
 import { useToast } from '@/hooks/use-toast';
 import { compareSessionsOldestFirst, formatDate } from '@/lib/helpers';
-import { AI_ENABLED } from '@/lib/features';
 import NarrativeDialog from '@/components/charts/NarrativeDialog';
 
 // Dynamically import the heavy charting component
@@ -111,7 +110,7 @@ export default function AnalysisReportPage() {
                 <CardTitle className="text-2xl font-bold flex items-center gap-2">
                     <BarChart2 className="h-7 w-7 text-primary"/>Analysis &amp; Reports
                 </CardTitle>
-                <CardDescription>Visualize student progress, analyze trends and write a progress narrative{AI_ENABLED && ', and generate AI summaries'} (for active goals).</CardDescription>
+                <CardDescription>Visualize student progress, analyze trends and write a progress narrative (for active goals).</CardDescription>
              </div>
              <div className="flex flex-wrap gap-2">
                 {selectedStudent && (

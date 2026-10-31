@@ -1,15 +1,14 @@
 # Goal Tracker - Student Data Capture App
 
-This is a comprehensive Next.js application designed for educators and therapists to track student progress towards their goals. It features robust data entry, session management, data analysis, and AI-powered assistance.
+This is a comprehensive Next.js application designed for educators and therapists to track student progress towards their goals. It features robust data entry, session management and data analysis. It has no AI features and no server: student data never leaves the device.
 
 ## Key Features
 
 - **Student Management**: Add, edit, and manage a roster of students.
 - **Goal Template Library**: Create, manage, and assign reusable goal templates. Includes a rich default library of common goals.
-- **AI-Powered SMART Goals**: Use AI to generate Specific, Measurable, Achievable, Relevant, and Time-bound (SMART) goals from simple prompts.
 - **Dynamic Data Entry**: A powerful and flexible data entry page to record session data for multiple students at once, with full keyboard hotkey support for speed.
 - **Session Management**: View, edit, and delete historical session data.
-- **Analysis & Reports**: Visualize student progress with dynamic charts and generate AI-powered technical summaries of performance.
+- **Analysis & Reports**: Visualize student progress with dynamic charts and write a progress narrative from the data.
 - **Local Storage**: All data is stored in the browser's local storage on the device; nothing is synced to a cloud backend.
 - **Backup & Restore**: Save all data to a JSON backup file from Settings, and restore it on the same or another device (merge or replace). The dashboard reminds you when a backup is more than a week old.
 - **Responsive Design**: A modern, responsive interface that works on desktop and mobile devices.
@@ -22,7 +21,6 @@ This is a comprehensive Next.js application designed for educators and therapist
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/)
 - **UI Components**: [ShadCN UI](https://ui.shadcn.com/)
 - **Charting**: [Recharts](https://recharts.org/)
-- **AI Integration**: [Genkit](https://genkit.dev/)
 - **Data Storage**: Browser local storage
 
 ## Getting Started
@@ -59,7 +57,7 @@ This regenerates `src/lib/goal-constants/goal-bank.json` (the templates), `publi
 
 ## iPad and Web App (Home Screen)
 
-The same offline build can be hosted as a website and added to an iPad's Home Screen, where it opens full-screen like an app. A service worker stores the whole app on the device, so after the first visit it works without internet. Student data stays in the device's browser storage; the website only serves the app's code. AI features are hidden, as in the Android app.
+The same offline build can be hosted as a website and added to an iPad's Home Screen, where it opens full-screen like an app. A service worker stores the whole app on the device, so after the first visit it works without internet. Student data stays in the device's browser storage; the website only serves the app's code.
 
 ### Hosting on Netlify
 
@@ -82,7 +80,7 @@ Updates download in the background and apply the next time the app is opened. De
 
 ## Android App
 
-The app can be packaged as an Android APK with [Capacitor](https://capacitorjs.com/). The Android app uses the same static build as the iPad/web app and runs fully offline, storing data on the device. The AI features need a server, so they are hidden in the Android app.
+The app can be packaged as an Android APK with [Capacitor](https://capacitorjs.com/). The Android app uses the same static build as the iPad/web app and runs fully offline, storing data on the device.
 
 ### Getting the APK
 
@@ -109,11 +107,9 @@ The APK is written to `android/app/build/outputs/apk/debug/app-debug.apk`. You c
 
 - `npm run dev`: Starts the Next.js development server.
 - `npm run build`: Builds the application for production.
-- `npm run build:static`: Builds the offline static export into `out/` (AI features hidden, service worker generated), used for Netlify and the Android app.
+- `npm run build:static`: Builds the offline static export into `out/` (service worker generated), used for Netlify and the Android app.
 - `npm run android:sync`: Runs `build:static` and copies the result into the Android project.
 - `npm run start`: Starts the production server.
 - `npm run lint`: Runs the linter to check for code quality issues.
-- `npm run genkit:dev`: Starts the Genkit development server for AI flow testing.
-- `npm run genkit:watch`: Starts the Genkit server in watch mode.
 
 November 15, 2025 at 3:36 PM 
