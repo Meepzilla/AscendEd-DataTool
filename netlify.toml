@@ -1,7 +1,10 @@
-# Netlify hosting for the installable web app (static build, AI features hidden).
+# Netlify hosting for the installable web app (static build).
 [build]
   command = "npm run build:static"
   publish = "out"
+  # Dependency update pull requests (Dependabot) don't get a Netlify preview, so they don't use build credits;
+  # the Android build in GitHub Actions still checks that they build. (Exit 0 = skip the build.)
+  ignore = "case \"$HEAD\" in dependabot/*) exit 0;; *) exit 1;; esac"
 
 [build.environment]
   NODE_VERSION = "22"
