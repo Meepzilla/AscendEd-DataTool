@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-31',
+    title: 'School Year Dates in Settings',
+    description: 'Settings → Interface → School Year sets the first and last day of the school year (the month and day repeat each year). Student profiles use it for school-year attendance and service minutes, and the Progress Report for School year to date. It was August 1 to July 31 before.',
+    type: 'feature',
+    icon: BookOpen,
+  },
+  {
+    date: '2026-10-31',
     title: 'Student Overview: IEP Dates, Service Minutes and Attendance',
     description: 'Each student profile has an Overview. IEP Dates shows the IEP date, the annual review and re-evaluation due dates, and how many days are left (amber within 30 days, red when overdue). Service Minutes shows the minutes delivered this and last week or month against what the IEP requires, and the school-year total, from each session\'s start and end times. Attendance shows the share of sessions attended this school year, sessions held and missed (with reasons), and the last session. Set the dates and required minutes (per week, month or school year) with Edit IEP Details.',
     type: 'feature',

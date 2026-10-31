@@ -13,6 +13,7 @@ import { useStudentData } from '@/hooks/use-student-data';
 import { formatDate, formatDateOnly } from '@/lib/helpers';
 import { MISSED_REASON_SHORT } from '@/lib/attendance';
 import { daysUntil, formatMinutes, studentOverview } from '@/lib/student-overview';
+import { schoolYearLabel } from '@/lib/school-year';
 import type { ServicePer, SessionData, Student, StudentIep } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -62,7 +63,7 @@ export default function StudentOverviewCard({ student, sessions }: { student: St
       <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-2 space-y-0">
         <div>
           <CardTitle className="text-xl">Overview</CardTitle>
-          <CardDescription>IEP dates, service minutes and attendance (school year from August 1).</CardDescription>
+          <CardDescription>IEP dates, service minutes and attendance. School year: {schoolYearLabel()} (set in Settings).</CardDescription>
         </div>
         <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
           <Pencil className="mr-2 h-4 w-4" />Edit IEP Details
