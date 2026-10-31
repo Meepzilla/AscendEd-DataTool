@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { GoalTemplate, SessionData, Student } from './types';
 import { AbcListsSchema, type AbcLists } from './abc-lists';
 import { defaultTemplateKey } from './goal-constants';
+import { decryptWithPassword, encryptWithPassword, type PasswordProtected } from './secure-store';
 
 // A backup holds everything stored on the device: students (with their goals),
 // goal templates, sessions, and edited settings that belong with the data (the ABC data lists).
@@ -55,6 +56,38 @@ export function backupFileName(date = new Date()): string {
   const pad = (n: number) => String(n).padStart(2, '0');
   const stamp = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}_${pad(date.getHours())}${pad(date.getMinutes())}`;
   return `AscendEd-backup_${stamp}.json`;
+}
+
+// A backup file can be protected with a password: the backup's JSON is then encrypted, and the file holds only
+// what is needed to decrypt it with the password.
+export interface ProtectedBackupFile { app: typeof BACKUP_APP; protected: PasswordProtected }
+
+/** The text of a backup file, encrypted with the password when one is given. */
+export async function backupFileText(backup: AppBackup, password?: string): Promise<string> {
+  const json = JSON.stringify(backup, null, 2);
+  if (!password) return json;
+  const file: ProtectedBackupFile = { app: BACKUP_APP, protected: await encryptWithPassword(json, password) };
+  return JSON.stringify(file);
+}
+
+/** Whether a backup file's text is password-protected (then decryptBackupText is needed before parseBackup). */
+export function isProtectedBackup(text: string): boolean {
+  try {
+    const json = JSON.parse(text);
+    return json?.app === BACKUP_APP && !!json.protected?.data;
+  } catch {
+    return false;
+  }
+}
+
+/** The backup JSON inside a password-protected backup file. Throws a message for the user if the password is wrong. */
+export async function decryptBackupText(text: string, password: string): Promise<string> {
+  const file = JSON.parse(text) as ProtectedBackupFile;
+  try {
+    return await decryptWithPassword(file.protected, password);
+  } catch {
+    throw new Error('Wrong password, or the file is damaged.');
+  }
 }
 
 /**

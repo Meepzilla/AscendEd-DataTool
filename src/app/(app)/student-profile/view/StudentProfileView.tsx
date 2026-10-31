@@ -15,6 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { downloadSessionsCsv } from '@/lib/session-csv';
+import CsvExportWarning from '@/components/CsvExportWarning';
 import { useToast } from '@/hooks/use-toast';
 
 import AssignGoalToStudentModal from '@/components/modals/assign-goal-to-student-modal';
@@ -56,6 +57,7 @@ export default function StudentProfileView() {
   } = useStudentData();
 
   const [currentStudent, setCurrentStudent] = useState<Student | null>(null);
+  const [isCsvWarningOpen, setIsCsvWarningOpen] = useState(false);
   const [isAssignGoalModalOpen, setIsAssignGoalModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState(false);
@@ -119,8 +121,8 @@ export default function StudentProfileView() {
       });
       return;
     }
-
-    downloadSessionsCsv(studentSessions, currentStudent.name);
+    // Confirmed in CsvExportWarning first (the file holds student data in plain text).
+    setIsCsvWarningOpen(true);
   };
 
   const handleOpenEditAssignedGoalModal = (goal: Goal) => {
@@ -241,6 +243,14 @@ export default function StudentProfileView() {
             <Button variant="outline" size="sm" onClick={handleExportData} className="w-full sm:w-auto" disabled={studentSessions.length === 0}>
               <Download className="mr-2 h-4 w-4" /> Export Data
             </Button>
+                {currentStudent && (
+                  <CsvExportWarning
+                    studentName={currentStudent.name}
+                    open={isCsvWarningOpen}
+                    onCancel={() => setIsCsvWarningOpen(false)}
+                    onConfirm={() => { setIsCsvWarningOpen(false); downloadSessionsCsv(studentSessions, currentStudent.name); }}
+                  />
+                )}
             <Button variant="outline" size="sm" onClick={() => setIsImportModalOpen(true)} className="w-full sm:w-auto">
               <Upload className="mr-2 h-4 w-4" /> Import Data
             </Button>

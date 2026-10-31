@@ -1,4 +1,5 @@
 import type { StudentSessionState } from './types';
+import * as secureStore from './secure-store';
 
 // Unsaved Data Entry work, kept on the device so it is still there after switching pages, closing the app
 // or reloading. It is updated on every change; a student drops out of it once their session is saved or
@@ -24,7 +25,7 @@ const draftKey = (uid: string) => `${DRAFT_KEY_BASE}_${uid}`;
 export function loadDataEntryDraft(uid: string | undefined): DataEntryDraft | null {
   if (!uid || typeof window === 'undefined') return null;
   try {
-    const stored = window.localStorage.getItem(draftKey(uid));
+    const stored = secureStore.getItem(draftKey(uid));
     if (!stored) return null;
     const draft = JSON.parse(stored) as DataEntryDraft;
     return draft && typeof draft === 'object' && draft.students && Array.isArray(draft.selectedStudentIds) ? draft : null;
@@ -36,7 +37,7 @@ export function loadDataEntryDraft(uid: string | undefined): DataEntryDraft | nu
 export function saveDataEntryDraft(uid: string | undefined, draft: DataEntryDraft) {
   if (!uid) return;
   try {
-    window.localStorage.setItem(draftKey(uid), JSON.stringify(draft));
+    secureStore.setItem(draftKey(uid), JSON.stringify(draft));
   } catch {
     // Storage full or unavailable: the draft just isn't kept.
   }
