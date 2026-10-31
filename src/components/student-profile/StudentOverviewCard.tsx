@@ -13,7 +13,7 @@ import { useStudentData } from '@/hooks/use-student-data';
 import { formatDate, formatDateOnly } from '@/lib/helpers';
 import { MISSED_REASON_SHORT } from '@/lib/attendance';
 import { daysUntil, formatMinutes, studentOverview } from '@/lib/student-overview';
-import type { SessionData, Student, StudentIep } from '@/lib/types';
+import type { ServicePer, SessionData, Student, StudentIep } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 // The student profile's Overview: IEP dates (with how soon each is due), service minutes delivered against what
@@ -50,7 +50,7 @@ export default function StudentOverviewCard({ student, sessions }: { student: St
   const overview = useMemo(() => studentOverview(sessions, student.iep), [sessions, student.iep]);
   const iep = student.iep ?? {};
   const { service, attendance } = overview;
-  const periodWord = service.per === 'month' ? 'month' : 'week';
+  const periodWord = service.per === 'year' ? 'school year' : service.per === 'month' ? 'month' : 'week';
   const dates: [string, string | undefined, boolean][] = [
     ['IEP date', iep.iepDate, false],
     ['Annual review due', iep.annualReviewDate, true],
@@ -88,10 +88,14 @@ export default function StudentOverviewCard({ student, sessions }: { student: St
                 indicatorClassName={service.thisPeriod >= service.required ? 'bg-green-500' : 'bg-primary'}
                 aria-label={`Service minutes this ${periodWord}`}
               />
-              <Row label={`Last ${periodWord}`}>
-                {service.lastPeriod} min
-                {service.lastPeriod < service.required && <span className="text-xs text-amber-300">({service.required - service.lastPeriod} min short)</span>}
-              </Row>
+              {service.per === 'year' ? (
+                <Row label="Remaining">{Math.max(0, service.required - service.thisPeriod)} min</Row>
+              ) : (
+                <Row label={`Last ${periodWord}`}>
+                  {service.lastPeriod} min
+                  {service.lastPeriod < service.required && <span className="text-xs text-amber-300">({service.required - service.lastPeriod} min short)</span>}
+                </Row>
+              )}
             </>
           ) : (
             <>
@@ -99,7 +103,7 @@ export default function StudentOverviewCard({ student, sessions }: { student: St
               <p className="text-sm text-muted-foreground">Add the required minutes with Edit IEP Details to track them.</p>
             </>
           )}
-          <Row label="School year">{formatMinutes(service.schoolYear)}</Row>
+          {service.per !== 'year' && <Row label="School year">{formatMinutes(service.schoolYear)}</Row>}
           {service.untimed > 0 && (
             <p className="text-xs text-muted-foreground">{service.untimed} session{service.untimed === 1 ? '' : 's'} without start and end times {service.untimed === 1 ? 'isn\'t' : 'aren\'t'} counted.</p>
           )}
@@ -150,39 +154,42 @@ function IepDetailsDialog({ student, onClose }: { student: Student; onClose: () 
 
   return (
     <Dialog open onOpenChange={o => { if (!o) onClose(); }}>
-      <DialogContent className="sm:max-w-lg">
+      {/* Wide enough for three date fields side by side on iPad. Safari draws date fields at their own width
+          unless they are blocks without the native look, so they're kept to their column that way. */}
+      <DialogContent className="sm:max-w-3xl">
         <form onSubmit={save} className="space-y-4">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><CalendarClock className="h-5 w-5 text-primary" aria-hidden />IEP Details: {student.name}</DialogTitle>
             <DialogDescription>Dates from the student&apos;s IEP and the service minutes it requires. Leave any blank.</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-3 [&_input]:block [&_input]:w-full [&_input]:min-w-0 [&_input]:appearance-none [&_input::-webkit-date-and-time-value]:text-left">
             <div className="space-y-1">
-              <Label htmlFor="iep-date">IEP date</Label>
+              <Label htmlFor="iep-date" className="whitespace-nowrap">IEP date</Label>
               <Input id="iep-date" type="date" value={form.iepDate ?? ''} onChange={e => set({ iepDate: e.target.value })} />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="iep-annual">Annual review due</Label>
+              <Label htmlFor="iep-annual" className="whitespace-nowrap">Annual review due</Label>
               <Input id="iep-annual" type="date" value={form.annualReviewDate ?? ''} onChange={e => set({ annualReviewDate: e.target.value })} />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="iep-reeval">Re-evaluation due</Label>
+              <Label htmlFor="iep-reeval" className="whitespace-nowrap">Re-evaluation due</Label>
               <Input id="iep-reeval" type="date" value={form.reevaluationDate ?? ''} onChange={e => set({ reevaluationDate: e.target.value })} />
             </div>
           </div>
-          <div className="flex flex-wrap items-end gap-3">
+          <div className="flex flex-wrap items-end gap-4">
             <div className="space-y-1">
               <Label htmlFor="iep-minutes">Service minutes required</Label>
-              <Input id="iep-minutes" type="number" min="0" step="5" className="w-32" placeholder="e.g., 60"
+              <Input id="iep-minutes" type="number" min="0" step="5" className="w-40" placeholder="e.g., 60"
                 value={form.serviceMinutes ?? ''} onChange={e => set({ serviceMinutes: e.target.value === '' ? undefined : Number(e.target.value) })} />
             </div>
             <div className="space-y-1">
               <Label htmlFor="iep-per">Per</Label>
-              <Select value={form.servicePer ?? 'week'} onValueChange={v => set({ servicePer: v as 'week' | 'month' })}>
-                <SelectTrigger id="iep-per" className="w-32"><SelectValue /></SelectTrigger>
+              <Select value={form.servicePer ?? 'week'} onValueChange={v => set({ servicePer: v as ServicePer })}>
+                <SelectTrigger id="iep-per" className="w-40"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="week">Week</SelectItem>
                   <SelectItem value="month">Month</SelectItem>
+                  <SelectItem value="year">School year</SelectItem>
                 </SelectContent>
               </Select>
             </div>
