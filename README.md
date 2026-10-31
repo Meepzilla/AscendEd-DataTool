@@ -59,16 +59,23 @@ This regenerates `src/lib/goal-constants/goal-bank.json` (the templates), `publi
 
 The same offline build can be hosted as a website and added to an iPad's Home Screen, where it opens full-screen like an app. A service worker stores the whole app on the device, so after the first visit it works without internet. Student data stays in the device's browser storage; the website only serves the app's code.
 
-### Hosting on Netlify
+### Hosting on Cloudflare (the live site)
 
-`netlify.toml` holds the build settings (`npm run build:static`, publishing `out/`). Netlify's free plan works with private repositories.
+The live app is served by Cloudflare Workers at https://ascended-datatool.devinllewis-git.workers.dev. `wrangler.jsonc` publishes the static build in `out/` (no server code), with the response headers in `public/_headers`.
+
+1. In the Cloudflare dashboard choose **Workers & Pages → Create → Import a repository**, and pick this repository.
+2. Set the build command to `npm run build:static` and the deploy command to `npx wrangler deploy`.
+
+Every push to `master` then redeploys the site automatically.
+
+### Netlify (pull request previews)
+
+Netlify builds a preview of each pull request. `netlify.toml` holds the build settings (`npm run build:static`, publishing `out/`) and the same response headers as `public/_headers`. Netlify adds a "Powered by Netlify" badge in the bottom-right corner, which the app no longer hides, so Netlify is for previews rather than the live site. To set it up, or to host there instead:
 
 1. Sign in at [netlify.com](https://www.netlify.com/) (signing in with GitHub is easiest).
 2. Choose **Add new project → Import an existing project → GitHub**, and allow Netlify access to this repository.
 3. Pick this repository and the `master` branch. The build settings are filled in from `netlify.toml`; click **Deploy**.
 4. Optionally rename the site under **Project configuration → Change project name** (for example `ascended-lesd.netlify.app`).
-
-Every push to `master` then redeploys the site automatically.
 
 ### Installing on an iPad
 

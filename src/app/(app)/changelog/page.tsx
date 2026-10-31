@@ -20,7 +20,7 @@ const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-31',
     title: 'Netlify Badge Workaround Removed',
-    description: 'The app is now hosted on Cloudflare, which doesn\'t add a corner badge, so the space kept clear for the old "Powered by Netlify" badge is gone: the Data Entry bottom bar uses its full width on wide screens and notifications sit at the bottom corner.',
+    description: 'The live app is hosted on Cloudflare, which doesn\'t add a corner badge, so the code that hid the "Powered by Netlify" badge and the space kept clear for it are gone: the Data Entry bottom bar uses its full width on wide screens. Netlify is still used for test previews, where the badge may show.',
     type: 'improvement',
     icon: ScrollText,
   },

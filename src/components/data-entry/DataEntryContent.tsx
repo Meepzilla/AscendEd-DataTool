@@ -779,6 +779,17 @@ export default function DataEntryContent() {
     const delta = target === undefined ? direction * view.width * 0.8 : target - padding;
     vp.scrollBy({ left: delta * toCss, behavior: 'smooth' });
   }, []);
+  // Notifications (toasts) sit above the save bar instead of over the Save buttons: the bar's height is shared
+  // as --save-bar-height while it is shown.
+  const hasSaveBar = selectedStudentIds.length > 0;
+  useEffect(() => {
+    const bar = saveBarRef.current;
+    const rootStyle = document.documentElement.style;
+    if (!hasSaveBar || !bar) return;
+    const observer = new ResizeObserver(() => rootStyle.setProperty('--save-bar-height', `${bar.offsetHeight}px`));
+    observer.observe(bar);
+    return () => { observer.disconnect(); rootStyle.removeProperty('--save-bar-height'); };
+  }, [hasSaveBar]);
   useEffect(() => {
     const update = () => {
       const root = rootRef.current;
@@ -944,8 +955,7 @@ export default function DataEntryContent() {
         {selectedStudentIds.length > 0 && (
             <div ref={saveBarRef} className="sticky bottom-0 left-0 right-0 z-10 bg-background mt-auto">
                 {/* Student and Goal at the left, the scroll arrows in the middle (on the Student button's line), and the
-                    save buttons at the right. On large screens, right padding keeps the buttons clear of the preview
-                    host's corner badge (usually hidden; smaller screens need the room for the buttons). */}
+                    save buttons at the right. */}
                 <div className="flex flex-wrap justify-between items-center gap-2 p-2 border-t">
                     <div className="hidden sm:block self-start">
                       <TouchControls
