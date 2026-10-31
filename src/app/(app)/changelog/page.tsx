@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-31',
+    title: 'Privacy Notice and Accessibility Fixes',
+    description: 'A new Privacy Notice page (linked from Settings and the footer) explains what the app stores, where it is kept, who can see it and how to delete it. Accessibility (WCAG 2.1 AA): every page now has its own title and a main heading; dropdowns, the + and − counter buttons and number boxes in Data Entry have names that screen readers announce; progress bars report their value; and the Independent prompt color and the Sessions table header have stronger contrast.',
+    type: 'feature',
+    icon: ShieldCheck,
+  },
+  {
+    date: '2026-10-31',
     title: 'Scroll Arrows for Data Entry Students',
     description: 'Data Entry has left and right arrows under the Student and Goal buttons in the bottom bar. Each tap scrolls the student cards sideways by one card, lining the next card up with the left edge. An arrow is greyed out when there is nothing more to scroll in that direction.',
     type: 'feature',
@@ -755,7 +762,7 @@ export default function ChangelogPage() {
           <div className="flex items-center gap-3">
             <ScrollText className="h-10 w-10 text-primary" />
             <div>
-              <CardTitle className="text-3xl font-bold">Application Changelog</CardTitle>
+              <CardTitle role="heading" aria-level={1} className="text-3xl font-bold">Application Changelog</CardTitle>
               <CardDescription>
                 Stay updated with the latest features, improvements, and fixes in {APP_NAME}.
               </CardDescription>

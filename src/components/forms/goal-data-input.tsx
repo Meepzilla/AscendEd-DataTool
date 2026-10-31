@@ -262,25 +262,25 @@ export default function GoalDataInputComponent({
                 <FormItem>
                     <FormLabel>Correct</FormLabel>
                     <div className="flex items-center gap-1">
-                    <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('correct', Math.max(0, (Number(data.correct) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
-                    <Input type="number" min="0" value={data.correct ?? 0} onChange={(e) => handleChange('correct', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
-                    <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('correct', (Number(data.correct) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
+                    <Button aria-label="Decrease Correct" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('correct', Math.max(0, (Number(data.correct) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
+                    <Input aria-label="Correct" type="number" min="0" value={data.correct ?? 0} onChange={(e) => handleChange('correct', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
+                    <Button aria-label="Increase Correct" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('correct', (Number(data.correct) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
                     </div>
                 </FormItem>
                 <FormItem>
                     <FormLabel>Approx.</FormLabel>
                     <div className="flex items-center gap-1">
-                    <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('approximate', Math.max(0, (Number(data.approximate) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
-                    <Input type="number" min="0" value={data.approximate ?? 0} onChange={(e) => handleChange('approximate', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
-                    <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('approximate', (Number(data.approximate) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
+                    <Button aria-label="Decrease Approximate" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('approximate', Math.max(0, (Number(data.approximate) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
+                    <Input aria-label="Approximate" type="number" min="0" value={data.approximate ?? 0} onChange={(e) => handleChange('approximate', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
+                    <Button aria-label="Increase Approximate" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('approximate', (Number(data.approximate) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
                     </div>
                 </FormItem>
                 <FormItem>
                     <FormLabel>Incorrect</FormLabel>
                     <div className="flex items-center gap-1">
-                    <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('incorrect', Math.max(0, (Number(data.incorrect) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
-                    <Input type="number" min="0" value={data.incorrect ?? 0} onChange={(e) => handleChange('incorrect', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
-                    <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('incorrect', (Number(data.incorrect) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
+                    <Button aria-label="Decrease Incorrect" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('incorrect', Math.max(0, (Number(data.incorrect) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
+                    <Input aria-label="Incorrect" type="number" min="0" value={data.incorrect ?? 0} onChange={(e) => handleChange('incorrect', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
+                    <Button aria-label="Increase Incorrect" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('incorrect', (Number(data.incorrect) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
                     </div>
                 </FormItem>
                 <div className="mt-1.5">
@@ -308,6 +308,7 @@ export default function GoalDataInputComponent({
                   value={data.numberOfTrials ?? ''}
                   onChange={(e) => handleChange('numberOfTrials', e.target.value === '' ? undefined : parseInt(e.target.value, 10))}
                   className="h-8 text-sm text-center w-20"
+                  aria-label="Number of Trials"
                   disabled={isArchived || isLocked}
                 />
                  <div className="flex flex-wrap gap-1">
@@ -394,17 +395,17 @@ export default function GoalDataInputComponent({
               <FormItem>
                 <FormLabel>Trials Accepted</FormLabel>
                 <div className="flex items-center gap-1">
-                  <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('trialsAccepted', Math.max(0, (Number(data.trialsAccepted) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
-                  <Input type="number" min="0" value={data.trialsAccepted ?? 0} onChange={(e) => handleChange('trialsAccepted', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
-                  <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('trialsAccepted', (Number(data.trialsAccepted) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
+                  <Button aria-label="Decrease Trials Accepted" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('trialsAccepted', Math.max(0, (Number(data.trialsAccepted) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
+                  <Input aria-label="Trials Accepted" type="number" min="0" value={data.trialsAccepted ?? 0} onChange={(e) => handleChange('trialsAccepted', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
+                  <Button aria-label="Increase Trials Accepted" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('trialsAccepted', (Number(data.trialsAccepted) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
                 </div>
               </FormItem>
               <FormItem>
                 <FormLabel>Trials Refused</FormLabel>
                 <div className="flex items-center gap-1">
-                  <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('trialsRefused', Math.max(0, (Number(data.trialsRefused) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
-                  <Input type="number" min="0" value={data.trialsRefused ?? 0} onChange={(e) => handleChange('trialsRefused', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
-                  <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('trialsRefused', (Number(data.trialsRefused) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
+                  <Button aria-label="Decrease Trials Refused" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('trialsRefused', Math.max(0, (Number(data.trialsRefused) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
+                  <Input aria-label="Trials Refused" type="number" min="0" value={data.trialsRefused ?? 0} onChange={(e) => handleChange('trialsRefused', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
+                  <Button aria-label="Increase Trials Refused" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('trialsRefused', (Number(data.trialsRefused) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
                 </div>
               </FormItem>
                  <div className="mt-1.5 col-span-2">
@@ -434,17 +435,17 @@ export default function GoalDataInputComponent({
               <FormItem>
                 <FormLabel>Total Syllables</FormLabel>
                  <div className="flex items-center gap-1">
-                  <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('totalSyllables', Math.max(0, (Number(data.totalSyllables) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
-                  <Input type="number" min="0" value={data.totalSyllables ?? 0} onChange={(e) => handleChange('totalSyllables', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
-                  <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('totalSyllables', (Number(data.totalSyllables) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
+                  <Button aria-label="Decrease Total Syllables" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('totalSyllables', Math.max(0, (Number(data.totalSyllables) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
+                  <Input aria-label="Total Syllables" type="number" min="0" value={data.totalSyllables ?? 0} onChange={(e) => handleChange('totalSyllables', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
+                  <Button aria-label="Increase Total Syllables" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('totalSyllables', (Number(data.totalSyllables) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
                 </div>
               </FormItem>
               <FormItem>
                 <FormLabel>Stuttered Syllables</FormLabel>
                 <div className="flex items-center gap-1">
-                  <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('stutteredSyllables', Math.max(0, (Number(data.stutteredSyllables) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
-                  <Input type="number" min="0" value={data.stutteredSyllables ?? 0} onChange={(e) => handleChange('stutteredSyllables', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
-                  <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('stutteredSyllables', (Number(data.stutteredSyllables) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
+                  <Button aria-label="Decrease Stuttered Syllables" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('stutteredSyllables', Math.max(0, (Number(data.stutteredSyllables) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
+                  <Input aria-label="Stuttered Syllables" type="number" min="0" value={data.stutteredSyllables ?? 0} onChange={(e) => handleChange('stutteredSyllables', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
+                  <Button aria-label="Increase Stuttered Syllables" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('stutteredSyllables', (Number(data.stutteredSyllables) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
                 </div>
               </FormItem>
                <div className="mt-1.5 col-span-2">
@@ -458,33 +459,33 @@ export default function GoalDataInputComponent({
                 <FormItem>
                     <FormLabel>Blocks</FormLabel>
                     <div className="flex items-center gap-1">
-                        <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('blocks', Math.max(0, (Number(data.blocks) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
-                        <Input type="number" min="0" value={data.blocks ?? 0} onChange={(e) => handleChange('blocks', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
-                        <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('blocks', (Number(data.blocks) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
+                        <Button aria-label="Decrease Blocks" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('blocks', Math.max(0, (Number(data.blocks) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
+                        <Input aria-label="Blocks" type="number" min="0" value={data.blocks ?? 0} onChange={(e) => handleChange('blocks', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
+                        <Button aria-label="Increase Blocks" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('blocks', (Number(data.blocks) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
                     </div>
                 </FormItem>
                 <FormItem>
                     <FormLabel>Repetitions</FormLabel>
                     <div className="flex items-center gap-1">
-                        <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('repetitions', Math.max(0, (Number(data.repetitions) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
-                        <Input type="number" min="0" value={data.repetitions ?? 0} onChange={(e) => handleChange('repetitions', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
-                        <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('repetitions', (Number(data.repetitions) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
+                        <Button aria-label="Decrease Repetitions" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('repetitions', Math.max(0, (Number(data.repetitions) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
+                        <Input aria-label="Repetitions" type="number" min="0" value={data.repetitions ?? 0} onChange={(e) => handleChange('repetitions', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
+                        <Button aria-label="Increase Repetitions" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('repetitions', (Number(data.repetitions) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
                     </div>
                 </FormItem>
                  <FormItem>
                     <FormLabel>Prolongations</FormLabel>
                     <div className="flex items-center gap-1">
-                        <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('prolongations', Math.max(0, (Number(data.prolongations) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
-                        <Input type="number" min="0" value={data.prolongations ?? 0} onChange={(e) => handleChange('prolongations', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
-                        <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('prolongations', (Number(data.prolongations) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
+                        <Button aria-label="Decrease Prolongations" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('prolongations', Math.max(0, (Number(data.prolongations) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
+                        <Input aria-label="Prolongations" type="number" min="0" value={data.prolongations ?? 0} onChange={(e) => handleChange('prolongations', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
+                        <Button aria-label="Increase Prolongations" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('prolongations', (Number(data.prolongations) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
                     </div>
                 </FormItem>
                 <FormItem>
                     <FormLabel>Interjections</FormLabel>
                     <div className="flex items-center gap-1">
-                        <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('interjections', Math.max(0, (Number(data.interjections) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
-                        <Input type="number" min="0" value={data.interjections ?? 0} onChange={(e) => handleChange('interjections', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
-                        <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('interjections', (Number(data.interjections) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
+                        <Button aria-label="Decrease Interjections" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('interjections', Math.max(0, (Number(data.interjections) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
+                        <Input aria-label="Interjections" type="number" min="0" value={data.interjections ?? 0} onChange={(e) => handleChange('interjections', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
+                        <Button aria-label="Increase Interjections" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('interjections', (Number(data.interjections) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
                     </div>
                 </FormItem>
             </div>
@@ -572,25 +573,25 @@ export default function GoalDataInputComponent({
                 <FormItem>
                     <FormLabel>Correct</FormLabel>
                     <div className="flex items-center gap-1">
-                    <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('questionsCorrect', Math.max(0, (Number(data.questionsCorrect) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
-                    <Input type="number" min="0" value={data.questionsCorrect ?? 0} onChange={(e) => handleChange('questionsCorrect', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
-                    <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('questionsCorrect', (Number(data.questionsCorrect) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
+                    <Button aria-label="Decrease Correct" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('questionsCorrect', Math.max(0, (Number(data.questionsCorrect) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
+                    <Input aria-label="Correct" type="number" min="0" value={data.questionsCorrect ?? 0} onChange={(e) => handleChange('questionsCorrect', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
+                    <Button aria-label="Increase Correct" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('questionsCorrect', (Number(data.questionsCorrect) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
                     </div>
                 </FormItem>
                 <FormItem>
                     <FormLabel>Approx.</FormLabel>
                     <div className="flex items-center gap-1">
-                    <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('approximate', Math.max(0, (Number(data.approximate) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
-                    <Input type="number" min="0" value={data.approximate ?? 0} onChange={(e) => handleChange('approximate', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
-                    <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('approximate', (Number(data.approximate) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
+                    <Button aria-label="Decrease Approximate" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('approximate', Math.max(0, (Number(data.approximate) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
+                    <Input aria-label="Approximate" type="number" min="0" value={data.approximate ?? 0} onChange={(e) => handleChange('approximate', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
+                    <Button aria-label="Increase Approximate" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('approximate', (Number(data.approximate) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
                     </div>
                 </FormItem>
                 <FormItem>
                     <FormLabel>Incorrect</FormLabel>
                     <div className="flex items-center gap-1">
-                    <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('questionsIncorrect', Math.max(0, (Number(data.questionsIncorrect) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
-                    <Input type="number" min="0" value={data.questionsIncorrect ?? 0} onChange={(e) => handleChange('questionsIncorrect', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
-                    <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('questionsIncorrect', (Number(data.questionsIncorrect) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
+                    <Button aria-label="Decrease Incorrect" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('questionsIncorrect', Math.max(0, (Number(data.questionsIncorrect) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
+                    <Input aria-label="Incorrect" type="number" min="0" value={data.questionsIncorrect ?? 0} onChange={(e) => handleChange('questionsIncorrect', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
+                    <Button aria-label="Increase Incorrect" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('questionsIncorrect', (Number(data.questionsIncorrect) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
                     </div>
                 </FormItem>
                 <div className="mt-1.5">
@@ -620,25 +621,25 @@ export default function GoalDataInputComponent({
                 <FormItem>
                     <FormLabel>Correct</FormLabel>
                     <div className="flex items-center gap-1">
-                    <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('successfulResponses', Math.max(0, (Number(data.successfulResponses) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
-                    <Input type="number" min="0" value={data.successfulResponses ?? 0} onChange={(e) => handleChange('successfulResponses', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
-                    <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('successfulResponses', (Number(data.successfulResponses) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
+                    <Button aria-label="Decrease Correct" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('successfulResponses', Math.max(0, (Number(data.successfulResponses) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
+                    <Input aria-label="Correct" type="number" min="0" value={data.successfulResponses ?? 0} onChange={(e) => handleChange('successfulResponses', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
+                    <Button aria-label="Increase Correct" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('successfulResponses', (Number(data.successfulResponses) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
                     </div>
                 </FormItem>
                 <FormItem>
                     <FormLabel>Approx.</FormLabel>
                     <div className="flex items-center gap-1">
-                    <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('approximate', Math.max(0, (Number(data.approximate) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
-                    <Input type="number" min="0" value={data.approximate ?? 0} onChange={(e) => handleChange('approximate', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
-                    <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('approximate', (Number(data.approximate) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
+                    <Button aria-label="Decrease Approximate" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('approximate', Math.max(0, (Number(data.approximate) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
+                    <Input aria-label="Approximate" type="number" min="0" value={data.approximate ?? 0} onChange={(e) => handleChange('approximate', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
+                    <Button aria-label="Increase Approximate" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('approximate', (Number(data.approximate) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
                     </div>
                 </FormItem>
                 <FormItem>
                     <FormLabel>Incorrect</FormLabel>
                     <div className="flex items-center gap-1">
-                    <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('unsuccessfulResponses', Math.max(0, (Number(data.unsuccessfulResponses) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
-                    <Input type="number" min="0" value={data.unsuccessfulResponses ?? 0} onChange={(e) => handleChange('unsuccessfulResponses', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
-                    <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('unsuccessfulResponses', (Number(data.unsuccessfulResponses) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
+                    <Button aria-label="Decrease Incorrect" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('unsuccessfulResponses', Math.max(0, (Number(data.unsuccessfulResponses) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
+                    <Input aria-label="Incorrect" type="number" min="0" value={data.unsuccessfulResponses ?? 0} onChange={(e) => handleChange('unsuccessfulResponses', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
+                    <Button aria-label="Increase Incorrect" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('unsuccessfulResponses', (Number(data.unsuccessfulResponses) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
                     </div>
                 </FormItem>
                 <div className="mt-1.5">
@@ -668,25 +669,25 @@ export default function GoalDataInputComponent({
                 <FormItem>
                     <FormLabel>Correct</FormLabel>
                     <div className="flex items-center gap-1">
-                    <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('correctProductions', Math.max(0, (Number(data.correctProductions) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
-                    <Input type="number" min="0" value={data.correctProductions ?? 0} onChange={(e) => handleChange('correctProductions', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
-                    <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('correctProductions', (Number(data.correctProductions) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
+                    <Button aria-label="Decrease Correct" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('correctProductions', Math.max(0, (Number(data.correctProductions) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
+                    <Input aria-label="Correct" type="number" min="0" value={data.correctProductions ?? 0} onChange={(e) => handleChange('correctProductions', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
+                    <Button aria-label="Increase Correct" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('correctProductions', (Number(data.correctProductions) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
                     </div>
                 </FormItem>
                 <FormItem>
                     <FormLabel>Approx.</FormLabel>
                     <div className="flex items-center gap-1">
-                    <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('approximate', Math.max(0, (Number(data.approximate) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
-                    <Input type="number" min="0" value={data.approximate ?? 0} onChange={(e) => handleChange('approximate', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
-                    <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('approximate', (Number(data.approximate) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
+                    <Button aria-label="Decrease Approximate" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('approximate', Math.max(0, (Number(data.approximate) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
+                    <Input aria-label="Approximate" type="number" min="0" value={data.approximate ?? 0} onChange={(e) => handleChange('approximate', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
+                    <Button aria-label="Increase Approximate" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('approximate', (Number(data.approximate) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
                     </div>
                 </FormItem>
                 <FormItem>
                     <FormLabel>Incorrect</FormLabel>
                     <div className="flex items-center gap-1">
-                    <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('incorrectProductions', Math.max(0, (Number(data.incorrectProductions) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
-                    <Input type="number" min="0" value={data.incorrectProductions ?? 0} onChange={(e) => handleChange('incorrectProductions', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
-                    <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('incorrectProductions', (Number(data.incorrectProductions) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
+                    <Button aria-label="Decrease Incorrect" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('incorrectProductions', Math.max(0, (Number(data.incorrectProductions) || 0) - 1)))} disabled={isArchived}><Minus className="h-4 w-4" /></Button>
+                    <Input aria-label="Incorrect" type="number" min="0" value={data.incorrectProductions ?? 0} onChange={(e) => handleChange('incorrectProductions', parseInt(e.target.value, 10) || 0)} className="h-9 text-sm text-center w-16" disabled={isArchived || isLocked} />
+                    <Button aria-label="Increase Incorrect" type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0 touch-manipulation" onClick={(e) => handleInteraction(e, () => handleChange('incorrectProductions', (Number(data.incorrectProductions) || 0) + 1))} disabled={isArchived}><Plus className="h-4 w-4" /></Button>
                     </div>
                 </FormItem>
                 <div className="mt-1.5">

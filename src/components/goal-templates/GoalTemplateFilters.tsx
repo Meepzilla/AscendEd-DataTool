@@ -63,7 +63,7 @@ const GoalTemplateFilters: React.FC<GoalTemplateFiltersProps> = ({
         />
       </div>
       <Select value={filterType} onValueChange={setFilterType}>
-        <SelectTrigger className="w-full sm:w-[180px]">
+        <SelectTrigger className="w-full sm:w-[180px]" aria-label="Filter by goal type">
           <ListFilter className="mr-2 h-4 w-4 text-muted-foreground" />
           <SelectValue placeholder="Filter by type" />
         </SelectTrigger>
@@ -78,7 +78,7 @@ const GoalTemplateFilters: React.FC<GoalTemplateFiltersProps> = ({
       </Select>
       {categories.length > 0 && (
         <Select value={filterCategory} onValueChange={setFilterCategory}>
-          <SelectTrigger className="w-full sm:w-[220px]">
+          <SelectTrigger className="w-full sm:w-[220px]" aria-label="Filter by category">
             <Layers className="mr-2 h-4 w-4 text-muted-foreground" />
             <SelectValue placeholder="Filter by skill area" />
           </SelectTrigger>
@@ -91,7 +91,7 @@ const GoalTemplateFilters: React.FC<GoalTemplateFiltersProps> = ({
         </Select>
       )}
       <Select value={sortOrder} onValueChange={(value) => setSortOrder(value as GoalTemplateSortOrder)}>
-        <SelectTrigger className="w-full sm:w-[180px]">
+        <SelectTrigger className="w-full sm:w-[180px]" aria-label="Sort templates">
           <ArrowUpDown className="mr-2 h-4 w-4 text-muted-foreground" />
           <SelectValue placeholder="Sort by" />
         </SelectTrigger>
@@ -103,7 +103,7 @@ const GoalTemplateFilters: React.FC<GoalTemplateFiltersProps> = ({
         </SelectContent>
       </Select>
       <Select value={gridSize} onValueChange={(value) => setGridSize(value as GridSize)}>
-        <SelectTrigger className="w-full sm:w-[130px]">
+        <SelectTrigger className="w-full sm:w-[130px]" aria-label="Card size">
           <Grid className="mr-2 h-4 w-4 text-muted-foreground" />
           <SelectValue placeholder="Grid Size" />
         </SelectTrigger>

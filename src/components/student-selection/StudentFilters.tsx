@@ -45,7 +45,7 @@ const StudentFilters: React.FC<StudentFiltersProps> = ({
         />
       </div>
       <Select value={sortOrder} onValueChange={(value) => setSortOrder(value as StudentSortOrder)}>
-        <SelectTrigger className="w-full sm:w-[180px]">
+        <SelectTrigger className="w-full sm:w-[180px]" aria-label="Sort students">
           <ArrowUpDown className="mr-2 h-4 w-4 text-muted-foreground" />
           <SelectValue placeholder="Sort by" />
         </SelectTrigger>
