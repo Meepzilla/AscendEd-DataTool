@@ -5270,7 +5270,7 @@
 },
 {
 "name": "Retell the event or story using appropriate sequencing",
-"type": "STORY_CHAMPS",
+"type": "STORY_ELEMENTS",
 "isDefault": true,
 "sessionTargetValue": 80,
 "smartGoalPrompt": "This goal builds the student's ability to share and seek information, using their preferred communication method.",
@@ -5996,7 +5996,7 @@
 },
 {
 "name": "Tell their story with the appropriate number of details and in the right order",
-"type": "STORY_CHAMPS",
+"type": "STORY_ELEMENTS",
 "isDefault": true,
 "sessionTargetValue": 80,
 "smartGoalPrompt": "This goal builds skills in expressive Language, using their preferred communication method.",

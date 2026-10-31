@@ -64,7 +64,7 @@ const DEFAULT_RATING = 3;
 export function goalMeasureInfo(goal: MeasuredGoal): GoalMeasureInfo {
   switch (captureTypeOf(goal)) {
     case 'FLUENCY_SYLLABLE_STUTTER': return { label: '% fluent syllables', unit: '%', max: 100 };
-    case 'STORY_CHAMPS': return { label: 'Story score', unit: '%', max: 100 };
+    case 'STORY_ELEMENTS': return { label: 'Story score', unit: '%', max: 100 };
     case 'COMMUNICATION_FUNCTIONS': return { label: 'Functions used spontaneously', unit: '', max: COMMUNICATION_FUNCTIONS.length };
     case 'QUALITATIVE_OBSERVATION':
     case 'COGNITIVE': return { label: 'Rating (1-5)', unit: '', max: 5 };
@@ -119,7 +119,7 @@ export function goalMeasure(goal: MeasuredGoal, data: Record<string, any> = {}):
       const dysfluent = ['stutteredSyllables', 'blocks', 'repetitions', 'interjections'].reduce((sum, field) => sum + (Number(data[field]) || 0), 0);
       return total > 0 ? (Math.max(0, total - dysfluent) / total) * 100 : null;
     }
-    case 'STORY_CHAMPS': {
+    case 'STORY_ELEMENTS': {
       const story = scoreStory(data);
       return story.points > 0 || story.linkingWords > 0 ? story.percent : null;
     }

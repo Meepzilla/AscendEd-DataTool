@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, UploadCloud, FileCheck2, AlertTriangle } from 'lucide-react';
 import Papa from 'papaparse';
 import type { GoalType, SessionData, SessionGoalData } from '@/lib/types';
+import { currentGoalType } from '@/lib/legacy-goal-types';
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 
 /** A session read from the file, with the Session ID it had (kept, so a later backup merge matches it). */
@@ -115,7 +116,7 @@ export default function ImportDataModal({ onClose, onImport }: ImportDataModalPr
                     let value = row[key];
                     // Columns from other goal types are empty for this goal.
                     if (value === undefined || value === null || value === '') continue;
-                    value = cellValue(String(value), row['Goal Type'], camelCaseKey);
+                    value = cellValue(String(value), String(currentGoalType(row['Goal Type'])), camelCaseKey);
                     goalData[camelCaseKey] = value;
                   }
                 }
@@ -123,7 +124,7 @@ export default function ImportDataModal({ onClose, onImport }: ImportDataModalPr
                 const sessionGoal: SessionGoalData = {
                   goalId: row['Goal ID'],
                   goalName: row['Goal Name'],
-                  goalType: row['Goal Type'],
+                  goalType: currentGoalType(row['Goal Type']) as GoalType,
                   data: goalData,
                 };
 

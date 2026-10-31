@@ -159,7 +159,7 @@ export default function GoalDataInputComponent({
         const summary = summarizeCommunicationFunctions(data);
         return `${summary.functionsUsedSpontaneously} of ${summary.functionCount} used spontaneously (${summary.spontaneous} spontaneous, ${summary.prompted} prompted)`;
       }
-      case 'STORY_CHAMPS': {
+      case 'STORY_ELEMENTS': {
         const story = scoreStory(data);
         return `${story.percent.toFixed(1)}% (${story.points}/${story.maxPoints} points)`;
       }
@@ -758,7 +758,7 @@ export default function GoalDataInputComponent({
           </>
         );
       }
-      case 'STORY_CHAMPS':
+      case 'STORY_ELEMENTS':
         return (
           <>
             <FormItem>

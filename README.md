@@ -1,51 +1,129 @@
-# Goal Tracker - Student Data Capture App
+# AscendEd
 
-This is a comprehensive Next.js application designed for educators and therapists to track student progress towards their goals. It features robust data entry, session management and data analysis. It has no AI features and no server: student data never leaves the device.
+AscendEd is a data collection and progress reporting app for speech-language pathologists, special educators and related service providers. It records session data on IEP goals, tracks service minutes and attendance, and turns the data into charts, written narratives and printable progress reports.
 
-## Key Features
+It runs entirely on the device: there is no account, no server and no AI. Student data stays in the browser or Home Screen app and is never sent anywhere. It works offline once installed.
 
-- **Student Management**: Add, edit, and manage a roster of students.
-- **Goal Template Library**: Create, manage, and assign reusable goal templates. Includes a rich default library of common goals.
-- **Dynamic Data Entry**: A powerful and flexible data entry page to record session data for multiple students at once, with full keyboard hotkey support for speed.
-- **Session Management**: View, edit, and delete historical session data.
-- **Analysis & Reports**: Visualize student progress with dynamic charts and write a progress narrative from the data.
-- **Local Storage**: All data is stored in the browser's local storage on the device; nothing is synced to a cloud backend.
-- **Backup & Restore**: Save all data to a JSON backup file from Settings, and restore it on the same or another device (merge or replace). The dashboard reminds you when a backup is more than a week old.
-- **Responsive Design**: A modern, responsive interface that works on desktop and mobile devices.
+**Live app:** https://ascended-datatool.devinllewis-git.workers.dev
 
-## Tech Stack 
+## Features
 
-- **Framework**: [Next.js](https://nextjs.org/) (App Router)
-- **UI Library**: [React](https://react.dev/)
-- **Language**: [TypeScript](https://www.typescriptlang.org/)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
-- **UI Components**: [ShadCN UI](https://ui.shadcn.com/)
-- **Charting**: [Recharts](https://recharts.org/)
-- **Data Storage**: Browser local storage
+**Data collection**
+- Record several students at once, with no limit on slots. Saved groups (a class or small group) load in one step.
+- 20 goal types, each with its own controls and measure, including:
+  - accuracy counts and trial grids;
+  - prompt levels, fluency, communication functions, story elements and task analysis;
+  - behavior frequency, duration, ABC, interval and latency.
+- Keyboard shortcuts for fast entry. Unsaved work survives switching pages or closing the app.
+- Missed sessions are recorded with a reason. Sessions saved in parts can be merged so their minutes count once.
 
-## Getting Started
+**Students and goals**
+- A goal bank of over 900 templates, searchable by skill area, with purpose and activity ideas.
+- Each goal has a target, a direction (increase or decrease), a target date, a baseline and mastery criteria.
+- Each student's profile shows IEP dates, service minutes against the IEP (per week, month or school year) and attendance.
 
-Follow these steps to get the application running locally.
+**Reports**
+- A chart per goal, with the target line and the aim line.
+- Written progress narratives in brief or detailed style.
+- A printable IEP progress report, with optional service minutes and your school or district name at the top.
+- CSV export.
 
-### 1. Install Dependencies
+**Privacy and safety**
+- Optional passcode protection: student data is encrypted on the device (AES-256).
+- Backups to a file, optionally password-protected; restoring can merge or replace.
+- A Student Access Lock with a PIN.
+- A strict Content Security Policy: only the app's own scripts can run.
+- A [Privacy Notice](src/app/(app)/privacy/page.tsx) page in the app.
+
+In the app, the **Help** page (Alt + H) explains each feature, and the **Changelog** lists what changed.
+
+## Tech stack
+
+- [Next.js 15](https://nextjs.org/) (App Router) with a static export, plus [React 18](https://react.dev/) and [TypeScript](https://www.typescriptlang.org/)
+- [Tailwind CSS](https://tailwindcss.com/), [shadcn/ui](https://ui.shadcn.com/) and Radix UI
+- [Recharts](https://recharts.org/) for charts
+- Browser `localStorage` for data, with Web Crypto for passcode encryption
+- A service worker for offline use, and [Capacitor](https://capacitorjs.com/) for the Android app
+
+## Development
+
+Requires Node.js 22 (see `.nvmrc`).
 
 ```bash
 npm install
+npm run dev            # http://localhost:3000
 ```
 
-### 2. Run the Development Server
+| Script | What it does |
+| --- | --- |
+| `npm run dev` | Development server |
+| `npm run build:static` | Offline static build in `out/`, used for hosting and Android. It adds the Content Security Policy (`scripts/add-csp.mjs`) and generates the service worker (`scripts/generate-service-worker.mjs`). |
+| `npx tsc --noEmit` | Type check |
+| `npm run lint` | Lint |
+| `npm run android:sync` | `build:static`, then copies the result into the Android project |
 
-Start the Next.js development server:
+To try the production build locally: `npm run build:static && npx serve out`.
+
+### Project layout
+
+| Path | Contents |
+| --- | --- |
+| `src/app/(app)/` | Pages: dashboard, data-entry, manage-sessions, analysis-report, progress-report, student-profile, goal-templates, settings, help, changelog, privacy |
+| `src/components/` | UI, by area (data-entry, forms, charts, reports, settings…) and shadcn components in `ui/` |
+| `src/hooks/use-student-data.tsx` | All student, goal and session data, and saving to storage |
+| `src/lib/` | Logic without UI: goal types and measures (`goal-constants/`), report narratives, aim lines, service minutes, attendance, session merging, task analysis, encryption (`secure-store.ts`), backups |
+| `docs/` | Goal bank review CSV and the original blueprint |
+
+When you change features, add an entry at the top of `src/app/(app)/changelog/page.tsx`, and update the Help page if the change affects how the app is used.
+
+## Hosting
+
+The static build in `out/` is all that needs hosting. There is no server code.
+
+### Cloudflare (the live site)
+
+`wrangler.jsonc` publishes `out/` as Cloudflare Workers static assets, with the response headers (CSP and security headers) in `public/_headers`. To set it up:
+
+1. In the Cloudflare dashboard, go to **Workers & Pages → Create → Import a repository** and pick this repository.
+2. Set the build command to `npm run build:static` and the deploy command to `npx wrangler deploy`.
+
+Every push to `master` redeploys the live site.
+
+### Netlify (pull request previews)
+
+Netlify builds a preview of each pull request from `netlify.toml`, which has the same build and headers. Netlify adds a "Powered by Netlify" badge in the corner, which the app doesn't hide. That makes it fine for previews but not for the live site.
+
+## Installing on an iPad
+
+1. Open the live app in **Safari**.
+2. Tap **Share → Add to Home Screen → Add**.
+3. Open AscendEd from the Home Screen once while online, and wait a few seconds so it is saved for offline use.
+
+Updates download in the background and apply the next time the app is opened.
+
+- Data in the Home Screen app is separate from data in Safari.
+- Deleting the Home Screen icon deletes the app's data, so back up first.
+
+## Android app
+
+GitHub Actions builds an APK on every push to `master` and on pull requests (`.github/workflows/android-apk.yml`).
+
+1. Open the latest **Android APK** run in the repository's **Actions** tab, or start one with **Run workflow**.
+2. Download the **AscendEd-apk** artifact and unzip it to get `app-debug.apk`.
+3. Open the APK on the device and allow installing from that source.
+
+Every build is signed with the same key (`android/app/ascended-debug.keystore`), so a new APK installs over the old one and keeps the data. Don't uninstall to update: uninstalling deletes the data.
+
+To build it locally you need Node.js 22, JDK 21 and the Android SDK:
 
 ```bash
-npm run dev
+npm run android:sync
+cd android && ./gradlew assembleDebug    # android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
-The application should now be running at [http://localhost:3000](http://localhost:3000).
+## Goal bank
 
-## Goal Bank
-
-The built-in goal templates include the SLP goal bank (903 goals). `scripts/import-goal-bank.py` turns the bank's CSV export into templates. For each goal it picks the data collection type (which data entry screen the goal uses) and the session target, based on the goal's skill area and how its text says success is measured. `docs/goal-bank-review.csv` lists every goal with its type, target and the reason.
+The built-in templates include the SLP goal bank (903 goals). `scripts/import-goal-bank.py` turns the bank's CSV export into templates. For each goal it chooses the data collection type and the session target, based on the skill area and how the goal says success is measured.
 
 To update the bank, export it to CSV with the same columns and run:
 
@@ -53,63 +131,9 @@ To update the bank, export it to CSV with the same columns and run:
 python3 scripts/import-goal-bank.py path/to/SLP_Goal_Bank.csv
 ```
 
-This regenerates `src/lib/goal-constants/goal-bank.json` (the templates), `public/goal-bank/details.json` (purpose, activity ideas and tags, loaded when a goal's details are opened) and the review CSV. Devices add new templates automatically, matched by name.
+This regenerates three files:
+- `src/lib/goal-constants/goal-bank.json`: the templates.
+- `public/goal-bank/details.json`: purpose, activity ideas and tags, loaded when a goal is opened.
+- `docs/goal-bank-review.csv`: every goal with its type, target and the reason they were chosen.
 
-## iPad and Web App (Home Screen)
-
-The same offline build can be hosted as a website and added to an iPad's Home Screen, where it opens full-screen like an app. A service worker stores the whole app on the device, so after the first visit it works without internet. Student data stays in the device's browser storage; the website only serves the app's code.
-
-### Hosting on Netlify
-
-`netlify.toml` holds the build settings (`npm run build:static`, publishing `out/`). Netlify's free plan works with private repositories.
-
-1. Sign in at [netlify.com](https://www.netlify.com/) (signing in with GitHub is easiest).
-2. Choose **Add new project → Import an existing project → GitHub**, and allow Netlify access to this repository.
-3. Pick this repository and the `master` branch. The build settings are filled in from `netlify.toml`; click **Deploy**.
-4. Optionally rename the site under **Project configuration → Change project name** (for example `ascended-lesd.netlify.app`).
-
-Every push to `master` then redeploys the site automatically.
-
-### Installing on an iPad
-
-1. Open the site in **Safari**.
-2. Tap **Share → Add to Home Screen → Add**.
-3. Open AscendEd from the Home Screen once while online and wait a few seconds so the app is stored for offline use.
-
-Updates download in the background and apply the next time the app is opened. Deleting the Home Screen icon deletes the app's data, and data entered in the Home Screen app is separate from data entered in Safari itself.
-
-## Android App
-
-The app can be packaged as an Android APK with [Capacitor](https://capacitorjs.com/). The Android app uses the same static build as the iPad/web app and runs fully offline, storing data on the device.
-
-### Getting the APK
-
-GitHub Actions builds the APK on every push to `master` and on pull requests (workflow: `.github/workflows/android-apk.yml`). To download it:
-
-1. Open the repository's **Actions** tab and select the latest **Android APK** run. You can also start one with **Run workflow**.
-2. Under **Artifacts**, download **AscendEd-apk** and unzip it to get `app-debug.apk`.
-3. Copy the APK to the Android device and open it. Android will ask you to allow installing apps from that source.
-
-Every build is signed with the same key (`android/app/ascended-debug.keystore`), so a new APK installs over the previous one and keeps the data on the device. Don't uninstall the app to update it: uninstalling deletes its data.
-
-### Building the APK locally
-
-Requires Node.js 22 or later (needed by the Capacitor CLI), JDK 21, and the Android SDK (for example, through Android Studio).
-
-```bash
-npm run android:sync          # static export into out/, copied into android/
-cd android && ./gradlew assembleDebug
-```
-
-The APK is written to `android/app/build/outputs/apk/debug/app-debug.apk`. You can also open the `android/` folder in Android Studio to run the app on an emulator or a connected device.
-
-## Available Scripts
-
-- `npm run dev`: Starts the Next.js development server.
-- `npm run build`: Builds the application for production.
-- `npm run build:static`: Builds the offline static export into `out/` (service worker generated), used for Netlify and the Android app.
-- `npm run android:sync`: Runs `build:static` and copies the result into the Android project.
-- `npm run start`: Starts the production server.
-- `npm run lint`: Runs the linter to check for code quality issues.
-
-November 15, 2025 at 3:36 PM 
+Devices add new templates automatically, matched by name.

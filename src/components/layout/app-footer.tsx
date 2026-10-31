@@ -16,6 +16,7 @@ export default function AppFooter() {
     { key: 'Alt+D', desc: 'Dashboard' },
     { key: 'Alt+1-5', desc: 'Navigate Views' },
     { key: 'Alt+6', desc: 'Changelog' },
+    { key: 'Alt+7', desc: 'Settings' },
     { key: 'Alt+H', desc: 'Help Page' },
     { key: 'Alt+J', desc: 'Error Log (Icon)' },
     { key: 'Alt+M', desc: 'Add Student' },

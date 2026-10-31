@@ -37,7 +37,7 @@ const avg = (values: number[]) => (values.length ? sum(values) / values.length :
 function measureName(goal: Goal): string {
   switch (captureTypeOf(goal)) {
     case 'FLUENCY_SYLLABLE_STUTTER': return 'the percentage of fluent syllables';
-    case 'STORY_CHAMPS': return 'the story score';
+    case 'STORY_ELEMENTS': return 'the story score';
     case 'COMMUNICATION_FUNCTIONS': return 'the number of functions used spontaneously';
     case 'QUALITATIVE_OBSERVATION':
     case 'COGNITIVE': return 'the rating';
@@ -275,7 +275,7 @@ function detailSentences(name: string, goal: Goal, data: Record<string, any>[]):
     lines.push(`${plural(syllables, 'syllable')} were sampled, with ${plural(total('stutteredSyllables'), 'stuttered syllable')}.${top.length ? ` The most frequent dysfluency type was ${top[0][0]} (${top[0][1]}).` : ''}`);
   }
 
-  if (type === 'STORY_CHAMPS') {
+  if (type === 'STORY_ELEMENTS') {
     const parts = STORY_PARTS.map(p => ({ label: p.label, score: avg(data.map(d => Math.min(2, Number(d[p.key]) || 0))) }));
     const strong = parts.filter(p => p.score >= 1.5).map(p => p.label.toLowerCase());
     const weak = parts.filter(p => p.score < 1).map(p => p.label.toLowerCase());

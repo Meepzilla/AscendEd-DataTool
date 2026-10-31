@@ -208,21 +208,6 @@ html.zoomed-rects [data-radix-popper-content-wrapper] > * {
   }
 }
 
-/* The host's "Powered by Netlify" badge sits in the bottom-right corner of the screen. It is hidden when it
-   can be found (here and in HostBadgeHider); in case it can't, anything clickable that is anchored to the
-   bottom of the screen keeps this much space clear below it. */
-:root {
-  --host-badge-clearance: 48px; /* its height, for things above it */
-  --host-badge-width: 260px; /* its width, for things beside it */
-}
-
-/* Hide the badge when it can be identified. */
-body > [id*="netlify" i],
-body > [class*="netlify" i],
-body > iframe[src*="netlify" i] {
-  display: none !important;
-}
-
 /* Printable progress report (progress-report page). The report is drawn as a light "paper" page, on screen and
    in print, in the app's own colors: its tokens switch to the light theme, with a darker gold for accent text
    (the bright gold is kept for lines and fills, where it doesn't need text contrast). */
