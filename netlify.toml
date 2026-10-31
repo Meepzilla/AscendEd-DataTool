@@ -20,6 +20,8 @@
 
 # Keep the app out of search engines, and out of other sites' frames (so a page can't overlay it to
 # trick taps); don't send the app's address to links it opens; the page may only send data to this site.
+# Which scripts may run (only the app's own) is set per page by scripts/add-csp.mjs in a <meta> tag, since it
+# lists each page's own inline scripts by hash.
 [[headers]]
   for = "/*"
   [headers.values]

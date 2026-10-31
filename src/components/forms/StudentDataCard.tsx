@@ -9,13 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Users, XCircle, Eye, EyeOff, Loader2, Lightbulb } from 'lucide-react';
+import { Users, XCircle, Eye, EyeOff } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
-import { AI_ENABLED } from '@/lib/features';
 
 const GoalDataInputComponent = lazy(() => import('@/components/forms/goal-data-input'));
 
@@ -30,8 +29,6 @@ interface StudentDataCardProps {
   dataEntryVisibleGoalCountByStudentId: Record<string, number>;
   dataEntryFocusedGoalIndexByStudentId: Record<string, number>;
   setDataEntryFocusedGoalIndexByStudentId: React.Dispatch<React.SetStateAction<Record<string, number>>>;
-  dataEntryAiActivitySuggestions: Record<string, string[]>;
-  isAiLoading: Record<string, boolean>;
   setDataEntryFocusedStudentSlotIndex: (index: number) => void;
   openEditStudentModal: (student: Student) => void;
   handleStudentSelect: (studentId: string, index: number) => void;
@@ -41,7 +38,6 @@ interface StudentDataCardProps {
   setDataEntryVisibleGoalCountByStudentId: React.Dispatch<React.SetStateAction<Record<string, number>>>;
   handleGoalDataChange: (studentId: string, goalId: string, updatedField: any, newData: any) => void;
   handleMoveGoal: (studentId: string, goalId: string, direction: 'up' | 'down') => void;
-  handleLocalAiFetch: (studentId: string) => void;
   isStudentAccessLocked: boolean;
 }
 
@@ -56,8 +52,6 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
   dataEntryVisibleGoalCountByStudentId,
   dataEntryFocusedGoalIndexByStudentId,
   setDataEntryFocusedGoalIndexByStudentId,
-  dataEntryAiActivitySuggestions,
-  isAiLoading,
   setDataEntryFocusedStudentSlotIndex,
   openEditStudentModal,
   handleStudentSelect,
@@ -67,7 +61,6 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
   setDataEntryVisibleGoalCountByStudentId,
   handleGoalDataChange,
   handleMoveGoal,
-  handleLocalAiFetch,
   isStudentAccessLocked,
 }) => {
   const showArchived = dataEntryShowArchivedByStudentId[student.id] || false;
@@ -231,28 +224,6 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
               disabled={isStudentAccessLocked}
             />
           </div>
-          {AI_ENABLED && (
-            <div className="border-t pt-3 space-y-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleLocalAiFetch(student.id)}
-                disabled={isAiLoading[student.id] || allStudentGoals.filter(g => !g.isArchived).length === 0}
-                className="w-full"
-              >
-                {isAiLoading[student.id] ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <Lightbulb className="mr-2 h-4 w-4" />}
-                Get AI Activity Suggestions
-              </Button>
-              {dataEntryAiActivitySuggestions[student.id] && dataEntryAiActivitySuggestions[student.id].length > 0 && (
-                <div className="p-2 border rounded-md bg-accent/30">
-                  <h4 className="text-xs font-semibold mb-1">Suggested Activities:</h4>
-                  <ul className="list-disc list-inside text-xs space-y-0.5">
-                    {dataEntryAiActivitySuggestions[student.id].map((sugg, i) => <li key={i}>{sugg}</li>)}
-                  </ul>
-                </div>
-              )}
-            </div>
-          )}
         </CardContent>
       </ScrollArea>
     </Card>

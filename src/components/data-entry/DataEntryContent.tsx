@@ -20,7 +20,6 @@ import { applyGoalHotkey, hotkeyChar, hotkeysBlocked } from '@/lib/data-entry-ho
 import GoalFocusManager from './GoalFocusManager';
 import AccessLockDialog, { type AccessLockDialogMode } from './AccessLockDialog';
 import { clearAccessPin, hasAccessPin } from '@/lib/access-pin';
-import { getActivitySuggestions as getAiActivitySuggestions } from '@/ai/flows/activity-suggestions';
 
 
 const ConfirmationModal = lazy(() => import('@/components/modals/confirmation-modal'));
@@ -43,7 +42,6 @@ export default function DataEntryContent() {
     openEditStudentModal,
     addSession,
     addErrorLog,
-    getSessionsForStudent,
   } = useStudentData();
   const { toast } = useToast();
   const { currentUser } = useAuth();
@@ -95,8 +93,6 @@ export default function DataEntryContent() {
     (draft?.selectedStudentIds ?? []).filter(id => students.some(s => s.id === id && !s.isArchived)));
   const [focusedStudentSlotIndex, setFocusedStudentSlotIndex] = useState<number>(() =>
     Math.max(0, Math.min(draft?.focusedStudentSlotIndex ?? 0, selectedStudentIds.length - 1)));
-  const [aiActivitySuggestions, setAiActivitySuggestions] = useState<Record<string, string[]>>({});
-  const [isAiLoading, setIsAiLoading] = useState<Record<string, boolean>>({});
 
   const activeStudents = useMemo(() => students.filter(s => !s.isArchived), [students]);
 
@@ -459,38 +455,6 @@ export default function DataEntryContent() {
     });
   }, []);
 
-  const getActivitySuggestions = async (studentId: string) => {
-    const studentState = studentSessionStates[studentId];
-    const activeGoals = studentState?.originalGoalHeaders.filter((g: any) => !g.isArchived);
-
-    if (!studentState || !activeGoals || activeGoals.length === 0) {
-      toast({ title: "Info", description: "Student has no active goals assigned or data is missing.", variant: "default" });
-      return;
-    }
-    setIsAiLoading(prev => ({...prev, [studentId]: true}));
-    
-    try {
-        const goalDescriptions = activeGoals.map(g => `${g.name} (${g.type})`).join(', ');
-        const studentProgressSummary = `Currently working on: ${goalDescriptions}. Recent activity: ${studentState.activity}. Notes: ${studentState.notes}`;
-        const sessionsForStudent = getSessionsForStudent(studentId);
-        const sessionHistorySummary = sessionsForStudent.slice(0, 3).map(s => `Date: ${s.date}, Activity: ${s.activity}`).join('\n');
-
-        const result = await getAiActivitySuggestions({
-            goal: goalDescriptions,
-            studentProgress: studentProgressSummary,
-            sessionHistory: sessionHistorySummary,
-        });
-        setAiActivitySuggestions(prev => ({ ...prev, [studentId]: result.suggestions }));
-        toast({ title: "AI Suggestions", description: `Found ${result.suggestions.length} activities. Reasoning: ${result.reasoning}` });
-    } catch (error: any) {
-        console.error("Error fetching AI activity suggestions:", error);
-        addErrorLog({ message: 'Failed to fetch AI activity suggestions.', source: 'DataEntryContent.handleLocalAiFetch', details: error.message, type: 'error' });
-        toast({ title: "AI Error", description: "Could not fetch activity suggestions.", variant: "destructive" });
-    } finally {
-        setIsAiLoading(prev => ({...prev, [studentId]: false}));
-    }
-  };
-    
   const handleMoveGoal = useCallback((studentId: string, goalId: string, direction: 'up' | 'down') => {
     setStudentSessionStates(prevStates => {
         const studentState = prevStates[studentId];
@@ -877,8 +841,6 @@ export default function DataEntryContent() {
                   setDataEntryVisibleGoalCountByStudentId={setVisibleGoalCountByStudentId}
                   dataEntryFocusedGoalIndexByStudentId={focusedGoalIndexByStudentId}
                   setDataEntryFocusedGoalIndexByStudentId={setFocusedGoalIndexByStudentId}
-                  dataEntryAiActivitySuggestions={aiActivitySuggestions}
-                  isAiLoading={isAiLoading}
                   setDataEntryFocusedStudentSlotIndex={setFocusedStudentSlotIndex}
                   openEditStudentModal={openEditStudentModalUnlocked}
                   handleStudentSelect={handleStudentSelect}
@@ -886,7 +848,6 @@ export default function DataEntryContent() {
                   handleInputChange={handleInputChange}
                   handleGoalDataChange={localHandleGoalDataChange}
                   handleMoveGoal={handleMoveGoal}
-                  handleLocalAiFetch={getActivitySuggestions}
                   addStudentSlot={addStudentSlot}
                   isStudentAccessLocked={isStudentAccessLocked}
               />
