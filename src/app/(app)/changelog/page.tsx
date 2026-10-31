@@ -19,8 +19,8 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-31',
-    title: 'Story Elements (Renamed)',
-    description: 'The Story Champs goal type is now called Story Elements, and its built-in goals no longer use the program\'s name (for example "Story elements: Retell a simple story with all story parts", and "a model story" in the goal text). Goals already assigned to students are renamed too, unless you changed their name or wording. Saved sessions and reports are unchanged.',
+    title: 'Story Elements Wording',
+    description: 'The story elements goal type and its built-in goals use plain wording, for example "Story elements: Retell a simple story with all story parts" and "a model story" in the goal text. Goals already assigned to students are updated too, unless you changed their name or wording. Saved sessions, reports and backups keep working as before.',
     type: 'improvement',
     icon: ScrollText,
   },

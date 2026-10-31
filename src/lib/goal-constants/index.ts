@@ -4,7 +4,6 @@
 
 import type { Goal, GoalTemplate, GoalType, Student } from '../types';
 import { ARTICULATION_FIELDS, ARTICULATION_TEMPLATES, ARTICULATION_TEMPLATE_RENAMES } from './articulation';
-import { STORY_TEMPLATE_RENAMES } from './story-champs';
 import { FLUENCY_FIELDS, FLUENCY_TEMPLATES } from './fluency';
 import { LANGUAGE_FIELDS, LANGUAGE_TEMPLATES } from './language';
 import { OBSERVATION_FIELDS, OBSERVATION_TEMPLATES } from './observation';
@@ -14,7 +13,7 @@ import { FEEDING_TEMPLATES } from './feeding';
 import { AAC_FIELDS, AAC_TEMPLATES } from './aac';
 import { COGNITIVE_FIELDS, COGNITIVE_TEMPLATES } from './cognitive';
 import { COMMUNICATION_FIELDS, COMMUNICATION_TEMPLATES } from './communication';
-import { STORY_CHAMPS_FIELDS, STORY_CHAMPS_TEMPLATES } from './story-champs';
+import { STORY_ELEMENTS_FIELDS, STORY_ELEMENTS_TEMPLATES } from './story-elements';
 import { BEHAVIOR_FIELDS, BEHAVIOR_GOAL_TYPES, BEHAVIOR_TEMPLATES } from './behavior';
 import { TASK_ANALYSIS_FIELDS, TASK_ANALYSIS_TEMPLATES } from './task-analysis';
 // The SLP goal bank, generated from the goal bank CSV by scripts/import-goal-bank.py.
@@ -23,7 +22,7 @@ import goalBank from './goal-bank.json';
 import goalBankTypeUpdates from './goal-bank-type-updates.json';
 
 export * from './communication';
-export * from './story-champs';
+export * from './story-elements';
 export * from './behavior';
 
 // Combine all field definitions from individual files.
@@ -37,7 +36,7 @@ export const GOAL_TYPE_FIELDS: Record<GoalType, Record<string, any>> = {
   ...AAC_FIELDS,
   ...COGNITIVE_FIELDS,
   ...COMMUNICATION_FIELDS,
-  ...STORY_CHAMPS_FIELDS,
+  ...STORY_ELEMENTS_FIELDS,
   ...BEHAVIOR_FIELDS,
   ...TASK_ANALYSIS_FIELDS,
 } as Record<GoalType, Record<string, any>>;
@@ -83,7 +82,7 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
   ...AAC_TEMPLATES,
   ...COGNITIVE_TEMPLATES,
   ...COMMUNICATION_TEMPLATES,
-  ...STORY_CHAMPS_TEMPLATES,
+  ...STORY_ELEMENTS_TEMPLATES,
   ...BEHAVIOR_TEMPLATES,
   ...TASK_ANALYSIS_TEMPLATES,
   ...(goalBank as Omit<GoalTemplate, 'id' | 'createdAt' | 'userId'>[]),
@@ -138,10 +137,26 @@ export function applyDefaultTemplateRetirements<T extends GoalTemplate>(template
   return { templates: updated, changed };
 }
 
-const TEMPLATE_RENAMES = [...ARTICULATION_TEMPLATE_RENAMES, ...STORY_TEMPLATE_RENAMES];
+interface TemplateRename { to: string; isOriginalText: (text: string) => boolean }
+
+// Story element templates once had another program's name in front ("<Name>: Retell…") and in their text
+// ("a <Name> model story"). Stored copies are recognized by the rest of the name and renamed.
+const STORY_NAME_PREFIX = 'Story elements: ';
+const withoutProgramName = (text: string) => text.replace(/\ba [A-Z][a-z]+ [A-Z][a-z]+ model story\b/g, 'a model story');
+
+/** The new name for a built-in template (or a goal copied from one) whose name changed, or null. */
+function templateRename(name: string, type: string | undefined): TemplateRename | null {
+  const articulation = ARTICULATION_TEMPLATE_RENAMES.find(r => r.from === name);
+  if (articulation) return { to: articulation.to, isOriginalText: text => text === articulation.fromPrompt };
+  if (type !== 'STORY_ELEMENTS' || name.startsWith(STORY_NAME_PREFIX)) return null;
+  const rest = /^[^:]+: (.+)$/.exec(name)?.[1];
+  const current = rest && STORY_ELEMENTS_TEMPLATES.find(t => t.name === STORY_NAME_PREFIX + rest);
+  if (!current) return null;
+  return { to: current.name, isOriginalText: text => text !== current.smartGoalPrompt && withoutProgramName(text) === current.smartGoalPrompt };
+}
 
 /**
- * Renames stored copies of built-in templates whose names changed (see TEMPLATE_RENAMES).
+ * Renames stored copies of built-in templates whose names changed (see templateRename).
  * Runs before missing default templates are added, so a renamed template is not added a second time.
  * Description text is only replaced where it is still the original built-in wording.
  */
@@ -149,7 +164,8 @@ export function applyDefaultTemplateRenames<T extends GoalTemplate>(templates: T
   let changed = false;
   const defaultNames = new Set(templates.filter(t => t.isDefault).map(defaultTemplateKey));
   const renamed = templates.flatMap(template => {
-    const rename = template.isDefault && TEMPLATE_RENAMES.find(r => r.from === defaultTemplateKey(template));
+    const key = defaultTemplateKey(template);
+    const rename = template.isDefault ? templateRename(key, template.type) : null;
     if (!rename) return [template];
     changed = true;
     // Already there under the new name (e.g. restored from a backup): drop the old copy.
@@ -158,9 +174,9 @@ export function applyDefaultTemplateRenames<T extends GoalTemplate>(templates: T
     // A template the user renamed keeps their name; only the built-in key moves to the new name.
     return [{
       ...template,
-      name: template.name === rename.from ? rename.to : template.name,
+      name: template.name === key ? rename.to : template.name,
       defaultKey: rename.to,
-      smartGoalPrompt: template.smartGoalPrompt === rename.fromPrompt && current ? current.smartGoalPrompt : template.smartGoalPrompt,
+      smartGoalPrompt: rename.isOriginalText(template.smartGoalPrompt) && current ? current.smartGoalPrompt : template.smartGoalPrompt,
     }];
   });
   return { templates: renamed, changed };
@@ -170,14 +186,14 @@ export function applyDefaultTemplateRenames<T extends GoalTemplate>(templates: T
 export function applyAssignedGoalRenames<T extends Student>(students: T[]): { students: T[]; changed: boolean } {
   let changed = false;
   const renameGoal = (goal: Goal): Goal => {
-    const rename = TEMPLATE_RENAMES.find(r => r.from === goal.name);
+    const rename = templateRename(goal.name, goal.type);
     if (!rename) return goal;
     changed = true;
     const current = DEFAULT_GOAL_TEMPLATES.find(t => t.name === rename.to);
     return {
       ...goal,
       name: rename.to,
-      smartGoal: goal.smartGoal === rename.fromPrompt && current ? current.smartGoalPrompt : goal.smartGoal,
+      smartGoal: rename.isOriginalText(goal.smartGoal) && current ? current.smartGoalPrompt : goal.smartGoal,
     };
   };
   const updated = students.map(student => ({ ...student, goals: (student.goals || []).map(renameGoal) }));
@@ -186,4 +202,4 @@ export function applyAssignedGoalRenames<T extends Student>(students: T[]): { st
 
 // Goal types that record prompting in their own fields, so the general prompt level counters are hidden.
 // Task analysis scores a prompt level per step instead of tallying prompts.
-export const GOAL_TYPES_WITHOUT_PROMPT_COUNTERS: GoalType[] = ['COMMUNICATION_FUNCTIONS', 'STORY_CHAMPS', 'TASK_ANALYSIS', ...BEHAVIOR_GOAL_TYPES];
+export const GOAL_TYPES_WITHOUT_PROMPT_COUNTERS: GoalType[] = ['COMMUNICATION_FUNCTIONS', 'STORY_ELEMENTS', 'TASK_ANALYSIS', ...BEHAVIOR_GOAL_TYPES];

@@ -102,11 +102,7 @@ export function formatDataValue(value: unknown): string {
 }
 
 /** A goal type as shown to the user, e.g. "Behavior Frequency", "AAC", "Behavior ABC". */
-/** Goal types shown under another name than their key (kept as is so saved data still matches). */
-const GOAL_TYPE_LABELS: Record<string, string> = { STORY_CHAMPS: 'Story Elements' };
-
 export function goalTypeLabel(type: string): string {
-  if (GOAL_TYPE_LABELS[type]) return GOAL_TYPE_LABELS[type];
   return type.split('_').map(word => (word === 'AAC' || word === 'ABC') ? word : word.charAt(0) + word.slice(1).toLowerCase()).join(' ');
 }
 

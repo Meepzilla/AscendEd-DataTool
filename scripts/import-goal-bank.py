@@ -30,7 +30,7 @@ TYPE_LABELS = {
     'FLUENCY_SYLLABLE_STUTTER': 'Fluency Syllable Stutter', 'LANGUAGE_COMPREHENSION': 'Language Comprehension',
     'LANGUAGE_EXPRESSION': 'Language Expression', 'AAC': 'AAC', 'DISCRETE_TRIALS': 'Discrete Trials',
     'FEEDING_SWALLOWING': 'Feeding Swallowing', 'QUALITATIVE_OBSERVATION': 'Qualitative Observation',
-    'COGNITIVE': 'Cognitive', 'COMMUNICATION_FUNCTIONS': 'Communication Functions', 'STORY_CHAMPS': 'Story Elements',
+    'COGNITIVE': 'Cognitive', 'COMMUNICATION_FUNCTIONS': 'Communication Functions', 'STORY_ELEMENTS': 'Story Elements',
     'BEHAVIOR_FREQUENCY': 'Behavior Frequency', 'BEHAVIOR_DURATION': 'Behavior Duration', 'BEHAVIOR_ABC': 'Behavior ABC',
 }
 
@@ -79,7 +79,7 @@ def classify(area, text):
     if 'aided language input' in t and len(listed) >= 2:
         return 'COMMUNICATION_FUNCTIONS', 'Counts use of several communicative functions per instructional period'
     if has(t, r'tell (their|a) story', r'retell the event or story') and has(t, r'details|sequenc|order'):
-        return 'STORY_CHAMPS', 'Story told with its parts in order; scored by story part'
+        return 'STORY_ELEMENTS', 'Story told with its parts in order; scored by story part'
     if area == 'Partner Strategies' or 'fidelity checklist' in t:
         return 'QUALITATIVE_OBSERVATION', 'Partner fidelity is rated, not counted'
 
@@ -229,7 +229,7 @@ def main():
         type_updates = []
     existing = set(re.findall(r"name: '((?:[^'\\]|\\.)*)'", ''.join(
         open(f'src/lib/goal-constants/{f}.ts').read() for f in
-        ['articulation', 'fluency', 'language', 'observation', 'phonological', 'trials', 'feeding', 'aac', 'cognitive', 'communication', 'story-champs'])))
+        ['articulation', 'fluency', 'language', 'observation', 'phonological', 'trials', 'feeding', 'aac', 'cognitive', 'communication', 'story-elements'])))
     groups = {}
     for r in rows:
         groups.setdefault(make_name(r['Goal text']), []).append(r['Goal text'])

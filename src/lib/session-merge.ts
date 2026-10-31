@@ -2,7 +2,7 @@ import type { SessionData, SessionGoalData } from './types';
 import { compareSessionsOldestFirst } from './helpers';
 import { sessionMinutes } from './student-overview';
 import { finalizeBehaviorData } from './goal-constants/behavior';
-import { STORY_PARTS } from './goal-constants/story-champs';
+import { STORY_PARTS } from './goal-constants/story-elements';
 
 // Sessions → Merge: records of one student's session that were saved in parts (saved, then more data collected
 // and saved again) become one session. Its time runs from the earliest start to the latest end, so service
