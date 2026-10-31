@@ -889,6 +889,12 @@ export default function DataEntryContent() {
                     </div>
 
                     <div className="flex flex-wrap justify-end gap-2 ml-auto">
+                        {/* Always in view, unlike the Add Student Slot card at the far end of the slots. */}
+                        <Button variant="outline" onClick={addStudentSlot} size="lg" aria-label="Add Student Slot"
+                          disabled={selectedStudentIds.length >= activeStudents.length} title="Add another student slot (Alt+W)">
+                          <PlusCircle className="mr-2 h-5 w-5" />
+                          Add<span className="hidden sm:inline">&nbsp;Student</span>
+                        </Button>
                         <Button variant="outline" onClick={handleOpenResetConfirmation} disabled={isSaving || isSavingAll} size="lg" aria-label="Reset Focused">
                         <RotateCcw className="mr-2 h-5 w-5" />
                         Reset<span className="hidden sm:inline">&nbsp;Focused</span>
