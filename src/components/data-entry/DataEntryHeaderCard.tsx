@@ -5,7 +5,6 @@ import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronUp, Edit2 } from 'lucide-react';
-import { AI_ENABLED } from '@/lib/features';
 import SessionDateTimePickers from './SessionDateTimePickers';
 import HotkeysMessage from './HotkeysMessage';
 import StudentAccessToggle from './StudentAccessToggle';
@@ -58,7 +57,7 @@ const DataEntryHeaderCard: React.FC<DataEntryHeaderCardProps> = ({
           </Button>
         </div>
         {!isHeaderCardCollapsed && (
-          <CardDescription>Record session data for students.{AI_ENABLED && ' AI suggests activities.'} Use hotkeys for speed.</CardDescription>
+          <CardDescription>Record session data for students. Use hotkeys for speed.</CardDescription>
         )}
       </CardHeader>
       {!isHeaderCardCollapsed && (

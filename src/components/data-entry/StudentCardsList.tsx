@@ -21,8 +21,6 @@ interface StudentCardsListProps {
   setDataEntryVisibleGoalCountByStudentId: React.Dispatch<React.SetStateAction<Record<string, number>>>;
   dataEntryFocusedGoalIndexByStudentId: Record<string, number>;
   setDataEntryFocusedGoalIndexByStudentId: React.Dispatch<React.SetStateAction<Record<string, number>>>;
-  dataEntryAiActivitySuggestions: Record<string, string[]>;
-  isAiLoading: Record<string, boolean>;
   setDataEntryFocusedStudentSlotIndex: (index: number) => void;
   openEditStudentModal: (student: Student) => void;
   handleStudentSelect: (studentId: string, index: number) => void;
@@ -30,7 +28,6 @@ interface StudentCardsListProps {
   handleInputChange: (studentId: string, field: 'activity' | 'notes', value: string) => void;
   handleGoalDataChange: (studentId: string, goalId: string, field: string, value: any) => void;
   handleMoveGoal: (studentId: string, goalId: string, direction: 'up' | 'down') => void;
-  handleLocalAiFetch: (studentId: string) => void;
   addStudentSlot: () => void;
   isStudentAccessLocked: boolean;
 }
@@ -47,8 +44,6 @@ const StudentCardsList: React.FC<StudentCardsListProps> = ({
   setDataEntryVisibleGoalCountByStudentId,
   dataEntryFocusedGoalIndexByStudentId,
   setDataEntryFocusedGoalIndexByStudentId,
-  dataEntryAiActivitySuggestions,
-  isAiLoading,
   setDataEntryFocusedStudentSlotIndex,
   openEditStudentModal,
   handleStudentSelect,
@@ -56,7 +51,6 @@ const StudentCardsList: React.FC<StudentCardsListProps> = ({
   handleInputChange,
   handleGoalDataChange,
   handleMoveGoal,
-  handleLocalAiFetch,
   addStudentSlot,
   isStudentAccessLocked,
 }) => {
@@ -86,8 +80,6 @@ const StudentCardsList: React.FC<StudentCardsListProps> = ({
               setDataEntryVisibleGoalCountByStudentId={setDataEntryVisibleGoalCountByStudentId}
               dataEntryFocusedGoalIndexByStudentId={dataEntryFocusedGoalIndexByStudentId}
               setDataEntryFocusedGoalIndexByStudentId={setDataEntryFocusedGoalIndexByStudentId}
-              dataEntryAiActivitySuggestions={dataEntryAiActivitySuggestions}
-              isAiLoading={isAiLoading}
               setDataEntryFocusedStudentSlotIndex={setDataEntryFocusedStudentSlotIndex}
               openEditStudentModal={openEditStudentModal}
               handleStudentSelect={handleStudentSelect}
@@ -95,7 +87,6 @@ const StudentCardsList: React.FC<StudentCardsListProps> = ({
               handleInputChange={handleInputChange}
               handleGoalDataChange={handleGoalDataChange}
               handleMoveGoal={handleMoveGoal}
-              handleLocalAiFetch={handleLocalAiFetch}
               isStudentAccessLocked={isStudentAccessLocked}
             />
           </Suspense>
