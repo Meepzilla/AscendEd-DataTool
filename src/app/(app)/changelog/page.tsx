@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-31',
+    title: 'Service Minutes on the Progress Report',
+    description: 'The Progress Report has a Service minutes switch (off by default). Turned on, the report adds a Service Minutes section: the minutes the IEP requires, the minutes delivered in the reporting period, and for a weekly or monthly requirement the minutes expected for the period, the average per week or month and how far over or short it is (for a yearly requirement, the share of it delivered). Minutes come from the sessions\' start and end times; missed sessions aren\'t counted.',
+    type: 'feature',
+    icon: ScrollText,
+  },
+  {
+    date: '2026-10-31',
     title: 'Merge Sessions Saved in Parts',
     description: 'On the Sessions page, tick the records of one session that was saved in parts (saved, then more data collected and saved again) and choose Merge Selected. They become one session that runs from the earliest start to the latest end, so service minutes count the time once. Counts and trials are added together, each task analysis step keeps its latest score, ratings keep the latest, and notes are joined. Only sessions of the same student on the same day can be merged; the window shows the merged time and minutes first.',
     type: 'feature',
@@ -34,7 +41,7 @@ const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-31',
     title: 'Student Groups for Data Entry',
-    description: 'Save groups of students, such as a class or a small group, with Students → Groups (or Data Entry → Load Group → Manage Groups). In Data Entry, Load Group fills the slots with that group\'s students in one tap. A student already in a slot with unsaved entries keeps their slot, so nothing entered is lost. Archived students are skipped. Groups are saved on this device.',
+    description: 'Save groups of students, such as a class or a small group, with Students → Groups (or Data Entry → Load Group → Manage Groups). In Data Entry, Load Group (on the Student button\'s line, next to the scroll arrows) fills the slots with that group\'s students in one tap. A student already in a slot with unsaved entries keeps their slot, so nothing entered is lost. Archived students are skipped. Groups are saved on this device.',
     type: 'feature',
     icon: UserPlus,
   },

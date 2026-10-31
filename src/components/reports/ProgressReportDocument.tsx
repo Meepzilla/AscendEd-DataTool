@@ -4,6 +4,7 @@ import { APP_NAME } from '@/lib/appConstants';
 import { formatDate, formatDateOnly, goalStatement, plural } from '@/lib/helpers';
 import { PROGRESS_STATUS_LABELS, type GoalProgress, type ProgressStatus } from '@/lib/report-narrative';
 import { AIM_STATUS_LABELS } from '@/lib/aim-line';
+import type { PeriodService } from '@/lib/student-overview';
 import { cn } from '@/lib/utils';
 import ProgressReportChart from './ProgressReportChart';
 
@@ -19,6 +20,8 @@ export interface ProgressReportSettings {
   reportDate: string;
   showCharts: boolean;
   showNextSteps: boolean;
+  /** Include the Service Minutes section (needs `service`). */
+  showService: boolean;
 }
 
 export interface ProgressReportEdits {
@@ -32,6 +35,8 @@ interface Props {
   sessionCount: number;
   /** Sessions held and missed in the period, e.g. "12 held · 2 missed (Student absent 2)". */
   attendance?: string;
+  /** Service minutes in the period, against the IEP's requirement. */
+  service?: PeriodService;
   goals: GoalProgress[];
   settings: ProgressReportSettings;
   edits: ProgressReportEdits;
@@ -58,6 +63,40 @@ function StatusPill({ status }: { status: ProgressStatus }) {
   );
 }
 
+function ServiceSection({ service }: { service: PeriodService }) {
+  const perWord = service.per === 'year' ? 'school year' : service.per;
+  const rows: [string, string][] = [
+    ['Required by the IEP', service.required ? `${service.required} min per ${perWord}` : 'Not set'],
+    ['Delivered this period', `${service.delivered} min`],
+  ];
+  if (service.required && service.per !== 'year' && service.expected !== null) {
+    rows.push([`Expected for this period (${service.periods} ${service.per}s)`, `${service.expected} min`]);
+    rows.push([`Average per ${service.per}`, `${Math.round(service.delivered / Math.max(service.periods, 0.1))} min`]);
+    const difference = service.delivered - service.expected;
+    rows.push(['Difference', difference >= 0 ? `${difference} min over` : `${-difference} min short`]);
+  }
+  if (service.required && service.per === 'year') {
+    rows.push(['Share of the yearly requirement', `${Math.round((service.delivered / service.required) * 100)}%`]);
+  }
+  return (
+    <section className="mt-6 report-avoid-break" aria-labelledby="report-service">
+      <h2 id="report-service" className="mb-2 text-sm font-bold uppercase tracking-wide text-[hsl(var(--report-accent))]">Service Minutes</h2>
+      <dl className="grid gap-x-8 gap-y-1 sm:grid-cols-2">
+        {rows.map(([term, value]) => (
+          <div key={term} className="flex justify-between gap-3 border-b border-border/60 py-1">
+            <dt className="text-muted-foreground">{term}</dt>
+            <dd className="font-semibold">{value}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="mt-1 text-[11px] text-muted-foreground">
+        From each session&apos;s start and end times; missed sessions aren&apos;t counted
+        {service.untimed ? `, and ${service.untimed} session${service.untimed === 1 ? '' : 's'} without times ${service.untimed === 1 ? 'isn\'t' : 'aren\'t'} either` : ''}.
+      </p>
+    </section>
+  );
+}
+
 function Logo() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="hsl(35 75% 45%)" className="h-8 w-8 shrink-0" aria-hidden>
@@ -66,7 +105,7 @@ function Logo() {
   );
 }
 
-export default function ProgressReportDocument({ studentName, periodLabel, sessionCount, attendance, goals, settings, edits, onEdit, onTargetDate }: Props) {
+export default function ProgressReportDocument({ studentName, periodLabel, sessionCount, attendance, service, goals, settings, edits, onEdit, onTargetDate }: Props) {
   const statusOf = (g: GoalProgress) => edits.status[g.goal.id] ?? g.status;
   const commentOf = (g: GoalProgress) => edits.comment[g.goal.id] ?? g.comment;
   const reportDate = settings.reportDate ? formatDateOnly(settings.reportDate) : formatDate(new Date());
@@ -127,6 +166,8 @@ export default function ProgressReportDocument({ studentName, periodLabel, sessi
           </tbody>
         </table>
       </section>
+
+      {settings.showService && service && <ServiceSection service={service} />}
 
       {goals.map(g => (
         <section key={g.goal.id} className="mt-6 border-t border-border pt-4 report-avoid-break" aria-labelledby={`goal-${g.goal.id}`}>

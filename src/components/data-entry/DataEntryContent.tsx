@@ -975,8 +975,11 @@ export default function DataEntryContent() {
                       />
                     </div>
 
-                    {/* Takes the space between the two groups, with the arrows centred in it. */}
-                    <div className="flex flex-1 justify-center gap-1 self-start" role="group" aria-label="Scroll students">
+                    {/* Takes the space between the two groups: Load Group, then the scroll arrows, centred on the
+                        Student button's line. */}
+                    <div className="flex flex-1 justify-center gap-2 self-start">
+                    <LoadGroupMenu onLoad={loadGroup} disabled={isStudentAccessLocked} size="sm" />
+                    <div className="flex gap-1" role="group" aria-label="Scroll students">
                       <Button type="button" variant="outline" size="sm" className="w-14" onClick={() => scrollCards(-1)} disabled={!cardScroll.left} aria-label="Scroll students left" title="Scroll students left">
                         <ChevronLeft className="h-5 w-5" />
                       </Button>
@@ -984,9 +987,9 @@ export default function DataEntryContent() {
                         <ChevronRight className="h-5 w-5" />
                       </Button>
                     </div>
+                    </div>
 
                     <div className="flex flex-wrap justify-end gap-2 ml-auto">
-                        <LoadGroupMenu onLoad={loadGroup} disabled={isStudentAccessLocked} />
                         {/* Always in view, unlike the Add Student Slot card at the far end of the slots. */}
                         <Button variant="outline" onClick={addStudentSlot} size="lg" aria-label="Add Student Slot"
                           disabled={selectedStudentIds.length >= activeStudents.length} title="Add another student slot (Alt+W)">
