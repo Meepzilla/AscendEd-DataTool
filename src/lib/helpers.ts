@@ -24,6 +24,11 @@ export function formatDate(date: Date | string): string {
   });
 }
 
+/** A date-only value (YYYY-MM-DD) as a date, read as that day in local time (not UTC, which can show the day before). */
+export function formatDateOnly(value: string): string {
+  return formatDate(/^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T00:00`) : value);
+}
+
 export function formatTime(date: Date | string): string {
    let d: Date;
   if (typeof date === 'string') {
