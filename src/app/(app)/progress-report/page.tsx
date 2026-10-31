@@ -18,6 +18,7 @@ import { useStudentData } from '@/hooks/use-student-data';
 import { compareSessionsOldestFirst, formatDate } from '@/lib/helpers';
 import { buildProgressReport, type ProgressStatus } from '@/lib/report-narrative';
 import { getOrganizationName } from '@/lib/organization';
+import { attendanceSummary, attendanceText } from '@/lib/attendance';
 import ProgressReportDocument, { type ProgressReportEdits } from '@/components/reports/ProgressReportDocument';
 
 // Reports → Progress Report: a printable IEP goal progress report for one student and reporting period. The
@@ -100,6 +101,7 @@ function ProgressReportPage() {
     () => (student ? buildProgressReport({ student, goals, sessions: periodSessions }) : []),
     [student, goals, periodSessions],
   );
+  const attendance = periodSessions.length ? attendanceText(attendanceSummary(periodSessions)) : '';
   const sessionCount = periodSessions.filter(s => s.goals?.some(g => goals.some(goal => goal.id === g.goalId))).length;
   const periodLabel = range?.from
     ? `${formatDate(range.from)} – ${formatDate(range.to ?? range.from)}`
@@ -130,7 +132,7 @@ function ProgressReportPage() {
   const onTargetDate = (goalId: string, date: string) => {
     if (studentId) updateStudentGoal(studentId, goalId, { targetDate: date || undefined });
   };
-  const documentProps = { studentName: student?.name ?? '', periodLabel, sessionCount, goals: report, settings, edits };
+  const documentProps = { studentName: student?.name ?? '', periodLabel, sessionCount, attendance, goals: report, settings, edits };
 
   if (loading && students.length === 0) return <p className="text-muted-foreground">Loading…</p>;
 

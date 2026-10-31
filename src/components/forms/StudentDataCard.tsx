@@ -15,6 +15,8 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
+import MissedSessionDialog from '@/components/data-entry/MissedSessionDialog';
+import type { MissedReason } from '@/lib/attendance';
 
 const GoalDataInputComponent = lazy(() => import('@/components/forms/goal-data-input'));
 
@@ -39,6 +41,7 @@ interface StudentDataCardProps {
   handleGoalDataChange: (studentId: string, goalId: string, updatedField: any, newData: any) => void;
   handleMoveGoal: (studentId: string, goalId: string, direction: 'up' | 'down') => void;
   isStudentAccessLocked: boolean;
+  recordMissedSession: (studentId: string, reason: MissedReason, note: string) => Promise<boolean>;
 }
 
 const StudentDataCard: React.FC<StudentDataCardProps> = ({
@@ -62,6 +65,7 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
   handleGoalDataChange,
   handleMoveGoal,
   isStudentAccessLocked,
+  recordMissedSession,
 }) => {
   const showArchived = dataEntryShowArchivedByStudentId[student.id] || false;
   const allStudentGoals = state.originalGoalHeaders;
@@ -120,6 +124,11 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
             </Select>
           </div>
           <div className="flex items-center">
+            <MissedSessionDialog
+              studentName={student.name}
+              disabled={isStudentAccessLocked}
+              onRecord={(reason, note) => recordMissedSession(student.id, reason, note)}
+            />
             {dataEntrySelectedStudentIds.length > 0 && (
               <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); removeStudentSlot(slotIndex); }} className="h-8 w-8" title="Remove Student Slot">
                 <XCircle className="h-5 w-5 text-destructive" />
