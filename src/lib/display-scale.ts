@@ -25,6 +25,8 @@ export const TABLET_DEFAULT_SCALE = 0.8;
  */
 export function applyDisplayScale(scale?: number) {
   try {
+    // The menu bar's position (menu-position.ts), set here too so the first paint already has it.
+    if (scale === undefined) document.documentElement.classList.toggle('menu-bottom', window.localStorage.getItem('ascended_menu_position') === 'bottom');
     const state = window as unknown as { __displayScale?: number; __displayScaleObserver?: MutationObserver };
     if (scale !== undefined) state.__displayScale = scale;
     if (state.__displayScale === undefined) {
