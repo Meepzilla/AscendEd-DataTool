@@ -49,24 +49,25 @@ const SessionDateTimePickers: React.FC<SessionDateTimePickersProps> = ({
         <Label htmlFor="sessionDate" className="block text-sm font-medium mb-1">Session Date</Label>
         <DatePicker date={dataEntrySessionDate} setDate={setDataEntrySessionDate} />
       </div>
+      {/* Reset sits beside the date, so the start and end times share the next row. */}
+      <div className="w-full self-end">
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full h-auto min-h-10 whitespace-normal"
+          onClick={resetToNow}
+          title={`Set the date to today, the start time to now and the end time to ${DEFAULT_SESSION_MINUTES} minutes from now`}
+        >
+          <RotateCcw className="mr-2 h-4 w-4 shrink-0" /> Reset Time to Now
+        </Button>
+      </div>
       <div className="w-full">
         <Label htmlFor="sessionTime" className="block text-sm font-medium mb-1">Start Time</Label>
         <TimePicker id="sessionTime" value={dataEntrySessionTime} onChange={setDataEntrySessionTime} />
       </div>
-      <div className="w-full col-span-2 sm:col-span-1">
+      <div className="w-full">
         <Label htmlFor="sessionEndTime" className="block text-sm font-medium mb-1">End Time</Label>
         <TimePicker id="sessionEndTime" value={dataEntrySessionEndTime} onChange={setDataEntrySessionEndTime} />
-      </div>
-      <div className="w-full col-span-2 sm:col-span-1 self-end">
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full"
-          onClick={resetToNow}
-          title={`Set the date to today, the start time to now and the end time to ${DEFAULT_SESSION_MINUTES} minutes from now`}
-        >
-          <RotateCcw className="mr-2 h-4 w-4" /> Reset Time to Now
-        </Button>
       </div>
     </fieldset>
   );

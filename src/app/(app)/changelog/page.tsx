@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-31',
+    title: 'Start and End Time on One Line',
+    description: 'In Data Entry, Reset Time to Now now sits beside the Session Date, so the Start Time and End Time share the next line on every screen size, phones included.',
+    type: 'improvement',
+    icon: LayoutGrid,
+  },
+  {
+    date: '2026-10-31',
     title: 'Privacy Notice and Accessibility Fixes',
     description: 'A new Privacy Notice page (linked from Settings and the footer) explains what the app stores, where it is kept, who can see it and how to delete it. Accessibility (WCAG 2.1 AA): every page now has its own title and a main heading; dropdowns, the + and − counter buttons and number boxes in Data Entry have names that screen readers announce; progress bars report their value; the Independent prompt color and the Sessions table header have stronger contrast; a Skip to Main Content link appears on the first Tab press; and Settings → Interface can turn off Data Entry\'s single-key shortcuts (for speech input or switch users) while keeping the Alt and Ctrl/Cmd ones.',
     type: 'feature',
