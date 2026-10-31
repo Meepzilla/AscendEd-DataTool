@@ -19,6 +19,7 @@ import { compareSessionsOldestFirst, formatDate } from '@/lib/helpers';
 import { buildProgressReport, type ProgressStatus } from '@/lib/report-narrative';
 import { getOrganizationName } from '@/lib/organization';
 import { attendanceSummary, attendanceText } from '@/lib/attendance';
+import { schoolYearStart } from '@/lib/student-overview';
 import ProgressReportDocument, { type ProgressReportEdits } from '@/components/reports/ProgressReportDocument';
 
 // Reports → Progress Report: a printable IEP goal progress report for one student and reporting period. The
@@ -38,8 +39,6 @@ const PERIOD_LABELS: Record<Period, string> = {
 
 function startOfDay(d: Date) { const c = new Date(d); c.setHours(0, 0, 0, 0); return c; }
 function daysAgo(n: number) { const d = startOfDay(new Date()); d.setDate(d.getDate() - n); return d; }
-/** The school year starts August 1 (the year before, until then). */
-function schoolYearStart() { const now = new Date(); return new Date(now.getMonth() >= 7 ? now.getFullYear() : now.getFullYear() - 1, 7, 1); }
 
 function rangeFor(period: Period, custom: DateRange | undefined): DateRange | undefined {
   switch (period) {
