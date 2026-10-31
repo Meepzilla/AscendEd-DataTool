@@ -1,7 +1,7 @@
 import React from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { APP_NAME } from '@/lib/appConstants';
-import { formatDate, plural } from '@/lib/helpers';
+import { formatDate, formatDateOnly, plural } from '@/lib/helpers';
 import { PROGRESS_STATUS_LABELS, type GoalProgress, type ProgressStatus } from '@/lib/report-narrative';
 import { cn } from '@/lib/utils';
 import ProgressReportChart from './ProgressReportChart';
@@ -12,6 +12,8 @@ import ProgressReportChart from './ProgressReportChart';
 
 export interface ProgressReportSettings {
   preparedBy: string;
+  /** The date printed on the report (YYYY-MM-DD). */
+  reportDate: string;
   showCharts: boolean;
   showNextSteps: boolean;
 }
@@ -30,6 +32,8 @@ interface Props {
   edits: ProgressReportEdits;
   /** On screen: status and comments can be changed before printing. */
   onEdit?: (goalId: string, change: { status?: ProgressStatus; comment?: string }) => void;
+  /** On screen: sets the goal's target date (saved with the student's goal). */
+  onTargetDate?: (goalId: string, date: string) => void;
 }
 
 const STATUS_STYLES: Record<ProgressStatus, string> = {
@@ -57,10 +61,10 @@ function Logo() {
   );
 }
 
-export default function ProgressReportDocument({ studentName, periodLabel, sessionCount, goals, settings, edits, onEdit }: Props) {
+export default function ProgressReportDocument({ studentName, periodLabel, sessionCount, goals, settings, edits, onEdit, onTargetDate }: Props) {
   const statusOf = (g: GoalProgress) => edits.status[g.goal.id] ?? g.status;
   const commentOf = (g: GoalProgress) => edits.comment[g.goal.id] ?? g.comment;
-  const today = formatDate(new Date());
+  const reportDate = settings.reportDate ? formatDateOnly(settings.reportDate) : formatDate(new Date());
 
   return (
     <article className="report-paper mx-auto w-full max-w-[8.5in] rounded-md p-6 text-[13px] leading-relaxed shadow-lg sm:p-10 print:max-w-none print:rounded-none print:p-0 print:shadow-none">
@@ -80,7 +84,7 @@ export default function ProgressReportDocument({ studentName, periodLabel, sessi
           ['Student', studentName],
           ['Reporting period', periodLabel],
           ['Prepared by', settings.preparedBy.trim() || '—'],
-          ['Date', today],
+          ['Date', reportDate],
         ].map(([term, value]) => (
           <div key={term}>
             <dt className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{term}</dt>
@@ -125,7 +129,19 @@ export default function ProgressReportDocument({ studentName, periodLabel, sessi
               <h2 id={`goal-${g.goal.id}`} className="text-base font-bold">Goal {g.number}: {g.goal.name}</h2>
               <p className="text-xs text-muted-foreground">
                 {g.typeLabel}{g.targetLabel ? ` · Target ${g.targetLabel}` : ''}
+                {g.goal.targetDate && !onTargetDate ? ` by ${formatDateOnly(g.goal.targetDate)}` : ''}
               </p>
+              {onTargetDate && (
+                <label className="mt-1 flex items-center gap-2 text-xs print:hidden">
+                  <span className="font-semibold">Target date</span>
+                  <input
+                    type="date"
+                    value={g.goal.targetDate ?? ''}
+                    onChange={e => onTargetDate(g.goal.id, e.target.value)}
+                    className="rounded-md border border-input bg-background px-2 py-0.5 text-xs"
+                  />
+                </label>
+              )}
             </div>
             {onEdit ? (
               <label className="flex items-center gap-2 text-xs print:hidden">

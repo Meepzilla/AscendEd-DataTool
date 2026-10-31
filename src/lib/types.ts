@@ -23,6 +23,8 @@ export interface Goal {
   isArchived?: boolean; // New field for archiving
   /** The template the goal was assigned from, so it is still recognized after the student's copy is renamed. */
   templateId?: string;
+  /** The date the goal's criteria should be met by (YYYY-MM-DD), shown with the target on the progress report. */
+  targetDate?: string;
   // Additional fields based on goal type might be present
   [key: string]: any;
 }
@@ -214,6 +216,10 @@ export const AssignedGoalEditSchema = z.object({
     (val) => (val === "" || val === undefined || val === null ? undefined : Number(val)),
     z.number().min(0, "Target must be 0 or greater.").max(100, "Target percentage cannot exceed 100 for most goals.").optional()
   ).describe("Target percentage (0-100), or a specific rating for qualitative goals."),
+  targetDate: z.preprocess(
+    (val) => (val === '' || val === null ? undefined : val),
+    z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter a valid date.').optional()
+  ),
   isArchived: z.boolean().optional(),
 });
 
