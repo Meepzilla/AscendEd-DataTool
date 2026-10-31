@@ -31,7 +31,8 @@ interface EditAssignedGoalModalProps {
 }
 
 export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goalToEdit }: EditAssignedGoalModalProps) {
-  const { updateStudentGoal, loading: dataLoading } = useStudentData();
+  const { updateStudentGoal, students, loading: dataLoading } = useStudentData();
+  const studentName = students.find(s => s.id === studentId)?.name;
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -82,7 +83,7 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
       isOpen={isOpen}
       onClose={onClose}
       title={`Edit Assigned Goal: ${goalToEdit?.name}`}
-      description="Modify the details of this goal for the student. This will not affect goal templates."
+      description={`Changes apply only to ${studentName ?? 'this student'}. The goal template and other students with this goal stay as they are.`}
       size="lg"
     >
       <Form {...form}>
@@ -171,7 +172,7 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
                     placeholder="e.g., 80 (for 80%)"
                     {...field}
                     value={field.value ?? ''}
-                    onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))}
+                    onChange={e => field.onChange(e.target.value === '' ? '' : Number(e.target.value))} // '' (not undefined, which react-hook-form replaces with the starting value) = no target
                     min="0"
                     max="100"
                   />

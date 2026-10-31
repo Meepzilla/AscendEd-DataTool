@@ -21,6 +21,8 @@ export interface Goal {
   sessionTargetValue?: number; // Target percentage (0-100) or specific count for some qualitative goals
   targetDirection?: TargetDirection; // Defaults by goal type; see goalDirection()
   isArchived?: boolean; // New field for archiving
+  /** The template the goal was assigned from, so it is still recognized after the student's copy is renamed. */
+  templateId?: string;
   // Additional fields based on goal type might be present
   [key: string]: any;
 }
