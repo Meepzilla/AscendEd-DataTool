@@ -12,7 +12,7 @@ It runs entirely on the device: there is no account, no server and no AI. Studen
 - Record several students at once, with no limit on slots. Saved groups (a class or small group) load in one step.
 - 20 goal types, each with its own controls and measure, including:
   - accuracy counts and trial grids;
-  - prompt levels, fluency, communication functions, Story Champs and task analysis;
+  - prompt levels, fluency, communication functions, story elements and task analysis;
   - behavior frequency, duration, ABC, interval and latency.
 - Keyboard shortcuts for fast entry. Unsaved work survives switching pages or closing the app.
 - Missed sessions are recorded with a reason. Sessions saved in parts can be merged so their minutes count once.

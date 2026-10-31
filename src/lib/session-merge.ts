@@ -10,7 +10,7 @@ import { STORY_PARTS } from './goal-constants/story-champs';
 // - counts add up (correct/incorrect, prompts, behavior counts, observation minutes, fluency counts...);
 // - lists are joined (trials, ABC incidents, duration episodes, occurrence times, intervals);
 // - task analysis steps keep each step's latest score; ratings, settings (interval length, interval method)
-//   and other single values keep the latest; Story Champs parts keep the best score given;
+//   and other single values keep the latest; story element scores keep the best score given;
 // - summaries worked out from the data (% of intervals, average latency) are worked out again;
 // - notes and activities are joined.
 // Only sessions of the same student on the same day that took place (not missed) can be merged.

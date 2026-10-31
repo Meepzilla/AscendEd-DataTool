@@ -4,6 +4,7 @@
 
 import type { Goal, GoalTemplate, GoalType, Student } from '../types';
 import { ARTICULATION_FIELDS, ARTICULATION_TEMPLATES, ARTICULATION_TEMPLATE_RENAMES } from './articulation';
+import { STORY_TEMPLATE_RENAMES } from './story-champs';
 import { FLUENCY_FIELDS, FLUENCY_TEMPLATES } from './fluency';
 import { LANGUAGE_FIELDS, LANGUAGE_TEMPLATES } from './language';
 import { OBSERVATION_FIELDS, OBSERVATION_TEMPLATES } from './observation';
@@ -137,8 +138,10 @@ export function applyDefaultTemplateRetirements<T extends GoalTemplate>(template
   return { templates: updated, changed };
 }
 
+const TEMPLATE_RENAMES = [...ARTICULATION_TEMPLATE_RENAMES, ...STORY_TEMPLATE_RENAMES];
+
 /**
- * Renames stored copies of built-in templates whose names changed (see ARTICULATION_TEMPLATE_RENAMES).
+ * Renames stored copies of built-in templates whose names changed (see TEMPLATE_RENAMES).
  * Runs before missing default templates are added, so a renamed template is not added a second time.
  * Description text is only replaced where it is still the original built-in wording.
  */
@@ -146,7 +149,7 @@ export function applyDefaultTemplateRenames<T extends GoalTemplate>(templates: T
   let changed = false;
   const defaultNames = new Set(templates.filter(t => t.isDefault).map(defaultTemplateKey));
   const renamed = templates.flatMap(template => {
-    const rename = template.isDefault && ARTICULATION_TEMPLATE_RENAMES.find(r => r.from === defaultTemplateKey(template));
+    const rename = template.isDefault && TEMPLATE_RENAMES.find(r => r.from === defaultTemplateKey(template));
     if (!rename) return [template];
     changed = true;
     // Already there under the new name (e.g. restored from a backup): drop the old copy.
@@ -167,7 +170,7 @@ export function applyDefaultTemplateRenames<T extends GoalTemplate>(templates: T
 export function applyAssignedGoalRenames<T extends Student>(students: T[]): { students: T[]; changed: boolean } {
   let changed = false;
   const renameGoal = (goal: Goal): Goal => {
-    const rename = ARTICULATION_TEMPLATE_RENAMES.find(r => r.from === goal.name);
+    const rename = TEMPLATE_RENAMES.find(r => r.from === goal.name);
     if (!rename) return goal;
     changed = true;
     const current = DEFAULT_GOAL_TEMPLATES.find(t => t.name === rename.to);

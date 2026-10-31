@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-31',
+    title: 'Story Elements (Renamed)',
+    description: 'The Story Champs goal type is now called Story Elements, and its built-in goals no longer use the program\'s name (for example "Story elements: Retell a simple story with all story parts", and "a model story" in the goal text). Goals already assigned to students are renamed too, unless you changed their name or wording. Saved sessions and reports are unchanged.',
+    type: 'improvement',
+    icon: ScrollText,
+  },
+  {
+    date: '2026-10-31',
     title: 'New Help Page',
     description: 'The Help page is rewritten: getting started in five steps, a guide to Data Entry, students and goals, every goal type, sessions and reports (including the Progress Report), your data and privacy, keyboard shortcuts and troubleshooting, with links to jump to each part. Alt+7 now opens Settings, as the menu shows.',
     type: 'improvement',
@@ -34,7 +41,7 @@ const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-31',
     title: 'Fixes from a Code Review',
-    description: 'Merging sessions no longer adds up values that aren\'t counts: interval length, % of intervals and average latency are worked out again from the combined data, and Story Champs parts keep their best score instead of being added. The Sessions page clears ticked sessions when the filters change, so only sessions you can see are merged. Report narratives start the aim line at the goal\'s first session (as the Reports chart does) and the brief style counts latency sessions without a response. Passcode protection: turning it on, changing the passcode or turning it off no longer loses data saved at the same moment, a failed restore puts damaged data back exactly as it was stored, and the lock screen shows a message instead of getting stuck if unlocking can\'t run.',
+    description: 'Merging sessions no longer adds up values that aren\'t counts: interval length, % of intervals and average latency are worked out again from the combined data, and story element scores keep their best score instead of being added. The Sessions page clears ticked sessions when the filters change, so only sessions you can see are merged. Report narratives start the aim line at the goal\'s first session (as the Reports chart does) and the brief style counts latency sessions without a response. Passcode protection: turning it on, changing the passcode or turning it off no longer loses data saved at the same moment, a failed restore puts damaged data back exactly as it was stored, and the lock screen shows a message instead of getting stuck if unlocking can\'t run.',
     type: 'fix',
     icon: ScrollText,
   },
@@ -335,7 +342,7 @@ const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-28',
     title: 'Fixed: Editing Sessions and Report Totals',
-    description: 'Editing a saved session no longer shows "Application error". Reports\' Total Opportunities, Total Correct, Total Incorrect and accuracy now count only correct, incorrect and approximate responses from trial-based goals; Story Champs points, fluency syllables and communication function uses were being added as opportunities and errors (including for goals not worked on in a session). Those goals are reported on their own Goal by Goal cards.',
+    description: 'Editing a saved session no longer shows "Application error". Reports\' Total Opportunities, Total Correct, Total Incorrect and accuracy now count only correct, incorrect and approximate responses from trial-based goals; story element points, fluency syllables and communication function uses were being added as opportunities and errors (including for goals not worked on in a session). Those goals are reported on their own Goal by Goal cards.',
     type: 'fix',
     icon: Bug,
   },
@@ -356,7 +363,7 @@ const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-28',
     title: 'Reports: Goal by Goal',
-    description: 'Reports now include a card for every goal, charted by the measure that fits its type (accuracy, % fluent, Story Champs score, communication functions used spontaneously, 1-5 rating, % independent, or the behavior measures) with the target line, sessions with data, latest, average and how many sessions met the target. Each card also breaks the data down for its goal type: correct/approximate/incorrect responses per session, prompt levels, story part scores and linking words, uses by communication function, dysfluency types, or ABC antecedents and functions, plus recent notes. Sessions where nothing was recorded for a goal are no longer charted as 0.',
+    description: 'Reports now include a card for every goal, charted by the measure that fits its type (accuracy, % fluent, story element score, communication functions used spontaneously, 1-5 rating, % independent, or the behavior measures) with the target line, sessions with data, latest, average and how many sessions met the target. Each card also breaks the data down for its goal type: correct/approximate/incorrect responses per session, prompt levels, story part scores and linking words, uses by communication function, dysfluency types, or ABC antecedents and functions, plus recent notes. Sessions where nothing was recorded for a goal are no longer charted as 0.',
     type: 'feature',
     icon: BarChartHorizontalBig,
   },
@@ -397,8 +404,8 @@ const allChangelogEntries: ChangelogEntry[] = [
   },
   {
     date: '2026-10-28',
-    title: 'Story Champs Goal Type',
-    description: 'A new goal type for Story Champs narrative data: score Character, Setting, Problem, Feeling, Action, Ending and End Feeling as 0 (missing), 1 (partial) or 2 (complete), and tally linking words. The story score is the percentage of 14 possible points. Includes eight default goal templates; "Retell a short story with 3 key elements" now uses this type.',
+    title: 'Story Elements Goal Type',
+    description: 'A new goal type for story grammar (story elements) data: score Character, Setting, Problem, Feeling, Action, Ending and End Feeling as 0 (missing), 1 (partial) or 2 (complete), and tally linking words. The story score is the percentage of 14 possible points. Includes eight default goal templates; "Retell a short story with 3 key elements" now uses this type.',
     type: 'feature',
     icon: BookOpen,
   },

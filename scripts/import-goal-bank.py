@@ -30,7 +30,7 @@ TYPE_LABELS = {
     'FLUENCY_SYLLABLE_STUTTER': 'Fluency Syllable Stutter', 'LANGUAGE_COMPREHENSION': 'Language Comprehension',
     'LANGUAGE_EXPRESSION': 'Language Expression', 'AAC': 'AAC', 'DISCRETE_TRIALS': 'Discrete Trials',
     'FEEDING_SWALLOWING': 'Feeding Swallowing', 'QUALITATIVE_OBSERVATION': 'Qualitative Observation',
-    'COGNITIVE': 'Cognitive', 'COMMUNICATION_FUNCTIONS': 'Communication Functions', 'STORY_CHAMPS': 'Story Champs',
+    'COGNITIVE': 'Cognitive', 'COMMUNICATION_FUNCTIONS': 'Communication Functions', 'STORY_CHAMPS': 'Story Elements',
     'BEHAVIOR_FREQUENCY': 'Behavior Frequency', 'BEHAVIOR_DURATION': 'Behavior Duration', 'BEHAVIOR_ABC': 'Behavior ABC',
 }
 

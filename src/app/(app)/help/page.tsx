@@ -71,7 +71,7 @@ const GOAL_TYPES: [string, string][] = [
   ['Qualitative observation', 'A 1–5 rating, prompt levels and notes.'],
   ['Feeding and swallowing', 'Trials accepted and refused for each food or liquid and texture.'],
   ['Communication functions', 'Tally each function (requesting, commenting, protesting, greeting…) as spontaneous or prompted. The measure is the number of functions used spontaneously.'],
-  ['Story Champs', 'Score each story part 0 (missing), 1 (partial) or 2 (complete) and tally linking words. The measure is % of the 14 points.'],
+  ['Story elements', 'Score each story part (character, setting, problem, feeling, action, ending, end feeling) 0 (missing), 1 (partial) or 2 (complete) and tally linking words. The measure is % of the 14 points.'],
   ['Task analysis', 'Score each step of a routine as Independent, a prompt level, or Not done. The measure is % of steps done independently.'],
   ['Behavior: frequency and duration', 'Count occurrences (with observation time for a rate per hour), or time each episode with Start and Stop.'],
   ['Behavior: ABC', 'Record each incident’s antecedent, behavior and consequence, and whether the replacement skill was used. The lists can be edited in Settings.'],
