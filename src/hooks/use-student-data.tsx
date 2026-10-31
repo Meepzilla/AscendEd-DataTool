@@ -11,6 +11,7 @@ import { goalFromTemplate, hasTemplateGoal, linkGoalsToTemplates, recordRecentTe
 import { DEFAULT_GOAL_TEMPLATES, defaultTemplateKey, applyAssignedGoalRenames, applyDefaultTemplateRenames, applyDefaultTemplateRetirements, applyDefaultTemplateUpdates } from '@/lib/goal-constants';
 import { compareSessionsOldestFirst, generateUUID } from '@/lib/helpers';
 import * as secureStore from '@/lib/secure-store';
+import { reviveGoalTypes } from '@/lib/legacy-goal-types';
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 import type { ImportedSession } from '@/components/modals/import-data-modal';
 import { createBackup, mergeBackupData, type AppBackup, type RestoreMode, type RestoreSummary } from '@/lib/backup';
@@ -32,7 +33,7 @@ const readFromLocalStorage = (key: string | null, defaultValue: any) => {
     if (typeof window === 'undefined' || !key) return defaultValue;
     try {
         const item = secureStore.getItem(key);
-        const value = item ? JSON.parse(item) : defaultValue;
+        const value = item ? JSON.parse(item, reviveGoalTypes) : defaultValue;
         return Array.isArray(defaultValue) && !Array.isArray(value) ? undefined : value;
     } catch (error) {
         console.warn(`Error reading from localStorage key "${key}":`, error);

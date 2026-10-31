@@ -95,7 +95,7 @@ const GoalBreakdowns: React.FC<{ goal: Goal; recorded: Recorded[] }> = ({ goal, 
   const data = recorded.map(r => r.data);
   const sum = (get: (d: Record<string, any>) => number) => data.reduce((total, d) => total + get(d), 0);
 
-  if (type === 'STORY_CHAMPS') {
+  if (type === 'STORY_ELEMENTS') {
     panels.push(
       <HBars key="parts" title="Average score by story part (0-2)" max={2} series={[{ key: 'average', label: 'Average score', color: 'hsl(var(--chart-2))' }]}
         rows={STORY_PARTS.map(p => ({ name: p.label, average: round(sum(d => Math.min(2, Number(d[p.key]) || 0)) / data.length) }))} />,
@@ -180,7 +180,7 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[] }> = ({ goal
   const metCount = target === undefined ? null : values.filter(v => meetsTarget(goal, v, target)).length;
   const yMax = info.max ?? Math.ceil(Math.max(...values, target ?? 0, 1) * 1.1);
   const notes = recorded.map(r => ({ date: r.session.date, text: goalNotes(r.data) })).filter(n => n.text).slice(-3).reverse();
-  const storyWords = type === 'STORY_CHAMPS' ? recorded.reduce((total, r) => total + scoreStory(r.data).linkingWords, 0) : null;
+  const storyWords = type === 'STORY_ELEMENTS' ? recorded.reduce((total, r) => total + scoreStory(r.data).linkingWords, 0) : null;
 
   const stats = [
     { label: 'Sessions with data', value: String(points.length) },

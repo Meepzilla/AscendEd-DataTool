@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { reviveGoalTypes } from './legacy-goal-types';
 import type { GoalTemplate, SessionData, Student } from './types';
 import { AbcListsSchema, type AbcLists } from './abc-lists';
 import { defaultTemplateKey } from './goal-constants';
@@ -104,7 +105,7 @@ export async function decryptBackupText(text: string, password: string): Promise
 export function parseBackup(text: string): AppBackup {
   let json: unknown;
   try {
-    json = JSON.parse(text);
+    json = JSON.parse(text, reviveGoalTypes); // backups from earlier versions may use earlier goal type keys
   } catch {
     throw new Error('This file is not an AscendEd backup (it is not valid JSON).');
   }

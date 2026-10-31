@@ -1,164 +1,275 @@
-
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { HelpCircle, Keyboard, BookOpen, Lightbulb } from 'lucide-react';
+import { BarChart2, ClipboardList, HelpCircle, Keyboard, LifeBuoy, Rocket, Shield, Target, UserCog } from 'lucide-react';
 import { APP_NAME } from '@/lib/appConstants';
 
-interface Hotkey {
-  key: string;
-  description: string;
-  category: string;
-}
+// Help: getting started, a guide to each page, the goal types, data safety, hotkeys and troubleshooting.
+// The hotkey lists are kept in sync with use-keyboard-shortcuts.ts, DataEntryContent.tsx and data-entry-hotkeys.ts.
 
-const hotkeys: Hotkey[] = [
-  // Global Navigation
-  { key: 'Alt + D', description: 'Navigate to Dashboard', category: 'Global Navigation' },
-  { key: 'Alt + 1', description: 'Navigate to Data Entry', category: 'Global Navigation' },
-  { key: 'Alt + 2', description: 'Navigate to Sessions Page', category: 'Global Navigation' },
-  { key: 'Alt + 3', description: 'Navigate to Analysis & Reports', category: 'Global Navigation' },
-  { key: 'Alt + 4', description: 'Navigate to Students Page', category: 'Global Navigation' },
-  { key: 'Alt + 5', description: 'Navigate to Goal Templates', category: 'Global Navigation' },
-  // Global Actions
-  { key: 'Alt + H', description: 'Open this Help Page', category: 'Global Actions' },
-  { key: 'Alt + J', description: 'Open Error Log Modal', category: 'Global Actions' },
-  { key: 'Alt + M', description: 'Open Add Student Modal', category: 'Global Actions' },
-  { key: 'Alt + K', description: 'Toggle Sidebar', category: 'Global Actions'},
-  { key: 'Ctrl + Enter (Cmd + Enter on Mac/iPad)', description: 'Confirm action / Save (contextual)', category: 'Global Actions'},
-  // Data Entry Specific
-  { key: 'Alt + L', description: 'Toggle Student Access Lock', category: 'Data Entry' },
-  { key: '1, 2, 3, or 4', description: 'Focus on Student Slot 1-4', category: 'Data Entry' },
-  { key: 'A', description: 'Cycle to Next Student Slot', category: 'Data Entry' },
-  { key: 'Alt + A', description: 'Cycle to Previous Student Slot', category: 'Data Entry' },
-  { key: 'S', description: 'Cycle to Next Goal (for focused student)', category: 'Data Entry' },
-  { key: 'Alt + S', description: 'Cycle to Previous Goal (for focused student)', category: 'Data Entry' },
-  { key: 'Alt + W', description: 'Add a new student slot', category: 'Data Entry'},
-  { key: 'Alt + Q', description: 'Remove focused student slot', category: 'Data Entry'},
-  { key: 'Alt + U', description: 'Open Select Student modal', category: 'Data Entry' },
-  { key: 'Alt + T', description: 'Open Select Goal modal', category: 'Data Entry' },
-  { key: 'C', description: 'Increment Correct (Discrete Trials: mark next trial correct; Behavior Frequency: add an occurrence)', category: 'Data Entry' },
-  { key: 'N', description: 'Increment Incorrect (Discrete Trials: mark next trial incorrect)', category: 'Data Entry' },
-  { key: 'B', description: 'Increment Approximate (Discrete Trials: mark next trial approximate) / Blocks (Fluency)', category: 'Data Entry' },
-  { key: 'D', description: 'Increment Visual Prompt count', category: 'Data Entry' },
-  { key: 'V', description: 'Increment Verbal Prompt count', category: 'Data Entry' },
-  { key: 'G', description: 'Increment Gestural Prompt count', category: 'Data Entry' },
-  { key: 'P', description: 'Increment Partial Physical Prompt count', category: 'Data Entry' },
-  { key: 'F', description: 'Increment Imitation Prompt count', category: 'Data Entry' },
-  { key: 'I', description: 'Increment Independent count (also increments main Correct count)', category: 'Data Entry' },
-  { key: 'Alt + E', description: 'Edit focused student\'s info/goals (from Data Entry page)', category: 'Data Entry' },
-  { key: 'R', description: 'Increment Repetitions (Fluency)', category: 'Data Entry' },
-  { key: 'H', description: 'Increment Prolongations (Fluency)', category: 'Data Entry' },
-  { key: 'J', description: 'Increment Interjections (Fluency)', category: 'Data Entry' },
+interface Hotkey { keys: string; description: string }
+
+const HOTKEYS: { group: string; note?: string; keys: Hotkey[] }[] = [
+  {
+    group: 'Anywhere in the app',
+    keys: [
+      { keys: 'Alt + D', description: 'Dashboard' },
+      { keys: 'Alt + 1', description: 'Data Entry' },
+      { keys: 'Alt + 2', description: 'Sessions' },
+      { keys: 'Alt + 3', description: 'Reports' },
+      { keys: 'Alt + 4', description: 'Students' },
+      { keys: 'Alt + 5', description: 'Goals' },
+      { keys: 'Alt + 6', description: 'Changelog' },
+      { keys: 'Alt + 7', description: 'Settings' },
+      { keys: 'Alt + H', description: 'Help (this page)' },
+      { keys: 'Alt + M', description: 'Add a student' },
+      { keys: 'Alt + K', description: 'Show or hide the student sidebar' },
+      { keys: 'Alt + J', description: 'Error log' },
+    ],
+  },
+  {
+    group: 'Data Entry: students and goals',
+    keys: [
+      { keys: 'Ctrl + Enter', description: 'Save all students (Cmd + Enter on Apple keyboards; works while typing)' },
+      { keys: '1 – 4', description: 'Focus the student in that slot' },
+      { keys: 'A / Alt + A', description: 'Next / previous student' },
+      { keys: 'S / Alt + S', description: 'Next / previous goal of the focused student' },
+      { keys: 'Alt + W', description: 'Add a student slot' },
+      { keys: 'Alt + Q', description: 'Remove the focused student slot' },
+      { keys: 'Alt + U', description: 'Choose a student' },
+      { keys: 'Alt + T', description: 'Choose a goal' },
+      { keys: 'Alt + E', description: 'Edit the focused student and their goals' },
+      { keys: 'Alt + L', description: 'Student Access Lock on or off' },
+    ],
+  },
+  {
+    group: 'Data Entry: recording data',
+    note: 'These add to the focused goal of the focused student. Single-letter keys can be turned off in Settings → Interface.',
+    keys: [
+      { keys: 'C', description: 'Correct (next trial correct on trial grids; one occurrence for behavior frequency; Independent for task analysis steps)' },
+      { keys: 'N', description: 'Incorrect (next trial incorrect; Not done for task analysis steps)' },
+      { keys: 'B', description: 'Approximate (next trial approximate); a block for fluency goals' },
+      { keys: 'I', description: 'Independent (also counts as correct)' },
+      { keys: 'D', description: 'Visual prompt' },
+      { keys: 'V', description: 'Verbal prompt' },
+      { keys: 'G', description: 'Gestural prompt' },
+      { keys: 'P', description: 'Partial physical prompt' },
+      { keys: 'F', description: 'Imitation (model) prompt' },
+      { keys: 'R / H / J', description: 'Fluency: repetition / prolongation / interjection' },
+    ],
+  },
 ];
 
-const categorizedHotkeys = hotkeys.reduce((acc, hotkey) => {
-  if (!acc[hotkey.category]) {
-    acc[hotkey.category] = [];
-  }
-  acc[hotkey.category].push(hotkey);
-  return acc;
-}, {} as Record<string, Hotkey[]>);
+const GOAL_TYPES: [string, string][] = [
+  ['Articulation, language, phonological processes, AAC', 'Count correct, approximate and incorrect responses. The measure is accuracy (% correct).'],
+  ['Discrete and sequenced trials', 'Score each trial on a grid (correct, approximate, incorrect), or count attempts of a set length.'],
+  ['Prompting and cognitive', 'Tally the prompt level of each response; cognitive goals also take a 1–5 rating.'],
+  ['Fluency', 'Count syllables and each kind of dysfluency (repetitions, prolongations, blocks, interjections). The measure is % fluent.'],
+  ['Qualitative observation', 'A 1–5 rating, prompt levels and notes.'],
+  ['Feeding and swallowing', 'Trials accepted and refused for each food or liquid and texture.'],
+  ['Communication functions', 'Tally each function (requesting, commenting, protesting, greeting…) as spontaneous or prompted. The measure is the number of functions used spontaneously.'],
+  ['Story elements', 'Score each story part (character, setting, problem, feeling, action, ending, end feeling) 0 (missing), 1 (partial) or 2 (complete) and tally linking words. The measure is % of the 14 points.'],
+  ['Task analysis', 'Score each step of a routine as Independent, a prompt level, or Not done. The measure is % of steps done independently.'],
+  ['Behavior: frequency and duration', 'Count occurrences (with observation time for a rate per hour), or time each episode with Start and Stop.'],
+  ['Behavior: ABC', 'Record each incident’s antecedent, behavior and consequence, and whether the replacement skill was used. The lists can be edited in Settings.'],
+  ['Behavior: interval and latency', 'Score partial, whole or momentary intervals with a timer, or time how long the student takes to respond after a cue.'],
+];
+
+function Section({ id, icon: Icon, title, description, children }: {
+  id: string; icon: typeof HelpCircle; title: string; description?: string; children: React.ReactNode;
+}) {
+  return (
+    <Card id={id} className="scroll-mt-20">
+      <CardHeader>
+        <CardTitle role="heading" aria-level={2} className="flex items-center gap-2 text-xl"><Icon className="h-5 w-5 text-primary" aria-hidden />{title}</CardTitle>
+        {description && <CardDescription>{description}</CardDescription>}
+      </CardHeader>
+      <CardContent className="space-y-3 text-sm leading-relaxed text-muted-foreground">{children}</CardContent>
+    </Card>
+  );
+}
+
+const B = ({ children }: { children: React.ReactNode }) => <strong className="font-semibold text-foreground">{children}</strong>;
+
+function Topic({ value, title, children }: { value: string; title: string; children: React.ReactNode }) {
+  return (
+    <AccordionItem value={value}>
+      <AccordionTrigger className="text-base font-semibold text-foreground">{title}</AccordionTrigger>
+      <AccordionContent className="space-y-2 text-sm leading-relaxed text-muted-foreground">{children}</AccordionContent>
+    </AccordionItem>
+  );
+}
+
+const CONTENTS: [string, string][] = [
+  ['start', 'Getting started'],
+  ['data-entry', 'Data Entry'],
+  ['students', 'Students and goals'],
+  ['goal-types', 'Goal types'],
+  ['reports', 'Sessions and reports'],
+  ['data-safety', 'Your data and privacy'],
+  ['hotkeys', 'Keyboard shortcuts'],
+  ['troubleshooting', 'Troubleshooting'],
+];
 
 export default function HelpPage() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <Card className="shadow-lg">
         <CardHeader>
           <div className="flex items-center gap-3">
-            <HelpCircle className="h-10 w-10 text-primary" />
+            <HelpCircle className="h-10 w-10 shrink-0 text-primary" aria-hidden />
             <div>
-              <CardTitle role="heading" aria-level={1} className="text-3xl font-bold">Help & Guidance</CardTitle>
+              <CardTitle role="heading" aria-level={1} className="text-3xl font-bold">Help</CardTitle>
               <CardDescription>
-                Welcome to {APP_NAME}! Here you'll find tips, hotkeys, and guidance to make the most of the application.
+                How to use {APP_NAME} to record session data, track IEP goals and write progress reports. Everything
+                stays on this device.
               </CardDescription>
             </div>
           </div>
         </CardHeader>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Keyboard className="text-primary"/>Keyboard Shortcuts (Hotkeys)</CardTitle>
-          <CardDescription>Speed up your workflow with these keyboard shortcuts. On a Mac or iPad keyboard, Alt is the Option key. Data Entry keys apply to the focused goal of the focused student, and don't work while typing in a box or with a window open.</CardDescription>
-        </CardHeader>
         <CardContent>
-          <Accordion type="multiple" className="w-full" defaultValue={["Global Actions", "Data Entry"]}>
-            {Object.entries(categorizedHotkeys).map(([category, keys]) => (
-              <AccordionItem value={category} key={category}>
-                <AccordionTrigger className="text-lg font-semibold">{category}</AccordionTrigger>
-                <AccordionContent>
-                  <ul className="space-y-2 divide-y divide-border">
-                    {keys.map((hotkey) => (
-                      <li key={hotkey.key} className="flex justify-between items-center pt-2">
-                        <span className="text-muted-foreground">{hotkey.description}</span>
-                        <kbd className="ml-4 px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-md dark:bg-gray-600 dark:text-gray-100 dark:border-gray-500">
-                          {hotkey.key}
-                        </kbd>
-                      </li>
-                    ))}
-                  </ul>
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
+          <nav aria-label="On this page">
+            <ul className="flex flex-wrap gap-2 text-sm">
+              {CONTENTS.map(([id, label]) => (
+                <li key={id}>
+                  <a href={`#${id}`} className="inline-block rounded-full border px-3 py-1 hover:border-primary hover:text-primary">{label}</a>
+                </li>
+              ))}
+            </ul>
+          </nav>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><BookOpen className="text-primary"/>Application Guide</CardTitle>
-          <CardDescription>General tips for using {APP_NAME}.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4 text-muted-foreground">
-          <div>
-            <h3 className="font-semibold text-foreground text-lg mb-1">Dashboard</h3>
-            <p>The Dashboard provides an overview of your students, goal templates, and recent activity. Use it as your starting point.</p>
-          </div>
-          <div>
-            <h3 className="font-semibold text-foreground text-lg mb-1">Students</h3>
-            <p>The "Students" page is now a selection grid. Choose a student to view their profile, where you can manage their details, assign goals from templates, or create custom goals for them. The sidebar also provides a quick progress overview for the selected student. Use the "Edit Student Info" button on the profile page, or the "Edit Student" modal (accessible from Data Entry via icon or Alt+E) for comprehensive goal management.</p>
-          </div>
-          <div>
-            <h3 className="font-semibold text-foreground text-lg mb-1">Goal Templates</h3>
-            <p>Create and manage reusable goal templates. {' Search by words in the goal name, goal text or skill area, and filter by skill area.'} These templates can then be assigned to multiple students.</p>
-          </div>
-          <div>
-            <h3 className="font-semibold text-foreground text-lg mb-1">Data Entry</h3>
-            <p>Record session data for one or more students. Select students, enter activity details, and log performance for each assigned goal. The 'Qualitative Observation' goal type has been enhanced to include prompt level tracking, making it a flexible tool for various data collection scenarios. A new 'Feeding/Swallowing' goal type is also available for tracking trials. Use the hotkeys listed above for rapid data input.</p>
-             <p className="mt-1"><strong className="text-foreground">Communication Functions:</strong> Tally each communicative function (requesting, commenting, protesting, greeting, and more) as spontaneous (S) or prompted (P). Tap a button to add a use; press and hold, or right-click, to remove one. Progress is the number of different functions used spontaneously, compared with the goal&apos;s target number of functions.</p>
-             <p className="mt-1"><strong className="text-foreground">Story Champs:</strong> Score each story part (Character, Setting, Problem, Feeling, Action, Ending, End Feeling) 0 = missing, 1 = partial, 2 = complete, and tally linking words (because, then, when, so, after, but). The story score is the percentage of the 14 possible points.</p>
-             <p className="mt-1"><strong className="text-foreground">Behavior Data:</strong> <em>Frequency</em> goals count occurrences (tap to add, press and hold to remove); enter the observation time to see a rate per hour. <em>Duration</em> goals time each episode with Start/Stop, or add one by hand; saving the session stops a running timer. <em>ABC</em> goals record each incident by tapping an antecedent, a behavior and a consequence, then Add Incident; choose &quot;Used replacement skill&quot; when the student uses the taught skill instead. The antecedent, behavior and consequence choices can be edited in Settings → ABC Data Lists. <em>Interval</em> goals split the observation into equal intervals (choose partial interval, whole interval or momentary time sampling, the interval length and the number of intervals); tap each interval for + (behavior seen) or − (not seen). The timer highlights the current interval and can beep at each one. The result is the % of scored intervals with the behavior. <em>Latency</em> goals time how long the student takes to respond: tap Cue Given when you give the direction, then Responded (or No Response); the result is the average time to respond. Behavior goals can aim to <em>decrease</em> (the target is a maximum, the default) or <em>increase</em> (the target is a minimum); set this under Goal Direction when editing the goal. In Reports, each behavior goal is charted by its own measure against the target (see Goal by Goal below).</p>
-             <p className="mt-1"><strong className="text-foreground">Unsaved work is kept:</strong> What you enter stays on Data Entry when you switch pages and come back, or if the app is closed, until you save or reset that student&apos;s session. Timers keep running in the meantime.</p>
-             <p className="mt-1"><strong className="text-foreground">Note:</strong> Clicking a student's icon on their card or pressing Alt+E (when a student card is focused) will open the "Edit Student" modal, where you can manage their goals directly, assign new templates, or create custom goals.</p>
-          </div>
-          <div>
-            <h3 className="font-semibold text-foreground text-lg mb-1">Manage Sessions</h3>
-            <p>Review, edit, or delete past session records. Filter sessions by student, date range, or keywords in activity/notes.</p>
-          </div>
-          <div>
-            <h3 className="font-semibold text-foreground text-lg mb-1">Analysis & Reports</h3>
-            <p>Visualize student progress over time with charts for accuracy, response counts, opportunities, prompt usage, goal performance flow (Sankey), and correlations (Scatter Plot).</p>
-            <p className="mt-1"><strong className="text-foreground">Write Narrative:</strong> Writes a progress summary of the data shown (student, goal and date range): for each goal, the number of sessions with data, the average and range, the most recent result against the target, how often the target was met, whether performance went up or down over the period, details for the goal type, and recent notes. Edit it as needed, then Copy it or Save as File.</p>
-            <p className="mt-1"><strong className="text-foreground">Goal by Goal:</strong> Each goal gets its own card showing the measure that fits its type (accuracy, % fluent, story score, functions used spontaneously, 1-5 rating, % independent, or a behavior measure) for each session, with a dashed target line and how many sessions met the target. Below the chart are breakdowns for the goal type: correct, approximate and incorrect responses; prompt levels; story part scores and linking words; uses by communication function; dysfluency types; or ABC antecedents, behaviors and functions; plus the most recent notes. Sessions where nothing was recorded for a goal are left out. Choose a goal at the top to see just that goal.</p>
-          </div>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Lightbulb className="text-primary"/>General Tips</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 text-muted-foreground">
-            <p><strong className="text-foreground">Performance:</strong> The app now loads essential data first to be interactive quickly, while session history loads in the background.</p>
-            <p><strong className="text-foreground">Data Storage:</strong> All data is stored on this device only. It is not synced to the cloud, so clearing browser data or removing the app will remove it.</p>
-            <p><strong className="text-foreground">Backup &amp; Restore:</strong> In Settings, use Back Up Now to save all data to a file (keep it in Files, Google Drive, or email it to yourself). Restore from Backup loads that file on this or another device, either adding to the data already there or replacing it. The dashboard reminds you when there is no backup from the last week.</p>
-            <p><strong className="text-foreground">Error Log:</strong> If you encounter issues, check the Error Log (Alt+J or header icon) for recent application-level errors. For more detailed debugging, use your browser's developer console.</p>
-            <p><strong className="text-foreground">Ctrl+Enter:</strong> In many forms and on the Data Entry page, pressing Ctrl+Enter will act as a "confirm" or "save" action.</p>
-            <p><strong className="text-foreground">Data Entry Focus:</strong> On the Data Entry page, student cards widen when focused. Click on a student card or use number keys (1-4) to focus.</p>
-        </CardContent>
-      </Card>
+      <Section id="start" icon={Rocket} title="Getting started" description="Five steps from a new device to your first progress report.">
+        <ol className="list-decimal space-y-2 pl-5">
+          <li><B>Set up.</B> In <Link href="/settings" className="underline hover:text-primary">Settings</Link>, add your school or district name (it heads printed documents), check the school year dates, and consider turning on Passcode Protection.</li>
+          <li><B>Add students.</B> Press <kbd>Alt + M</kbd> or use the + in the sidebar. On a student&apos;s profile, add IEP dates and required service minutes with Edit IEP Details.</li>
+          <li><B>Assign goals.</B> Pick goals from the goal bank on the student&apos;s profile (or write your own). Set the target, target date, baseline and mastery criteria when you edit a goal.</li>
+          <li><B>Record sessions.</B> In <Link href="/data-entry" className="underline hover:text-primary">Data Entry</Link>, add students (or load a saved group), record data during the session, then Save All.</li>
+          <li><B>Report.</B> In <Link href="/analysis-report" className="underline hover:text-primary">Reports</Link>, choose a student to see charts, write a narrative, or open the printable Progress Report.</li>
+        </ol>
+        <p>Back up regularly from Settings → Backup &amp; Restore. The dashboard reminds you when the last backup is more than a week old.</p>
+      </Section>
+
+      <Section id="data-entry" icon={ClipboardList} title="Data Entry">
+        <Accordion type="multiple" defaultValue={['de-basics']}>
+          <Topic value="de-basics" title="Recording a session">
+            <p>Set the session date and start and end times at the top (Reset Time to Now starts the clock again). The start and end times are what count toward service minutes.</p>
+            <p>Each student gets a card with their goals. Tap a card or press <kbd>1</kbd>–<kbd>4</kbd> to focus it; the focused goal is outlined, and hotkeys add data to it. Add an activity and notes, then use <B>Save Focused</B> for one student or <B>Save All</B> (<kbd>Ctrl + Enter</kbd>).</p>
+            <p>Unsaved work is kept if you switch pages or close the app, until you save or reset it. Timers keep running meanwhile.</p>
+          </Topic>
+          <Topic value="de-students" title="Adding students and groups">
+            <p>Use <B>Add Student</B> on the bottom bar or the Student button to fill a slot. There is no limit on slots; the arrows in the middle of the bottom bar scroll the cards one at a time.</p>
+            <p><B>Groups</B> load a class or small group in one step: Load Group → Manage Groups… to create one, then choose it from Load Group. Groups are included in backups.</p>
+          </Topic>
+          <Topic value="de-missed" title="Missed sessions">
+            <p>The calendar icon on a student&apos;s card records a missed session with the reason (student absent or unavailable, provider absent, no school…). Missed sessions show in attendance and don&apos;t count as service minutes.</p>
+          </Topic>
+          <Topic value="de-lock" title="Student Access Lock">
+            <p>When a student uses the iPad, turn on the Student Access Lock (<kbd>Alt + L</kbd>). Data can&apos;t be changed and other students can&apos;t be opened until the lock is turned off with your PIN.</p>
+          </Topic>
+        </Accordion>
+      </Section>
+
+      <Section id="students" icon={UserCog} title="Students and goals">
+        <Accordion type="multiple">
+          <Topic value="st-profile" title="Student profiles">
+            <p>Choose a student on the <Link href="/student-profile" className="underline hover:text-primary">Students</Link> page. The <B>Overview</B> shows IEP dates (and how soon reviews are due), service minutes delivered against the IEP (per week, month or school year), and attendance for the school year. Use <B>Edit IEP Details</B> to set the dates and required minutes.</p>
+            <p>Students you no longer see can be archived (kept, but hidden) or deleted.</p>
+          </Topic>
+          <Topic value="st-goals" title="Goals, targets and mastery">
+            <p>Assign goals from the goal bank or write your own. When editing a goal you can set the <B>target</B> (e.g. 80%), whether the goal should increase or decrease, the <B>target date</B>, the <B>baseline</B> and when it was taken, and <B>mastery</B> (the target met in a number of sessions in a row, 3 by default).</p>
+            <p>Write &quot;By [date]&quot; and &quot;STUDENT&quot; in goal text: they are filled in with the goal&apos;s target date and the student&apos;s name on reports.</p>
+          </Topic>
+          <Topic value="st-bank" title="The goal bank">
+            <p>The <Link href="/goal-templates" className="underline hover:text-primary">Goals</Link> page holds over 900 templates. Search by words in the name, goal text or skill area, filter by skill area, and open a goal to read the full text, its purpose and activity ideas. You can edit templates, add your own and archive ones you don&apos;t use.</p>
+          </Topic>
+        </Accordion>
+      </Section>
+
+      <Section id="goal-types" icon={Target} title="Goal types" description="Each goal type has its own data entry controls and its own measure in reports.">
+        <dl className="divide-y divide-border">
+          {GOAL_TYPES.map(([name, text]) => (
+            <div key={name} className="grid gap-1 py-2 sm:grid-cols-[16rem_1fr] sm:gap-4">
+              <dt className="font-semibold text-foreground">{name}</dt>
+              <dd>{text}</dd>
+            </div>
+          ))}
+        </dl>
+        <p>Counter buttons add one with a tap; press and hold (or right-click) to take one away.</p>
+      </Section>
+
+      <Section id="reports" icon={BarChart2} title="Sessions and reports">
+        <Accordion type="multiple">
+          <Topic value="rp-sessions" title="Sessions">
+            <p>The <Link href="/manage-sessions" className="underline hover:text-primary">Sessions</Link> page lists every saved session. Filter by student, dates or words in the activity and notes; view, edit or delete a session.</p>
+            <p><B>Merge Selected</B> joins the records of one session that was saved in parts (saved, then more data collected and saved again), so its minutes count once. Tick the records of the same student on the same day, then choose Merge Selected.</p>
+          </Topic>
+          <Topic value="rp-charts" title="Charts and Goal by Goal">
+            <p>On <Link href="/analysis-report" className="underline hover:text-primary">Reports</Link>, choose a student, a goal and a date range. Each goal gets a chart of its own measure, with the target line, the aim line (from the baseline to the target by the target date) and how many sessions met the target, plus breakdowns for its type (prompt levels, story parts, ABC patterns, time of day…).</p>
+          </Topic>
+          <Topic value="rp-narrative" title="Write Narrative">
+            <p>Writes a progress summary of what is shown: for each goal, the sessions with data, the average and range, the latest result against the target, the trend, whether the student is on track with the aim line, and recent notes. Choose a brief or detailed style, edit it, then copy it or save it as a file.</p>
+          </Topic>
+          <Topic value="rp-progress" title="Printable Progress Report">
+            <p>Reports → <B>Progress Report</B> makes a printable IEP progress report: each goal&apos;s text, target and target date, baseline, a chart, progress for the reporting period and a status. Change the report date and period, add comments, and optionally include service minutes. Print it or save it as PDF from the print dialog.</p>
+          </Topic>
+          <Topic value="rp-export" title="Exporting data">
+            <p>Reports can export session data as a spreadsheet (CSV). A CSV file isn&apos;t protected, so keep it somewhere safe.</p>
+          </Topic>
+        </Accordion>
+      </Section>
+
+      <Section id="data-safety" icon={Shield} title="Your data and privacy">
+        <p><B>Stored on this device only.</B> {APP_NAME} has no account and no server. Student data stays in this browser or Home Screen app and is never sent anywhere. Read the <Link href="/privacy" className="underline hover:text-primary">Privacy Notice</Link> for details.</p>
+        <p><B>Back up.</B> Clearing browser data, deleting the Home Screen icon or losing the device deletes the data. Settings → Backup &amp; Restore saves everything to a file (you can protect it with a password); restoring adds to the data on a device or replaces it. Data in the Home Screen app is separate from data in Safari.</p>
+        <p><B>Passcode Protection.</B> Settings → Passcode Protection encrypts student data on the device. The app locks after a period of inactivity and asks for the passcode. A forgotten passcode can&apos;t be recovered: the data can only be erased and restored from a backup.</p>
+        <p><B>Deleting data.</B> Settings → Delete Data removes student data from this device, for example at the end of the year or before handing on a device.</p>
+      </Section>
+
+      <Section id="hotkeys" icon={Keyboard} title="Keyboard shortcuts" description="On a Mac or iPad keyboard, Alt is the Option key. Shortcuts don't run while you are typing in a box or a window is open.">
+        <Accordion type="multiple" defaultValue={HOTKEYS.map(h => h.group)}>
+          {HOTKEYS.map(({ group, note, keys }) => (
+            <AccordionItem value={group} key={group}>
+              <AccordionTrigger className="text-base font-semibold text-foreground">{group}</AccordionTrigger>
+              <AccordionContent>
+                {note && <p className="mb-2 text-sm text-muted-foreground">{note}</p>}
+                <ul className="divide-y divide-border text-sm">
+                  {keys.map(k => (
+                    <li key={k.keys} className="flex items-center justify-between gap-4 py-2">
+                      <span className="text-muted-foreground">{k.description}</span>
+                      <kbd className="shrink-0 rounded-md border border-gray-200 bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-800 dark:border-gray-500 dark:bg-gray-600 dark:text-gray-100">{k.keys}</kbd>
+                    </li>
+                  ))}
+                </ul>
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+      </Section>
+
+      <Section id="troubleshooting" icon={LifeBuoy} title="Troubleshooting">
+        <Accordion type="multiple">
+          <Topic value="ts-update" title="I don't see the latest changes">
+            <p>Updates download in the background and apply the next time the app opens. Close the app fully (swipe it away on an iPad) and open it again. The <Link href="/changelog" className="underline hover:text-primary">Changelog</Link> lists what changed.</p>
+          </Topic>
+          <Topic value="ts-offline" title="Using it without internet">
+            <p>After it has been opened once online, the app works offline. Open it from the Home Screen while online now and then to get updates.</p>
+          </Topic>
+          <Topic value="ts-size" title="Text or buttons are too small or too large">
+            <p>Settings → Interface → Display Size changes the size of everything. You can also move the menu bar to the bottom of the screen or hide the student sidebar there.</p>
+          </Topic>
+          <Topic value="ts-hotkeys" title="Letters I type set off shortcuts">
+            <p>Turn off single-key shortcuts in Settings → Interface. The Alt shortcuts and Ctrl + Enter keep working.</p>
+          </Topic>
+          <Topic value="ts-error" title="Something went wrong">
+            <p>The error log (<kbd>Alt + J</kbd>, or the icon in the header) lists recent errors with details you can copy when reporting a problem. If data looks wrong, restore your latest backup.</p>
+          </Topic>
+        </Accordion>
+      </Section>
     </div>
   );
 }

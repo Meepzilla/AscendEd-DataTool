@@ -18,7 +18,7 @@ const ToastViewport = React.forwardRef<
     // Each toast is a status message (role="status"), not a list item, so the list itself has no list role.
     role="none"
     className={cn(
-      "fixed top-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 pt-[calc(1rem+env(safe-area-inset-top)/var(--body-zoom))] sm:pt-4 sm:bottom-[calc(var(--host-badge-clearance)+var(--menu-bar-bottom,0px))] sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]",
+      "fixed top-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 pt-[calc(1rem+env(safe-area-inset-top)/var(--body-zoom))] sm:pt-4 sm:bottom-[calc(var(--save-bar-height,0px)+var(--menu-bar-bottom,0px))] sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]",
       className
     )}
     {...props}
