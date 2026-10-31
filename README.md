@@ -58,7 +58,8 @@ npm run dev            # http://localhost:3000
 | --- | --- |
 | `npm run dev` | Development server |
 | `npm run build:static` | Offline static build in `out/`, used for hosting and Android. It adds the Content Security Policy (`scripts/add-csp.mjs`) and generates the service worker (`scripts/generate-service-worker.mjs`). |
-| `npx tsc --noEmit` | Type check |
+| `npm run typecheck` | Type check |
+| `npm test` | Unit tests (Vitest, `src/lib/__tests__/`) |
 | `npm run lint` | Lint |
 | `npm run android:sync` | `build:static`, then copies the result into the Android project |
 
@@ -73,6 +74,8 @@ To try the production build locally: `npm run build:static && npx serve out`.
 | `src/hooks/use-student-data.tsx` | All student, goal and session data, and saving to storage |
 | `src/lib/` | Logic without UI: goal types and measures (`goal-constants/`), report narratives, aim lines, service minutes, attendance, session merging, task analysis, encryption (`secure-store.ts`), backups |
 | `docs/` | Goal bank review CSV and the original blueprint |
+
+Every pull request runs the type check, the unit tests and the static build (`.github/workflows/checks.yml`). Add or update tests in `src/lib/__tests__/` when you change logic in `src/lib/`.
 
 When you change features, add an entry at the top of `src/app/(app)/changelog/page.tsx`, and update the Help page if the change affects how the app is used.
 
