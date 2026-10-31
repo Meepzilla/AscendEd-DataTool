@@ -946,7 +946,7 @@ export default function DataEntryContent() {
                 {/* Student and Goal at the left, the scroll arrows in the middle (on the Student button's line), and the
                     save buttons at the right. On large screens, right padding keeps the buttons clear of the preview
                     host's corner badge (usually hidden; smaller screens need the room for the buttons). */}
-                <div className="flex flex-wrap justify-between items-center gap-2 p-2 xl:pr-[var(--host-badge-width)] border-t">
+                <div className="flex flex-wrap justify-between items-center gap-2 p-2 border-t">
                     <div className="hidden sm:block self-start">
                       <TouchControls
                         activeStudentsInSlots={activeStudentsInSlots}
