@@ -10,6 +10,7 @@ import { useModalState } from './use-modal-state';
 import { goalFromTemplate, hasTemplateGoal, linkGoalsToTemplates, recordRecentTemplates } from '@/lib/goal-templates';
 import { DEFAULT_GOAL_TEMPLATES, defaultTemplateKey, applyAssignedGoalRenames, applyDefaultTemplateRenames, applyDefaultTemplateRetirements, applyDefaultTemplateUpdates } from '@/lib/goal-constants';
 import { compareSessionsOldestFirst, generateUUID } from '@/lib/helpers';
+import * as secureStore from '@/lib/secure-store';
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 import type { ImportedSession } from '@/components/modals/import-data-modal';
 import { createBackup, mergeBackupData, type AppBackup, type RestoreMode, type RestoreSummary } from '@/lib/backup';
@@ -28,7 +29,7 @@ const getLocalStorageKey = (base: string, uid: string | undefined): string | nul
 const readFromLocalStorage = (key: string | null, defaultValue: any) => {
     if (typeof window === 'undefined' || !key) return defaultValue;
     try {
-        const item = window.localStorage.getItem(key);
+        const item = secureStore.getItem(key);
         const value = item ? JSON.parse(item) : defaultValue;
         return Array.isArray(defaultValue) && !Array.isArray(value) ? undefined : value;
     } catch (error) {
@@ -148,7 +149,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
             return false;
         }
         try {
-            window.localStorage.setItem(key, JSON.stringify(data));
+            secureStore.setItem(key, JSON.stringify(data));
             return true;
         } catch (error) {
             console.error(`Error writing localStorage key "${key}":`, error);
@@ -160,6 +161,16 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
             });
             return false;
         }
+    }, [toast, addErrorLog]);
+
+    // With passcode protection, data is encrypted into storage in the background; a write that fails there
+    // is reported the same way.
+    useEffect(() => {
+        secureStore.setWriteErrorHandler(error => {
+            addErrorLog({ message: `Saving (encrypted) failed: ${error instanceof Error ? error.message : String(error)}`, source: 'storage', type: 'error' });
+            toast({ title: "Couldn't save", description: "This device's storage is full or unavailable, so the latest change was not saved. Back up your data in Settings.", variant: "destructive" });
+        });
+        return () => secureStore.setWriteErrorHandler(null);
     }, [toast, addErrorLog]);
 
     const studentsKey = getLocalStorageKey(LOCAL_STORAGE_STUDENTS_BASE_KEY, currentUser?.uid);
@@ -368,7 +379,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const nextSessions = [...next.sessions].sort(byDateDesc);
     // Replacing is how damaged data is recovered, so those lists may be overwritten now. If storage fills
     // part way, each list is put back exactly as it was stored (damaged ones too).
-    const stored = keys.map(key => (key ? window.localStorage.getItem(key) : null));
+    const stored = keys.map(key => (key ? secureStore.getItem(key) : null));
     damaged.forEach(key => unreadableKeys.current.delete(key));
     const writes: [string | null, unknown][] = [
       [studentsKey, nextStudents],
@@ -380,8 +391,8 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         keys.slice(0, i).forEach((key, j) => {
           if (!key) return;
           try {
-            if (stored[j] === null) window.localStorage.removeItem(key);
-            else window.localStorage.setItem(key, stored[j]!);
+            if (stored[j] === null) secureStore.removeItem(key);
+            else secureStore.setItem(key, stored[j]!);
           } catch { /* the earlier value fit before, so it fits again */ }
         });
         damaged.forEach(key => unreadableKeys.current.add(key));
