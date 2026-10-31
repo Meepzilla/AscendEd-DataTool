@@ -4,11 +4,11 @@
 import React from 'react';
 import GenericModal from './generic-modal';
 import { Button } from '@/components/ui/button';
-import type { SessionData, Goal } from '@/lib/types';
-import { formatDate, formatTime, formatDataValue, goalTypeLabel } from '@/lib/helpers';
+import type { SessionData } from '@/lib/types';
+import { formatDate, formatDataValue, goalTypeLabel } from '@/lib/helpers';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Activity, CalendarDays, Clock, FileText, Target, CheckSquare, Info } from 'lucide-react';
+import { Activity, CalendarDays, Clock, FileText, Target, Info } from 'lucide-react';
 
 interface ViewSessionDetailsModalProps {
   session: SessionData | null;

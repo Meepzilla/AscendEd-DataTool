@@ -165,7 +165,7 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
           {allStudentGoals.length === 0 ? (
             <p className="text-sm text-muted-foreground p-4 text-center border rounded-md">No goals assigned. Assign goals in Student Profile.</p>
           ) : displayedGoals.length === 0 && !showArchived ? (
-            <p className="text-sm text-muted-foreground p-4 text-center border rounded-md">No active goals. Toggle "Show Archived Goals" to view them.</p>
+            <p className="text-sm text-muted-foreground p-4 text-center border rounded-md">No active goals. Toggle &ldquo;Show Archived Goals&rdquo; to view them.</p>
           ) : displayedGoals.length === 0 && showArchived ? (
             <p className="text-sm text-muted-foreground p-4 text-center border rounded-md">No goals (active or archived) for this student.</p>
           ) : (

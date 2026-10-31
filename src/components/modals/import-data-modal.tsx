@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import GenericModal from './generic-modal';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -44,11 +44,12 @@ export default function ImportDataModal({ onClose, onImport }: ImportDataModalPr
   const [parsedSessions, setParsedSessions] = useState<ImportedSession[]>([]);
   const { toast } = useToast();
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
+  // A plain function (not useCallback), so it always uses the current handleFileChange.
+  const onDrop = (acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
       handleFileChange(acceptedFiles[0]);
     }
-  }, []);
+  };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,

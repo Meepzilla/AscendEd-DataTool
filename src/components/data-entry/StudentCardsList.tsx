@@ -2,7 +2,7 @@
 'use client';
 
 import React, { lazy, Suspense } from 'react';
-import type { Student, StudentSessionState, Goal, SessionGoalData } from '@/lib/types';
+import type { Student, StudentSessionState } from '@/lib/types';
 import type { MissedReason } from '@/lib/attendance';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';

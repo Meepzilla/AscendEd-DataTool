@@ -11,9 +11,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Button, buttonVariants } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button';
 import { useStudentData } from '@/hooks/use-student-data';
-import type { Student, Goal, GoalTemplate, SessionData } from '@/lib/types';
+import type { Student, GoalTemplate, SessionData } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 interface ConfirmationModalProps {

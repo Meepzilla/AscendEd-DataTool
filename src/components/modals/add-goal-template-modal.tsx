@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useStudentData } from '@/hooks/use-student-data';
-import { GoalTemplateSchema, GoalType, type GoalTemplate } from '@/lib/types';
+import { GoalTemplateSchema, GoalType } from '@/lib/types';
 import { GOAL_TYPES, GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 import TargetDirectionField from './TargetDirectionField';
 import { goalTypeLabel } from '@/lib/helpers';

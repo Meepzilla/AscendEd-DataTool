@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { PlusCircle, Search, Check, Edit3, TrendingUp } from 'lucide-react';
 import { useStudentData } from '@/hooks/use-student-data';
-import type { Student, Goal, GoalTemplate, GoalType } from '@/lib/types';
+import type { Student, Goal, GoalType } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import {
   Select,

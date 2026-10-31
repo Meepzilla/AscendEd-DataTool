@@ -8,7 +8,6 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Search, ArrowUpDown, Archive, PlusCircle } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 export type StudentSortOrder = 'name-asc' | 'name-desc' | 'date-desc' | 'date-asc' | 'updated-desc' | 'updated-asc';
 

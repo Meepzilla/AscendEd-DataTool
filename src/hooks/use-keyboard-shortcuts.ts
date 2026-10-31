@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useCallback } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useStudentData } from './use-student-data';
 import { useSidebar } from '@/components/ui/sidebar'; 
 import { useErrorLog } from './use-error-log';

@@ -5,14 +5,13 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { useAuth } from './use-auth';
 import { useToast as useShadcnToast } from "@/hooks/use-toast";
 import { useErrorLog } from './use-error-log';
-import type { Student, Goal, GoalTemplate, SessionData, SessionGoalData, User } from '@/lib/types';
+import type { Student, Goal, GoalTemplate, SessionData, SessionGoalData } from '@/lib/types';
 import { useModalState } from './use-modal-state';
 import { goalFromTemplate, hasTemplateGoal, linkGoalsToTemplates, recordRecentTemplates } from '@/lib/goal-templates';
 import { DEFAULT_GOAL_TEMPLATES, defaultTemplateKey, applyAssignedGoalRenames, applyDefaultTemplateRenames, applyDefaultTemplateRetirements, applyDefaultTemplateUpdates } from '@/lib/goal-constants';
 import { compareSessionsOldestFirst, generateUUID } from '@/lib/helpers';
 import * as secureStore from '@/lib/secure-store';
 import { reviveGoalTypes } from '@/lib/legacy-goal-types';
-import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 import type { ImportedSession } from '@/components/modals/import-data-modal';
 import { createBackup, mergeBackupData, type AppBackup, type RestoreMode, type RestoreSummary } from '@/lib/backup';
 import { loadAbcLists, loadCustomAbcLists, mergeAbcLists, saveAbcLists } from '@/lib/abc-lists';
