@@ -25,6 +25,12 @@ export interface Goal {
   templateId?: string;
   /** The date the goal's criteria should be met by (YYYY-MM-DD), shown with the target on the progress report. */
   targetDate?: string;
+  /** Where the student started, in the goal's measure (e.g. 40 for 40%); the start of the aim line. */
+  baseline?: number;
+  /** When the baseline was taken (YYYY-MM-DD); the aim line starts here (or at the first session). */
+  baselineDate?: string;
+  /** Mastery: the target met in this many sessions in a row (3 when not set). */
+  masterySessions?: number;
   // Additional fields based on goal type might be present
   [key: string]: any;
 }
@@ -219,6 +225,18 @@ export const AssignedGoalEditSchema = z.object({
   targetDate: z.preprocess(
     (val) => (val === '' || val === null ? undefined : val),
     z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter a valid date.').optional()
+  ),
+  baseline: z.preprocess(
+    (val) => (val === '' || val === undefined || val === null ? undefined : Number(val)),
+    z.number().min(0, 'Baseline must be 0 or greater.').optional()
+  ),
+  baselineDate: z.preprocess(
+    (val) => (val === '' || val === null ? undefined : val),
+    z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter a valid date.').optional()
+  ),
+  masterySessions: z.preprocess(
+    (val) => (val === '' || val === undefined || val === null ? undefined : Number(val)),
+    z.number().int('Use a whole number.').min(1, 'At least 1 session.').max(20, 'At most 20 sessions.').optional()
   ),
   isArchived: z.boolean().optional(),
 });
