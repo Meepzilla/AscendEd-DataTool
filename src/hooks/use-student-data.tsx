@@ -412,7 +412,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const nextSessions = [...next.sessions].sort(byDateDesc);
     // Replacing is how damaged data is recovered, so those lists may be overwritten now. If storage fills
     // part way, each list is put back exactly as it was stored (damaged ones too).
-    const stored = keys.map(key => (key ? secureStore.getItem(key) : null));
+    const stored = keys.map(key => (key ? secureStore.snapshotItem(key) : null));
     damaged.forEach(key => unreadableKeys.current.delete(key));
     const writes: [string | null, unknown][] = [
       [studentsKey, nextStudents],
@@ -424,8 +424,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         keys.slice(0, i).forEach((key, j) => {
           if (!key) return;
           try {
-            if (stored[j] === null) secureStore.removeItem(key);
-            else secureStore.setItem(key, stored[j]!);
+            secureStore.restoreItem(key, stored[j]!);
           } catch { /* the earlier value fit before, so it fits again */ }
         });
         damaged.forEach(key => unreadableKeys.current.add(key));
