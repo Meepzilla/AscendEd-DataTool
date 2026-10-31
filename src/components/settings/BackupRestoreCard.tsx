@@ -2,7 +2,7 @@
 
 import React, { useRef, useState } from 'react';
 import { format, formatDistanceToNow } from 'date-fns';
-import { DatabaseBackup, Loader2, Upload } from 'lucide-react';
+import { Loader2, Upload } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -12,24 +12,50 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useStudentData } from '@/hooks/use-student-data';
 import { useBackup } from '@/hooks/use-backup';
+import BackUpNowButton from './BackUpNowButton';
 import { useToast } from '@/hooks/use-toast';
-import { parseBackup, type AppBackup, type RestoreMode } from '@/lib/backup';
+import { decryptBackupText, isProtectedBackup, parseBackup, type AppBackup, type RestoreMode } from '@/lib/backup';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { plural } from '@/lib/helpers';
 
 export default function BackupRestoreCard() {
   const { students, goalTemplates, sessions, restoreBackup } = useStudentData();
-  const { lastBackupAt, backUpNow, isBackingUp } = useBackup();
+  const { lastBackupAt } = useBackup();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pendingBackup, setPendingBackup] = useState<AppBackup | null>(null);
   const [isConfirmingReplace, setIsConfirmingReplace] = useState(false);
+  // A password-protected backup file waiting for its password.
+  const [protectedText, setProtectedText] = useState<string | null>(null);
+  const [backupPassword, setBackupPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [isDecrypting, setIsDecrypting] = useState(false);
+
+  const closePasswordPrompt = () => { setProtectedText(null); setBackupPassword(''); setPasswordError(''); };
+  const openProtectedBackup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!protectedText || !backupPassword) return;
+    setIsDecrypting(true);
+    try {
+      const backup = parseBackup(await decryptBackupText(protectedText, backupPassword));
+      closePasswordPrompt();
+      setPendingBackup(backup);
+    } catch (error: any) {
+      setPasswordError(error.message);
+    } finally {
+      setIsDecrypting(false);
+    }
+  };
 
   const handleFileChosen = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = ''; // allow choosing the same file again
     if (!file) return;
     try {
-      setPendingBackup(parseBackup(await file.text()));
+      const text = await file.text();
+      if (isProtectedBackup(text)) setProtectedText(text);
+      else setPendingBackup(parseBackup(text));
     } catch (error: any) {
       toast({ title: "Can't restore this file", description: error.message, variant: 'destructive' });
     }
@@ -81,10 +107,7 @@ export default function BackupRestoreCard() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3">
-          <Button onClick={backUpNow} disabled={isBackingUp}>
-            {isBackingUp ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <DatabaseBackup className="mr-2 h-4 w-4" />}
-            Back Up Now
-          </Button>
+          <BackUpNowButton />
           <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
             <Upload className="mr-2 h-4 w-4" />
             Restore from Backup
@@ -98,8 +121,8 @@ export default function BackupRestoreCard() {
           />
         </div>
         <p className="text-xs text-muted-foreground">
-          Backing up saves a file you can keep in Files, Google Drive, or email to yourself. Keep backups somewhere
-          secure: they contain student information.
+          Backing up saves a file you can keep in Files, Google Drive, or email to yourself. It contains student
+          information, so protect it with a password (you&apos;ll be asked) and keep it somewhere secure.
         </p>
       </CardContent>
 
@@ -129,6 +152,30 @@ export default function BackupRestoreCard() {
             <Button variant="destructive" onClick={() => setIsConfirmingReplace(true)}>Replace All Data</Button>
             <Button onClick={() => handleRestore('merge')}>Add to This Device</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={protectedText !== null} onOpenChange={o => { if (!o) closePasswordPrompt(); }}>
+        <DialogContent className="sm:max-w-sm">
+          <form onSubmit={openProtectedBackup} className="space-y-4">
+            <DialogHeader>
+              <DialogTitle>Password-protected backup</DialogTitle>
+              <DialogDescription>Enter the password this backup was saved with.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-1">
+              <Label htmlFor="restore-password">Password</Label>
+              <Input id="restore-password" type="password" autoComplete="off" autoFocus value={backupPassword}
+                onChange={e => { setBackupPassword(e.target.value); setPasswordError(''); }} />
+              {passwordError && <p className="text-sm text-destructive" role="alert">{passwordError}</p>}
+            </div>
+            <DialogFooter className="gap-2">
+              <Button type="button" variant="outline" onClick={closePasswordPrompt}>Cancel</Button>
+              <Button type="submit" disabled={!backupPassword || isDecrypting}>
+                {isDecrypting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Open Backup
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 

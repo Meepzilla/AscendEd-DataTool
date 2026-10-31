@@ -13,6 +13,7 @@ import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
 import type { DateRange } from "react-day-picker";
 import { useSearchParams, useRouter } from 'next/navigation';
 import { downloadSessionsCsv } from '@/lib/session-csv';
+import CsvExportWarning from '@/components/CsvExportWarning';
 import { useToast } from '@/hooks/use-toast';
 import { compareSessionsOldestFirst, formatDate } from '@/lib/helpers';
 import NarrativeDialog from '@/components/charts/NarrativeDialog';
@@ -29,6 +30,7 @@ export default function AnalysisReportPage() {
   const { toast } = useToast();
   
   const [selectedStudentId, setSelectedStudentId] = useState<string | undefined>(undefined);
+  const [isCsvWarningOpen, setIsCsvWarningOpen] = useState(false);
   const [selectedGoalId, setSelectedGoalId] = useState<string | undefined>(undefined);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -90,8 +92,8 @@ export default function AnalysisReportPage() {
       });
       return;
     }
-
-    downloadSessionsCsv(studentSessions, selectedStudent.name);
+    // Confirmed in CsvExportWarning first (the file holds student data in plain text).
+    setIsCsvWarningOpen(true);
   };
 
   if (studentsLoading && students.length === 0) {
@@ -128,6 +130,14 @@ export default function AnalysisReportPage() {
                 <Button onClick={handleExportData} size="sm" variant="outline" disabled={studentSessions.length === 0}>
                     <Download className="mr-2 h-4 w-4" /> Export Data
                 </Button>
+                {selectedStudent && (
+                  <CsvExportWarning
+                    studentName={selectedStudent.name}
+                    open={isCsvWarningOpen}
+                    onCancel={() => setIsCsvWarningOpen(false)}
+                    onConfirm={() => { setIsCsvWarningOpen(false); downloadSessionsCsv(studentSessions, selectedStudent.name); }}
+                  />
+                )}
              </div>
           </div>
         </CardHeader>
