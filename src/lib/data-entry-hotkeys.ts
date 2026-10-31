@@ -1,11 +1,13 @@
 import type { GoalType, TrialStatus } from './types';
 import { PROMPT_HOTKEY_MAP } from './promptConstants';
 import { GOAL_TYPES_WITHOUT_PROMPT_COUNTERS, alignTimes } from './goal-constants';
+import { scoreNextStep, type StepLevel } from './task-analysis';
 
 // Data Entry hotkeys that record data for the focused goal (see Help → Hotkeys):
 //   C = correct, N = incorrect, B = approximate (Blocks for fluency); R/H/J = fluency repetitions,
 //   prolongations, interjections; D/V/G/P/F/I = prompt levels (I also counts a correct response).
 // Discrete and sequenced trials: C/N/B fill the next unscored trial. Behavior frequency: C adds an occurrence.
+// Task analysis: C (independent), N (not done) and the prompt keys score the next unscored step.
 
 /**
  * The key a hotkey event stands for, as an upper-case letter or digit ("A", "1") or "ENTER". Uses the
@@ -81,7 +83,12 @@ export function removeCorrect(type: GoalType, data: Record<string, any>): Record
  * The goal's data after a hotkey, or null when the key does nothing for this goal type.
  * `type` is the type the goal's data is entered as (its data capture type).
  */
-export function applyGoalHotkey(type: GoalType, key: string, data: Record<string, any>): Record<string, any> | null {
+export function applyGoalHotkey(type: GoalType, key: string, data: Record<string, any>, steps: string[] = []): Record<string, any> | null {
+  // Task analysis: the next unscored step gets the level (C = independent, N = not done, prompt keys = that prompt).
+  if (type === 'TASK_ANALYSIS') {
+    const level: StepLevel | undefined = key === 'C' ? 'Independent' : key === 'N' ? 'NotDone' : PROMPT_HOTKEY_MAP[key as keyof typeof PROMPT_HOTKEY_MAP];
+    return level ? scoreNextStep(data, steps, level) : null;
+  }
   if (key === 'C') return addCorrect(type, data);
 
   if (key === 'N') {

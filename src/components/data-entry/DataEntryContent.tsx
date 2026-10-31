@@ -13,6 +13,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Info, PlusCircle } from 'lucide-react';
 import type { Goal, Student, StudentSessionState, SessionGoalData, GoalType } from '@/lib/types';
 import { MISSED_REASON_SHORT, type MissedReason } from '@/lib/attendance';
+import { taskSteps } from '@/lib/task-analysis';
 import type { StudentGroup } from '@/lib/student-groups';
 import LoadGroupMenu from '@/components/student-groups/LoadGroupMenu';
 import { formatDate } from '@/lib/helpers';
@@ -643,7 +644,7 @@ export default function DataEntryContent() {
       if (!studentState || !goal || goal.isArchived) return prevStates;
       const type = captureTypeOf(goal);
       const current = studentState.goalData[goalId] || JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[type] || {}));
-      const next = applyGoalHotkey(type, key, current);
+      const next = applyGoalHotkey(type, key, current, taskSteps(goal));
       if (!next) return prevStates;
       return { ...prevStates, [studentId]: { ...studentState, goalData: { ...studentState.goalData, [goalId]: { ...next, recorded: true } } } };
     });
@@ -707,7 +708,7 @@ export default function DataEntryContent() {
     // Data for the focused goal. Holding a key down doesn't repeat it.
     if (event.repeat || !studentId) return;
     const focusedGoal = visibleGoals[focusedGoalIndexByStudentId[studentId] ?? 0];
-    if (!focusedGoal || !applyGoalHotkey(captureTypeOf(focusedGoal), key, {})) return;
+    if (!focusedGoal || !applyGoalHotkey(captureTypeOf(focusedGoal), key, {}, taskSteps(focusedGoal))) return;
     event.preventDefault();
     applyHotkeyToGoal(studentId, focusedGoal.id, key);
   }, [

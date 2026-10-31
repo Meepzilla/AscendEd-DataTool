@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-31',
+    title: 'Task Analysis Goal Type',
+    description: 'A new goal type for multi-step skills (routines, self-care, device use). Add the steps to a student\'s task analysis goal in Students → Edit Assigned Goal → Task Steps, one per line. In Data Entry each step has buttons for Independent, the prompt levels (visual, verbal, gestural, partial physical, model) and Not done; the hotkeys score the next unscored step (C independent, N not done, D/V/G/P/F/I prompt levels). The measure is the percentage of steps done independently, so targets, aim lines, mastery, Reports (with a chart of each step), the narrative and the Progress Report all work with it. Three task analysis templates are included (handwashing, arrival routine, requesting with a communication device).',
+    type: 'feature',
+    icon: ListChecks,
+  },
+  {
+    date: '2026-10-31',
     title: 'Student Groups for Data Entry',
     description: 'Save groups of students, such as a class or a small group, with Students → Groups (or Data Entry → Load Group → Manage Groups). In Data Entry, Load Group fills the slots with that group\'s students in one tap. A student already in a slot with unsaved entries keeps their slot, so nothing entered is lost. Archived students are skipped. Groups are saved on this device.',
     type: 'feature',
