@@ -185,6 +185,7 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
                                         data={sessionGoal.data || GOAL_TYPE_FIELDS[(originalGoal.dataCaptureType || originalGoal.type) as keyof typeof GOAL_TYPE_FIELDS]}
                                         onChange={(fieldName,newData) => handleGoalDataChange(sessionGoal.goalId, fieldName,newData)}
                                         isArchived={originalGoal.isArchived}
+                                        studentName={currentSession.studentName}
                                         />
                                     );
                                 })}

@@ -166,7 +166,7 @@ export default function ProgressReportDocument({ studentName, periodLabel, sessi
             )}
           </div>
 
-          {g.goal.smartGoal && <p className="mt-2 italic">{goalStatement(g.goal)}</p>}
+          {g.goal.smartGoal && <p className="mt-2 italic">{goalStatement(g.goal, studentName)}</p>}
 
           {g.sessionCount > 0 && (
             <dl className="mt-3 flex flex-wrap gap-x-8 gap-y-2 rounded-md bg-muted/60 p-3">
