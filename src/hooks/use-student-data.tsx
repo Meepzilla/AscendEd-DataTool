@@ -15,6 +15,7 @@ import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 import type { ImportedSession } from '@/components/modals/import-data-modal';
 import { createBackup, mergeBackupData, type AppBackup, type RestoreMode, type RestoreSummary } from '@/lib/backup';
 import { loadAbcLists, loadCustomAbcLists, mergeAbcLists, saveAbcLists } from '@/lib/abc-lists';
+import { getStudentGroups, saveStudentGroups } from '@/lib/student-groups';
 
 const LOCAL_STORAGE_STUDENTS_BASE_KEY = 'ascended_students_v2';
 const LOCAL_STORAGE_GOAL_TEMPLATES_BASE_KEY = 'ascended_goal_templates_v2';
@@ -357,8 +358,8 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   }, [currentUser, commitSessions, commitStudents]);
 
   const exportBackup = useCallback(
-    () => createBackup({ students, goalTemplates, sessions }, { abcLists: loadCustomAbcLists() ?? undefined }),
-    [students, goalTemplates, sessions],
+    () => createBackup({ students, goalTemplates, sessions }, { abcLists: loadCustomAbcLists() ?? undefined, studentGroups: getStudentGroups(currentUser?.uid) }),
+    [students, goalTemplates, sessions, currentUser],
   );
 
   /**
@@ -426,6 +427,13 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     } catch (error) {
       // The student data is restored; only the custom ABC lists didn't fit.
       addErrorLog({ message: `Restoring ABC lists failed: ${error instanceof Error ? error.message : String(error)}`, source: 'storage', type: 'error' });
+    }
+    // Saved groups: replace uses the backup's; merge adds groups this device doesn't have.
+    const groups = backup.settings?.studentGroups;
+    if (mode === 'replace') saveStudentGroups(currentUser?.uid, groups ?? []);
+    else if (groups?.length) {
+      const existing = getStudentGroups(currentUser?.uid);
+      saveStudentGroups(currentUser?.uid, [...existing, ...groups.filter(g => !existing.some(e => e.id === g.id))]);
     }
     return summary;
   }, [currentUser, studentsKey, templatesKey, sessionsKey, saveToLocal, addErrorLog]);
