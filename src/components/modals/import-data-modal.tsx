@@ -7,12 +7,13 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, UploadCloud, FileCheck2, AlertTriangle } from 'lucide-react';
 import Papa from 'papaparse';
-import type { GoalType, SessionData, SessionGoalData } from '@/lib/types';
+import type { GoalType, SessionGoalData } from '@/lib/types';
 import { currentGoalType } from '@/lib/legacy-goal-types';
+import type { ImportedSession } from '@/lib/session-import';
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 
 /** A session read from the file, with the Session ID it had (kept, so a later backup merge matches it). */
-export type ImportedSession = Omit<SessionData, 'sessionId'> & { sourceSessionId?: string };
+export type { ImportedSession };
 
 /**
  * A CSV cell as the value it was exported from: lists and objects were written as JSON, numbers and true/false as
