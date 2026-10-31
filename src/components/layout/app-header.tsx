@@ -5,7 +5,8 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Menu, FileText, UserPlus } from 'lucide-react';
+import { Menu, FileText, UserPlus, Lock } from 'lucide-react';
+import { isPasscodeEnabled, lockNow } from '@/lib/secure-store';
 import { useAuth } from '@/hooks/use-auth';
 import { APP_NAME, APP_SUBTITLE } from '@/lib/appConstants';
 import { useStudentData } from '@/hooks/use-student-data';
@@ -43,6 +44,15 @@ export default function AppHeader() {
   useEffect(() => {
     document.documentElement.classList.add('has-app-header');
     return () => document.documentElement.classList.remove('has-app-header');
+  }, []);
+
+  // With passcode protection on, a Lock button in the bar.
+  const [passcodeOn, setPasscodeOn] = useState(false);
+  useEffect(() => {
+    const check = () => setPasscodeOn(isPasscodeEnabled());
+    check();
+    window.addEventListener('ascended-passcode-change', check);
+    return () => window.removeEventListener('ascended-passcode-change', check);
   }, []);
 
   // The phone menu closes once a page is chosen.
@@ -138,6 +148,11 @@ export default function AppHeader() {
             <span className="sr-only">Add Student</span>
           </Button>
 
+          {passcodeOn && (
+            <Button variant="ghost" size="icon" onClick={() => lockNow()} title="Lock (student data stays encrypted until the passcode is entered)" aria-label="Lock">
+              <Lock className="h-5 w-5" />
+            </Button>
+          )}
           <Button variant="ghost" size="icon" onClick={toggleErrorLogModal} title="Error Log (Alt+J)">
             <FileText className="h-5 w-5" />
             <span className="sr-only">Error Log</span>
