@@ -9,6 +9,7 @@ import AppFooter from '@/components/layout/app-footer';
 import StudentSidebar from '@/components/layout/student-sidebar';
 import { SidebarProvider, SidebarInset, SidebarRail } from '@/components/ui/sidebar';
 import { useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts';
+import { APP_NAME } from '@/lib/appConstants';
 
 function KeyboardShortcutInitializer() {
   useKeyboardShortcuts();
@@ -16,6 +17,20 @@ function KeyboardShortcutInitializer() {
 }
 
 const SIDEBAR_ENABLED_KEY = 'sidebar_enabled';
+
+// Each page's own browser title, so screen readers announce where you are and tabs/history are told apart.
+const PAGE_TITLES: [string, string][] = [
+  ['/dashboard', 'Dashboard'],
+  ['/data-entry', 'Data Entry'],
+  ['/manage-sessions', 'Sessions'],
+  ['/analysis-report', 'Reports'],
+  ['/student-profile', 'Students'],
+  ['/goal-templates', 'Goals'],
+  ['/changelog', 'Changelog'],
+  ['/settings', 'Settings'],
+  ['/help', 'Help'],
+  ['/privacy', 'Privacy Notice'],
+];
 
 export default function AppLayout({
   children,
@@ -26,6 +41,11 @@ export default function AppLayout({
   const router = useRouter();
   const pathname = usePathname();
   const mainRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const page = PAGE_TITLES.find(([prefix]) => pathname.startsWith(prefix))?.[1];
+    document.title = page ? `${page} | ${APP_NAME}` : APP_NAME;
+  }, [pathname]);
   const [isSidebarEnabled, setIsSidebarEnabled] = useState(true);
 
   // Pages scroll inside <main>, not the window, so start each page at the top.
@@ -115,6 +135,10 @@ export default function AppLayout({
           scrolls (iPad Safari could leave a position: sticky header drawn hazy after a dialog closed).
           flex-1 min-w-0: fill the width of the SidebarProvider's flex row instead of shrinking to the content. */}
       <div className="flex flex-1 min-w-0 flex-col h-full min-h-0 bg-background">
+        {/* For keyboard and screen-reader users: jumps past the menu bar and sidebar (shown when focused). */}
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground">
+          Skip to main content
+        </a>
         <AppHeader />
         <div className="flex flex-1 min-h-0 overflow-hidden">
           {isSidebarEnabled ? (
@@ -123,7 +147,7 @@ export default function AppLayout({
               <SidebarRail />
             </>
           ) : null}
-          <main ref={mainRef} className="flex flex-1 min-w-0 min-h-0 flex-col overflow-y-auto">
+          <main ref={mainRef} id="main-content" tabIndex={-1} className="flex flex-1 min-w-0 min-h-0 flex-col overflow-y-auto focus:outline-none">
             <div className="flex-1 p-4 sm:p-6 lg:p-8">
               {children}
             </div>

@@ -17,7 +17,7 @@ export const PROMPT_HOTKEY_MAP: Record<string, PromptType> = {
 
 // Defines a color palette for different prompt types, used in charts or UI for visual distinction.
 export const PROMPT_COLORS: Record<PromptType, string> = {
-  Independent: '#8B5CF6', // violet-500
+  Independent: '#A78BFA', // violet-400 (violet-500 was under 4.5:1 contrast as text on the dark background)
   Visual: '#2DD4BF', // teal-400 (New color)
   Verbal: '#3B82F6', // blue-500
   Gestural: '#10B981', // emerald-500

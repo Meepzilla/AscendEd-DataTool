@@ -105,8 +105,8 @@ export default function StudentProgressSidebar({ student, studentSessions }: {st
               {averageOverallProgress > 75 ? "Excellent" : averageOverallProgress > 50 ? "Good" : averageOverallProgress > 25 ? "Fair" : "Needs Focus"}
             </span>
           </div>
-          <Progress value={averageOverallProgress} className="h-2 mt-2" />
-          <p className="text-xs text-muted-foreground mt-1">{Math.round(averageOverallProgress)}% average completion of targets</p>
+          <Progress value={averageOverallProgress} className="h-2 mt-2" aria-label="Average progress toward targets" />
+          <p className="text-xs text-sidebar-foreground mt-1">{Math.round(averageOverallProgress)}% average completion of targets</p>
         </CardContent>
       </Card>
 
@@ -130,7 +130,7 @@ export default function StudentProgressSidebar({ student, studentSessions }: {st
                 <p className={`text-[11px] font-semibold mt-0.5 mb-1 whitespace-normal break-words ${goal.progress >= 100 ? 'text-green-500' : goal.progress > 0 ? 'text-primary' : 'text-muted-foreground'}`}>
                     {displayValue}
                 </p>
-                <Progress value={goal.progress} className="h-1.5" indicatorClassName={goal.progress >= 100 ? 'bg-green-500' : goal.progress > 0 ? 'bg-primary' : 'bg-muted'}/>
+                <Progress value={goal.progress} className="h-1.5" aria-label={`${goal.name} progress`} indicatorClassName={goal.progress >= 100 ? 'bg-green-500' : goal.progress > 0 ? 'bg-primary' : 'bg-muted'}/>
               </div>
             );
           })}

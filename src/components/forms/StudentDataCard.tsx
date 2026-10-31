@@ -104,7 +104,7 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
               <Users className="h-5 w-5 text-primary" />
             </Button>
             <Select value={student.id} onValueChange={(newStudentId) => handleStudentSelect(newStudentId, slotIndex)}>
-              <SelectTrigger className="flex-grow truncate">
+              <SelectTrigger className="flex-grow truncate" aria-label={`Student in slot ${slotIndex + 1}`}>
                 <SelectValue placeholder="Select Student" />
               </SelectTrigger>
               <SelectContent>

@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -13,6 +14,7 @@ import PasscodeCard from '@/components/settings/PasscodeCard';
 import DeleteDataCard from '@/components/settings/DeleteDataCard';
 import DisplaySizeSetting from '@/components/settings/DisplaySizeSetting';
 import MenuPositionSetting from '@/components/settings/MenuPositionSetting';
+import SingleKeyShortcutsSetting from '@/components/settings/SingleKeyShortcutsSetting';
 import AbcListsCard from '@/components/settings/AbcListsCard';
 
 const SIDEBAR_ENABLED_KEY = 'sidebar_enabled';
@@ -57,9 +59,10 @@ export default function SettingsPage() {
           <div className="flex items-center gap-3">
             <Settings className="h-10 w-10 text-primary" />
             <div>
-              <CardTitle className="text-3xl font-bold">Application Settings</CardTitle>
+              <CardTitle role="heading" aria-level={1} className="text-3xl font-bold">Application Settings</CardTitle>
               <CardDescription>
-                Manage application behavior.
+                Manage application behavior. How student data is stored and protected:{' '}
+                <Link href="/privacy" className="underline hover:text-primary">Privacy Notice</Link>.
               </CardDescription>
             </div>
           </div>
@@ -80,6 +83,7 @@ export default function SettingsPage() {
         <CardContent className="space-y-4">
           <DisplaySizeSetting />
           <MenuPositionSetting />
+          <SingleKeyShortcutsSetting />
           <div className="flex flex-row items-center justify-between rounded-lg border p-4">
             <div className="space-y-0.5">
               <Label htmlFor="sidebar-switch" className="text-base font-medium">

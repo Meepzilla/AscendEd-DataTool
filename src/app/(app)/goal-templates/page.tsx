@@ -160,7 +160,7 @@ export default function GoalTemplatesPage() {
         <CardHeader>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
             <div>
-              <CardTitle className="text-2xl font-bold flex items-center gap-2"><BrainCircuit className="h-7 w-7 text-primary"/>Goals</CardTitle>
+              <CardTitle role="heading" aria-level={1} className="text-2xl font-bold flex items-center gap-2"><BrainCircuit className="h-7 w-7 text-primary"/>Goals</CardTitle>
               <CardDescription>
                 Manage your library of reusable goal templates.
               </CardDescription>
