@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-31',
+    title: 'Collapsible Hotkeys in the Footer',
+    description: 'Tap Global Hotkeys at the bottom of any page to hide or show the list of keyboard shortcuts. The choice is remembered on this device; the Help and Privacy Notice links stay visible.',
+    type: 'improvement',
+    icon: KeyboardIcon,
+  },
+  {
+    date: '2026-10-31',
     title: 'School Year Dates in Settings',
     description: 'Settings → Interface → School Year sets the first and last day of the school year (the month and day repeat each year). Student profiles use it for school-year attendance and service minutes, and the Progress Report for School year to date. It was August 1 to July 31 before.',
     type: 'feature',
