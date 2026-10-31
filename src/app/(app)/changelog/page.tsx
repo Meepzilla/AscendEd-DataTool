@@ -20,7 +20,7 @@ const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-31',
     title: 'More Than 5 Students in Data Entry',
-    description: 'Data Entry no longer stops at 5 student slots: Add Student Slot is available until every active student is in a slot. Slots past the screen width scroll sideways, and the focused slot is brought into view (A and Alt+A cycle through all of them; the 1-4 keys still jump to the first four).',
+    description: 'Data Entry no longer stops at 5 student slots: Add Student Slot is available until every active student is in a slot. An Add Student button next to Save Focused adds a slot from anywhere (it stays in view however many slots there are). Slots past the screen width scroll sideways, and the focused slot is brought into view (A and Alt+A cycle through all of them; the 1-4 keys still jump to the first four).',
     type: 'feature',
     icon: UserPlus,
   },
