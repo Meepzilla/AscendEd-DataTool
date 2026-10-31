@@ -1,0 +1,32 @@
+name: Checks
+
+# Runs on every pull request and push to master: the type check, the unit tests and the offline build the
+# live site is made from. A pull request shows these as one check that must pass.
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build (static export)
+        run: npm run build:static
