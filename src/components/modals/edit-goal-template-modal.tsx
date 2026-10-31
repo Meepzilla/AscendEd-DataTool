@@ -14,11 +14,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useStudentData } from '@/hooks/use-student-data';
 import { GoalTemplateSchema, GoalType, type GoalTemplate } from '@/lib/types';
 import { GOAL_TYPES, GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
-import { generateSmartGoal } from '@/ai/flows/smart-goal-generation';
-import { Sparkles, Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { useErrorLog } from '@/hooks/use-error-log';
-import { AI_ENABLED } from '@/lib/features';
 import TargetDirectionField from './TargetDirectionField';
 import { goalTypeLabel } from '@/lib/helpers';
 
@@ -36,9 +31,6 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
     loading: dataLoading
   } = useStudentData();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isAiGenerating, setIsAiGenerating] = useState(false);
-  const { toast } = useToast();
-  const { addErrorLog } = useErrorLog();
 
   const currentTemplate = goalTemplates.find(t => t.id === templateToEdit?.id) || null;
 
@@ -71,31 +63,6 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
       });
     }
   }, [currentTemplate, form]);
-
-  const handleGenerateSmartGoal = async () => {
-    const promptValue = form.getValues('smartGoalPrompt');
-    if (!promptValue.trim()) {
-      form.setError('smartGoalPrompt', { type: 'manual', message: 'Prompt cannot be empty for AI generation.' });
-      return;
-    }
-    setIsAiGenerating(true);
-    try {
-      const result = await generateSmartGoal({ goalPrompt: promptValue });
-      if (result.smartGoal) {
-        form.setValue('generatedSmartGoal', result.smartGoal, { shouldValidate: true });
-        toast({ title: "AI Success", description: "SMART goal re-generated!" });
-      } else {
-        toast({ title: "AI Info", description: "AI did not return a goal. Please refine your prompt.", variant: "default" });
-      }
-    } catch (error: any) {
-      console.error("Error generating SMART goal:", error);
-      addErrorLog({ message: 'Failed to re-generate SMART goal with AI.', source: 'EditGoalTemplateModal.handleGenerateSmartGoal', details: error.message, type: 'error' });
-      toast({ title: "AI Error", description: "Failed to generate SMART goal. Check console for details.", variant: "destructive" });
-      form.setValue('generatedSmartGoal', "Error generating goal. Please try again or write manually.");
-    } finally {
-      setIsAiGenerating(false);
-    }
-  };
 
   const onSubmit = async (data: EditGoalTemplateFormData) => {
     if (!currentTemplate) return;
@@ -197,10 +164,10 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
             name="smartGoalPrompt"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{AI_ENABLED ? 'SMART Goal Prompt (for AI)' : 'Goal Description'}</FormLabel>
+                <FormLabel>Goal Description</FormLabel>
                 <FormControl>
                   <Textarea
-                    placeholder={AI_ENABLED ? "Describe the goal for the AI to make it SMART. E.g., 'Student will improve articulation of /r/ sound in words.'" : "E.g., Student will produce /r/ in words with 80% accuracy."}
+                    placeholder="E.g., Student will produce /r/ in words with 80% accuracy."
                     {...field}
                     rows={3}
                   />
@@ -210,16 +177,6 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
             )}
           />
 
-          {AI_ENABLED && (
-            <Button type="button" variant="outline" onClick={handleGenerateSmartGoal} disabled={isAiGenerating || dataLoading}>
-              {isAiGenerating ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Sparkles className="mr-2 h-4 w-4 text-yellow-500" />
-              )}
-              {form.getValues('generatedSmartGoal') ? 'Re-generate' : 'Generate'} SMART Goal with AI
-            </Button>
-          )}
 
           <FormField
             control={form.control}
@@ -229,7 +186,7 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
                 <FormLabel>Final SMART Goal</FormLabel>
                 <FormControl>
                   <Textarea
-                    placeholder="The generated or manually entered SMART goal will appear here."
+                    placeholder="The full SMART goal: specific, measurable, achievable, relevant and time-bound."
                     {...field}
                     rows={4}
                     className="bg-muted/30"
@@ -268,10 +225,10 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
           />
 
           <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={closeEditGoalTemplateModal} disabled={isSubmitting || dataLoading || isAiGenerating}>
+            <Button type="button" variant="outline" onClick={closeEditGoalTemplateModal} disabled={isSubmitting || dataLoading}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting || dataLoading || isAiGenerating}>
+            <Button type="submit" disabled={isSubmitting || dataLoading}>
               {isSubmitting || dataLoading ? 'Saving...' : 'Save Changes'}
             </Button>
           </div>

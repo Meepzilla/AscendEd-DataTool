@@ -4,9 +4,8 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { RotateCcw, ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, Trash2, LayoutGrid, Minimize2, UserX, UserPlus, ArrowRightLeft, Lightbulb, Download, ListPlus, Workflow, Shuffle, CheckSquare, ListChecks, DatabaseZap, UserSearch, Upload, Sparkles, BrainCircuit, PanelLeft, ArrowLeft, MessagesSquare, BookOpen, Lock } from 'lucide-react';
+import { RotateCcw, ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, Trash2, LayoutGrid, Minimize2, UserX, UserPlus, ArrowRightLeft, Lightbulb, Download, ListPlus, Workflow, Shuffle, CheckSquare, ListChecks, DatabaseZap, UserSearch, Upload, BrainCircuit, PanelLeft, ArrowLeft, MessagesSquare, BookOpen, Lock, ShieldCheck } from 'lucide-react';
 import { APP_NAME } from '@/lib/appConstants';
-import { AI_ENABLED } from '@/lib/features';
 
 interface ChangelogEntry {
   version?: string; // Optional version number
@@ -15,10 +14,16 @@ interface ChangelogEntry {
   description: string;
   type: 'feature' | 'improvement' | 'fix' | 'hotkey';
   icon: React.ElementType;
-  aiFeature?: boolean; // Only listed in builds with AI features turned on
 }
 
 const allChangelogEntries: ChangelogEntry[] = [
+  {
+    date: '2026-10-31',
+    title: 'AI Features Removed',
+    description: 'The AI features (SMART goal generation, AI goal search, activity suggestions and AI summaries) and the AI libraries they used have been removed from the app entirely. They were already turned off in the website and Android app; now no AI code is included at all, so student data has no path to an AI service. Goal search on the Goals page searches the words in goal names, goal text and skill areas, and the progress narrative on the Reports page is written from your data on the device.',
+    type: 'improvement',
+    icon: ShieldCheck,
+  },
   {
     date: '2026-10-30',
     title: 'Fixed: Third App Review',
@@ -284,14 +289,6 @@ const allChangelogEntries: ChangelogEntry[] = [
     description: "Improved the layout and user experience on the Data Entry page. The 'Select Student' and 'Select Goal' buttons are now integrated into the bottom action bar on mobile devices for easier access, while remaining as a floating control on desktop for a cleaner workspace. Also adjusted student card height for better visibility.",
     type: 'improvement',
     icon: LayoutGrid,
-  },
-  {
-    date: '2025-10-17',
-    title: 'AI-Powered Semantic Search for Goals',
-    aiFeature: true,
-    description: 'The Goal Templates page now features an AI-powered semantic search. Simply type your query and press Enter to find the most relevant goals based on meaning, not just keywords. Each result is ranked with a relevance score, and you can even generate a new goal template directly from your search query if you don\'t find what you\'re looking for.',
-    type: 'feature',
-    icon: Sparkles,
   },
   {
     date: '2025-10-15',
@@ -561,14 +558,6 @@ const allChangelogEntries: ChangelogEntry[] = [
   },
   {
     date: '2025-06-17',
-    title: 'AI Technical Summary Prompt Enhancement',
-    aiFeature: true,
-    description: 'Updated the prompt for AI-generated technical summaries on the Analysis Report page to guide the AI towards more insightful and concise observations based on student data.',
-    type: 'improvement',
-    icon: Lightbulb,
-  },
-  {
-    date: '2025-06-17',
     title: 'Analysis Report Bug Fix',
     description: 'Resolved a "params enumerated" warning on the Analysis Report page, improving stability when handling URL parameters.',
     type: 'fix',
@@ -714,7 +703,7 @@ const getIconForType = (type: ChangelogEntry['type']): React.ElementType => {
   }
 };
 
-const changelogEntries = allChangelogEntries.filter(entry => AI_ENABLED || !entry.aiFeature);
+const changelogEntries = allChangelogEntries;
 
 export default function ChangelogPage() {
   return (

@@ -1,5 +1,4 @@
 import type {NextConfig} from 'next';
-import path from 'path';
 
 // `BUILD_TARGET=static` builds a static export (into out/) with no server, used for the Android app
 // and the installable web app (see `npm run build:static`).
@@ -33,16 +32,6 @@ const nextConfig: NextConfig = {
     env: {
       ...appVersionEnv,
       NEXT_PUBLIC_STATIC_EXPORT: 'true',
-    },
-    webpack: (config, { webpack }) => {
-      // AI flows are server actions, which a static export can't contain. Swap them for stubs.
-      config.plugins.push(
-        new webpack.NormalModuleReplacementPlugin(
-          /(^@\/ai\/flows\/|[\\/]src[\\/]ai[\\/]flows[\\/])/,
-          path.resolve(__dirname, 'src/ai/flows-disabled.ts'),
-        ),
-      );
-      return config;
     },
   }),
 };
