@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-31',
+    title: 'Report Date and Goal Target Dates',
+    description: 'The Progress Report has a Report date you can change (for example, to the IEP progress-reporting date). Each goal can have a target date, the date its criteria should be met by: set it on the Progress Report or in Students → Edit Goal. It is saved with the goal and printed with the target, for example "Target 80% by Jun 12, 2027". Settings → Interface → School or District Name puts your school or district at the top of the report in place of AscendEd.',
+    type: 'feature',
+    icon: ScrollText,
+  },
+  {
+    date: '2026-10-31',
     title: 'Printable Progress Report',
     description: 'Reports → Progress Report makes a printable IEP goal progress report for a student and reporting period (last 30 days, a quarter, the school year or custom dates). It has a summary table of every goal, then for each goal its statement and target, sessions, average, range, latest result and how often the target was met, a progress rating (Goal met, Making progress, Limited progress, Not making progress, Too few sessions, Not addressed), a chart with the target line, and written comments from the data. Change the rating or comments before printing; print it or save it as a PDF. Like everything else, it is made on the device.',
     type: 'feature',

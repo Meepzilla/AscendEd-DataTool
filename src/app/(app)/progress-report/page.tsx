@@ -17,6 +17,7 @@ import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
 import { useStudentData } from '@/hooks/use-student-data';
 import { compareSessionsOldestFirst, formatDate } from '@/lib/helpers';
 import { buildProgressReport, type ProgressStatus } from '@/lib/report-narrative';
+import { getOrganizationName } from '@/lib/organization';
 import ProgressReportDocument, { type ProgressReportEdits } from '@/components/reports/ProgressReportDocument';
 
 // Reports → Progress Report: a printable IEP goal progress report for one student and reporting period. The
@@ -50,7 +51,7 @@ function rangeFor(period: Period, custom: DateRange | undefined): DateRange | un
 }
 
 function ProgressReportPage() {
-  const { students, sessions, loading } = useStudentData();
+  const { students, sessions, loading, updateStudentGoal } = useStudentData();
   const searchParams = useSearchParams();
   const router = useRouter();
   const activeStudents = useMemo(() => students.filter(s => !s.isArchived), [students]);
@@ -62,6 +63,11 @@ function ProgressReportPage() {
   const [customRange, setCustomRange] = useState<DateRange | undefined>();
   const [excludedGoals, setExcludedGoals] = useState<Set<string>>(new Set());
   const [preparedBy, setPreparedBy] = useState('');
+  const [organization, setOrganization] = useState('');
+  const [reportDate, setReportDate] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  });
   const [showCharts, setShowCharts] = useState(true);
   const [showNextSteps, setShowNextSteps] = useState(false);
   const [edits, setEdits] = useState<ProgressReportEdits>({ status: {}, comment: {} });
@@ -69,6 +75,7 @@ function ProgressReportPage() {
 
   useEffect(() => {
     try { setPreparedBy(localStorage.getItem(PREPARER_KEY) ?? ''); } catch { /* not saved */ }
+    setOrganization(getOrganizationName());
     setPortalReady(true);
   }, []);
   // A different student or period starts from fresh figures and comments.
@@ -118,7 +125,11 @@ function ProgressReportPage() {
     window.print();
   };
 
-  const settings = { preparedBy, showCharts, showNextSteps };
+  const settings = { preparedBy, organization, reportDate, showCharts, showNextSteps };
+  // Saved with the student's goal (also editable in the goal's Edit window), so it carries over to later reports.
+  const onTargetDate = (goalId: string, date: string) => {
+    if (studentId) updateStudentGoal(studentId, goalId, { targetDate: date || undefined });
+  };
   const documentProps = { studentName: student?.name ?? '', periodLabel, sessionCount, goals: report, settings, edits };
 
   if (loading && students.length === 0) return <p className="text-muted-foreground">Loading…</p>;
@@ -148,7 +159,7 @@ function ProgressReportPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-4">
             <div className="space-y-1">
               <Label htmlFor="report-student">Student</Label>
               <Select value={studentId} onValueChange={v => router.replace(`/progress-report?studentId=${v}`, { scroll: false })}>
@@ -171,6 +182,10 @@ function ProgressReportPage() {
             <div className="space-y-1">
               <Label htmlFor="report-preparer">Prepared by</Label>
               <Input id="report-preparer" value={preparedBy} onChange={e => savePreparer(e.target.value)} placeholder="Name, title" autoComplete="name" />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="report-date">Report date</Label>
+              <Input id="report-date" type="date" value={reportDate} onChange={e => setReportDate(e.target.value)} />
             </div>
           </div>
 
@@ -203,7 +218,9 @@ function ProgressReportPage() {
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            Changes to progress and comments are for this printout only and aren&apos;t saved.
+            Changes to progress, comments and the report date are for this printout only and aren&apos;t saved. A goal&apos;s
+            target date is saved with the goal (also in Students → Edit Goal). The school or district name at the top
+            of the report is set in <Link href="/settings" className="underline hover:text-primary">Settings</Link>.
           </p>
         </CardContent>
       </Card>
@@ -216,7 +233,7 @@ function ProgressReportPage() {
         <p className="text-muted-foreground">Select at least one goal to include.</p>
       ) : (
         <div className="overflow-x-auto rounded-lg bg-muted/40 p-2 sm:p-6">
-          <ProgressReportDocument {...documentProps} onEdit={onEdit} />
+          <ProgressReportDocument {...documentProps} onEdit={onEdit} onTargetDate={onTargetDate} />
         </div>
       )}
 
