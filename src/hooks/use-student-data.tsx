@@ -16,6 +16,7 @@ import type { ImportedSession } from '@/components/modals/import-data-modal';
 import { createBackup, mergeBackupData, type AppBackup, type RestoreMode, type RestoreSummary } from '@/lib/backup';
 import { loadAbcLists, loadCustomAbcLists, mergeAbcLists, saveAbcLists } from '@/lib/abc-lists';
 import { getStudentGroups, saveStudentGroups } from '@/lib/student-groups';
+import { mergeProblem, mergeSessions } from '@/lib/session-merge';
 
 const LOCAL_STORAGE_STUDENTS_BASE_KEY = 'ascended_students_v2';
 const LOCAL_STORAGE_GOAL_TEMPLATES_BASE_KEY = 'ascended_goal_templates_v2';
@@ -72,6 +73,8 @@ interface StudentDataContextType {
   /** False when it couldn't be saved (the error was shown). */
   updateSession: (sessionId: string, data: Partial<SessionData>) => Promise<boolean>;
   deleteSession: (sessionId: string) => Promise<void>;
+  /** Merges sessions saved in parts into one (session-merge.ts); false when they can't be merged or saving failed. */
+  mergeSessionRecords: (sessionIds: string[]) => Promise<boolean>;
   getSessionsForStudent: (studentId: string) => SessionData[];
   importSessions: (sessionsToImport: ImportedSession[]) => Promise<{ newCount: number; duplicateCount: number; unmatchedCount: number; addedGoalCount: number }>;
   exportBackup: () => AppBackup;
@@ -294,6 +297,24 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     if (!currentUser) return false;
     if (!commitSessions(sessionsRef.current.map(s => s.sessionId === sessionId ? { ...s, ...data } : s).sort(byDateDesc))) return false;
     toast({ title: "Success", description: "Session updated." });
+    return true;
+  }, [currentUser, toast, commitSessions]);
+
+  const mergeSessionRecords = useCallback(async (sessionIds: string[]) => {
+    if (!currentUser) return false;
+    const parts = sessionsRef.current.filter(s => sessionIds.includes(s.sessionId));
+    const problem = mergeProblem(parts);
+    if (problem) {
+      toast({ title: 'Can\'t merge', description: problem, variant: 'destructive' });
+      return false;
+    }
+    const merged = mergeSessions(parts);
+    const next = sessionsRef.current
+      .filter(s => s.sessionId === merged.sessionId || !sessionIds.includes(s.sessionId))
+      .map(s => (s.sessionId === merged.sessionId ? merged : s))
+      .sort(byDateDesc);
+    if (!commitSessions(next)) return false;
+    toast({ title: 'Sessions merged', description: `${parts.length} sessions for ${merged.studentName} are now one session (${merged.time}–${merged.endTime}).` });
     return true;
   }, [currentUser, toast, commitSessions]);
 
@@ -570,7 +591,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     addStudent, updateStudent, deleteStudent, deleteStudents,
     assignGoalToStudent, removeGoalFromStudent, updateStudentGoal,
     addGoalTemplate, updateGoalTemplate, deleteGoalTemplate, archiveGoalTemplates, assignTemplateToStudents,
-    addSession, updateSession, deleteSession,
+    addSession, updateSession, deleteSession, mergeSessionRecords,
     getSessionsForStudent, importSessions,
     exportBackup, restoreBackup,
 
