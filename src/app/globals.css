@@ -222,3 +222,63 @@ body > [class*="netlify" i],
 body > iframe[src*="netlify" i] {
   display: none !important;
 }
+
+/* Printable progress report (progress-report page). The report is drawn as a light "paper" page, on screen and
+   in print, in the app's own colors: its tokens switch to the light theme, with a darker gold for accent text
+   (the bright gold is kept for lines and fills, where it doesn't need text contrast). */
+.report-paper {
+  --background: 0 0% 100%;
+  --foreground: 210 25% 18%;
+  --card: 0 0% 100%;
+  --card-foreground: 210 25% 18%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 210 25% 18%;
+  --primary: 35 75% 45%;
+  --primary-foreground: 35 20% 12%;
+  --secondary: 210 20% 94%;
+  --secondary-foreground: 210 25% 18%;
+  --muted: 210 20% 95%;
+  --muted-foreground: 210 15% 38%;
+  --accent: 35 50% 92%;
+  --accent-foreground: 35 20% 15%;
+  --border: 35 30% 78%;
+  --input: 35 30% 70%;
+  --ring: 35 75% 40%;
+  --report-accent: 35 80% 30%;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  color-scheme: light;
+}
+
+/* Only the report is printed: it is also rendered straight into <body> (outside the app's fixed-height layout)
+   for printing, and everything else is hidden. Printed at full size, without the app's zoom. */
+.print-only {
+  display: none;
+}
+@media print {
+  @page {
+    size: letter;
+    margin: 0.5in;
+  }
+  html {
+    padding: 0 !important;
+    background: #fff !important;
+  }
+  body {
+    zoom: 1 !important;
+    background: #fff !important;
+  }
+  body > *:not(.print-only) {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  .report-paper {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .report-avoid-break {
+    break-inside: avoid;
+  }
+}

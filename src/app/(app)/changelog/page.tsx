@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-31',
+    title: 'Printable Progress Report',
+    description: 'Reports → Progress Report makes a printable IEP goal progress report for a student and reporting period (last 30 days, a quarter, the school year or custom dates). It has a summary table of every goal, then for each goal its statement and target, sessions, average, range, latest result and how often the target was met, a progress rating (Goal met, Making progress, Limited progress, Not making progress, Too few sessions, Not addressed), a chart with the target line, and written comments from the data. Change the rating or comments before printing; print it or save it as a PDF. Like everything else, it is made on the device.',
+    type: 'feature',
+    icon: ScrollText,
+  },
+  {
+    date: '2026-10-31',
     title: 'Start and End Time on One Line',
     description: 'In Data Entry, Reset Time to Now now sits beside the Session Date, so the Start Time and End Time share the next line on every screen size, phones included.',
     type: 'improvement',
