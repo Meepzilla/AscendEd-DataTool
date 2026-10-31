@@ -10,6 +10,20 @@ export interface Student {
   updatedAt?: string; // ISO string
   userId: string;
   isArchived?: boolean; // New field for archiving
+  /** IEP dates and required service minutes (student profile → Overview → Edit IEP Details). */
+  iep?: StudentIep;
+}
+
+export interface StudentIep {
+  /** Date of the current IEP meeting (YYYY-MM-DD). */
+  iepDate?: string;
+  /** Annual IEP review due (YYYY-MM-DD). */
+  annualReviewDate?: string;
+  /** Re-evaluation (triennial) due (YYYY-MM-DD). */
+  reevaluationDate?: string;
+  /** Service minutes the IEP requires, per week or per month. */
+  serviceMinutes?: number;
+  servicePer?: 'week' | 'month';
 }
 
 export interface Goal {
