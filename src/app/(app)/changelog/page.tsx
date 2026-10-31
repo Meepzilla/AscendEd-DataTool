@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-31',
+    title: 'Scroll Arrows in the Middle of the Bottom Bar',
+    description: 'In Data Entry, the left and right arrows that scroll between students are now in the middle of the bottom bar, on the same line as the Student button, instead of under Student and Goal. On iPad in landscape the whole bar fits on one line.',
+    type: 'improvement',
+    icon: ArrowRightLeft,
+  },
+  {
+    date: '2026-10-31',
     title: 'Missed Sessions and Attendance',
     description: 'Each Data Entry student card has a Missed button (calendar icon) to record a session that didn\'t take place on the date and times set, with the reason (student absent, student unavailable, provider absent, no school, or other) and an optional note. Missed sessions appear on the Sessions page, count toward attendance on Reports and the Progress Report (for example "12 held · 2 missed (Student absent 2)"), and are included in CSV exports with an Attendance column. They aren\'t counted in progress charts or figures.',
     type: 'feature',
