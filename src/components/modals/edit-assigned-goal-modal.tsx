@@ -171,7 +171,7 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
                     placeholder="e.g., 80 (for 80%)"
                     {...field}
                     value={field.value ?? ''}
-                    onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))}
+                    onChange={e => field.onChange(e.target.value === '' ? '' : Number(e.target.value))} // '' (not undefined, which react-hook-form replaces with the starting value) = no target
                     min="0"
                     max="100"
                   />
