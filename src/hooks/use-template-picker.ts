@@ -20,7 +20,9 @@ export function useTemplatePicker(goalTemplates: GoalTemplate[], student: Pick<S
     [goalTemplates]
   );
 
-  // Read once per template list change; it only changes when a goal is assigned.
+  // Read once per template list change; it only changes when a goal is assigned. goalTemplates and student
+  // aren't used inside, but they are what change when it does, so they make it read again.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const recentIds = useMemo(() => getRecentTemplateIds(userId), [userId, goalTemplates, student]);
 
   const templates = useMemo(() => {

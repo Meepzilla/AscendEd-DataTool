@@ -22,7 +22,8 @@ type ToasterToast = ToastProps & {
   action?: ToastActionElement
 }
 
-// Defines action types for the toast reducer, ensuring type safety for dispatch actions.
+// Defines action types for the toast reducer, ensuring type safety for dispatch actions (used as a type only).
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const actionTypes = {
   ADD_TOAST: "ADD_TOAST",
   UPDATE_TOAST: "UPDATE_TOAST",

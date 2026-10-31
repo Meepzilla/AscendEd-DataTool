@@ -11,7 +11,7 @@ import { Save, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
 import { Info, PlusCircle } from 'lucide-react';
-import type { Goal, Student, StudentSessionState, SessionGoalData, GoalType } from '@/lib/types';
+import type { Goal, Student, StudentSessionState, SessionGoalData } from '@/lib/types';
 import { MISSED_REASON_SHORT, type MissedReason } from '@/lib/attendance';
 import { taskSteps } from '@/lib/task-analysis';
 import type { StudentGroup } from '@/lib/student-groups';
@@ -20,7 +20,7 @@ import { formatDate } from '@/lib/helpers';
 import TouchControls from '@/components/forms/touch-controls';
 import { ConfettiProvider } from '@/hooks/use-confetti';
 import { ScrollArea } from '../ui/scroll-area';
-import { GOAL_TYPE_FIELDS, GOAL_TYPES, GOAL_TYPES_WITHOUT_PROMPT_COUNTERS, captureTypeOf, finalizeBehaviorData } from '@/lib/goal-constants';
+import { GOAL_TYPE_FIELDS, captureTypeOf, finalizeBehaviorData } from '@/lib/goal-constants';
 import { applyGoalHotkey, hotkeyChar, hotkeysBlocked, singleKeyShortcutsEnabled } from '@/lib/data-entry-hotkeys';
 import GoalFocusManager from './GoalFocusManager';
 import AccessLockDialog, { type AccessLockDialogMode } from './AccessLockDialog';
@@ -472,7 +472,7 @@ export default function DataEntryContent() {
         if (!goal) return prevStates;
         // Marks the goal as worked on this session, so reports count it even when its values equal the
         // starting ones (e.g. a rating left at 3).
-        let processedData = { ...newData, recorded: true };
+        const processedData = { ...newData, recorded: true };
         return { ...prevStates, [studentId]: { ...studentState, goalData: { ...studentState.goalData, [goalId]: processedData } } };
     });
   }, []);
@@ -1034,7 +1034,7 @@ export default function DataEntryContent() {
                     </Button>
                     <LoadGroupMenu onLoad={loadGroup} disabled={isStudentAccessLocked} />
                   </div>
-                  {students.length === 0 && <p className="mt-4 text-sm">You don't have any students yet. Go to 'Students' or press (Alt+M) to add one.</p>}
+                  {students.length === 0 && <p className="mt-4 text-sm">You don&apos;t have any students yet. Go to Students or press (Alt+M) to add one.</p>}
               </CardContent>
             </Card>
           )}

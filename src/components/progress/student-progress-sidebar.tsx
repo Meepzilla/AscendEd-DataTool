@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { TrendingUp, CheckCircle2, ListChecks, BarChart2 } from 'lucide-react';
+import { TrendingUp, ListChecks, BarChart2 } from 'lucide-react';
 import { compareSessionsOldestFirst, formatGoalTarget, studentProfilePath } from '@/lib/helpers';
 
 /**
@@ -43,9 +43,8 @@ const calculateProgressForGoal = (goal: Goal, latestSessionForGoal: SessionData 
 
 
 export default function StudentProgressSidebar({ student, studentSessions }: {student: Student, studentSessions: SessionData[]}) {
-  if (!student) return null;
-
-  const activeGoals = student.goals.filter(goal => !goal.isArchived);
+  // Hooks run on every render, before the early return below (React requires the same hooks each time).
+  const activeGoals = useMemo(() => (student?.goals ?? []).filter(goal => !goal.isArchived), [student]);
 
   // Memoize the expensive calculation to run only when student or sessions change.
   const goalsWithProgress = useMemo(() => {
@@ -78,6 +77,8 @@ export default function StudentProgressSidebar({ student, studentSessions }: {st
       return { ...goal, progress };
     });
   }, [activeGoals, studentSessions]);
+
+  if (!student) return null;
 
 
   const activeGoalsWithProgressSliced = goalsWithProgress.slice(0, 5);

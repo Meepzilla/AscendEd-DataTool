@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import type { Student, SessionData, Goal, TrialStatus } from '@/lib/types';
+import type { Student, SessionData, TrialStatus } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { CheckSquare, Check, X, CircleHelp } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
