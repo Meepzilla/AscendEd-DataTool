@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Edit, Trash2, PlusCircle, Info, Target, Edit3, CheckSquare, TrendingUp, Archive, ArchiveRestore, Upload, Download, ArrowLeft } from 'lucide-react';
-import { formatDate, formatGoalTarget, goalTypeLabel } from '@/lib/helpers';
+import { formatDate, formatGoalTarget, goalStatement, goalTypeLabel } from '@/lib/helpers';
 import { captureTypeOf } from '@/lib/goal-constants';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -296,7 +296,7 @@ export default function StudentProfileView() {
                         )}
                         {goal.isArchived && <Badge variant="outline" className="border-orange-500 text-orange-600">Archived</Badge>}
                       </div>
-                      <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{goal.smartGoal}</p>
+                      <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{goalStatement(goal)}</p>
                     </div>
                     <div className="flex flex-col gap-1 shrink-0 mt-2 sm:mt-0 sm:ml-2">
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenEditAssignedGoalModal(goal)} title="Edit Assigned Goal">

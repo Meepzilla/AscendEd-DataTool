@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-31',
+    title: 'Baseline, Aim Line and Mastery Criteria',
+    description: 'In Students → Edit Goal, a goal can have a baseline (where the student started) and a baseline date, and mastery criteria (the target met in a number of sessions in a row, 3 if not set). With a target and a target date, Reports and the Progress Report draw an aim line from the baseline to the target by the target date and show whether the student is On track or Behind the aim line (the last 3 sessions all short of it). A goal that meets its mastery criteria shows as Mastered on Reports and Goal met on the Progress Report, and the written comments describe progress against the aim line. A goal\'s target date now also fills in "[date]" in its goal text (for example "By Jun 12, 2027, …") on the Progress Report, the student profile and Data Entry.',
+    type: 'feature',
+    icon: ScrollText,
+  },
+  {
+    date: '2026-10-31',
     title: 'Report Date and Goal Target Dates',
     description: 'The Progress Report has a Report date you can change (for example, to the IEP progress-reporting date). Each goal can have a target date, the date its criteria should be met by: set it on the Progress Report or in Students → Edit Goal. It is saved with the goal and printed with the target, for example "Target 80% by Jun 12, 2027". Settings → Interface → School or District Name puts your school or district at the top of the report in place of AscendEd.',
     type: 'feature',

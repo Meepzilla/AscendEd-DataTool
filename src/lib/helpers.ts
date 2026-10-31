@@ -162,3 +162,9 @@ export function sessionTimestamp(session: { date: string; time?: string }): numb
 export function compareSessionsOldestFirst(a: { date: string; time?: string }, b: { date: string; time?: string }): number {
   return sessionTimestamp(a) - sessionTimestamp(b) || new Date(a.date).getTime() - new Date(b.date).getTime();
 }
+
+/** The goal statement with its "[date]" placeholder (from the goal bank) filled in with the goal's target date. */
+export function goalStatement(goal: { smartGoal?: string; targetDate?: string }): string {
+  const text = goal.smartGoal ?? '';
+  return goal.targetDate ? text.replace(/\[date\]/gi, formatDateOnly(goal.targetDate)) : text;
+}
