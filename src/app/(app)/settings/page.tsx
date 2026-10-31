@@ -79,7 +79,7 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle>Interface</CardTitle>
           <CardDescription>
-            Control the application's user interface elements.
+            Control the application&apos;s user interface elements.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

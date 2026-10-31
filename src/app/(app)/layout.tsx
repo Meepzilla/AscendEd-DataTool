@@ -7,7 +7,7 @@ import AppHeader from '@/components/layout/app-header';
 import TopEdgeBar from '@/components/layout/TopEdgeBar';
 import AppFooter from '@/components/layout/app-footer';
 import StudentSidebar from '@/components/layout/student-sidebar';
-import { SidebarProvider, SidebarInset, SidebarRail } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarRail } from '@/components/ui/sidebar';
 import { useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts';
 import { APP_NAME } from '@/lib/appConstants';
 

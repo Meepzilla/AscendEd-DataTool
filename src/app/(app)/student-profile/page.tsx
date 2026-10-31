@@ -7,7 +7,6 @@ import { UserSearch, UsersRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ManageGroupsDialog from '@/components/student-groups/ManageGroupsDialog';
 import AppLoadingSkeleton from '@/components/layout/AppLoadingSkeleton';
-import type { Student } from '@/lib/types';
 import StudentFilters, { type StudentSortOrder } from '@/components/student-selection/StudentFilters';
 
 const StudentSelectionGrid = lazy(() => import('@/components/student-selection/StudentSelectionGrid'));

@@ -1,12 +1,12 @@
 
 'use client';
 
-import React, { useState, useMemo, lazy, Suspense } from 'react';
+import React, { useMemo, lazy, Suspense } from 'react';
 import type { Student, SessionData, Goal, PromptType } from '@/lib/types';
 import { BEHAVIOR_GOAL_TYPES, captureTypeOf } from '@/lib/goal-constants';
 import { goalMeasure, goalResponses, withoutRunningTimers } from '@/lib/goal-measures';
 import { PROMPT_TYPES } from '@/lib/promptConstants';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertTriangle } from 'lucide-react';
 

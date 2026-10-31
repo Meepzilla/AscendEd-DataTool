@@ -1,13 +1,12 @@
 
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { Users, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import SelectionModal from '@/components/modals/selection-modal';
-import { cn } from '@/lib/utils';
 import { useSidebar } from '@/components/ui/sidebar';
-import type { Student, StudentSessionState, Goal } from '@/lib/types';
+import type { Student, StudentSessionState } from '@/lib/types';
 
 interface TouchControlsProps {
   activeStudentsInSlots: Student[];
@@ -26,7 +25,6 @@ export default function TouchControls({
   activeStudentsInSlots,
   studentSessionStates,
   focusedStudentSlotIndex,
-  setFocusedStudentSlotIndex,
   focusedGoalIndexByStudentId,
   setFocusedGoalIndexByStudentId,
   showArchivedByStudentId,
@@ -59,11 +57,6 @@ export default function TouchControls({
       name: student.name,
     }));
   }, [activeStudentsInSlots]);
-
-  const handleStudentSelect = (indexStr: string) => {
-    setFocusedStudentSlotIndex(parseInt(indexStr, 10));
-    setSelectionModalType(null);
-  };
 
   const handleGoalSelect = (goalId: string) => {
     if (!focusedStudentId) return;

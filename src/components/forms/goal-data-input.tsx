@@ -77,7 +77,7 @@ export default function GoalDataInputComponent({
 
   const handleChange = (field: string, value: any) => {
     // This function is now only for logic, not for checking lock status
-    let newData = { ...data, [field]: value };
+    const newData = { ...data, [field]: value };
 
     // A dysfluent syllable is also a syllable, so changing a dysfluency count changes total syllables by the
     // same amount (up or down, so a mistaken tap taken back leaves the total as it was).

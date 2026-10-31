@@ -9,14 +9,14 @@ import { Menu, FileText, UserPlus, Lock } from 'lucide-react';
 import { isPasscodeEnabled, lockNow } from '@/lib/secure-store';
 import { MENU_POSITION_EVENT, getMenuPosition, type MenuPosition } from '@/lib/menu-position';
 import { useAuth } from '@/hooks/use-auth';
-import { APP_NAME, APP_SUBTITLE } from '@/lib/appConstants';
+import { APP_NAME } from '@/lib/appConstants';
 import { useStudentData } from '@/hooks/use-student-data';
 import { useErrorLog } from '@/hooks/use-error-log';
 import AddStudentModal from '@/components/modals/add-student-modal';
 import EditStudentModal from '@/components/modals/edit-student-modal';
 import ErrorLogModal from '@/components/modals/error-log-modal';
 import AppNavigation from './app-navigation'; 
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { Separator } from '../ui/separator';
 import { 
   DropdownMenu, 
@@ -27,19 +27,16 @@ import {
   DropdownMenuSeparator 
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import TouchControls from '../forms/touch-controls';
 import { useSidebar } from '@/components/ui/sidebar';
 
 export default function AppHeader() {
   const { currentUser, signOut } = useAuth();
   const { openAddStudentModal, editingStudent } = useStudentData();
-  const { toggleErrorLogModal, isErrorLogModalOpen } = useErrorLog(); 
-  const router = useRouter();
+  const { toggleErrorLogModal } = useErrorLog();
   const pathname = usePathname();
   const { toggleSidebar } = useSidebar();
 
   const userInitial = currentUser?.displayName?.charAt(0) || currentUser?.email?.charAt(0) || 'U';
-  const isDataEntryPage = pathname.startsWith('/data-entry');
 
   // Dialog backdrops start below the menu bar while it is shown (see --app-top-bar in globals.css).
   useEffect(() => {

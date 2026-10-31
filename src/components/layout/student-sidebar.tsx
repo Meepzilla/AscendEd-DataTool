@@ -2,21 +2,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { 
-  Sidebar, 
-  SidebarHeader, 
-  SidebarContent, 
-  SidebarFooter, 
-  SidebarGroup, 
-  SidebarGroupLabel,
-  SidebarMenu, 
-  SidebarMenuItem, 
-  SidebarMenuButton,
-  SidebarMenuSkeleton,
-  SidebarSeparator,
-  useSidebar,
-  SidebarTrigger
-} from '@/components/ui/sidebar';
+import { Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarMenuSkeleton, SidebarSeparator, useSidebar } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -24,7 +10,7 @@ import { User, PlusCircle, Search, Edit3, Trash2, Archive, ArchiveRestore, Panel
 import { useStudentData } from '@/hooks/use-student-data';
 import type { Student } from '@/lib/types';
 import StudentProgressSidebar from '@/components/progress/student-progress-sidebar';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
   Accordion,
@@ -53,7 +39,6 @@ export default function StudentSidebar() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showArchived, setShowArchived] = useState(false);
   const { state: sidebarState, toggleSidebar } = useSidebar(); // To adapt content based on collapsed/expanded
-  const router = useRouter();
   const pathname = usePathname();
 
   const filteredStudents = useMemo(() => students
