@@ -1,7 +1,7 @@
 import React from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { APP_NAME } from '@/lib/appConstants';
-import { formatDate, formatDateOnly, plural } from '@/lib/helpers';
+import { formatDate, formatDateOnly, goalStatement, plural } from '@/lib/helpers';
 import { PROGRESS_STATUS_LABELS, type GoalProgress, type ProgressStatus } from '@/lib/report-narrative';
 import { AIM_STATUS_LABELS } from '@/lib/aim-line';
 import { cn } from '@/lib/utils';
@@ -166,7 +166,7 @@ export default function ProgressReportDocument({ studentName, periodLabel, sessi
             )}
           </div>
 
-          {g.goal.smartGoal && <p className="mt-2 italic">{g.goal.smartGoal}</p>}
+          {g.goal.smartGoal && <p className="mt-2 italic">{goalStatement(g.goal)}</p>}
 
           {g.sessionCount > 0 && (
             <dl className="mt-3 flex flex-wrap gap-x-8 gap-y-2 rounded-md bg-muted/60 p-3">
