@@ -1,13 +1,17 @@
 import type { SessionData, SessionGoalData } from './types';
 import { compareSessionsOldestFirst } from './helpers';
 import { sessionMinutes } from './student-overview';
+import { finalizeBehaviorData } from './goal-constants/behavior';
+import { STORY_PARTS } from './goal-constants/story-champs';
 
 // Sessions → Merge: records of one student's session that were saved in parts (saved, then more data collected
 // and saved again) become one session. Its time runs from the earliest start to the latest end, so service
 // minutes count the time once instead of once per save, and the goal data is combined:
 // - counts add up (correct/incorrect, prompts, behavior counts, observation minutes, fluency counts...);
 // - lists are joined (trials, ABC incidents, duration episodes, occurrence times, intervals);
-// - task analysis steps keep each step's latest score; ratings and other single values keep the latest;
+// - task analysis steps keep each step's latest score; ratings, settings (interval length, interval method)
+//   and other single values keep the latest; Story Champs parts keep the best score given;
+// - summaries worked out from the data (% of intervals, average latency) are worked out again;
 // - notes and activities are joined.
 // Only sessions of the same student on the same day that took place (not missed) can be merged.
 
@@ -28,6 +32,11 @@ const toMinutes = (t?: string) => {
   return m ? Number(m[1]) * 60 + Number(m[2]) : null;
 };
 
+// Numbers that are settings, times or summaries rather than counts: they keep the latest value (summaries are
+// worked out again afterwards).
+const NOT_ADDED = new Set(['rating', 'numberOfTrials', 'runningSince', 'intervalSeconds', 'percentIntervals', 'averageSeconds', 'timerStartedAt', 'cueGivenAt']);
+const STORY_PART_KEYS = new Set<string>(STORY_PARTS.map(p => p.key));
+
 /** Combines one goal's data from several sessions, oldest first. */
 export function mergeGoalData(parts: Record<string, any>[]): Record<string, any> {
   const result: Record<string, any> = {};
@@ -45,7 +54,11 @@ export function mergeGoalData(parts: Record<string, any>[]): Record<string, any>
         result.trials = scored.length ? scored : [...value];
       } else if (Array.isArray(current) && Array.isArray(value)) {
         result[key] = [...current, ...value];
-      } else if (typeof current === 'number' && typeof value === 'number' && key !== 'rating' && key !== 'numberOfTrials' && key !== 'runningSince') {
+      } else if (key === 'startedAt' && current) {
+        // Interval recording: keeps when the first part's intervals began.
+      } else if (typeof current === 'number' && typeof value === 'number' && STORY_PART_KEYS.has(key)) {
+        result[key] = Math.max(current, value); // the same story part scored again: its best score
+      } else if (typeof current === 'number' && typeof value === 'number' && !NOT_ADDED.has(key)) {
         result[key] = current + value;
       } else if (typeof current === 'boolean' && typeof value === 'boolean') {
         result[key] = current || value;
@@ -57,6 +70,12 @@ export function mergeGoalData(parts: Record<string, any>[]): Record<string, any>
     }
   }
   if (Array.isArray(result.trials)) result.numberOfTrials = result.trials.length;
+  // Work the summaries out again from the combined data.
+  if (Array.isArray(result.intervals)) {
+    result.intervalCount = result.intervals.length;
+    return finalizeBehaviorData('BEHAVIOR_INTERVAL', result);
+  }
+  if (Array.isArray(result.latencies)) return finalizeBehaviorData('BEHAVIOR_LATENCY', result);
   return result;
 }
 
