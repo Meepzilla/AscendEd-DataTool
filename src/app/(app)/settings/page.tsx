@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -57,9 +58,10 @@ export default function SettingsPage() {
           <div className="flex items-center gap-3">
             <Settings className="h-10 w-10 text-primary" />
             <div>
-              <CardTitle className="text-3xl font-bold">Application Settings</CardTitle>
+              <CardTitle role="heading" aria-level={1} className="text-3xl font-bold">Application Settings</CardTitle>
               <CardDescription>
-                Manage application behavior.
+                Manage application behavior. How student data is stored and protected:{' '}
+                <Link href="/privacy" className="underline hover:text-primary">Privacy Notice</Link>.
               </CardDescription>
             </div>
           </div>

@@ -2,6 +2,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { APP_NAME } from '@/lib/appConstants';
 
 export default function AppFooter() {
@@ -34,7 +35,7 @@ export default function AppFooter() {
                 </li>
               ))}
             </ul>
-             <p className="text-xs mt-1">See <a href="/help" className="underline hover:text-primary">Help Page</a> for Data Entry hotkeys.</p>
+             <p className="text-xs mt-1">See <Link href="/help" className="underline hover:text-primary">Help Page</Link> for Data Entry hotkeys. <Link href="/privacy" className="underline hover:text-primary">Privacy Notice</Link></p>
           </div>
         </div>
       </div>

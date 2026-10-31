@@ -9,6 +9,7 @@ import AppFooter from '@/components/layout/app-footer';
 import StudentSidebar from '@/components/layout/student-sidebar';
 import { SidebarProvider, SidebarInset, SidebarRail } from '@/components/ui/sidebar';
 import { useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts';
+import { APP_NAME } from '@/lib/appConstants';
 
 function KeyboardShortcutInitializer() {
   useKeyboardShortcuts();
@@ -16,6 +17,20 @@ function KeyboardShortcutInitializer() {
 }
 
 const SIDEBAR_ENABLED_KEY = 'sidebar_enabled';
+
+// Each page's own browser title, so screen readers announce where you are and tabs/history are told apart.
+const PAGE_TITLES: [string, string][] = [
+  ['/dashboard', 'Dashboard'],
+  ['/data-entry', 'Data Entry'],
+  ['/manage-sessions', 'Sessions'],
+  ['/analysis-report', 'Reports'],
+  ['/student-profile', 'Students'],
+  ['/goal-templates', 'Goals'],
+  ['/changelog', 'Changelog'],
+  ['/settings', 'Settings'],
+  ['/help', 'Help'],
+  ['/privacy', 'Privacy Notice'],
+];
 
 export default function AppLayout({
   children,
@@ -26,6 +41,11 @@ export default function AppLayout({
   const router = useRouter();
   const pathname = usePathname();
   const mainRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const page = PAGE_TITLES.find(([prefix]) => pathname.startsWith(prefix))?.[1];
+    document.title = page ? `${page} | ${APP_NAME}` : APP_NAME;
+  }, [pathname]);
   const [isSidebarEnabled, setIsSidebarEnabled] = useState(true);
 
   // Pages scroll inside <main>, not the window, so start each page at the top.

@@ -69,7 +69,7 @@ export default function HelpPage() {
           <div className="flex items-center gap-3">
             <HelpCircle className="h-10 w-10 text-primary" />
             <div>
-              <CardTitle className="text-3xl font-bold">Help & Guidance</CardTitle>
+              <CardTitle role="heading" aria-level={1} className="text-3xl font-bold">Help & Guidance</CardTitle>
               <CardDescription>
                 Welcome to {APP_NAME}! Here you'll find tips, hotkeys, and guidance to make the most of the application.
               </CardDescription>
