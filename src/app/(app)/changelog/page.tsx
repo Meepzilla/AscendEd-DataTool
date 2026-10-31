@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-31',
+    title: 'New Help Page',
+    description: 'The Help page is rewritten: getting started in five steps, a guide to Data Entry, students and goals, every goal type, sessions and reports (including the Progress Report), your data and privacy, keyboard shortcuts and troubleshooting, with links to jump to each part. Alt+7 now opens Settings, as the menu shows.',
+    type: 'improvement',
+    icon: ScrollText,
+  },
+  {
+    date: '2026-10-31',
     title: 'Netlify Badge Workaround Removed',
     description: 'The live app is hosted on Cloudflare, which doesn\'t add a corner badge, so the code that hid the "Powered by Netlify" badge and the space kept clear for it are gone: the Data Entry bottom bar uses its full width on wide screens. Netlify is still used for test previews, where the badge may show.',
     type: 'improvement',

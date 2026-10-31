@@ -32,6 +32,7 @@ export function useKeyboardShortcuts() {
       case '4': router.push('/student-profile'); break;
       case '5': router.push('/goal-templates'); break;
       case '6': router.push('/changelog'); break;
+      case '7': router.push('/settings'); break;
       case 'H': router.push('/help'); break;
 
       // Global Actions
