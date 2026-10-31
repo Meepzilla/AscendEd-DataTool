@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import AppHeader from '@/components/layout/app-header';
+import TopEdgeBar from '@/components/layout/TopEdgeBar';
 import AppFooter from '@/components/layout/app-footer';
 import StudentSidebar from '@/components/layout/student-sidebar';
 import { SidebarProvider, SidebarInset, SidebarRail } from '@/components/ui/sidebar';
@@ -99,7 +100,12 @@ export default function AppLayout({
   }, [router, currentUser]);
 
   if (loading || !currentUser) {
-    return <div className="flex items-center justify-center min-h-screen bg-background text-foreground">Loading application data...</div>;
+    return (
+      <div className="flex h-full flex-col bg-background text-foreground">
+        <TopEdgeBar />
+        <div className="flex flex-1 items-center justify-center">Loading application data...</div>
+      </div>
+    );
   }
 
   return (
