@@ -54,6 +54,7 @@ interface StudentDataContextType {
   addStudent: (name: string) => Promise<Student | null>;
   updateStudent: (studentId: string, data: Partial<Student>) => Promise<void>;
   deleteStudent: (studentId: string) => Promise<void>;
+  deleteStudents: (studentIds: string[]) => boolean;
   assignGoalToStudent: (studentId: string, goal: Goal) => Promise<void>;
   removeGoalFromStudent: (studentId: string, goalId: string) => Promise<void>;
   updateStudentGoal: (studentId: string, goalId: string, updatedGoalData: Partial<Goal>) => Promise<void>;
@@ -223,6 +224,16 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     if (!commitStudents(studentsRef.current.filter(s => s.id !== studentId))) return;
     toast({ title: "Success", description: "Student and sessions deleted." });
   }, [currentUser, toast, commitStudents, commitSessions]);
+
+  /** Deletes several students and all their sessions at once (end-of-year clean-up). Returns whether it worked. */
+  const deleteStudents = useCallback((studentIds: string[]): boolean => {
+    if (!currentUser || studentIds.length === 0) return false;
+    const ids = new Set(studentIds);
+    if (!commitSessions(sessionsRef.current.filter(s => !ids.has(s.studentId)))) return false;
+    if (!commitStudents(studentsRef.current.filter(s => !ids.has(s.id)))) return false;
+    setSelectedStudent(prev => (prev && ids.has(prev.id) ? null : prev));
+    return true;
+  }, [currentUser, commitStudents, commitSessions]);
 
   const addGoalTemplate = useCallback(async (templateData: any) => {
     if (!currentUser) return null;
@@ -548,7 +559,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     addErrorLog,
 
     // Data Actions
-    addStudent, updateStudent, deleteStudent,
+    addStudent, updateStudent, deleteStudent, deleteStudents,
     assignGoalToStudent, removeGoalFromStudent, updateStudentGoal,
     addGoalTemplate, updateGoalTemplate, deleteGoalTemplate, archiveGoalTemplates, assignTemplateToStudents,
     addSession, updateSession, deleteSession,

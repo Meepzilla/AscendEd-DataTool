@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-31',
+    title: 'Password-Protected Backups, CSV Warning and Deleting Data',
+    description: 'Back Up Now asks for a password and saves the backup encrypted with it (AES-256), so only someone with the password can restore it; restoring asks for the password. You can still save without a password after confirming you will keep the file somewhere secure. Exporting a CSV now warns first that the file holds student data in plain text. Settings → Delete Data adds an end-of-year clean-up (select students who have left, or all archived students in one tap, and delete them with all their sessions) and Delete All Data, which removes everything the app has stored on the device (type DELETE to confirm).',
+    type: 'feature',
+    icon: ShieldCheck,
+  },
+  {
+    date: '2026-10-31',
     title: 'Passcode Protection (Encrypted Student Data)',
     description: 'Settings → Passcode Protection encrypts the student data stored on this device (students, sessions and unsaved Data Entry work) with a passcode of at least 6 characters, using AES-256. The app then opens to a lock screen, locks again after 5 to 60 minutes without use (your choice) or with the Lock button in the menu bar, and the data can only be read after the passcode is entered. The passcode can\'t be recovered: if it is forgotten, the student data on the device can only be erased and restored from a backup, so back up first. Goal templates and settings aren\'t student data and aren\'t encrypted; backup and CSV files aren\'t encrypted either.',
     type: 'feature',

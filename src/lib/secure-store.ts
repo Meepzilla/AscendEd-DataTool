@@ -286,3 +286,20 @@ export async function lockNow() {
   await flushWrites();
   window.location.reload();
 }
+
+// ---- Password-protected files (backups) ----
+
+export interface PasswordProtected { v: 1; salt: string; iterations: number; data: string }
+
+/** Encrypts text with a password (same scheme as the passcode: PBKDF2-SHA-256 key, AES-256-GCM). */
+export async function encryptWithPassword(text: string, password: string): Promise<PasswordProtected> {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const k = await deriveKey(password, salt, ITERATIONS);
+  return { v: 1, salt: b64(salt), iterations: ITERATIONS, data: await encryptWith(k, text) };
+}
+
+/** Decrypts text encrypted with encryptWithPassword; throws if the password is wrong or the data damaged. */
+export async function decryptWithPassword(payload: PasswordProtected, password: string): Promise<string> {
+  const k = await deriveKey(password, unb64(payload.salt), payload.iterations);
+  return decryptWith(k, payload.data);
+}
