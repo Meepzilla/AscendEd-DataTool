@@ -30,6 +30,7 @@ const PAGE_TITLES: [string, string][] = [
   ['/settings', 'Settings'],
   ['/help', 'Help'],
   ['/privacy', 'Privacy Notice'],
+  ['/progress-report', 'Progress Report'],
 ];
 
 export default function AppLayout({

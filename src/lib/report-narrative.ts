@@ -465,3 +465,91 @@ export function buildNarrative({ student, goals, sessions, rangeLabel, options =
     : analyses.map(a => goalParagraph(name, a, settings));
   return [`Progress Summary: ${student.name}`, intro, overview(analyses), ...body].filter(Boolean).join('\n\n');
 }
+
+// ---- Printable progress report (Reports → Progress Report) ----
+
+/** Where a goal stands for the reporting period, in the words IEP progress reports use. */
+export type ProgressStatus = 'mastered' | 'progressing' | 'limited' | 'not-progressing' | 'too-few' | 'not-addressed';
+
+export const PROGRESS_STATUS_LABELS: Record<ProgressStatus, string> = {
+  mastered: 'Goal met',
+  progressing: 'Making progress',
+  limited: 'Limited progress',
+  'not-progressing': 'Not making progress',
+  'too-few': 'Too few sessions to judge',
+  'not-addressed': 'Not addressed this period',
+};
+
+export interface GoalProgress {
+  goal: Goal;
+  number: number;
+  typeLabel: string;
+  targetLabel: string | null;
+  /** One point per session with a measure, oldest first. */
+  points: { date: string; value: number }[];
+  /** Average, range and latest, already formatted with the goal's unit (null without data). */
+  average: string | null;
+  range: string | null;
+  latest: string | null;
+  latestDate: string | null;
+  target: number | undefined;
+  metCount: number;
+  sessionCount: number;
+  streak: number;
+  trend: 'improving' | 'declining' | 'stable' | 'too few';
+  status: ProgressStatus;
+  /** The goal's paragraph from the narrative (without its heading line). */
+  comment: string;
+  nextStep: string | null;
+  /** The measure's name, unit and scale, for the chart. */
+  measureLabel: string;
+  unit: string;
+  max?: number;
+}
+
+function progressStatus(a: GoalAnalysis): ProgressStatus {
+  switch (a.status) {
+    case 'met': return 'mastered';
+    case 'improving': return 'progressing';
+    // Steady at or above the target in the latest session still counts as progress toward it.
+    case 'stable': return a.latestMet ? 'progressing' : 'limited';
+    case 'declining': return a.latestMet ? 'limited' : 'not-progressing';
+    case 'too few': return 'too-few';
+    default: return 'not-addressed';
+  }
+}
+
+/** Per-goal figures, status and comment for the printable progress report. */
+export function buildProgressReport({ student, goals, sessions }: Omit<NarrativeInput, 'rangeLabel' | 'options'>): GoalProgress[] {
+  const name = student.name.trim().split(/\s+/)[0] || student.name;
+  const sorted = [...sessions].sort(compareSessionsOldestFirst);
+  const settings: Required<NarrativeOptions> = { style: 'detailed', nextSteps: false };
+  return goals.map((goal, i) => {
+    const a = analyzeGoal(goal, i + 1, sorted);
+    const type = captureTypeOf(goal);
+    const info = goalMeasureInfo(goal);
+    const has = !!a.latest;
+    return {
+      goal,
+      number: a.number,
+      typeLabel: goalTypeLabel(type),
+      targetLabel: a.target !== undefined ? formatGoalTarget(type, a.target, goal.targetDirection) : null,
+      points: a.recorded.map(r => ({ date: r.session.date, value: r.value })),
+      average: has && a.values.length > 1 ? formatValue(goal, a.average) : has ? formatValue(goal, a.latest!.value) : null,
+      range: has && a.values.length > 1 && round(a.low) !== round(a.high) ? `${formatValue(goal, a.low)} – ${formatValue(goal, a.high)}` : null,
+      latest: has ? formatValue(goal, a.latest!.value) : null,
+      latestDate: a.latest?.date ?? null,
+      target: a.target,
+      metCount: a.metCount,
+      sessionCount: a.values.length + a.unmeasured.length,
+      streak: a.streak,
+      trend: a.trend.kind,
+      status: progressStatus(a),
+      comment: goalParagraph(name, a, settings).split('\n').slice(1).join(' ').trim(),
+      nextStep: nextStep(a),
+      measureLabel: info.label,
+      unit: info.unit,
+      max: info.max,
+    };
+  });
+}
