@@ -694,6 +694,45 @@ export default function DataEntryContent() {
   const saveBarRef = useRef<HTMLDivElement>(null);
   const viewportProbeRef = useRef<HTMLDivElement>(null);
   const hasSelectedStudents = selectedStudentIds.length > 0;
+
+  // The arrows under Student and Goal in the save bar scroll the student cards sideways, one card at a time
+  // (the next card that is partly or fully out of view is lined up with the left edge).
+  const [cardScroll, setCardScroll] = useState({ left: false, right: false });
+  const cardsViewport = () => cardsRegionRef.current?.querySelector<HTMLElement>('[data-radix-scroll-area-viewport]') ?? null;
+  const updateCardScroll = useCallback(() => {
+    const vp = cardsViewport();
+    if (!vp) return;
+    const left = vp.scrollLeft > 1;
+    const right = vp.scrollLeft + vp.clientWidth < vp.scrollWidth - 1;
+    setCardScroll(prev => (prev.left === left && prev.right === right ? prev : { left, right }));
+  }, []);
+  useEffect(() => {
+    const vp = cardsViewport();
+    if (!vp) return;
+    updateCardScroll();
+    vp.addEventListener('scroll', updateCardScroll, { passive: true });
+    const observer = new ResizeObserver(updateCardScroll);
+    observer.observe(vp);
+    if (vp.firstElementChild) observer.observe(vp.firstElementChild);
+    return () => {
+      vp.removeEventListener('scroll', updateCardScroll);
+      observer.disconnect();
+    };
+  }, [updateCardScroll, selectedStudentIds.length]);
+  const scrollCards = useCallback((direction: -1 | 1) => {
+    const vp = cardsViewport();
+    if (!vp) return;
+    const view = vp.getBoundingClientRect();
+    // Rects can be in screen pixels while scrolling is in CSS pixels (the zoomed body), so convert.
+    const toCss = vp.clientWidth / (view.width || 1) || 1;
+    const lefts = [...vp.querySelectorAll<HTMLElement>('[id^="student-card-slot-"]')].map(card => card.getBoundingClientRect().left - view.left);
+    const padding = 16 / toCss; // the row's left padding, kept in view
+    const target = direction === 1
+      ? lefts.find(x => x > padding + 2)
+      : [...lefts].reverse().find(x => x < padding - 2);
+    const delta = target === undefined ? direction * view.width * 0.8 : target - padding;
+    vp.scrollBy({ left: delta * toCss, behavior: 'smooth' });
+  }, []);
   useEffect(() => {
     const update = () => {
       const root = rootRef.current;
@@ -871,6 +910,9 @@ export default function DataEntryContent() {
                         showArchivedByStudentId={showArchivedByStudentId}
                         selectionModalType={selectionModalType}
                         setSelectionModalType={setSelectionModalType}
+                        scrollCards={scrollCards}
+                        canScrollLeft={cardScroll.left}
+                        canScrollRight={cardScroll.right}
                       />
                     </div>
                     
@@ -885,6 +927,9 @@ export default function DataEntryContent() {
                         showArchivedByStudentId={showArchivedByStudentId}
                         selectionModalType={selectionModalType}
                         setSelectionModalType={setSelectionModalType}
+                        scrollCards={scrollCards}
+                        canScrollLeft={cardScroll.left}
+                        canScrollRight={cardScroll.right}
                       />
                     </div>
 
