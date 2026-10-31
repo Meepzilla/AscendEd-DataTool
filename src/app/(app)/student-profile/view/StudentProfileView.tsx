@@ -20,6 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 
 import AssignGoalToStudentModal from '@/components/modals/assign-goal-to-student-modal';
 import EditAssignedGoalModal from '@/components/modals/edit-assigned-goal-modal';
+import StudentOverviewCard from '@/components/student-profile/StudentOverviewCard';
 import ConfirmationModal from '@/components/modals/confirmation-modal';
 import { cn } from '@/lib/utils';
 
@@ -268,6 +269,8 @@ export default function StudentProfileView() {
           </div>
         </CardHeader>
       </Card>
+
+      <StudentOverviewCard student={currentStudent} sessions={studentSessions} />
 
       <Card>
         <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
