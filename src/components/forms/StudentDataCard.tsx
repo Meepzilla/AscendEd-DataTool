@@ -181,6 +181,7 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
                       canMoveDown={actualGoalIndexInOriginal < allStudentGoals.length - 1}
                       isArchived={goal.isArchived}
                       isLocked={isStudentAccessLocked}
+                      studentName={student.name}
                     />
                   );
                 })}
