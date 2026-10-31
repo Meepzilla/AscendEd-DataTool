@@ -35,12 +35,12 @@ export default function AppFooter() {
 
   return (
     <footer className="border-t bg-card text-card-foreground">
-      {/* Bottom padding keeps the footer's links clear of the host's corner badge. */}
-      <div className="container mx-auto px-4 pt-6 pb-[calc(1.5rem+var(--host-badge-clearance))] sm:px-6 lg:px-8">
+      {/* Kept short: the footer scrolls with the page, so it only needs room for the iPhone/iPad home indicator. */}
+      <div className="container mx-auto px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom)/var(--body-zoom))] sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row justify-between items-center text-sm text-muted-foreground">
           <p>&copy; {currentYear} {APP_NAME}. All rights reserved.</p>
-          <div className="mt-4 md:mt-0">
-            <h3 className="mb-1">
+          <div className="mt-2 text-center md:mt-0 md:text-left">
+            <h3 className="mb-0.5 flex justify-center md:justify-start">
               <button
                 type="button"
                 onClick={toggle}
@@ -53,14 +53,14 @@ export default function AppFooter() {
                 <span className="sr-only">{collapsed ? '(show)' : '(hide)'}</span>
               </button>
             </h3>
-            <ul id="footer-hotkeys" className={`${collapsed ? 'hidden' : 'flex'} flex-wrap gap-x-4 gap-y-1`}>
+            <ul id="footer-hotkeys" className={`${collapsed ? 'hidden' : 'flex'} flex-wrap justify-center gap-x-4 gap-y-1 md:justify-start`}>
               {hotkeys.map(hk => (
                 <li key={hk.key}>
                   <kbd className="px-1.5 py-0.5 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-md dark:bg-gray-600 dark:text-gray-100 dark:border-gray-500">{hk.key}</kbd>: {hk.desc}
                 </li>
               ))}
             </ul>
-             <p className="text-xs mt-1">See <Link href="/help" className="underline hover:text-primary">Help Page</Link> for Data Entry hotkeys. <Link href="/privacy" className="underline hover:text-primary">Privacy Notice</Link></p>
+            <p className="text-xs mt-0.5">See <Link href="/help" className="underline hover:text-primary">Help Page</Link> for Data Entry hotkeys. <Link href="/privacy" className="underline hover:text-primary">Privacy Notice</Link></p>
           </div>
         </div>
       </div>

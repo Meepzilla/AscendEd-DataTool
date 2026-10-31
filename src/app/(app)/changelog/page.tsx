@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-31',
+    title: 'Shorter Footer',
+    description: 'The footer at the bottom of each page (Global Hotkeys, Help Page and Privacy Notice) takes up much less space: the extra empty room below it is gone and its lines sit closer together, centered on phones.',
+    type: 'improvement',
+    icon: ScrollText,
+  },
+  {
+    date: '2026-10-31',
     title: 'Service Minutes on the Progress Report',
     description: 'The Progress Report has a Service minutes switch (off by default). Turned on, the report adds a Service Minutes section: the minutes the IEP requires, the minutes delivered in the reporting period, and for a weekly or monthly requirement the minutes expected for the period, the average per week or month and how far over or short it is (for a yearly requirement, the share of it delivered). Minutes come from the sessions\' start and end times; missed sessions aren\'t counted.',
     type: 'feature',
