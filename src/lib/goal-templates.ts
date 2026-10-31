@@ -5,6 +5,7 @@ import { generateUUID } from './helpers';
 export function goalFromTemplate(template: GoalTemplate): Goal {
   return {
     id: generateUUID(),
+    templateId: template.id,
     name: template.name,
     type: template.type,
     dataCaptureType: template.dataCaptureType,
@@ -14,9 +15,42 @@ export function goalFromTemplate(template: GoalTemplate): Goal {
   };
 }
 
-/** Whether the student already has a goal from this template (goals are copies, matched by name and type). */
-export function hasTemplateGoal(student: Pick<Student, 'goals'>, template: Pick<GoalTemplate, 'name' | 'type'>): boolean {
-  return (student.goals || []).some(g => g.name === template.name && g.type === template.type);
+/**
+ * Whether the student already has a goal from this template. Goals are copies that can be edited for the student,
+ * so they are matched by the template they came from (templateId), or, for goals assigned before that was kept,
+ * by name and type.
+ */
+export function hasTemplateGoal(student: Pick<Student, 'goals'>, template: Pick<GoalTemplate, 'id' | 'name' | 'type'>): boolean {
+  return (student.goals || []).some(g => g.templateId
+    ? g.templateId === template.id
+    : g.name === template.name && g.type === template.type);
+}
+
+/**
+ * Gives goals assigned before templateId was kept the id of the template they match by name and type (only when
+ * exactly one template matches), so later renames of the student's copy don't hide where it came from.
+ */
+export function linkGoalsToTemplates<T extends Pick<Student, 'goals'>>(students: T[], templates: Pick<GoalTemplate, 'id' | 'name' | 'type'>[]): { students: T[]; changed: boolean } {
+  let changed = false;
+  const byKey = new Map<string, string[]>();
+  templates.forEach(t => {
+    const key = `${t.type}|${t.name}`;
+    byKey.set(key, [...(byKey.get(key) || []), t.id]);
+  });
+  const linked = students.map(student => {
+    let studentChanged = false;
+    const goals = (student.goals || []).map(goal => {
+      if (goal.templateId) return goal;
+      const ids = byKey.get(`${goal.type}|${goal.name}`);
+      if (!ids || ids.length !== 1) return goal;
+      studentChanged = true;
+      return { ...goal, templateId: ids[0] };
+    });
+    if (!studentChanged) return student;
+    changed = true;
+    return { ...student, goals };
+  });
+  return { students: linked, changed };
 }
 
 // ---- Recently assigned templates (per device, a convenience for the goal pickers) ----

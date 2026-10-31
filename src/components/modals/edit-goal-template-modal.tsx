@@ -112,6 +112,7 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
       isOpen={!!currentTemplate}
       onClose={closeEditGoalTemplateModal}
       title={`Edit Goal Template: ${currentTemplate.name}`}
+      description="Changes apply to this template, the starting point for goals assigned from now on. Goals already assigned to students don't change; edit a student's goal from their profile to change it for that student."
       size="lg"
     >
       <Form {...form}>
