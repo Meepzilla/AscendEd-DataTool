@@ -19,7 +19,7 @@ import { compareSessionsOldestFirst, formatDate } from '@/lib/helpers';
 import { buildProgressReport, type ProgressStatus } from '@/lib/report-narrative';
 import { getOrganizationName } from '@/lib/organization';
 import { attendanceSummary, attendanceText } from '@/lib/attendance';
-import { schoolYearStart } from '@/lib/student-overview';
+import { schoolYearStart } from '@/lib/school-year';
 import ProgressReportDocument, { type ProgressReportEdits } from '@/components/reports/ProgressReportDocument';
 
 // Reports → Progress Report: a printable IEP goal progress report for one student and reporting period. The
