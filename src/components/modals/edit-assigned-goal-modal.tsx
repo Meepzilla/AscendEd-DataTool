@@ -57,6 +57,7 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
         smartGoal: goalToEdit.smartGoal,
         sessionTargetValue: goalToEdit.sessionTargetValue,
         targetDate: goalToEdit.targetDate ?? '',
+        taskSteps: (goalToEdit.taskSteps ?? []).join('\n') as unknown as string[],
         baseline: goalToEdit.baseline ?? ('' as unknown as number),
         baselineDate: goalToEdit.baselineDate ?? '',
         masterySessions: goalToEdit.masterySessions ?? ('' as unknown as number),
@@ -161,6 +162,31 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
               </FormItem>
             )}
           />
+
+          {(form.watch('dataCaptureType') || goalToEdit?.type) === 'TASK_ANALYSIS' && (
+            <FormField
+              control={form.control}
+              name="taskSteps"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Task Steps</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      rows={6}
+                      placeholder={'One step per line, in order, e.g.\nTurn on water\nWet hands\nGet soap'}
+                      value={Array.isArray(field.value) ? field.value.join('\n') : (field.value as unknown as string) ?? ''}
+                      onChange={e => field.onChange(e.target.value)}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    One step per line, in order. In Data Entry each step is scored Independent, with a prompt level, or
+                    Not done; the goal&apos;s measure is the percentage of steps done independently.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
 
           <TargetDirectionField control={form.control} goalType={form.watch('dataCaptureType') || goalToEdit?.type} />
 

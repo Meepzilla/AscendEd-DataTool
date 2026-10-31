@@ -12,6 +12,7 @@ import {
 import { goalMeasure, goalMeasureInfo, goalResponses, goalNotes, meetsTarget, promptTotals, usesPromptCounters, withoutRunningTimers } from '@/lib/goal-measures';
 import { formatDate, formatGoalTarget, goalTypeLabel } from '@/lib/helpers';
 import BehaviorTimeCharts from './BehaviorTimeCharts';
+import type { TaskStepScore } from '@/lib/task-analysis';
 import { AIM_STATUS_LABELS, aimLine, aimStatus, aimValueAt, masterySessions } from '@/lib/aim-line';
 
 // A report card for each goal: its measure per session against the target, summary numbers, and a
@@ -111,6 +112,25 @@ const GoalBreakdowns: React.FC<{ goal: Goal; recorded: Recorded[] }> = ({ goal, 
         rows={COMMUNICATION_FUNCTIONS
           .map(f => ({ name: f.label, spontaneous: sum(d => Number(d[`${f.key}Spontaneous`]) || 0), prompted: sum(d => Number(d[`${f.key}Prompted`]) || 0) }))
           .filter(r => r.spontaneous + r.prompted > 0)} />,
+    );
+  }
+  if (type === 'TASK_ANALYSIS') {
+    // Each step across the sessions: done independently, with a prompt, or not done (by the step's name).
+    const byStep = new Map<string, { independent: number; prompted: number; notDone: number }>();
+    data.forEach(d => (Array.isArray(d.steps) ? d.steps as TaskStepScore[] : []).forEach(s => {
+      if (!s?.level) return;
+      const row = byStep.get(s.label) ?? { independent: 0, prompted: 0, notDone: 0 };
+      if (s.level === 'Independent') row.independent++; else if (s.level === 'NotDone') row.notDone++; else row.prompted++;
+      byStep.set(s.label, row);
+    }));
+    panels.push(
+      <div key="steps" className="md:col-span-3">
+        <HBars title="Steps (sessions)" series={[
+          { key: 'independent', label: 'Independent', color: 'hsl(var(--chart-2))' },
+          { key: 'prompted', label: 'Prompted', color: 'hsl(var(--chart-4))' },
+          { key: 'notDone', label: 'Not done', color: 'hsl(var(--chart-1))' },
+        ]} rows={[...byStep.entries()].map(([name, r]) => ({ name, ...r }))} />
+      </div>,
     );
   }
   if (type === 'FLUENCY_SYLLABLE_STUTTER') {

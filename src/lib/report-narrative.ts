@@ -7,6 +7,7 @@ import {
 import { goalMeasure, goalMeasureInfo, goalNotes, goalResponses, meetsTarget, promptTotals, usesPromptCounters, withoutRunningTimers } from './goal-measures';
 import { compareSessionsOldestFirst, formatDate, formatGoalTarget, goalTypeLabel, plural } from './helpers';
 import { timePatterns, TIMING_MEASURE_LABELS, WEEKDAY_NAMES } from './behavior-timing';
+import type { TaskStepScore } from './task-analysis';
 import { AIM_RULE_SESSIONS, aimLine, aimStatus, aimValueAt, masterySessions, type AimLine, type AimStatus } from './aim-line';
 
 // A written summary of a student's data for a date range, built from fixed sentence patterns (no AI).
@@ -41,6 +42,7 @@ function measureName(goal: Goal): string {
     case 'QUALITATIVE_OBSERVATION':
     case 'COGNITIVE': return 'the rating';
     case 'PROMPTING': return 'the percentage of independent responses';
+    case 'TASK_ANALYSIS': return 'the percentage of steps done independently';
     case 'BEHAVIOR_FREQUENCY': return 'the number of occurrences';
     case 'BEHAVIOR_DURATION': return 'the total duration';
     case 'BEHAVIOR_INTERVAL': return 'the percentage of intervals with the behavior';
@@ -229,11 +231,31 @@ function nextStep(a: GoalAnalysis): string | null {
   return null;
 }
 
+/** Task analysis: the steps done independently in the latest session, and the step that most often needed help. */
+function taskAnalysisSentence(name: string, data: Record<string, any>[]): string | null {
+  const sessions = data.map(d => (Array.isArray(d.steps) ? d.steps as TaskStepScore[] : []).filter(s => s && s.level)).filter(s => s.length);
+  if (!sessions.length) return null;
+  const latest = sessions[sessions.length - 1];
+  const independent = latest.filter(s => s.level === 'Independent').length;
+  const needed = new Map<string, number>();
+  sessions.forEach(steps => steps.filter(s => s.level !== 'Independent').forEach(s => needed.set(s.label, (needed.get(s.label) ?? 0) + 1)));
+  const hardest = [...needed.entries()].sort((a, b) => b[1] - a[1])[0];
+  const latestText = `In the most recent session, ${name} did ${independent} of ${plural(latest.length, 'step')} independently.`;
+  return hardest
+    ? `${latestText} The step that most often needed support was "${hardest[0]}" (${plural(hardest[1], 'session')}).`
+    : latestText;
+}
+
 /** Extra sentences that fit the goal's type, over the sessions with data. */
 function detailSentences(name: string, goal: Goal, data: Record<string, any>[]): string[] {
   const type = captureTypeOf(goal);
   const lines: string[] = [];
   const total = (field: string) => sum(data.map(d => Number(d[field]) || 0));
+
+  if (type === 'TASK_ANALYSIS') {
+    const line = taskAnalysisSentence(name, data);
+    if (line) lines.push(line);
+  }
 
   const responses = data.map(d => goalResponses(type, d)).filter((r): r is NonNullable<typeof r> => !!r);
   if (responses.length) {

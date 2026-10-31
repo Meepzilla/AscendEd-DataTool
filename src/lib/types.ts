@@ -47,6 +47,8 @@ export interface Goal {
   baselineDate?: string;
   /** Mastery: the target met in this many sessions in a row (3 when not set). */
   masterySessions?: number;
+  /** Task analysis goals: the steps of the skill, in order (task-analysis.ts). */
+  taskSteps?: string[];
   // Additional fields based on goal type might be present
   [key: string]: any;
 }
@@ -71,6 +73,7 @@ export const GOAL_TYPE_VALUES = [
   'BEHAVIOR_ABC',
   'BEHAVIOR_INTERVAL',
   'BEHAVIOR_LATENCY',
+  'TASK_ANALYSIS',
 ] as const;
 
 export type GoalType = typeof GOAL_TYPE_VALUES[number];
@@ -95,6 +98,7 @@ export interface GoalTemplate {
   bankId?: string; // Key into public/goal-bank/details.json (purpose, activity ideas, tags)
   targetDirection?: TargetDirection;
   retired?: boolean; // Built-in duplicate archived once by the app (see RETIRED_DEFAULT_TEMPLATES)
+  taskSteps?: string[]; // Task analysis templates: the steps copied to a student's goal
   defaultKey?: string; // Built-in templates: the name they were added under, kept if the user renames them
 }
 
@@ -251,6 +255,10 @@ export const AssignedGoalEditSchema = z.object({
   baselineDate: z.preprocess(
     (val) => (val === '' || val === null ? undefined : val),
     z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter a valid date.').optional()
+  ),
+  taskSteps: z.preprocess(
+    (val) => (typeof val === 'string' ? val.split('\n').map(s => s.trim()).filter(Boolean) : val),
+    z.array(z.string()).max(40, 'At most 40 steps.').optional()
   ),
   masterySessions: z.preprocess(
     (val) => (val === '' || val === undefined || val === null ? undefined : Number(val)),
