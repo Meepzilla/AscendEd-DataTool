@@ -3,6 +3,7 @@
 
 import React, { lazy, Suspense } from 'react';
 import type { Student, StudentSessionState, Goal, SessionGoalData } from '@/lib/types';
+import type { MissedReason } from '@/lib/attendance';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 
@@ -29,6 +30,7 @@ interface StudentCardsListProps {
   handleMoveGoal: (studentId: string, goalId: string, direction: 'up' | 'down') => void;
   addStudentSlot: () => void;
   isStudentAccessLocked: boolean;
+  recordMissedSession: (studentId: string, reason: MissedReason, note: string) => Promise<boolean>;
 }
 
 const StudentCardsList: React.FC<StudentCardsListProps> = ({
@@ -52,6 +54,7 @@ const StudentCardsList: React.FC<StudentCardsListProps> = ({
   handleMoveGoal,
   addStudentSlot,
   isStudentAccessLocked,
+  recordMissedSession,
 }) => {
   const activeStudents = students.filter(s => !s.isArchived);
 
@@ -87,6 +90,7 @@ const StudentCardsList: React.FC<StudentCardsListProps> = ({
               handleGoalDataChange={handleGoalDataChange}
               handleMoveGoal={handleMoveGoal}
               isStudentAccessLocked={isStudentAccessLocked}
+              recordMissedSession={recordMissedSession}
             />
           </Suspense>
         );

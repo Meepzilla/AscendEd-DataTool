@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-31',
+    title: 'Missed Sessions and Attendance',
+    description: 'Each Data Entry student card has a Missed button (calendar icon) to record a session that didn\'t take place on the date and times set, with the reason (student absent, student unavailable, provider absent, no school, or other) and an optional note. Missed sessions appear on the Sessions page, count toward attendance on Reports and the Progress Report (for example "12 held · 2 missed (Student absent 2)"), and are included in CSV exports with an Attendance column. They aren\'t counted in progress charts or figures.',
+    type: 'feature',
+    icon: UserX,
+  },
+  {
+    date: '2026-10-31',
     title: 'Student Names in Goal Text',
     description: 'Goal statements now show the student\'s first name in place of "STUDENT" and "the student" (for example "By Oct 15, 2026, Ava will…"), on the Progress Report, the student profile, Data Entry and Edit Session. The saved goal text is unchanged, so goal templates stay general.',
     type: 'improvement',
