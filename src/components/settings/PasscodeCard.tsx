@@ -135,7 +135,7 @@ export default function PasscodeCard() {
         <div className="flex flex-wrap items-center gap-2">
           <Label htmlFor="auto-lock" className="text-sm">Lock after</Label>
           <Select value={String(autoLock)} onValueChange={v => { const m = Number(v); setAutoLock(m); setAutoLockMinutes(m); }}>
-            <SelectTrigger id="auto-lock" className="w-40"><SelectValue /></SelectTrigger>
+            <SelectTrigger id="auto-lock" className="w-auto min-w-40 gap-2"><SelectValue /></SelectTrigger>
             <SelectContent>
               {AUTO_LOCK_OPTIONS.map(m => <SelectItem key={m} value={String(m)}>{m} minutes without use</SelectItem>)}
             </SelectContent>
