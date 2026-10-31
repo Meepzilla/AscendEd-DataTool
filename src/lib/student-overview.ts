@@ -1,4 +1,4 @@
-import type { SessionData, StudentIep } from './types';
+import type { ServicePer, SessionData, StudentIep } from './types';
 import { attendanceSummary, type AttendanceSummary } from './attendance';
 import { dateValue } from './aim-line';
 
@@ -23,8 +23,13 @@ export function sessionMinutes(session: Pick<SessionData, 'time' | 'endTime'>): 
   return span > 0 && span <= 600 ? span : 0;
 }
 
-/** The current week (Monday to Sunday) or month containing `now`, and the one before it. */
-export function servicePeriods(per: 'week' | 'month', now = new Date()) {
+/** The current week (Monday to Sunday), month or school year containing `now`, and the one before it. */
+export function servicePeriods(per: ServicePer, now = new Date()) {
+  if (per === 'year') {
+    const start = schoolYearStart(now);
+    const end = new Date(start.getFullYear() + 1, 7, 1);
+    return { current: { start, end }, previous: { start: new Date(start.getFullYear() - 1, 7, 1), end: start } };
+  }
   if (per === 'month') {
     const start = new Date(now.getFullYear(), now.getMonth(), 1);
     const prevStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -38,7 +43,7 @@ export function servicePeriods(per: 'week' | 'month', now = new Date()) {
 
 export interface ServiceSummary {
   required: number | null;
-  per: 'week' | 'month';
+  per: ServicePer;
   thisPeriod: number;
   lastPeriod: number;
   schoolYear: number;

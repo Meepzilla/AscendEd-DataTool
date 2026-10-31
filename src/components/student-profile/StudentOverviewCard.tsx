@@ -13,7 +13,7 @@ import { useStudentData } from '@/hooks/use-student-data';
 import { formatDate, formatDateOnly } from '@/lib/helpers';
 import { MISSED_REASON_SHORT } from '@/lib/attendance';
 import { daysUntil, formatMinutes, studentOverview } from '@/lib/student-overview';
-import type { SessionData, Student, StudentIep } from '@/lib/types';
+import type { ServicePer, SessionData, Student, StudentIep } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 // The student profile's Overview: IEP dates (with how soon each is due), service minutes delivered against what
@@ -50,7 +50,7 @@ export default function StudentOverviewCard({ student, sessions }: { student: St
   const overview = useMemo(() => studentOverview(sessions, student.iep), [sessions, student.iep]);
   const iep = student.iep ?? {};
   const { service, attendance } = overview;
-  const periodWord = service.per === 'month' ? 'month' : 'week';
+  const periodWord = service.per === 'year' ? 'school year' : service.per === 'month' ? 'month' : 'week';
   const dates: [string, string | undefined, boolean][] = [
     ['IEP date', iep.iepDate, false],
     ['Annual review due', iep.annualReviewDate, true],
@@ -88,10 +88,14 @@ export default function StudentOverviewCard({ student, sessions }: { student: St
                 indicatorClassName={service.thisPeriod >= service.required ? 'bg-green-500' : 'bg-primary'}
                 aria-label={`Service minutes this ${periodWord}`}
               />
-              <Row label={`Last ${periodWord}`}>
-                {service.lastPeriod} min
-                {service.lastPeriod < service.required && <span className="text-xs text-amber-300">({service.required - service.lastPeriod} min short)</span>}
-              </Row>
+              {service.per === 'year' ? (
+                <Row label="Remaining">{Math.max(0, service.required - service.thisPeriod)} min</Row>
+              ) : (
+                <Row label={`Last ${periodWord}`}>
+                  {service.lastPeriod} min
+                  {service.lastPeriod < service.required && <span className="text-xs text-amber-300">({service.required - service.lastPeriod} min short)</span>}
+                </Row>
+              )}
             </>
           ) : (
             <>
@@ -99,7 +103,7 @@ export default function StudentOverviewCard({ student, sessions }: { student: St
               <p className="text-sm text-muted-foreground">Add the required minutes with Edit IEP Details to track them.</p>
             </>
           )}
-          <Row label="School year">{formatMinutes(service.schoolYear)}</Row>
+          {service.per !== 'year' && <Row label="School year">{formatMinutes(service.schoolYear)}</Row>}
           {service.untimed > 0 && (
             <p className="text-xs text-muted-foreground">{service.untimed} session{service.untimed === 1 ? '' : 's'} without start and end times {service.untimed === 1 ? 'isn\'t' : 'aren\'t'} counted.</p>
           )}
@@ -180,11 +184,12 @@ function IepDetailsDialog({ student, onClose }: { student: Student; onClose: () 
             </div>
             <div className="space-y-1">
               <Label htmlFor="iep-per">Per</Label>
-              <Select value={form.servicePer ?? 'week'} onValueChange={v => set({ servicePer: v as 'week' | 'month' })}>
+              <Select value={form.servicePer ?? 'week'} onValueChange={v => set({ servicePer: v as ServicePer })}>
                 <SelectTrigger id="iep-per" className="w-40"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="week">Week</SelectItem>
                   <SelectItem value="month">Month</SelectItem>
+                  <SelectItem value="year">School year</SelectItem>
                 </SelectContent>
               </Select>
             </div>
