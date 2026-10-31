@@ -35,7 +35,7 @@ import { AI_ENABLED } from '@/lib/features';
 import GoalTextPopover from '@/components/forms/GoalTextPopover';
 import TemplatePickerFilters from '@/components/goal-templates/TemplatePickerFilters';
 import { useTemplatePicker } from '@/hooks/use-template-picker';
-import { goalFromTemplate, recordRecentTemplates } from '@/lib/goal-templates';
+import { goalFromTemplate, hasTemplateGoal, recordRecentTemplates } from '@/lib/goal-templates';
 
 type EditStudentFormData = z.infer<typeof StudentSchema>;
 
@@ -119,8 +119,8 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
 
   const isGoalEffectivelyAssigned = (template: GoalTemplate): boolean => {
     if (!currentStudent) return false;
-    // This check is by name and type, which is how we define if a template-derived goal is "taken"
-    return currentStudent.goals.some(g => g.name === template.name && g.type === template.type);
+    // By the template the goal came from, so a goal renamed for this student still counts.
+    return hasTemplateGoal(currentStudent, template);
   };
 
   const handleGenerateAiSmartGoal = async () => {

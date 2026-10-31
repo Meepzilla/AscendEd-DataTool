@@ -39,6 +39,12 @@ export default function AppHeader() {
   const userInitial = currentUser?.displayName?.charAt(0) || currentUser?.email?.charAt(0) || 'U';
   const isDataEntryPage = pathname.startsWith('/data-entry');
 
+  // Dialog backdrops start below the menu bar while it is shown (see --app-top-bar in globals.css).
+  useEffect(() => {
+    document.documentElement.classList.add('has-app-header');
+    return () => document.documentElement.classList.remove('has-app-header');
+  }, []);
+
   // The phone menu closes once a page is chosen.
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   useEffect(() => { setIsMenuOpen(false); }, [pathname]);
