@@ -5,7 +5,6 @@ import React, { lazy, Suspense } from 'react';
 import type { Student, StudentSessionState, Goal, SessionGoalData } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
-import { MAX_STUDENTS_DATA_ENTRY } from '@/lib/appConstants';
 
 const StudentDataCard = lazy(() => import('@/components/forms/StudentDataCard'));
 
@@ -93,7 +92,7 @@ const StudentCardsList: React.FC<StudentCardsListProps> = ({
         );
       })}
 
-      {dataEntrySelectedStudentIds.length < (activeStudents?.length || 0) && dataEntrySelectedStudentIds.length < MAX_STUDENTS_DATA_ENTRY && (
+      {dataEntrySelectedStudentIds.length < (activeStudents?.length || 0) && (
         <div className="flex-shrink-0 w-[300px] h-full flex items-center justify-center p-4">
             <Button
               variant="outline"
