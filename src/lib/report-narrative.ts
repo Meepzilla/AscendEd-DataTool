@@ -7,6 +7,7 @@ import {
 import { goalMeasure, goalMeasureInfo, goalNotes, goalResponses, meetsTarget, promptTotals, usesPromptCounters, withoutRunningTimers } from './goal-measures';
 import { compareSessionsOldestFirst, formatDate, formatGoalTarget, goalTypeLabel, plural } from './helpers';
 import { timePatterns, TIMING_MEASURE_LABELS, WEEKDAY_NAMES } from './behavior-timing';
+import { AIM_RULE_SESSIONS, aimLine, aimStatus, aimValueAt, masterySessions, type AimLine, type AimStatus } from './aim-line';
 
 // A written summary of a student's data for a date range, built from fixed sentence patterns (no AI).
 // Each goal is analysed once (analyzeGoal): average, range, latest value, how often and how many sessions in
@@ -73,8 +74,7 @@ function trendThreshold(goal: Goal, values: number[]): number {
   return Math.max(0.5, avg(values) * 0.1);
 }
 
-// Sessions in a row at the end of the period that met the target, for "mastery" and the overview.
-const MASTERY_STREAK = 3;
+// Mastery (the target met in a number of sessions in a row, 3 unless the goal sets it) is masterySessions(goal).
 // Fewer sessions than this are too few to call a trend.
 const MIN_TREND_SESSIONS = 3;
 
@@ -103,6 +103,11 @@ interface GoalAnalysis {
   unmeasuredDates: string[];
   /** The most recent session is one of those (so `latest` is the most recent session with a measure). */
   latestUnanswered: boolean;
+  /** Sessions in a row that count as mastery for this goal. */
+  mastery: number;
+  /** The aim line (baseline to target by the target date) and where the student is against it. */
+  aim: AimLine | null;
+  aimStatus: AimStatus | null;
 }
 
 /**
@@ -152,10 +157,14 @@ function analyzeGoal(goal: Goal, number: number, sessions: SessionData[]): GoalA
   if (latestUnanswered) streak = 0;
   const trend = fitTrend(goal, values);
   const last = recorded[recorded.length - 1];
+  const mastery = masterySessions(goal);
   const status: GoalStatus = recorded.length === 0 ? 'no data'
-    : target !== undefined && streak >= MASTERY_STREAK ? 'met'
+    : target !== undefined && streak >= mastery ? 'met'
     : trend.kind;
+  const aim = aimLine(goal, sessions[0]?.date);
+  const points = recorded.map(r => ({ date: r.session.date, value: r.value }));
   return {
+    mastery, aim, aimStatus: aimStatus(goal, aim, points),
     goal, number, recorded, values, target, streak, trend, status, unmeasured,
     unmeasuredDates: unmeasuredRows.map(r => r.session.date),
     latestUnanswered,
@@ -166,6 +175,16 @@ function analyzeGoal(goal: Goal, number: number, sessions: SessionData[]): GoalA
     metCount: met.filter(Boolean).length,
     latestMet: target === undefined || !last ? null : latestUnanswered ? false : met[met.length - 1],
   };
+}
+
+/** Where the student is against the aim line (from the baseline to the target by the target date). */
+function aimSentence(name: string, a: GoalAnalysis): string | null {
+  if (!a.aim || !a.aimStatus || !a.latest) return null;
+  const expected = aimValueAt(a.aim, a.latest.date);
+  const line = `the aim line (from a baseline of ${formatValue(a.goal, a.aim.start.value)} to ${formatValue(a.goal, a.aim.end.value)} by ${formatDate(new Date(a.aim.end.time))})`;
+  return a.aimStatus === 'behind'
+    ? `The last ${AIM_RULE_SESSIONS} sessions were ${goalDirection(a.goal) === 'decrease' ? 'above' : 'below'} ${line}, which expected about ${formatValue(a.goal, expected)} by now.`
+    : `${name} is on track with ${line}, which expected about ${formatValue(a.goal, expected)} by the most recent session.`;
 }
 
 function trendSentence(name: string, a: GoalAnalysis): string {
@@ -204,7 +223,8 @@ function nextStep(a: GoalAnalysis): string | null {
   if (a.status === 'stable' && hasTarget && a.latestMet === false && a.values.length >= 5) {
     return `Progress has levelled off ${decrease ? 'above' : 'below'} the target; consider adjusting the approach or the level of support.`;
   }
-  if (a.latestMet) return `The target was met in the most recent session; keep monitoring until it is met in ${MASTERY_STREAK} sessions in a row.`;
+  if (a.aimStatus === 'behind') return `The last ${AIM_RULE_SESSIONS} sessions were ${decrease ? 'above' : 'below'} the aim line; consider changing the instruction or support for this goal.`;
+  if (a.latestMet) return `The target was met in the most recent session; keep monitoring until it is met in ${plural(a.mastery, 'session')} in a row.`;
   if (a.status === 'improving') return `Progress is moving ${hasTarget ? 'toward the target' : 'in the right direction'}; continue the current approach and keep monitoring.`;
   return null;
 }
@@ -376,6 +396,8 @@ function goalParagraph(name: string, a: GoalAnalysis, options: Required<Narrativ
   if (targetText) sentences.push(targetText);
   const trend = trendSentence(name, a);
   if (trend) sentences.push(trend);
+  const aimText = aimSentence(name, a);
+  if (aimText) sentences.push(aimText);
   if (a.unmeasured.length) {
     const n = a.unmeasured.length;
     sentences.push(`In ${n === 1 ? '1 more session' : `${n} more sessions`} (${a.unmeasuredDates.map(d => formatDate(d)).join(', ')}), ${name} did not respond in any trial; ${n === 1 ? 'it is' : 'they are'} not included in the average time.`);
@@ -402,7 +424,8 @@ function briefLine(a: GoalAnalysis, options: Required<NarrativeOptions>): string
   const parts = [
     a.values.length > 1 ? `averaged ${formatValue(goal, a.average)} over ${plural(a.values.length, 'session')}` : `${formatValue(goal, a.latest.value)} in 1 session`,
     a.values.length > 1 ? `latest ${formatValue(goal, a.latest.value)}` : null,
-    a.target !== undefined ? `target met in ${a.metCount} of ${a.values.length}${a.streak >= MASTERY_STREAK ? ` (last ${a.streak} in a row)` : ''}` : null,
+    a.target !== undefined ? `target met in ${a.metCount} of ${a.values.length}${a.streak >= a.mastery ? ` (last ${a.streak} in a row)` : ''}` : null,
+    a.aimStatus === 'behind' ? 'behind the aim line' : a.aimStatus === 'on-track' ? 'on track with the aim line' : null,
     TREND_WORDS[a.trend.kind],
   ].filter(Boolean);
   const step = options.nextSteps ? nextStep(a) : null;
@@ -413,7 +436,7 @@ function briefLine(a: GoalAnalysis, options: Required<NarrativeOptions>): string
 function overview(analyses: GoalAnalysis[]): string | null {
   if (analyses.length < 2) return null;
   const groups: [GoalStatus, string][] = [
-    ['met', `met the target in at least ${MASTERY_STREAK} sessions in a row`],
+    ['met', 'met their mastery criteria'],
     ['improving', 'are improving'],
     ['stable', 'are steady'],
     ['declining', 'are moving away from the goal'],
@@ -501,6 +524,11 @@ export interface GoalProgress {
   /** The goal's paragraph from the narrative (without its heading line). */
   comment: string;
   nextStep: string | null;
+  /** Mastery criteria, baseline and aim line (null when the goal doesn't set them). */
+  mastery: number;
+  baseline: string | null;
+  aim: AimLine | null;
+  aimStatus: AimStatus | null;
   /** The measure's name, unit and scale, for the chart. */
   measureLabel: string;
   unit: string;
@@ -547,6 +575,10 @@ export function buildProgressReport({ student, goals, sessions }: Omit<Narrative
       status: progressStatus(a),
       comment: goalParagraph(name, a, settings).split('\n').slice(1).join(' ').trim(),
       nextStep: nextStep(a),
+      mastery: a.mastery,
+      baseline: goal.baseline !== undefined && goal.baseline !== null ? formatValue(goal, Number(goal.baseline)) : null,
+      aim: a.aim,
+      aimStatus: a.aimStatus,
       measureLabel: info.label,
       unit: info.unit,
       max: info.max,

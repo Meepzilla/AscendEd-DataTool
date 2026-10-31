@@ -12,6 +12,7 @@ import {
 import { goalMeasure, goalMeasureInfo, goalResponses, goalNotes, meetsTarget, promptTotals, usesPromptCounters, withoutRunningTimers } from '@/lib/goal-measures';
 import { formatDate, formatGoalTarget, goalTypeLabel } from '@/lib/helpers';
 import BehaviorTimeCharts from './BehaviorTimeCharts';
+import { AIM_STATUS_LABELS, aimLine, aimStatus, aimValueAt, masterySessions } from '@/lib/aim-line';
 
 // A report card for each goal: its measure per session against the target, summary numbers, and a
 // breakdown that fits the goal type (responses, prompt levels, story parts, communication functions,
@@ -145,7 +146,14 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[] }> = ({ goal
   const recorded = useMemo(() => recordedSessions(goal, sessions), [goal, sessions]);
   const behaviorRecorded = useMemo(() => recordedSessions(goal, sessions, true), [goal, sessions]);
 
-  const points = recorded.map(r => ({ label: r.label, value: r.value, ...(goalResponses(type, r.data) ?? {}) }));
+  // The aim line (baseline to target by the target date), as the value expected on each session's date.
+  const aim = aimLine(goal, recorded[0]?.session.date);
+  const points = recorded.map(r => ({
+    label: r.label, value: r.value, ...(goalResponses(type, r.data) ?? {}),
+    ...(aim ? { aim: round(aimValueAt(aim, r.session.date)) } : {}),
+  }));
+  const onTrack = aimStatus(goal, aim, recorded.map(r => ({ date: r.session.date, value: r.value })));
+  const mastery = masterySessions(goal);
   const hasResponses = goalResponses(type) !== null && points.length > 0;
   const values = recorded.map(r => r.value);
   const average = values.length ? round(values.reduce((a, b) => a + b, 0) / values.length) : null;
@@ -159,7 +167,10 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[] }> = ({ goal
     { label: 'Latest', value: values.length ? `${values[values.length - 1]}${info.unit}` : '—' },
     { label: 'Average', value: average === null ? '—' : `${average}${info.unit}` },
     ...(metCount === null ? [] : [{ label: 'Met target', value: points.length ? `${metCount} of ${points.length}` : '—' }]),
+    ...(onTrack ? [{ label: 'Aim line', value: AIM_STATUS_LABELS[onTrack] }] : []),
   ];
+  // Mastered: the target met in the last `mastery` sessions in a row.
+  const mastered = target !== undefined && values.length >= mastery && values.slice(-mastery).every(v => meetsTarget(goal, v, target));
 
   return (
     <Card className="lg:col-span-2">
@@ -169,10 +180,12 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[] }> = ({ goal
           {goalTypeLabel(type)} · {info.label} per session
           {target !== undefined && ` · Target ${formatGoalTarget(type, target, goal.targetDirection)}`}
           {storyWords !== null && ` · ${storyWords} linking words`}
+          {target !== undefined && ` · Mastery: ${mastery} in a row`}
+          {mastered && <span className="ml-2 inline-block rounded-full border border-green-500/50 bg-green-500/15 px-2 py-0.5 text-xs font-semibold text-green-400">Mastered</span>}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+        <div className={`grid grid-cols-2 gap-2 text-center ${stats.length > 4 ? 'sm:grid-cols-5' : 'sm:grid-cols-4'}`}>
           {stats.map(stat => (
             <div key={stat.label} className="rounded-lg bg-muted/50 p-2">
               <p className="text-lg font-bold">{stat.value}</p>
@@ -185,7 +198,7 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[] }> = ({ goal
         ) : (
           <div className={hasResponses ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : ''}>
             <div className="h-[240px] w-full">
-              <ChartContainer config={{ value: { label: info.label, color: 'hsl(var(--primary))' } }} className="h-full w-full">
+              <ChartContainer config={{ value: { label: info.label, color: 'hsl(var(--primary))' }, aim: { label: 'Aim line', color: 'hsl(var(--chart-2))' } }} className="h-full w-full">
                 <LineChart data={points} margin={{ top: 10, right: 20, left: -10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} />
@@ -197,6 +210,7 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[] }> = ({ goal
                     <ReferenceLine y={target} stroke="hsl(var(--chart-5))" strokeDasharray="6 4"
                       label={{ value: direction === 'decrease' ? 'Target (max)' : 'Target', position: 'insideTopRight', fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
                   )}
+                  {aim && <Line type="linear" dataKey="aim" stroke="var(--color-aim)" strokeWidth={1.5} strokeDasharray="2 3" dot={false} />}
                   <Line type="monotone" dataKey="value" stroke="var(--color-value)" strokeWidth={2} dot={true} />
                 </LineChart>
               </ChartContainer>
