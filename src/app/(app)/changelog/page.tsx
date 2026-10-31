@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-31',
+    title: 'Student Groups for Data Entry',
+    description: 'Save groups of students, such as a class or a small group, with Students → Groups (or Data Entry → Load Group → Manage Groups). In Data Entry, Load Group fills the slots with that group\'s students in one tap. A student already in a slot with unsaved entries keeps their slot, so nothing entered is lost. Archived students are skipped. Groups are saved on this device.',
+    type: 'feature',
+    icon: UserPlus,
+  },
+  {
+    date: '2026-10-31',
     title: 'Collapsible Hotkeys in the Footer',
     description: 'Tap Global Hotkeys at the bottom of any page to hide or show the list of keyboard shortcuts. The choice is remembered on this device; the Help and Privacy Notice links stay visible.',
     type: 'improvement',
