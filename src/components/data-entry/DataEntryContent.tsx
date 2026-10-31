@@ -16,7 +16,7 @@ import TouchControls from '@/components/forms/touch-controls';
 import { ConfettiProvider } from '@/hooks/use-confetti';
 import { ScrollArea } from '../ui/scroll-area';
 import { GOAL_TYPE_FIELDS, GOAL_TYPES, GOAL_TYPES_WITHOUT_PROMPT_COUNTERS, captureTypeOf, finalizeBehaviorData } from '@/lib/goal-constants';
-import { applyGoalHotkey, hotkeyChar, hotkeysBlocked } from '@/lib/data-entry-hotkeys';
+import { applyGoalHotkey, hotkeyChar, hotkeysBlocked, singleKeyShortcutsEnabled } from '@/lib/data-entry-hotkeys';
 import GoalFocusManager from './GoalFocusManager';
 import AccessLockDialog, { type AccessLockDialogMode } from './AccessLockDialog';
 import { clearAccessPin, hasAccessPin } from '@/lib/access-pin';
@@ -650,6 +650,9 @@ export default function DataEntryContent() {
       if (handled) event.preventDefault();
       return;
     }
+
+    // Single-key shortcuts can be turned off in Settings.
+    if (!singleKeyShortcutsEnabled()) return;
 
     if (/^[1-4]$/.test(key)) {
       const slotIndex = Number(key) - 1;

@@ -97,7 +97,7 @@ export default function ManageSessionsPage() {
         <CardHeader>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
             <div>
-                <CardTitle className="text-2xl font-bold flex items-center gap-2">
+                <CardTitle role="heading" aria-level={1} className="text-2xl font-bold flex items-center gap-2">
                     <FileText className="h-7 w-7 text-primary"/>Manage Sessions
                 </CardTitle>
                 <CardDescription>View, edit, or delete past session records. Filter by student, date, or keywords.</CardDescription>
@@ -109,7 +109,7 @@ export default function ManageSessionsPage() {
         <CardContent>
           <div className="flex flex-col md:flex-row gap-2 mb-4">
             <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
-              <SelectTrigger className="w-full md:w-[200px]">
+              <SelectTrigger className="w-full md:w-[200px]" aria-label="Student">
                 <SelectValue placeholder="Filter by student" />
               </SelectTrigger>
               <SelectContent>
@@ -134,7 +134,7 @@ export default function ManageSessionsPage() {
 
           <ScrollArea className="h-[500px] border rounded-md"> {/* Adjust height as needed */}
             <Table>
-              <TableHeader className="sticky top-0 bg-muted">
+              <TableHeader className="sticky top-0 bg-muted [&_th]:text-foreground">
                 <TableRow>
                   <TableHead>Student</TableHead>
                   <TableHead>Date</TableHead>

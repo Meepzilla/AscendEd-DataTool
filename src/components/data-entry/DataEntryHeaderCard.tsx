@@ -44,7 +44,7 @@ const DataEntryHeaderCard: React.FC<DataEntryHeaderCardProps> = ({
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
             <Edit2 className="h-7 w-7 text-primary" />
-            <CardTitle className="text-2xl font-bold">Data Entry</CardTitle>
+            <CardTitle role="heading" aria-level={1} className="text-2xl font-bold">Data Entry</CardTitle>
           </div>
           <Button
             variant="ghost"

@@ -109,7 +109,7 @@ export default function AnalysisReportPage() {
         <CardHeader>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
              <div>
-                <CardTitle className="text-2xl font-bold flex items-center gap-2">
+                <CardTitle role="heading" aria-level={1} className="text-2xl font-bold flex items-center gap-2">
                     <BarChart2 className="h-7 w-7 text-primary"/>Analysis &amp; Reports
                 </CardTitle>
                 <CardDescription>Visualize student progress, analyze trends and write a progress narrative (for active goals).</CardDescription>
@@ -144,7 +144,7 @@ export default function AnalysisReportPage() {
         <CardContent className="space-y-4">
           <div className="flex flex-col md:flex-row gap-2">
             <Select value={selectedStudentId} onValueChange={handleStudentChange}>
-              <SelectTrigger className="w-full md:w-[250px]">
+              <SelectTrigger className="w-full md:w-[250px]" aria-label="Student">
                 <SelectValue placeholder="Select Student" />
               </SelectTrigger>
               <SelectContent>
@@ -155,7 +155,7 @@ export default function AnalysisReportPage() {
             </Select>
             {selectedStudent && (
                 <Select value={selectedGoalId} onValueChange={(value) => setSelectedGoalId(value === 'ALL_ACTIVE' ? undefined : value)}>
-                    <SelectTrigger className="w-full md:w-[250px]">
+                    <SelectTrigger className="w-full md:w-[250px]" aria-label="Goal">
                         <SelectValue placeholder="Select Active Goal (Optional)" />
                     </SelectTrigger>
                     <SelectContent>

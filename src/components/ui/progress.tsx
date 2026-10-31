@@ -17,6 +17,8 @@ const Progress = React.forwardRef<
 >(({ className, value, indicatorClassName, ...props }, ref) => (
   <ProgressPrimitive.Root
     ref={ref}
+    // Passed on so screen readers get the current value (without it the bar reads as "indeterminate").
+    value={value == null ? value : Math.min(100, Math.max(0, value))}
     className={cn(
       "relative h-4 w-full overflow-hidden rounded-full bg-secondary",
       className

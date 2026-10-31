@@ -231,7 +231,7 @@ export default function StudentProfileView() {
             </Avatar>
             <div>
               <div className="flex items-center gap-2">
-                <CardTitle className="text-2xl sm:text-3xl font-bold">{currentStudent.name}</CardTitle>
+                <CardTitle role="heading" aria-level={1} className="text-2xl sm:text-3xl font-bold">{currentStudent.name}</CardTitle>
                 {currentStudent.isArchived && <Badge variant="outline" className="border-orange-500 text-orange-600 bg-orange-50 dark:bg-orange-900/20">Archived</Badge>}
               </div>
               <CardDescription className="text-xs sm:text-sm">

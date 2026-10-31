@@ -138,7 +138,7 @@ export default function AppHeader() {
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.09L6.71 11.8l1.41-1.41L11 13.27l4.88-4.88 1.41 1.41L11 16.09z"/>
             </svg>
             <div>
-              <h1 className="font-semibold text-foreground">{APP_NAME}</h1>
+              <span className="font-semibold text-foreground">{APP_NAME}</span>
             </div>
           </Button>
         </div>

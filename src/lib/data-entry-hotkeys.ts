@@ -115,3 +115,13 @@ export function applyGoalHotkey(type: GoalType, key: string, data: Record<string
   }
   return null;
 }
+
+/** Settings → Data Entry single-key shortcuts. Off leaves only the Alt and Ctrl/Cmd shortcuts, so speech input
+ *  or a stray key press can't record data (WCAG 2.1.4). On unless turned off. */
+export const SINGLE_KEY_SHORTCUTS_KEY = 'ascended_single_key_shortcuts';
+export function singleKeyShortcutsEnabled(): boolean {
+  try { return localStorage.getItem(SINGLE_KEY_SHORTCUTS_KEY) !== 'off'; } catch { return true; }
+}
+export function setSingleKeyShortcutsEnabled(enabled: boolean) {
+  try { localStorage.setItem(SINGLE_KEY_SHORTCUTS_KEY, enabled ? 'on' : 'off'); } catch { /* applies for this visit only */ }
+}

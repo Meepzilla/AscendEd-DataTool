@@ -71,7 +71,7 @@ export default function StudentProfileLandingPage() {
           <div className="flex items-center gap-3">
               <UserSearch className="h-10 w-10 text-primary" />
               <div>
-              <CardTitle className="text-3xl font-bold">Students</CardTitle>
+              <CardTitle role="heading" aria-level={1} className="text-3xl font-bold">Students</CardTitle>
               <CardDescription>
                   Search, sort, and select a student to view their profile or manage goals.
               </CardDescription>
