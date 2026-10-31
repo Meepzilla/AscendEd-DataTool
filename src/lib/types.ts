@@ -14,6 +14,8 @@ export interface Student {
   iep?: StudentIep;
 }
 
+export type ServicePer = 'week' | 'month' | 'year';
+
 export interface StudentIep {
   /** Date of the current IEP meeting (YYYY-MM-DD). */
   iepDate?: string;
@@ -21,9 +23,9 @@ export interface StudentIep {
   annualReviewDate?: string;
   /** Re-evaluation (triennial) due (YYYY-MM-DD). */
   reevaluationDate?: string;
-  /** Service minutes the IEP requires, per week or per month. */
+  /** Service minutes the IEP requires, per week, month or school year. */
   serviceMinutes?: number;
-  servicePer?: 'week' | 'month';
+  servicePer?: ServicePer;
 }
 
 export interface Goal {
