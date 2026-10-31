@@ -93,6 +93,8 @@ export interface SessionData {
   notes: string;
   goals: SessionGoalData[];
   originalGoalHeaders: Goal[]; 
+  /** A session that didn't take place (no goal data), with the reason (attendance.ts). */
+  missed?: { reason: import('./attendance').MissedReason; note?: string };
   userId?: string; 
 }
 

@@ -30,6 +30,8 @@ interface Props {
   studentName: string;
   periodLabel: string;
   sessionCount: number;
+  /** Sessions held and missed in the period, e.g. "12 held · 2 missed (Student absent 2)". */
+  attendance?: string;
   goals: GoalProgress[];
   settings: ProgressReportSettings;
   edits: ProgressReportEdits;
@@ -64,7 +66,7 @@ function Logo() {
   );
 }
 
-export default function ProgressReportDocument({ studentName, periodLabel, sessionCount, goals, settings, edits, onEdit, onTargetDate }: Props) {
+export default function ProgressReportDocument({ studentName, periodLabel, sessionCount, attendance, goals, settings, edits, onEdit, onTargetDate }: Props) {
   const statusOf = (g: GoalProgress) => edits.status[g.goal.id] ?? g.status;
   const commentOf = (g: GoalProgress) => edits.comment[g.goal.id] ?? g.comment;
   const reportDate = settings.reportDate ? formatDateOnly(settings.reportDate) : formatDate(new Date());
@@ -100,6 +102,7 @@ export default function ProgressReportDocument({ studentName, periodLabel, sessi
         <h2 id="report-summary" className="mb-2 text-sm font-bold uppercase tracking-wide text-[hsl(var(--report-accent))]">Summary</h2>
         <p className="mb-2 text-muted-foreground">
           {plural(goals.length, 'goal')} · {plural(sessionCount, 'session')} with data in this period
+          {attendance ? <> · <span className="font-medium text-foreground">Attendance:</span> {attendance}</> : null}
         </p>
         <table className="w-full border-collapse text-left">
           <thead>

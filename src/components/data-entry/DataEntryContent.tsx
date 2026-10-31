@@ -12,6 +12,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
 import { Info, PlusCircle } from 'lucide-react';
 import type { Goal, Student, StudentSessionState, SessionGoalData, GoalType } from '@/lib/types';
+import { MISSED_REASON_SHORT, type MissedReason } from '@/lib/attendance';
+import { formatDate } from '@/lib/helpers';
 import TouchControls from '@/components/forms/touch-controls';
 import { ConfettiProvider } from '@/hooks/use-confetti';
 import { ScrollArea } from '../ui/scroll-area';
@@ -419,6 +421,23 @@ export default function DataEntryContent() {
     savingRef.current = false;
     setIsSavingAll(false);
   }
+
+  // A student card's Missed button: saves a session with the reason and no goal data (attendance.ts), on the
+  // session date and times. What was entered on the card is kept.
+  const recordMissedSession = async (studentId: string, reason: MissedReason, note: string): Promise<boolean> => {
+    const student = students.find(s => s.id === studentId);
+    if (!student || !sessionDate) return false;
+    if (isStudentAccessLocked) {
+      toast({ title: 'Access Locked', description: 'Student access is locked. Unlock to record a missed session.' });
+      return false;
+    }
+    const saved = await addSession({
+      studentId, studentName: student.name, date: sessionDate.toISOString(), time: sessionTime, endTime: sessionEndTime,
+      activity: '', notes: note, goals: [], originalGoalHeaders: student.goals, missed: { reason, ...(note ? { note } : {}) },
+    });
+    if (saved) toast({ title: 'Missed session recorded', description: `${student.name}: ${MISSED_REASON_SHORT[reason]}, ${formatDate(sessionDate)}.` });
+    return !!saved;
+  };
 
   const handleReset = () => {
     if (selectedStudentIds.length === 0 || focusedStudentSlotIndex >= selectedStudentIds.length) {
@@ -890,6 +909,7 @@ export default function DataEntryContent() {
                   handleInputChange={handleInputChange}
                   handleGoalDataChange={localHandleGoalDataChange}
                   handleMoveGoal={handleMoveGoal}
+                  recordMissedSession={recordMissedSession}
                   addStudentSlot={addStudentSlot}
                   isStudentAccessLocked={isStudentAccessLocked}
               />

@@ -1,6 +1,7 @@
 import Papa from 'papaparse';
 import type { SessionData } from './types';
 import { formatDate } from './helpers';
+import { MISSED_REASON_SHORT } from './attendance';
 
 // Session export as CSV, one row per goal in each session (one row for a session without goals). Goal data
 // fields become "Goal Data: ..." columns; the import (import-data-modal) reads this same layout back.
@@ -16,8 +17,9 @@ function sessionRows(sessions: SessionData[]): Record<string, unknown>[] {
       'End Time': session.endTime || 'N/A',
       'Activity': session.activity,
       'Session Notes': session.notes,
+      'Attendance': session.missed ? `Missed: ${MISSED_REASON_SHORT[session.missed.reason]}` : 'Held',
     };
-    if (!session.goals || session.goals.length === 0) return [{ ...base, 'Goal Name': 'N/A (No goals recorded)' }];
+    if (!session.goals || session.goals.length === 0) return [{ ...base, 'Goal Name': session.missed ? 'N/A (Missed session)' : 'N/A (No goals recorded)' }];
     return session.goals.map(goalData => {
       const goalFields: Record<string, unknown> = {};
       Object.entries(goalData.data || {}).forEach(([key, value]) => {
