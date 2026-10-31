@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-31',
+    title: 'Fixes from a Code Review',
+    description: 'Merging sessions no longer adds up values that aren\'t counts: interval length, % of intervals and average latency are worked out again from the combined data, and Story Champs parts keep their best score instead of being added. The Sessions page clears ticked sessions when the filters change, so only sessions you can see are merged. Report narratives start the aim line at the goal\'s first session (as the Reports chart does) and the brief style counts latency sessions without a response. Passcode protection: turning it on, changing the passcode or turning it off no longer loses data saved at the same moment, a failed restore puts damaged data back exactly as it was stored, and the lock screen shows a message instead of getting stuck if unlocking can\'t run.',
+    type: 'fix',
+    icon: ScrollText,
+  },
+  {
+    date: '2026-10-31',
     title: 'Shorter Footer',
     description: 'The footer at the bottom of each page (Global Hotkeys, Help Page and Privacy Notice) takes up much less space: the extra empty room below it is gone and its lines sit closer together, centered on phones.',
     type: 'improvement',

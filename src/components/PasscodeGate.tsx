@@ -76,7 +76,15 @@ function LockScreen({ onUnlocked }: { onUnlocked: () => void }) {
     if (!passcode || busy) return;
     setBusy(true);
     setError('');
-    const ok = await unlock(passcode);
+    let ok: boolean;
+    try {
+      ok = await unlock(passcode);
+    } catch {
+      // Encryption isn't available (e.g. the page isn't served over https) or the stored settings are damaged.
+      setBusy(false);
+      setError('This device couldn\'t unlock the data. Make sure the app is opened from its https address, then try again.');
+      return;
+    }
     if (ok) {
       onUnlocked();
       return;
