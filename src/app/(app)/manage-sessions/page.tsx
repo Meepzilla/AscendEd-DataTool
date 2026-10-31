@@ -54,6 +54,8 @@ export default function ManageSessionsPage() {
   const [searchTerm, setSearchTerm] = useState(''); // Search by activity or notes
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [viewingSessionDetails, setViewingSessionDetails] = useState<SessionData | null>(null);
+  // Changing the filters clears the ticks, so a merge never includes sessions that aren't shown.
+  useEffect(() => { setSelectedIds(new Set()); }, [selectedStudentId, searchTerm, dateRange]);
 
 
   const filteredSessions = useMemo(() => {
@@ -103,7 +105,7 @@ export default function ManageSessionsPage() {
           open={isMergeOpen && !mergeBlocked}
           onCancel={() => setIsMergeOpen(false)}
           onConfirm={async () => {
-            if (await mergeSessionRecords([...selectedIds])) setSelectedIds(new Set());
+            if (await mergeSessionRecords(selectedSessions.map(s => s.sessionId))) setSelectedIds(new Set());
             setIsMergeOpen(false);
           }}
         />

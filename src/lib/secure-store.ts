@@ -28,6 +28,8 @@ let key: CryptoKey | null = null;
 const cache = new Map<string, string | null>();
 const writing = new Map<string, Promise<void>>();
 const dirty = new Set<string>();
+/** Stored student-data values that couldn't be decrypted at unlock (damaged); they are left as stored. */
+const undecryptable = new Set<string>();
 let onWriteError: ((error: unknown) => void) | null = null;
 
 const b64 = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes));
@@ -108,8 +110,11 @@ function persist(storageKey: string) {
   const run = (async () => {
     try {
       const value = cache.get(storageKey);
-      if (value === null || value === undefined) localStorage.removeItem(storageKey);
-      else localStorage.setItem(storageKey, await encryptWith(key!, value));
+      const stored = value === null || value === undefined ? null : await encryptWith(key!, value);
+      // A damaged value put back as it was stored (restoreItem) is left alone.
+      if (undecryptable.has(storageKey)) return;
+      if (stored === null) localStorage.removeItem(storageKey);
+      else localStorage.setItem(storageKey, stored);
     } catch (error) {
       onWriteError?.(error);
     }
@@ -139,6 +144,7 @@ export function setItem(storageKey: string, value: string) {
   if (isSensitiveKey(storageKey) && isPasscodeEnabled()) {
     if (!key) throw new Error('Locked');
     if (!fits(storageKey, encryptedLength(value))) throw new DOMException('Storage is full', 'QuotaExceededError');
+    undecryptable.delete(storageKey); // replaced with readable data
     cache.set(storageKey, value);
     persist(storageKey);
     return;
@@ -148,6 +154,7 @@ export function setItem(storageKey: string, value: string) {
 
 export function removeItem(storageKey: string) {
   if (isSensitiveKey(storageKey) && isPasscodeEnabled()) {
+    undecryptable.delete(storageKey);
     cache.set(storageKey, null);
     persist(storageKey);
     return;
@@ -155,10 +162,30 @@ export function removeItem(storageKey: string) {
   localStorage.removeItem(storageKey);
 }
 
-/** Whether a stored student-data value couldn't be decrypted at unlock (damaged); it is left as stored. */
-const undecryptable = new Set<string>();
 export function isUndecryptable(storageKey: string) {
   return undecryptable.has(storageKey);
+}
+
+/** A stored value as it is, to put back with restoreItem (damaged values exactly as stored, not as read). */
+export type ItemSnapshot = { damaged: boolean; value: string | null };
+export function snapshotItem(storageKey: string): ItemSnapshot {
+  if (isSensitiveKey(storageKey) && isPasscodeEnabled() && undecryptable.has(storageKey)) {
+    return { damaged: true, value: localStorage.getItem(storageKey) };
+  }
+  return { damaged: false, value: getItem(storageKey) };
+}
+/** Puts back a value taken with snapshotItem. */
+export function restoreItem(storageKey: string, snapshot: ItemSnapshot) {
+  if (snapshot.damaged) {
+    // Back to the damaged value as stored: pending writes of the newer value skip it (see persist).
+    undecryptable.add(storageKey);
+    cache.set(storageKey, '\u0000damaged');
+    if (snapshot.value === null) localStorage.removeItem(storageKey);
+    else localStorage.setItem(storageKey, snapshot.value);
+    return;
+  }
+  if (snapshot.value === null) removeItem(storageKey);
+  else setItem(storageKey, snapshot.value);
 }
 
 /** Waits until every background write has been stored. */
@@ -177,16 +204,22 @@ const sensitiveKeysInStorage = () => {
 
 // ---- Passcode ----
 
+/** The key for the passcode, or null if it is wrong. */
+async function keyFor(passcode: string, config: PasscodeConfig): Promise<CryptoKey | null> {
+  const candidate = await deriveKey(passcode, unb64(config.salt), config.iterations);
+  try {
+    return await decryptWith(candidate, config.check) === CHECK_TEXT ? candidate : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Unlocks with the passcode: true if it is right (the data is then decrypted into memory). */
 export async function unlock(passcode: string): Promise<boolean> {
   const config = readConfig();
   if (!config) return true;
-  const candidate = await deriveKey(passcode, unb64(config.salt), config.iterations);
-  try {
-    if (await decryptWith(candidate, config.check) !== CHECK_TEXT) return false;
-  } catch {
-    return false;
-  }
+  const candidate = await keyFor(passcode, config);
+  if (!candidate) return false;
   cache.clear();
   undecryptable.clear();
   for (const storageKey of sensitiveKeysInStorage()) {
@@ -210,10 +243,10 @@ async function newConfig(passcode: string, autoLockMinutes = 15): Promise<{ conf
 }
 
 /**
- * Writes every stored student-data value as `encode` gives it, all or nothing: if storage fills part way,
+ * Writes the given student-data values, all or nothing (synchronously, so no other write can come between): if storage fills part way,
  * what was written is put back as it was.
  */
-async function rewriteAll(entries: [string, string][], configValue: string | null) {
+function rewriteAll(entries: [string, string][], configValue: string | null) {
   const previous = new Map<string, string | null>();
   try {
     for (const [storageKey, value] of entries) {
@@ -234,41 +267,68 @@ async function rewriteAll(entries: [string, string][], configValue: string | nul
   }
 }
 
+/**
+ * Encodes every value `read` gives (each key's current value) with `encode`. Encoding waits, and the app can
+ * write meanwhile, so values that changed are encoded again until none have; the caller then stores the result
+ * straight away (synchronously), so nothing written in between is lost.
+ */
+async function encodeCurrent(read: () => [string, string | null][], encode: (value: string) => Promise<string>, waitForWrites: boolean) {
+  const done = new Map<string, { value: string; out: string }>();
+  for (;;) {
+    if (waitForWrites) await flushWrites();
+    const changed = read().filter(([k, v]) => v !== null && done.get(k)?.value !== v) as [string, string][];
+    if (!changed.length) break;
+    for (const [k, v] of changed) done.set(k, { value: v, out: await encode(v) });
+  }
+  const current = new Map(read());
+  return [...done].filter(([k, d]) => current.get(k) === d.value).map(([k, d]) => [k, d.out] as [string, string]);
+}
+
 /** Turns protection on: encrypts the student data with a new passcode. */
 export async function enablePasscode(passcode: string, autoLockMinutes = 15) {
   if (passcode.length < MIN_PASSCODE_LENGTH) throw new Error(`Use at least ${MIN_PASSCODE_LENGTH} characters.`);
   if (isPasscodeEnabled()) throw new Error('Passcode protection is already on.');
   const { config, key: k } = await newConfig(passcode, autoLockMinutes);
-  const plain = sensitiveKeysInStorage().map(storageKey => [storageKey, localStorage.getItem(storageKey)!] as [string, string]);
-  const encrypted: [string, string][] = [];
-  for (const [storageKey, value] of plain) encrypted.push([storageKey, await encryptWith(k, value)]);
-  await rewriteAll(encrypted, JSON.stringify(config));
+  const readStorage = () => sensitiveKeysInStorage().map(storageKey => [storageKey, localStorage.getItem(storageKey)] as [string, string | null]);
+  const encrypted = await encodeCurrent(readStorage, value => encryptWith(k, value), false);
+  const plain = readStorage();
+  rewriteAll(encrypted, JSON.stringify(config));
   key = k;
   cache.clear();
   plain.forEach(([storageKey, value]) => cache.set(storageKey, value));
 }
 
+/** Checks the passcode for change/disable, without reloading the data the app is using. */
+async function confirmPasscode(current: string, wrong: string) {
+  const config = readConfig();
+  if (!config) throw new Error('Passcode protection is off.');
+  if (!key) {
+    if (!(await unlock(current))) throw new Error(wrong);
+  } else if (!(await keyFor(current, config))) {
+    throw new Error(wrong);
+  }
+}
+
+const cachedValues = () => [...cache].filter(([k]) => !undecryptable.has(k));
+
 /** Changes the passcode (the data is re-encrypted). Needs the current passcode. */
 export async function changePasscode(current: string, next: string) {
   if (next.length < MIN_PASSCODE_LENGTH) throw new Error(`Use at least ${MIN_PASSCODE_LENGTH} characters.`);
-  await flushWrites();
-  if (!(await unlock(current))) throw new Error('The current passcode is wrong.');
+  await confirmPasscode(current, 'The current passcode is wrong.');
   if (undecryptable.size) throw new Error("Some saved data can't be read, so the passcode can't be changed. Restore a backup first.");
   const { config, key: k } = await newConfig(next, getAutoLockMinutes());
-  const encrypted: [string, string][] = [];
-  for (const [storageKey, value] of cache) if (value !== null) encrypted.push([storageKey, await encryptWith(k, value)]);
-  await rewriteAll(encrypted, JSON.stringify(config));
+  // Pending writes (with the old key) are finished before the last check, so none land after the rewrite.
+  const encrypted = await encodeCurrent(cachedValues, value => encryptWith(k, value), true);
+  rewriteAll(encrypted, JSON.stringify(config));
   key = k;
 }
 
 /** Turns protection off: the student data is stored unencrypted again. Needs the passcode. */
 export async function disablePasscode(current: string) {
-  await flushWrites();
-  if (!(await unlock(current))) throw new Error('The passcode is wrong.');
+  await confirmPasscode(current, 'The passcode is wrong.');
   if (undecryptable.size) throw new Error("Some saved data can't be read, so protection can't be turned off. Restore a backup first.");
-  const plain: [string, string][] = [];
-  for (const [storageKey, value] of cache) if (value !== null) plain.push([storageKey, value]);
-  await rewriteAll(plain, null);
+  const plain = await encodeCurrent(cachedValues, async value => value, true);
+  rewriteAll(plain, null);
   key = null;
   cache.clear();
 }

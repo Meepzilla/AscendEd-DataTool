@@ -163,7 +163,8 @@ function analyzeGoal(goal: Goal, number: number, sessions: SessionData[]): GoalA
   const status: GoalStatus = recorded.length === 0 ? 'no data'
     : target !== undefined && streak >= mastery ? 'met'
     : trend.kind;
-  const aim = aimLine(goal, sessions[0]?.date);
+  // Without a baseline date the aim line starts at this goal's first recorded session, as on the Reports chart.
+  const aim = aimLine(goal, recorded[0]?.session.date);
   const points = recorded.map(r => ({ date: r.session.date, value: r.value }));
   return {
     mastery, aim, aimStatus: aimStatus(goal, aim, points),
@@ -446,7 +447,7 @@ function briefLine(a: GoalAnalysis, options: Required<NarrativeOptions>): string
   const parts = [
     a.values.length > 1 ? `averaged ${formatValue(goal, a.average)} over ${plural(a.values.length, 'session')}` : `${formatValue(goal, a.latest.value)} in 1 session`,
     a.values.length > 1 ? `latest ${formatValue(goal, a.latest.value)}` : null,
-    a.target !== undefined ? `target met in ${a.metCount} of ${a.values.length}${a.streak >= a.mastery ? ` (last ${a.streak} in a row)` : ''}` : null,
+    a.target !== undefined ? `target met in ${a.metCount} of ${a.values.length + a.unmeasured.length}${a.streak >= a.mastery ? ` (last ${a.streak} in a row)` : ''}` : null,
     a.aimStatus === 'behind' ? 'behind the aim line' : a.aimStatus === 'on-track' ? 'on track with the aim line' : null,
     TREND_WORDS[a.trend.kind],
   ].filter(Boolean);
