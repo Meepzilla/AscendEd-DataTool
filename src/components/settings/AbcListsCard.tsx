@@ -47,7 +47,7 @@ const ListEditor: React.FC<{
       <ul className="space-y-1">
         {items.map((item, index) => (
           <li key={item} className="flex items-center gap-1 rounded border px-2 py-1 text-sm">
-            <span className="flex-grow min-w-0 truncate">{item}</span>
+            <span className="flex-grow min-w-0 break-words">{item}</span>
             {renderExtra?.(index)}
             <Button type="button" variant="ghost" size="icon" className="h-7 w-7 shrink-0" title="Move up" aria-label={`Move ${item} up`}
               disabled={index === 0} onClick={() => onChange(move(index))}>
@@ -118,7 +118,7 @@ export default function AbcListsCard() {
                 value={lists.consequences[index].fn ?? NO_FUNCTION}
                 onValueChange={(v) => setFunction(index, v === NO_FUNCTION ? null : (v as BehaviorFunction))}
               >
-                <SelectTrigger className="h-7 w-[6.5rem] text-xs shrink-0" aria-label={`Function for ${lists.consequences[index].label}`}>
+                <SelectTrigger className="h-7 w-auto min-w-[6.5rem] gap-1 text-xs shrink-0" aria-label={`Function for ${lists.consequences[index].label}`}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
