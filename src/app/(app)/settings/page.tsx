@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Settings, PanelLeft } from 'lucide-react';
 import BackupRestoreCard from '@/components/settings/BackupRestoreCard';
+import PasscodeCard from '@/components/settings/PasscodeCard';
 import DisplaySizeSetting from '@/components/settings/DisplaySizeSetting';
 import AbcListsCard from '@/components/settings/AbcListsCard';
 
@@ -64,6 +65,8 @@ export default function SettingsPage() {
       </Card>
 
       <BackupRestoreCard />
+
+      <PasscodeCard />
 
       <Card>
         <CardHeader>

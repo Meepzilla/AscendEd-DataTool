@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-31',
+    title: 'Passcode Protection (Encrypted Student Data)',
+    description: 'Settings → Passcode Protection encrypts the student data stored on this device (students, sessions and unsaved Data Entry work) with a passcode of at least 6 characters, using AES-256. The app then opens to a lock screen, locks again after 5 to 60 minutes without use (your choice) or with the Lock button in the menu bar, and the data can only be read after the passcode is entered. The passcode can\'t be recovered: if it is forgotten, the student data on the device can only be erased and restored from a backup, so back up first. Goal templates and settings aren\'t student data and aren\'t encrypted; backup and CSV files aren\'t encrypted either.',
+    type: 'feature',
+    icon: Lock,
+  },
+  {
+    date: '2026-10-31',
     title: 'Only the App\'s Own Scripts Can Run',
     description: 'Every page now tells the browser to run only the app\'s own code: its script files and the exact scripts built into each page. Any other script, such as one injected into the page or loaded from another website, is blocked. This protects student data on the device from code that isn\'t part of the app.',
     type: 'improvement',
