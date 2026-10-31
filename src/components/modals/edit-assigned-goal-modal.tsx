@@ -31,7 +31,8 @@ interface EditAssignedGoalModalProps {
 }
 
 export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goalToEdit }: EditAssignedGoalModalProps) {
-  const { updateStudentGoal, loading: dataLoading } = useStudentData();
+  const { updateStudentGoal, students, loading: dataLoading } = useStudentData();
+  const studentName = students.find(s => s.id === studentId)?.name;
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -82,7 +83,7 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
       isOpen={isOpen}
       onClose={onClose}
       title={`Edit Assigned Goal: ${goalToEdit?.name}`}
-      description="Modify the details of this goal for the student. This will not affect goal templates."
+      description={`Changes apply only to ${studentName ?? 'this student'}. The goal template and other students with this goal stay as they are.`}
       size="lg"
     >
       <Form {...form}>

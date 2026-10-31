@@ -7,7 +7,7 @@ import { useToast as useShadcnToast } from "@/hooks/use-toast";
 import { useErrorLog } from './use-error-log';
 import type { Student, Goal, GoalTemplate, SessionData, SessionGoalData, User } from '@/lib/types';
 import { useModalState } from './use-modal-state';
-import { goalFromTemplate, hasTemplateGoal, recordRecentTemplates } from '@/lib/goal-templates';
+import { goalFromTemplate, hasTemplateGoal, linkGoalsToTemplates, recordRecentTemplates } from '@/lib/goal-templates';
 import { DEFAULT_GOAL_TEMPLATES, defaultTemplateKey, applyAssignedGoalRenames, applyDefaultTemplateRenames, applyDefaultTemplateRetirements, applyDefaultTemplateUpdates } from '@/lib/goal-constants';
 import { compareSessionsOldestFirst, generateUUID } from '@/lib/helpers';
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
@@ -477,6 +477,15 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     if (missingDefaultTemplates.length > 0 || templatesUpdated) saveToLocal(templatesKey, nextTemplates);
     templatesRef.current = nextTemplates;
     setGoalTemplates(nextTemplates);
+
+    // Goals assigned before they kept their template's id get it now (see linkGoalsToTemplates).
+    const { students: linkedStudents, changed: goalsLinked } = linkGoalsToTemplates(localStudents, nextTemplates);
+    if (goalsLinked) {
+      if (saveToLocal(studentsKey, linkedStudents)) {
+        studentsRef.current = linkedStudents;
+        setStudents(linkedStudents);
+      }
+    }
 
     const localSessions = [...rawSessions].sort(byDateDesc);
     sessionsRef.current = localSessions;
