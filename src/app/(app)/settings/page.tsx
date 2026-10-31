@@ -15,6 +15,7 @@ import DeleteDataCard from '@/components/settings/DeleteDataCard';
 import DisplaySizeSetting from '@/components/settings/DisplaySizeSetting';
 import MenuPositionSetting from '@/components/settings/MenuPositionSetting';
 import SingleKeyShortcutsSetting from '@/components/settings/SingleKeyShortcutsSetting';
+import OrganizationNameSetting from '@/components/settings/OrganizationNameSetting';
 import AbcListsCard from '@/components/settings/AbcListsCard';
 
 const SIDEBAR_ENABLED_KEY = 'sidebar_enabled';
@@ -84,6 +85,7 @@ export default function SettingsPage() {
           <DisplaySizeSetting />
           <MenuPositionSetting />
           <SingleKeyShortcutsSetting />
+          <OrganizationNameSetting />
           <div className="flex flex-row items-center justify-between rounded-lg border p-4">
             <div className="space-y-0.5">
               <Label htmlFor="sidebar-switch" className="text-base font-medium">

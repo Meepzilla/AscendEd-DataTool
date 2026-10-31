@@ -20,7 +20,7 @@ const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-10-31',
     title: 'Report Date and Goal Target Dates',
-    description: 'The Progress Report has a Report date you can change (for example, to the IEP progress-reporting date). Each goal can have a target date, the date its criteria should be met by: set it on the Progress Report or in Students → Edit Goal. It is saved with the goal and printed with the target, for example "Target 80% by Jun 12, 2027".',
+    description: 'The Progress Report has a Report date you can change (for example, to the IEP progress-reporting date). Each goal can have a target date, the date its criteria should be met by: set it on the Progress Report or in Students → Edit Goal. It is saved with the goal and printed with the target, for example "Target 80% by Jun 12, 2027". Settings → Interface → School or District Name puts your school or district at the top of the report in place of AscendEd.',
     type: 'feature',
     icon: ScrollText,
   },
