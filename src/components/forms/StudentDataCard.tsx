@@ -131,7 +131,7 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
             />
             {dataEntrySelectedStudentIds.length > 0 && (
               <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); removeStudentSlot(slotIndex); }} className="h-8 w-8" title="Remove Student Slot">
-                <XCircle className="h-5 w-5 text-destructive" />
+                <XCircle className="h-5 w-5 text-red-500" />
               </Button>
             )}
           </div>
