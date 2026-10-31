@@ -7,7 +7,8 @@ import type { Student, SessionData } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Download, Info, BarChart2, Upload } from 'lucide-react';
+import { Download, Info, BarChart2, Upload, FileText } from 'lucide-react';
+import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
 import type { DateRange } from "react-day-picker";
@@ -123,6 +124,11 @@ export default function AnalysisReportPage() {
                     rangeLabel={dateRange?.from ? `${formatDate(dateRange.from)} to ${formatDate(dateRange.to ?? new Date())}` : undefined}
                     disabled={activeStudentGoals.length === 0}
                   />
+                )}
+                {selectedStudent && (
+                  <Button size="sm" asChild>
+                    <Link href={`/progress-report?studentId=${selectedStudent.id}`}><FileText className="mr-2 h-4 w-4" /> Progress Report</Link>
+                  </Button>
                 )}
                 <Button onClick={() => setIsImportModalOpen(true)} size="sm" variant="outline">
                     <Upload className="mr-2 h-4 w-4" /> Import Data
