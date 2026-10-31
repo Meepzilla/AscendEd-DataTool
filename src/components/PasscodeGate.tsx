@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { APP_NAME } from '@/lib/appConstants';
+import TopEdgeBar from '@/components/layout/TopEdgeBar';
 import { eraseProtectedData, getAutoLockMinutes, isPasscodeEnabled, isUnlocked, lockNow, unlock } from '@/lib/secure-store';
 
 // With passcode protection on (Settings), the app opens to this lock screen; the student data is decrypted
@@ -53,7 +54,12 @@ export default function PasscodeGate({ children }: { children: React.ReactNode }
 
   if (status === 'open') return <>{children}</>;
   if (status === 'checking') {
-    return <div className="flex min-h-full items-center justify-center bg-background text-muted-foreground">Loading…</div>;
+    return (
+      <div className="flex h-full flex-col bg-background">
+        <TopEdgeBar />
+        <div className="flex flex-1 items-center justify-center text-muted-foreground">Loading…</div>
+      </div>
+    );
   }
   return <LockScreen onUnlocked={() => setStatus('open')} />;
 }
@@ -83,7 +89,9 @@ function LockScreen({ onUnlocked }: { onUnlocked: () => void }) {
   }, [passcode, busy, onUnlocked]);
 
   return (
-    <div className="flex min-h-full items-center justify-center bg-background p-6 text-foreground">
+    <div className="flex h-full flex-col bg-background text-foreground">
+    <TopEdgeBar />
+    <div className="flex flex-1 items-center justify-center overflow-y-auto p-6">
       <div className="w-full max-w-sm space-y-5 rounded-lg border bg-card p-6 shadow-lg">
         <div className="flex flex-col items-center gap-2 text-center">
           <Lock className="h-10 w-10 text-primary" />
@@ -125,6 +133,7 @@ function LockScreen({ onUnlocked }: { onUnlocked: () => void }) {
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 }
