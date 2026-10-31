@@ -16,6 +16,7 @@ import DisplaySizeSetting from '@/components/settings/DisplaySizeSetting';
 import MenuPositionSetting from '@/components/settings/MenuPositionSetting';
 import SingleKeyShortcutsSetting from '@/components/settings/SingleKeyShortcutsSetting';
 import OrganizationNameSetting from '@/components/settings/OrganizationNameSetting';
+import SchoolYearSetting from '@/components/settings/SchoolYearSetting';
 import AbcListsCard from '@/components/settings/AbcListsCard';
 
 const SIDEBAR_ENABLED_KEY = 'sidebar_enabled';
@@ -86,6 +87,7 @@ export default function SettingsPage() {
           <MenuPositionSetting />
           <SingleKeyShortcutsSetting />
           <OrganizationNameSetting />
+          <SchoolYearSetting />
           <div className="flex flex-row items-center justify-between rounded-lg border p-4">
             <div className="space-y-0.5">
               <Label htmlFor="sidebar-switch" className="text-base font-medium">

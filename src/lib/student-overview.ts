@@ -1,14 +1,12 @@
 import type { ServicePer, SessionData, StudentIep } from './types';
 import { attendanceSummary, type AttendanceSummary } from './attendance';
 import { dateValue } from './aim-line';
+import { schoolYearRange } from './school-year';
 
 // Figures for the student profile's Overview: IEP dates (days until each is due), service minutes delivered
 // against what the IEP requires (from the sessions' start and end times), and attendance for the school year.
 
-/** The school year starts August 1 (the year before, until then). */
-export function schoolYearStart(now = new Date()): Date {
-  return new Date(now.getMonth() >= 7 ? now.getFullYear() : now.getFullYear() - 1, 7, 1);
-}
+export { schoolYearStart } from './school-year';
 
 /** Minutes between a session's start and end time ("HH:MM"); 0 when either is missing or the span isn't sensible. */
 export function sessionMinutes(session: Pick<SessionData, 'time' | 'endTime'>): number {
@@ -26,9 +24,9 @@ export function sessionMinutes(session: Pick<SessionData, 'time' | 'endTime'>): 
 /** The current week (Monday to Sunday), month or school year containing `now`, and the one before it. */
 export function servicePeriods(per: ServicePer, now = new Date()) {
   if (per === 'year') {
-    const start = schoolYearStart(now);
-    const end = new Date(start.getFullYear() + 1, 7, 1);
-    return { current: { start, end }, previous: { start: new Date(start.getFullYear() - 1, 7, 1), end: start } };
+    const current = schoolYearRange(now);
+    const before = new Date(current.start.getFullYear(), current.start.getMonth(), current.start.getDate() - 1);
+    return { current, previous: schoolYearRange(before) };
   }
   if (per === 'month') {
     const start = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -60,8 +58,8 @@ export interface StudentOverview {
 }
 
 export function studentOverview(sessions: SessionData[], iep: StudentIep | undefined, now = new Date()): StudentOverview {
-  const yearStart = schoolYearStart(now).getTime();
-  const inYear = sessions.filter(s => new Date(s.date).getTime() >= yearStart);
+  const year = schoolYearRange(now);
+  const inYear = sessions.filter(s => { const t = new Date(s.date).getTime(); return t >= year.start.getTime() && t < year.end.getTime(); });
   const held = sessions.filter(s => !s.missed);
   const per = iep?.servicePer ?? 'week';
   const { current, previous } = servicePeriods(per, now);
