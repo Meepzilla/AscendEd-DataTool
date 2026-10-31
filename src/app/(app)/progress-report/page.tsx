@@ -17,6 +17,7 @@ import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
 import { useStudentData } from '@/hooks/use-student-data';
 import { compareSessionsOldestFirst, formatDate } from '@/lib/helpers';
 import { buildProgressReport, type ProgressStatus } from '@/lib/report-narrative';
+import { getOrganizationName } from '@/lib/organization';
 import ProgressReportDocument, { type ProgressReportEdits } from '@/components/reports/ProgressReportDocument';
 
 // Reports → Progress Report: a printable IEP goal progress report for one student and reporting period. The
@@ -62,6 +63,7 @@ function ProgressReportPage() {
   const [customRange, setCustomRange] = useState<DateRange | undefined>();
   const [excludedGoals, setExcludedGoals] = useState<Set<string>>(new Set());
   const [preparedBy, setPreparedBy] = useState('');
+  const [organization, setOrganization] = useState('');
   const [reportDate, setReportDate] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -73,6 +75,7 @@ function ProgressReportPage() {
 
   useEffect(() => {
     try { setPreparedBy(localStorage.getItem(PREPARER_KEY) ?? ''); } catch { /* not saved */ }
+    setOrganization(getOrganizationName());
     setPortalReady(true);
   }, []);
   // A different student or period starts from fresh figures and comments.
@@ -122,7 +125,7 @@ function ProgressReportPage() {
     window.print();
   };
 
-  const settings = { preparedBy, reportDate, showCharts, showNextSteps };
+  const settings = { preparedBy, organization, reportDate, showCharts, showNextSteps };
   // Saved with the student's goal (also editable in the goal's Edit window), so it carries over to later reports.
   const onTargetDate = (goalId: string, date: string) => {
     if (studentId) updateStudentGoal(studentId, goalId, { targetDate: date || undefined });
@@ -216,7 +219,8 @@ function ProgressReportPage() {
           </div>
           <p className="text-xs text-muted-foreground">
             Changes to progress, comments and the report date are for this printout only and aren&apos;t saved. A goal&apos;s
-            target date is saved with the goal (also in Students → Edit Goal).
+            target date is saved with the goal (also in Students → Edit Goal). The school or district name at the top
+            of the report is set in <Link href="/settings" className="underline hover:text-primary">Settings</Link>.
           </p>
         </CardContent>
       </Card>

@@ -12,6 +12,8 @@ import ProgressReportChart from './ProgressReportChart';
 
 export interface ProgressReportSettings {
   preparedBy: string;
+  /** The school or district shown under the title (Settings); the app's name when blank. */
+  organization: string;
   /** The date printed on the report (YYYY-MM-DD). */
   reportDate: string;
   showCharts: boolean;
@@ -73,7 +75,7 @@ export default function ProgressReportDocument({ studentName, periodLabel, sessi
           <Logo />
           <div>
             <h1 className="text-xl font-bold leading-tight">IEP Goal Progress Report</h1>
-            <p className="text-xs text-muted-foreground">{APP_NAME}</p>
+            <p className="text-sm font-medium text-muted-foreground">{settings.organization.trim() || APP_NAME}</p>
           </div>
         </div>
         <p className="text-right text-xs font-semibold uppercase tracking-wide text-[hsl(var(--report-accent))]">Confidential student record</p>
