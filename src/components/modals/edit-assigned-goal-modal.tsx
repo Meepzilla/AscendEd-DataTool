@@ -56,6 +56,7 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
         name: goalToEdit.name,
         smartGoal: goalToEdit.smartGoal,
         sessionTargetValue: goalToEdit.sessionTargetValue,
+        targetDate: goalToEdit.targetDate ?? '',
         targetDirection: goalToEdit.targetDirection,
         isArchived: goalToEdit.isArchived || false,
         dataCaptureType: goalToEdit.dataCaptureType || goalToEdit.type,
@@ -179,6 +180,23 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
                 </FormControl>
                 <FormDescription>
                   Target percentage (0-100) for accuracy/fluency goals, a rating for qualitative goals (e.g. 4 out of 5), or the number of different functions for communication functions goals.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="targetDate"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Target Date (Optional)</FormLabel>
+                <FormControl>
+                  <Input type="date" {...field} value={(field.value as string | undefined) ?? ''} className="w-full sm:w-56" />
+                </FormControl>
+                <FormDescription>
+                  When the goal&apos;s criteria should be met by (for example, the IEP&apos;s annual review date). Shown with the target on the progress report.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
