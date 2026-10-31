@@ -163,8 +163,14 @@ export function compareSessionsOldestFirst(a: { date: string; time?: string }, b
   return sessionTimestamp(a) - sessionTimestamp(b) || new Date(a.date).getTime() - new Date(b.date).getTime();
 }
 
-/** The goal statement with its "[date]" placeholder (from the goal bank) filled in with the goal's target date. */
-export function goalStatement(goal: { smartGoal?: string; targetDate?: string }): string {
-  const text = goal.smartGoal ?? '';
-  return goal.targetDate ? text.replace(/\[date\]/gi, formatDateOnly(goal.targetDate)) : text;
+/**
+ * The goal statement with the goal bank's placeholders filled in: "[date]" with the goal's target date, and
+ * "STUDENT" / "the student" with the student's first name. The stored text is unchanged.
+ */
+export function goalStatement(goal: { smartGoal?: string; targetDate?: string }, studentName?: string): string {
+  let text = goal.smartGoal ?? '';
+  if (goal.targetDate) text = text.replace(/\[date\]/gi, formatDateOnly(goal.targetDate));
+  const firstName = studentName?.trim().split(/\s+/)[0];
+  if (firstName) text = text.replace(/\bSTUDENT\b/g, firstName).replace(/\b[Tt]he student\b/g, firstName);
+  return text;
 }

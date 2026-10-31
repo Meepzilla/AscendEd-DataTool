@@ -41,6 +41,8 @@ interface GoalDataInputComponentProps {
   canMoveDown?: boolean;
   isArchived?: boolean;
   isLocked?: boolean;
+  /** Fills in "STUDENT" / "the student" in the goal text. */
+  studentName?: string;
 }
 
 export default function GoalDataInputComponent({
@@ -56,6 +58,7 @@ export default function GoalDataInputComponent({
   canMoveDown,
   isArchived,
   isLocked = false,
+  studentName,
 }: GoalDataInputComponentProps) {
   const { toast } = useToast();
   const { fire } = useConfetti();
@@ -888,7 +891,7 @@ export default function GoalDataInputComponent({
             <div className="flex-grow min-w-0" onClick={isLocked ? undefined : onSetFocus}>
                 <CardTitle className="text-sm font-semibold">
                     <div className="flex justify-between items-start">
-                        <GoalTextPopover name={goal.name} smartGoal={goalStatement(goal)} className="whitespace-normal break-words mr-1" />
+                        <GoalTextPopover name={goal.name} smartGoal={goalStatement(goal, studentName)} className="whitespace-normal break-words mr-1" />
                         <Badge variant="outline" className="text-xs px-1.5 py-0.5 shrink-0 max-w-[45%] text-center leading-tight">
                             {goalTypeLabel(goal.type)}
                         </Badge>
