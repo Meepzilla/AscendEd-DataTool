@@ -135,6 +135,10 @@ export default function AppLayout({
           scrolls (iPad Safari could leave a position: sticky header drawn hazy after a dialog closed).
           flex-1 min-w-0: fill the width of the SidebarProvider's flex row instead of shrinking to the content. */}
       <div className="flex flex-1 min-w-0 flex-col h-full min-h-0 bg-background">
+        {/* For keyboard and screen-reader users: jumps past the menu bar and sidebar (shown when focused). */}
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground">
+          Skip to main content
+        </a>
         <AppHeader />
         <div className="flex flex-1 min-h-0 overflow-hidden">
           {isSidebarEnabled ? (
@@ -143,7 +147,7 @@ export default function AppLayout({
               <SidebarRail />
             </>
           ) : null}
-          <main ref={mainRef} className="flex flex-1 min-w-0 min-h-0 flex-col overflow-y-auto">
+          <main ref={mainRef} id="main-content" tabIndex={-1} className="flex flex-1 min-w-0 min-h-0 flex-col overflow-y-auto focus:outline-none">
             <div className="flex-1 p-4 sm:p-6 lg:p-8">
               {children}
             </div>
