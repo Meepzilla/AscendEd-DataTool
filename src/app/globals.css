@@ -37,6 +37,47 @@ html.has-app-header {
   --app-top-bar: calc(env(safe-area-inset-top) / var(--body-zoom) + 65px);
 }
 
+/* The menu bar (app-header.tsx) is at the top by default. With "Menu bar position: Bottom" in Settings
+   (html.menu-bottom, menu-position.ts) it is pinned to the bottom instead, clear of the home indicator, and its
+   spacer moves below the page. A thin bar of the same color stays pinned to the top edge so iPadOS still draws
+   the top of the screen sharply, and dialog backdrops start below that. Fixed things anchored to the bottom of
+   the screen (toasts) stay above the bar using --menu-bar-bottom. */
+.app-menubar {
+  top: 0;
+  border-bottom-width: 1px;
+  padding-top: calc(env(safe-area-inset-top) / var(--body-zoom));
+  /* Clear of the notch on a phone in landscape (fixed, so <html>'s padding doesn't apply). */
+  padding-left: calc(env(safe-area-inset-left) / var(--body-zoom));
+  padding-right: calc(env(safe-area-inset-right) / var(--body-zoom));
+}
+.app-top-strip,
+.app-top-strip-spacer {
+  display: none;
+}
+html.menu-bottom .app-menubar {
+  top: auto;
+  bottom: 0;
+  border-bottom-width: 0;
+  border-top-width: 1px;
+  padding-top: 0;
+  padding-bottom: calc(env(safe-area-inset-bottom) / var(--body-zoom));
+}
+html.menu-bottom .app-menubar-spacer {
+  order: 1;
+}
+html.menu-bottom .app-top-strip {
+  display: block;
+  height: calc(env(safe-area-inset-top) / var(--body-zoom) + 4px);
+}
+html.menu-bottom .app-top-strip-spacer {
+  display: block;
+  height: 4px;
+}
+html.menu-bottom.has-app-header {
+  --app-top-bar: calc(env(safe-area-inset-top) / var(--body-zoom) + 4px);
+  --menu-bar-bottom: calc(env(safe-area-inset-bottom) / var(--body-zoom) + 65px);
+}
+
 /* Menus and popovers (Radix positions them with a transform on this wrapper) in browsers that measure zoomed
    elements in screen pixels (see ZoomCompensation): the wrapper undoes the body's zoom so it is placed in screen
    pixels, and its content zooms back to the app's size. */
