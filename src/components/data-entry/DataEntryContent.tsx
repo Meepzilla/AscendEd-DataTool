@@ -13,6 +13,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Info, PlusCircle } from 'lucide-react';
 import type { Goal, Student, StudentSessionState, SessionGoalData, GoalType } from '@/lib/types';
 import { MISSED_REASON_SHORT, type MissedReason } from '@/lib/attendance';
+import type { StudentGroup } from '@/lib/student-groups';
+import LoadGroupMenu from '@/components/student-groups/LoadGroupMenu';
 import { formatDate } from '@/lib/helpers';
 import TouchControls from '@/components/forms/touch-controls';
 import { ConfettiProvider } from '@/hooks/use-confetti';
@@ -550,6 +552,27 @@ export default function DataEntryContent() {
     guardSlotChange(indexToRemove, () => applyRemoveStudentSlot(indexToRemove));
   }, [guardSlotChange, applyRemoveStudentSlot]);
 
+  // Load Group: the group's (active) students fill the slots, in the group's order. A student already in a slot
+  // with unsaved entries keeps their slot (after the group), so nothing entered is lost.
+  const loadGroup = useCallback((group: StudentGroup) => {
+    if (isStudentAccessLocked) {
+      toast({ title: 'Access Locked', description: 'Student access is locked. Unlock to make changes.' });
+      return;
+    }
+    const ids = group.studentIds.filter(id => activeStudents.some(s => s.id === id));
+    if (ids.length === 0) {
+      toast({ title: 'Nothing to load', description: `${group.name} has no active students.` });
+      return;
+    }
+    const kept = selectedStudentIds.filter(id => !ids.includes(id) && hasUnsavedEntry(studentSessionStates[id], goalDefaults));
+    setSelectedStudentIds([...ids, ...kept]);
+    setFocusedStudentSlotIndex(0);
+    toast({
+      title: `Loaded ${group.name}`,
+      description: `${ids.length} student${ids.length === 1 ? '' : 's'}${kept.length ? `; kept ${kept.length} with unsaved entries` : ''}.`,
+    });
+  }, [isStudentAccessLocked, activeStudents, selectedStudentIds, studentSessionStates, goalDefaults, setSelectedStudentIds, setFocusedStudentSlotIndex, toast]);
+
   // Editing the student (name, goals) from Data Entry is also covered by the Student Access Lock.
   const openEditStudentModalUnlocked = useCallback((student: Student) => {
     if (isStudentAccessLocked) {
@@ -962,6 +985,7 @@ export default function DataEntryContent() {
                     </div>
 
                     <div className="flex flex-wrap justify-end gap-2 ml-auto">
+                        <LoadGroupMenu onLoad={loadGroup} disabled={isStudentAccessLocked} />
                         {/* Always in view, unlike the Add Student Slot card at the far end of the slots. */}
                         <Button variant="outline" onClick={addStudentSlot} size="lg" aria-label="Add Student Slot"
                           disabled={selectedStudentIds.length >= activeStudents.length} title="Add another student slot (Alt+W)">
@@ -989,10 +1013,13 @@ export default function DataEntryContent() {
               <CardContent className="p-8 text-center text-muted-foreground">
                   <Info className="h-10 w-10 mx-auto mb-3 text-primary"/>
                   <p className="text-lg mb-4">No students selected for data entry.</p>
-                  <Button variant="outline" onClick={addStudentSlot}>
-                    <PlusCircle className="mr-2 h-5 w-5" />
-                    Add Student Slot
-                  </Button>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    <Button variant="outline" onClick={addStudentSlot}>
+                      <PlusCircle className="mr-2 h-5 w-5" />
+                      Add Student Slot
+                    </Button>
+                    <LoadGroupMenu onLoad={loadGroup} disabled={isStudentAccessLocked} />
+                  </div>
                   {students.length === 0 && <p className="mt-4 text-sm">You don't have any students yet. Go to 'Students' or press (Alt+M) to add one.</p>}
               </CardContent>
             </Card>

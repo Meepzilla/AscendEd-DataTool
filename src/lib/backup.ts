@@ -20,6 +20,7 @@ export interface BackupData {
 
 export interface BackupSettings {
   abcLists?: AbcLists; // only when edited on the device
+  studentGroups?: { id: string; name: string; studentIds: string[] }[]; // saved Data Entry groups, when there are any
 }
 
 export interface AppBackup {
@@ -43,12 +44,19 @@ const BackupSchema = z.object({
     sessions: z.array(z.object({ sessionId: z.string(), studentId: z.string(), date: z.string() }).passthrough()),
   }),
   // Settings that don't validate are dropped rather than rejecting the whole backup.
-  settings: z.object({ abcLists: AbcListsSchema.optional().catch(undefined) }).optional().catch(undefined),
+  settings: z.object({
+    abcLists: AbcListsSchema.optional().catch(undefined),
+    studentGroups: z.array(z.object({ id: z.string(), name: z.string(), studentIds: z.array(z.string()) })).optional().catch(undefined),
+  }).optional().catch(undefined),
 });
 
 export function createBackup(data: BackupData, settings: BackupSettings = {}): AppBackup {
   const backup: AppBackup = { app: BACKUP_APP, version: BACKUP_VERSION, exportedAt: new Date().toISOString(), data };
-  if (settings.abcLists) backup.settings = settings;
+  const kept: BackupSettings = {
+    ...(settings.abcLists ? { abcLists: settings.abcLists } : {}),
+    ...(settings.studentGroups?.length ? { studentGroups: settings.studentGroups } : {}),
+  };
+  if (Object.keys(kept).length) backup.settings = kept;
   return backup;
 }
 
