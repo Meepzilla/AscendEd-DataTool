@@ -1,9 +1,12 @@
 
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import { APP_NAME } from '@/lib/appConstants';
+
+const HOTKEYS_COLLAPSED_KEY = 'ascended_footer_hotkeys_collapsed';
 
 export default function AppFooter() {
   const currentYear = new Date().getFullYear();
@@ -20,6 +23,16 @@ export default function AppFooter() {
     { key: 'Alt+Q', desc: 'Remove Slot'},
   ];
 
+  // The hotkey list can be hidden; the choice is remembered on this device.
+  const [collapsed, setCollapsed] = useState(false);
+  useEffect(() => {
+    try { setCollapsed(localStorage.getItem(HOTKEYS_COLLAPSED_KEY) === '1'); } catch { /* shown */ }
+  }, []);
+  const toggle = () => setCollapsed(prev => {
+    try { localStorage.setItem(HOTKEYS_COLLAPSED_KEY, prev ? '0' : '1'); } catch { /* this visit only */ }
+    return !prev;
+  });
+
   return (
     <footer className="border-t bg-card text-card-foreground">
       {/* Bottom padding keeps the footer's links clear of the host's corner badge. */}
@@ -27,8 +40,20 @@ export default function AppFooter() {
         <div className="flex flex-col md:flex-row justify-between items-center text-sm text-muted-foreground">
           <p>&copy; {currentYear} {APP_NAME}. All rights reserved.</p>
           <div className="mt-4 md:mt-0">
-            <h3 className="font-semibold mb-1 text-foreground">Global Hotkeys:</h3>
-            <ul className="flex flex-wrap gap-x-4 gap-y-1">
+            <h3 className="mb-1">
+              <button
+                type="button"
+                onClick={toggle}
+                aria-expanded={!collapsed}
+                aria-controls="footer-hotkeys"
+                className="flex items-center gap-1 rounded-sm font-semibold text-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                Global Hotkeys
+                <ChevronDown className={`h-4 w-4 transition-transform ${collapsed ? '-rotate-90' : ''}`} aria-hidden />
+                <span className="sr-only">{collapsed ? '(show)' : '(hide)'}</span>
+              </button>
+            </h3>
+            <ul id="footer-hotkeys" className={`${collapsed ? 'hidden' : 'flex'} flex-wrap gap-x-4 gap-y-1`}>
               {hotkeys.map(hk => (
                 <li key={hk.key}>
                   <kbd className="px-1.5 py-0.5 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-md dark:bg-gray-600 dark:text-gray-100 dark:border-gray-500">{hk.key}</kbd>: {hk.desc}
