@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Menu, FileText, UserPlus, Lock } from 'lucide-react';
 import { isPasscodeEnabled, lockNow } from '@/lib/secure-store';
+import { MENU_POSITION_EVENT, getMenuPosition, type MenuPosition } from '@/lib/menu-position';
 import { useAuth } from '@/hooks/use-auth';
 import { APP_NAME, APP_SUBTITLE } from '@/lib/appConstants';
 import { useStudentData } from '@/hooks/use-student-data';
@@ -55,6 +56,15 @@ export default function AppHeader() {
     return () => window.removeEventListener('ascended-passcode-change', check);
   }, []);
 
+  // Top or bottom of the screen (Settings → Menu bar position); the account menu opens toward the page.
+  const [menuPosition, setMenuPositionState] = useState<MenuPosition>('top');
+  useEffect(() => {
+    const check = () => setMenuPositionState(getMenuPosition());
+    check();
+    window.addEventListener(MENU_POSITION_EVENT, check);
+    return () => window.removeEventListener(MENU_POSITION_EVENT, check);
+  }, []);
+
   // The phone menu closes once a page is chosen.
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   useEffect(() => { setIsMenuOpen(false); }, [pathname]);
@@ -65,18 +75,14 @@ export default function AppHeader() {
   // touches that edge; it then takes that bar's color instead, so the menu bar stays sharp. The bar reaches
   // up behind the status bar (padding by the safe-area inset, converted for the body's zoom), and a spacer of
   // the bar's own height keeps the page below it. (No backdrop blur: iPad Safari draws it hazy when zoomed out.)
+  // The bar can be moved to the bottom in Settings; a thin bar then stays at the top edge (see .app-menubar in
+  // globals.css, where the position and padding are set).
   return (
     <>
-    <div aria-hidden className="h-[65px] w-full shrink-0" />
-    <header
-      className="fixed inset-x-0 top-0 z-40 border-b bg-card"
-      style={{
-        paddingTop: 'calc(env(safe-area-inset-top) / var(--body-zoom))',
-        // Clear of the notch on a phone in landscape (fixed, so <html>'s padding doesn't apply).
-        paddingLeft: 'calc(env(safe-area-inset-left) / var(--body-zoom))',
-        paddingRight: 'calc(env(safe-area-inset-right) / var(--body-zoom))',
-      }}
-    >
+    <div aria-hidden className="app-top-strip-spacer w-full shrink-0" />
+    <div aria-hidden className="app-top-strip fixed inset-x-0 top-0 z-40 bg-card" />
+    <div aria-hidden className="app-menubar-spacer h-[65px] w-full shrink-0" />
+    <header className="app-menubar fixed inset-x-0 z-40 bg-card">
       <div className="flex h-16 items-center px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-2 sm:gap-4">
           <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
@@ -168,7 +174,7 @@ export default function AppHeader() {
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuContent className="w-56" align="end" side={menuPosition === 'bottom' ? 'top' : 'bottom'} forceMount>
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none">{currentUser.displayName || 'User'}</p>
