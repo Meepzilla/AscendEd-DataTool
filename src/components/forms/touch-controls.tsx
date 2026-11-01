@@ -79,7 +79,7 @@ export default function TouchControls({
 
   if (sidebarState === 'collapsed') {
     return (
-        <div className="flex flex-col gap-2 items-center">
+        <div className="flex flex-col short:flex-row gap-2 items-center">
              <Button
                 type="button"
                 variant="ghost"
@@ -108,14 +108,14 @@ export default function TouchControls({
 
   return (
     <>
-      <div className="w-full space-y-1">
+      <div className="w-full space-y-1 short:flex short:gap-2 short:space-y-0">
         <Button
           type="button"
           variant="outline"
           onClick={() => setSelectionModalType('student')}
           disabled={!studentSlots || studentSlots.length <= 1}
           size="sm"
-          className="w-full justify-start"
+          className="w-full justify-start short:w-auto"
           aria-label="Select Student"
           title="Select Focused Student (Alt+U)"
         >
@@ -129,7 +129,7 @@ export default function TouchControls({
           onClick={() => setSelectionModalType('goal')}
           disabled={!visibleGoals || visibleGoals.length <= 1}
           size="sm"
-          className="w-full justify-start"
+          className="w-full justify-start short:w-auto"
           aria-label="Select Goal"
           title="Select Focused Goal (Alt+T)"
         >
