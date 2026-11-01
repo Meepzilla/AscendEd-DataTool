@@ -26,6 +26,7 @@ It runs entirely on the device: there is no account, no server and no AI. Studen
 - A goal bank of over 900 templates, searchable by skill area, with purpose and activity ideas.
 - Every built-in goal reads the same way: "By [date], the student will … with 80% accuracy across 3 consecutive sessions, as measured by …".
 - Each goal has a target, a direction (increase or decrease), a target date, a baseline and mastery criteria. The goal text follows them: "[date]", the student's name, blanks ("___"), the stated percentage and the consecutive sessions are filled in from the goal's settings, in goal bank and custom goals alike. The number of opportunities ("4 out of 5 opportunities") stays as written unless it is the goal's only target.
+- Import students from a spreadsheet (Excel .xlsx or CSV, one row per student, such as an "IEP at a glance"): names, IEP start and end dates, service minutes and goals. Each goal is given a goal type from its wording, which can be changed before anything is saved.
 - Each student's profile shows IEP dates, service minutes against the IEP (per week, month or school year) and attendance, with a View Report button for that student's charts and Progress Report.
 
 **Reports**
@@ -80,7 +81,7 @@ To try the production build locally: `npm run build:static && npx serve out`.
 | `src/app/(app)/` | Pages: dashboard, data-entry, manage-sessions, analysis-report, progress-report, student-profile, goal-templates, settings, help, changelog, privacy |
 | `src/components/` | UI, by area (data-entry, forms, charts, reports, settings…) and shadcn components in `ui/` |
 | `src/hooks/use-student-data.tsx` | All student, goal and session data, and saving to storage |
-| `src/lib/` | Logic without UI: goal types and measures (`goal-constants/`, with the built-in goal statements in `built-in-statements.ts`), goal text (`goal-blanks.ts`), the dashboard's figures (`dashboard.ts`), report narratives, aim lines, service minutes, attendance, session merging, task analysis, encryption (`secure-store.ts`), backups |
+| `src/lib/` | Logic without UI: goal types and measures (`goal-constants/`, with the built-in goal statements in `built-in-statements.ts`), goal text (`goal-blanks.ts`), the dashboard's figures (`dashboard.ts`), report narratives, aim lines, service minutes, attendance, session merging, task analysis, encryption (`secure-store.ts`), backups, importing students from a spreadsheet (`student-import.ts`, with the .xlsx reader in `xlsx-read.ts`) |
 | `docs/` | Goal bank review CSV and the original blueprint |
 
 Every pull request runs the type check, lint, the unit tests and the static build (`.github/workflows/checks.yml`). Add or update tests in `src/lib/__tests__/` when you change logic in `src/lib/`.

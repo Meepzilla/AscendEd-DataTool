@@ -5,6 +5,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import Link from 'next/link';
 import GenericModal from './generic-modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -81,6 +82,12 @@ export default function AddStudentModal() {
               </FormItem>
             )}
           />
+          <p className="text-sm text-muted-foreground">
+            Adding several students with IEP dates and goals?{' '}
+            <Link href="/settings#import-students" className="underline hover:text-primary" onClick={closeAddStudentModal}>
+              Import them from a spreadsheet
+            </Link>.
+          </p>
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={closeAddStudentModal} disabled={isSubmitting || dataLoading}>
               Cancel

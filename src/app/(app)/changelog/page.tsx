@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-01',
+    title: 'Import Students from a Spreadsheet',
+    description: 'Settings → Import Students reads an Excel (.xlsx) or CSV file with one row per student, such as an IEP at a glance, and adds the students with their IEP start and end dates, required service minutes (such as "120 min/month") and goals. Columns are found by their headings, and several goals in one cell can be separated with "|". Each goal is given the goal type that fits what it measures (AAC, communication functions, frequency, articulation, phonological processes, language and more), a target from its wording (such as 4 of 5 opportunities → 80%) and a target date ("by Oct 2026", or the IEP end date). Before anything is saved, a review lists every student and goal, where a goal\'s type can be changed and a student left out. Students already in AscendEd with the same name get the IEP dates from the file and only the goals they don\'t have yet. Add Student links to it too.',
+    type: 'feature',
+    icon: Upload,
+  },
+  {
+    date: '2026-11-01',
     title: 'ABC Narrative Names Every Tied Choice',
     description: 'The progress narrative for an ABC goal named only one antecedent, problem behavior and function, even when an incident had several with the same count. It now names every one tied for the most, such as: The most common antecedents were "Unstructured time" and "Noise or sensory input" (1 each). Data Entry\'s ABC summary does the same, and "1 incident were recorded" now reads "1 incident was recorded".',
     type: 'fix',
