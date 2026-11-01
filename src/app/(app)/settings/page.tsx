@@ -12,6 +12,7 @@ import { Settings, PanelLeft } from 'lucide-react';
 import BackupRestoreCard from '@/components/settings/BackupRestoreCard';
 import PasscodeCard from '@/components/settings/PasscodeCard';
 import DeleteDataCard from '@/components/settings/DeleteDataCard';
+import ImportStudentsCard from '@/components/settings/ImportStudentsCard';
 import DisplaySizeSetting from '@/components/settings/DisplaySizeSetting';
 import MenuPositionSetting from '@/components/settings/MenuPositionSetting';
 import SingleKeyShortcutsSetting from '@/components/settings/SingleKeyShortcutsSetting';
@@ -72,6 +73,8 @@ export default function SettingsPage() {
       </Card>
 
       <BackupRestoreCard />
+
+      <ImportStudentsCard />
 
       <PasscodeCard />
 

@@ -90,8 +90,9 @@ export default function GenericModal({
           {children}
         </div>
 
+        {/* Stays in view at the bottom while a long window scrolls. */}
         {footerContent && (
-          <DialogFooter>
+          <DialogFooter className="sticky -bottom-6 -mx-6 -mb-6 gap-2 border-t bg-background px-6 py-3">
             {footerContent}
           </DialogFooter>
         )}
