@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { automaticBlankValues, fillBlanks, fillNameBlanks, findBlanks, percentAsFraction } from '../goal-blanks';
+import { automaticBlankValues, fillBlanks, fillNameBlanks, findBlanks, matchTextToTarget, percentAsFraction } from '../goal-blanks';
 import { goalStatement } from '../helpers';
 
 const AAC = 'By [date], STUDENT will independently initiate communication using _________ (AAC device/app/system) to interact with peers or adults in ___ out of ___ opportunities as measured by _________.';
@@ -42,5 +42,31 @@ describe('goal text blanks', () => {
     const goal = { name: 'Initiate communication using _________ (AAC device/app/system) to interact with peers or...', smartGoal: AAC, blankFills: ['a talker'] };
     expect(fillNameBlanks(goal)).toBe('Initiate communication using a talker (AAC device/app/system) to interact with peers or...');
     expect(fillNameBlanks({ ...goal, name: 'Other ___ name' })).toBe('Other ___ name');
+  });
+});
+
+describe('goal text follows the target and mastery', () => {
+  const text = 'By [date], STUDENT will request help in 4 out of 5 observed opportunities across 3 consecutive sessions.';
+  it('changes "4 out of 5" when the target changes, keeping the number of opportunities when it can', () => {
+    expect(matchTextToTarget(text, { type: 'LANGUAGE_EXPRESSION', sessionTargetValue: 60 })).toContain('in 3 out of 5 observed opportunities');
+    expect(matchTextToTarget(text, { type: 'LANGUAGE_EXPRESSION', sessionTargetValue: 90 })).toContain('in 9 out of 10 observed opportunities');
+    expect(matchTextToTarget(text, { type: 'LANGUAGE_EXPRESSION', sessionTargetValue: 80 })).toBe(text);
+  });
+  it('changes a stated percentage, and "6 of 10 opportunities"', () => {
+    const pct = 'respond accurately across 80% of opportunities with 80% accuracy (8 of 10 opportunities).';
+    expect(matchTextToTarget(pct, { type: 'AAC', sessionTargetValue: 70 })).toBe('respond accurately across 70% of opportunities with 70% accuracy (7 of 10 opportunities).');
+  });
+  it('leaves text with two different percentages, and goals whose target is not a percentage', () => {
+    expect(matchTextToTarget('80% accuracy at 90% intelligibility', { type: 'ARTICULATION', sessionTargetValue: 70 })).toBe('80% accuracy at 90% intelligibility');
+    expect(matchTextToTarget('in 4 out of 5 opportunities', { type: 'BEHAVIOR_FREQUENCY', sessionTargetValue: 2 })).toBe('in 4 out of 5 opportunities');
+    expect(matchTextToTarget('rated 4 out of 5', { type: 'COGNITIVE', sessionTargetValue: 3 })).toBe('rated 4 out of 5');
+  });
+  it('doesn\'t treat "2 out of 3 sessions" as the target, and follows mastery for "consecutive sessions" when set', () => {
+    expect(matchTextToTarget('in 4 out of 5 trials in 2 out of 3 sessions', { type: 'ARTICULATION', sessionTargetValue: 60 })).toBe('in 3 out of 5 trials in 2 out of 3 sessions');
+    expect(matchTextToTarget(text, { type: 'ARTICULATION', sessionTargetValue: 80, masterySessions: 4 })).toContain('across 4 consecutive sessions');
+    expect(matchTextToTarget(text, { type: 'ARTICULATION', sessionTargetValue: 80 })).toContain('across 3 consecutive sessions');
+  });
+  it('shows the goal statement with the new numbers', () => {
+    expect(goalStatement({ smartGoal: text, type: 'LANGUAGE_EXPRESSION', sessionTargetValue: 60 }, 'Ava')).toBe('By [date], Ava will request help in 3 out of 5 observed opportunities across 3 consecutive sessions.');
   });
 });
