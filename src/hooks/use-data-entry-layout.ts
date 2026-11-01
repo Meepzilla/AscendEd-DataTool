@@ -88,7 +88,11 @@ export function useDataEntryLayout(selectedCount: number) {
       // the bar itself. (The bar's own position isn't used: it is sticky, which can hide an overflow.)
       const cardTop = (card.getBoundingClientRect().top - document.body.getBoundingClientRect().top) / ratio;
       const screenBottom = probe.getBoundingClientRect().height / ratio;
-      const available = screenBottom - cardTop - CARD_TO_SAVE_BAR - saveBar.offsetHeight;
+      // With the menu bar at the bottom (Settings), the save bar sits above it.
+      const menuBar = document.documentElement.classList.contains('menu-bottom')
+        ? document.querySelector<HTMLElement>('.app-menubar')?.offsetHeight ?? 0
+        : 0;
+      const available = screenBottom - cardTop - CARD_TO_SAVE_BAR - saveBar.offsetHeight - menuBar;
       root.style.setProperty('--student-card-height', `${Math.max(MIN_STUDENT_CARD_HEIGHT, Math.floor(available))}px`);
     };
     update();

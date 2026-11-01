@@ -29,6 +29,16 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useSidebar } from '@/components/ui/sidebar';
 
+/** With the menu bar at the bottom: a thin bar of its color at the top edge, so iPadOS still draws the top sharply. */
+export function TopStrip() {
+  return (
+    <>
+      <div aria-hidden className="app-top-strip-spacer w-full shrink-0" />
+      <div aria-hidden className="app-top-strip fixed inset-x-0 top-0 z-40 bg-card" />
+    </>
+  );
+}
+
 export default function AppHeader() {
   const { currentUser, signOut } = useAuth();
   const { openAddStudentModal, editingStudent } = useStudentData();
@@ -72,12 +82,11 @@ export default function AppHeader() {
   // touches that edge; it then takes that bar's color instead, so the menu bar stays sharp. The bar reaches
   // up behind the status bar (padding by the safe-area inset, converted for the body's zoom), and a spacer of
   // the bar's own height keeps the page below it. (No backdrop blur: iPad Safari draws it hazy when zoomed out.)
-  // The bar can be moved to the bottom in Settings; a thin bar then stays at the top edge (see .app-menubar in
-  // globals.css, where the position and padding are set).
+  // The bar can be moved to the bottom in Settings: the layout then places it at the end of the page, above the
+  // footer, where it sticks to the bottom of the screen while the page scrolls, and a thin bar stays at the top
+  // edge (TopStrip). The position and padding are set in globals.css (.app-menubar).
   return (
     <>
-    <div aria-hidden className="app-top-strip-spacer w-full shrink-0" />
-    <div aria-hidden className="app-top-strip fixed inset-x-0 top-0 z-40 bg-card" />
     <div aria-hidden className="app-menubar-spacer h-[65px] w-full shrink-0" />
     <header className="app-menubar fixed inset-x-0 z-40 bg-card">
       <div className="flex h-16 items-center px-4 sm:px-6 lg:px-8">

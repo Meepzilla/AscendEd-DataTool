@@ -3,7 +3,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
-import AppHeader from '@/components/layout/app-header';
+import AppHeader, { TopStrip } from '@/components/layout/app-header';
+import { MENU_POSITION_EVENT, getMenuPosition } from '@/lib/menu-position';
 import TopEdgeBar from '@/components/layout/TopEdgeBar';
 import AppFooter from '@/components/layout/app-footer';
 import StudentSidebar from '@/components/layout/student-sidebar';
@@ -48,6 +49,16 @@ export default function AppLayout({
     document.title = page ? `${page} | ${APP_NAME}` : APP_NAME;
   }, [pathname]);
   const [isSidebarEnabled, setIsSidebarEnabled] = useState(true);
+
+  // Settings → Menu bar position. At the bottom, the menu bar is part of the page, just above the footer (see the
+  // layout below). Read from the class set on <html> before the first paint (menu-position.ts), so it doesn't jump.
+  const [menuAtBottom, setMenuAtBottom] = useState(() => typeof document !== 'undefined' && document.documentElement.classList.contains('menu-bottom'));
+  useEffect(() => {
+    const check = () => setMenuAtBottom(getMenuPosition() === 'bottom');
+    check();
+    window.addEventListener(MENU_POSITION_EVENT, check);
+    return () => window.removeEventListener(MENU_POSITION_EVENT, check);
+  }, []);
 
   // Pages scroll inside <main>, not the window, so start each page at the top.
   useEffect(() => {
@@ -140,7 +151,8 @@ export default function AppLayout({
         <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground">
           Skip to main content
         </a>
-        <AppHeader />
+        <TopStrip />
+        {!menuAtBottom && <AppHeader />}
         <div className="flex flex-1 min-h-0 overflow-hidden">
           {isSidebarEnabled ? (
             <>
@@ -152,6 +164,9 @@ export default function AppLayout({
             <div className="flex-1 p-4 sm:p-6 lg:p-8">
               {children}
             </div>
+            {/* Menu bar at the bottom: after the page and above the footer. It sticks to the bottom of the screen
+                while the page scrolls, and the footer (privacy notice, hotkeys) comes below it at the end. */}
+            {menuAtBottom && <AppHeader />}
             <AppFooter />
           </main>
         </div>

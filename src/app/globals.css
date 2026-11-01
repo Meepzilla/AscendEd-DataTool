@@ -38,10 +38,11 @@ html.has-app-header {
 }
 
 /* The menu bar (app-header.tsx) is at the top by default. With "Menu bar position: Bottom" in Settings
-   (html.menu-bottom, menu-position.ts) it is pinned to the bottom instead, clear of the home indicator, and its
-   spacer moves below the page. A thin bar of the same color stays pinned to the top edge so iPadOS still draws
-   the top of the screen sharply, and dialog backdrops start below that. Fixed things anchored to the bottom of
-   the screen (toasts) stay above the bar using --menu-bar-bottom. */
+   (html.menu-bottom, menu-position.ts) the layout puts it at the end of the page, above the footer: it sticks to
+   the bottom of the screen (clear of the home indicator) while the page scrolls, and the footer scrolls into
+   view below it. A thin bar of the same color stays pinned to the top edge so iPadOS still draws the top of the
+   screen sharply, and dialog backdrops start below that. Things anchored to the bottom of the screen (toasts,
+   Data Entry's save bar) stay above the bar using --menu-bar-bottom. */
 .app-menubar {
   top: 0;
   border-bottom-width: 1px;
@@ -55,6 +56,7 @@ html.has-app-header {
   display: none;
 }
 html.menu-bottom .app-menubar {
+  position: sticky;
   top: auto;
   bottom: 0;
   border-bottom-width: 0;
@@ -63,7 +65,11 @@ html.menu-bottom .app-menubar {
   padding-bottom: calc(env(safe-area-inset-bottom) / var(--body-zoom));
 }
 html.menu-bottom .app-menubar-spacer {
-  order: 1;
+  display: none;
+}
+/* Data Entry's save bar sticks to the bottom of the page too, so it sits just above the menu bar. */
+html.menu-bottom .data-entry-save-bar {
+  bottom: var(--menu-bar-bottom, 0px);
 }
 html.menu-bottom .app-top-strip {
   display: block;
