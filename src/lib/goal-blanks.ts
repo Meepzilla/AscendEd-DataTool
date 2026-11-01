@@ -43,7 +43,7 @@ export function percentAsFraction(percent: number): [number, number] | null {
   return null;
 }
 
-type BlankGoal = Partial<Pick<Goal, 'smartGoal' | 'sessionTargetValue' | 'masterySessions' | 'blankFills'>>;
+type BlankGoal = Partial<Pick<Goal, 'smartGoal' | 'sessionTargetValue' | 'masterySessions' | 'blankFills' | 'type' | 'dataCaptureType' | 'targetDirection'>>;
 
 /** What each blank in the text is filled with automatically from the goal's settings (undefined when nothing fits). */
 export function automaticBlankValues(text: string, goal: BlankGoal): (string | undefined)[] {
@@ -95,4 +95,45 @@ export function fillNameBlanks(goal: BlankGoal & { name: string }): string {
   const values = blankValues(goal.smartGoal, goal);
   let i = 0;
   return name.replace(BLANK, blank => values[offset + i++] ?? blank);
+}
+
+// Numbers written into the goal text follow the goal's settings too. Goal bank text states its target
+// ("with 80% accuracy", "in 4 out of 5 opportunities", "across 3 consecutive sessions"), so when the target or
+// mastery is changed the text shows the new values instead of contradicting them. Only text that states the target
+// one way is changed (every percentage the same value, every fraction the same ratio), so other numbers stay.
+
+// Goal types whose target isn't a percentage (a count, a rating, minutes or seconds).
+const NOT_PERCENT = new Set(['COMMUNICATION_FUNCTIONS', 'QUALITATIVE_OBSERVATION', 'COGNITIVE', 'BEHAVIOR_FREQUENCY', 'BEHAVIOR_DURATION', 'BEHAVIOR_LATENCY']);
+function percentTarget(goal: BlankGoal): boolean {
+  const type = goal.dataCaptureType || goal.type || '';
+  if (type === 'BEHAVIOR_ABC') return goal.targetDirection === 'increase';
+  return !NOT_PERCENT.has(type);
+}
+
+const PERCENT = /(?<![\d.])(\d{1,3}(?:\.\d+)?)(\s?)%/g;
+// "4 out of 5" (not "2 out of 3 sessions", which is about sessions) and "6 of 10 opportunities/trials".
+const FRACTION = /\b(\d{1,3})(\s+out of\s+|\s+of\s+(?=\d{1,3}\s+(?:\w+\s+)?(?:opportunit|trial|attempt)))(\d{1,3})\b(?!\s+(?:consecutive\s+)?(?:sessions?|days?|weeks?|data|probes?)\b)/gi;
+const CONSECUTIVE = /\b(\d{1,2})(\s+consecutive\s+(?:sessions?|data|probes?|days?|weeks?|opportunit))/gi;
+
+/** The goal text with its stated target, fractions and consecutive-session count matching the goal's settings. */
+export function matchTextToTarget(text: string, goal: BlankGoal): string {
+  if (!text) return text ?? '';
+  let out = text;
+  const target = goal.sessionTargetValue;
+  if (target !== undefined && target !== null && percentTarget(goal)) {
+    const percents = new Set([...out.matchAll(PERCENT)].map(m => Number(m[1])));
+    if (percents.size === 1 && !percents.has(target)) out = out.replace(PERCENT, (_m, _n, space) => `${target}${space}%`);
+    const fractions = [...out.matchAll(FRACTION)];
+    const ratios = new Set(fractions.map(m => Math.round((Number(m[1]) / Number(m[3])) * 1000)));
+    if (fractions.length && ratios.size === 1 && !ratios.has(Math.round(target * 10))) {
+      out = out.replace(FRACTION, (whole, _k, between, n) => {
+        const k = (target * Number(n)) / 100;
+        if (Number.isInteger(k)) return `${k}${between}${n}`;
+        const fraction = percentAsFraction(target);
+        return fraction ? `${fraction[0]}${between}${fraction[1]}` : whole;
+      });
+    }
+  }
+  if (goal.masterySessions) out = out.replace(CONSECUTIVE, (_m, _n, rest) => `${goal.masterySessions}${rest}`);
+  return out;
 }
