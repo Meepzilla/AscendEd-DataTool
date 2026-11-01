@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
 // the IEP requires (this and last week or month, and the school year), and attendance for the school year.
 // IEP dates and required minutes are set with Edit IEP Details and saved with the student.
 
-function DueBadge({ date }: { date: string }) {
+export function DueBadge({ date }: { date: string }) {
   const days = daysUntil(date);
   const text = days < 0 ? `Overdue by ${-days} day${days === -1 ? '' : 's'}` : days === 0 ? 'Due today' : `In ${days} day${days === 1 ? '' : 's'}`;
   const tone = days < 0 ? 'border-red-500/50 bg-red-500/15 text-red-300' : days <= 30 ? 'border-amber-500/50 bg-amber-500/15 text-amber-300' : 'border-border bg-muted/50 text-muted-foreground';
