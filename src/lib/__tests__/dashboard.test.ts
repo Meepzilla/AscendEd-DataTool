@@ -84,6 +84,20 @@ describe('serviceStatus (weekly requirement)', () => {
   });
 });
 
+describe('serviceStatus across a daylight-saving change', () => {
+  it('counts whole days left in a week that is an hour longer', () => {
+    // US clocks go back on Sunday 1 November 2026, so that week is 169 hours long.
+    const tz = process.env.TZ;
+    process.env.TZ = 'America/Los_Angeles';
+    try {
+      const { behind } = serviceStatus([student('a', 'Ava', { serviceMinutes: 60, servicePer: 'week' })], [], new Date(2026, 9, 26, 10, 0));
+      expect(behind[0].daysLeft).toBe(7); // Monday: Monday to Sunday
+    } finally {
+      if (tz === undefined) delete process.env.TZ; else process.env.TZ = tz;
+    }
+  });
+});
+
 describe('serviceStatus (school-year requirement)', () => {
   const iep = { serviceMinutes: 1200, servicePer: 'year' as const };
   it('compares with an even pace through the school year (1 August to 31 July)', () => {
