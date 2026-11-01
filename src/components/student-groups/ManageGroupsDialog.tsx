@@ -92,16 +92,16 @@ export default function ManageGroupsDialog({ open, onOpenChange }: { open: boole
                   return (
                     <li key={g.id} className="flex items-center gap-2 px-3 py-2">
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium">{g.name}</p>
-                        <p className="truncate text-xs text-muted-foreground" title={names.join(', ')}>
+                        <p className="break-words font-medium">{g.name}</p>
+                        <p className="line-clamp-2 break-words text-xs text-muted-foreground" title={names.join(', ')}>
                           {names.length} student{names.length === 1 ? '' : 's'}: {names.join(', ') || '—'}
                         </p>
                       </div>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Edit group ${g.name}`} title="Edit group"
+                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label={`Edit group ${g.name}`} title="Edit group"
                         onClick={() => setEditing({ id: g.id, name: g.name, studentIds: new Set(g.studentIds.filter(id => nameOf(id))) })}>
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Delete group ${g.name}`} title="Delete group" onClick={() => setConfirmDelete(g)}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label={`Delete group ${g.name}`} title="Delete group" onClick={() => setConfirmDelete(g)}>
                         <Trash2 className="h-4 w-4 text-red-500" />
                       </Button>
                     </li>
