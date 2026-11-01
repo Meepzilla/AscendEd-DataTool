@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-01',
+    title: 'Edit Goal Button on the Student Profile',
+    description: 'Each goal on a student\'s profile now has labelled Edit Goal, Archive and Remove buttons in a row under the goal, in place of the small unlabelled icons. Edit Goal opens the goal editor: name, goal text, fill in the blanks, data capture method, target, target date, baseline and mastery.',
+    type: 'improvement',
+    icon: ScrollText,
+  },
+  {
+    date: '2026-11-01',
     title: 'Fixed: Data Entry Cards Show Goal Edits Right Away',
     description: 'After editing a goal from Data Entry (its text, blanks, target date, baseline or mastery), the student\'s card now shows the updated goal straight away instead of after reopening the app. What is entered on the card is kept, and goals moved up or down on a card keep their place when a goal is edited.',
     type: 'fix',
