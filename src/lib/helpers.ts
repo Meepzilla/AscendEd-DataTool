@@ -2,7 +2,7 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 import type { Goal } from './types';
-import { fillBlanks } from './goal-blanks';
+import { fillBlanks, matchTextToTarget } from './goal-blanks';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -166,12 +166,14 @@ export function compareSessionsOldestFirst(a: { date: string; time?: string }, b
 }
 
 /**
- * The goal statement with the goal bank's placeholders filled in: blanks ("___", see goal-blanks.ts), "[date]" with
+ * The goal statement with the goal bank's placeholders filled in: blanks ("___", see goal-blanks.ts), the stated target
+ * and mastery matching the goal's settings, "[date]" with
  * the goal's target date, and "STUDENT" / "the student" with the student's first name. The stored text is unchanged.
  */
-export function goalStatement(goal: Pick<Goal, 'smartGoal' | 'targetDate' | 'sessionTargetValue' | 'masterySessions' | 'blankFills'>, studentName?: string): string {
-  // Blanks ("___") first: their positions are in the stored text.
-  let text = fillBlanks(goal.smartGoal ?? '', goal);
+export function goalStatement(goal: Pick<Goal, 'smartGoal' | 'targetDate' | 'sessionTargetValue' | 'masterySessions' | 'blankFills'> & Partial<Pick<Goal, 'type' | 'dataCaptureType' | 'targetDirection'>>, studentName?: string): string {
+  // Blanks ("___") first: their positions are in the stored text. Then the stated target and mastery follow the
+  // goal's settings (goal-blanks.ts).
+  let text = matchTextToTarget(fillBlanks(goal.smartGoal ?? '', goal), goal);
   if (goal.targetDate) text = text.replace(/\[date\]/gi, formatDateOnly(goal.targetDate));
   const firstName = studentName?.trim().split(/\s+/)[0];
   if (firstName) text = text.replace(/\bSTUDENT\b/g, firstName).replace(/\b[Tt]he student\b/g, firstName);

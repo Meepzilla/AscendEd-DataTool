@@ -18,7 +18,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 import TargetDirectionField from './TargetDirectionField';
-import { goalTypeLabel } from '@/lib/helpers';
+import { goalStatement, goalTypeLabel } from '@/lib/helpers';
 import { automaticBlankValues, findBlanks } from '@/lib/goal-blanks';
 
 type EditAssignedGoalFormData = z.infer<typeof AssignedGoalEditSchema>;
@@ -138,6 +138,8 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
               </FormItem>
             )}
           />
+
+          <ShownAs form={form} studentName={studentName} />
 
           <BlankFills form={form} />
 
@@ -362,5 +364,26 @@ function BlankFills({ form }: { form: ReturnType<typeof useForm<EditAssignedGoal
         </div>
       ))}
     </fieldset>
+  );
+}
+
+/**
+ * The goal as it will be shown: blanks filled, the stated target ("80%", "4 out of 5") and consecutive sessions
+ * matching the settings below, the target date and the student's name. Updates as the fields change.
+ */
+function ShownAs({ form, studentName }: { form: ReturnType<typeof useForm<EditAssignedGoalFormData>>; studentName?: string }) {
+  const [smartGoal, target, mastery, blankFills, targetDate, dataCaptureType, targetDirection] =
+    form.watch(['smartGoal', 'sessionTargetValue', 'masterySessions', 'blankFills', 'targetDate', 'dataCaptureType', 'targetDirection']);
+  const toNumber = (v: unknown) => (v === '' || v === undefined || v === null || Number.isNaN(Number(v)) ? undefined : Number(v));
+  const shown = goalStatement({
+    smartGoal, blankFills, targetDate: targetDate || undefined, sessionTargetValue: toNumber(target),
+    masterySessions: toNumber(mastery), dataCaptureType, targetDirection,
+  }, studentName);
+  if (!shown || shown === smartGoal) return null;
+  return (
+    <div className="rounded-md border border-dashed p-3 text-sm" aria-live="polite">
+      <p className="mb-1 text-xs font-medium text-muted-foreground">As shown on the profile, Data Entry and reports</p>
+      <p>{shown}</p>
+    </div>
   );
 }
