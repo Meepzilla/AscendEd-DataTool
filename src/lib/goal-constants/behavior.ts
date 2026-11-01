@@ -3,8 +3,9 @@ import type { GoalTemplate, GoalType, TargetDirection } from '../types';
 // Behavior data goal types:
 // - BEHAVIOR_FREQUENCY: tally of occurrences, with an optional rate per hour from the observation time.
 // - BEHAVIOR_DURATION: timed episodes (start/stop timer or entered by hand).
-// - BEHAVIOR_ABC: incidents recorded as Antecedent -> Behavior -> Consequence. An incident's behavior can be
-//   the replacement skill, so replacement goals can measure the % of incidents where it was used.
+// - BEHAVIOR_ABC: incidents recorded as Antecedent -> Behavior -> Consequence, with one or more of each. An
+//   incident's behavior can be the replacement skill, so replacement goals can measure the % of incidents where
+//   it was used.
 // - BEHAVIOR_INTERVAL: the observation is split into equal intervals, each marked + (behavior seen) or −;
 //   measured as the % of scored intervals with the behavior.
 // - BEHAVIOR_LATENCY: seconds from a cue (instruction, direction) to the start of the response.
@@ -55,13 +56,39 @@ export const ABC_CONSEQUENCES: readonly { label: string; fn: BehaviorFunction | 
 
 export interface AbcIncident {
   time: string; // ISO timestamp
+  /** The choices as one line ("Transition, Peer interaction"), for display and older versions of the app. */
   antecedent: string;
   behavior: string;
   consequence: string;
+  /** Each choice, when more than one can be selected (incidents recorded before that have only the line above). */
+  antecedents?: string[];
+  behaviors?: string[];
+  consequences?: string[];
   /** The consequence's function when the incident was recorded (the consequence list can be edited). */
   fn?: BehaviorFunction | null;
+  /** The functions of all the consequences selected, without repeats. */
+  fns?: BehaviorFunction[];
   note?: string;
 }
+
+/** Joins an incident's choices into the one-line form stored in `antecedent`, `behavior` and `consequence`. */
+export const joinAbcChoices = (choices: readonly string[]) => choices.join(', ');
+
+const listOrSingle = (list: unknown, single: string | undefined): string[] =>
+  Array.isArray(list) ? list.filter((v): v is string => typeof v === 'string' && v !== '') : single ? [single] : [];
+
+/** An incident's antecedents, behaviors and consequences, whether recorded as lists or (earlier) as one each. */
+export function incidentChoices(incident: AbcIncident) {
+  return {
+    antecedents: listOrSingle(incident.antecedents, incident.antecedent),
+    behaviors: listOrSingle(incident.behaviors, incident.behavior),
+    consequences: listOrSingle(incident.consequences, incident.consequence),
+  };
+}
+
+/** Whether the student used the replacement skill (it isn't recorded with problem behaviors). */
+export const isReplacementIncident = (incident: AbcIncident) =>
+  incidentChoices(incident).behaviors.includes(ABC_REPLACEMENT_BEHAVIOR);
 
 export const INTERVAL_METHODS = [
   { value: 'partial', label: 'Partial interval', hint: 'Mark + if the behavior happened at any time during the interval.' },
@@ -142,29 +169,35 @@ export function summarizeDuration(data: Record<string, any> = {}, now = Date.now
 
 export function summarizeAbc(data: Record<string, any> = {}) {
   const incidents: AbcIncident[] = Array.isArray(data.incidents) ? data.incidents : [];
-  const replacementCount = incidents.filter(i => i.behavior === ABC_REPLACEMENT_BEHAVIOR).length;
+  const replacementCount = incidents.filter(isReplacementIncident).length;
   const problemCount = incidents.length - replacementCount;
   const tally = (values: string[]) => Object.entries(values.reduce<Record<string, number>>((acc, v) => {
     if (v) acc[v] = (acc[v] || 0) + 1;
     return acc;
   }, {})).sort((a, b) => b[1] - a[1]);
-  const problemIncidents = incidents.filter(i => i.behavior !== ABC_REPLACEMENT_BEHAVIOR);
+  // Each choice is counted, so an incident with two antecedents adds one to each.
+  const problemIncidents = incidents.filter(i => !isReplacementIncident(i));
   return {
     incidents,
     incidentCount: incidents.length,
     problemCount,
     replacementCount,
     replacementPercent: incidents.length > 0 ? (replacementCount / incidents.length) * 100 : null,
-    antecedents: tally(problemIncidents.map(i => i.antecedent)),
-    behaviors: tally(problemIncidents.map(i => i.behavior)),
-    functions: tally(problemIncidents.map(i => incidentFunction(i) || '')),
+    antecedents: tally(problemIncidents.flatMap(i => incidentChoices(i).antecedents)),
+    behaviors: tally(problemIncidents.flatMap(i => incidentChoices(i).behaviors)),
+    functions: tally(problemIncidents.flatMap(incidentFunctions)),
   };
 }
 
-/** The function an incident suggests: the one stored with it, or for older incidents the default list's. */
-export function incidentFunction(incident: AbcIncident): BehaviorFunction | null {
-  if (incident.fn !== undefined) return incident.fn;
-  return ABC_CONSEQUENCES.find(c => c.label === incident.consequence)?.fn ?? null;
+/**
+ * The functions an incident suggests, without repeats: those stored with it, or for older incidents the one
+ * stored with its single consequence, or the default list's.
+ */
+export function incidentFunctions(incident: AbcIncident): BehaviorFunction[] {
+  if (Array.isArray(incident.fns)) return incident.fns;
+  if (incident.fn !== undefined) return incident.fn ? [incident.fn] : [];
+  const fn = ABC_CONSEQUENCES.find(c => c.label === incident.consequence)?.fn;
+  return fn ? [fn] : [];
 }
 
 /** The interval setup in use: the session's own choices, else `fallback` (the goal's last setup), else the default. */

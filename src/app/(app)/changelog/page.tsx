@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-01',
+    title: 'ABC Incidents Can Have Several Choices',
+    description: 'When recording ABC data, more than one antecedent, behavior and consequence can be selected for an incident (tap a choice again to turn it off), then Add Incident saves them together as one incident. "Used replacement skill" can\'t be combined with problem behaviors. The ABC summary, Reports charts and narrative count each choice, so an incident with two antecedents adds one to each; an incident with consequences of two functions counts once toward each function. Incidents recorded earlier are unchanged.',
+    type: 'improvement',
+    icon: CheckSquare,
+  },
+  {
+    date: '2026-11-01',
     title: 'Data Entry Save Bar Fits on a Sideways Phone',
     description: 'With a phone turned sideways, Data Entry\'s bar at the bottom (Student, Goal, Load Group, Add, Reset, Save and Save All) took three lines and much of the short screen. On a short screen it now fits on one line, with smaller buttons and shorter labels ("Add", "Reset", "Save"), leaving more room for the student cards. Portrait phones, tablets and computers look as before.',
     type: 'fix',
