@@ -4,7 +4,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { RotateCcw, ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, LayoutGrid, Minimize2, UserX, UserPlus, ArrowRightLeft, Download, ListPlus, Workflow, Shuffle, CheckSquare, ListChecks, DatabaseZap, UserSearch, Upload, BrainCircuit, PanelLeft, ArrowLeft, MessagesSquare, BookOpen, Lock, ShieldCheck, PanelBottom } from 'lucide-react';
+import { RotateCcw, ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, LayoutGrid, Minimize2, UserX, UserPlus, ArrowRightLeft, Download, ListPlus, Workflow, Shuffle, CheckSquare, ListChecks, DatabaseZap, UserSearch, Upload, BrainCircuit, PanelLeft, ArrowLeft, MessagesSquare, BookOpen, Lock, ShieldCheck, PanelBottom, CalendarClock } from 'lucide-react';
 import { APP_NAME } from '@/lib/appConstants';
 
 interface ChangelogEntry {
@@ -17,6 +17,20 @@ interface ChangelogEntry {
 }
 
 const allChangelogEntries: ChangelogEntry[] = [
+  {
+    date: '2026-11-01',
+    title: 'Imported IEP Dates Move to the Current IEP Year',
+    description: 'An IEP at a Glance (PDF or spreadsheet) can hold last year\'s IEP, so students came in with an annual review that had already passed. Now, when a student\'s IEP in the file has ended, the import gives them the next IEP: it starts the day after the old one ended, and the annual review is due a year less a day later (an IEP from Oct 29, 2025 to Oct 28, 2026 becomes Oct 29, 2026 to Oct 28, 2027). The review says which students were moved and from which dates, and a box at the top keeps the file\'s dates instead (for a review that really is overdue). A file with only an IEP start date gets the annual review a year less a day later. To fix students already imported, import the file again: the same students are updated and no goals are added twice.',
+    type: 'fix',
+    icon: CalendarClock,
+  },
+  {
+    date: '2026-11-01',
+    title: 'Due Soon Scrolls, and Dashboard Cards Collapse',
+    description: 'The dashboard\'s Due Soon card now shows 4 reviews at a time and scrolls to show the rest, like Service Minutes (it used to stop at 8 with "and N more"). Both cards can be collapsed by tapping their title, leaving just the title and how many are listed; tap again to open. Each card stays collapsed or open on this device until changed.',
+    type: 'improvement',
+    icon: ScrollText,
+  },
   {
     date: '2026-11-01',
     title: 'Import Students from an IEP at a Glance PDF',

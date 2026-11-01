@@ -16,7 +16,7 @@ import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 import type { GoalType } from '@/lib/types';
 import type { CellValue } from '@/lib/xlsx-read';
 import {
-  goalDirectionFor, goalTarget, iepGlanceRows, matchExistingStudents, readStudentRows, type ImportGoal, type ImportStudent,
+  goalDirectionFor, goalTarget, iepGlanceRows, matchExistingStudents, moveIepToCurrentYear, readStudentRows, type ImportGoal, type ImportStudent,
 } from '@/lib/student-import';
 
 // Settings → Import Students: reads a spreadsheet with one row per student (name, IEP dates, service minutes,
@@ -50,6 +50,8 @@ export default function ImportStudentsCard() {
   const [warnings, setWarnings] = useState<string[]>([]);
   const [fileName, setFileName] = useState('');
   const [reading, setReading] = useState(false);
+  // IEP dates that have passed are moved to the current IEP year (the file can hold last year's IEP).
+  const [moveDates, setMoveDates] = useState(true);
 
   const onFile = async (file: File | undefined) => {
     if (!file) return;
@@ -57,7 +59,8 @@ export default function ImportStudentsCard() {
     try {
       const preview = readStudentRows(await readRows(file));
       if (preview.students.length === 0) throw new Error('No students were found in the file.');
-      setRows(matchExistingStudents(preview.students, existing).map(s => ({
+      setMoveDates(true);
+      setRows(matchExistingStudents(moveIepToCurrentYear(preview.students), existing).map(s => ({
         ...s, include: true, goals: s.goals.map(g => ({ ...g, include: !g.duplicate })),
       })));
       setWarnings(preview.warnings);
@@ -70,6 +73,9 @@ export default function ImportStudentsCard() {
     }
   };
 
+  /** A row's IEP dates as they will be saved: moved to the current year, or as in the file. */
+  const iepOf = (row: Row) => (moveDates ? row.iep : row.iepFromFile ?? row.iep);
+  const movedCount = (rows ?? []).filter(r => r.iepFromFile).length;
   const included = useMemo(() => (rows ?? []).filter(r => r.include), [rows]);
   const goalCount = included.reduce((n, s) => n + s.goals.filter(g => g.include).length, 0);
 
@@ -85,7 +91,9 @@ export default function ImportStudentsCard() {
 
   const runImport = () => {
     // Goals not ticked are left out, as goals the student already has are.
-    const result = importStudents(included.map(({ include: _, ...s }) => ({ ...s, goals: s.goals.map(({ include, ...g }) => ({ ...g, duplicate: !include })) })));
+    const result = importStudents(included.map(({ include: _, ...s }) => ({
+      ...s, iep: iepOf({ ...s, include: true }), goals: s.goals.map(({ include, ...g }) => ({ ...g, duplicate: !include })),
+    })));
     if (!result) return;
     setRows(null);
     const parts = [result.added && `${plural(result.added, 'student')} added`, result.updated && `${plural(result.updated, 'student')} updated`].filter(Boolean);
@@ -135,14 +143,29 @@ export default function ImportStudentsCard() {
             {warnings.map(w => <li key={w}>{w}</li>)}
           </ul>
         )}
+        {movedCount > 0 && (
+          <div className="mb-3 flex items-start gap-2 rounded-md border p-3">
+            <Checkbox id="import-move-dates" className="mt-0.5" checked={moveDates} onCheckedChange={v => setMoveDates(v === true)} />
+            <label htmlFor="import-move-dates" className="text-sm">
+              <span className="font-medium">Move IEP dates that have passed to the current IEP year</span>
+              <span className="block text-xs text-muted-foreground">
+                {movedCount === 1 ? '1 student\'s IEP in the file has' : `${movedCount} students' IEPs in the file have`} already ended. Ticked, each gets the next IEP: it starts the day after the
+                old one ended, with the annual review a year less a day later. Untick to keep the file&apos;s dates (for example, if a review is
+                really overdue).
+              </span>
+            </label>
+          </div>
+        )}
         <ol className="space-y-3">
           {(rows ?? []).map((row, si) => {
+            const dates = iepOf(row);
             const iep = [
-              row.iep.iepDate && `IEP ${formatDateOnly(row.iep.iepDate)}`,
-              row.iep.annualReviewDate && `annual review ${formatDateOnly(row.iep.annualReviewDate)}`,
-              row.iep.reevaluationDate && `re-evaluation ${formatDateOnly(row.iep.reevaluationDate)}`,
-              row.iep.serviceMinutes && `${row.iep.serviceMinutes} min per ${row.iep.servicePer}`,
+              dates.iepDate && `IEP ${formatDateOnly(dates.iepDate)}`,
+              dates.annualReviewDate && `annual review ${formatDateOnly(dates.annualReviewDate)}`,
+              dates.reevaluationDate && `re-evaluation ${formatDateOnly(dates.reevaluationDate)}`,
+              dates.serviceMinutes && `${dates.serviceMinutes} min per ${dates.servicePer}`,
             ].filter(Boolean).join(' · ');
+            const moved = moveDates && row.iepFromFile;
             const checkboxId = `import-student-${si}`;
             return (
               <li key={`${row.row}-${row.name}`} className={`rounded-md border p-3 ${row.include ? '' : 'opacity-60'}`}>
@@ -154,6 +177,11 @@ export default function ImportStudentsCard() {
                   </Badge>
                 </div>
                 {iep && <p className="mt-1 text-xs text-muted-foreground">{iep}</p>}
+                {moved && row.iepFromFile?.annualReviewDate && (
+                  <p className="text-xs text-muted-foreground">
+                    Moved from the file&apos;s IEP{row.iepFromFile.iepDate ? ` (${formatDateOnly(row.iepFromFile.iepDate)}` : ' (ending'} to {formatDateOnly(row.iepFromFile.annualReviewDate)}), which has ended.
+                  </p>
+                )}
                 {row.goals.length === 0 && <p className="mt-2 text-sm text-muted-foreground">No goals in the file.</p>}
                 <ul className="mt-2 space-y-2">
                   {row.goals.map((goal, gi) => {
