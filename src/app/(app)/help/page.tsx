@@ -188,6 +188,7 @@ export default function HelpPage() {
           </Topic>
           <Topic value="st-bank" title="The goal bank">
             <p>The <Link href="/goal-templates" className="underline hover:text-primary">Goals</Link> page holds over 900 templates. Search by words in the name, goal text or skill area, filter by skill area, and open a goal to read the full text, its purpose and activity ideas. You can edit templates, add your own and archive ones you don&apos;t use.</p>
+            <p>Every built-in goal is written the same way: &quot;By [date], the student will … with 80% accuracy across 3 consecutive sessions, as measured by SLP or teacher observation and data collection.&quot; The numbers follow the goal&apos;s target and mastery once it is assigned. Templates you have edited keep your wording.</p>
           </Topic>
         </Accordion>
       </Section>
@@ -207,7 +208,7 @@ export default function HelpPage() {
       <Section id="reports" icon={BarChart2} title="Sessions and reports">
         <Accordion type="multiple">
           <Topic value="rp-sessions" title="Sessions">
-            <p>The <Link href="/manage-sessions" className="underline hover:text-primary">Sessions</Link> page lists every saved session. Filter by student, dates or words in the activity and notes; view, edit or delete a session.</p>
+            <p>The <Link href="/manage-sessions" className="underline hover:text-primary">Sessions</Link> page lists every saved session. Filter by student, dates or words in the activity and notes; view, edit or delete a session. Editing covers the data, notes, and the session&apos;s date and times: tap the date to open a calendar on the session&apos;s month.</p>
             <p><B>Merge Selected</B> joins the records of one session that was saved in parts (saved, then more data collected and saved again), so its minutes count once. Tick the records of the same student on the same day, then choose Merge Selected.</p>
           </Topic>
           <Topic value="rp-charts" title="Charts and Goal by Goal">
@@ -262,7 +263,7 @@ export default function HelpPage() {
             <p>After it has been opened once online, the app works offline. Open it from the Home Screen while online now and then to get updates.</p>
           </Topic>
           <Topic value="ts-size" title="Text or buttons are too small or too large">
-            <p>Settings → Interface → Display Size changes the size of everything. You can also move the menu bar to the bottom of the screen or hide the student sidebar there.</p>
+            <p>Settings → Interface → Display Size changes the size of everything. You can also move the menu bar to the bottom of the screen (it stays in reach while you scroll, with the footer below it at the end of a page) or hide the student sidebar there.</p>
           </Topic>
           <Topic value="ts-hotkeys" title="Letters I type set off shortcuts">
             <p>Turn off single-key shortcuts in Settings → Interface. The Alt shortcuts and Ctrl + Enter keep working.</p>
