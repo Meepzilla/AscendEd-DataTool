@@ -55,7 +55,7 @@ export function automaticBlankValues(text: string, goal: BlankGoal): (string | u
   const fractionIsTarget = !statesPercent(text);
   blanks.forEach((blank, i) => {
     const after = text.slice(blank.end, blank.end + 20);
-    if (target !== undefined && /^\s?%/.test(after)) values[i] = String(target);
+    if (target !== undefined && /^(?:\s?%|\s+percent\b)/i.test(after)) values[i] = String(target);
     if (/^\s*consecutive\b/i.test(after)) values[i] = String(goal.masterySessions ?? 3); // mastery's default, as in aim-line.ts
     // "___ out of ___": this blank and the next.
     const next = blanks[i + 1];
@@ -83,7 +83,7 @@ export function fillBlanks(text: string, goal: BlankGoal): string {
 
 /** Whether the text states a percentage (written, or a "___%" blank). Its fractions are then a separate criterion. */
 function statesPercent(text: string): boolean {
-  return /(?<![\d.])\d{1,3}(?:\.\d+)?\s?%|_{3,}\s?%/.test(text);
+  return /(?<![\d./])\d{1,3}(?:\.\d+)?(?:\s?%|\s+percent\b)|_{3,}(?:\s?%|\s+percent\b)/i.test(text);
 }
 
 const normalize = (s: string) => s.toLowerCase().replace(/_{3,}/g, '_').replace(/\s+/g, ' ').trim();
@@ -120,9 +120,15 @@ function percentTarget(goal: BlankGoal): boolean {
   return !NOT_PERCENT.has(type);
 }
 
-const PERCENT = /(?<![\d.])(\d{1,3}(?:\.\d+)?)(\s?)%/g;
-// "4 out of 5" (not "2 out of 3 sessions", which is about sessions) and "6 of 10 opportunities/trials".
-const FRACTION = /\b(\d{1,3})(\s+out of\s+|\s+of\s+(?=\d{1,3}\s+(?:\w+\s+)?(?:opportunit|trial|attempt)))(\d{1,3})\b(?!\s+(?:consecutive\s+)?(?:sessions?|days?|weeks?|data|probes?)\b)/gi;
+// "80%", "80 %" or "80 percent" (custom goals are often typed that way).
+const PERCENT = /(?<![\d./])(\d{1,3}(?:\.\d+)?)(\s?%|\s+percent\b)/gi;
+// What a fraction counts: "6 of 10 opportunities", "4/5 trials".
+const COUNTED = '(?:\\w+\\s+)?(?:opportunit|trials?\\b|attempts?\\b|occasions?\\b|times\\b|items?\\b|questions?\\b|responses?\\b|turns?\\b|exchanges?\\b|prompts?\\b|words?\\b|sentences?\\b|tasks?\\b)';
+// "4 out of 5" (not "2 out of 3 sessions", which is about sessions), "6 of 10 opportunities" and "4/5 trials"
+// (a slash only before what is counted, so a date such as "6/15" is never taken for a fraction).
+const FRACTION = new RegExp(
+  `(?<![\\d/])\\b(\\d{1,3})(\\s+out of\\s+|\\s+of\\s+(?=\\d{1,3}\\s+${COUNTED})|\\s?/\\s?(?=\\d{1,3}\\s+${COUNTED}))(\\d{1,3})\\b(?![/\\d])` +
+  `(?!\\s+(?:consecutive\\s+)?(?:sessions?|days?|weeks?|data|probes?)\\b)`, 'gi');
 const CONSECUTIVE = /\b(\d{1,2})(\s+consecutive\s+(?:sessions?|data|probes?|days?|weeks?|opportunit))/gi;
 
 /** The goal text with its stated target, fractions and consecutive-session count matching the goal's settings. */
@@ -132,7 +138,7 @@ export function matchTextToTarget(text: string, goal: BlankGoal): string {
   const target = goal.sessionTargetValue;
   if (target !== undefined && target !== null && percentTarget(goal)) {
     const percents = new Set([...out.matchAll(PERCENT)].map(m => Number(m[1])));
-    if (percents.size === 1 && !percents.has(target)) out = out.replace(PERCENT, (_m, _n, space) => `${target}${space}%`);
+    if (percents.size === 1 && !percents.has(target)) out = out.replace(PERCENT, (_m, _n, unit) => `${target}${unit}`);
     const fractions = statesPercent(text) ? [] : [...out.matchAll(FRACTION)];
     const ratios = new Set(fractions.map(m => Math.round((Number(m[1]) / Number(m[3])) * 1000)));
     if (fractions.length && ratios.size === 1 && !ratios.has(Math.round(target * 10))) {

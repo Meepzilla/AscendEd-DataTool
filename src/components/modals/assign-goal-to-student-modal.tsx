@@ -284,7 +284,7 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
               disabled={!customGoalName.trim() || !customGoalSmartText.trim() || dataLoading || isAssigningTemplates || isAssigningCustom}
               className="h-9 text-sm"
             >
-              {isAssigningCustom ? 'Assigning...' : 'Create &amp; Assign Custom Goal'}
+              {isAssigningCustom ? 'Assigning...' : 'Create & Assign Custom Goal'}
               <PlusCircle className="ml-2 h-4 w-4" />
             </Button>
           </div>
