@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { strToU8, zipSync } from 'fflate';
 import { readXlsx, serialToDate } from '../xlsx-read';
 import {
-  applyStudentImport, classifyGoal, goalName, goalTarget, goalTargetDate, matchExistingStudents, parseDate, parseService,
+  applyStudentImport, classifyGoal, goalName, goalSimilarity, goalTarget, goalTargetDate, iepGlanceRows, matchExistingStudents, parseDate, parseService,
   readStudentRows, splitGoals,
 } from '../student-import';
 import type { Student } from '../types';
@@ -115,6 +115,9 @@ describe('goal wording', () => {
     expect(parseDate('12/1/26')).toBe('2026-12-01');
     expect(parseDate('13/1/2026')).toBeUndefined();
     expect(parseDate('soon')).toBeUndefined();
+    expect(parseDate('Oct 29, 2025')).toBe('2025-10-29');
+    expect(parseDate('September 3 2026')).toBe('2026-09-03');
+    expect(parseDate('3 Sept 2026')).toBe('2026-09-03');
     expect(parseService('120 min/month Related + 240 min/year Feeding')).toEqual({ serviceMinutes: 120, servicePer: 'month' });
     expect(parseService('30 minutes per week')).toEqual({ serviceMinutes: 30, servicePer: 'week' });
     expect(parseService('Consult')).toEqual({});
@@ -151,5 +154,110 @@ describe('importing into the student list', () => {
     ]);
     const quinn = result.students.find(s => s.name === 'Quinn')!;
     expect(quinn).toMatchObject({ userId: 'u', goals: [], iep: { annualReviewDate: '2027-06-01' }, isArchived: false, createdAt: '2026-11-01T12:00:00.000Z' });
+  });
+});
+
+describe('IEP at a Glance PDF', () => {
+  /** A minimal PDF with one Helvetica text line per [x, y, text], page by page. */
+  function pdf(pages: [number, number, string][][]): Uint8Array {
+    const objects: string[] = [];
+    const pageIds = pages.map((_, i) => 4 + i * 2);
+    objects[1] = '<< /Type /Catalog /Pages 2 0 R >>';
+    objects[2] = `<< /Type /Pages /Kids [${pageIds.map(id => `${id} 0 R`).join(' ')}] /Count ${pages.length} >>`;
+    objects[3] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>';
+    pages.forEach((lines, i) => {
+      const escape = (t: string) => t.replace(/[\\()]/g, c => `\\${c}`);
+      const stream = lines.map(([x, y, text]) => `BT /F1 11 Tf ${x} ${y} Td (${escape(text)}) Tj ET`).join('\n');
+      objects[pageIds[i]] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents ${pageIds[i] + 1} 0 R >>`;
+      objects[pageIds[i] + 1] = `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`;
+    });
+    let out = '%PDF-1.4\n';
+    const offsets: number[] = [];
+    for (let id = 1; id < objects.length; id++) { offsets[id] = out.length; out += `${id} 0 obj\n${objects[id]}\nendobj\n`; }
+    const xref = out.length;
+    out += `xref\n0 ${objects.length}\n0000000000 65535 f \n${offsets.slice(1).map(o => `${String(o).padStart(10, '0')} 00000 n \n`).join('')}`;
+    out += `trailer\n<< /Size ${objects.length} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
+    return strToU8(out);
+  }
+
+  const footer = (n: number): [number, number, string][] => [[230, 30, 'Copyright 2026 SLP Toolkit'], [480, 30, `Page ${n} of 3`]];
+  const file = () => pdf([
+    [
+      [250, 740, 'IEP at a Glance'], [260, 710, 'Student Information:'],
+      [72, 680, 'Name: Pat Lee'], [330, 680, 'Eligibility: ASD'],
+      [72, 655, 'IEP Start Date: Oct 29, 2025'], [330, 655, 'IEP End Date: Oct 28, 2026'],
+      [72, 620, 'Case Manager:'], [72, 600, 'Service time(s): 180 min/month - Related'], [72, 580, 'Goals:'],
+      [80, 560, '1. Speech: Given minimal pairs, Pat will eliminate final consonant'], [95, 545, 'deletion in 7/10 trials by October 2026.'],
+      [80, 525, '2. Language: a. Given a model, by October 2026 Pat will produce 3'],
+      ...footer(1),
+    ],
+    [
+      [95, 740, 'multiword utterances per session.'],
+      [72, 700, 'This student has...'], [72, 680, 'Testing Accommodations: NO YES*'],
+      ...footer(2),
+    ],
+    [
+      [250, 740, 'IEP at a Glance'], [72, 680, 'Name: Quinn "Q" Moss'], [330, 680, 'Eligibility: ID'],
+      [72, 655, 'IEP Start Date: 2 Mar 2026'], [330, 655, 'IEP End Date: 1 Mar 2027'], [72, 600, 'Service time(s): 900 min/year - Related'],
+      [72, 580, 'Goals:'], [80, 560, '1. Communication Goal: By March 2027, Quinn will demonstrate an ability to'],
+      [95, 545, 'communicate at least two times for at least two different functions within a'], [95, 530, '15-minute period.'],
+      ...footer(3),
+    ],
+  ]);
+
+  it('reads each student\'s name, dates, service time and goals, across a page break', async () => {
+    const { readPdfLines } = await import('../pdf-text');
+    const pages = await readPdfLines(file());
+    expect(pages[0][2]).toBe('Name: Pat Lee Eligibility: ASD');
+    const rows = iepGlanceRows(pages);
+    expect(rows.slice(1)).toEqual([
+      ['Pat Lee', 'Oct 29, 2025', 'Oct 28, 2026', '', '180 min/month - Related',
+        'Speech: Given minimal pairs, Pat will eliminate final consonant deletion in 7/10 trials by October 2026. | Language: a. Given a model, by October 2026 Pat will produce 3 multiword utterances per session.'],
+      ['Quinn "Q" Moss', '2 Mar 2026', '1 Mar 2027', '', '900 min/year - Related',
+        'Communication Goal: By March 2027, Quinn will demonstrate an ability to communicate at least two times for at least two different functions within a 15-minute period.'],
+    ]);
+    const { students } = readStudentRows(rows);
+    expect(students[0]).toMatchObject({ name: 'Pat Lee', iep: { iepDate: '2025-10-29', annualReviewDate: '2026-10-28', serviceMinutes: 180, servicePer: 'month' } });
+    expect(students[0].goals.map(g => [g.type, g.target, g.targetDate])).toEqual([['PHONOLOGICAL_PROCESSES', 70, '2026-10-31'], ['BEHAVIOR_FREQUENCY', 3, '2026-10-31']]);
+    expect(students[1].goals.map(g => [g.type, g.target, g.name])).toEqual([['COMMUNICATION_FUNCTIONS', 2, 'Communicate at least two times for at least two different…']]);
+  });
+
+  it('rejects a file that isn\'t a PDF', async () => {
+    const { readPdfLines } = await import('../pdf-text');
+    await expect(readPdfLines(strToU8('not a pdf'))).rejects.toThrow(/couldn't be read as a PDF/);
+  });
+});
+
+describe('matching students and goals written differently', () => {
+  const existing = [
+    { id: 'j', name: 'Jeremy (JJ)', iep: { iepDate: '2025-10-29' }, goals: [{ smartGoal: 'Speech: JJ will eliminate weak syllable deletion, consonant deletion and glottal replacement over 70% (7/10 trials) by Oct 2026.' }] },
+    { id: 'a1', name: 'Aiden', iep: { iepDate: '2026-02-18' }, goals: [] },
+    { id: 'a2', name: 'Aiden (2)', iep: { iepDate: '2026-04-15' }, goals: [] },
+  ] as unknown as Student[];
+  const row = (name: string, iepDate: string, goals: string[] = []) => ({ row: 2, name, iep: { iepDate }, goals: goals.map(smartGoal => ({ name: 'G', smartGoal, type: 'DISCRETE_TRIALS' as const, target: 80 })) });
+
+  it('matches a fuller name when the IEP started the same day', () => {
+    const [jj, aidenE, aidenC, other] = matchExistingStudents([
+      row('Jeremy (JJ) Taylor', '2025-10-29'), row('Aiden Eckart', '2026-02-18'), row('Aiden Curnutte', '2026-04-15'), row('Jeremy Stone', '2026-01-01'),
+    ], existing);
+    expect([jj.existingId, aidenE.existingId, aidenC.existingId, other.existingId]).toEqual(['j', 'a1', 'a2', undefined]);
+    expect(jj.existingName).toBe('Jeremy (JJ)');
+  });
+
+  it('marks a goal the student has in other words, but not a different goal', () => {
+    const [jj] = matchExistingStudents([row('Jeremy (JJ) Taylor', '2025-10-29', [
+      'Speech: Given further characterization of JJ\'s articulation differences, JJ will: i. eliminate his use of Weak Syllable Deletion, ii. Consonant Deletion, iii. and Glottal Replacement to afford correct productions over 70% (7/10 trials) by October 2026.',
+      'Language: by October 2026 JJ will produce 3 multiword utterances per session.',
+    ])], existing);
+    expect(jj.goals.map(g => g.duplicate)).toEqual([true, false]);
+    expect(goalSimilarity('use AAC to greet', 'answer wh- questions')).toBe(0);
+  });
+
+  it('reads targets written as 4/5 and numbers written as words', () => {
+    expect(classifyGoal('engage in simple problem solving given visual cues in 4/5 opportunities').type).toBe('DISCRETE_TRIALS');
+    expect(goalTarget('AAC', 'use a switch to request in 2/5 opportunities')).toBe(40);
+    expect(goalTarget('COMMUNICATION_FUNCTIONS', 'communicate at least 5 times for at least four different functions')).toBe(4);
+    expect(classifyGoal('ask a question at least one time in a 20-minute period').type).toBe('BEHAVIOR_FREQUENCY');
+    expect(classifyGoal('activate a switch at least once during a structured task across 5 opportunities').type).toBe('AAC');
   });
 });

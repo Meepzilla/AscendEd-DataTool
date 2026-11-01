@@ -16,7 +16,7 @@ export interface ImportGoal {
   direction?: TargetDirection;
   /** YYYY-MM-DD: the month in "by Oct 2026" (its last day), else the IEP end date. */
   targetDate?: string;
-  /** The student already has a goal with this text, so it won't be added again. */
+  /** The student already has this goal (the same or nearly the same wording), so it isn't added unless chosen. */
   duplicate?: boolean;
 }
 
@@ -26,6 +26,8 @@ export interface ImportStudent {
   name: string;
   /** The existing student this row updates (same name), if any. */
   existingId?: string;
+  /** That student's name, when it isn't written the same way (the file has "Jeremy Taylor", the app "Jeremy"). */
+  existingName?: string;
   iep: StudentIep;
   goals: ImportGoal[];
 }
@@ -78,9 +80,19 @@ export function parseDate(value: CellValue): string | undefined {
     const year = m[3].length === 2 ? 2000 + +m[3] : +m[3];
     return +m[1] >= 1 && +m[1] <= 12 && +m[2] >= 1 && +m[2] <= 31 ? `${year}-${pad(+m[1])}-${pad(+m[2])}` : undefined;
   }
-  const parsed = new Date(text);
-  return Number.isNaN(parsed.getTime()) || !/[a-z]/i.test(text) ? undefined
-    : `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())}`;
+  // "Oct 29, 2025", "October 29 2025" or "29 Oct 2025": read here, since browsers parse written dates differently.
+  m = /^([a-z]{3,9})\.?\s+(\d{1,2}),?\s+(\d{4})$/i.exec(text) ?? null;
+  const day = m ? +m[2] : 0;
+  let month = m ? MONTHS.indexOf(m[1].slice(0, 3).toLowerCase()) : -1;
+  let year = m ? +m[3] : 0;
+  if (!m) {
+    const dayFirst = /^(\d{1,2})\s+([a-z]{3,9})\.?,?\s+(\d{4})$/i.exec(text);
+    if (!dayFirst) return undefined;
+    month = MONTHS.indexOf(dayFirst[2].slice(0, 3).toLowerCase());
+    year = +dayFirst[3];
+    return month >= 0 && +dayFirst[1] >= 1 && +dayFirst[1] <= 31 ? `${year}-${pad(month + 1)}-${pad(+dayFirst[1])}` : undefined;
+  }
+  return month >= 0 && day >= 1 && day <= 31 ? `${year}-${pad(month + 1)}-${pad(day)}` : undefined;
 }
 
 /** The first "N min/week|month|year" in a service description ("120 min/month Related + 240 min/year …"). */
@@ -114,7 +126,8 @@ export function splitGoals(cell: CellValue): { area?: string; text: string }[] {
     .map(part => {
       const label = /^([A-Za-z][A-Za-z0-9 &/-]{0,30}?)\s*:\s+(?=\S)/.exec(part);
       if (!label) return { text: part };
-      const text = part.slice(label[0].length).trim();
+      // Without a leading list letter ("Language: a. Given …").
+      const text = part.slice(label[0].length).trim().replace(/^[a-h][.)]\s+/, '');
       return /^goal\s*\d*$/i.test(label[1]) ? { text } : { area: label[1].trim(), text };
     })
     .filter(goal => goal.text.length > 0);
@@ -122,6 +135,11 @@ export function splitGoals(cell: CellValue): { area?: string; text: string }[] {
 
 const has = (text: string, ...patterns: RegExp[]) => patterns.some(p => p.test(text));
 const FUNCTION_WORDS = /\b(request|reject|protest|comment|greet|socializ|share info|information exchange|info exchange|ask|answer|direct attention|regulat)/g;
+
+const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
+/** Lower case, with numbers written as words as digits ("at least two functions" → "at least 2 functions"). */
+const forMatching = (text: string) => text.toLowerCase()
+  .replace(new RegExp(`\\b(${NUMBER_WORDS.join('|')})\\b(?=\\s+(?:different|new|times?|functions|instances|opportunities|trials)\\b)`, 'g'), w => String(NUMBER_WORDS.indexOf(w)));
 
 /** How many communicative functions a goal asks for ("at least 4 functions", "2 different functions"). */
 const functionCount = (t: string) => {
@@ -132,16 +150,19 @@ const functionCount = (t: string) => {
 
 /** "at least 5 times", "3 instances per session", "3 multiword utterances per session", "at least once". */
 const timesCount = (t: string) => {
-  if (/\bat least once\b/.test(t)) return 1;
-  const m = /(?:at least\s+)?(\d+)\s+(?:times|instances|(?:multi-?word |novel |spontaneous )?(?:utterances|initiations|requests|comments))\b/.exec(t);
-  return m && has(t, /\b(per|within|in|during) (a |each )?(session|\d+[- ]minute|period|observation|activity)/, /at least \d+ times/) ? Number(m[1]) : null;
+  // Counted per session or period ("in a 20-minute period"), not once in each trial or task.
+  const perPeriod = has(t, /\b(per|within|in|during) (a |an |each )?(session|\d+[- ]minute|period|observation|activity)/);
+  if (/\bat least once\b/.test(t)) return perPeriod ? 1 : null;
+  // "3times": PDFs sometimes run words together.
+  const m = /(?:at least\s+)?(\d+)\s*(?:times?|instances|(?:multi-?word |novel |spontaneous )?(?:utterances|initiations|requests|comments))\b/.exec(t);
+  return m && (perPeriod || /at least \d+\s*times/.test(t)) ? Number(m[1]) : null;
 };
 
 /** The goal type that fits what a goal measures, from its wording (and its label, such as "Speech"). */
 export function classifyGoal(text: string, area = ''): { type: GoalType } {
-  const t = text.toLowerCase();
+  const t = forMatching(text);
   const a = area.toLowerCase();
-  const opportunities = has(t, /\d+\s+(?:out\s+)?of\s+\d+/, /\d+\s*%/, /accuracy/);
+  const opportunities = has(t, /\d+\s+(?:out\s+)?of\s+\d+/, /\d+\s*\/\s*\d+\s+(?:opportunit|trials|attempts)/, /\d+\s*%/, /accuracy/);
 
   if (has(t, /replacement (skill|behavior)/)) return { type: 'BEHAVIOR_ABC' };
   if (has(t, /\b(aggress|tantrum|elop|self-injur|hitting|kicking|disruptive|problem behavior)/) && has(t, /\b(reduce|decrease|no more than|fewer than)\b/)) {
@@ -170,7 +191,7 @@ export function classifyGoal(text: string, area = ''): { type: GoalType } {
     return { type: 'COMMUNICATION_FUNCTIONS' };
   }
   // A number of times per session or period.
-  if (timesCount(t) !== null && !has(t, /\d+\s+(?:out\s+)?of\s+\d+/)) return { type: 'BEHAVIOR_FREQUENCY' };
+  if (timesCount(t) !== null && !has(t, /\d+\s+(?:out\s+)?of\s+\d+/, /\d+\s*\/\s*\d+\s+(?:opportunit|trials|attempts)/)) return { type: 'BEHAVIOR_FREQUENCY' };
   if (has(t, /for (\d+) (?:consecutive )?minutes/) && !opportunities) return { type: 'BEHAVIOR_DURATION' };
 
   if (has(t, /\baac\b|device|voice[- ]output|switch|eye gaze|core board|speech[- ]generating|\bsgd\b|light-tech|high-tech|choice icon|picture exchange|\bpecs\b/) || a === 'aac') {
@@ -198,7 +219,7 @@ export function goalDirectionFor(type: GoalType, text: string): TargetDirection 
 
 /** The goal's target in its type's measure: a percentage, a count, a number of functions, minutes or a 1-5 rating. */
 export function goalTarget(type: GoalType, text: string): number {
-  const t = text.toLowerCase();
+  const t = forMatching(text);
   switch (type) {
     case 'COMMUNICATION_FUNCTIONS':
       return Math.min(COMMUNICATION_FUNCTIONS.length, functionCount(t) ?? 2);
@@ -221,7 +242,7 @@ export function goalTarget(type: GoalType, text: string): number {
       if (percent) return Math.min(100, Number(percent[1]));
       const ratio = /(\d+)\s+(?:out\s+)?of\s+(\d+)/.exec(t);
       if (ratio && Number(ratio[2]) > 0 && Number(ratio[1]) <= Number(ratio[2])) return Math.round((Number(ratio[1]) / Number(ratio[2])) * 100);
-      const trials = /(\d+)\s*\/\s*(\d+)\s+trials/.exec(t);
+      const trials = /(\d+)\s*\/\s*(\d+)\s+(?:trials|opportunit|attempts)/.exec(t);
       if (trials && Number(trials[2]) > 0) return Math.round((Number(trials[1]) / Number(trials[2])) * 100);
       return 80;
     }
@@ -251,6 +272,7 @@ export function goalName(text: string): string {
   s = s
     .split(/,?\s+(?:as measured|with \d+\s*%|in \d+\s+(?:out\s+)?of\s+\d+|in \d+\s*%|across \d+|over \d+|over \d+\s*%|by (?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.? \d{4}|given\b|during a \d+|within a \d+|at least \d+ times)/i)[0]
     .replace(/^(independently|appropriately|accurately)\s+/i, '')
+    .replace(/^demonstrate (?:an |the )?ability to\s+/i, '')
     .replace(/\s+/g, ' ')
     .trim()
     .replace(/[\s,.;:]+$/, '');
@@ -317,17 +339,107 @@ export function readStudentRows(rows: CellValue[][]): ImportPreview {
   return { students, warnings };
 }
 
+// --- IEP at a Glance PDF ---
+
+const PDF_HEADINGS = ['Student Name', 'IEP Start Date', 'IEP End Date', 'Re-evaluation Date', 'Service Time(s)', 'Goals'];
+/** Page headers and footers, and the form's other sections, which aren't imported. */
+const PDF_SKIP = /^(iep at a glance|student information:?|©|slp ?toolkit$)|copyright \d{4}|\bpage \d+ of \d+$/i;
+const PDF_SECTION_END = /^(this student has|testing accommodations|classroom accommodations|equipment needed|case manager|accommodations|notes?:)/i;
+
+/**
+ * The students in an "IEP at a Glance" PDF (one student per page or two, as SLP Toolkit makes them), as rows
+ * with the same headings as the spreadsheet, so they're read the same way. Each student starts at "Name:".
+ */
+export function iepGlanceRows(pages: string[][]): CellValue[][] {
+  const lines = pages.flat().map(l => l.replace(/\s+/g, ' ').trim()).filter(l => l && !PDF_SKIP.test(l));
+  type Entry = { name: string; start: string; end: string; reeval: string; service: string; goals: string[] };
+  const entries: Entry[] = [];
+  let current: Entry | null = null;
+  let inGoals = false;
+  // A field's value runs up to the next label on the same line ("Name: … Eligibility: …").
+  const field = (line: string, label: RegExp) => {
+    const m = new RegExp(`(?:${label.source})\\s*:?\\s*(.*?)(?=\\s+(?:eligibility|iep start date|iep end date|annual review|re-?evaluation|triennial|case manager|grade|school|dob|date of birth)\\b.*:|$)`, 'i').exec(line);
+    return m ? m[1].trim() : null;
+  };
+
+  for (const line of lines) {
+    const name = /^(?:student )?name\s*:/i.test(line) ? field(line, /^(?:student )?name/) : null;
+    if (name !== null) {
+      current = { name, start: '', end: '', reeval: '', service: '', goals: [] };
+      entries.push(current);
+      inGoals = false;
+      continue;
+    }
+    if (!current) continue;
+    if (inGoals) {
+      if (PDF_SECTION_END.test(line)) { inGoals = false; continue; }
+      // "2. …" starts the next goal (only the next number, so a wrapped "2026." isn't taken for one).
+      const item = /^(\d{1,2})[.)]\s+(.*)$/.exec(line);
+      if (item && Number(item[1]) === current.goals.length + 1) { current.goals.push(item[2]); continue; }
+      if (current.goals.length === 0) { current.goals.push(line); continue; }
+      const last = current.goals.length - 1;
+      // A word broken over two lines with a hyphen ("computer-" / "generated") keeps the hyphen, without a space.
+      current.goals[last] += /-$/.test(current.goals[last]) ? line : ` ${line}`;
+      continue;
+    }
+    const start = field(line, /iep start date|start date|iep date|meeting date/);
+    if (start !== null && /start|iep date|meeting/i.test(line)) current.start ||= start;
+    const end = field(line, /iep end date|end date|annual review(?: date)?/);
+    if (end !== null) current.end ||= end;
+    const reeval = field(line, /re-?evaluation(?: date)?|triennial(?: date)?/);
+    if (reeval !== null) current.reeval ||= reeval;
+    const service = /^service(?: time)?(?:\(s\))?s?\s*:\s*(.*)$/i.exec(line);
+    if (service) current.service = service[1].trim();
+    const goals = /^goals?\s*:\s*(.*)$/i.exec(line);
+    if (goals) { inGoals = true; if (goals[1]) current.goals.push(goals[1].replace(/^1[.)]\s+/, '')); }
+  }
+  return [PDF_HEADINGS, ...entries.map(e => [e.name, e.start, e.end, e.reeval, e.service, e.goals.join(' | ')])];
+}
+
 /**
  * Links each imported student to an existing student with the same name (when exactly one has it), and marks the
  * goals that student already has (same goal text) so they aren't added twice.
  */
-export function matchExistingStudents(students: ImportStudent[], existing: Pick<Student, 'id' | 'name' | 'goals'>[]): ImportStudent[] {
+export function matchExistingStudents(students: ImportStudent[], existing: Pick<Student, 'id' | 'name' | 'goals' | 'iep'>[]): ImportStudent[] {
   return students.map(s => {
-    const matches = existing.filter(e => normalize(e.name) === normalize(s.name));
-    if (matches.length !== 1) return { ...s, existingId: undefined, goals: s.goals.map(g => ({ ...g, duplicate: false })) };
-    const known = new Set((matches[0].goals ?? []).map(g => normalize(g.smartGoal ?? '')));
-    return { ...s, existingId: matches[0].id, goals: s.goals.map(g => ({ ...g, duplicate: known.has(normalize(g.smartGoal)) })) };
+    const match = findExistingStudent(s, existing);
+    if (!match) return { ...s, existingId: undefined, existingName: undefined, goals: s.goals.map(g => ({ ...g, duplicate: false })) };
+    const known = (match.goals ?? []).map(g => g.smartGoal ?? '');
+    return {
+      ...s,
+      existingId: match.id,
+      existingName: normalize(match.name) === normalize(s.name) ? undefined : match.name,
+      goals: s.goals.map(g => ({ ...g, duplicate: known.some(k => normalize(k) === normalize(g.smartGoal) || goalSimilarity(k, g.smartGoal) >= SAME_GOAL) })),
+    };
   });
+}
+
+/**
+ * The existing student a row is for: the one with the same name, or else the one whose name starts the same way
+ * ("Jeremy (JJ)" for "Jeremy (JJ) Taylor", "Aiden (2)" for "Aiden Curnutte") and whose IEP started the same day.
+ */
+function findExistingStudent<T extends Pick<Student, 'name' | 'iep'>>(s: ImportStudent, existing: T[]): T | undefined {
+  const exact = existing.filter(e => normalize(e.name) === normalize(s.name));
+  if (exact.length === 1) return exact[0];
+  if (exact.length > 1 || !s.iep.iepDate) return undefined;
+  const words = (name: string) => normalize(name.replace(/\s*\(\d+\)$/, '')).split(' ');
+  const startsLike = (a: string[], b: string[]) => a.length <= b.length && a.every((w, i) => w === b[i]);
+  const mine = words(s.name);
+  const similar = existing.filter(e => e.iep?.iepDate === s.iep.iepDate && (startsLike(words(e.name), mine) || startsLike(mine, words(e.name))));
+  return similar.length === 1 ? similar[0] : undefined;
+}
+
+/** Goals with this much of the shorter one's wording in common are the same goal, written out more or less fully. */
+const SAME_GOAL = 0.78;
+
+/** The share of the shorter goal's words (3 letters or more) that are also in the other one. */
+export function goalSimilarity(a: string, b: string): number {
+  const words = (t: string) => new Set(t.toLowerCase().replace(/[^a-z0-9]+/g, ' ').split(' ').filter(w => w.length >= 3));
+  const A = words(a), B = words(b);
+  if (!A.size || !B.size) return 0;
+  let shared = 0;
+  A.forEach(w => { if (B.has(w)) shared++; });
+  return shared / Math.min(A.size, B.size);
 }
 
 const toGoal = (g: ImportGoal): Goal => ({
