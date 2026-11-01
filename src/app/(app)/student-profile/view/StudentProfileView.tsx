@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useEffect, useState, lazy, Suspense } from 'react';
+import { fillNameBlanks } from '@/lib/goal-blanks';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useStudentData } from '@/hooks/use-student-data';
 import type { Student, Goal } from '@/lib/types';
@@ -288,7 +289,7 @@ export default function StudentProfileView() {
                 <li key={goal.id} className={`p-4 border rounded-lg shadow-sm bg-card hover:shadow-md transition-shadow ${goal.isArchived ? 'opacity-60 bg-muted/50' : ''}`}>
                   <div className="flex flex-col sm:flex-row justify-between items-start">
                     <div className="flex-grow">
-                      <h3 className="text-lg font-semibold text-primary">{goal.name}</h3>
+                      <h3 className="text-lg font-semibold text-primary">{fillNameBlanks(goal)}</h3>
                       <div className="flex flex-wrap items-center gap-1.5 mt-1">
                         <Badge variant="secondary">{goalTypeLabel(goal.type)}</Badge>
                         {goal.sessionTargetValue !== undefined && (

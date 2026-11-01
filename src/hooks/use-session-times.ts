@@ -19,12 +19,16 @@ interface Options {
   anyUnsaved: boolean;
   /** Whether the students' card states are built yet (until then, what's entered isn't known). */
   statesBuilt: boolean;
-  /** Read when the app comes back: true when something is entered, or when that isn't known yet. */
-  hasEntriesNow: () => boolean;
 }
 
-export function useSessionTimes({ initial, anyUnsaved, statesBuilt, hasEntriesNow }: Options) {
-  const [sessionDate, setSessionDate] = useState<Date | undefined>(() => (initial?.date ? new Date(initial.date) : new Date()));
+/** A stored date, or now when there is none or it can't be read. */
+const dateOrNow = (value?: string) => {
+  const date = value ? new Date(value) : new Date();
+  return Number.isNaN(date.getTime()) ? new Date() : date;
+};
+
+export function useSessionTimes({ initial, anyUnsaved, statesBuilt }: Options) {
+  const [sessionDate, setSessionDate] = useState<Date | undefined>(() => dateOrNow(initial?.date));
   const [sessionTime, setSessionTime] = useState<string>(() => initial?.time || '');
   const [sessionEndTime, setSessionEndTime] = useState<string>(() => initial?.endTime || '');
 
@@ -77,14 +81,15 @@ export function useSessionTimes({ initial, anyUnsaved, statesBuilt, hasEntriesNo
     }
   }, [anyUnsaved, statesBuilt]);
 
-  const hasEntriesNowRef = useRef(hasEntriesNow);
-  hasEntriesNowRef.current = hasEntriesNow;
+  // Read when the app comes back to the foreground: something is entered, or that isn't known yet.
+  const hasEntriesNowRef = useRef(false);
+  hasEntriesNowRef.current = !statesBuilt || anyUnsaved;
   useEffect(() => {
     const refreshDate = () => {
       if (document.visibilityState !== 'visible') return;
       const now = new Date();
       if (pastDateChosenRef.current || !sessionDate || sessionDate.toDateString() === now.toDateString()) return;
-      if (hasEntriesNowRef.current()) return;
+      if (hasEntriesNowRef.current) return;
       const { start, end } = defaultSessionTimes(now);
       timeChosenRef.current = false;
       setSessionDate(now);
