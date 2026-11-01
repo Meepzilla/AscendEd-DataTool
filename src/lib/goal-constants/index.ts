@@ -20,6 +20,11 @@ import { TASK_ANALYSIS_FIELDS, TASK_ANALYSIS_TEMPLATES } from './task-analysis';
 import goalBank from './goal-bank.json';
 // Goal bank templates whose type changed since an earlier import (written by the importer).
 import goalBankTypeUpdates from './goal-bank-type-updates.json';
+// Goal bank wording changed since an earlier import (written by the importer): earlier goal texts by hash, and
+// earlier names.
+import goalBankTextUpdates from './goal-bank-text-updates.json';
+import goalBankRenames from './goal-bank-renames.json';
+import { builtInGoalStatement } from './built-in-statements';
 
 export * from './communication';
 export * from './story-elements';
@@ -86,7 +91,10 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
   ...BEHAVIOR_TEMPLATES,
   ...TASK_ANALYSIS_TEMPLATES,
   ...(goalBank as Omit<GoalTemplate, 'id' | 'createdAt' | 'userId'>[]),
-].filter(template => !RETIRED_NAMES.has(template.name));
+]
+  .filter(template => !RETIRED_NAMES.has(template.name))
+  // Built-in templates written as a short sentence get a goal statement in the goal bank's form.
+  .map(template => template.generatedSmartGoal ? template : { ...template, generatedSmartGoal: builtInGoalStatement(template) });
 
 /** The name a built-in template was added under (its current name for templates stored before defaultKey). */
 export const defaultTemplateKey = (template: Pick<GoalTemplate, 'name' | 'defaultKey'>) => template.defaultKey ?? template.name;
@@ -123,6 +131,85 @@ export function applyDefaultTemplateUpdates<T extends GoalTemplate>(templates: T
   return { templates: updated, changed };
 }
 
+/** A short hash of a text (32-bit FNV-1a over its code points), the same as fnv1a in scripts/import-goal-bank.py. */
+export function textHash(text: string): string {
+  let hash = 0x811c9dc5;
+  for (const ch of text) {
+    hash ^= ch.codePointAt(0)!;
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash.toString(16).padStart(8, '0');
+}
+
+const BANK_TEXT_UPDATES = goalBankTextUpdates as Record<string, string[]>;
+// Other built-in templates whose wording changed: the hashes of their earlier description and goal statement.
+const BUILT_IN_TEXT_UPDATES: Record<string, string[]> = {
+  'Produce /pl/ blend in initial word position': ['cf5aa184'],
+  'Produce /bl/ blend in initial word position': ['50bab1c6'],
+  'Produce /gɹ/ ("gr") blend in initial word position': ['706a49a8'],
+  'Complete the handwashing routine (task analysis)': ['6cca3bf2'],
+  'Complete the arrival routine (task analysis)': ['8f7c27c6'],
+  'Use a communication device to make a request (task analysis)': ['9a1f487b'],
+};
+
+/**
+ * Brings stored copies of built-in templates up to the current goal statement, where the stored one is still
+ * the earlier built-in wording: a goal bank template whose text was tidied (see tidy_text in the importer), or an
+ * original built-in template that had no goal statement. Text the user has edited is left alone, as are goals
+ * already assigned to students.
+ */
+export function applyDefaultTemplateTextUpdates<T extends GoalTemplate>(templates: T[]): { templates: T[]; changed: boolean } {
+  let changed = false;
+  const updated = templates.map(template => {
+    if (!template.isDefault) return template;
+    const current = template.bankId
+      ? DEFAULT_GOAL_TEMPLATES.find(t => t.bankId === template.bankId)
+      : DEFAULT_GOAL_TEMPLATES.find(t => t.name === defaultTemplateKey(template));
+    if (!current) return template;
+    const earlier = template.bankId ? BANK_TEXT_UPDATES[template.bankId] : BUILT_IN_TEXT_UPDATES[current.name];
+    // A field is updated when it is still an earlier built-in wording (or, for a goal statement, empty).
+    const outdated = (field: 'generatedSmartGoal' | 'smartGoalPrompt') => {
+      const value = template[field] ?? '';
+      if (value === current[field]) return false;
+      return earlier?.includes(textHash(value)) || (field === 'generatedSmartGoal' && value === '' && !template.bankId);
+    };
+    const statement = outdated('generatedSmartGoal');
+    const description = outdated('smartGoalPrompt');
+    if (!statement && !description) return template;
+    changed = true;
+    return {
+      ...template,
+      ...(statement ? { generatedSmartGoal: current.generatedSmartGoal } : {}),
+      ...(description ? { smartGoalPrompt: current.smartGoalPrompt } : {}),
+    };
+  });
+  return { templates: updated, changed };
+}
+
+/**
+ * Goals assigned from a built-in template that had no goal statement were given a placeholder ("SMART goal for
+ * <name>"). They get the template's goal statement now; any other goal text is the user's and is left alone.
+ */
+export function applyAssignedGoalStatements<T extends Student>(students: T[], templates: GoalTemplate[]): { students: T[]; changed: boolean } {
+  let changed = false;
+  const updated = students.map(student => {
+    let studentChanged = false;
+    const goals = (student.goals || []).map(goal => {
+      if (!goal.smartGoal?.startsWith('SMART goal for ')) return goal;
+      const placeholderName = goal.smartGoal.slice('SMART goal for '.length);
+      const template = templates.find(t => t.id === goal.templateId)
+        ?? templates.find(t => t.isDefault && (defaultTemplateKey(t) === placeholderName || t.name === placeholderName));
+      if (!template?.generatedSmartGoal) return goal;
+      studentChanged = true;
+      return { ...goal, smartGoal: template.generatedSmartGoal };
+    });
+    if (!studentChanged) return student;
+    changed = true;
+    return { ...student, goals };
+  });
+  return { students: changed ? updated : students, changed };
+}
+
 /**
  * Archives stored copies of retired built-in templates, once: they are marked `retired`, so a template the
  * user restores afterwards stays restored.
@@ -145,7 +232,30 @@ const STORY_NAME_PREFIX = 'Story elements: ';
 const withoutProgramName = (text: string) => text.replace(/\ba [A-Z][a-z]+ [A-Z][a-z]+ model story\b/g, 'a model story');
 
 /** The new name for a built-in template (or a goal copied from one) whose name changed, or null. */
+// Goal bank names tidied by the importer ("HIS/HER" → "their", "[X]" → "___"); their description is unchanged.
+const BANK_RENAMES = new Map((goalBankRenames as { from: string; to: string }[]).map(r => [r.from, r.to]));
+
+// Built-in names put in sentence case like the rest ("Reduce Fronting of /k, g/" → "Reduce fronting of /k/ and /g/").
+const BUILT_IN_RENAMES = new Map<string, string>([
+  ['Use "Easy Onsets" to initiate speech', 'Use easy onsets to begin speech'],
+  ['Use "Light Articulatory Contacts" during reading', 'Use light articulatory contacts during reading'],
+  ['Eliminate Final Consonant Deletion in CVC words', 'Eliminate final consonant deletion in CVC words'],
+  ['Reduce Fronting of /k, g/', 'Reduce fronting of /k/ and /g/'],
+  ['Reduce Stopping of Fricatives (/s/, /f/)', 'Reduce stopping of fricatives (/s/, /f/)'],
+  ['Eliminate Cluster Reduction for s-blends', 'Eliminate cluster reduction in s-blends'],
+  ['Eliminate Cluster Reduction for l-blends', 'Eliminate cluster reduction in l-blends'],
+  ['Reduce Gliding of /l/ to /w/', 'Reduce gliding of /l/ to /w/'],
+  ['Reduce Gliding of /r/ to /w/', 'Reduce gliding of /r/ to /w/'],
+  ['Reduce Deaffrication of "ch" to "sh"', 'Reduce deaffrication of /tʃ/ ("ch") to /ʃ/ ("sh")'],
+  ['Reduce Weak Syllable Deletion in 3-syllable words', 'Reduce weak syllable deletion in 3-syllable words'],
+  ['Reduce Prevocalic Voicing', 'Reduce prevocalic voicing'],
+  ['Discrete Trial Training - Tacting', 'Tact objects (discrete trial training)'],
+  ['Discrete Trials - 5 Trials', 'Respond to a targeted skill (5 discrete trials)'],
+]);
+
 function templateRename(name: string, type: string | undefined): TemplateRename | null {
+  const bank = BANK_RENAMES.get(name) ?? BUILT_IN_RENAMES.get(name);
+  if (bank) return { to: bank, isOriginalText: () => false };
   const articulation = ARTICULATION_TEMPLATE_RENAMES.find(r => r.from === name);
   if (articulation) return { to: articulation.to, isOriginalText: text => text === articulation.fromPrompt };
   if (type !== 'STORY_ELEMENTS' || name.startsWith(STORY_NAME_PREFIX)) return null;

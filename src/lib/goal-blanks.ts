@@ -129,6 +129,9 @@ const COUNTED = '(?:\\w+\\s+)?(?:opportunit|trials?\\b|attempts?\\b|occasions?\\
 const FRACTION = new RegExp(
   `(?<![\\d/])\\b(\\d{1,3})(\\s+out of\\s+|\\s+of\\s+(?=\\d{1,3}\\s+${COUNTED})|\\s?/\\s?(?=\\d{1,3}\\s+${COUNTED}))(\\d{1,3})\\b(?![/\\d])` +
   `(?!\\s+(?:consecutive\\s+)?(?:sessions?|days?|weeks?|data|probes?)\\b)`, 'gi');
+// Ratings ("with a rating of at least 4 out of 5") and communication functions ("at least 4 different functions").
+const RATING = /\b(rating of at least )([1-5])( out of 5)\b/gi;
+const FUNCTIONS = /\b(at least )(\d{1,2})( different (?:communicative )?functions)\b/gi;
 const CONSECUTIVE = /\b(\d{1,2})(\s+consecutive\s+(?:sessions?|data|probes?|days?|weeks?|opportunit))/gi;
 
 /** The goal text with its stated target, fractions and consecutive-session count matching the goal's settings. */
@@ -149,6 +152,14 @@ export function matchTextToTarget(text: string, goal: BlankGoal): string {
         return fraction ? `${fraction[0]}${between}${fraction[1]}` : whole;
       });
     }
+  }
+  const type = goal.dataCaptureType || goal.type || '';
+  if (target !== undefined && target !== null && (type === 'QUALITATIVE_OBSERVATION' || type === 'COGNITIVE') && target >= 1 && target <= 5) {
+    out = out.replace(RATING, (_m, before, _n, after) => `${before}${target}${after}`);
+  }
+  if (target !== undefined && target !== null && type === 'COMMUNICATION_FUNCTIONS') {
+    const counts = new Set([...out.matchAll(FUNCTIONS)].map(m => m[2]));
+    if (counts.size === 1) out = out.replace(FUNCTIONS, (_m, before, _n, after) => `${before}${target}${after}`);
   }
   if (goal.masterySessions) out = out.replace(CONSECUTIVE, (_m, _n, rest) => `${goal.masterySessions}${rest}`);
   return out;
