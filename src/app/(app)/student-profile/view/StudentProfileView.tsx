@@ -9,7 +9,7 @@ import type { Student, Goal } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Edit, Trash2, PlusCircle, Info, Target, Edit3, CheckSquare, TrendingUp, Archive, ArchiveRestore, Upload, Download, ArrowLeft } from 'lucide-react';
+import { Edit, Trash2, PlusCircle, Info, Target, Edit3, CheckSquare, TrendingUp, Archive, ArchiveRestore, Upload, Download, ArrowLeft, BarChart2 } from 'lucide-react';
 import { formatDate, formatGoalTarget, goalStatement, goalTypeLabel } from '@/lib/helpers';
 import { captureTypeOf } from '@/lib/goal-constants';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -220,7 +220,7 @@ export default function StudentProfileView() {
 
 
       <Card className="shadow-lg">
-        <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 sm:p-6">
+        <CardHeader className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 p-4 sm:p-6">
           <div className="flex items-center gap-3 sm:gap-4">
              <Link href="/student-profile" passHref>
                 <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0">
@@ -241,7 +241,13 @@ export default function StudentProfileView() {
               </CardDescription>
             </div>
           </div>
-          <div className="flex flex-wrap sm:flex-nowrap gap-2 mt-3 sm:mt-0 w-full sm:w-auto">
+          <div className="flex flex-wrap xl:flex-nowrap gap-2 w-full xl:w-auto">
+            {/* This student's charts, data summary and attendance, with the Progress Report from there. */}
+            <Button asChild size="sm" className="w-full sm:w-auto">
+              <Link href={`/analysis-report?studentId=${currentStudent.id}`}>
+                <BarChart2 className="mr-2 h-4 w-4" /> View Report
+              </Link>
+            </Button>
             <Button variant="outline" size="sm" onClick={handleExportData} className="w-full sm:w-auto" disabled={studentSessions.length === 0}>
               <Download className="mr-2 h-4 w-4" /> Export Data
             </Button>
@@ -344,7 +350,7 @@ function StudentProfileSkeleton() {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 sm:p-6">
+        <CardHeader className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 p-4 sm:p-6">
           <div className="flex items-center gap-4">
             <Skeleton className="h-16 w-16 rounded-full" />
             <div>
