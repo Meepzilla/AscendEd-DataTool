@@ -23,8 +23,10 @@ export function freshStudentState(student: Student): StudentSessionState {
 
 // Rebuilt when goals are added or removed, and when a goal is edited mid-session (its name, type, data capture
 // type, target or archived state), so the cards and the save use the current goal.
+// The order doesn't count: goals moved up or down on a card keep their place.
 const goalSignature = (goals: Goal[]) =>
-  JSON.stringify(goals.map(g => [g.id, g.name, g.type, g.dataCaptureType, g.isArchived, g.sessionTargetValue, g.targetDirection]));
+  JSON.stringify(goals.map(g => [g.id, g.name, g.type, g.dataCaptureType, g.isArchived, g.sessionTargetValue, g.targetDirection])
+    .sort((a, b) => String(a[0]).localeCompare(String(b[0]))));
 
 /**
  * The cards' states kept in step with the students: a new student gets a state (from the unsaved draft if it has
@@ -40,12 +42,26 @@ export function syncSessionStates(
   let changed = false;
   for (const student of students) {
     const existing = prev[student.id];
-    const goals = student.goals || [];
+    let goals = student.goals || [];
     if (existing && goalSignature(existing.originalGoalHeaders) === goalSignature(goals)) {
-      next[student.id] = existing;
+      // The same goals, but one may have been edited in a way that keeps its data (its text, blanks, target
+      // date, baseline, mastery): the card shows the current goal, in the card's own order.
+      const current = new Map(goals.map(g => [g.id, g]));
+      const refreshed = existing.originalGoalHeaders.map(g => current.get(g.id) ?? g);
+      if (refreshed.some((g, i) => g !== existing.originalGoalHeaders[i])) {
+        next[student.id] = { ...existing, originalGoalHeaders: refreshed };
+        changed = true;
+      } else {
+        next[student.id] = existing;
+      }
       continue;
     }
     changed = true;
+    // Goals keep the order they have on the card (moved up or down there); new goals go at the end.
+    if (existing) {
+      const position = new Map(existing.originalGoalHeaders.map((g, i) => [g.id, i]));
+      goals = [...goals].sort((a, b) => (position.get(a.id) ?? Infinity) - (position.get(b.id) ?? Infinity));
+    }
     // A student's first state comes from the unsaved draft, if it has one.
     const draft = existing ? undefined : drafted?.[student.id];
     const goalData = { ...(existing?.goalData || draft?.goalData || {}) };
