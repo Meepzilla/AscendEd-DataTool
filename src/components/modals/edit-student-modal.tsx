@@ -15,7 +15,8 @@ import { StudentSchema } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { XIcon, PlusCircleIcon, Archive, ArchiveRestore, Pencil } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { TEMPLATE_PICKER_LIMIT, goalTypeLabel } from '@/lib/helpers';
+import { fillNameBlanks } from '@/lib/goal-blanks';
+import { TEMPLATE_PICKER_LIMIT, goalStatement, goalTypeLabel } from '@/lib/helpers';
 import EditAssignedGoalModal from './edit-assigned-goal-modal';
 import { cn } from '@/lib/utils';
 import GoalTextPopover from '@/components/forms/GoalTextPopover';
@@ -175,7 +176,7 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
                           </div>
                         ) : (
                         <div className={cn("flex-grow min-w-0 break-words", goal.isArchived && "opacity-60")}>
-                            <GoalTextPopover name={goal.name} smartGoal={goal.smartGoal} />
+                            <GoalTextPopover name={fillNameBlanks(goal)} smartGoal={goalStatement(goal, currentStudent.name)} />
                             <Badge variant="outline" className="ml-1">{goalTypeLabel(goal.dataCaptureType || goal.type)}</Badge>
                             {goal.isArchived && <Badge variant="destructive" className="ml-1">Archived</Badge>}
                         </div>

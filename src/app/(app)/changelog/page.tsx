@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-01',
+    title: 'Custom Goal Text Follows the Target Too',
+    description: 'Goal text now follows the target in more of the ways goals are typed by hand, so custom goals keep up as well: "80 percent" as well as "80%", "4/5 trials" as well as "4 out of 5", and "8 of 10 times", "questions", "responses" or "turns" as well as opportunities and trials. A date such as "6/15" is never mistaken for a fraction. The Edit Student window shows each goal with the current target, name and date too, and the "Create & Assign Custom Goal" button no longer shows "&amp;" in its name.',
+    type: 'improvement',
+    icon: ScrollText,
+  },
+  {
+    date: '2026-11-01',
     title: 'Goal Text Follows the Target',
     description: 'Goal text that states its target, such as "with 80% accuracy", "in 4 out of 5 opportunities" or "across 3 consecutive sessions", now shows the goal\'s current target and mastery. Change the target to 60% and "with 80% accuracy" reads "with 60% accuracy" on the profile, in Data Entry and on reports. The number of opportunities is separate from the accuracy: in "with 80% accuracy in 4 out of 5 opportunities" only the percentage changes, and "4 out of 5" changes only in goals that state no percentage (60% reads "3 out of 5"); set mastery to 4 and it reads "4 consecutive sessions". This applies to goals already assigned too. The original text is kept, and text that states two different percentages, or goals whose target is a count or rating, is left as written. Edit Goal shows the goal as it will appear while you change it.',
     type: 'improvement',
