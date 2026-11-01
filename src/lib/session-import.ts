@@ -1,4 +1,4 @@
-import type { SessionData, SessionGoalData, Student } from './types';
+import type { Goal, SessionData, SessionGoalData, Student } from './types';
 import { generateUUID } from './helpers';
 import { byDateDesc, byName } from './data-store';
 
@@ -42,21 +42,32 @@ export function planSessionImport(currentStudents: Student[], currentSessions: S
   let duplicateCount = 0;
   let unmatchedCount = 0;
   let addedGoalCount = 0;
+  // Goals a session needs that its student doesn't have. They are added only with a session that is imported, so
+  // a skipped duplicate never brings back a goal (e.g. one deleted after the first import).
+  const pendingGoals = new Map<string, Goal>();
+  const pendingKey = (studentId: string, g: SessionGoalData) => `${studentId}\u0000${nameKey(g.goalName)}\u0000${g.goalType}`;
   for (const { sourceSessionId, ...s } of toImport) {
     const student = findStudent(s as ImportedSession);
     if (!student) { unmatchedCount++; continue; }
+    const needed: Goal[] = [];
     const goals = (s.goals || []).map(g => {
       let goal = student.goals.find(sg => sg.id === g.goalId)
         ?? student.goals.find(sg => nameKey(sg.name) === nameKey(g.goalName) && sg.type === g.goalType);
       if (!goal) {
-        goal = { id: g.goalId || generateUUID(), name: g.goalName, type: g.goalType, smartGoal: '' };
-        student.goals.push(goal);
-        addedGoalCount++;
+        const key = pendingKey(student.id, g);
+        goal = pendingGoals.get(key) ?? { id: g.goalId || generateUUID(), name: g.goalName, type: g.goalType, smartGoal: '' };
+        pendingGoals.set(key, goal);
+        needed.push(goal);
       }
       return { ...g, goalId: goal.id, goalName: goal.name };
     });
     const session = { ...s, studentId: student.id, studentName: student.name, goals };
     if ((sourceSessionId && ids.has(sourceSessionId)) || contents.has(contentKey(session))) { duplicateCount++; continue; }
+    for (const goal of needed) {
+      if (student.goals.includes(goal)) continue;
+      student.goals.push(goal);
+      addedGoalCount++;
+    }
     const sessionId = sourceSessionId && !ids.has(sourceSessionId) ? sourceSessionId : generateUUID();
     ids.add(sessionId);
     contents.add(contentKey(session));

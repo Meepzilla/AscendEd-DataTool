@@ -52,3 +52,15 @@ describe('trial grid', () => {
     expect(clearTrials({ trials: ['correct', 'incorrect'] })).toEqual(['untouched', 'untouched']);
   });
 });
+
+describe('goalAccuracyText matches Reports', () => {
+  it('doesn\'t crash when trials isn\'t a list', () => {
+    expect(goalAccuracyText('DISCRETE_TRIALS', { trials: 'correct,incorrect' })).toBe('0.0% (0/0)');
+  });
+  it('counts a goal entered with another count type\'s inputs, as Reports do', () => {
+    expect(goalAccuracyText('ARTICULATION', { questionsCorrect: 3, questionsIncorrect: 1 })).toBe('75.0% (3/4)');
+  });
+  it('counts feeding trials accepted out of accepted and refused', () => {
+    expect(goalAccuracyText('FEEDING_SWALLOWING', { trialsAccepted: 1, trialsRefused: 3 })).toBe('25.0% (1/4)');
+  });
+});
