@@ -146,13 +146,18 @@ export default function DataEntryContent() {
   }, []);
 
 
+  // The student whose profile opened this page fills the first slot, once. It isn't repeated after a slot is removed,
+  // or the last student removed would come straight back.
+  const startingStudentHandled = useRef(false);
   useEffect(() => {
+    if (startingStudentHandled.current) return;
     if (selectedStudentIds.length === 0 && activeStudents.length > 0) {
       let initialIdToSelect: string | undefined = undefined;
       if (studentFromContext && activeStudents.find(s => s.id === studentFromContext.id)) {
         initialIdToSelect = studentFromContext.id;
       }
       if (initialIdToSelect) {
+        startingStudentHandled.current = true;
         setSelectedStudentIds([initialIdToSelect]);
         setFocusedStudentSlotIndex(0);
       }
@@ -353,6 +358,7 @@ export default function DataEntryContent() {
   }, [activeStudents, selectedStudentIds, toast, setSelectedStudentIds, setFocusedStudentSlotIndex, isStudentAccessLocked]);
 
   const applyRemoveStudentSlot = useCallback((indexToRemove: number) => {
+    startingStudentHandled.current = true;
     setSelectedStudentIds(prev => {
       const currentFocusedId = prev[focusedStudentSlotIndex];
       const newSelectedIds = prev.filter((_, i) => i !== indexToRemove);

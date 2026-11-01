@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-01',
+    title: 'Last Student Can Be Removed in Data Entry',
+    description: 'After opening a student\'s profile, removing the last student from Data Entry put that student straight back, so the list could never be emptied. The student from the profile now fills the first slot only when Data Entry opens, and removing students (with the X or Alt + Q) can go all the way down to none.',
+    type: 'fix',
+    icon: ScrollText,
+  },
+  {
+    date: '2026-11-01',
     title: 'Goal Templates Reworded Consistently',
     description: 'Every built-in goal template now reads the same way: "By [date], the student will … with 80% accuracy across 3 consecutive sessions, as measured by SLP or teacher observation and data collection." The original built-in templates (articulation, phonology, language, AAC, feeding, cognitive, behavior and others) had no goal statement, so goals assigned from them showed none; they now have one, and goals already assigned with that empty placeholder get it too. In the goal bank, "STUDENT" reads "the student", "HIS/HER" reads "their", placeholders such as "[X]" and "/ /" are blanks you can fill in Edit Goal, "i.g." is corrected to "e.g.", and every goal ends with the same "as measured by". A few built-in names are now in sentence case like the rest (for example "Reduce fronting of /k/ and /g/"). Ratings ("at least 4 out of 5") and numbers of communication functions follow the target too. Templates you have edited, and the text of goals already assigned to students, are left as they are.',
     type: 'improvement',
