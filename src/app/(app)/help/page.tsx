@@ -178,7 +178,7 @@ export default function HelpPage() {
       <Section id="students" icon={UserCog} title="Students and goals">
         <Accordion type="multiple">
           <Topic value="st-profile" title="Student profiles">
-            <p>Choose a student on the <Link href="/student-profile" className="underline hover:text-primary">Students</Link> page. The <B>Overview</B> shows IEP dates (and how soon reviews are due), service minutes delivered against the IEP (per week, month or school year), and attendance for the school year. Use <B>Edit IEP Details</B> to set the dates and required minutes.</p>
+            <p>Choose a student on the <Link href="/student-profile" className="underline hover:text-primary">Students</Link> page. The <B>Overview</B> shows IEP dates (and how soon reviews are due), service minutes delivered against the IEP (per week, month or school year), and attendance for the school year. Use <B>Edit IEP Details</B> to set the dates and required minutes. <B>View Report</B> opens the Reports page for that student, with the Progress Report from there.</p>
             <p>Students you no longer see can be archived (kept, but hidden) or deleted.</p>
           </Topic>
           <Topic value="st-goals" title="Goals, targets and mastery">
