@@ -41,8 +41,8 @@ html.has-app-header {
    (html.menu-bottom, menu-position.ts) the layout puts it at the end of the page, above the footer: it sticks to
    the bottom of the screen (clear of the home indicator) while the page scrolls, and the footer scrolls into
    view below it. A thin bar of the same color stays pinned to the top edge so iPadOS still draws the top of the
-   screen sharply, and dialog backdrops start below that. Things anchored to the bottom of the screen (toasts,
-   Data Entry's save bar) stay above the bar using --menu-bar-bottom. */
+   screen sharply, and dialog backdrops start below that. Toasts (fixed to the screen) stay above the bar using
+   --menu-bar-bottom, and Data Entry's save bar (sticky in the page, like the bar) using --menu-bar-height. */
 .app-menubar {
   top: 0;
   border-bottom-width: 1px;
@@ -61,15 +61,15 @@ html.menu-bottom .app-menubar {
   bottom: 0;
   border-bottom-width: 0;
   border-top-width: 1px;
-  padding-top: 0;
-  padding-bottom: calc(env(safe-area-inset-bottom) / var(--body-zoom));
+  /* Inside the page, which <html>'s padding already keeps clear of the home indicator and a landscape notch. */
+  padding: 0;
 }
 html.menu-bottom .app-menubar-spacer {
   display: none;
 }
 /* Data Entry's save bar sticks to the bottom of the page too, so it sits just above the menu bar. */
 html.menu-bottom .data-entry-save-bar {
-  bottom: var(--menu-bar-bottom, 0px);
+  bottom: var(--menu-bar-height, 0px);
 }
 html.menu-bottom .app-top-strip {
   display: block;
@@ -81,7 +81,9 @@ html.menu-bottom .app-top-strip-spacer {
 }
 html.menu-bottom.has-app-header {
   --app-top-bar: calc(env(safe-area-inset-top) / var(--body-zoom) + 4px);
-  --menu-bar-bottom: calc(env(safe-area-inset-bottom) / var(--body-zoom) + 65px);
+  --menu-bar-height: 65px;
+  /* From the screen's bottom edge: the bar sits inside <html>'s safe-area padding. */
+  --menu-bar-bottom: calc(env(safe-area-inset-bottom) / var(--body-zoom) + var(--menu-bar-height));
 }
 
 /* Menus and popovers (Radix positions them with a transform on this wrapper) in browsers that measure zoomed

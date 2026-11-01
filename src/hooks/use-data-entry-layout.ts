@@ -100,7 +100,9 @@ export function useDataEntryLayout(selectedCount: number) {
     // The region changes size when cards appear, and the full-height probe when the screen size changes
     // (rotation, Safari's toolbars, the display size setting). The result doesn't depend on the card's
     // height, so this can't loop.
-    [headerRef.current, saveBarRef.current, cardsRegionRef.current, viewportProbeRef.current].forEach(el => el && observer.observe(el));
+    // The menu bar too, when it is at the bottom (its height is taken off the space).
+    const menuBar = document.querySelector<HTMLElement>('.app-menubar');
+    [headerRef.current, saveBarRef.current, cardsRegionRef.current, viewportProbeRef.current, menuBar].forEach(el => el && observer.observe(el));
     // Cards load after the page, so also update when they are added (at most once a frame).
     let frame = 0;
     const cardsObserver = new MutationObserver(() => {
