@@ -189,6 +189,16 @@ export function summarizeAbc(data: Record<string, any> = {}) {
   };
 }
 
+/** The entries of a tally (most first) that share the highest count: every choice tied for most common. */
+export function topTied(tally: [string, number][]): [string, number][] {
+  return tally.filter(([, n]) => n === tally[0]?.[1]);
+}
+
+/** "a", "a and b", "a, b and c" */
+export function joinWithAnd(items: string[]): string {
+  return items.length <= 2 ? items.join(' and ') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+}
+
 /**
  * The functions an incident suggests, without repeats: those stored with it, or for older incidents the one
  * stored with its single consequence, or the default list's.
