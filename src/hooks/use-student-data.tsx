@@ -11,7 +11,7 @@ import { useDataStorage } from './use-data-storage';
 import { goalFromTemplate, hasTemplateGoal, recordRecentTemplates } from '@/lib/goal-templates';
 import { generateUUID } from '@/lib/helpers';
 import * as secureStore from '@/lib/secure-store';
-import { byDateDesc, byName, readList } from '@/lib/data-store';
+import { byDateDesc, byName } from '@/lib/data-store';
 import { prepareLoadedData } from '@/lib/data-migrations';
 import { planSessionImport, type ImportedSession } from '@/lib/session-import';
 import { createBackup, type AppBackup, type RestoreMode, type RestoreSummary } from '@/lib/backup';
@@ -129,7 +129,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const studentsRef = useRef<Student[]>([]);
   const templatesRef = useRef<GoalTemplate[]>([]);
   const sessionsRef = useRef<SessionData[]>([]);
-  const { keys, save: saveToLocal, unreadableKeys } = useDataStorage(currentUser?.uid);
+  const { keys, save: saveToLocal, read: readStored, resetUnreadable, isUnreadable, unmark, mark } = useDataStorage(currentUser?.uid);
   const { students: studentsKey, templates: templatesKey, sessions: sessionsKey } = keys;
 
   /** Stores a new list and, only if that worked, shows it. */
@@ -300,7 +300,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const current = { students: studentsRef.current, goalTemplates: templatesRef.current, sessions: sessionsRef.current };
 
     const keys = [studentsKey, templatesKey, sessionsKey];
-    const damaged = keys.filter((key): key is string => !!key && unreadableKeys.current.has(key));
+    const damaged = keys.filter((key): key is string => isUnreadable(key));
     if (mode === 'merge' && damaged.length > 0) {
       // Merging would keep this device's lists, but part of them couldn't be read.
       throw new Error("Some of this device's data couldn't be read, so the backup can't be added to it. Use Replace to restore the backup instead.");
@@ -311,7 +311,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     // Replacing is how damaged data is recovered, so those lists may be overwritten now. If storage fills
     // part way, each list is put back exactly as it was stored (damaged ones too).
     const stored = keys.map(key => (key ? secureStore.snapshotItem(key) : null));
-    damaged.forEach(key => unreadableKeys.current.delete(key));
+    unmark(damaged);
     const writes: [string | null, unknown][] = [
       [studentsKey, nextStudents],
       [templatesKey, nextTemplates],
@@ -325,7 +325,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
             secureStore.restoreItem(key, stored[j]!);
           } catch { /* the earlier value fit before, so it fits again */ }
         });
-        damaged.forEach(key => unreadableKeys.current.add(key));
+        mark(damaged);
         throw new Error("The backup couldn't be saved on this device (storage is full). Nothing was changed.");
       }
     }
@@ -341,7 +341,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     restoreBackupSettings(backup, mode, currentUser?.uid, error =>
       addErrorLog({ message: `Restoring ABC lists failed: ${error instanceof Error ? error.message : String(error)}`, source: 'storage', type: 'error' }));
     return summary;
-  }, [currentUser, studentsKey, templatesKey, sessionsKey, saveToLocal, addErrorLog, unreadableKeys]);
+  }, [currentUser, studentsKey, templatesKey, sessionsKey, saveToLocal, addErrorLog, isUnreadable, unmark, mark]);
 
   // --- End Data Actions ---
 
@@ -363,17 +363,12 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
 
     // A list that can't be read is kept as it is in storage (never written over) and reported.
-    unreadableKeys.current.clear();
-    const read = <T,>(key: string | null): T[] => {
-      const value = readList<T>(key);
-      if (value !== undefined) return value;
-      if (key) unreadableKeys.current.add(key);
-      return [];
-    };
-    const rawStudents = read<Student>(studentsKey);
-    const rawTemplates = read<GoalTemplate>(templatesKey);
-    const rawSessions = read<SessionData>(sessionsKey);
-    if (unreadableKeys.current.size > 0) {
+    resetUnreadable();
+    const rawStudents = readStored<Student>(studentsKey);
+    const rawTemplates = readStored<GoalTemplate>(templatesKey);
+    const rawSessions = readStored<SessionData>(sessionsKey);
+    const anyUnreadable = [studentsKey, templatesKey, sessionsKey].some(isUnreadable);
+    if (anyUnreadable) {
       setError(new Error('Some saved data could not be read.'));
       toast({
         title: "Some saved data couldn't be read",
@@ -383,26 +378,27 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
 
     // Renamed and updated built-in goals and templates, and the built-in templates this device doesn't have yet.
+    // A list that couldn't be read is never written over (the warning above covers it). Templates are saved first:
+    // goals are linked to template ids only once those templates are stored, so no goal points at a template
+    // that was never saved. The students are then saved once, with every update.
     const prepared = prepareLoadedData(rawStudents, rawTemplates, currentUser.uid);
-    if (prepared.studentsChanged) saveToLocal(studentsKey, prepared.students);
-    studentsRef.current = prepared.students;
-    setStudents(prepared.students);
-
-    if (prepared.templatesChanged) saveToLocal(templatesKey, prepared.templates);
+    const templatesStored = !prepared.templatesChanged
+      || (!isUnreadable(templatesKey) && saveToLocal(templatesKey, prepared.templates));
+    const nextStudents = templatesStored && prepared.linkedStudents ? prepared.linkedStudents : prepared.students;
+    if ((prepared.studentsChanged || nextStudents !== prepared.students) && !isUnreadable(studentsKey)) {
+      saveToLocal(studentsKey, nextStudents);
+    }
     templatesRef.current = prepared.templates;
     setGoalTemplates(prepared.templates);
-
-    if (prepared.linkedStudents && saveToLocal(studentsKey, prepared.linkedStudents)) {
-      studentsRef.current = prepared.linkedStudents;
-      setStudents(prepared.linkedStudents);
-    }
+    studentsRef.current = nextStudents;
+    setStudents(nextStudents);
 
     const localSessions = [...rawSessions].sort(byDateDesc);
     sessionsRef.current = localSessions;
     setSessions(localSessions);
     setLoading(false);
     setSessionsLoading(false);
-  }, [authLoading, currentUser, studentsKey, templatesKey, sessionsKey, saveToLocal, toast, unreadableKeys]);
+  }, [authLoading, currentUser, studentsKey, templatesKey, sessionsKey, saveToLocal, toast, readStored, resetUnreadable, isUnreadable]);
   
 
   const getSessionsForStudent = useCallback((studentId: string) => {

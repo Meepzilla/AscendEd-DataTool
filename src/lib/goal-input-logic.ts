@@ -2,6 +2,9 @@ import type { TrialStatus } from './types';
 import { goalResponses } from './goal-measures';
 import { scoreStory, summarizeCommunicationFunctions } from './goal-constants';
 
+/** The most trials a trial grid can have (the Number of Trials input's maximum). */
+export const MAX_TRIALS = 100;
+
 // The calculations behind Data Entry's goal inputs (goal-data-input.tsx and goal-inputs/), as plain functions.
 
 /** The data after changing one field, with the fields that follow it: fluency totals and the trial grid's size. */
@@ -15,56 +18,23 @@ export function applyFieldChange(captureType: string, data: Record<string, any>,
   }
   // A cleared or partly typed count leaves the trials as they are until a number is entered.
   if (field === 'numberOfTrials' && Number(value) >= 1) {
-    const size = Math.min(100, Math.floor(Number(value)));
+    const size = Math.min(MAX_TRIALS, Math.floor(Number(value)));
     const old: TrialStatus[] = Array.isArray(data.trials) ? data.trials : [];
     next.trials = Array.from({ length: size }, (_, i) => old[i] ?? 'untouched');
   }
   return next;
 }
 
-/** The result line shown under a goal's inputs: accuracy, % fluent, story score or functions used. */
+/**
+ * The result line shown under a goal's inputs: accuracy, % fluent, story score or functions used. Count types use
+ * goalResponses (the same counting as Reports), so the card and the reports agree.
+ */
 export function goalAccuracyText(captureType: string, data: Record<string, any>): string {
-  let correct: number;
-  let total: number;
   switch (captureType) {
-    case 'ARTICULATION':
-    case 'AAC':
-      correct = Number(data.correct || 0);
-      total = correct + Number(data.incorrect || 0) + Number(data.approximate || 0);
-      break;
-    case 'LANGUAGE_COMPREHENSION':
-      correct = Number(data.questionsCorrect || 0);
-      total = correct + Number(data.questionsIncorrect || 0) + Number(data.approximate || 0);
-      break;
-    case 'LANGUAGE_EXPRESSION':
-      correct = Number(data.successfulResponses || 0);
-      total = correct + Number(data.unsuccessfulResponses || 0) + Number(data.approximate || 0);
-      break;
-    case 'PHONOLOGICAL_PROCESSES':
-      correct = Number(data.correctProductions || 0);
-      total = correct + Number(data.incorrectProductions || 0) + Number(data.approximate || 0);
-      break;
     case 'FLUENCY_SYLLABLE_STUTTER': {
-      total = Number(data.totalSyllables || 0);
+      const total = Number(data.totalSyllables || 0);
       const dysfluencies = Number(data.stutteredSyllables || 0) + Number(data.blocks || 0) + Number(data.repetitions || 0) + Number(data.interjections || 0);
-      correct = Math.max(0, total - dysfluencies);
-      break;
-    }
-    case 'FEEDING_SWALLOWING':
-      correct = Number(data.trialsAccepted || 0);
-      total = correct + Number(data.trialsRefused || 0);
-      break;
-    case 'SEQUENCED_TRIALS': {
-      const responses = goalResponses('SEQUENCED_TRIALS', data)!;
-      correct = responses.correct;
-      total = responses.correct + responses.incorrect + responses.approximate;
-      break;
-    }
-    case 'DISCRETE_TRIALS': {
-      const trials: TrialStatus[] = data.trials || [];
-      const right = trials.filter(t => t === 'correct').length;
-      const scored = trials.filter(t => t !== 'untouched').length;
-      return `${(scored > 0 ? (right / scored) * 100 : 0).toFixed(1)}% (${right}/${scored})`;
+      return total === 0 ? 'N/A (0%)' : `${((Math.max(0, total - dysfluencies) / total) * 100).toFixed(1)}% (${Math.max(0, total - dysfluencies)}/${total})`;
     }
     case 'COMMUNICATION_FUNCTIONS': {
       const summary = summarizeCommunicationFunctions(data);
@@ -74,11 +44,13 @@ export function goalAccuracyText(captureType: string, data: Record<string, any>)
       const story = scoreStory(data);
       return `${story.percent.toFixed(1)}% (${story.points}/${story.maxPoints} points)`;
     }
-    default:
-      return 'N/A';
   }
-  if (total === 0) return 'N/A (0%)';
-  return `${((correct / total) * 100).toFixed(1)}% (${correct}/${total})`;
+  const responses = goalResponses(captureType, data);
+  if (!responses) return 'N/A';
+  const total = responses.correct + responses.incorrect + responses.approximate;
+  // The trial grid shows 0% before any trial is scored; counts show N/A.
+  if (total === 0) return captureType === 'DISCRETE_TRIALS' ? '0.0% (0/0)' : 'N/A (0%)';
+  return `${((responses.correct / total) * 100).toFixed(1)}% (${responses.correct}/${total})`;
 }
 
 // The trial grid (discrete and sequenced trials). Each returns the new trials, or null when nothing changes.

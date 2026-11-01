@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Check, X, CircleHelp, RotateCcw, Undo2 } from 'lucide-react';
 import type { TrialStatus } from '@/lib/types';
+import { MAX_TRIALS } from '@/lib/goal-input-logic';
 import { FormItem, FormLabel, type GoalInputContext } from './shared';
 
 // Data Entry inputs for goal types (see goal-data-input.tsx, which picks the inputs for a goal's type).
@@ -23,7 +24,7 @@ export function TrialInputs({ ctx }: { ctx: GoalInputContext }) {
           <Input
             type="number"
             min="1"
-            max="20"
+            max={MAX_TRIALS}
             value={data.numberOfTrials ?? ''}
             onChange={(e) => handleChange('numberOfTrials', e.target.value === '' ? undefined : parseInt(e.target.value, 10))}
             className="h-8 text-sm text-center w-20"
