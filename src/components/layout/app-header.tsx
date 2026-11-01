@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Menu, FileText, UserPlus, Lock } from 'lucide-react';
 import { isPasscodeEnabled, lockNow } from '@/lib/secure-store';
-import { MENU_POSITION_EVENT, getMenuPosition, type MenuPosition } from '@/lib/menu-position';
 import { useAuth } from '@/hooks/use-auth';
 import { APP_NAME } from '@/lib/appConstants';
 import { useStudentData } from '@/hooks/use-student-data';
@@ -39,7 +38,8 @@ export function TopStrip() {
   );
 }
 
-export default function AppHeader() {
+/** atBottom: Settings → Menu bar position is Bottom (the layout tracks it); the account menu then opens upward. */
+export default function AppHeader({ atBottom = false }: { atBottom?: boolean }) {
   const { currentUser, signOut } = useAuth();
   const { openAddStudentModal, editingStudent } = useStudentData();
   const { toggleErrorLogModal } = useErrorLog();
@@ -61,15 +61,6 @@ export default function AppHeader() {
     check();
     window.addEventListener('ascended-passcode-change', check);
     return () => window.removeEventListener('ascended-passcode-change', check);
-  }, []);
-
-  // Top or bottom of the screen (Settings → Menu bar position); the account menu opens toward the page.
-  const [menuPosition, setMenuPositionState] = useState<MenuPosition>('top');
-  useEffect(() => {
-    const check = () => setMenuPositionState(getMenuPosition());
-    check();
-    window.addEventListener(MENU_POSITION_EVENT, check);
-    return () => window.removeEventListener(MENU_POSITION_EVENT, check);
   }, []);
 
   // The phone menu closes once a page is chosen.
@@ -180,7 +171,7 @@ export default function AppHeader() {
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" side={menuPosition === 'bottom' ? 'top' : 'bottom'} forceMount>
+                <DropdownMenuContent className="w-56" align="end" side={atBottom ? 'top' : 'bottom'} forceMount>
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none">{currentUser.displayName || 'User'}</p>
