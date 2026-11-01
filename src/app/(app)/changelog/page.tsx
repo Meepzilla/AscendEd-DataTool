@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-01',
+    title: 'Goal Text Follows the Target',
+    description: 'Goal text that states its target, such as "with 80% accuracy", "in 4 out of 5 opportunities" or "across 3 consecutive sessions", now shows the goal\'s current target and mastery. Change the target to 60% and the goal reads "60% accuracy" and "3 out of 5 opportunities" (or "7 out of 10" for 70%) on the profile, in Data Entry and on reports; set mastery to 4 and it reads "4 consecutive sessions". This applies to goals already assigned too. The original text is kept, and text that states two different percentages, or goals whose target is a count or rating, is left as written. Edit Goal shows the goal as it will appear while you change it.',
+    type: 'improvement',
+    icon: ScrollText,
+  },
+  {
+    date: '2026-11-01',
     title: 'Edit Goal Button on the Student Profile',
     description: 'Each goal on a student\'s profile now has labelled Edit Goal, Archive and Remove buttons in a row under the goal, in place of the small unlabelled icons. Edit Goal opens the goal editor: name, goal text, fill in the blanks, data capture method, target, target date, baseline and mastery.',
     type: 'improvement',
