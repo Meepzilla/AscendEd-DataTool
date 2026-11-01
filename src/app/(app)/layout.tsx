@@ -51,7 +51,8 @@ export default function AppLayout({
   const [isSidebarEnabled, setIsSidebarEnabled] = useState(true);
 
   // Settings → Menu bar position. At the bottom, the menu bar is part of the page, just above the footer (see the
-  // layout below). Read from the class set on <html> before the first paint (menu-position.ts), so it doesn't jump.
+  // layout below). Read from the class set on <html> before the first paint (menu-position.ts), so it doesn't jump;
+  // the first render is the loading screen either way, so server and browser agree. The only place it is tracked.
   const [menuAtBottom, setMenuAtBottom] = useState(() => typeof document !== 'undefined' && document.documentElement.classList.contains('menu-bottom'));
   useEffect(() => {
     const check = () => setMenuAtBottom(getMenuPosition() === 'bottom');
@@ -166,7 +167,7 @@ export default function AppLayout({
             </div>
             {/* Menu bar at the bottom: after the page and above the footer. It sticks to the bottom of the screen
                 while the page scrolls, and the footer (privacy notice, hotkeys) comes below it at the end. */}
-            {menuAtBottom && <AppHeader />}
+            {menuAtBottom && <AppHeader atBottom />}
             <AppFooter />
           </main>
         </div>
