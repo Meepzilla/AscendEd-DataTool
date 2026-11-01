@@ -1,0 +1,422 @@
+[
+ {
+  "from": "Ask a peer [X] reciprocal questions regarding the peer's interests or weekend activities…",
+  "to": "Ask a peer ___ reciprocal questions regarding the peer's interests or weekend activities…"
+ },
+ {
+  "from": "Generalize a newly learned communication skill (e.g., requesting, greeting) to [X] novel…",
+  "to": "Generalize a newly learned communication skill (e.g., requesting, greeting) to ___ novel…"
+ },
+ {
+  "from": "Provide at least [X] descriptive features (color, size, function) when telling a partner…",
+  "to": "Provide at least ___ descriptive features (color, size, function) when telling a partner…"
+ },
+ {
+  "from": "Spontaneously request [X] preferred items or actions per session using their primary mode…",
+  "to": "Spontaneously request ___ preferred items or actions per session using their primary mode…"
+ },
+ {
+  "from": "Engage in [X] turns of unstructured social conversation with a peer on a mutually…",
+  "to": "Engage in ___ turns of unstructured social conversation with a peer on a mutually…"
+ },
+ {
+  "from": "Engage in a conversation on a non-preferred topic (chosen by a peer) for at least [X]…",
+  "to": "Engage in a conversation on a non-preferred topic (chosen by a peer) for at least ___…"
+ },
+ {
+  "from": "Ask a peer at least [X] \"other-oriented\" questions (e.g., \"What is your favorite...?\")…",
+  "to": "Ask a peer at least ___ \"other-oriented\" questions (e.g., \"What is your favorite...?\")…"
+ },
+ {
+  "from": "Identify and explain the meaning of [X] community survival/safety signs (e.g., EXIT…",
+  "to": "Identify and explain the meaning of ___ community survival/safety signs (e.g., EXIT…"
+ },
+ {
+  "from": "Stay on a single conversational topic for at least [X] exchanges before introducing a…",
+  "to": "Stay on a single conversational topic for at least ___ exchanges before introducing a…"
+ },
+ {
+  "from": "Use an adaptive tool (e.g., keyboard, adapted grip) to independently produce [X] words…",
+  "to": "Use an adaptive tool (e.g., keyboard, adapted grip) to independently produce ___ words…"
+ },
+ {
+  "from": "Imitate [X] novel, functional actions with a preferred toy/object demonstrated by a peer…",
+  "to": "Imitate ___ novel, functional actions with a preferred toy/object demonstrated by a peer…"
+ },
+ {
+  "from": "Engage in parallel or cooperative play with a peer using shared objects for [X] minutes",
+  "to": "Engage in parallel or cooperative play with a peer using shared objects for ___ minutes"
+ },
+ {
+  "from": "Demonstrate the intended functional use of [X] common classroom objects (e.g., rolling a…",
+  "to": "Demonstrate the intended functional use of ___ common classroom objects (e.g., rolling a…"
+ },
+ {
+  "from": "Retell a short story including at least [X] character dialogues or vocal inflections to…",
+  "to": "Retell a short story including at least ___ character dialogues or vocal inflections to…"
+ },
+ {
+  "from": "Combine [X] words into functional phrases (e.g., \"want apple,\" \"go outside\") to express…",
+  "to": "Combine ___ words into functional phrases (e.g., \"want apple,\" \"go outside\") to express…"
+ },
+ {
+  "from": "Imitate [X]-word phrases modeling appropriate syntax and articulation",
+  "to": "Imitate ___-word phrases modeling appropriate syntax and articulation"
+ },
+ {
+  "from": "Discriminate between [X] distinct icons on their communication board to request specific…",
+  "to": "Discriminate between ___ distinct icons on their communication board to request specific…"
+ },
+ {
+  "from": "Increase their Mean Length of Utterance (MLU) to [X] words during spontaneous…",
+  "to": "Increase their Mean Length of Utterance (MLU) to ___ words during spontaneous…"
+ },
+ {
+  "from": "Articulate at least [X] personal goals or preferred future activities using future-tense…",
+  "to": "Articulate at least ___ personal goals or preferred future activities using future-tense…"
+ },
+ {
+  "from": "Use [X] different adverbs (e.g., quickly, quietly) to describe how an action is being…",
+  "to": "Use ___ different adverbs (e.g., quickly, quietly) to describe how an action is being…"
+ },
+ {
+  "from": "Name at least [X] items belonging to a specified category (e.g., animals, clothing, food)…",
+  "to": "Name at least ___ items belonging to a specified category (e.g., animals, clothing, food)…"
+ },
+ {
+  "from": "Correctly explain or use [X] age-appropriate figurative/idiomatic expressions in context",
+  "to": "Correctly explain or use ___ age-appropriate figurative/idiomatic expressions in context"
+ },
+ {
+  "from": "Use at least [X] different prepositions (e.g., in, on, under, behind) to accurately…",
+  "to": "Use at least ___ different prepositions (e.g., in, on, under, behind) to accurately…"
+ },
+ {
+  "from": "Use at least [X] adjectives (e.g., big, blue, soft) to request a specific item out of an…",
+  "to": "Use at least ___ adjectives (e.g., big, blue, soft) to request a specific item out of an…"
+ },
+ {
+  "from": "Label [X] common classroom or household objects",
+  "to": "Label ___ common classroom or household objects"
+ },
+ {
+  "from": "Correctly label [X] familiar people (e.g., teachers, peers, family members) by name",
+  "to": "Correctly label ___ familiar people (e.g., teachers, peers, family members) by name"
+ },
+ {
+  "from": "Label [X] functional community or school locations (e.g., cafeteria, bathroom, store)",
+  "to": "Label ___ functional community or school locations (e.g., cafeteria, bathroom, store)"
+ },
+ {
+  "from": "Interpret and use [X] age-appropriate informal phrases or slang terms during interactions…",
+  "to": "Interpret and use ___ age-appropriate informal phrases or slang terms during interactions…"
+ },
+ {
+  "from": "Receptively identify [X] common community logos or signs when named by an adult",
+  "to": "Receptively identify ___ common community logos or signs when named by an adult"
+ },
+ {
+  "from": "Successfully match [X] 3D functional objects to their corresponding 2D picture…",
+  "to": "Successfully match ___ 3D functional objects to their corresponding 2D picture…"
+ },
+ {
+  "from": "Sort and match identical 2D picture cards into pairs from a field of [X]",
+  "to": "Sort and match identical 2D picture cards into pairs from a field of ___"
+ },
+ {
+  "from": "Correctly identify [X] common objects by their specific noun labels (e.g., \"Point to the…",
+  "to": "Correctly identify ___ common objects by their specific noun labels (e.g., \"Point to the…"
+ },
+ {
+  "from": "Correctly identify and explain the meaning of [X] age-appropriate idioms, metaphors, or…",
+  "to": "Correctly identify and explain the meaning of ___ age-appropriate idioms, metaphors, or…"
+ },
+ {
+  "from": "Imitate [X] targeted oral-motor movements (e.g., lip rounding, tongue elevation) to…",
+  "to": "Imitate ___ targeted oral-motor movements (e.g., lip rounding, tongue elevation) to…"
+ },
+ {
+  "from": "Sequence [X] or more AAC icons/pictures to create a complete phrase (e.g., \"I want +…",
+  "to": "Sequence ___ or more AAC icons/pictures to create a complete phrase (e.g., \"I want +…"
+ },
+ {
+  "from": "Safely consume a ground-texture diet with [X] instances of pacing or specialized utensils…",
+  "to": "Safely consume a ground-texture diet with ___ instances of pacing or specialized utensils…"
+ },
+ {
+  "from": "Use appropriate breath support to produce smooth, connected phrases of [X] words in length",
+  "to": "Use appropriate breath support to produce smooth, connected phrases of ___ words in length"
+ },
+ {
+  "from": "Produce [X] core manual signs (e.g., more, help, all done) to communicate basic needs",
+  "to": "Produce ___ core manual signs (e.g., more, help, all done) to communicate basic needs"
+ },
+ {
+  "from": "Fingerspell their first and last name, as well as [X] functional high-frequency words",
+  "to": "Fingerspell their first and last name, as well as ___ functional high-frequency words"
+ },
+ {
+  "from": "Correctly identify the corresponding object or action when an adult models [X] different…",
+  "to": "Correctly identify the corresponding object or action when an adult models ___ different…"
+ },
+ {
+  "from": "String together [X] simple signs to form a functional phrase (e.g., \"want + eat\")",
+  "to": "String together ___ simple signs to form a functional phrase (e.g., \"want + eat\")"
+ },
+ {
+  "from": "Safely consume thickened liquids via an open cup with [X] instances of verbal pacing…",
+  "to": "Safely consume thickened liquids via an open cup with ___ instances of verbal pacing…"
+ },
+ {
+  "from": "Articulate the sound(s) of / / at the isolation level (a verbal prompt or model)",
+  "to": "Articulate the sound(s) of /___/ at the isolation level (a verbal prompt or model)"
+ },
+ {
+  "from": "Articulate the sound(s) of / / at the isolation level (independently)",
+  "to": "Articulate the sound(s) of /___/ at the isolation level (independently)"
+ },
+ {
+  "from": "Articulate the sound(s) of / / at the syllable level (a verbal prompt or model)",
+  "to": "Articulate the sound(s) of /___/ at the syllable level (a verbal prompt or model)"
+ },
+ {
+  "from": "Articulate the sound(s) of / / at the syllable level (independently)",
+  "to": "Articulate the sound(s) of /___/ at the syllable level (independently)"
+ },
+ {
+  "from": "Articulate the sound(s) of / / in all positions of words at the word level (a verbal prompt or model)",
+  "to": "Articulate the sound(s) of /___/ in all positions of words at the word level (a verbal prompt or model)"
+ },
+ {
+  "from": "Articulate the sound(s) of / / in all positions of words at the word level (independently)",
+  "to": "Articulate the sound(s) of /___/ in all positions of words at the word level (independently)"
+ },
+ {
+  "from": "Articulate the sound(s) of / / in all positions of words at the phrase level (a verbal prompt or model)",
+  "to": "Articulate the sound(s) of /___/ in all positions of words at the phrase level (a verbal prompt or model)"
+ },
+ {
+  "from": "Articulate the sound(s) of / / in all positions of words at the phrase level (independently)",
+  "to": "Articulate the sound(s) of /___/ in all positions of words at the phrase level (independently)"
+ },
+ {
+  "from": "Articulate the sound(s) of / / in all positions of words at the sentence level (a verbal prompt or model)",
+  "to": "Articulate the sound(s) of /___/ in all positions of words at the sentence level (a verbal prompt or model)"
+ },
+ {
+  "from": "Articulate the sound(s) of / / in all positions of words at the sentence level (independently)",
+  "to": "Articulate the sound(s) of /___/ in all positions of words at the sentence level (independently)"
+ },
+ {
+  "from": "Articulate the sound(s) of / / in all positions of words at the reading level",
+  "to": "Articulate the sound(s) of /___/ in all positions of words at the reading level"
+ },
+ {
+  "from": "Retell the story by articulating the sound(s) of / / in all positions of words at the…",
+  "to": "Retell the story by articulating the sound(s) of /___/ in all positions of words at the…"
+ },
+ {
+  "from": "Answer WH questions by articulating the sound(s) of / / in all positions of words at the…",
+  "to": "Answer WH questions by articulating the sound(s) of /___/ in all positions of words at the…"
+ },
+ {
+  "from": "Articulate the sound(s) of / / in all positions of words at the conversational level",
+  "to": "Articulate the sound(s) of /___/ in all positions of words at the conversational level"
+ },
+ {
+  "from": "Self-monitor articulation of the sound(s) of / / in all positions of words at the…",
+  "to": "Self-monitor articulation of the sound(s) of /___/ in all positions of words at the…"
+ },
+ {
+  "from": "Generalize articulation of the sound(s) of / / in all positions of words at the…",
+  "to": "Generalize articulation of the sound(s) of /___/ in all positions of words at the…"
+ },
+ {
+  "from": "Identify if HIS/HER speech is “bumpy” or “smooth”",
+  "to": "Identify if their speech is “bumpy” or “smooth”"
+ },
+ {
+  "from": "Identify if HIS/HER speech is fast or slow",
+  "to": "Identify if their speech is fast or slow"
+ },
+ {
+  "from": "Identify the disfluencies in HIS/HER speech",
+  "to": "Identify the disfluencies in their speech"
+ },
+ {
+  "from": "Express HIS/HER wants or needs, such as stop, help, want, need, thirsty, toilet, etc.…",
+  "to": "Express their wants or needs, such as stop, help, want, need, thirsty, toilet, etc.…"
+ },
+ {
+  "from": "Maintain personal space at least an arm’s length distance between HIMSELF/HERSELF and…",
+  "to": "Maintain personal space at least an arm’s length distance between themselves and…"
+ },
+ {
+  "from": "Express HIS/HER feeling, such as I am frustrated, sick, happy, etc. using appropriate…",
+  "to": "Express their feeling, such as I am frustrated, sick, happy, etc. using appropriate…"
+ },
+ {
+  "from": "Produce HIS/HER own ideas (not mimicking or copying others’ ideas) when entering or…",
+  "to": "Produce their own ideas (not mimicking or copying others’ ideas) when entering or…"
+ },
+ {
+  "from": "Use present progressive-tense verbs (i.g., walking, running, laughing) appropriately in a…",
+  "to": "Use present progressive-tense verbs (e.g., walking, running, laughing) appropriately in a…"
+ },
+ {
+  "from": "Use regular/irregular plural markers (i.g., apples/feet) appropriately in a sentence or…",
+  "to": "Use regular/irregular plural markers (e.g., apples/feet) appropriately in a sentence or…"
+ },
+ {
+  "from": "Use article/number agreement (i.g., an apple/the boys) appropriately in a sentence or…",
+  "to": "Use article/number agreement (e.g., an apple/the boys) appropriately in a sentence or…"
+ },
+ {
+  "from": "Use present-tense verbs (i.g., give, go, drink) appropriately in a sentence or…",
+  "to": "Use present-tense verbs (e.g., give, go, drink) appropriately in a sentence or…"
+ },
+ {
+  "from": "Use future-tense verbs (i.g., will drive, will stop, will park) appropriately in a…",
+  "to": "Use future-tense verbs (e.g., will drive, will stop, will park) appropriately in a…"
+ },
+ {
+  "from": "Use regular/irregular past-tense verbs (i.g., walked/ran) appropriately in a sentence or…",
+  "to": "Use regular/irregular past-tense verbs (e.g., walked/ran) appropriately in a sentence or…"
+ },
+ {
+  "from": "Use complete grammatically correct sentence to express HIS/HER want or need",
+  "to": "Use complete grammatically correct sentence to express their want or need"
+ },
+ {
+  "from": "Use 2-4 words to express HIS/HER want or need",
+  "to": "Use 2-4 words to express their want or need"
+ },
+ {
+  "from": "Use2-4 words to express HIS/HER comment or share information",
+  "to": "Use2-4 words to express their comment or share information"
+ },
+ {
+  "from": "Use words and/or signs to indicate HE/SHE is “finished”",
+  "to": "Use words and/or signs to indicate they are “finished”"
+ },
+ {
+  "from": "Select 2 similar pictures and explain the similarities (using preferred communication method)",
+  "to": "Select 2 similar pictures and explain the similarities (using their preferred communication method)"
+ },
+ {
+  "from": "Substitute initial and/or final sounds to create new words (i.g., cat/fat; man, mad)",
+  "to": "Substitute initial and/or final sounds to create new words (e.g., cat/fat; man, mad)"
+ },
+ {
+  "from": "Wait for HIS/HER turn, sit or stand quietly, keep HIS/HER legs and arms still, avoid…",
+  "to": "Wait for their turn, sit or stand quietly, keep their legs and arms still, avoid…"
+ },
+ {
+  "from": "Look at the teacher, raise HIS/HER hand, wait to be acknowledged, and ask their question",
+  "to": "Look at the teacher, raise their hand, wait to be acknowledged, and ask their question"
+ },
+ {
+  "from": "Look at the person, ask if he or she has time to help, clearly describe what kind of help…",
+  "to": "Look at the person, ask if they have time to help, clearly describe what kind of help…"
+ },
+ {
+  "from": "Identify HIS/HER thoughts about others’ behaviors",
+  "to": "Identify their thoughts about others’ behaviors"
+ },
+ {
+  "from": "Monitor HIS/HER volume and adjust it based on setting and/or situation",
+  "to": "Monitor their volume and adjust it based on setting and/or situation"
+ },
+ {
+  "from": "Identify how it makes others feel , the consequences, and how that then makes HIM/HER…",
+  "to": "Identify how it makes others feel, the consequences, and how that then makes them…"
+ },
+ {
+  "from": "Discuss what goal needs to be achieved with the group, decided HIS/HER role is going to…",
+  "to": "Discuss what goal needs to be achieved with the group, decided their role is going to…"
+ },
+ {
+  "from": "Determine what materials HE/SHE needs for class, gather materials, and only take those…",
+  "to": "Determine what materials they need for class, gather materials, and only take those…"
+ },
+ {
+  "from": "Introduce HIMSELF/HERSELF by looking at the person, use an appropriate greeting (i.e.…",
+  "to": "Introduce themselves by looking at the person, use an appropriate greeting (i.e.…"
+ },
+ {
+  "from": "Look at the person, use a kind voice, give HIM/HER a compliment, and give the person time…",
+  "to": "Look at the person, use a kind voice, give them a compliment, and give the person time…"
+ },
+ {
+  "from": "Spontaneously communicate HIS/HER needs or desire (e.g., “I need…”, “I want…”)",
+  "to": "Spontaneously communicate their needs or desire (e.g., “I need…”, “I want…”)"
+ },
+ {
+  "from": "Describe the conversational partner’s emotional responses of HIM/HER when HE/SHE uses…",
+  "to": "Describe the conversational partner’s emotional responses of them when they use…"
+ },
+ {
+  "from": "Use communication breakdown strategies, such as restating what HE/SHE said, adjusting…",
+  "to": "Use communication breakdown strategies, such as restating what they said, adjusting…"
+ },
+ {
+  "from": "Adjust HIS/HER language style and topics of conversation based on the conversation partner",
+  "to": "Adjust their language style and topics of conversation based on the conversation partner"
+ },
+ {
+  "from": "Identify another person’s emotion and why HE/SHE is feeling that way",
+  "to": "Identify another person’s emotion and why they are feeling that way"
+ },
+ {
+  "from": "Identify exactly what is changing, ask questions, remain calm, and explain HIS/HER…",
+  "to": "Identify exactly what is changing, ask questions, remain calm, and explain their…"
+ },
+ {
+  "from": "Identify HIS/HER emotion and why HE/SHE is feeling that way",
+  "to": "Identify their emotion and why they are feeling that way"
+ },
+ {
+  "from": "Express HIS/HER anger with non-aggressive words to describe how HE/SHE feels",
+  "to": "Express their anger with non-aggressive words to describe how they feel"
+ },
+ {
+  "from": "Identify HIS/HER contact information selecting (i.e. name, address, phone number, etc.)…",
+  "to": "Identify their contact information selecting (i.e. name, address, phone number, etc.)…"
+ },
+ {
+  "from": "Express HIS/HER preference selecting “yes or no” using augmentative symbols or device",
+  "to": "Express their preference selecting “yes or no” using augmentative symbols or device"
+ },
+ {
+  "from": "Select HIS/HER meal choices (in the school lunchroom, restaurant, etc.)",
+  "to": "Select their meal choices (in the school lunchroom, restaurant, etc.)"
+ },
+ {
+  "from": "Introduce HIMSELF/HERSELF by fingerspelling HIS/HER name or using HIS/HER name sign",
+  "to": "Introduce themselves by fingerspelling their name or using their name sign"
+ },
+ {
+  "from": "Identify and interpret the meaning of idioms , metaphors, similes, or proverbs",
+  "to": "Identify and interpret the meaning of idioms, metaphors, similes, or proverbs"
+ },
+ {
+  "from": "Vary HIS/HER use of sentence starters to enhance HIS/HER writing",
+  "to": "Vary their use of sentence starters to enhance their writing"
+ },
+ {
+  "from": "Use clear slow speech and pausing to gather HIS/HER thoughts to improve HIS/HER…",
+  "to": "Use clear slow speech and pausing to gather their thoughts to improve their…"
+ },
+ {
+  "from": "Sustain engagement for [X] minutes with regulation supports in place",
+  "to": "Sustain engagement for ___ minutes with regulation supports in place"
+ },
+ {
+  "from": "Sustain a social exchange across at least [X] turns with a partner",
+  "to": "Sustain a social exchange across at least ___ turns with a partner"
+ },
+ {
+  "from": "Recount a past event or describe a sequence with at least [X] details",
+  "to": "Recount a past event or describe a sequence with at least ___ details"
+ }
+]
