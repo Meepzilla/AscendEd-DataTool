@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { strToU8, zipSync } from 'fflate';
 import { readXlsx, serialToDate } from '../xlsx-read';
 import {
-  applyStudentImport, classifyGoal, goalName, goalSimilarity, goalTarget, goalTargetDate, iepGlanceRows, matchExistingStudents, parseDate, parseService,
-  readStudentRows, splitGoals,
+  applyStudentImport, classifyGoal, goalName, goalSimilarity, goalTarget, goalTargetDate, iepGlanceRows, matchExistingStudents, moveIepToCurrentYear, parseDate, parseService,
+  readStudentRows, splitGoals, yearLessADay,
 } from '../student-import';
 import type { Student } from '../types';
 
@@ -259,5 +259,46 @@ describe('matching students and goals written differently', () => {
     expect(goalTarget('COMMUNICATION_FUNCTIONS', 'communicate at least 5 times for at least four different functions')).toBe(4);
     expect(classifyGoal('ask a question at least one time in a 20-minute period').type).toBe('BEHAVIOR_FREQUENCY');
     expect(classifyGoal('activate a switch at least once during a structured task across 5 opportunities').type).toBe('AAC');
+  });
+});
+
+describe('IEP dates from last year', () => {
+  const NOW = new Date(2026, 10, 1, 12); // 1 November 2026
+  const student = (iep: Record<string, string>) => ({ row: 2, name: 'Pat', iep, goals: [] });
+
+  it('ends an IEP a year less a day after it starts', () => {
+    expect(yearLessADay('2025-10-29')).toBe('2026-10-28');
+    expect(yearLessADay('2026-01-01')).toBe('2026-12-31');
+    expect(yearLessADay('2024-02-29')).toBe('2025-02-28');
+    expect(yearLessADay('2027-03-01')).toBe('2028-02-29');
+  });
+
+  it('moves an IEP that has ended to the next one, and leaves current IEPs alone', () => {
+    const [ended, current, endsToday, longAgo, noEnd] = moveIepToCurrentYear([
+      student({ iepDate: '2025-10-29', annualReviewDate: '2026-10-28', reevaluationDate: '2027-05-01' }),
+      student({ iepDate: '2026-03-10', annualReviewDate: '2027-03-09' }),
+      student({ iepDate: '2025-11-02', annualReviewDate: '2026-11-01' }),
+      student({ iepDate: '2024-01-30', annualReviewDate: '2025-01-29' }),
+      student({ iepDate: '2025-06-01' }),
+    ], NOW);
+    expect(ended.iep).toEqual({ iepDate: '2026-10-29', annualReviewDate: '2027-10-28', reevaluationDate: '2027-05-01' });
+    expect(ended.iepFromFile).toEqual({ iepDate: '2025-10-29', annualReviewDate: '2026-10-28', reevaluationDate: '2027-05-01' });
+    expect(current.iepFromFile).toBeUndefined();
+    expect(endsToday.iepFromFile).toBeUndefined();
+    expect(longAgo.iep).toEqual({ iepDate: '2026-01-30', annualReviewDate: '2027-01-29' });
+    expect(noEnd.iepFromFile).toBeUndefined();
+  });
+
+  it('gives a student with only a start date the annual review a year less a day later', () => {
+    const { students } = readStudentRows([['Student', 'IEP Start Date'], ['Pat', '2026-04-17']]);
+    expect(students[0].iep).toEqual({ iepDate: '2026-04-17', annualReviewDate: '2027-04-16' });
+  });
+
+  it('still matches a student imported before with the file\'s dates, or with the moved ones', () => {
+    const [moved] = moveIepToCurrentYear([student({ iepDate: '2025-10-29', annualReviewDate: '2026-10-28' })], NOW);
+    const before = [{ id: 'a', name: 'Pat', iep: { iepDate: '2025-10-29' }, goals: [] }] as unknown as Student[];
+    const after = [{ id: 'b', name: 'Pat', iep: { iepDate: '2026-10-29' }, goals: [] }] as unknown as Student[];
+    expect(matchExistingStudents([{ ...moved, name: 'Pat Lee' }], before)[0].existingId).toBe('a');
+    expect(matchExistingStudents([{ ...moved, name: 'Pat Lee' }], after)[0].existingId).toBe('b');
   });
 });
