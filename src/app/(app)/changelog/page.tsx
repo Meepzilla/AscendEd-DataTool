@@ -18,6 +18,13 @@ interface ChangelogEntry {
 
 const allChangelogEntries: ChangelogEntry[] = [
   {
+    date: '2026-11-01',
+    title: 'Edit Goals from Data Entry',
+    description: 'In Data Entry, the student button on a card opens Edit Student, where each goal now has a pencil button to edit it: its name, goal text, data capture method, target, target date, baseline and mastery, without leaving Data Entry. What is entered on the card is kept. Goal types there are shown by name (e.g. Language Comprehension).',
+    type: 'feature',
+    icon: ScrollText,
+  },
+  {
     date: '2026-10-31',
     title: 'Fixed: Select Goal Opened Twice',
     description: 'In Data Entry, the Goal button (and Alt+T) opened the Select Goal window twice, one on top of the other, so it took two taps to close. It now opens once.',

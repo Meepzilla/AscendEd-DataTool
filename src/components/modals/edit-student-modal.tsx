@@ -13,9 +13,10 @@ import { useStudentData } from '@/hooks/use-student-data';
 import type { Student, Goal, GoalTemplate } from '@/lib/types';
 import { StudentSchema } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { XIcon, PlusCircleIcon, Archive, ArchiveRestore } from 'lucide-react';
+import { XIcon, PlusCircleIcon, Archive, ArchiveRestore, Pencil } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { TEMPLATE_PICKER_LIMIT } from '@/lib/helpers';
+import { TEMPLATE_PICKER_LIMIT, goalTypeLabel } from '@/lib/helpers';
+import EditAssignedGoalModal from './edit-assigned-goal-modal';
 import { cn } from '@/lib/utils';
 import GoalTextPopover from '@/components/forms/GoalTextPopover';
 import TemplatePickerFilters from '@/components/goal-templates/TemplatePickerFilters';
@@ -46,6 +47,8 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
   const [isSubmittingName, setIsSubmittingName] = useState(false);
   // The goal whose Remove (X) was tapped, waiting for confirmation.
   const [goalToRemove, setGoalToRemove] = useState<string | null>(null);
+  // A goal being edited (name, goal text, target, dates, baseline, mastery) in the goal editor, opened over this window.
+  const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   
   const form = useForm<EditStudentFormData>({
     resolver: zodResolver(StudentSchema),
@@ -153,6 +156,9 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
                             <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => handleToggleArchiveGoal(goal)} title={goal.isArchived ? "Unarchive Goal" : "Archive Goal"}>
                                 {goal.isArchived ? <ArchiveRestore className="h-4 w-4 text-green-600" /> : <Archive className="h-4 w-4 text-orange-600" />}
                             </Button>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => setEditingGoal(goal)} title="Edit Goal" aria-label={`Edit goal ${goal.name}`}>
+                                <Pencil className="h-4 w-4 text-primary" />
+                            </Button>
                             <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => setGoalToRemove(goal.id)} title="Remove Goal Assignment">
                                 <XIcon className="h-4 w-4 text-destructive" />
                             </Button>
@@ -170,7 +176,7 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
                         ) : (
                         <div className={cn("flex-grow min-w-0 break-words", goal.isArchived && "opacity-60")}>
                             <GoalTextPopover name={goal.name} smartGoal={goal.smartGoal} />
-                            <Badge variant="outline" className="ml-1">{goal.type}</Badge>
+                            <Badge variant="outline" className="ml-1">{goalTypeLabel(goal.dataCaptureType || goal.type)}</Badge>
                             {goal.isArchived && <Badge variant="destructive" className="ml-1">Archived</Badge>}
                         </div>
                         )}
@@ -222,6 +228,14 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
           Done
         </Button>
       </div>
+      {editingGoal && (
+        <EditAssignedGoalModal
+          isOpen
+          onClose={() => setEditingGoal(null)}
+          studentId={currentStudent.id}
+          goalToEdit={currentStudent.goals.find(g => g.id === editingGoal.id) ?? editingGoal}
+        />
+      )}
     </GenericModal>
   );
 }
