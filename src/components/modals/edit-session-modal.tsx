@@ -127,6 +127,7 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
       title={`Edit Session for ${currentSession.studentName}`}
       description={`Session on ${formatDate(currentSession.date)}`}
       size="xl"
+      initialFocus="window"
     >
       <form
         onSubmit={handleSubmit}
