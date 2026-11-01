@@ -73,6 +73,17 @@ describe('goal text follows the target and mastery', () => {
     expect(matchTextToTarget(text, { type: 'ARTICULATION', sessionTargetValue: 80, masterySessions: 4 })).toContain('across 4 consecutive sessions');
     expect(matchTextToTarget(text, { type: 'ARTICULATION', sessionTargetValue: 80 })).toContain('across 3 consecutive sessions');
   });
+  it('reads custom goal wording: "80 percent", "4/5 trials" and "6 of 10 times"', () => {
+    expect(matchTextToTarget('with 80 percent accuracy in 4/5 trials', { type: 'ARTICULATION', sessionTargetValue: 70 })).toBe('with 70 percent accuracy in 4/5 trials');
+    expect(matchTextToTarget('answer wh- questions in 4/5 trials', { type: 'LANGUAGE_COMPREHENSION', sessionTargetValue: 60 })).toBe('answer wh- questions in 3/5 trials');
+    expect(matchTextToTarget('answer correctly 8 of 10 times', { type: 'LANGUAGE_COMPREHENSION', sessionTargetValue: 90 })).toBe('answer correctly 9 of 10 times');
+    expect(fillBlanks('with ___ percent accuracy', { sessionTargetValue: 75 })).toBe('with 75 percent accuracy');
+  });
+  it('never takes a date for a fraction', () => {
+    const dated = 'By 6/15/2027, STUDENT will answer in 4 out of 5 trials.';
+    expect(matchTextToTarget(dated, { type: 'ARTICULATION', sessionTargetValue: 60 })).toBe('By 6/15/2027, STUDENT will answer in 3 out of 5 trials.');
+    expect(matchTextToTarget('By 6/15, answer in 4/5 trials', { type: 'ARTICULATION', sessionTargetValue: 60 })).toBe('By 6/15, answer in 3/5 trials');
+  });
   it('shows the goal statement with the new numbers', () => {
     expect(goalStatement({ smartGoal: text, type: 'LANGUAGE_EXPRESSION', sessionTargetValue: 60 }, 'Ava')).toBe('By [date], Ava will request help in 3 out of 5 observed opportunities across 3 consecutive sessions.');
   });
