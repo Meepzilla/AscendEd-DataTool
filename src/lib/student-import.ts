@@ -29,6 +29,8 @@ export interface ImportStudent {
   /** That student's name, when it isn't written the same way (the file has "Jeremy Taylor", the app "Jeremy"). */
   existingName?: string;
   iep: StudentIep;
+  /** The IEP dates as the file has them, when they had passed and `iep` was moved to the current IEP year. */
+  iepFromFile?: StudentIep;
   goals: ImportGoal[];
 }
 
@@ -105,6 +107,40 @@ export function parseService(value: CellValue): Pick<StudentIep, 'serviceMinutes
 }
 
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+
+/** A year less a day after a date (YYYY-MM-DD): an IEP starting 29 Oct 2025 runs to 28 Oct 2026. */
+export function yearLessADay(date: string): string {
+  const [y, m, d] = date.split('-').map(Number);
+  // A year on, as the same day of the month (29 Feb gives 1 Mar), then a day back.
+  const end = new Date(Date.UTC(y + 1, m - 1, d - 1));
+  return end.toISOString().slice(0, 10);
+}
+
+const dayAfter = (date: string) => {
+  const [y, m, d] = date.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10);
+};
+
+/** Today as YYYY-MM-DD on this device. */
+const localToday = (now: Date) => `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+
+/**
+ * IEP dates moved to the current IEP year. A file such as an IEP at a Glance can hold last year's IEP: once its
+ * end date has passed, the next IEP started the day after, and its annual review is due a year less a day later.
+ * Students whose IEP hasn't ended are left as they are. Re-evaluation dates aren't moved.
+ */
+export function moveIepToCurrentYear(students: ImportStudent[], now = new Date()): ImportStudent[] {
+  const today = localToday(now);
+  return students.map(s => {
+    let { iepDate, annualReviewDate } = s.iep;
+    if (!annualReviewDate || annualReviewDate >= today) return s;
+    while (annualReviewDate < today) {
+      iepDate = dayAfter(annualReviewDate);
+      annualReviewDate = yearLessADay(iepDate);
+    }
+    return { ...s, iepFromFile: s.iep, iep: { ...s.iep, iepDate, annualReviewDate } };
+  });
+}
 
 /** "by Oct 2026" in a goal as the last day of that month. */
 export function goalTargetDate(text: string): string | undefined {
@@ -306,7 +342,9 @@ export function readStudentRows(rows: CellValue[][]): ImportPreview {
 
     const iep: StudentIep = {
       ...(parseDate(cell(row, 'iepDate')) ? { iepDate: parseDate(cell(row, 'iepDate')) } : {}),
-      ...(parseDate(cell(row, 'annualReviewDate')) ? { annualReviewDate: parseDate(cell(row, 'annualReviewDate')) } : {}),
+      // Without an end date, the annual review is a year less a day after the IEP started.
+      ...((parseDate(cell(row, 'annualReviewDate')) ?? (parseDate(cell(row, 'iepDate')) && yearLessADay(parseDate(cell(row, 'iepDate'))!)))
+        ? { annualReviewDate: parseDate(cell(row, 'annualReviewDate')) ?? yearLessADay(parseDate(cell(row, 'iepDate'))!) } : {}),
       ...(parseDate(cell(row, 'reevaluationDate')) ? { reevaluationDate: parseDate(cell(row, 'reevaluationDate')) } : {}),
       ...parseService(cell(row, 'service')),
     };
@@ -425,7 +463,9 @@ function findExistingStudent<T extends Pick<Student, 'name' | 'iep'>>(s: ImportS
   const words = (name: string) => normalize(name.replace(/\s*\(\d+\)$/, '')).split(' ');
   const startsLike = (a: string[], b: string[]) => a.length <= b.length && a.every((w, i) => w === b[i]);
   const mine = words(s.name);
-  const similar = existing.filter(e => e.iep?.iepDate === s.iep.iepDate && (startsLike(words(e.name), mine) || startsLike(mine, words(e.name))));
+  // The IEP start in the file or, when it was moved to the current year, the moved one (either may be stored).
+  const starts = [s.iep.iepDate, s.iepFromFile?.iepDate];
+  const similar = existing.filter(e => !!e.iep?.iepDate && starts.includes(e.iep.iepDate) && (startsLike(words(e.name), mine) || startsLike(mine, words(e.name))));
   return similar.length === 1 ? similar[0] : undefined;
 }
 
