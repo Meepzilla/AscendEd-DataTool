@@ -8,19 +8,25 @@ It runs entirely on the device: there is no account, no server and no AI. Studen
 
 ## Features
 
+**Dashboard**
+- Today's Work: a button per saved group that opens Data Entry with that group loaded, and a reminder when Data Entry has unsaved entries.
+- Due Soon: IEP annual reviews and re-evaluations that are overdue or due within 60 days.
+- Service Minutes: students who still need minutes this week or month (those short last time first), or are behind pace for a yearly requirement. Shows 4 at a time and scrolls.
+
 **Data collection**
-- Record several students at once, with no limit on slots. Saved groups (a class or small group) load in one step.
+- Record several students at once, with no limit on slots. Saved groups (a class or small group) load in one step, and Remove All clears the slots (after asking, and naming anyone with unsaved data).
 - 20 goal types, each with its own controls and measure, including:
   - accuracy counts and trial grids;
   - prompt levels, fluency, communication functions, story elements and task analysis;
   - behavior frequency, duration, ABC, interval and latency.
 - Keyboard shortcuts for fast entry. Unsaved work survives switching pages or closing the app.
-- Missed sessions are recorded with a reason. Sessions saved in parts can be merged so their minutes count once.
+- Missed sessions are recorded with a reason. Sessions saved in parts can be merged so their minutes count once. Saved sessions can be edited, date and times included.
 
 **Students and goals**
 - A goal bank of over 900 templates, searchable by skill area, with purpose and activity ideas.
-- Each goal has a target, a direction (increase or decrease), a target date, a baseline and mastery criteria.
-- Each student's profile shows IEP dates, service minutes against the IEP (per week, month or school year) and attendance.
+- Every built-in goal reads the same way: "By [date], the student will … with 80% accuracy across 3 consecutive sessions, as measured by …".
+- Each goal has a target, a direction (increase or decrease), a target date, a baseline and mastery criteria. The goal text follows them: "[date]", the student's name, blanks ("___"), the stated percentage and the consecutive sessions are filled in from the goal's settings, in goal bank and custom goals alike. The number of opportunities ("4 out of 5 opportunities") stays as written unless it is the goal's only target.
+- Each student's profile shows IEP dates, service minutes against the IEP (per week, month or school year) and attendance, with a View Report button for that student's charts and Progress Report.
 
 **Reports**
 - A chart per goal, with the target line and the aim line.
@@ -34,6 +40,8 @@ It runs entirely on the device: there is no account, no server and no AI. Studen
 - A Student Access Lock with a PIN.
 - A strict Content Security Policy: only the app's own scripts can run.
 - A [Privacy Notice](src/app/(app)/privacy/page.tsx) page in the app.
+
+The menu bar can sit at the top or the bottom of the screen (Settings → Interface); at the bottom it stays in reach while scrolling and sits above the footer.
 
 In the app, the **Help** page (Alt + H) explains each feature, and the **Changelog** lists what changed.
 
@@ -72,7 +80,7 @@ To try the production build locally: `npm run build:static && npx serve out`.
 | `src/app/(app)/` | Pages: dashboard, data-entry, manage-sessions, analysis-report, progress-report, student-profile, goal-templates, settings, help, changelog, privacy |
 | `src/components/` | UI, by area (data-entry, forms, charts, reports, settings…) and shadcn components in `ui/` |
 | `src/hooks/use-student-data.tsx` | All student, goal and session data, and saving to storage |
-| `src/lib/` | Logic without UI: goal types and measures (`goal-constants/`), report narratives, aim lines, service minutes, attendance, session merging, task analysis, encryption (`secure-store.ts`), backups |
+| `src/lib/` | Logic without UI: goal types and measures (`goal-constants/`, with the built-in goal statements in `built-in-statements.ts`), goal text (`goal-blanks.ts`), the dashboard's figures (`dashboard.ts`), report narratives, aim lines, service minutes, attendance, session merging, task analysis, encryption (`secure-store.ts`), backups |
 | `docs/` | Goal bank review CSV and the original blueprint |
 
 Every pull request runs the type check, lint, the unit tests and the static build (`.github/workflows/checks.yml`). Add or update tests in `src/lib/__tests__/` when you change logic in `src/lib/`.
