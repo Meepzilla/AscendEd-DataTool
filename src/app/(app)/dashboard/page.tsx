@@ -10,6 +10,9 @@ import { APP_NAME } from '@/lib/appConstants';
 import { formatDate } from '@/lib/helpers';
 import { Skeleton } from '@/components/ui/skeleton';
 import BackupReminder from '@/components/settings/BackupReminder';
+import TodaysWork from '@/components/dashboard/TodaysWork';
+import DueSoonCard from '@/components/dashboard/DueSoonCard';
+import ServiceMinutesCard from '@/components/dashboard/ServiceMinutesCard';
 
 const AppLoadingSkeleton = lazy(() => import('@/components/layout/AppLoadingSkeleton'));
 export default function DashboardPage() {
@@ -98,6 +101,13 @@ export default function DashboardPage() {
       </div>
 
       <BackupReminder />
+
+      <TodaysWork />
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <DueSoonCard />
+        <ServiceMinutesCard />
+      </div>
 
       {/* Quick Actions */}
       <section aria-labelledby="quick-actions-title">
