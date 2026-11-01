@@ -126,7 +126,9 @@ cd android && ./gradlew assembleDebug    # android/app/build/outputs/apk/debug/a
 
 ## Goal bank
 
-The built-in templates include the SLP goal bank (903 goals). `scripts/import-goal-bank.py` turns the bank's CSV export into templates. For each goal it chooses the data collection type and the session target, based on the skill area and how the goal says success is measured.
+The built-in templates include the SLP goal bank (903 goals). `scripts/import-goal-bank.py` turns the bank's CSV export into templates. For each goal it chooses the data collection type and the session target, based on the skill area and how the goal says success is measured. It also makes the wording consistent (`tidy_text`): "the student" rather than "STUDENT", "they/their" rather than "HIS/HER", "___" for every blank, and one "as measured by" ending.
+
+The other built-in templates (in `src/lib/goal-constants/`) are written as a short sentence; their goal statements are written in the same form by `built-in-statements.ts`.
 
 To update the bank, export it to CSV with the same columns and run:
 
@@ -134,9 +136,12 @@ To update the bank, export it to CSV with the same columns and run:
 python3 scripts/import-goal-bank.py path/to/SLP_Goal_Bank.csv
 ```
 
-This regenerates three files:
+This regenerates these files:
 - `src/lib/goal-constants/goal-bank.json`: the templates.
 - `public/goal-bank/details.json`: purpose, activity ideas and tags, loaded when a goal is opened.
 - `docs/goal-bank-review.csv`: every goal with its type, target and the reason they were chosen.
+- `src/lib/goal-constants/goal-bank-type-updates.json`, `goal-bank-text-updates.json` and `goal-bank-renames.json`: what changed since the last import, so devices can update their stored copies.
 
-Devices add new templates automatically, matched by name.
+After changing `tidy_text`, run `python3 scripts/import-goal-bank.py --tidy` to apply it without the CSV.
+
+Devices add new templates automatically, matched by name. Stored templates still in an earlier built-in wording are updated to the current one; templates the user edited, and goals already assigned to students, keep their text.

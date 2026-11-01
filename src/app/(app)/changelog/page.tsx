@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-01',
+    title: 'Goal Templates Reworded Consistently',
+    description: 'Every built-in goal template now reads the same way: "By [date], the student will … with 80% accuracy across 3 consecutive sessions, as measured by SLP or teacher observation and data collection." The original built-in templates (articulation, phonology, language, AAC, feeding, cognitive, behavior and others) had no goal statement, so goals assigned from them showed none; they now have one, and goals already assigned with that empty placeholder get it too. In the goal bank, "STUDENT" reads "the student", "HIS/HER" reads "their", placeholders such as "[X]" and "/ /" are blanks you can fill in Edit Goal, "i.g." is corrected to "e.g.", and every goal ends with the same "as measured by". A few built-in names are now in sentence case like the rest (for example "Reduce fronting of /k/ and /g/"). Ratings ("at least 4 out of 5") and numbers of communication functions follow the target too. Templates you have edited, and the text of goals already assigned to students, are left as they are.',
+    type: 'improvement',
+    icon: ScrollText,
+  },
+  {
+    date: '2026-11-01',
     title: 'Custom Goal Text Follows the Target Too',
     description: 'Goal text now follows the target in more of the ways goals are typed by hand, so custom goals keep up as well: "80 percent" as well as "80%", "4/5 trials" as well as "4 out of 5", and "8 of 10 times", "questions", "responses" or "turns" as well as opportunities and trials. A date such as "6/15" is never mistaken for a fraction. The Edit Student window shows each goal with the current target, name and date too, and the "Create & Assign Custom Goal" button no longer shows "&amp;" in its name.',
     type: 'improvement',

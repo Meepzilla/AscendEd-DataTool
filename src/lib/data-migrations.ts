@@ -3,7 +3,7 @@ import { generateUUID } from './helpers';
 import { linkGoalsToTemplates } from './goal-templates';
 import {
   DEFAULT_GOAL_TEMPLATES, defaultTemplateKey, applyAssignedGoalRenames, applyDefaultTemplateRenames,
-  applyDefaultTemplateRetirements, applyDefaultTemplateUpdates,
+  applyDefaultTemplateRetirements, applyDefaultTemplateUpdates, applyDefaultTemplateTextUpdates, applyAssignedGoalStatements,
 } from './goal-constants';
 import { byName } from './data-store';
 
@@ -17,7 +17,7 @@ export interface PreparedData {
   /** Templates with every update and the missing built-in templates added, sorted; save them when templatesChanged. */
   templates: GoalTemplate[];
   templatesChanged: boolean;
-  /** Students with goals linked to their templates, when any were linked (saved after the templates). */
+  /** Students with goals linked to their templates or given their template's goal statement, when any were (saved after the templates). */
   linkedStudents: Student[] | null;
 }
 
@@ -29,7 +29,8 @@ export function prepareLoadedData(rawStudents: Student[], rawTemplates: GoalTemp
     rawTemplates.map(t => ({ ...t, createdAt: new Date(t.createdAt) })),
   );
   const { templates: updatedTypes, changed: typesUpdated } = applyDefaultTemplateUpdates<GoalTemplate>(renamedTemplates);
-  const { templates: retiredTemplates, changed: templatesRetired } = applyDefaultTemplateRetirements<GoalTemplate>(updatedTypes);
+  const { templates: updatedText, changed: textUpdated } = applyDefaultTemplateTextUpdates<GoalTemplate>(updatedTypes);
+  const { templates: retiredTemplates, changed: templatesRetired } = applyDefaultTemplateRetirements<GoalTemplate>(updatedText);
   // Built-in templates stored before defaultKey existed get it now (their current name), so renaming one later
   // doesn't bring the original back.
   let keysAdded = false;
@@ -45,10 +46,12 @@ export function prepareLoadedData(rawStudents: Student[], rawTemplates: GoalTemp
     .filter(defaultTemplate => !existingDefaultNames.has(defaultTemplate.name))
     .map(t => ({ ...t, defaultKey: t.name, id: generateUUID(), createdAt: new Date(), userId: userId || 'local-user' }));
   const templates = [...localTemplates, ...missingDefaultTemplates].sort(byName);
-  const templatesChanged = missingDefaultTemplates.length > 0 || templatesRenamed || typesUpdated || templatesRetired || keysAdded;
+  const templatesChanged = missingDefaultTemplates.length > 0 || templatesRenamed || typesUpdated || textUpdated || templatesRetired || keysAdded;
 
   // Goals assigned before they kept their template's id get it now (see linkGoalsToTemplates).
   const { students: linked, changed: goalsLinked } = linkGoalsToTemplates(students, templates);
+  // Goals given a placeholder statement get their template's statement (applyAssignedGoalStatements).
+  const { students: withStatements, changed: statementsAdded } = applyAssignedGoalStatements(linked, templates);
 
-  return { students, studentsChanged, templates, templatesChanged, linkedStudents: goalsLinked ? linked : null };
+  return { students, studentsChanged, templates, templatesChanged, linkedStudents: goalsLinked || statementsAdded ? withStatements : null };
 }
