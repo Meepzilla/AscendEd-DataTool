@@ -28,7 +28,7 @@ import AccessLockDialog, { type AccessLockDialogMode } from './AccessLockDialog'
 import DataEntrySaveBar from './DataEntrySaveBar';
 import { clearAccessPin, hasAccessPin } from '@/lib/access-pin';
 import { getStudentGroups } from '@/lib/student-groups';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 // The Data Entry page: the session's date and times, a card per student to record data on, and the save bar.
 // Parts live in their own files: the session times (use-session-times), the layout (use-data-entry-layout),
@@ -426,7 +426,10 @@ export default function DataEntryContent() {
 
   // The dashboard's group buttons open Data Entry as /data-entry?group=<id>: that group is loaded once, when the
   // students are there to load.
+  // The link is then taken out of the address, so reopening or reloading the page doesn't load the group again
+  // over the students chosen since.
   const groupFromLink = useSearchParams().get('group');
+  const router = useRouter();
   const groupLinkHandled = useRef(false);
   useEffect(() => {
     if (!groupFromLink || groupLinkHandled.current || activeStudents.length === 0) return;
@@ -434,7 +437,8 @@ export default function DataEntryContent() {
     const group = getStudentGroups(uid).find(g => g.id === groupFromLink);
     if (group) loadGroup(group);
     else toast({ title: 'Group not found', description: 'That group has been deleted. Choose one with Load Group.' });
-  }, [groupFromLink, activeStudents.length, uid, loadGroup, toast]);
+    router.replace('/data-entry', { scroll: false });
+  }, [groupFromLink, activeStudents.length, uid, loadGroup, toast, router]);
 
   // Editing the student (name, goals) from Data Entry is also covered by the Student Access Lock.
   const openEditStudentModalUnlocked = useCallback((student: Student) => {

@@ -92,7 +92,8 @@ export function serviceStatus(
       behind.push({
         ...base, kind: 'needed', minutes: required - delivered,
         lastShort: Math.max(0, required - minutesIn(previous.start, previous.end)),
-        daysLeft: Math.max(1, Math.ceil((current.end.getTime() - today) / DAY)),
+        // Both are local midnights; rounding absorbs the hour gained or lost at a daylight-saving change.
+        daysLeft: Math.max(1, Math.round((current.end.getTime() - today) / DAY)),
       });
     }
   }
