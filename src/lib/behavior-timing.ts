@@ -1,5 +1,5 @@
 import type { SessionData } from './types';
-import { ABC_REPLACEMENT_BEHAVIOR, summarizeIntervals, type AbcIncident } from './goal-constants';
+import { isReplacementIncident, summarizeIntervals, type AbcIncident } from './goal-constants';
 
 // When behavior happened, for time-of-day, day-of-week and within-session patterns.
 //
@@ -79,7 +79,7 @@ export function behaviorEvents(type: string, data: Record<string, any> = {}, sta
     });
   } else if (type === 'BEHAVIOR_ABC') {
     const incidents: AbcIncident[] = Array.isArray(data.incidents) ? data.incidents : [];
-    incidents.filter(i => i.behavior !== ABC_REPLACEMENT_BEHAVIOR).forEach(incident => {
+    incidents.filter(i => !isReplacementIncident(i)).forEach(incident => {
       const at = validDate(incident.time);
       const detail = [incident.antecedent || '?', incident.behavior, incident.consequence || '?'].join(' → ');
       if (at) events.push({ at, exact: true, amount: 1, detail });

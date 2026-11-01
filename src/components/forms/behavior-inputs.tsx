@@ -13,7 +13,7 @@ import TallyButton from './TallyButton';
 import {
   ABC_REPLACEMENT_BEHAVIOR, INTERVAL_METHODS, INTERVAL_LENGTHS_SECONDS, MAX_INTERVALS,
   summarizeFrequency, summarizeDuration, summarizeAbc, summarizeIntervals, summarizeLatency,
-  formatSeconds, formatLatency, alignTimes, type AbcIncident, type IntervalSetup,
+  formatSeconds, formatLatency, alignTimes, joinAbcChoices, type AbcIncident, type BehaviorFunction, type IntervalSetup,
 } from '@/lib/goal-constants';
 import { formatClockTime } from '@/lib/behavior-timing';
 import { useAbcLists } from '@/hooks/use-abc-lists';
@@ -202,44 +202,65 @@ export const DurationInput: React.FC<BehaviorInputProps> = (props) => {
   );
 };
 
-const ChipGroup: React.FC<{ label: string; options: readonly string[]; value: string; onSelect: (v: string) => void; disabled?: boolean; highlight?: string }> =
-  ({ label, options, value, onSelect, disabled, highlight }) => (
-    <Field label={label}>
-      <div className="flex flex-wrap gap-1" role="radiogroup" aria-label={label}>
-        {options.map(option => (
-          <Button
-            key={option}
-            type="button"
-            size="sm"
-            role="radio"
-            aria-checked={value === option}
-            variant={value === option ? 'default' : 'outline'}
-            className={cn('h-7 px-2 text-xs touch-manipulation', option === highlight && value !== option && 'border-green-600 text-green-700 dark:text-green-400')}
-            onClick={() => onSelect(value === option ? '' : option)}
-            disabled={disabled}
-          >
-            {option}
-          </Button>
-        ))}
-      </div>
-    </Field>
-  );
+/**
+ * Choices that can be turned on and off, more than one at a time. `exclusive` is a choice that can't be combined
+ * with the others: selecting it clears them, and selecting another clears it.
+ */
+const ChipGroup: React.FC<{ label: string; options: readonly string[]; value: string[]; onChange: (v: string[]) => void; disabled?: boolean; exclusive?: string }> =
+  ({ label, options, value, onChange, disabled, exclusive }) => {
+    const toggle = (option: string) => {
+      if (value.includes(option)) onChange(value.filter(v => v !== option));
+      else if (option === exclusive) onChange([option]);
+      // In the order the options are shown, whatever order they were tapped in.
+      else onChange(options.filter(o => o !== exclusive && (o === option || value.includes(o))));
+    };
+    return (
+      <Field label={label}>
+        <div className="flex flex-wrap gap-1" role="group" aria-label={label}>
+          {options.map(option => {
+            const on = value.includes(option);
+            return (
+              <Button
+                key={option}
+                type="button"
+                size="sm"
+                aria-pressed={on}
+                variant={on ? 'default' : 'outline'}
+                className={cn('h-7 px-2 text-xs touch-manipulation', option === exclusive && !on && 'border-green-600 text-green-700 dark:text-green-400')}
+                onClick={() => toggle(option)}
+                disabled={disabled}
+              >
+                {option}
+              </Button>
+            );
+          })}
+        </div>
+      </Field>
+    );
+  };
 
 export const AbcInput: React.FC<BehaviorInputProps> = (props) => {
   const { data, update, interact, disabled, isLocked } = props;
   const lists = useAbcLists();
-  const [antecedent, setAntecedent] = useState('');
-  const [behavior, setBehavior] = useState('');
-  const [consequence, setConsequence] = useState('');
+  const [antecedents, setAntecedents] = useState<string[]>([]);
+  const [behaviors, setBehaviors] = useState<string[]>([]);
+  const [consequences, setConsequences] = useState<string[]>([]);
   const [note, setNote] = useState('');
   const summary = summarizeAbc(data);
   const incidents: AbcIncident[] = summary.incidents;
 
   const addIncident = () => {
-    const fn = lists.consequences.find(c => c.label === consequence)?.fn ?? null;
-    const incident: AbcIncident = { time: new Date().toISOString(), antecedent, behavior, consequence, fn, ...(note.trim() ? { note: note.trim() } : {}) };
+    const fns = [...new Set(consequences.map(c => lists.consequences.find(l => l.label === c)?.fn).filter((f): f is BehaviorFunction => !!f))];
+    const incident: AbcIncident = {
+      time: new Date().toISOString(),
+      antecedent: joinAbcChoices(antecedents), behavior: joinAbcChoices(behaviors), consequence: joinAbcChoices(consequences),
+      antecedents, behaviors, consequences,
+      // `fn` (one function) is for older versions of the app.
+      fn: fns[0] ?? null, fns,
+      ...(note.trim() ? { note: note.trim() } : {}),
+    };
     update({ incidents: [...incidents, incident], incidentCount: incidents.length + 1 });
-    setAntecedent(''); setBehavior(''); setConsequence(''); setNote('');
+    setAntecedents([]); setBehaviors([]); setConsequences([]); setNote('');
   };
   const removeIncident = (index: number) => {
     const next = incidents.filter((_, i) => i !== index);
@@ -248,12 +269,13 @@ export const AbcInput: React.FC<BehaviorInputProps> = (props) => {
 
   return (
     <>
-      <ChipGroup label="A: Antecedent (what happened before)" options={lists.antecedents} value={antecedent} onSelect={setAntecedent} disabled={disabled || isLocked} />
-      <ChipGroup label="B: Behavior" options={[ABC_REPLACEMENT_BEHAVIOR, ...lists.behaviors]} value={behavior} onSelect={setBehavior} disabled={disabled || isLocked} highlight={ABC_REPLACEMENT_BEHAVIOR} />
-      <ChipGroup label="C: Consequence (what happened after)" options={lists.consequences.map(c => c.label)} value={consequence} onSelect={setConsequence} disabled={disabled || isLocked} />
+      <p className="text-xs text-muted-foreground">Select one or more of each, then Add Incident.</p>
+      <ChipGroup label="A: Antecedent (what happened before)" options={lists.antecedents} value={antecedents} onChange={setAntecedents} disabled={disabled || isLocked} />
+      <ChipGroup label="B: Behavior" options={[ABC_REPLACEMENT_BEHAVIOR, ...lists.behaviors]} value={behaviors} onChange={setBehaviors} disabled={disabled || isLocked} exclusive={ABC_REPLACEMENT_BEHAVIOR} />
+      <ChipGroup label="C: Consequence (what happened after)" options={lists.consequences.map(c => c.label)} value={consequences} onChange={setConsequences} disabled={disabled || isLocked} />
       <div className="flex items-center gap-1">
         <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note (optional)" className="h-8 text-sm" disabled={disabled || isLocked} />
-        <Button type="button" size="sm" className="h-8 shrink-0" onClick={(e) => interact(e, addIncident)} disabled={disabled || !behavior}>
+        <Button type="button" size="sm" className="h-8 shrink-0" onClick={(e) => interact(e, addIncident)} disabled={disabled || behaviors.length === 0}>
           <Plus className="mr-1 h-3.5 w-3.5" /> Add Incident
         </Button>
       </div>
