@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-01',
+    title: 'Dashboard: Today\'s Work, Due Soon and Service Minutes',
+    description: 'The dashboard now shows what needs attention. Today\'s Work has a button for each saved group that opens Data Entry with that group\'s students already in the slots, and a reminder with a Continue Data Entry button when entries are unsaved. Due Soon lists IEP annual reviews and re-evaluations that are overdue or due in the next 60 days, most overdue first. Service Minutes lists students who still need minutes this week or month (those who were short last time first), or who are behind an even pace through the school year for a yearly requirement. Tap a student to open their profile. Due Soon and Service Minutes use the dates and required minutes on each profile (Edit IEP Details); Quick Actions, Overview and Recent Activity are unchanged.',
+    type: 'feature',
+    icon: ScrollText,
+  },
+  {
+    date: '2026-11-01',
     title: 'Student Groups Window Fits on iPad and Phone',
     description: 'With a group of many students, the list of names stretched the Student Groups window, pushing the delete and New Group buttons (and on a phone, every button) past its edge. The names now wrap onto two lines and the buttons stay inside. Every pop-up window now keeps long text within its width the same way.',
     type: 'fix',
