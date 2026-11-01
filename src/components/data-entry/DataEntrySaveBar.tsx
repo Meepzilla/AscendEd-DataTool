@@ -1,19 +1,20 @@
 'use client';
 
 import React, { type ComponentProps, type Ref } from 'react';
-import { ChevronLeft, ChevronRight, PlusCircle, RotateCcw, Save } from 'lucide-react';
+import { ChevronLeft, ChevronRight, PlusCircle, RotateCcw, Save, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import TouchControls from '@/components/forms/touch-controls';
 import LoadGroupMenu from '@/components/student-groups/LoadGroupMenu';
 import type { StudentGroup } from '@/lib/student-groups';
 
-// Data Entry's bar at the bottom of the screen: Student and Goal at the left, Load Group and the scroll arrows in
-// the middle (on the Student button's line), and Add Student, Reset and the save buttons at the right.
+// Data Entry's bar at the bottom of the screen: Student and Goal at the left, Load Group, Remove All and the scroll
+// arrows in the middle (on the Student button's line), and Add Student, Reset and the save buttons at the right.
 
 interface Props {
   barRef: Ref<HTMLDivElement>;
   touchControls: ComponentProps<typeof TouchControls>;
   onLoadGroup: (group: StudentGroup) => void;
+  onRemoveAll: () => void;
   isStudentAccessLocked: boolean;
   cardScroll: { left: boolean; right: boolean };
   onScrollCards: (direction: -1 | 1) => void;
@@ -27,7 +28,7 @@ interface Props {
 }
 
 export default function DataEntrySaveBar({
-  barRef, touchControls, onLoadGroup, isStudentAccessLocked, cardScroll, onScrollCards,
+  barRef, touchControls, onLoadGroup, onRemoveAll, isStudentAccessLocked, cardScroll, onScrollCards,
   canAddStudent, onAddStudent, onReset, onSave, onSaveAll, isSaving, isSavingAll,
 }: Props) {
   const busy = isSaving || isSavingAll;
@@ -42,6 +43,11 @@ export default function DataEntrySaveBar({
             Student button's line. */}
         <div className="flex flex-1 justify-center gap-2 self-start">
           <LoadGroupMenu onLoad={onLoadGroup} disabled={isStudentAccessLocked} size="sm" />
+          <Button type="button" variant="outline" size="sm" onClick={onRemoveAll} disabled={isStudentAccessLocked || busy}
+            aria-label="Remove all students" title="Remove every student from Data Entry">
+            <XCircle className="mr-2 h-4 w-4 text-red-500" />
+            <span className="hidden sm:inline">Remove&nbsp;</span>All
+          </Button>
           <div className="flex gap-1" role="group" aria-label="Scroll students">
             <Button type="button" variant="outline" size="sm" className="w-14" onClick={() => onScrollCards(-1)} disabled={!cardScroll.left} aria-label="Scroll students left" title="Scroll students left">
               <ChevronLeft className="h-5 w-5" />
