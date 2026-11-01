@@ -18,13 +18,22 @@ interface DatePickerProps {
   setDate: (date: Date | undefined) => void;
   className?: string;
   disabled?: (date: Date) => boolean;
+  /** For a <Label htmlFor>. */
+  id?: string;
 }
 
-export function DatePicker({ date, setDate, className, disabled }: DatePickerProps) {
+// The calendar opens on the chosen date's month (not today's, so an older session's date can be found and
+// changed), closes once a day is picked, and keeps the date when the chosen day is tapped again (the calendar
+// would otherwise clear it, leaving no date).
+export function DatePicker({ date, setDate, className, disabled, id }: DatePickerProps) {
+  const [open, setOpen] = React.useState(false)
   return (
-    <Popover>
+    // Modal, so inside a window (Edit Session) the calendar holds focus itself rather than the window's focus trap
+    // pulling focus back and closing it.
+    <Popover open={open} onOpenChange={setOpen} modal>
       <PopoverTrigger asChild>
         <Button
+          id={id}
           variant={"outline"}
           className={cn(
             "w-full justify-start text-left font-normal",
@@ -40,7 +49,11 @@ export function DatePicker({ date, setDate, className, disabled }: DatePickerPro
         <Calendar
           mode="single"
           selected={date}
-          onSelect={setDate}
+          defaultMonth={date}
+          onSelect={picked => {
+            if (picked) setDate(picked)
+            setOpen(false)
+          }}
           initialFocus
           disabled={disabled}
         />

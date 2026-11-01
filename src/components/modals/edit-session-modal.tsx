@@ -127,6 +127,7 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
       title={`Edit Session for ${currentSession.studentName}`}
       description={`Session on ${formatDate(currentSession.date)}`}
       size="xl"
+      initialFocus="window"
     >
       <form
         onSubmit={handleSubmit}
@@ -145,6 +146,7 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
                     <div>
                         <Label htmlFor="sessionDateEdit">Session Date</Label>
                         <DatePicker
+                            id="sessionDateEdit"
                             date={formData.date ? fromLocalDay(formData.date) : undefined}
                             setDate={handleDateChange}
                         />

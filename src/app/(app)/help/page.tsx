@@ -164,7 +164,7 @@ export default function HelpPage() {
           <Topic value="de-students" title="Adding students and groups">
             <p>Use <B>Add Student</B> on the bottom bar or the Student button to fill a slot. There is no limit on slots; the arrows in the middle of the bottom bar scroll the cards one at a time.</p>
             <p><B>Editing a student&apos;s goals:</B> the student button at the top of a card (<kbd>Alt + E</kbd>) opens Edit Student. There you can edit a goal (pencil), archive or remove it, or assign another. What is entered on the card is kept.</p>
-            <p><B>Groups</B> load a class or small group in one step: Load Group → Manage Groups… to create one, then choose it from Load Group. Groups are included in backups.</p>
+            <p><B>Groups</B> load a class or small group in one step: Load Group → Manage Groups… to create one, then choose it from Load Group. Groups are included in backups. <B>Remove All</B> (next to Load Group) empties Data Entry; if anyone has unsaved data it asks first, so you can Save All instead.</p>
           </Topic>
           <Topic value="de-missed" title="Missed sessions">
             <p>The calendar icon on a student&apos;s card records a missed session with the reason (student absent or unavailable, provider absent, no school…). Missed sessions show in attendance and don&apos;t count as service minutes.</p>
