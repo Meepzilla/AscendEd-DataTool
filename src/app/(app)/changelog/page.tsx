@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-01',
+    title: 'Data Entry Save Bar Fits on a Sideways Phone',
+    description: 'With a phone turned sideways, Data Entry\'s bar at the bottom (Student, Goal, Load Group, Add, Reset, Save and Save All) took three lines and much of the short screen. On a short screen it now fits on one line, with smaller buttons and shorter labels ("Add", "Reset", "Save"), leaving more room for the student cards. Portrait phones, tablets and computers look as before.',
+    type: 'fix',
+    icon: PanelBottom,
+  },
+  {
+    date: '2026-11-01',
     title: 'Backups Work in Chrome on Android',
     description: 'Back Up Now failed in Chrome on Android with "Permission denied": Chrome won\'t share a backup file through the share sheet, and won\'t share at all once the tap is a few seconds old (a password-protected backup takes a moment to encrypt). When the share sheet can\'t be used, the backup (or narrative file) is now saved as a download, in the device\'s Downloads folder. On an iPad the share sheet works as before.',
     type: 'fix',
