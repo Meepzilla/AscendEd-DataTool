@@ -1,4 +1,5 @@
 import type {Config} from 'tailwindcss';
+import plugin from 'tailwindcss/plugin';
 
 // Tailwind CSS configuration file.
 // This file defines how Tailwind generates its utility classes,
@@ -19,10 +20,6 @@ export default {
   theme: {
     // 'extend' allows adding new theme values without overriding existing ones.
     extend: {
-      // Short screens, such as a phone turned sideways: `short:` styles keep bars to one line there.
-      screens: {
-        short: { raw: '(max-height: 560px)' },
-      },
       // Custom font families.
       fontFamily: {
         body: ['Inter', 'sans-serif'],
@@ -123,5 +120,10 @@ export default {
   },
   // Tailwind CSS plugins.
   // These extend Tailwind's functionality with new features or utilities.
-  plugins: [require('tailwindcss-animate')],
+  plugins: [
+    require('tailwindcss-animate'),
+    // Short screens, such as a phone turned sideways: `short:` styles keep bars to one line there. A variant, not a
+    // screen: a screen written as a media query turns off Tailwind's min-[…] and max-[…] variants.
+    plugin(({ addVariant }) => addVariant('short', '@media (max-height: 560px)')),
+  ],
 } satisfies Config;
