@@ -33,7 +33,7 @@ export default function DataEntrySaveBar({
 }: Props) {
   const busy = isSaving || isSavingAll;
   return (
-    <div ref={barRef} className="sticky bottom-0 left-0 right-0 z-10 bg-background mt-auto">
+    <div ref={barRef} className="data-entry-save-bar sticky bottom-0 left-0 right-0 z-10 bg-background mt-auto">
       <div className="flex flex-wrap justify-between items-center gap-2 p-2 border-t">
         <div className="self-start">
           <TouchControls {...touchControls} />
