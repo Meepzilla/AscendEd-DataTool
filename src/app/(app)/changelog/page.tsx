@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-01',
+    title: 'ABC Narrative Names Every Tied Choice',
+    description: 'The progress narrative for an ABC goal named only one antecedent, problem behavior and function, even when an incident had several with the same count. It now names every one tied for the most, such as: The most common antecedents were "Unstructured time" and "Noise or sensory input" (1 each). Data Entry\'s ABC summary does the same, and "1 incident were recorded" now reads "1 incident was recorded".',
+    type: 'fix',
+    icon: CheckSquare,
+  },
+  {
+    date: '2026-11-01',
     title: 'ABC Incidents Can Have Several Choices',
     description: 'When recording ABC data, more than one antecedent, behavior and consequence can be selected for an incident (tap a choice again to turn it off), then Add Incident saves them together as one incident. "Used replacement skill" can\'t be combined with problem behaviors. The ABC summary, Reports charts and narrative count each choice, so an incident with two antecedents adds one to each; an incident with consequences of two functions counts once toward each function. Incidents recorded earlier are unchanged.',
     type: 'improvement',

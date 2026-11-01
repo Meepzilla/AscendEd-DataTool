@@ -13,7 +13,7 @@ import TallyButton from './TallyButton';
 import {
   ABC_REPLACEMENT_BEHAVIOR, INTERVAL_METHODS, INTERVAL_LENGTHS_SECONDS, MAX_INTERVALS,
   summarizeFrequency, summarizeDuration, summarizeAbc, summarizeIntervals, summarizeLatency,
-  formatSeconds, formatLatency, alignTimes, joinAbcChoices, type AbcIncident, type BehaviorFunction, type IntervalSetup,
+  formatSeconds, formatLatency, alignTimes, joinAbcChoices, joinWithAnd, topTied, type AbcIncident, type BehaviorFunction, type IntervalSetup,
 } from '@/lib/goal-constants';
 import { formatClockTime } from '@/lib/behavior-timing';
 import { useAbcLists } from '@/hooks/use-abc-lists';
@@ -302,7 +302,10 @@ export const AbcInput: React.FC<BehaviorInputProps> = (props) => {
       </Summary>
       {(summary.antecedents.length > 0 || summary.functions.length > 0) && (
         <p className="text-xs text-muted-foreground">
-          {summary.antecedents.length > 0 && <>Most common antecedent: {summary.antecedents[0][0]} ({summary.antecedents[0][1]}). </>}
+          {summary.antecedents.length > 0 && (() => {
+            const top = topTied(summary.antecedents);
+            return <>Most common {top.length === 1 ? 'antecedent' : 'antecedents'}: {joinWithAnd(top.map(([a]) => a))} ({top[0][1]}{top.length > 1 ? ' each' : ''}). </>;
+          })()}
           {summary.functions.length > 0 && <>Possible function: {summary.functions.map(([fn, n]) => `${fn} ${n}`).join(', ')}.</>}
         </p>
       )}
