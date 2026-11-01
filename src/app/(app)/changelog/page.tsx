@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-01',
+    title: 'Backups Work in Chrome on Android',
+    description: 'Back Up Now failed in Chrome on Android with "Permission denied": Chrome won\'t share a backup file through the share sheet, and won\'t share at all once the tap is a few seconds old (a password-protected backup takes a moment to encrypt). When the share sheet can\'t be used, the backup (or narrative file) is now saved as a download, in the device\'s Downloads folder. On an iPad the share sheet works as before.',
+    type: 'fix',
+    icon: ScrollText,
+  },
+  {
+    date: '2026-11-01',
     title: 'Service Minutes Card Scrolls',
     description: 'The dashboard\'s Service Minutes card shows 4 students at a time and scrolls to show the rest, so every student who still needs minutes is listed (it used to stop at 8 with "and N more"). The card says how many there are when there are more than 4.',
     type: 'improvement',
