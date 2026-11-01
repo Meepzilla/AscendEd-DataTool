@@ -28,7 +28,9 @@ interface DatePickerProps {
 export function DatePicker({ date, setDate, className, disabled, id }: DatePickerProps) {
   const [open, setOpen] = React.useState(false)
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    // Modal, so inside a window (Edit Session) the calendar holds focus itself rather than the window's focus trap
+    // pulling focus back and closing it.
+    <Popover open={open} onOpenChange={setOpen} modal>
       <PopoverTrigger asChild>
         <Button
           id={id}

@@ -13,7 +13,12 @@ interface GenericModalProps {
   children: React.ReactNode;
   footerContent?: React.ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | 'full';
-  // onOpenAutoFocus?: (event: Event) => void; // For focus trapping
+  /**
+   * Where focus goes when the window opens: its first field (the default), or the window itself. A window whose
+   * first field opens a pop-up (a date or time picker) uses 'window': on an iPad, tapping a picker that already
+   * had focus could leave its pop-up closed.
+   */
+  initialFocus?: 'first-field' | 'window';
 }
 
 export default function GenericModal({
@@ -24,7 +29,7 @@ export default function GenericModal({
   children,
   footerContent,
   size = 'md',
-  // onOpenAutoFocus,
+  initialFocus = 'first-field',
 }: GenericModalProps) {
   const modalContentRef = useRef<HTMLDivElement>(null);
 
@@ -60,7 +65,8 @@ export default function GenericModal({
       <DialogContent 
         className={cn("overflow-y-auto max-h-[90vh]", SIZES[size])} 
         ref={modalContentRef}
-        // onOpenAutoFocus={onOpenAutoFocus} // Pass to DialogContent if needed
+        tabIndex={initialFocus === 'window' ? -1 : undefined}
+        onOpenAutoFocus={initialFocus === 'window' ? (e) => { e.preventDefault(); modalContentRef.current?.focus(); } : undefined}
         onPointerDownOutside={(e) => {
             // Allow closing by clicking outside only if not interacting with a select/popover inside modal
             const target = e.target as HTMLElement;

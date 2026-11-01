@@ -20,7 +20,7 @@ const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-01',
     title: 'Changing a Session\'s Date When Editing It',
-    description: 'In Edit Session, the date\'s calendar opened on the current month rather than the session\'s, so the session\'s date wasn\'t shown; it stayed open after a day was picked; and tapping the highlighted day cleared the date, so the session couldn\'t be saved. The calendar now opens on the session\'s month, closes when a day is picked, and keeps the date if the highlighted day is tapped. The same applies to the date in Data Entry.',
+    description: 'In Edit Session, the date\'s calendar opened on the current month rather than the session\'s, so the session\'s date wasn\'t shown; it stayed open after a day was picked; and tapping the highlighted day cleared the date, so the session couldn\'t be saved. On an iPad the date also wouldn\'t open when it was tapped first (it worked after opening Start Time): the window put focus on the date when it opened, and the calendar then closed straight away. The window no longer does that. The calendar now opens on the session\'s month, closes when a day is picked, and keeps the date if the highlighted day is tapped. The same applies to the date in Data Entry.',
     type: 'fix',
     icon: ScrollText,
   },
