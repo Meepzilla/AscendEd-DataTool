@@ -17,6 +17,7 @@ import { planSessionImport, type ImportedSession } from '@/lib/session-import';
 import { createBackup, type AppBackup, type RestoreMode, type RestoreSummary } from '@/lib/backup';
 import { planRestore, restoreBackupSettings } from '@/lib/restore';
 import { loadCustomAbcLists } from '@/lib/abc-lists';
+import { applyStudentImport, type ImportStudent } from '@/lib/student-import';
 import { getStudentGroups } from '@/lib/student-groups';
 import { mergeProblem, mergeSessions } from '@/lib/session-merge';
 
@@ -42,6 +43,8 @@ interface StudentDataContextType {
   updateStudent: (studentId: string, data: Partial<Student>) => Promise<void>;
   deleteStudent: (studentId: string) => Promise<void>;
   deleteStudents: (studentIds: string[]) => boolean;
+  /** Adds and updates students from a spreadsheet in one save. Null when it couldn't be saved (the error was shown). */
+  importStudents: (students: ImportStudent[]) => { added: number; updated: number; goals: number } | null;
   assignGoalToStudent: (studentId: string, goal: Goal) => Promise<void>;
   removeGoalFromStudent: (studentId: string, goalId: string) => Promise<void>;
   updateStudentGoal: (studentId: string, goalId: string, updatedGoalData: Partial<Goal>) => Promise<void>;
@@ -185,6 +188,13 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setSelectedStudent(prev => (prev && ids.has(prev.id) ? null : prev));
     return true;
   }, [currentUser, commitStudents, commitSessions]);
+
+  const importStudents = useCallback((imported: ImportStudent[]) => {
+    if (!currentUser || imported.length === 0) return null;
+    const result = applyStudentImport(studentsRef.current, imported, currentUser.uid);
+    if (!commitStudents(result.students.sort(byName))) return null;
+    return { added: result.added, updated: result.updated, goals: result.goals };
+  }, [currentUser, commitStudents]);
 
   const addGoalTemplate = useCallback(async (templateData: any) => {
     if (!currentUser) return null;
@@ -443,7 +453,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     addErrorLog,
 
     // Data Actions
-    addStudent, updateStudent, deleteStudent, deleteStudents,
+    addStudent, updateStudent, deleteStudent, deleteStudents, importStudents,
     assignGoalToStudent, removeGoalFromStudent, updateStudentGoal,
     addGoalTemplate, updateGoalTemplate, deleteGoalTemplate, archiveGoalTemplates, assignTemplateToStudents,
     addSession, updateSession, deleteSession, mergeSessionRecords,
