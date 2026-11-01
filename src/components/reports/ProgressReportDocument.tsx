@@ -1,4 +1,5 @@
 import React from 'react';
+import { fillNameBlanks } from '@/lib/goal-blanks';
 import { Textarea } from '@/components/ui/textarea';
 import { APP_NAME } from '@/lib/appConstants';
 import { formatDate, formatDateOnly, goalStatement, plural } from '@/lib/helpers';
@@ -156,7 +157,7 @@ export default function ProgressReportDocument({ studentName, periodLabel, sessi
           <tbody>
             {goals.map(g => (
               <tr key={g.goal.id} className="border-b border-border/60 align-top">
-                <th scope="row" className="py-1.5 pr-2 font-medium">{g.number}. {g.goal.name}</th>
+                <th scope="row" className="py-1.5 pr-2 font-medium">{g.number}. {fillNameBlanks(g.goal)}</th>
                 <td className="py-1.5 pr-2"><StatusPill status={statusOf(g)} /></td>
                 <td className="py-1.5 pr-2">{g.latest ?? '—'}</td>
                 <td className="py-1.5 pr-2">{g.average ?? '—'}</td>
@@ -173,7 +174,7 @@ export default function ProgressReportDocument({ studentName, periodLabel, sessi
         <section key={g.goal.id} className="mt-6 border-t border-border pt-4 report-avoid-break" aria-labelledby={`goal-${g.goal.id}`}>
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
-              <h2 id={`goal-${g.goal.id}`} className="text-base font-bold">Goal {g.number}: {g.goal.name}</h2>
+              <h2 id={`goal-${g.goal.id}`} className="text-base font-bold">Goal {g.number}: {fillNameBlanks(g.goal)}</h2>
               <p className="text-xs text-muted-foreground">
                 {g.typeLabel}{g.targetLabel ? ` · Target ${g.targetLabel}` : ''}
                 {g.goal.targetDate && !onTargetDate ? ` by ${formatDateOnly(g.goal.targetDate)}` : ''}

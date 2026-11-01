@@ -184,6 +184,7 @@ export default function HelpPage() {
           <Topic value="st-goals" title="Goals, targets and mastery">
             <p>Assign goals from the goal bank or write your own. When editing a goal you can set the <B>target</B> (e.g. 80%), whether the goal should increase or decrease, the <B>target date</B>, the <B>baseline</B> and when it was taken, and <B>mastery</B> (the target met in a number of sessions in a row, 3 by default).</p>
             <p>Write &quot;By [date]&quot; and &quot;STUDENT&quot; in goal text: they are filled in with the goal&apos;s target date and the student&apos;s name on reports.</p>
+            <p><B>Blanks</B> in goal text (&quot;___&quot;) are filled in too. &quot;___ out of ___&quot; and &quot;___%&quot; come from the target (80% shows as 4 out of 5) and &quot;___ consecutive&quot; from mastery; fill the others in Edit Goal → Fill in the Blanks.</p>
           </Topic>
           <Topic value="st-bank" title="The goal bank">
             <p>The <Link href="/goal-templates" className="underline hover:text-primary">Goals</Link> page holds over 900 templates. Search by words in the name, goal text or skill area, filter by skill area, and open a goal to read the full text, its purpose and activity ideas. You can edit templates, add your own and archive ones you don&apos;t use.</p>
