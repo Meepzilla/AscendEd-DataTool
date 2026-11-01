@@ -145,6 +145,7 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
                     <div>
                         <Label htmlFor="sessionDateEdit">Session Date</Label>
                         <DatePicker
+                            id="sessionDateEdit"
                             date={formData.date ? fromLocalDay(formData.date) : undefined}
                             setDate={handleDateChange}
                         />
