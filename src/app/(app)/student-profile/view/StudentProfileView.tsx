@@ -287,8 +287,7 @@ export default function StudentProfileView() {
             <ul className="space-y-4">
               {currentStudent.goals.map((goal) => (
                 <li key={goal.id} className={`p-4 border rounded-lg shadow-sm bg-card hover:shadow-md transition-shadow ${goal.isArchived ? 'opacity-60 bg-muted/50' : ''}`}>
-                  <div className="flex flex-col sm:flex-row justify-between items-start">
-                    <div className="flex-grow">
+                  <div>
                       <h3 className="text-lg font-semibold text-primary">{fillNameBlanks(goal)}</h3>
                       <div className="flex flex-wrap items-center gap-1.5 mt-1">
                         <Badge variant="secondary">{goalTypeLabel(goal.type)}</Badge>
@@ -301,27 +300,27 @@ export default function StudentProfileView() {
                         {goal.isArchived && <Badge variant="outline" className="border-orange-500 text-orange-600">Archived</Badge>}
                       </div>
                       <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{goalStatement(goal, currentStudent.name)}</p>
-                    </div>
-                    <div className="flex flex-col gap-1 shrink-0 mt-2 sm:mt-0 sm:ml-2">
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenEditAssignedGoalModal(goal)} title="Edit Assigned Goal">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openDeleteAssignedGoalConfirmationModal(currentStudent.id, goal)} title="Remove Goal Assignment">
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleToggleArchiveGoal(goal)} title={goal.isArchived ? "Unarchive Goal" : "Archive Goal"}>
-                        {goal.isArchived ? <ArchiveRestore className="h-4 w-4 text-green-600" /> : <Archive className="h-4 w-4 text-orange-600" />}
-                      </Button>
-                    </div>
                   </div>
-                  {!goal.isArchived && (
-                    <div className="mt-3 pt-3 border-t">
-                       <Link href={`/data-entry?studentId=${currentStudent.id}&goalId=${goal.id}`}
-                             className="inline-flex items-center text-sm text-primary hover:underline">
-                          <CheckSquare className="mr-2 h-4 w-4" /> Enter/View Progress Data
-                       </Link>
-                    </div>
-                  )}
+                  {/* Labelled actions, in one row (they wrap on a phone). */}
+                  <div className="mt-3 pt-3 border-t flex flex-wrap items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => handleOpenEditAssignedGoalModal(goal)} aria-label={`Edit goal ${goal.name}`}>
+                      <Edit className="mr-2 h-4 w-4" /> Edit Goal
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleToggleArchiveGoal(goal)}>
+                      {goal.isArchived
+                        ? <><ArchiveRestore className="mr-2 h-4 w-4 text-green-600" /> Unarchive</>
+                        : <><Archive className="mr-2 h-4 w-4 text-orange-600" /> Archive</>}
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => openDeleteAssignedGoalConfirmationModal(currentStudent.id, goal)}>
+                      <Trash2 className="mr-2 h-4 w-4 text-destructive" /> Remove
+                    </Button>
+                    {!goal.isArchived && (
+                      <Link href={`/data-entry?studentId=${currentStudent.id}&goalId=${goal.id}`}
+                            className="inline-flex items-center text-sm text-primary hover:underline sm:ml-auto">
+                        <CheckSquare className="mr-2 h-4 w-4" /> Enter/View Progress Data
+                      </Link>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>
