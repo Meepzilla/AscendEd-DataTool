@@ -137,7 +137,8 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      {/* items-start: a collapsed card stays short beside an open one. */}
+      <div className="grid items-start gap-4 lg:grid-cols-2">
         <DueSoonCard />
         <ServiceMinutesCard />
       </div>

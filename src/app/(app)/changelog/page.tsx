@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-01',
+    title: 'Due Soon Scrolls, and Dashboard Cards Collapse',
+    description: 'The dashboard\'s Due Soon card now shows 4 reviews at a time and scrolls to show the rest, like Service Minutes (it used to stop at 8 with "and N more"). Both cards can be collapsed by tapping their title, leaving just the title and how many are listed; tap again to open. Each card stays collapsed or open on this device until changed.',
+    type: 'improvement',
+    icon: ScrollText,
+  },
+  {
+    date: '2026-11-01',
     title: 'Import Students from an IEP at a Glance PDF',
     description: 'Settings → Import Students now also takes an IEP at a Glance PDF (a page or two per student, as SLP Toolkit makes them). Each student\'s name, IEP start and end dates, service time and numbered goals are read from the PDF and shown in the same review as a spreadsheet, where each goal\'s type can be checked before saving. Importing the PDF after the spreadsheet updates the same students: "Jeremy (JJ)" is matched to "Jeremy (JJ) Taylor" when their IEPs started the same day, and goals they already have (in shorter or longer wording) are left unticked, so nothing is added twice. Each goal now has a tick box, so a goal can be left out or added anyway. Targets written as 4/5 and numbers written as words ("at least two functions") are read too. Also fixes the time picker\'s two-column layout on wider phones, which the sideways-phone save bar change had turned off.',
     type: 'feature',
