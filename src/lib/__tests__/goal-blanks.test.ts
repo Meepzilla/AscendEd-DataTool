@@ -52,9 +52,16 @@ describe('goal text follows the target and mastery', () => {
     expect(matchTextToTarget(text, { type: 'LANGUAGE_EXPRESSION', sessionTargetValue: 90 })).toContain('in 9 out of 10 observed opportunities');
     expect(matchTextToTarget(text, { type: 'LANGUAGE_EXPRESSION', sessionTargetValue: 80 })).toBe(text);
   });
-  it('changes a stated percentage, and "6 of 10 opportunities"', () => {
-    const pct = 'respond accurately across 80% of opportunities with 80% accuracy (8 of 10 opportunities).';
-    expect(matchTextToTarget(pct, { type: 'AAC', sessionTargetValue: 70 })).toBe('respond accurately across 70% of opportunities with 70% accuracy (7 of 10 opportunities).');
+  it('changes "6 of 10 opportunities" when it is the only target in the text', () => {
+    expect(matchTextToTarget('respond in 8 of 10 opportunities.', { type: 'AAC', sessionTargetValue: 70 })).toBe('respond in 7 of 10 opportunities.');
+  });
+  it('changes a stated percentage but keeps the number of opportunities, which is set separately', () => {
+    const pct = 'with 80% accuracy in 4 out of 5 opportunities across 3 consecutive sessions.';
+    expect(matchTextToTarget(pct, { type: 'ARTICULATION', sessionTargetValue: 60 })).toBe('with 60% accuracy in 4 out of 5 opportunities across 3 consecutive sessions.');
+    expect(matchTextToTarget('across 80% of opportunities (8 of 10 opportunities).', { type: 'AAC', sessionTargetValue: 70 })).toBe('across 70% of opportunities (8 of 10 opportunities).');
+    const blanks = 'with ___% accuracy in ___ out of ___ opportunities';
+    expect(fillBlanks(blanks, { sessionTargetValue: 60 })).toBe('with 60% accuracy in ___ out of ___ opportunities');
+    expect(fillBlanks(blanks, { sessionTargetValue: 60, blankFills: ['', '4', '5'] })).toBe('with 60% accuracy in 4 out of 5 opportunities');
   });
   it('leaves text with two different percentages, and goals whose target is not a percentage', () => {
     expect(matchTextToTarget('80% accuracy at 90% intelligibility', { type: 'ARTICULATION', sessionTargetValue: 70 })).toBe('80% accuracy at 90% intelligibility');
