@@ -23,7 +23,10 @@ interface GoalTextPopoverProps {
 export default function GoalTextPopover({ name, smartGoal, description, className, iconOnly = false }: GoalTextPopoverProps) {
   // Goals without generated text get a placeholder SMART goal ("SMART goal for <name>"), which adds nothing.
   const goalText = smartGoal && !smartGoal.startsWith('SMART goal for ') ? smartGoal.trim() : '';
-  const descriptionText = description?.trim() || '';
+  // A built-in template's description is often its goal in short ("Student will produce /p/ …"); it isn't repeated.
+  const plain = (s: string) => s.toLowerCase().replace(/[“”"]/g, '"').replace(/[‘’']/g, "'").replace(/\.$/, '');
+  const shortGoal = plain(description?.trim() || '').replace(/^.*?\bstudent will\s+/, '');
+  const descriptionText = description?.trim() && !(goalText && plain(goalText).includes(shortGoal)) ? description.trim() : '';
   if (!goalText && !descriptionText) return iconOnly ? null : <span className={className}>{name}</span>;
 
   return (
@@ -54,7 +57,7 @@ export default function GoalTextPopover({ name, smartGoal, description, classNam
       <PopoverContent className="w-[min(24rem,90vw)] max-h-[60vh] overflow-y-auto text-sm space-y-2" align="start">
         <p className="font-semibold leading-snug">{name}</p>
         {goalText && <p className="leading-relaxed whitespace-pre-wrap">{goalText}</p>}
-        {descriptionText && descriptionText !== goalText && (
+        {descriptionText && (
           <p className="text-xs text-muted-foreground leading-relaxed">{descriptionText}</p>
         )}
       </PopoverContent>

@@ -10,6 +10,7 @@ session target, from the goal's skill area and how its text says success is meas
   docs/goal-bank-review.csv               every goal with its type, target and the reason, for review
 
 Run from the repository root:  python3 scripts/import-goal-bank.py path/to/SLP_Goal_Bank.csv
+To apply changes to tidy_text without the CSV:  python3 scripts/import-goal-bank.py --tidy
 """
 import csv
 import json
@@ -21,6 +22,11 @@ TEMPLATES_OUT = 'src/lib/goal-constants/goal-bank.json'
 # Every type change between imports, so devices that stored the old version can be updated
 # (see applyDefaultTemplateUpdates). Cumulative: entries are only ever added.
 TYPE_UPDATES_OUT = 'src/lib/goal-constants/goal-bank-type-updates.json'
+# Wording changes between imports (see tidy_text), so devices that stored a template's earlier wording can be
+# updated: earlier goal texts by hash (keyed by bankId), and earlier names. Cumulative, like the type updates.
+TEXT_UPDATES_OUT = 'src/lib/goal-constants/goal-bank-text-updates.json'
+RENAMES_OUT = 'src/lib/goal-constants/goal-bank-renames.json'
+MEASURED_BY = 'as measured by SLP or teacher observation and data collection'
 DETAILS_OUT = 'public/goal-bank/details.json'
 REVIEW_OUT = 'docs/goal-bank-review.csv'
 MAX_NAME = 90
@@ -49,6 +55,49 @@ OPPORTUNITY_AREAS = {
 }
 
 FUNCTION_WORDS = ['reject', 'request', 'be social', 'share information', 'comment', 'protest', 'greet']
+
+
+def fnv1a(text):
+    """32-bit FNV-1a over the text's code points, as hex (the same as textHash in goal-constants/index.ts)."""
+    h = 0x811c9dc5
+    for ch in text:
+        h ^= ord(ch)
+        h = (h * 0x01000193) & 0xffffffff
+    return format(h, '08x')
+
+
+def tidy_text(text, name=False):
+    """The goal bank's wording made consistent: "the student" (not "STUDENT"), "they/their" (not "HIS/HER"),
+    "___" for every blank (so it can be filled in Edit Goal), one "as measured by" ending, and typos fixed."""
+    s = re.sub(r'\s+', ' ', text).strip()
+    s = re.sub(r'\bi\.g\.', 'e.g.', s)
+    s = re.sub(r'\b(use|uses)(\d)', r'\1 \2', s)
+    s = re.sub(r'\s+([,.;:])(?=\s|$)', r'\1', s)
+    # Pronouns: "HIS/HER" was written as a placeholder for the student's pronoun.
+    plural = {'is': 'are', 'has': 'have', 'was': 'were', 'does': 'do'}
+    s = re.sub(r'\b(?:HE/SHE|he or she) (\w+)',
+               lambda m: 'they ' + plural.get(m.group(1), re.sub(r'(?<!s)s$', '', m.group(1)) if m.group(1).endswith('s') and not m.group(1).endswith('ss') else m.group(1)), s)
+    for old, new in [('HIS/HER', 'their'), ('HE/SHE', 'they'), ('HIM/HER', 'them'), ('HIMSELF/HERSELF', 'themselves')]:
+        s = re.sub(rf'\b{re.escape(old)}\b', new, s, flags=re.I)
+    # Blanks: "[X]" and an empty sound "/ /" are blanks too.
+    s = re.sub(r'\[(?:x|item)\]', '___', s, flags=re.I)
+    # "using [preferred communication method]" and "using preferred communication method" alike.
+    s = re.sub(r'\busing \[?preferred communication method\]?', 'using their preferred communication method', s)
+    s = s.replace('/ /', '/___/')
+    if name:
+        return s
+    s = re.sub(r'(?<=[.!?] )STUDENT\b|^STUDENT\b', 'The student', s)
+    s = re.sub(r'\bSTUDENT\b', 'the student', s)
+    s = re.sub(r'(?<![Tt]he )(?<!’s )(?<!\'s )\bstudent will\b', 'the student will', s)
+    # A label in brackets before the goal ("(Compensatory Goal) The student will …") is left out.
+    s = re.sub(r'^By \[date\], \([^)]*\) The student\b', 'By [date], the student', s)
+    s = re.sub(r',?\s*as measured by (?:_{3,}|teacher or speech therapist data(?: collection)?|teacher or SLP observation)(?=\.?$)', ', ' + MEASURED_BY, s)
+    s = re.sub(r'(?<=[a-z)”])\s+as measured by\b', ', as measured by', s)
+    # Straight double quotes as typographic ones, as in most of the bank.
+    s = re.sub(r'"([^"]*)"', '“\\1”', s)
+    if not re.search(r'[.!?]$', s):
+        s += '.'
+    return s
 
 
 def has(text, *patterns):
@@ -215,14 +264,68 @@ def first_sentence(text):
     return (m.group(1) if m else text).strip()
 
 
-def main():
-    if len(sys.argv) != 2:
-        sys.exit('Usage: python3 scripts/import-goal-bank.py path/to/SLP_Goal_Bank.csv')
-    rows = list(csv.DictReader(open(sys.argv[1], newline='', encoding='utf-8-sig')))
+def load_json(path, default):
     try:
-        previous_types = {t['name']: t['type'] for t in json.load(open(TEMPLATES_OUT))}
+        return json.load(open(path))
     except FileNotFoundError:
-        previous_types = {}
+        return default
+
+
+def record_wording_changes(previous, templates):
+    """Records each template whose goal text or name changed since the previous version (matched by bankId):
+    its earlier text's hash, and its earlier name. Devices update stored copies that still have the old wording."""
+    text_updates = load_json(TEXT_UPDATES_OUT, {})
+    renames = load_json(RENAMES_OUT, [])
+    before = {t['bankId']: t for t in previous}
+    for t in templates:
+        old = before.get(t['bankId'])
+        if not old:
+            continue
+        if old['generatedSmartGoal'] != t['generatedSmartGoal']:
+            hashes = text_updates.setdefault(t['bankId'], [])
+            if fnv1a(old['generatedSmartGoal']) not in hashes:
+                hashes.append(fnv1a(old['generatedSmartGoal']))
+        if old['name'] != t['name']:
+            # An earlier rename of this template now leads to the newest name.
+            for r in renames:
+                if r['to'] == old['name']:
+                    r['to'] = t['name']
+            renames.append({'from': old['name'], 'to': t['name']})
+    json.dump(text_updates, open(TEXT_UPDATES_OUT, 'w'), ensure_ascii=False, separators=(',', ':'), sort_keys=True)
+    json.dump(renames, open(RENAMES_OUT, 'w'), ensure_ascii=False, indent=1)
+    return len(text_updates), len(renames)
+
+
+def tidy_existing():
+    """Applies tidy_text to the templates already imported (no CSV needed), and to the review file."""
+    previous = json.load(open(TEMPLATES_OUT))
+    templates = [{**t, 'name': tidy_text(t['name'], name=True), 'generatedSmartGoal': tidy_text(t['generatedSmartGoal'])} for t in previous]
+    names = Counter(t['name'] for t in templates)
+    clashes = [n for n, c in names.items() if c > 1]
+    if clashes:
+        sys.exit(f'Tidied names would clash: {clashes}')
+    json.dump(templates, open(TEMPLATES_OUT, 'w'), ensure_ascii=False, indent=0)
+    rows = list(csv.DictReader(open(REVIEW_OUT, newline='', encoding='utf-8-sig')))
+    for row, t in zip(rows, templates):
+        row['Template name'], row['Goal text'] = t['name'], t['generatedSmartGoal']
+    with open(REVIEW_OUT, 'w', newline='', encoding='utf-8-sig') as fh:
+        w = csv.DictWriter(fh, fieldnames=list(rows[0].keys()))
+        w.writeheader()
+        w.writerows(rows)
+    changed_text = sum(a['generatedSmartGoal'] != b['generatedSmartGoal'] for a, b in zip(previous, templates))
+    changed_names = sum(a['name'] != b['name'] for a, b in zip(previous, templates))
+    record_wording_changes(previous, templates)
+    print(f'{changed_text} goal texts and {changed_names} names tidied')
+
+
+def main():
+    if len(sys.argv) == 2 and sys.argv[1] == '--tidy':
+        return tidy_existing()
+    if len(sys.argv) != 2:
+        sys.exit('Usage: python3 scripts/import-goal-bank.py path/to/SLP_Goal_Bank.csv   (or --tidy)')
+    rows = list(csv.DictReader(open(sys.argv[1], newline='', encoding='utf-8-sig')))
+    previous = load_json(TEMPLATES_OUT, [])
+    previous_types = {t['name']: t['type'] for t in previous}
     try:
         type_updates = json.load(open(TYPE_UPDATES_OUT))
     except FileNotFoundError:
@@ -232,7 +335,8 @@ def main():
         ['articulation', 'fluency', 'language', 'observation', 'phonological', 'trials', 'feeding', 'aac', 'cognitive', 'communication', 'story-elements'])))
     groups = {}
     for r in rows:
-        groups.setdefault(make_name(r['Goal text']), []).append(r['Goal text'])
+        r['Goal text'] = tidy_text(r['Goal text'])
+        groups.setdefault(tidy_text(make_name(r['Goal text']), name=True), []).append(r['Goal text'])
     used = set(existing)
     templates, details, review = [], {}, []
     for i, r in enumerate(rows, 1):
@@ -242,7 +346,7 @@ def main():
             goal_type, direction, reason = behavior
         else:
             (goal_type, reason), direction = classify(r['Skill area'], text), None
-        name = make_name(text)
+        name = tidy_text(make_name(text), name=True)
         siblings = [g for g in groups[name] if g != r['Goal text']]
         if siblings:
             # Goals that would share a name: add what sets this one apart.
@@ -272,6 +376,8 @@ def main():
                        'Why': reason, 'Goal text': text})
 
     json.dump(templates, open(TEMPLATES_OUT, 'w'), ensure_ascii=False, indent=0)
+    # Matched by bankId (the row number), so this assumes the CSV keeps its row order between imports.
+    record_wording_changes(previous, templates)
     json.dump(type_updates, open(TYPE_UPDATES_OUT, 'w'), ensure_ascii=False, indent=1)
     json.dump(details, open(DETAILS_OUT, 'w'), ensure_ascii=False, separators=(',', ':'))
     with open(REVIEW_OUT, 'w', newline='', encoding='utf-8-sig') as fh:
