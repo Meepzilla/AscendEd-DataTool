@@ -59,3 +59,26 @@ describe('Data Entry student state', () => {
     expect(g.map(x => x.id)).toEqual(['g1', 'g2', 'g3']);
   });
 });
+
+describe('Data Entry cards follow goal edits', () => {
+  it('shows an edited goal (text, blanks, date) and keeps what was entered and the card\'s goal order', () => {
+    const second = goal({ id: 'g2', type: 'ARTICULATION', name: 'Second' });
+    const prev = syncSessionStates({}, [ava([artic, second])], undefined);
+    prev.ava.goalData.g1 = { correct: 3 };
+    prev.ava.originalGoalHeaders = [second, artic]; // moved on the card
+    const edited = { ...artic, smartGoal: 'Using ___ in ___ out of ___ trials.', blankFills: ['a talker'], targetDate: '2027-01-15' };
+    const next = syncSessionStates(prev, [ava([edited, second])], undefined);
+    expect(next.ava.originalGoalHeaders.map(g => g.id)).toEqual(['g2', 'g1']);
+    expect(next.ava.originalGoalHeaders[1]).toBe(edited);
+    expect(next.ava.goalData.g1).toEqual({ correct: 3 });
+  });
+});
+
+it('keeps the card\'s goal order when a goal is renamed, and adds new goals at the end', () => {
+  const second = goal({ id: 'g2', type: 'ARTICULATION', name: 'Second' });
+  const prev = syncSessionStates({}, [ava([artic, second])], undefined);
+  prev.ava.originalGoalHeaders = [second, artic];
+  const next = syncSessionStates(prev, [ava([{ ...artic, name: 'Renamed' }, second, goal({ id: 'g3' })])], undefined);
+  expect(next.ava.originalGoalHeaders.map(g => g.id)).toEqual(['g2', 'g1', 'g3']);
+  expect(next.ava.originalGoalHeaders[1].name).toBe('Renamed');
+});

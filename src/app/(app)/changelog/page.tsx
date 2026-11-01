@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-01',
+    title: 'Fixed: Data Entry Cards Show Goal Edits Right Away',
+    description: 'After editing a goal from Data Entry (its text, blanks, target date, baseline or mastery), the student\'s card now shows the updated goal straight away instead of after reopening the app. What is entered on the card is kept, and goals moved up or down on a card keep their place when a goal is edited.',
+    type: 'fix',
+    icon: ScrollText,
+  },
+  {
+    date: '2026-11-01',
     title: 'Fill In the Blanks in Goals',
     description: 'Goal text with blanks (for example "using ______ (AAC device) ... in ___ out of ___ opportunities as measured by ______") is shown filled in, like the date and student name. Blanks the target answers fill in on their own: "___ out of ___" from the target (80% shows as 4 out of 5), "___%" with the target, and "___ consecutive" with the mastery sessions. For the others, Edit Goal has a Fill in the Blanks box for each blank, labelled with the words around it. The goal name, student profile, Data Entry and Progress Report all show the filled-in goal; the original text keeps its blanks.',
     type: 'feature',
