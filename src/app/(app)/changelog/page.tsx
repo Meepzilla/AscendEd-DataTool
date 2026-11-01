@@ -20,7 +20,7 @@ const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-01',
     title: 'Remove All Students in Data Entry',
-    description: 'Data Entry\'s bottom bar has a Remove All button next to Load Group, to clear every student at once (for example between groups). If any student has data entered that isn\'t saved, it names them and asks first: Cancel to go back and Save All, or Discard and Remove All. It follows the Student Access Lock like the other buttons.',
+    description: 'Data Entry\'s bottom bar has a Remove All button next to Load Group, to clear every student at once (for example between groups). It always asks first. If any student has data entered that isn\'t saved, it names them: Cancel to go back and Save All, or Discard and Remove All. It follows the Student Access Lock like the other buttons.',
     type: 'feature',
     icon: ScrollText,
   },
