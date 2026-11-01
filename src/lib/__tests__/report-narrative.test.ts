@@ -42,3 +42,32 @@ describe('buildNarrative', () => {
     expect(text).toMatch(/on track with the aim line/);
   });
 });
+
+describe('ABC narrative', () => {
+  const abc = goal({ id: 'g3', name: 'Calm down', type: 'BEHAVIOR_ABC', sessionTargetValue: 80, targetDirection: 'increase' });
+  const withIncidents = (incidents: object[]) => buildNarrative({ student, goals: [abc], sessions: [
+    session({ date: '2026-11-01T17:00:00Z', goals: [{ goalId: 'g3', goalName: 'Calm down', goalType: 'BEHAVIOR_ABC', data: { incidents, incidentCount: incidents.length, recorded: true } }] }),
+  ] });
+  const time = '2026-11-01T17:05:00Z';
+
+  it('reports every choice tied for the most, when an incident has several', () => {
+    const text = withIncidents([{
+      time, antecedent: 'Unstructured time, Noise or sensory input', behavior: 'Aggression, Self-injury', consequence: 'Break given, Adult attention',
+      antecedents: ['Unstructured time', 'Noise or sensory input'], behaviors: ['Aggression', 'Self-injury'], consequences: ['Break given', 'Adult attention'],
+      fn: 'Escape', fns: ['Escape', 'Attention'],
+    }]);
+    expect(text).toContain('1 incident was recorded');
+    expect(text).toContain('The most common antecedents were "Unstructured time" and "Noise or sensory input" (1 each).');
+    expect(text).toContain('The most frequent problem behaviors were "Aggression" and "Self-injury" (1 each).');
+    expect(text).toContain('Consequences most often suggested functions of escape and attention (1 each).');
+  });
+
+  it('names only the most common when one stands out', () => {
+    const one = (antecedent: string) => ({ time, antecedent, behavior: 'Elopement', consequence: 'Break given' });
+    const text = withIncidents([one('Transition'), one('Transition'), one('Peer interaction')]);
+    expect(text).toContain('3 incidents were recorded');
+    expect(text).toContain('The most common antecedent was "Transition" (2).');
+    expect(text).toContain('The most frequent problem behavior was "Elopement" (3).');
+    expect(text).toContain('Consequences most often suggested a function of escape (3).');
+  });
+});

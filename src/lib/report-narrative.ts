@@ -2,7 +2,7 @@ import type { Goal, SessionData, Student } from './types';
 import {
   BEHAVIOR_GOAL_TYPES, INTERVAL_METHODS, captureTypeOf, goalDirection, summarizeAbc, summarizeCommunicationFunctions,
   median, summarizeDuration, summarizeFrequency, summarizeIntervals, summarizeLatency,
-  COMMUNICATION_FUNCTIONS, STORY_PARTS, STORY_LINKING_WORDS, linkingWordField, type AbcIncident,
+  COMMUNICATION_FUNCTIONS, STORY_PARTS, STORY_LINKING_WORDS, linkingWordField, topTied, joinWithAnd, type AbcIncident,
 } from './goal-constants';
 import { goalMeasure, goalMeasureInfo, goalNotes, goalResponses, meetsTarget, promptTotals, usesPromptCounters, withoutRunningTimers } from './goal-measures';
 import { compareSessionsOldestFirst, formatDate, formatGoalTarget, goalTypeLabel, plural } from './helpers';
@@ -304,10 +304,15 @@ function detailSentences(name: string, goal: Goal, data: Record<string, any>[]):
 
   if (type === 'BEHAVIOR_ABC') {
     const abc = summarizeAbc({ incidents: data.flatMap(d => (Array.isArray(d.incidents) ? d.incidents : []) as AbcIncident[]) });
-    lines.push(`${plural(abc.incidentCount, 'incident')} were recorded: ${abc.problemCount} with problem behavior and ${abc.replacementCount} where ${name} used the replacement skill.`);
-    if (abc.antecedents.length) lines.push(`The most common antecedent was "${abc.antecedents[0][0]}" (${abc.antecedents[0][1]}).`);
-    if (abc.behaviors.length) lines.push(`The most frequent problem behavior was "${abc.behaviors[0][0]}" (${abc.behaviors[0][1]}).`);
-    if (abc.functions.length) lines.push(`Consequences most often suggested a function of ${abc.functions[0][0].toLowerCase()} (${abc.functions[0][1]}).`);
+    lines.push(`${plural(abc.incidentCount, 'incident')} ${abc.incidentCount === 1 ? 'was' : 'were'} recorded: ${abc.problemCount} with problem behavior and ${abc.replacementCount} where ${name} used the replacement skill.`);
+    // Every choice tied for the most, since an incident can have several of each.
+    const most = (tally: [string, number][], one: string, many: string, format = (v: string) => `"${v}"`) => {
+      const top = topTied(tally);
+      return `${top.length === 1 ? one : many} ${joinWithAnd(top.map(([v]) => format(v)))} (${top[0][1]}${top.length > 1 ? ' each' : ''}).`;
+    };
+    if (abc.antecedents.length) lines.push(most(abc.antecedents, 'The most common antecedent was', 'The most common antecedents were'));
+    if (abc.behaviors.length) lines.push(most(abc.behaviors, 'The most frequent problem behavior was', 'The most frequent problem behaviors were'));
+    if (abc.functions.length) lines.push(most(abc.functions, 'Consequences most often suggested a function of', 'Consequences most often suggested functions of', v => v.toLowerCase()));
   }
 
   if (type === 'BEHAVIOR_DURATION') {
