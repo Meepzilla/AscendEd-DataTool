@@ -163,6 +163,7 @@ export default function HelpPage() {
           </Topic>
           <Topic value="de-students" title="Adding students and groups">
             <p>Use <B>Add Student</B> on the bottom bar or the Student button to fill a slot. There is no limit on slots; the arrows in the middle of the bottom bar scroll the cards one at a time.</p>
+            <p><B>Editing a student&apos;s goals:</B> the student button at the top of a card (<kbd>Alt + E</kbd>) opens Edit Student. There you can edit a goal (pencil), archive or remove it, or assign another. What is entered on the card is kept.</p>
             <p><B>Groups</B> load a class or small group in one step: Load Group → Manage Groups… to create one, then choose it from Load Group. Groups are included in backups.</p>
           </Topic>
           <Topic value="de-missed" title="Missed sessions">
