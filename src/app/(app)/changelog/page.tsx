@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-01',
+    title: 'Remove All Students in Data Entry',
+    description: 'Data Entry\'s bottom bar has a Remove All button next to Load Group, to clear every student at once (for example between groups). If any student has data entered that isn\'t saved, it names them and asks first: Cancel to go back and Save All, or Discard and Remove All. It follows the Student Access Lock like the other buttons.',
+    type: 'feature',
+    icon: ScrollText,
+  },
+  {
+    date: '2026-11-01',
     title: 'Changing a Session\'s Date When Editing It',
     description: 'In Edit Session, the date\'s calendar opened on the current month rather than the session\'s, so the session\'s date wasn\'t shown; it stayed open after a day was picked; and tapping the highlighted day cleared the date, so the session couldn\'t be saved. On an iPad the date also wouldn\'t open when it was tapped first (it worked after opening Start Time): the window put focus on the date when it opened, and the calendar then closed straight away. The window no longer does that. The calendar now opens on the session\'s month, closes when a day is picked, and keeps the date if the highlighted day is tapped. The same applies to the date in Data Entry.',
     type: 'fix',

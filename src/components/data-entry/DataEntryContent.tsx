@@ -399,6 +399,27 @@ export default function DataEntryContent() {
     if (selectedStudentIds[index] === studentId) return;
     guardSlotChange(index, () => applyStudentSelect(studentId, index));
   }, [guardSlotChange, applyStudentSelect, selectedStudentIds]);
+  // Remove All: empties Data Entry. When students have unsaved entries it asks first, and discards them if confirmed.
+  const [confirmRemoveAll, setConfirmRemoveAll] = useState<string[] | null>(null);
+  const applyRemoveAll = useCallback(() => {
+    startingStudentHandled.current = true;
+    selectedStudentIds.forEach(id => resetSessionStateForStudent(id));
+    setSelectedStudentIds([]);
+    setFocusedStudentSlotIndex(0);
+    setConfirmRemoveAll(null);
+  }, [selectedStudentIds, resetSessionStateForStudent, setSelectedStudentIds, setFocusedStudentSlotIndex]);
+  const removeAllStudents = useCallback(() => {
+    if (isStudentAccessLocked) {
+      toast({ title: 'Access Locked', description: 'Student access is locked. Unlock to make changes.' });
+      return;
+    }
+    const unsaved = selectedStudentIds
+      .filter(id => hasUnsavedEntry(studentSessionStates[id], goalDefaults))
+      .map(id => studentSessionStates[id]?.studentName ?? 'A student');
+    if (unsaved.length) setConfirmRemoveAll(unsaved);
+    else applyRemoveAll();
+  }, [isStudentAccessLocked, selectedStudentIds, studentSessionStates, goalDefaults, applyRemoveAll, toast]);
+
   const removeStudentSlot = useCallback((indexToRemove: number) => {
     guardSlotChange(indexToRemove, () => applyRemoveStudentSlot(indexToRemove));
   }, [guardSlotChange, applyRemoveStudentSlot]);
@@ -564,6 +585,16 @@ export default function DataEntryContent() {
               confirmText="Discard and Continue"
             />
           )}
+          {confirmRemoveAll && (
+            <ConfirmationModal
+              isOpen={!!confirmRemoveAll}
+              onClose={() => setConfirmRemoveAll(null)}
+              onConfirm={applyRemoveAll}
+              title="Remove all students and discard unsaved data?"
+              description={`${confirmRemoveAll.join(', ')} ${confirmRemoveAll.length === 1 ? 'has' : 'have'} data entered that hasn't been saved. Use Save All first to keep it, or continue to discard it.`}
+              confirmText="Discard and Remove All"
+            />
+          )}
           {isResetConfirmationOpen && (
             <ConfirmationModal
               isOpen={isResetConfirmationOpen}
@@ -645,6 +676,7 @@ export default function DataEntryContent() {
               selectionModalType, setSelectionModalType,
             }}
             onLoadGroup={loadGroup}
+            onRemoveAll={removeAllStudents}
             isStudentAccessLocked={isStudentAccessLocked}
             cardScroll={cardScroll}
             onScrollCards={scrollCards}
