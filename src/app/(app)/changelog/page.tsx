@@ -19,6 +19,20 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-01',
+    title: 'Remove All Students in Data Entry',
+    description: 'Data Entry\'s bottom bar has a Remove All button next to Load Group, to clear every student at once (for example between groups). If any student has data entered that isn\'t saved, it names them and asks first: Cancel to go back and Save All, or Discard and Remove All. It follows the Student Access Lock like the other buttons.',
+    type: 'feature',
+    icon: ScrollText,
+  },
+  {
+    date: '2026-11-01',
+    title: 'Changing a Session\'s Date When Editing It',
+    description: 'In Edit Session, the date\'s calendar opened on the current month rather than the session\'s, so the session\'s date wasn\'t shown; it stayed open after a day was picked; and tapping the highlighted day cleared the date, so the session couldn\'t be saved. On an iPad the date also wouldn\'t open when it was tapped first (it worked after opening Start Time): the window put focus on the date when it opened, and the calendar then closed straight away. The window no longer does that. The calendar now opens on the session\'s month, closes when a day is picked, and keeps the date if the highlighted day is tapped. The same applies to the date in Data Entry.',
+    type: 'fix',
+    icon: ScrollText,
+  },
+  {
+    date: '2026-11-01',
     title: 'Dashboard: Today\'s Work, Due Soon and Service Minutes',
     description: 'The dashboard now shows what needs attention. Today\'s Work has a button for each saved group that opens Data Entry with that group\'s students already in the slots, and a reminder with a Continue Data Entry button when entries are unsaved. Due Soon lists IEP annual reviews and re-evaluations that are overdue or due in the next 60 days, most overdue first. Service Minutes lists students who still need minutes this week or month (those who were short last time first), or who are behind an even pace through the school year for a yearly requirement. Tap a student to open their profile. Due Soon and Service Minutes use the dates and required minutes on each profile (Edit IEP Details); Quick Actions, Overview and Recent Activity are unchanged.',
     type: 'feature',

@@ -18,7 +18,10 @@ describe('backups', () => {
   it('round-trips a password-protected backup and rejects a wrong password', async () => {
     const text = await backupFileText(createBackup(data()), 'secret-pass');
     expect(isProtectedBackup(text)).toBe(true);
-    expect(text).not.toContain('ava');
+    // The student's data isn't readable in the file. Checked with quote marks: the encrypted part is base64, which has
+    // no quote marks, so random ciphertext can't match by chance (a bare 'ava' sometimes did, e.g. "…Navab…").
+    expect(text).not.toContain('"ava"');
+    expect(text).not.toContain('"students"');
     await expect(decryptBackupText(text, 'wrong-pass')).rejects.toThrow(/Wrong password/);
     expect(parseBackup(await decryptBackupText(text, 'secret-pass')).data.students[0].id).toBe('ava');
   }, 20000);
