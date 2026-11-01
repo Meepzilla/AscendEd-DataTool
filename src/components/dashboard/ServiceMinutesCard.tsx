@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Clock } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -47,21 +47,23 @@ function Row({ item }: { item: ServiceItem }) {
 function ScrollingList({ count, children }: { count: number; children: React.ReactNode }) {
   const ref = useRef<HTMLUListElement>(null);
   const [maxHeight, setMaxHeight] = useState<number | undefined>(undefined);
+  // Measured after every render, since a row's text can change (and wrap differently) without the count
+  // changing, and again when the list's width changes (rotation). Same value: no re-render.
+  const measure = useCallback(() => {
+    const list = ref.current;
+    if (!list) return;
+    const rows = list.children;
+    if (rows.length <= VISIBLE_ROWS) return setMaxHeight(undefined);
+    setMaxHeight((rows[VISIBLE_ROWS] as HTMLElement).offsetTop - (rows[0] as HTMLElement).offsetTop);
+  }, []);
+  useLayoutEffect(measure);
   useLayoutEffect(() => {
     const list = ref.current;
     if (!list) return;
-    const measure = () => {
-      const rows = list.children;
-      if (rows.length <= VISIBLE_ROWS) return setMaxHeight(undefined);
-      const first = rows[0] as HTMLElement;
-      const afterLast = rows[VISIBLE_ROWS] as HTMLElement;
-      setMaxHeight(afterLast.offsetTop - first.offsetTop);
-    };
-    measure();
     const observer = new ResizeObserver(measure);
     observer.observe(list);
     return () => observer.disconnect();
-  }, [count]);
+  }, [measure]);
   return (
     <ul
       ref={ref}
