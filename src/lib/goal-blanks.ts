@@ -4,7 +4,9 @@ import type { Goal } from './types';
 // as measured by ______"). A run of three or more underscores is a blank. Blanks are filled where the goal is
 // shown (its text and name), the same way "[date]" and "STUDENT" are; the stored text keeps its blanks.
 // - Blanks the goal's own settings can answer are filled automatically: "___%" with the target, "___ out of ___"
-//   with the target as a fraction (80% → 4 out of 5), and "___ consecutive" with the mastery sessions.
+//   with the target as a fraction (80% → 4 out of 5) when the text states no percentage, and "___ consecutive"
+//   with the mastery sessions. In "___% accuracy in ___ out of ___ opportunities" the fraction is a separate
+//   criterion (how many opportunities), so it isn't taken from the target.
 // - Any blank can be filled by hand in Edit Goal (goal.blankFills, by position); that wins over the automatic value.
 
 const BLANK = /_{3,}/g;
@@ -50,13 +52,14 @@ export function automaticBlankValues(text: string, goal: BlankGoal): (string | u
   const blanks = findBlanks(text);
   const values: (string | undefined)[] = blanks.map(() => undefined);
   const target = goal.sessionTargetValue;
+  const fractionIsTarget = !statesPercent(text);
   blanks.forEach((blank, i) => {
     const after = text.slice(blank.end, blank.end + 20);
     if (target !== undefined && /^\s?%/.test(after)) values[i] = String(target);
     if (/^\s*consecutive\b/i.test(after)) values[i] = String(goal.masterySessions ?? 3); // mastery's default, as in aim-line.ts
     // "___ out of ___": this blank and the next.
     const next = blanks[i + 1];
-    if (target !== undefined && next && /^\s+out of\s+$/i.test(text.slice(blank.end, next.start))) {
+    if (target !== undefined && fractionIsTarget && next && /^\s+out of\s+$/i.test(text.slice(blank.end, next.start))) {
       const fraction = percentAsFraction(target);
       if (fraction) { values[i] = String(fraction[0]); values[i + 1] = String(fraction[1]); }
     }
@@ -76,6 +79,11 @@ export function fillBlanks(text: string, goal: BlankGoal): string {
   const values = blankValues(text, goal);
   let i = 0;
   return text.replace(BLANK, blank => values[i++] ?? blank);
+}
+
+/** Whether the text states a percentage (written, or a "___%" blank). Its fractions are then a separate criterion. */
+function statesPercent(text: string): boolean {
+  return /(?<![\d.])\d{1,3}(?:\.\d+)?\s?%|_{3,}\s?%/.test(text);
 }
 
 const normalize = (s: string) => s.toLowerCase().replace(/_{3,}/g, '_').replace(/\s+/g, ' ').trim();
@@ -101,6 +109,8 @@ export function fillNameBlanks(goal: BlankGoal & { name: string }): string {
 // ("with 80% accuracy", "in 4 out of 5 opportunities", "across 3 consecutive sessions"), so when the target or
 // mastery is changed the text shows the new values instead of contradicting them. Only text that states the target
 // one way is changed (every percentage the same value, every fraction the same ratio), so other numbers stay.
+// A fraction is the target only when the text states no percentage: in "with 80% accuracy in 4 out of 5
+// opportunities" the accuracy is the target and "4 out of 5" is how many opportunities, set separately.
 
 // Goal types whose target isn't a percentage (a count, a rating, minutes or seconds).
 const NOT_PERCENT = new Set(['COMMUNICATION_FUNCTIONS', 'QUALITATIVE_OBSERVATION', 'COGNITIVE', 'BEHAVIOR_FREQUENCY', 'BEHAVIOR_DURATION', 'BEHAVIOR_LATENCY']);
@@ -123,7 +133,7 @@ export function matchTextToTarget(text: string, goal: BlankGoal): string {
   if (target !== undefined && target !== null && percentTarget(goal)) {
     const percents = new Set([...out.matchAll(PERCENT)].map(m => Number(m[1])));
     if (percents.size === 1 && !percents.has(target)) out = out.replace(PERCENT, (_m, _n, space) => `${target}${space}%`);
-    const fractions = [...out.matchAll(FRACTION)];
+    const fractions = statesPercent(text) ? [] : [...out.matchAll(FRACTION)];
     const ratios = new Set(fractions.map(m => Math.round((Number(m[1]) / Number(m[3])) * 1000)));
     if (fractions.length && ratios.size === 1 && !ratios.has(Math.round(target * 10))) {
       out = out.replace(FRACTION, (whole, _k, between, n) => {
