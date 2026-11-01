@@ -104,11 +104,6 @@ export default function DashboardPage() {
 
       <TodaysWork />
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <DueSoonCard />
-        <ServiceMinutesCard />
-      </div>
-
       {/* Quick Actions */}
       <section aria-labelledby="quick-actions-title">
         <h2 id="quick-actions-title" className="text-xl font-semibold mb-4 text-foreground">Quick Actions</h2>
@@ -141,6 +136,11 @@ export default function DashboardPage() {
           })}
         </div>
       </section>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <DueSoonCard />
+        <ServiceMinutesCard />
+      </div>
 
       {/* Summary Cards */}
       <section aria-labelledby="summary-title">
