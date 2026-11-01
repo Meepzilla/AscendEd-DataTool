@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-01',
+    title: 'View Report Button on the Student Profile',
+    description: 'A student\'s profile now has a View Report button at the start of its buttons. It opens the Reports page for that student: charts for each goal, the data summary, attendance and written narratives, with the Progress Report one tap away. On an iPad the profile buttons now sit on their own row under the student\'s name, so the name isn\'t squeezed.',
+    type: 'feature',
+    icon: ScrollText,
+  },
+  {
+    date: '2026-11-01',
     title: 'Last Student Can Be Removed in Data Entry',
     description: 'After opening a student\'s profile, removing the last student from Data Entry put that student straight back, so the list could never be emptied. The student from the profile now fills the first slot only when Data Entry opens, and removing students (with the X or Alt + Q) can go all the way down to none.',
     type: 'fix',
