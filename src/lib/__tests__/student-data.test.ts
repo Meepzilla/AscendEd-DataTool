@@ -97,3 +97,26 @@ describe('planRestore (backups)', () => {
     expect(summary).toMatchObject({ students: 1, sessions: 1 });
   });
 });
+
+describe('planSessionImport: goals and duplicates', () => {
+  const imported = (overrides: Partial<ImportedSession> = {}): ImportedSession => ({
+    studentId: 'ava', studentName: 'Ava', date: '2026-10-01T09:00:00.000Z', time: '09:00', endTime: '09:30', activity: '', notes: '',
+    goals: [{ goalId: 'gx', goalName: 'Fluency', goalType: 'FLUENCY_SYLLABLE_STUTTER', data: { totalSyllables: 10 } }], originalGoalHeaders: [], ...overrides,
+  });
+
+  it('doesn\'t bring back a goal deleted after the first import when the same file is imported again', () => {
+    const first = planSessionImport([student('ava', 'Ava')], [], [imported({ sourceSessionId: 'f1' })], 'u');
+    expect(first.addedGoalCount).toBe(1);
+    const goalDeleted = first.students.map(s => ({ ...s, goals: [] }));
+    const again = planSessionImport(goalDeleted, first.sessions, [imported({ sourceSessionId: 'f1' })], 'u');
+    expect(again).toMatchObject({ newCount: 0, duplicateCount: 1, addedGoalCount: 0 });
+    expect(again.students[0].goals).toHaveLength(0);
+  });
+
+  it('adds a missing goal once when several new sessions use it', () => {
+    const plan = planSessionImport([student('ava', 'Ava')], [], [imported({ sourceSessionId: 'a' }), imported({ sourceSessionId: 'b', time: '10:00' })], 'u');
+    expect(plan.addedGoalCount).toBe(1);
+    expect(plan.students[0].goals).toHaveLength(1);
+    expect(plan.sessions.every(s => s.goals[0].goalId === 'gx')).toBe(true);
+  });
+});

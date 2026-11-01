@@ -107,7 +107,6 @@ export default function DataEntryContent() {
     initial: draftHadEntries ? { date: draft?.sessionDate, time: draft?.sessionTime, endTime: draft?.sessionEndTime } : undefined,
     anyUnsaved,
     statesBuilt,
-    hasEntriesNow: () => !statesBuilt || anyUnsaved,
   });
   // Each student's card state follows the students and their goals (see syncSessionStates).
   useEffect(() => {
@@ -177,8 +176,11 @@ export default function DataEntryContent() {
   }, [students]);
 
 
+  // A date that can't be used (e.g. from a damaged draft) counts as no date, so saving asks for one.
+  const validSessionDate = sessionDate && !Number.isNaN(sessionDate.getTime()) ? sessionDate : undefined;
+
   const handleSave = async () => {
-    if (!sessionDate) {
+    if (!validSessionDate) {
         toast({ title: "Error", description: "Please select a date.", variant: "destructive" });
         return;
     }
@@ -210,26 +212,26 @@ export default function DataEntryContent() {
     savingRef.current = true;
 
     setIsSaving(true);
-    const session = sessionFromState(state, { date: sessionDate, time: sessionTime, endTime: sessionEndTime });
-
-    if (session.goals.length === 0) {
+    // The buttons are released whatever happens, so a failed save can't leave them disabled.
+    try {
+      const session = sessionFromState(state, { date: validSessionDate, time: sessionTime, endTime: sessionEndTime });
+      if (session.goals.length === 0) {
         toast({ title: "Info", description: `Cannot save for ${state.studentName}, no active goals with data.`, variant: "default" });
-        savingRef.current = false;
-        setIsSaving(false);
         return;
-    }
-
-    const savedSession = await addSession(session);
-    if (savedSession) {
+      }
+      const savedSession = await addSession(session);
+      if (savedSession) {
         toast({ title: "Success", description: `Session for ${state.studentName} saved.` });
         resetSessionStateForStudent(focusedStudentId);
+      }
+    } finally {
+      savingRef.current = false;
+      setIsSaving(false);
     }
-    savingRef.current = false;
-    setIsSaving(false);
   }
 
   const handleSaveAll = async () => {
-    if (!sessionDate) {
+    if (!validSessionDate) {
         toast({ title: "Error", description: "Please select a date.", variant: "destructive" });
         return;
     }
@@ -240,47 +242,50 @@ export default function DataEntryContent() {
     if (savingRef.current) return;
     savingRef.current = true;
     setIsSavingAll(true);
-    let savedCount = 0, errorCount = 0, simulatedCount = 0;
-    for (const studentId of selectedStudentIds) {
-        const state = studentSessionStates[studentId];
-        // Students with nothing entered get no (empty) session.
-        if (!state || !hasUnsavedEntry(state, goalDefaults)) continue;
-        if (isStudentAccessLocked) {
-            simulatedCount++;
-            continue;
-        }
-        const session = sessionFromState(state, { date: sessionDate, time: sessionTime, endTime: sessionEndTime });
-        if (session.goals.length === 0) continue;
-        const savedSession = await addSession(session);
-        if (savedSession) {
-            savedCount++;
-            resetSessionStateForStudent(studentId);
-        } else {
-            errorCount++;
-        }
+    try {
+      let savedCount = 0, errorCount = 0, simulatedCount = 0;
+      for (const studentId of selectedStudentIds) {
+          const state = studentSessionStates[studentId];
+          // Students with nothing entered get no (empty) session.
+          if (!state || !hasUnsavedEntry(state, goalDefaults)) continue;
+          if (isStudentAccessLocked) {
+              simulatedCount++;
+              continue;
+          }
+          const session = sessionFromState(state, { date: validSessionDate, time: sessionTime, endTime: sessionEndTime });
+          if (session.goals.length === 0) continue;
+          const savedSession = await addSession(session);
+          if (savedSession) {
+              savedCount++;
+              resetSessionStateForStudent(studentId);
+          } else {
+              errorCount++;
+          }
+      }
+      if (savedCount > 0) toast({ title: "Success", description: `Saved ${savedCount} session(s).` });
+      if (simulatedCount > 0) toast({ title: "Simulated Save", description: `${simulatedCount} session(s) not saved due to lock.` });
+      if (errorCount > 0) toast({ title: "Error", description: `Failed to save ${errorCount} session(s).`, variant: "destructive" });
+      if (savedCount + simulatedCount + errorCount === 0) toast({ title: "Nothing to save", description: "Nothing has been entered for these students yet." });
+    } finally {
+      savingRef.current = false;
+      setIsSavingAll(false);
     }
-    if (savedCount > 0) toast({ title: "Success", description: `Saved ${savedCount} session(s).` });
-    if (simulatedCount > 0) toast({ title: "Simulated Save", description: `${simulatedCount} session(s) not saved due to lock.` });
-    if (errorCount > 0) toast({ title: "Error", description: `Failed to save ${errorCount} session(s).`, variant: "destructive" });
-    if (savedCount + simulatedCount + errorCount === 0) toast({ title: "Nothing to save", description: "Nothing has been entered for these students yet." });
-    savingRef.current = false;
-    setIsSavingAll(false);
   }
 
   // A student card's Missed button: saves a session with the reason and no goal data (attendance.ts), on the
   // session date and times. What was entered on the card is kept.
   const recordMissedSession = async (studentId: string, reason: MissedReason, note: string): Promise<boolean> => {
     const student = students.find(s => s.id === studentId);
-    if (!student || !sessionDate) return false;
+    if (!student || !validSessionDate) return false;
     if (isStudentAccessLocked) {
       toast({ title: 'Access Locked', description: 'Student access is locked. Unlock to record a missed session.' });
       return false;
     }
     const saved = await addSession({
-      studentId, studentName: student.name, date: sessionDate.toISOString(), time: sessionTime, endTime: sessionEndTime,
+      studentId, studentName: student.name, date: validSessionDate.toISOString(), time: sessionTime, endTime: sessionEndTime,
       activity: '', notes: note, goals: [], originalGoalHeaders: student.goals, missed: { reason, ...(note ? { note } : {}) },
     });
-    if (saved) toast({ title: 'Missed session recorded', description: `${student.name}: ${MISSED_REASON_SHORT[reason]}, ${formatDate(sessionDate)}.` });
+    if (saved) toast({ title: 'Missed session recorded', description: `${student.name}: ${MISSED_REASON_SHORT[reason]}, ${formatDate(validSessionDate)}.` });
     return !!saved;
   };
 
