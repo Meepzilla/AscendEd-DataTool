@@ -19,6 +19,20 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-01',
+    title: 'Service Minutes Card Scrolls',
+    description: 'The dashboard\'s Service Minutes card shows 4 students at a time and scrolls to show the rest, so every student who still needs minutes is listed (it used to stop at 8 with "and N more"). The card says how many there are when there are more than 4.',
+    type: 'improvement',
+    icon: ScrollText,
+  },
+  {
+    date: '2026-11-01',
+    title: 'Bottom Menu Bar Sits Above the Footer',
+    description: 'With the menu bar at the bottom of the screen (Settings → Interface), it now sits above the footer with the privacy notice and hotkeys instead of below it. The footer still scrolls with the page: the menu bar stays at the bottom of the screen while you scroll, and at the end of the page the footer appears beneath it. In Data Entry, the bar with Save All sits just above the menu bar and the student cards are sized to fit. With the menu bar at the top nothing changes.',
+    type: 'improvement',
+    icon: ScrollText,
+  },
+  {
+    date: '2026-11-01',
     title: 'Remove All Students in Data Entry',
     description: 'Data Entry\'s bottom bar has a Remove All button next to Load Group, to clear every student at once (for example between groups). It always asks first. If any student has data entered that isn\'t saved, it names them: Cancel to go back and Save All, or Discard and Remove All. It follows the Student Access Lock like the other buttons.',
     type: 'feature',

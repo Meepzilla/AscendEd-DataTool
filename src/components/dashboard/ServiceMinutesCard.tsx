@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Clock } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,7 +13,8 @@ import { formatMinutes } from '@/lib/student-overview';
 // The dashboard's Service Minutes: who still needs minutes this week or month (or is behind an even pace through
 // the school year), from each student's required minutes (Edit IEP Details) and their sessions' start and end times.
 
-const SHOWN = 8;
+// Rows shown at once; the list scrolls for the rest.
+const VISIBLE_ROWS = 4;
 const PERIOD_WORD = { week: 'week', month: 'month', year: 'school year' } as const;
 
 function Row({ item }: { item: ServiceItem }) {
@@ -39,6 +40,41 @@ function Row({ item }: { item: ServiceItem }) {
   );
 }
 
+/**
+ * The list, as tall as its first VISIBLE_ROWS rows and scrolling for the rest. Rows differ in height (names and
+ * figures wrap on narrow screens), so the height is measured from the rows rather than fixed.
+ */
+function ScrollingList({ count, children }: { count: number; children: React.ReactNode }) {
+  const ref = useRef<HTMLUListElement>(null);
+  const [maxHeight, setMaxHeight] = useState<number | undefined>(undefined);
+  useLayoutEffect(() => {
+    const list = ref.current;
+    if (!list) return;
+    const measure = () => {
+      const rows = list.children;
+      if (rows.length <= VISIBLE_ROWS) return setMaxHeight(undefined);
+      const first = rows[0] as HTMLElement;
+      const afterLast = rows[VISIBLE_ROWS] as HTMLElement;
+      setMaxHeight(afterLast.offsetTop - first.offsetTop);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(list);
+    return () => observer.disconnect();
+  }, [count]);
+  return (
+    <ul
+      ref={ref}
+      className="relative divide-y overflow-y-auto overscroll-contain"
+      style={maxHeight ? { maxHeight } : undefined}
+      tabIndex={count > VISIBLE_ROWS ? 0 : undefined}
+      aria-label={count > VISIBLE_ROWS ? `Students who still need service minutes, ${count}, scrollable` : undefined}
+    >
+      {children}
+    </ul>
+  );
+}
+
 export default function ServiceMinutesCard() {
   const { students, sessions, sessionsLoading } = useStudentData();
   const { tracked, behind } = useMemo(() => serviceStatus(students, sessions), [students, sessions]);
@@ -57,9 +93,9 @@ export default function ServiceMinutesCard() {
         ) : behind.length === 0 ? (
           <p className="text-sm text-muted-foreground">Everyone with required minutes ({tracked}) has met them so far.</p>
         ) : (
-          <ul className="divide-y">{behind.slice(0, SHOWN).map(item => <Row key={item.studentId} item={item} />)}</ul>
+          <ScrollingList count={behind.length}>{behind.map(item => <Row key={item.studentId} item={item} />)}</ScrollingList>
         )}
-        {behind.length > SHOWN && <p className="pt-2 text-xs text-muted-foreground">and {behind.length - SHOWN} more.</p>}
+        {behind.length > VISIBLE_ROWS && <p className="pt-2 text-xs text-muted-foreground">{plural(behind.length, 'student')}: scroll the list to see them all.</p>}
         {tracked > 0 && !sessionsLoading && <p className="pt-2 text-xs text-muted-foreground">Counts sessions with start and end times. Missed sessions aren&apos;t counted.</p>}
       </CardContent>
     </Card>
