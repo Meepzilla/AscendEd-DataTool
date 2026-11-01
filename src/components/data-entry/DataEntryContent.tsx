@@ -399,7 +399,8 @@ export default function DataEntryContent() {
     if (selectedStudentIds[index] === studentId) return;
     guardSlotChange(index, () => applyStudentSelect(studentId, index));
   }, [guardSlotChange, applyStudentSelect, selectedStudentIds]);
-  // Remove All: empties Data Entry. When students have unsaved entries it asks first, and discards them if confirmed.
+  // Remove All: empties Data Entry, always after asking. The question names anyone with unsaved entries, which are
+  // discarded if confirmed.
   const [confirmRemoveAll, setConfirmRemoveAll] = useState<string[] | null>(null);
   const applyRemoveAll = useCallback(() => {
     startingStudentHandled.current = true;
@@ -416,9 +417,8 @@ export default function DataEntryContent() {
     const unsaved = selectedStudentIds
       .filter(id => hasUnsavedEntry(studentSessionStates[id], goalDefaults))
       .map(id => studentSessionStates[id]?.studentName ?? 'A student');
-    if (unsaved.length) setConfirmRemoveAll(unsaved);
-    else applyRemoveAll();
-  }, [isStudentAccessLocked, selectedStudentIds, studentSessionStates, goalDefaults, applyRemoveAll, toast]);
+    setConfirmRemoveAll(unsaved);
+  }, [isStudentAccessLocked, selectedStudentIds, studentSessionStates, goalDefaults, toast]);
 
   const removeStudentSlot = useCallback((indexToRemove: number) => {
     guardSlotChange(indexToRemove, () => applyRemoveStudentSlot(indexToRemove));
@@ -590,9 +590,11 @@ export default function DataEntryContent() {
               isOpen={!!confirmRemoveAll}
               onClose={() => setConfirmRemoveAll(null)}
               onConfirm={applyRemoveAll}
-              title="Remove all students and discard unsaved data?"
-              description={`${confirmRemoveAll.join(', ')} ${confirmRemoveAll.length === 1 ? 'has' : 'have'} data entered that hasn't been saved. Use Save All first to keep it, or continue to discard it.`}
-              confirmText="Discard and Remove All"
+              title={confirmRemoveAll.length ? 'Remove all students and discard unsaved data?' : (selectedStudentIds.length === 1 ? 'Remove the student?' : `Remove all ${selectedStudentIds.length} students?`)}
+              description={confirmRemoveAll.length
+                ? `${confirmRemoveAll.join(', ')} ${confirmRemoveAll.length === 1 ? 'has' : 'have'} data entered that hasn't been saved. Use Save All first to keep it, or continue to discard it.`
+                : 'They are taken out of Data Entry. Their saved sessions and goals aren\'t affected.'}
+              confirmText={confirmRemoveAll.length ? 'Discard and Remove All' : 'Remove All'}
             />
           )}
           {isResetConfirmationOpen && (
