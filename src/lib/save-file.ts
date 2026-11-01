@@ -5,6 +5,9 @@
  * - Android app: writes the file to the app's cache and opens the share sheet (Drive, email, Files…).
  *   The Android WebView can't download files.
  * - Phones/tablets in a browser (iPad Home Screen app): the system share sheet ("Save to Files", AirDrop, Mail…).
+ *   When the browser won't share the file it is downloaded instead: Chrome on Android refuses some file types
+ *   (a backup's .json) with "Permission denied" even when canShare said yes, and refuses any share once the tap
+ *   that started it is a few seconds old (a password-protected backup takes a moment to encrypt).
  * - Desktop browsers: a normal download.
  *
  * Returns false if the user cancelled the share sheet.
@@ -32,7 +35,7 @@ export async function saveTextFile(fileName: string, text: string, mimeType = 'a
       return true;
     } catch (error) {
       if (isShareCancel(error)) return false;
-      throw error;
+      // Not allowed to share (see above): download it instead.
     }
   }
 
