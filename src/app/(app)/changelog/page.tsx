@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-01',
+    title: 'Student Groups Window Fits on iPad and Phone',
+    description: 'With a group of many students, the list of names stretched the Student Groups window, pushing the delete and New Group buttons (and on a phone, every button) past its edge. The names now wrap onto two lines and the buttons stay inside. Every pop-up window now keeps long text within its width the same way.',
+    type: 'fix',
+    icon: ScrollText,
+  },
+  {
+    date: '2026-11-01',
     title: 'View Report Button on the Student Profile',
     description: 'A student\'s profile now has a View Report button at the start of its buttons. It opens the Reports page for that student: charts for each goal, the data summary, attendance and written narratives, with the Progress Report one tap away. On an iPad the profile buttons now sit on their own row under the student\'s name, so the name isn\'t squeezed.',
     type: 'feature',
