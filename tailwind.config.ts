@@ -19,6 +19,10 @@ export default {
   theme: {
     // 'extend' allows adding new theme values without overriding existing ones.
     extend: {
+      // Short screens, such as a phone turned sideways: `short:` styles keep bars to one line there.
+      screens: {
+        short: { raw: '(max-height: 560px)' },
+      },
       // Custom font families.
       fontFamily: {
         body: ['Inter', 'sans-serif'],
