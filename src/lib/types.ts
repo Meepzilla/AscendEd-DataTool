@@ -49,6 +49,8 @@ export interface Goal {
   masterySessions?: number;
   /** Task analysis goals: the steps of the skill, in order (task-analysis.ts). */
   taskSteps?: string[];
+  /** What fills each blank ("___") in the goal text, by position; empty uses the automatic value (goal-blanks.ts). */
+  blankFills?: string[];
   // Additional fields based on goal type might be present
   [key: string]: any;
 }
@@ -264,6 +266,7 @@ export const AssignedGoalEditSchema = z.object({
     (val) => (val === '' || val === undefined || val === null ? undefined : Number(val)),
     z.number().int('Use a whole number.').min(1, 'At least 1 session.').max(20, 'At most 20 sessions.').optional()
   ),
+  blankFills: z.array(z.string()).optional(),
   isArchived: z.boolean().optional(),
 });
 

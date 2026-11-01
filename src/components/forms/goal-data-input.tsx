@@ -2,6 +2,7 @@
 'use client';
 
 import React from 'react';
+import { fillNameBlanks } from '@/lib/goal-blanks';
 import type { Goal, SessionGoalData, GoalType, TrialStatus } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -212,7 +213,7 @@ export default function GoalDataInputComponent({
             <div className="flex-grow min-w-0" onClick={isLocked ? undefined : onSetFocus}>
                 <CardTitle className="text-sm font-semibold">
                     <div className="flex justify-between items-start">
-                        <GoalTextPopover name={goal.name} smartGoal={goalStatement(goal, studentName)} className="whitespace-normal break-words mr-1" />
+                        <GoalTextPopover name={fillNameBlanks(goal)} smartGoal={goalStatement(goal, studentName)} className="whitespace-normal break-words mr-1" />
                         <Badge variant="outline" className="text-xs px-1.5 py-0.5 shrink-0 max-w-[45%] text-center leading-tight">
                             {goalTypeLabel(goal.type)}
                         </Badge>

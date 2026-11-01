@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 import TargetDirectionField from './TargetDirectionField';
 import { goalTypeLabel } from '@/lib/helpers';
+import { automaticBlankValues, findBlanks } from '@/lib/goal-blanks';
 
 type EditAssignedGoalFormData = z.infer<typeof AssignedGoalEditSchema>;
 
@@ -60,6 +61,7 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
         baseline: goalToEdit.baseline ?? ('' as unknown as number),
         baselineDate: goalToEdit.baselineDate ?? '',
         masterySessions: goalToEdit.masterySessions ?? ('' as unknown as number),
+        blankFills: goalToEdit.blankFills ?? [],
         targetDirection: goalToEdit.targetDirection,
         isArchived: goalToEdit.isArchived || false,
         dataCaptureType: goalToEdit.dataCaptureType || goalToEdit.type,
@@ -71,7 +73,10 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
     if (!goalToEdit) return;
     setIsSubmitting(true);
     try {
-      await updateStudentGoal(studentId, goalToEdit.id, data);
+      // One fill per blank in the (possibly edited) text; empty ones use the automatic value.
+      const blankCount = findBlanks(data.smartGoal).length;
+      const blankFills = Array.from({ length: blankCount }, (_, i) => (data.blankFills?.[i] ?? '').trim());
+      await updateStudentGoal(studentId, goalToEdit.id, { ...data, blankFills: blankFills.some(Boolean) ? blankFills : undefined });
       toast({ title: 'Success', description: 'Goal updated successfully.' });
       onClose();
     } catch (error) {
@@ -133,6 +138,8 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
               </FormItem>
             )}
           />
+
+          <BlankFills form={form} />
 
           <FormField
             control={form.control}
@@ -315,5 +322,45 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
         </form>
       </Form>
     </GenericModal>
+  );
+}
+
+/**
+ * Fill in the Blanks: a box for each blank ("___") in the goal text, labelled with the words around it. A blank the
+ * goal's target or mastery answers shows that value as its placeholder and is filled with it unless something is
+ * typed. The goal is shown with its blanks filled; the text itself keeps them.
+ */
+function BlankFills({ form }: { form: ReturnType<typeof useForm<EditAssignedGoalFormData>> }) {
+  const [text, target, mastery, fills] = form.watch(['smartGoal', 'sessionTargetValue', 'masterySessions', 'blankFills']);
+  const blanks = findBlanks(text ?? '');
+  if (blanks.length === 0) return null;
+  const toNumber = (v: unknown) => (v === '' || v === undefined || v === null || Number.isNaN(Number(v)) ? undefined : Number(v));
+  const automatic = automaticBlankValues(text ?? '', { sessionTargetValue: toNumber(target), masterySessions: toNumber(mastery) });
+  const setFill = (index: number, value: string) => {
+    const next = Array.from({ length: blanks.length }, (_, i) => (fills ?? [])[i] ?? '');
+    next[index] = value;
+    form.setValue('blankFills', next, { shouldDirty: true });
+  };
+  return (
+    <fieldset className="space-y-2 rounded-md border p-3">
+      <legend className="px-1 text-sm font-medium">Fill in the Blanks</legend>
+      <p className="text-xs text-muted-foreground">
+        What each blank in the goal text says when the goal is shown. Blanks the target answers fill in on their own
+        (shown greyed); type to use something else.
+      </p>
+      {blanks.map(blank => (
+        <div key={blank.index} className="space-y-1">
+          <label htmlFor={`goal-blank-${blank.index}`} className="block text-xs text-muted-foreground">
+            {blank.before ? `…${blank.before} ` : ''}<span className="font-semibold text-foreground">[blank {blank.index + 1}]</span>{blank.after ? ` ${blank.after}…` : ''}
+          </label>
+          <Input
+            id={`goal-blank-${blank.index}`}
+            value={(fills ?? [])[blank.index] ?? ''}
+            placeholder={automatic[blank.index] ?? 'Leave empty to keep the blank'}
+            onChange={e => setFill(blank.index, e.target.value)}
+          />
+        </div>
+      ))}
+    </fieldset>
   );
 }
