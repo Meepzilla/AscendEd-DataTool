@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-02',
+    title: 'Quicker Custom Goals',
+    description: 'Writing a custom goal now has its own tab in Assign / Create Goal (From templates | Write a custom goal), with the whole window. Only the goal text is needed: type or paste it, and the goal name, goal type, target and target date are filled in from its wording, the same way imported IEPs are read ("80% accuracy" → 80%, "4 out of 5" → 80%, "at least 3 functions" → 3, "by May 2027" → May 31, 2027, otherwise the annual review date). Each is marked "from the goal text" and can be changed; a field you change keeps your value, and choosing another goal type re-reads the target for it. The target date, baseline and mastery are set in the same form, so there is no second trip to Edit Goal, and "Also save as a template" saves the goal as a template too (under Custom), linked to the student\'s goal, to give to other students later.',
+    type: 'improvement',
+    icon: Pencil,
+  },
+  {
+    date: '2026-11-02',
     title: 'Placeholders in Goal Text',
     description: 'Goal text in custom goals, templates and assigned goals can include placeholders in square brackets, filled in wherever the goal is shown (profile, Data Entry, reports and the progress report): [student], [full name], [date], [target], [opportunities], [sessions], [baseline], [baseline date], [annual review], [IEP date], [re-evaluation] and [service minutes]. For example, "By [date], [student] will produce /s/ in [opportunities] opportunities" reads "By Jun 30, 2027, Ava will produce /s/ in 4 out of 5 opportunities". Tap a placeholder under the goal text in Edit Goal, a template or a custom goal to insert it where the cursor is; a preview shows the goal as it will read. The goal keeps the placeholders, so the text follows the goal\'s target and the student\'s IEP dates, and a template reads "the student" until it is assigned. A placeholder with nothing to fill it (a goal without a baseline) stays as typed.',
     type: 'feature',
