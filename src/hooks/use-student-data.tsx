@@ -39,7 +39,8 @@ interface StudentDataContextType {
   error: Error | null;
   addErrorLog: (log: any) => void;
 
-  addStudent: (name: string) => Promise<Student | null>;
+  /** `quiet`: no "added" message (the caller shows its own). */
+  addStudent: (name: string, options?: { quiet?: boolean }) => Promise<Student | null>;
   updateStudent: (studentId: string, data: Partial<Student>) => Promise<void>;
   deleteStudent: (studentId: string) => Promise<void>;
   deleteStudents: (studentIds: string[]) => boolean;
@@ -155,12 +156,12 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return true;
   }, [saveToLocal, sessionsKey]);
 
-  const addStudent = useCallback(async (name: string) => {
+  const addStudent = useCallback(async (name: string, options?: { quiet?: boolean }) => {
     if (!currentUser) return null;
     const newStudent: Omit<Student, 'id'> = { name, goals: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), userId: currentUser.uid, isArchived: false };
     const studentWithId = { ...newStudent, id: generateUUID()};
     if (!commitStudents([...studentsRef.current, studentWithId].sort(byName))) return null;
-    toast({ title: "Success", description: `Student "${name}" added.` });
+    if (!options?.quiet) toast({ title: "Success", description: `Student "${name}" added.` });
     return studentWithId;
   }, [currentUser, toast, commitStudents]);
 

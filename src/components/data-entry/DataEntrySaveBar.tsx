@@ -63,19 +63,22 @@ export default function DataEntrySaveBar({
         </div>
 
         <div className="flex flex-wrap short:flex-nowrap justify-end gap-2 ml-auto">
-          {/* Always in view, unlike the Add Student Slot card at the far end of the slots. */}
-          <Button variant="outline" onClick={onAddStudent} size="lg" className={SHORT_BUTTON} aria-label="Add Student Slot"
-            disabled={!canAddStudent} title="Add another student slot (Alt+W)">
+          {/* Always in view, unlike the Add a Student card at the far end of the cards. */}
+          <Button variant="outline" onClick={onAddStudent} size="lg" className={SHORT_BUTTON} aria-label="Add a student"
+            disabled={!canAddStudent} title="Add another student's card (Alt+W)">
             <PlusCircle className="mr-2 h-5 w-5" />
             Add<span className="hidden sm:inline short:hidden">&nbsp;Student</span>
           </Button>
-          <Button variant="outline" onClick={onReset} disabled={busy} size="lg" className={SHORT_BUTTON} aria-label="Reset Focused">
+          {/* "Student" is the highlighted (outlined) card's student; Save All saves every card. */}
+          <Button variant="outline" onClick={onReset} disabled={busy} size="lg" className={SHORT_BUTTON} aria-label="Reset student"
+            title="Clear what hasn't been saved for the highlighted student (the outlined card)">
             <RotateCcw className="mr-2 h-5 w-5" />
-            Reset<span className="hidden sm:inline short:hidden">&nbsp;Focused</span>
+            Reset<span className="hidden sm:inline short:hidden">&nbsp;Student</span>
           </Button>
-          <Button onClick={onSave} disabled={busy} size="lg" className={SHORT_BUTTON} aria-label="Save Focused">
+          <Button onClick={onSave} disabled={busy} size="lg" className={SHORT_BUTTON} aria-label="Save student"
+            title="Save the highlighted student only (the outlined card). Save All saves every card.">
             <Save className="mr-2 h-5 w-5" />
-            {isSaving ? 'Saving...' : <>Save<span className="hidden sm:inline short:hidden">&nbsp;Focused</span></>}
+            {isSaving ? 'Saving...' : <>Save<span className="hidden sm:inline short:hidden">&nbsp;Student</span></>}
           </Button>
           <Button onClick={onSaveAll} disabled={busy} size="lg" className={SHORT_BUTTON}>
             <Save className="mr-2 h-5 w-5" />

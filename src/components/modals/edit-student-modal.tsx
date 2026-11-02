@@ -210,7 +210,7 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
                       <div className="flex-grow min-w-0 break-words">
                         <GoalTextPopover name={template.name} smartGoal={template.generatedSmartGoal} description={template.smartGoalPrompt} />
                         {picker.isRecent(template) && <Badge variant="default" className="ml-2">Recent</Badge>}
-                        <Badge variant="secondary" className="ml-2">{template.type}</Badge>
+                        <Badge variant="secondary" className="ml-2">{goalTypeLabel(template.type)}</Badge>
                         {template.category && <Badge variant="outline" className="ml-1">{template.category}</Badge>}
                       </div>
                     </li>

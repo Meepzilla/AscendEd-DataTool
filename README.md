@@ -47,7 +47,7 @@ Four color themes (Settings → Interface): Dark (the default, navy and gold), L
 
 The menu bar can sit at the top or the bottom of the screen (Settings → Interface); at the bottom it stays in reach while scrolling and sits above the footer.
 
-In the app, the **Help** page (Alt + H) explains each feature, and the **Changelog** lists what changed.
+In the app, a **Getting Started** checklist on the Dashboard walks a new user through the five steps (add a student, give them goals, record a session, see their progress, back up), ticking each off as it's done. The **Help** page (Alt + H) explains each feature, and **What's New** (the account menu, or Alt + 6) lists what changed. Keyboard shortcut hints are hidden on touch screens.
 
 ## Tech stack
 

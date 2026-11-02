@@ -125,5 +125,7 @@ export default {
     // Short screens, such as a phone turned sideways: `short:` styles keep bars to one line there. A variant, not a
     // screen: a screen written as a media query turns off Tailwind's min-[…] and max-[…] variants.
     plugin(({ addVariant }) => addVariant('short', '@media (max-height: 560px)')),
+    // Touch screens without a mouse (iPad, phones): `touch:hidden` hides keyboard shortcut hints there.
+    plugin(({ addVariant }) => addVariant('touch', '@media (hover: none) and (pointer: coarse)')),
   ],
 } satisfies Config;

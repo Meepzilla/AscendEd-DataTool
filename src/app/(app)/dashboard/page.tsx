@@ -11,6 +11,7 @@ import { formatDate } from '@/lib/helpers';
 import { Skeleton } from '@/components/ui/skeleton';
 import BackupReminder from '@/components/settings/BackupReminder';
 import TodaysWork from '@/components/dashboard/TodaysWork';
+import GettingStarted from '@/components/dashboard/GettingStarted';
 import DueSoonCard from '@/components/dashboard/DueSoonCard';
 import ServiceMinutesCard from '@/components/dashboard/ServiceMinutesCard';
 
@@ -38,11 +39,12 @@ export default function DashboardPage() {
     { title: 'Total Sessions', value: sessionsLoading ? '...' : sessions.length, icon: Activity, href: '/manage-sessions', buttonLabel: 'View Sessions' },
   ];
 
+  // In the order a session goes: add students, record, see progress; goal templates (used less) last.
   const quickActions = [
     { label: 'Add New Student', icon: UserPlus, action: openAddStudentModal, href: null },
-    { label: 'Create Goal Template', icon: ListPlus, href: '/goal-templates' }, // Link to page, modal can be triggered there
     { label: 'Start Data Entry', icon: ClipboardList, href: '/data-entry' },
     { label: 'View Reports', icon: BarChart2, href: '/analysis-report' },
+    { label: 'Goal Templates', icon: ListPlus, href: '/goal-templates' },
   ];
   
   const recentActivities = React.useMemo(() => {
@@ -60,14 +62,15 @@ export default function DashboardPage() {
             text: <>New student <strong>{student.name}</strong> added.</>
         }));
         
-    const templateActivities = [...goalTemplates]
+    // Templates you made; the built-in ones (over a thousand, added by the app) aren't activity.
+    const templateActivities = goalTemplates.filter(t => !t.isDefault)
         .sort((a, b) => getSafeTimestamp(b.createdAt) - getSafeTimestamp(a.createdAt))
         .slice(0, 5)
         .map(template => ({
             id: `template-${template.id}`,
             type: 'template' as const,
             timestamp: new Date(template.createdAt),
-            text: <>{template.isDefault ? 'New default template' : 'New template'} &ldquo;<strong>{template.name}</strong>&rdquo; created.</>
+            text: <>New template &ldquo;<strong>{template.name}</strong>&rdquo; created.</>
         }));
 
     const sessionActivities = [...sessions]
@@ -102,7 +105,10 @@ export default function DashboardPage() {
 
       <BackupReminder />
 
-      <TodaysWork />
+      <GettingStarted />
+
+      {/* Groups and unsaved work need students first. */}
+      {students.some(s => !s.isArchived) && <TodaysWork />}
 
       {/* Quick Actions */}
       <section aria-labelledby="quick-actions-title">

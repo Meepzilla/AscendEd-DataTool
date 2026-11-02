@@ -9,7 +9,8 @@ import type { Student, Goal } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Edit, Trash2, PlusCircle, Info, Target, Edit3, CheckSquare, TrendingUp, Archive, ArchiveRestore, Upload, Download, ArrowLeft, BarChart2 } from 'lucide-react';
+import { Edit, Trash2, PlusCircle, Info, Target, Edit3, CheckSquare, TrendingUp, Archive, ArchiveRestore, Upload, Download, ArrowLeft, BarChart2, MoreHorizontal } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { formatDate, formatGoalTarget, goalStatement, goalTypeLabel } from '@/lib/helpers';
 import { captureTypeOf } from '@/lib/goal-constants';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -23,7 +24,6 @@ import AssignGoalToStudentModal from '@/components/modals/assign-goal-to-student
 import EditAssignedGoalModal from '@/components/modals/edit-assigned-goal-modal';
 import StudentOverviewCard from '@/components/student-profile/StudentOverviewCard';
 import ConfirmationModal from '@/components/modals/confirmation-modal';
-import { cn } from '@/lib/utils';
 
 const ImportDataModal = lazy(() => import('@/components/modals/import-data-modal'));
 
@@ -237,7 +237,7 @@ export default function StudentProfileView() {
                 {currentStudent.isArchived && <Badge variant="outline" className="border-orange-500 text-orange-700 dark:text-orange-600 bg-orange-50 dark:bg-orange-900/20">Archived</Badge>}
               </div>
               <CardDescription className="text-xs sm:text-sm">
-                Student ID: {currentStudent.id} | Joined: {formatDate(currentStudent.createdAt)}
+                Added {formatDate(currentStudent.createdAt)}
               </CardDescription>
             </div>
           </div>
@@ -248,9 +248,6 @@ export default function StudentProfileView() {
                 <BarChart2 className="mr-2 h-4 w-4" /> View Report
               </Link>
             </Button>
-            <Button variant="outline" size="sm" onClick={handleExportData} className="w-full sm:w-auto" disabled={studentSessions.length === 0}>
-              <Download className="mr-2 h-4 w-4" /> Export Data
-            </Button>
                 {currentStudent && (
                   <CsvExportWarning
                     studentName={currentStudent.name}
@@ -259,20 +256,33 @@ export default function StudentProfileView() {
                     onConfirm={() => { setIsCsvWarningOpen(false); downloadSessionsCsv(studentSessions, currentStudent.name); }}
                   />
                 )}
-            <Button variant="outline" size="sm" onClick={() => setIsImportModalOpen(true)} className="w-full sm:w-auto">
-              <Upload className="mr-2 h-4 w-4" /> Import Data
-            </Button>
             <Button variant="outline" size="sm" onClick={() => openEditStudentModal(currentStudent)} className="w-full sm:w-auto">
               <Edit3 className="mr-2 h-4 w-4" /> Edit Student Info
             </Button>
-            <Button variant="outline" size="sm" onClick={handleToggleArchiveStudent} className={cn("w-full sm:w-auto", currentStudent.isArchived ? "text-green-700 dark:text-green-600 hover:text-green-800 dark:hover:text-green-700 border-green-500 hover:bg-green-50" : "text-orange-700 dark:text-orange-600 hover:text-orange-800 dark:hover:text-orange-700 border-orange-500 hover:bg-orange-50")}>
-              {currentStudent.isArchived ? <ArchiveRestore className="mr-2 h-4 w-4"/> : <Archive className="mr-2 h-4 w-4"/>}
-              {currentStudent.isArchived ? 'Unarchive' : 'Archive'}
-            </Button>
-            <Button variant="destructive" size="sm" onClick={handleDeleteStudent} className="w-full sm:w-auto">
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete
-            </Button>
+            {/* Used less often, so kept in a menu: moving data in and out, archiving and deleting. */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="w-full sm:w-auto" aria-label={`More actions for ${currentStudent.name}`}>
+                  <MoreHorizontal className="mr-2 h-4 w-4" aria-hidden /> More
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem onClick={handleExportData} disabled={studentSessions.length === 0}>
+                  <Download className="mr-2 h-4 w-4" aria-hidden /> Export Data (CSV)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setIsImportModalOpen(true)}>
+                  <Upload className="mr-2 h-4 w-4" aria-hidden /> Import Data
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleToggleArchiveStudent}>
+                  {currentStudent.isArchived ? <ArchiveRestore className="mr-2 h-4 w-4" aria-hidden /> : <Archive className="mr-2 h-4 w-4" aria-hidden />}
+                  {currentStudent.isArchived ? 'Unarchive Student' : 'Archive Student'}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleDeleteStudent} className="text-destructive focus:text-destructive">
+                  <Trash2 className="mr-2 h-4 w-4" aria-hidden /> Delete Student
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </CardHeader>
       </Card>
