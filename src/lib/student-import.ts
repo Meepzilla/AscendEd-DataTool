@@ -184,12 +184,21 @@ const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'sev
 const forMatching = (text: string) => text.toLowerCase()
   .replace(new RegExp(`\\b(${NUMBER_WORDS.join('|')})\\b(?=\\s+(?:different|new|times?|functions|instances|opportunities|trials)\\b)`, 'g'), w => String(NUMBER_WORDS.indexOf(w)));
 
-/** How many communicative functions a goal asks for ("at least 4 functions", "2 different functions"). */
+/** How many communicative functions a goal asks for ("at least 4 functions", "2 different functions", "3 purposes", "3 intents"). */
 const functionCount = (t: string) => {
-  const m = /(\d+)\s+(?:\(?[a-z\s]*\)?\s*)?(?:different\s+|new\s+|language\s+|communicative\s+|communication\s+)*functions\b/.exec(t)
-    ?? /at least (\d+) (?:different )?(?:language |communicative |communication )?functions/.exec(t);
+  const m = /(\d+)\s+(?:\(?[a-z\s]*\)?\s*)?(?:different\s+|new\s+|language\s+|communicative\s+|communication\s+)*(?:functions|purposes|intents)\b/.exec(t)
+    ?? /at least (\d+) (?:different )?(?:language |communicative |communication )?(?:functions|purposes|intents)/.exec(t);
   return m ? Number(m[1]) : null;
 };
+
+/**
+ * Wording that names communicative functions as what is measured ("a variety of communicative functions",
+ * "communication functions beyond requesting", "communicative intents"), even when the goal also gives a number of
+ * times: those goals are about which functions the student uses.
+ */
+const FUNCTION_WORDING = /\b(?:communicat\w*|language|pragmatic)\s+(?:functions|intents)\b|\bfunctions of (?:communication|language)\b|\bvariety of (?:communicative |communication )?(?:functions|purposes|intents)\b/;
+/** The function words a goal lists (requesting, commenting…), each counted once. */
+const listedFunctions = (t: string) => new Set(t.match(FUNCTION_WORDS) ?? []).size;
 
 /** "at least 5 times", "3 instances per session", "3 multiword utterances per session", "at least once". */
 const timesCount = (t: string) => {
@@ -228,9 +237,10 @@ export function classifyGoal(text: string, area = ''): { type: GoalType } {
   }
   if (has(t, /\bstory\b|narrative|retell|literary elements|story grammar|story elements/)) return { type: 'STORY_ELEMENTS' };
 
-  // Communication counted by function ("at least 3 functions") or across listed functions with no count of times.
-  const functionsListed = new Set(t.match(FUNCTION_WORDS) ?? []).size;
-  if (functionCount(t) !== null || (has(t, /\bfunctions\b/) && functionsListed >= 2 && timesCount(t) === null)) {
+  // Communication counted by function: a number of functions ("at least 3 functions", "3 different purposes"), wording
+  // that names communicative functions (even with a number of times), or listed functions with no number of times.
+  const functionsListed = listedFunctions(t);
+  if (functionCount(t) !== null || has(t, FUNCTION_WORDING) || (has(t, /\bfunctions\b/) && functionsListed >= 2 && timesCount(t) === null)) {
     return { type: 'COMMUNICATION_FUNCTIONS' };
   }
   // A number of times per session or period.
@@ -264,8 +274,11 @@ export function goalDirectionFor(type: GoalType, text: string): TargetDirection 
 export function goalTarget(type: GoalType, text: string): number {
   const t = forMatching(text);
   switch (type) {
-    case 'COMMUNICATION_FUNCTIONS':
-      return Math.min(COMMUNICATION_FUNCTIONS.length, functionCount(t) ?? 2);
+    case 'COMMUNICATION_FUNCTIONS': {
+      // The number of functions asked for, else the number listed ("requesting, commenting, protesting" = 3), else 2.
+      const listed = listedFunctions(t);
+      return Math.min(COMMUNICATION_FUNCTIONS.length, functionCount(t) ?? (listed >= 2 ? listed : 2));
+    }
     case 'BEHAVIOR_FREQUENCY': {
       if (/\b(no more than|fewer than|reduce|decrease)\b/.test(t)) {
         const m = /(?:no more than|fewer than|to)\s+(\d+)/.exec(t);
