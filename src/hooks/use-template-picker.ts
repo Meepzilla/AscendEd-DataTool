@@ -28,13 +28,16 @@ export function useTemplatePicker(goalTemplates: GoalTemplate[], student: Pick<S
   const templates = useMemo(() => {
     const browsing = !search.trim() && typeFilter === 'ALL' && categoryFilter === 'ALL';
     const rank = (t: GoalTemplate) => (browsing && recentIds.includes(t.id) ? recentIds.indexOf(t.id) : recentIds.length);
+    // Browsing: after the recent ones, your own templates, then the original built-in goals (short, plainly named),
+    // then the goal bank's thousand or so, so the list doesn't open on the bank's long names.
+    const group = (t: GoalTemplate) => (!browsing ? 0 : !t.isDefault ? 0 : !t.source && !t.bankId ? 1 : 2);
     return goalTemplates
       .filter(t => !t.isArchived
         && (typeFilter === 'ALL' || t.type === typeFilter)
         && (categoryFilter === 'ALL' || t.category === categoryFilter)
         && templateMatchesSearch(t, search)
         && !(student && hasTemplateGoal(student, t)))
-      .sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name));
+      .sort((a, b) => rank(a) - rank(b) || group(a) - group(b) || a.name.localeCompare(b.name));
   }, [goalTemplates, student, search, typeFilter, categoryFilter, recentIds]);
 
   const isRecent = (template: GoalTemplate) =>

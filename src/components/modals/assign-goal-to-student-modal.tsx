@@ -11,7 +11,7 @@ import { PlusCircle, Search, Check, Edit3 } from 'lucide-react';
 import { useStudentData } from '@/hooks/use-student-data';
 import type { Student, Goal } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
-import { formatGoalTarget, TEMPLATE_PICKER_LIMIT } from '@/lib/helpers';
+import { formatGoalTarget, goalTypeLabel, TEMPLATE_PICKER_LIMIT } from '@/lib/helpers';
 import { useToast } from '@/hooks/use-toast';
 import GoalTextPopover from '@/components/forms/GoalTextPopover';
 import TemplatePickerFilters from '@/components/goal-templates/TemplatePickerFilters';
@@ -100,6 +100,10 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
         </TabsList>
         <TabsContent value="templates" className="mt-3">
         <div className="space-y-3 flex flex-col">
+          <p className="text-xs text-muted-foreground">
+            Search by skill or sound (such as &quot;/s/&quot;, &quot;wh- questions&quot; or &quot;AAC&quot;) or filter by goal type and skill area,
+            then tick goals and assign them. Can&apos;t find it? Use <span className="font-medium">Write a custom goal</span>.
+          </p>
           <TemplatePickerFilters picker={picker} />
 
           <ScrollArea className="flex-grow border rounded-md p-1.5 h-[200px] [&_[data-radix-scroll-area-viewport]>div]:!block"> {/* Adjusted height and padding */}
@@ -123,7 +127,7 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
                                 {template.name}
                                 {picker.isRecent(template) && <Badge variant="outline" className="ml-2 text-xs">Recent</Badge>}
                               </p>
-                              <Badge variant="secondary" className="mt-0.5 text-xs">{template.type}</Badge>
+                              <Badge variant="secondary" className="mt-0.5 text-xs">{goalTypeLabel(template.type)}</Badge>
                               {template.category && <Badge variant="outline" className="mt-0.5 ml-1 text-xs">{template.category}</Badge>}
                               {template.sessionTargetValue !== undefined && (
                                 <p className="text-xs text-muted-foreground mt-0.5">Target: {formatGoalTarget(template.type, template.sessionTargetValue, template.targetDirection)}</p>

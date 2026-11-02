@@ -102,7 +102,7 @@ export default function StudentProfileLandingPage() {
             <CardHeader className="text-center">
                 <CardTitle>No Students Found</CardTitle>
                 <CardDescription>
-                    {students.length > 0 ? "No students match your current filters." : "You can add a new student by clicking the 'Add Student' button above or by pressing (Alt+M)."}
+                    {students.length > 0 ? "No students match your current filters." : <>Add a student with the Add Student button above<span className="touch:hidden"> (or press Alt+M)</span>, or import several from Settings → Import Students.</>}
                 </CardDescription>
             </CardHeader>
         </Card>
