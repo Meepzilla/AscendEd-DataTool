@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { visibleTemplates, deletedBuiltInTemplates, restoreBuiltInTemplates } from '../builtin-goals';
 import { prepareLoadedData } from '../data-migrations';
+import { mergeBackupData } from '../backup';
 import { DEFAULT_GOAL_TEMPLATES, defaultTemplateKey } from '../goal-constants';
 import type { GoalTemplate } from '../types';
 
@@ -51,5 +52,15 @@ describe('built-in goals the user deleted', () => {
   it('a missing built-in template is still added on load', () => {
     const prepared = prepareLoadedData([], [], 'u');
     expect(prepared.templates.filter(t => t.isDefault).length).toBe(DEFAULT_GOAL_TEMPLATES.length);
+  });
+
+  it('a backup merge does not bring back a deleted built-in goal', () => {
+    const name = DEFAULT_GOAL_TEMPLATES[0].name;
+    const current = { students: [], goalTemplates: [builtIn('gone', name, { deleted: true, isArchived: true })], sessions: [] };
+    // The backup has the same built-in goal, not deleted, under another id (ids are per device).
+    const incoming = { students: [], goalTemplates: [builtIn('other-id', name)], sessions: [] };
+    const { merged } = mergeBackupData(current, incoming);
+    expect(merged.goalTemplates.filter(t => defaultTemplateKey(t) === name)).toHaveLength(1);
+    expect(merged.goalTemplates.find(t => defaultTemplateKey(t) === name)?.deleted).toBe(true);
   });
 });
