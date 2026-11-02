@@ -4,7 +4,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { RotateCcw, ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, LayoutGrid, Minimize2, UserX, UserPlus, ArrowRightLeft, Download, ListPlus, Workflow, Shuffle, CheckSquare, ListChecks, DatabaseZap, UserSearch, Upload, BrainCircuit, PanelLeft, ArrowLeft, MessagesSquare, BookOpen, Lock, ShieldCheck, PanelBottom, CalendarClock } from 'lucide-react';
+import { RotateCcw, ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, LayoutGrid, Minimize2, UserX, UserPlus, ArrowRightLeft, Download, ListPlus, Workflow, Shuffle, CheckSquare, ListChecks, DatabaseZap, UserSearch, Upload, BrainCircuit, PanelLeft, ArrowLeft, MessagesSquare, BookOpen, Lock, ShieldCheck, PanelBottom, CalendarClock, Sun } from 'lucide-react';
 import { APP_NAME } from '@/lib/appConstants';
 
 interface ChangelogEntry {
@@ -17,6 +17,20 @@ interface ChangelogEntry {
 }
 
 const allChangelogEntries: ChangelogEntry[] = [
+  {
+    date: '2026-11-02',
+    title: 'Placeholders in Goal Text',
+    description: 'Goal text in custom goals, templates and assigned goals can include placeholders in square brackets, filled in wherever the goal is shown (profile, Data Entry, reports and the progress report): [student], [full name], [date], [target], [opportunities], [sessions], [baseline], [baseline date], [annual review], [IEP date], [re-evaluation] and [service minutes]. For example, "By [date], [student] will produce /s/ in [opportunities] opportunities" reads "By Jun 30, 2027, Ava will produce /s/ in 4 out of 5 opportunities". Tap a placeholder under the goal text in Edit Goal, a template or a custom goal to insert it where the cursor is; a preview shows the goal as it will read. The goal keeps the placeholders, so the text follows the goal\'s target and the student\'s IEP dates, and a template reads "the student" until it is assigned. A placeholder with nothing to fill it (a goal without a baseline) stays as typed.',
+    type: 'feature',
+    icon: Pencil,
+  },
+  {
+    date: '2026-11-02',
+    title: 'Light, High Contrast and Pastel Themes',
+    description: 'Settings → Interface → Theme has three new color themes besides Dark (navy and gold): Light, white and gold for bright rooms; High Contrast, black with white text, bright yellow buttons and focus outlines, and light borders, for low vision; and Pastel, a soft lavender background with white cards, a baby-blue sidebar, mint highlights and plum buttons. The choice applies straight away, is saved on this device, and is in place before a page appears (no flash of the dark theme). Text in all four themes meets WCAG AA contrast; colors that only suited the dark theme (due-date badges, "short last month", prompt-level buttons, task analysis steps, the Mastered badge) have light-theme shades. Printed reports are unchanged.',
+    type: 'feature',
+    icon: Sun,
+  },
   {
     date: '2026-11-02',
     title: 'See How Report Figures Are Worked Out',

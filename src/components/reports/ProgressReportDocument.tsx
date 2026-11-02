@@ -32,6 +32,8 @@ export interface ProgressReportEdits {
 
 interface Props {
   studentName: string;
+  /** The student's IEP dates and minutes, for placeholders such as [annual review] in goal text. */
+  studentIep?: import('@/lib/types').StudentIep;
   periodLabel: string;
   sessionCount: number;
   /** Sessions held and missed in the period, e.g. "12 held · 2 missed (Student absent 2)". */
@@ -106,7 +108,7 @@ function Logo() {
   );
 }
 
-export default function ProgressReportDocument({ studentName, periodLabel, sessionCount, attendance, service, goals, settings, edits, onEdit, onTargetDate }: Props) {
+export default function ProgressReportDocument({ studentName, studentIep, periodLabel, sessionCount, attendance, service, goals, settings, edits, onEdit, onTargetDate }: Props) {
   const statusOf = (g: GoalProgress) => edits.status[g.goal.id] ?? g.status;
   const commentOf = (g: GoalProgress) => edits.comment[g.goal.id] ?? g.comment;
   const reportDate = settings.reportDate ? formatDateOnly(settings.reportDate) : formatDate(new Date());
@@ -211,7 +213,7 @@ export default function ProgressReportDocument({ studentName, periodLabel, sessi
             )}
           </div>
 
-          {g.goal.smartGoal && <p className="mt-2 italic">{goalStatement(g.goal, studentName)}</p>}
+          {g.goal.smartGoal && <p className="mt-2 italic">{goalStatement(g.goal, studentName, studentIep)}</p>}
 
           {g.sessionCount > 0 && (
             <dl className="mt-3 flex flex-wrap gap-x-8 gap-y-2 rounded-md bg-muted/60 p-3">

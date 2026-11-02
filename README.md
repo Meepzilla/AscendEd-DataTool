@@ -25,7 +25,7 @@ It runs entirely on the device: there is no account, no server and no AI. Studen
 **Students and goals**
 - A goal bank of over 900 templates, searchable by skill area, with purpose and activity ideas.
 - Every built-in goal reads the same way: "By [date], the student will … with 80% accuracy across 3 consecutive sessions, as measured by …".
-- Each goal has a target, a direction (increase or decrease), a target date, a baseline and mastery criteria. The goal text follows them: "[date]", the student's name, blanks ("___"), the stated percentage and the consecutive sessions are filled in from the goal's settings, in goal bank and custom goals alike. The number of opportunities ("4 out of 5 opportunities") stays as written unless it is the goal's only target.
+- Each goal has a target, a direction (increase or decrease), a target date, a baseline and mastery criteria. The goal text follows them: placeholders such as "[student]", "[date]", "[target]", "[opportunities]", "[sessions]", "[annual review]" and "[service minutes]" (`goal-placeholders.ts`, with chips to insert them in the goal and template editors), the student's name, blanks ("___"), the stated percentage and the consecutive sessions are filled in from the goal's settings, in goal bank and custom goals alike. The number of opportunities ("4 out of 5 opportunities") stays as written unless it is the goal's only target.
 - Import students from an IEP at a Glance PDF (a page per student, as SLP Toolkit makes them) or a spreadsheet (Excel .xlsx or CSV, one row per student): names, IEP start and end dates, service minutes and goals. Each goal is given a goal type from its wording, which can be changed before anything is saved.
 - Each student's profile shows IEP dates, service minutes against the IEP (per week, month or school year) and attendance, with a View Report button for that student's charts and Progress Report.
 
@@ -41,6 +41,8 @@ It runs entirely on the device: there is no account, no server and no AI. Studen
 - A Student Access Lock with a PIN.
 - A strict Content Security Policy: only the app's own scripts can run.
 - A [Privacy Notice](src/app/(app)/privacy/page.tsx) page in the app.
+
+Four color themes (Settings → Interface): Dark (the default, navy and gold), Light (white and gold), High Contrast (black, white and bright yellow) and Pastel (soft lavender, baby blue and mint, with plum buttons), saved on each device. All four meet WCAG AA text contrast.
 
 The menu bar can sit at the top or the bottom of the screen (Settings → Interface); at the bottom it stays in reach while scrolling and sits above the footer.
 

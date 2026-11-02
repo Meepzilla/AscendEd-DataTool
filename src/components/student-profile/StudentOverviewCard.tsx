@@ -24,7 +24,7 @@ import { cn } from '@/lib/utils';
 export function DueBadge({ date }: { date: string }) {
   const days = daysUntil(date);
   const text = days < 0 ? `Overdue by ${-days} day${days === -1 ? '' : 's'}` : days === 0 ? 'Due today' : `In ${days} day${days === 1 ? '' : 's'}`;
-  const tone = days < 0 ? 'border-red-500/50 bg-red-500/15 text-red-300' : days <= 30 ? 'border-amber-500/50 bg-amber-500/15 text-amber-300' : 'border-border bg-muted/50 text-muted-foreground';
+  const tone = days < 0 ? 'border-red-500/50 bg-red-500/15 text-red-700 dark:text-red-300' : days <= 30 ? 'border-amber-500/50 bg-amber-500/15 text-amber-800 dark:text-amber-300' : 'border-border bg-muted/50 text-muted-foreground';
   return <span className={cn('inline-block whitespace-nowrap rounded-full border px-2 py-0.5 text-xs font-semibold', tone)}>{text}</span>;
 }
 
@@ -94,7 +94,7 @@ export default function StudentOverviewCard({ student, sessions }: { student: St
               ) : (
                 <Row label={`Last ${periodWord}`}>
                   {service.lastPeriod} min
-                  {service.lastPeriod < service.required && <span className="text-xs text-amber-300">({service.required - service.lastPeriod} min short)</span>}
+                  {service.lastPeriod < service.required && <span className="text-xs text-amber-700 dark:text-amber-300">({service.required - service.lastPeriod} min short)</span>}
                 </Row>
               )}
             </>

@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { fillNameBlanks } from '@/lib/goal-blanks';
-import type { Goal, SessionGoalData, GoalType, TrialStatus } from '@/lib/types';
+import type { Goal, SessionGoalData, GoalType, StudentIep, TrialStatus } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -42,8 +42,10 @@ interface GoalDataInputComponentProps {
   canMoveDown?: boolean;
   isArchived?: boolean;
   isLocked?: boolean;
-  /** Fills in "STUDENT" / "the student" in the goal text. */
+  /** Fills in "STUDENT" / "the student" and placeholders such as [student] in the goal text. */
   studentName?: string;
+  /** The student's IEP dates and minutes, for placeholders such as [annual review]. */
+  studentIep?: StudentIep;
 }
 
 export default function GoalDataInputComponent({
@@ -60,6 +62,7 @@ export default function GoalDataInputComponent({
   isArchived,
   isLocked = false,
   studentName,
+  studentIep,
 }: GoalDataInputComponentProps) {
   const { toast } = useToast();
   const { fire } = useConfetti();
@@ -213,7 +216,7 @@ export default function GoalDataInputComponent({
             <div className="flex-grow min-w-0" onClick={isLocked ? undefined : onSetFocus}>
                 <CardTitle className="text-sm font-semibold">
                     <div className="flex justify-between items-start">
-                        <GoalTextPopover name={fillNameBlanks(goal)} smartGoal={goalStatement(goal, studentName)} className="whitespace-normal break-words mr-1" />
+                        <GoalTextPopover name={fillNameBlanks(goal)} smartGoal={goalStatement(goal, studentName, studentIep)} className="whitespace-normal break-words mr-1" />
                         <Badge variant="outline" className="text-xs px-1.5 py-0.5 shrink-0 max-w-[45%] text-center leading-tight">
                             {goalTypeLabel(goal.type)}
                         </Badge>

@@ -9,6 +9,7 @@ import GenericModal from './generic-modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { GoalTextPreview, PlaceholderChips } from '@/components/goal-templates/PlaceholderChips';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useStudentData } from '@/hooks/use-student-data';
@@ -181,12 +182,23 @@ export default function AddGoalTemplateModal() {
                 <FormLabel>Final SMART Goal</FormLabel>
                 <FormControl>
                   <Textarea
-                    placeholder="The full SMART goal: specific, measurable, achievable, relevant and time-bound."
+                    id="new-template-goal-text"
+                    placeholder="The full SMART goal: specific, measurable, achievable, relevant and time-bound. e.g. By [date], [student] will … in [opportunities] opportunities."
                     {...field}
                     rows={4}
                     className="bg-muted/30"
                   />
                 </FormControl>
+                <PlaceholderChips textareaId="new-template-goal-text" value={field.value ?? ''}
+                  onChange={v => form.setValue('generatedSmartGoal', v, { shouldDirty: true, shouldValidate: true })} />
+                <GoalTextPreview
+                  label="As shown for a student (the target date, name and IEP dates come from each student's goal)"
+                  goal={{
+                    smartGoal: field.value ?? '',
+                    sessionTargetValue: form.watch('sessionTargetValue') === undefined || String(form.watch('sessionTargetValue')) === '' ? undefined : Number(form.watch('sessionTargetValue')),
+                    type: form.watch('type'), dataCaptureType: form.watch('dataCaptureType'), targetDirection: form.watch('targetDirection'),
+                    targetDate: undefined, masterySessions: undefined, blankFills: undefined,
+                  }} />
                 <FormMessage />
               </FormItem>
             )}

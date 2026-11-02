@@ -4,6 +4,7 @@ import './globals.css'; // Import global CSS styles
 import { Toaster } from "@/components/ui/toaster"; // Import Toaster component for displaying notifications
 import AppProviders from '@/providers/app-providers'; // Import AppProviders for wrapping the application with context providers
 import ZoomCompensation from '@/components/ZoomCompensation';
+import ThemeSync from '@/components/ThemeSync';
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
 import { DISPLAY_SCALE_SCRIPT } from '@/lib/display-scale';
 
@@ -34,7 +35,7 @@ export default function RootLayout({
   children: React.ReactNode; // React children to be rendered within this layout
 }>) {
   return (
-    // Set the language of the document to English and enable dark mode by default.
+    // Dark by default; the theme setting (theme.ts) swaps the classes before the first paint.
     <html lang="en" className="dark">
       <head>
         {/* Home Screen app tags. Written here rather than in `metadata`, which Next.js streams into the
@@ -62,6 +63,7 @@ export default function RootLayout({
           <Toaster /> {/* Renders toast notifications across the application */}
           <ServiceWorkerRegistration />
           <ZoomCompensation />
+          <ThemeSync />
         </AppProviders>
       </body>
     </html>

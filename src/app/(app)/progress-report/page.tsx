@@ -141,7 +141,7 @@ function ProgressReportPage() {
   const onTargetDate = (goalId: string, date: string) => {
     if (studentId) updateStudentGoal(studentId, goalId, { targetDate: date || undefined });
   };
-  const documentProps = { studentName: student?.name ?? '', periodLabel, sessionCount, attendance, service, goals: report, settings, edits };
+  const documentProps = { studentName: student?.name ?? '', studentIep: student?.iep, periodLabel, sessionCount, attendance, service, goals: report, settings, edits };
 
   if (loading && students.length === 0) return <p className="text-muted-foreground">Loading…</p>;
 

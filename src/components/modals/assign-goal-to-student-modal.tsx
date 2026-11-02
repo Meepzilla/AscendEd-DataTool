@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { GOAL_TYPES } from '@/lib/goal-constants';
 import { Textarea } from '../ui/textarea';
+import { GoalTextPreview, PlaceholderChips } from '@/components/goal-templates/PlaceholderChips';
 import { Label } from '../ui/label';
 import { generateUUID, formatGoalTarget, TEMPLATE_PICKER_LIMIT, goalTypeLabel } from '@/lib/helpers';
 import { useToast } from '@/hooks/use-toast';
@@ -251,11 +252,17 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
                 id="customGoalSmartText"
                 value={customGoalSmartText}
                 onChange={(e) => setCustomGoalSmartText(e.target.value)}
-                placeholder="Enter the full SMART goal description..."
+                placeholder="Enter the full SMART goal description... e.g. By [date], [student] will … in [opportunities] opportunities."
                 rows={2} 
                 disabled={dataLoading || isAssigningTemplates || isAssigningCustom}
                 className="text-sm"
               />
+              <div className="mt-1 space-y-2">
+                <PlaceholderChips textareaId="customGoalSmartText" value={customGoalSmartText} onChange={setCustomGoalSmartText}
+                  disabled={dataLoading || isAssigningTemplates || isAssigningCustom} />
+                <GoalTextPreview studentName={student.name} studentIep={student.iep}
+                  goal={{ smartGoal: customGoalSmartText, sessionTargetValue: customGoalSessionTarget, type: customGoalType, targetDate: undefined, masterySessions: undefined, blankFills: undefined }} />
+              </div>
             </div>
             <div>
               <Label htmlFor="customGoalSessionTarget" className="text-sm">Session Target Value (Optional)</Label>

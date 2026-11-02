@@ -11,7 +11,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { useStudentData } from '@/hooks/use-student-data';
-import type { Goal } from '@/lib/types';
+import type { Goal, StudentIep } from '@/lib/types';
+import { PlaceholderChips } from '@/components/goal-templates/PlaceholderChips';
 import { AssignedGoalEditSchema } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Switch } from '@/components/ui/switch';
@@ -33,6 +34,7 @@ interface EditAssignedGoalModalProps {
 export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goalToEdit }: EditAssignedGoalModalProps) {
   const { updateStudentGoal, students, loading: dataLoading } = useStudentData();
   const studentName = students.find(s => s.id === studentId)?.name;
+  const studentIep = students.find(s => s.id === studentId)?.iep;
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -129,17 +131,20 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
                 <FormLabel>SMART Goal Text</FormLabel>
                 <FormControl>
                   <Textarea
-                    placeholder="Describe the SMART goal..."
+                    id="assigned-goal-text"
+                    placeholder="Describe the SMART goal... e.g. By [date], [student] will … in [opportunities] opportunities."
                     {...field}
                     rows={4}
                   />
                 </FormControl>
+                <PlaceholderChips textareaId="assigned-goal-text" value={field.value ?? ''}
+                  onChange={v => form.setValue('smartGoal', v, { shouldDirty: true, shouldValidate: true })} />
                 <FormMessage />
               </FormItem>
             )}
           />
 
-          <ShownAs form={form} studentName={studentName} />
+          <ShownAs form={form} studentName={studentName} studentIep={studentIep} />
 
           <BlankFills form={form} />
 
@@ -371,14 +376,15 @@ function BlankFills({ form }: { form: ReturnType<typeof useForm<EditAssignedGoal
  * The goal as it will be shown: blanks filled, the stated target ("80%", "4 out of 5") and consecutive sessions
  * matching the settings below, the target date and the student's name. Updates as the fields change.
  */
-function ShownAs({ form, studentName }: { form: ReturnType<typeof useForm<EditAssignedGoalFormData>>; studentName?: string }) {
-  const [smartGoal, target, mastery, blankFills, targetDate, dataCaptureType, targetDirection] =
-    form.watch(['smartGoal', 'sessionTargetValue', 'masterySessions', 'blankFills', 'targetDate', 'dataCaptureType', 'targetDirection']);
+function ShownAs({ form, studentName, studentIep }: { form: ReturnType<typeof useForm<EditAssignedGoalFormData>>; studentName?: string; studentIep?: StudentIep }) {
+  const [smartGoal, target, mastery, blankFills, targetDate, dataCaptureType, targetDirection, baseline, baselineDate] =
+    form.watch(['smartGoal', 'sessionTargetValue', 'masterySessions', 'blankFills', 'targetDate', 'dataCaptureType', 'targetDirection', 'baseline', 'baselineDate']);
   const toNumber = (v: unknown) => (v === '' || v === undefined || v === null || Number.isNaN(Number(v)) ? undefined : Number(v));
   const shown = goalStatement({
     smartGoal, blankFills, targetDate: targetDate || undefined, sessionTargetValue: toNumber(target),
     masterySessions: toNumber(mastery), dataCaptureType, targetDirection,
-  }, studentName);
+    baseline: toNumber(baseline), baselineDate: baselineDate || undefined,
+  }, studentName, studentIep);
   if (!shown || shown === smartGoal) return null;
   return (
     <div className="rounded-md border border-dashed p-3 text-sm" aria-live="polite">

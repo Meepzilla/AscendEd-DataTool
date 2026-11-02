@@ -205,7 +205,7 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[] }> = ({ goal
           {target !== undefined && ` · Target ${formatGoalTarget(type, target, goal.targetDirection)}`}
           {storyWords !== null && ` · ${storyWords} linking words`}
           {target !== undefined && ` · Mastery: ${mastery} in a row`}
-          {mastered && <span className="ml-2 inline-block rounded-full border border-green-500/50 bg-green-500/15 px-2 py-0.5 text-xs font-semibold text-green-400">Mastered</span>}
+          {mastered && <span className="ml-2 inline-block rounded-full border border-green-500/50 bg-green-500/15 px-2 py-0.5 text-xs font-semibold text-green-700 dark:text-green-400">Mastered</span>}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
