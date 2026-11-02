@@ -6,6 +6,10 @@ import type { GoalTemplate } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { PlusCircle, Edit, Trash2, Info, BrainCircuit, Archive, ArchiveRestore, UserPlus, CopyCheck } from 'lucide-react';
+import { getHideBuiltInGoals, setHideBuiltInGoals } from '@/lib/builtin-goals';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { formatDate, formatGoalTarget, goalTypeLabel } from '@/lib/helpers';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +39,7 @@ export default function GoalTemplatesPage() {
     editingGoalTemplate, 
     deletingStudent,
     updateGoalTemplate,
+    deleteGoalTemplate,
     closeDeleteConfirmationModal,
   } = useStudentData();
   
@@ -47,6 +52,10 @@ export default function GoalTemplatesPage() {
   const [gridSize, setGridSize] = useState<GridSize>('md');
   const [sortOrder, setSortOrder] = useState<GoalTemplateSortOrder>('date-desc');
   const [showArchived, setShowArchived] = useState(false);
+  const [hideBuiltIn, setHideBuiltIn] = useState(false);
+  // Read from the device after the first render (the page is made at build time).
+  useEffect(() => { setHideBuiltIn(getHideBuiltInGoals()); }, []);
+  const [builtInToDelete, setBuiltInToDelete] = useState<GoalTemplate | null>(null);
   const [assigningTemplate, setAssigningTemplate] = useState<GoalTemplate | null>(null);
   const [isDuplicateFinderOpen, setIsDuplicateFinderOpen] = useState(false);
 
@@ -57,7 +66,7 @@ export default function GoalTemplatesPage() {
         return 0;
     };
 
-    let templates = [...goalTemplates].filter(template => showArchived || !template.isArchived);
+    let templates = [...goalTemplates].filter(template => (showArchived || !template.isArchived) && !(hideBuiltIn && template.isDefault));
 
     // Apply type and skill area filters first
     if (filterType !== 'ALL') {
@@ -91,7 +100,7 @@ export default function GoalTemplatesPage() {
     });
 
     return templates;
-  }, [goalTemplates, filterType, filterCategory, searchTerm, sortOrder, showArchived]);
+  }, [goalTemplates, filterType, filterCategory, searchTerm, sortOrder, showArchived, hideBuiltIn]);
 
   const categories = useMemo(
     () => Array.from(new Set(goalTemplates.map(t => t.category).filter((c): c is string => !!c))).sort((a, b) => a.localeCompare(b)),
@@ -101,7 +110,7 @@ export default function GoalTemplatesPage() {
   // Start again from the top when the list changes.
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [filterType, filterCategory, searchTerm, sortOrder, showArchived]);
+  }, [filterType, filterCategory, searchTerm, sortOrder, showArchived, hideBuiltIn]);
 
   const gridClasses = {
     sm: 'grid-cols-1 sm:grid-cols-2',
@@ -156,6 +165,23 @@ export default function GoalTemplatesPage() {
         )}
       </Suspense>
 
+      <AlertDialog open={!!builtInToDelete} onOpenChange={open => { if (!open) setBuiltInToDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this built-in goal?</AlertDialogTitle>
+            <AlertDialogDescription>
+              &ldquo;{builtInToDelete?.name}&rdquo; will be removed from the Goals library and the goal picker. Goals already given to students are kept. You can restore it any time in Settings → Built-in goals.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (builtInToDelete) void deleteGoalTemplate(builtInToDelete.id); setBuiltInToDelete(null); }}>
+              Yes, Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Card className="shadow-lg">
         <CardHeader>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
@@ -190,6 +216,8 @@ export default function GoalTemplatesPage() {
             setGridSize={setGridSize}
             showArchived={showArchived}
             setShowArchived={setShowArchived}
+            hideBuiltIn={hideBuiltIn}
+            setHideBuiltIn={value => { setHideBuiltIn(value); setHideBuiltInGoals(value); }}
           />
 
           {loading && (
@@ -264,9 +292,14 @@ export default function GoalTemplatesPage() {
                           <Edit className="h-4 w-4" />
                         </Button>
                         {template.isDefault ? (
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleArchiveToggle(template)} title={template.isArchived ? "Unarchive Template" : "Archive Template"}>
-                             {template.isArchived ? <ArchiveRestore className="h-4 w-4 text-green-600"/> : <Archive className="h-4 w-4 text-orange-600"/>}
-                          </Button>
+                          <>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleArchiveToggle(template)} title={template.isArchived ? "Unarchive Template" : "Archive Template"}>
+                               {template.isArchived ? <ArchiveRestore className="h-4 w-4 text-green-600"/> : <Archive className="h-4 w-4 text-orange-600"/>}
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setBuiltInToDelete(template)} title="Delete built-in goal (restore in Settings)" aria-label={`Delete built-in goal ${template.name}`}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </>
                         ) : (
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openDeleteConfirmationModal(template, 'goalTemplate')} title="Delete Template" aria-label="Delete Template">
                             <Trash2 className="h-4 w-4 text-destructive" />

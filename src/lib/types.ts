@@ -102,6 +102,7 @@ export interface GoalTemplate {
   retired?: boolean; // Built-in duplicate archived once by the app (see RETIRED_DEFAULT_TEMPLATES)
   taskSteps?: string[]; // Task analysis templates: the steps copied to a student's goal
   defaultKey?: string; // Built-in templates: the name they were added under, kept if the user renames them
+  deleted?: boolean; // Built-in templates: deleted by the user. Kept so they aren't added back; restorable in Settings (builtin-goals.ts)
 }
 
 export interface SessionData {

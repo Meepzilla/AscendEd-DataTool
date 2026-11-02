@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { GOAL_TYPES } from '@/lib/goal-constants';
-import { ListFilter, Search, ArrowUpDown, Grid, Archive, Layers } from 'lucide-react';
+import { ListFilter, Search, ArrowUpDown, Grid, Archive, Layers, BookOpen } from 'lucide-react';
 import { goalTypeLabel } from '@/lib/helpers';
 
 export type GoalTemplateSortOrder = 'date-desc' | 'date-asc' | 'name-asc' | 'name-desc';
@@ -27,6 +27,8 @@ interface GoalTemplateFiltersProps {
   setGridSize: (value: GridSize) => void;
   showArchived: boolean;
   setShowArchived: (value: boolean) => void;
+  hideBuiltIn: boolean;
+  setHideBuiltIn: (value: boolean) => void;
 }
 
 const GoalTemplateFilters: React.FC<GoalTemplateFiltersProps> = ({
@@ -43,6 +45,8 @@ const GoalTemplateFilters: React.FC<GoalTemplateFiltersProps> = ({
   setGridSize,
   showArchived,
   setShowArchived,
+  hideBuiltIn,
+  setHideBuiltIn,
 }) => {
 
   const sortedGoalTypes = React.useMemo(() => Object.values(GOAL_TYPES).sort((a, b) => a.localeCompare(b)), []);
@@ -113,6 +117,16 @@ const GoalTemplateFilters: React.FC<GoalTemplateFiltersProps> = ({
           <SelectItem value="lg">Large</SelectItem>
         </SelectContent>
       </Select>
+      <div className="flex items-center space-x-2 border p-2 rounded-md">
+        <Switch
+          id="hide-builtin-toggle"
+          checked={hideBuiltIn}
+          onCheckedChange={setHideBuiltIn}
+        />
+        <Label htmlFor="hide-builtin-toggle" className="flex items-center gap-1.5 text-sm cursor-pointer">
+          <BookOpen className="h-4 w-4" /> Hide built-in goals
+        </Label>
+      </div>
       <div className="flex items-center space-x-2 border p-2 rounded-md">
         <Switch
           id="show-archived-toggle"

@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-02',
+    title: 'Hide or Delete Built-in Goals',
+    description: 'The Goals page has a "Hide built-in goals" switch that hides the built-in goal library from the page (saved on this device). Each built-in goal also has a Delete button; it is removed from the Goals library and the goal picker, and goals already given to students are kept. Deleted built-in goals stay deleted when the app reopens, and Settings → Built-in goals lists them with Restore for each one or Restore all. Backups keep the deletions.',
+    type: 'improvement',
+    icon: BookOpen,
+  },
+  {
+    date: '2026-11-02',
     title: 'Easier for New Users',
     description: 'A Getting Started checklist on the Dashboard walks through the five steps (add a student, give them goals, record a session, see their progress, back up), each ticking off by itself, with a button for each; it goes away when done or hidden (Help → Getting started can show it again), and isn\'t shown to someone who already has sessions. After adding a student from the Dashboard or Students page, their profile opens to add goals (elsewhere, a message offers "Add goals"). The goal picker lists the original built-in goals before the goal bank and shows goal types by name (Language Comprehension, not LANGUAGE_COMPREHENSION), with tips for finding a goal. Recent Activity no longer lists the built-in templates. Quick Actions are in session order, and Today\'s Work appears once there are students. In Data Entry, "Add Student Slot" is "Add a Student", "Save Focused" and "Reset Focused" are "Save Student" and "Reset Student" (the highlighted card), and the Student and Goal buttons are "Pick Student" and "Pick Goal". Keyboard shortcut hints are hidden on touch screens, and come back once a hardware keyboard is used. The student profile no longer shows its internal ID, and Export, Import, Archive and Delete are under a More menu. The Changelog (now What\'s New) and the Error Log moved from the menu bar to the account menu; Alt + 6 and Alt + J still open them.',
     type: 'improvement',
