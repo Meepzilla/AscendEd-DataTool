@@ -19,8 +19,8 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-02',
-    title: 'Light and High Contrast Themes',
-    description: 'Settings → Interface → Theme has two new color themes besides Dark (navy and gold): Light, white and gold for bright rooms, and High Contrast, black with white text, bright yellow buttons and focus outlines, and light borders, for low vision. The choice applies straight away, is saved on this device, and is in place before a page appears (no flash of the dark theme). Text in all three themes meets WCAG AA contrast; colors that only suited the dark theme (due-date badges, "short last month", prompt-level buttons, task analysis steps, the Mastered badge) have light-theme shades. Printed reports are unchanged.',
+    title: 'Light, High Contrast and Pastel Themes',
+    description: 'Settings → Interface → Theme has three new color themes besides Dark (navy and gold): Light, white and gold for bright rooms; High Contrast, black with white text, bright yellow buttons and focus outlines, and light borders, for low vision; and Pastel, a soft lavender background with white cards, a baby-blue sidebar, mint highlights and plum buttons. The choice applies straight away, is saved on this device, and is in place before a page appears (no flash of the dark theme). Text in all four themes meets WCAG AA contrast; colors that only suited the dark theme (due-date badges, "short last month", prompt-level buttons, task analysis steps, the Mastered badge) have light-theme shades. Printed reports are unchanged.',
     type: 'feature',
     icon: Sun,
   },
