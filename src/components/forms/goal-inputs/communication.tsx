@@ -17,7 +17,7 @@ export function CommunicationFunctionsInputs({ ctx }: { ctx: GoalInputContext })
   return (
     <>
       <FormItem>
-        <div className="grid grid-cols-[1fr_auto_auto] items-center gap-x-1.5 gap-y-1">
+        <div className="grid grid-cols-[1fr_auto_auto] items-center gap-x-1.5 gap-y-1.5">
           <FormLabel>Function</FormLabel>
           <FormLabel>Spontaneous</FormLabel>
           <FormLabel>Prompted</FormLabel>

@@ -92,6 +92,12 @@ describe('goal wording', () => {
     ['given unrestricted AAC access, use multimodal communication to initiate interactions during daily routines (play, feedings, diaper changes)', 'AAC', 80],
     ['use symbolic communication at least 5 times for at least 3 functions within a 15-minute period', 'COMMUNICATION_FUNCTIONS', 3],
     ['communicate to request, reject, socialize, or share info at least 4 times per 15-minute period', 'BEHAVIOR_FREQUENCY', 4],
+    // Wording that names communicative functions is about which functions are used, even with a number of times.
+    ['use a variety of communicative functions (requesting, commenting, protesting, greeting) at least 10 times per session', 'COMMUNICATION_FUNCTIONS', 4],
+    ['use an AAC device to communicate for a variety of functions (request, protest, comment) 5 times per session', 'COMMUNICATION_FUNCTIONS', 3],
+    ['communicate for 3 different purposes (requesting, commenting, protesting) during structured activities', 'COMMUNICATION_FUNCTIONS', 3],
+    ['demonstrate 3 communicative intents (request, reject, comment) during play', 'COMMUNICATION_FUNCTIONS', 3],
+    ['clarify communicative intent with an introductory prompt across 3 out of 4 trials', 'DISCRETE_TRIALS', 75],
     ['ask a "who, what, where" question at least once in a 20-minute period', 'BEHAVIOR_FREQUENCY', 1],
     ['accept 5 bites of a new texture without gagging', 'FEEDING_SWALLOWING', 80],
     ['use easy onset to reduce stuttering in conversation with 90% fluent syllables', 'FLUENCY_SYLLABLE_STUTTER', 90],
