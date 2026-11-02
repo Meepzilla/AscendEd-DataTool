@@ -6,6 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { BarChart2, ClipboardList, HelpCircle, Keyboard, LifeBuoy, Rocket, Shield, Target, UserCog } from 'lucide-react';
 import { APP_NAME } from '@/lib/appConstants';
+import { goalMeasureInfo } from '@/lib/goal-measures';
+import { goalTypeLabel } from '@/lib/helpers';
+import type { GoalType } from '@/lib/types';
 import { ShowGettingStartedButton } from '@/components/dashboard/GettingStarted';
 
 // Help: getting started, a guide to each page, the goal types, data safety, hotkeys and troubleshooting.
@@ -64,19 +67,28 @@ const HOTKEYS: { group: string; note?: string; keys: Hotkey[] }[] = [
   },
 ];
 
-const GOAL_TYPES: [string, string][] = [
-  ['Articulation, language, phonological processes, AAC', 'Count correct, approximate and incorrect responses. The measure is accuracy (% correct).'],
-  ['Discrete and sequenced trials', 'Score each trial on a grid (correct, approximate, incorrect), or count attempts of a set length.'],
-  ['Prompting and cognitive', 'Tally the prompt level of each response; cognitive goals also take a 1–5 rating.'],
-  ['Fluency', 'Count syllables and each kind of dysfluency (repetitions, prolongations, blocks, interjections). The measure is % fluent.'],
-  ['Qualitative observation', 'A 1–5 rating, prompt levels and notes.'],
-  ['Feeding and swallowing', 'Trials accepted and refused for each food or liquid and texture.'],
-  ['Communication functions', 'Tally each function (requesting, commenting, protesting, greeting…) as spontaneous or prompted. The measure is the number of functions used spontaneously.'],
-  ['Story elements', 'Score each story part (character, setting, problem, feeling, action, ending, end feeling) 0 (missing), 1 (partial) or 2 (complete) and tally linking words. The measure is % of the 14 points.'],
-  ['Task analysis', 'Score each step of a routine as Independent, a prompt level, or Not done. The measure is % of steps done independently.'],
-  ['Behavior: frequency and duration', 'Count occurrences (with observation time for a rate per hour), or time each episode with Start and Stop.'],
-  ['Behavior: ABC', 'Record each incident’s antecedents, behaviors and consequences (select as many of each as apply), and whether the replacement skill was used. The lists can be edited in Settings.'],
-  ['Behavior: interval and latency', 'Score partial, whole or momentary intervals with a timer, or time how long the student takes to respond after a cue.'],
+// Each goal type: what its data entry records, and the measure reports chart (its label comes from goal-measures.ts).
+const GOAL_TYPE_HELP: { type: GoalType; does: string }[] = [
+  { type: 'ARTICULATION', does: 'Count correct, approximate and incorrect productions of a target sound, from a word list or in conversation.' },
+  { type: 'LANGUAGE_COMPREHENSION', does: 'Count questions answered correctly, incorrectly and approximately, with a note of the details asked for.' },
+  { type: 'LANGUAGE_EXPRESSION', does: 'Count successful and unsuccessful responses, with a note of the target structure or vocabulary.' },
+  { type: 'PHONOLOGICAL_PROCESSES', does: 'Choose the process being targeted, then count correct and incorrect productions and approximations.' },
+  { type: 'AAC', does: 'Count correct, incorrect and approximate responses made with the device or system.' },
+  { type: 'FEEDING_SWALLOWING', does: 'Count food or liquid trials accepted and refused, with the texture or consistency for each.' },
+  { type: 'DISCRETE_TRIALS', does: 'Mark each trial on a grid as correct, approximate or incorrect; the number of trials can be set.' },
+  { type: 'SEQUENCED_TRIALS', does: 'Mark each trial of a sequence on the grid, or enter the successful and failed attempts directly.' },
+  { type: 'PROMPTING', does: 'Tally the prompt level of each response; the measure is the share given independently.' },
+  { type: 'COGNITIVE', does: 'Give a 1–5 rating and tally the prompt level of each response, with notes.' },
+  { type: 'QUALITATIVE_OBSERVATION', does: 'Give a 1–5 rating and tally the prompt level of each response, with notes.' },
+  { type: 'COMMUNICATION_FUNCTIONS', does: 'Tally each function (requesting, protesting, commenting, greeting, and others), spontaneous or prompted. The measure counts the functions used spontaneously.' },
+  { type: 'FLUENCY_SYLLABLE_STUTTER', does: 'Count total syllables and each kind of dysfluency (repetitions, prolongations, blocks, interjections, secondary behaviors). The measure is the share of fluent syllables.' },
+  { type: 'STORY_ELEMENTS', does: 'Score each story part (character, setting, problem, feeling, action, ending, end feeling) 0 (missing), 1 (partial) or 2 (complete), and tally linking words (because, then, when, so). The measure is the share of points.' },
+  { type: 'TASK_ANALYSIS', does: 'Score each step of a routine as Independent, with a prompt level, or Not done. The measure is the share of steps done independently.' },
+  { type: 'BEHAVIOR_FREQUENCY', does: 'Count each occurrence, with the observation time for a rate per hour.' },
+  { type: 'BEHAVIOR_DURATION', does: 'Time each episode with Start and Stop. The measure is the total minutes.' },
+  { type: 'BEHAVIOR_INTERVAL', does: 'Score each interval with a timer as partial, whole or momentary. The measure is the share of intervals with the behavior.' },
+  { type: 'BEHAVIOR_LATENCY', does: 'Time how long the student takes to respond after a cue. The measure is the average in seconds.' },
+  { type: 'BEHAVIOR_ABC', does: 'Record each incident’s antecedents, behaviors and consequences (select as many as apply), and whether the replacement skill was used. Decrease goals chart the incidents; increase goals chart the share of incidents with the replacement skill. The lists can be edited in Settings.' },
 ];
 
 function Section({ id, icon: Icon, title, description, children }: {
@@ -198,15 +210,18 @@ export default function HelpPage() {
       </Section>
 
       <Section id="goal-types" icon={Target} title="Goal types" description="Each goal type has its own data entry controls and its own measure in reports.">
+        <p>Most types also tally the prompt level of each response (Independent, Visual, Verbal, Gestural, Partial physical, Imitation). Counter buttons add one with a tap; press and hold (or right-click) to take one away.</p>
         <dl className="divide-y divide-border">
-          {GOAL_TYPES.map(([name, text]) => (
-            <div key={name} className="grid gap-1 py-2 sm:grid-cols-[16rem_1fr] sm:gap-4">
-              <dt className="font-semibold text-foreground">{name}</dt>
-              <dd>{text}</dd>
+          {[...GOAL_TYPE_HELP].sort((a, b) => goalTypeLabel(a.type).localeCompare(goalTypeLabel(b.type))).map(({ type, does }) => (
+            <div key={type} className="grid gap-1 py-2 sm:grid-cols-[14rem_1fr] sm:gap-4">
+              <dt className="font-semibold text-foreground">
+                {goalTypeLabel(type)}
+                <span className="block text-xs font-normal text-muted-foreground">Measure: {goalMeasureInfo({ type }).label}</span>
+              </dt>
+              <dd>{does}</dd>
             </div>
           ))}
         </dl>
-        <p>Counter buttons add one with a tap; press and hold (or right-click) to take one away.</p>
       </Section>
 
       <Section id="reports" icon={BarChart2} title="Sessions and reports">

@@ -20,6 +20,7 @@ import SingleKeyShortcutsSetting from '@/components/settings/SingleKeyShortcutsS
 import OrganizationNameSetting from '@/components/settings/OrganizationNameSetting';
 import SchoolYearSetting from '@/components/settings/SchoolYearSetting';
 import AbcListsCard from '@/components/settings/AbcListsCard';
+import BuiltInGoalsCard from '@/components/settings/BuiltInGoalsCard';
 
 const SIDEBAR_ENABLED_KEY = 'sidebar_enabled';
 
@@ -119,6 +120,8 @@ export default function SettingsPage() {
       </Card>
 
       <AbcListsCard />
+
+      <BuiltInGoalsCard />
 
       <DeleteDataCard />
 
