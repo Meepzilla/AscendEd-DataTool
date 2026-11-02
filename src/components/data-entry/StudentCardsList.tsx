@@ -102,9 +102,9 @@ const StudentCardsList: React.FC<StudentCardsListProps> = ({
               variant="outline"
               onClick={addStudentSlot}
               className="w-full h-full border-dashed hover:border-primary hover:text-primary flex flex-col items-center justify-center"
-              title="Add another student data entry card (Alt+W)"
+              title="Add another student's card to record data for them too (Alt+W)"
             >
-              <PlusCircle className="mr-2 h-5 w-5" /> Add Student Slot
+              <PlusCircle className="mr-2 h-5 w-5" /> Add a Student
             </Button>
         </div>
       )}

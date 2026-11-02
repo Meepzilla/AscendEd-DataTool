@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { UserCog, ListPlus, ClipboardList, ListChecks, BarChart2, LayoutDashboard, HelpCircle, ScrollText, Settings } from 'lucide-react';
+import { UserCog, ListPlus, ClipboardList, ListChecks, BarChart2, LayoutDashboard, HelpCircle, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -25,8 +25,8 @@ const mainNavItems: NavItem[] = [
   { href: '/goal-templates', label: 'Goals', icon: ListPlus, hotkey: '5' },
 ];
 
+// The Changelog is reached from the account menu, Help and the footer (and Alt+6), not the menu bar.
 const secondaryNavItems: NavItem[] = [
-   { href: '/changelog', label: 'Changelog', icon: ScrollText, hotkey: '6' },
    { href: '/settings', label: 'Settings', icon: Settings, hotkey: '7' },
    { href: '/help', label: 'Help', icon: HelpCircle, hotkey: 'H' },
 ];

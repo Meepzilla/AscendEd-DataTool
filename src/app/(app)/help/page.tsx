@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { BarChart2, ClipboardList, HelpCircle, Keyboard, LifeBuoy, Rocket, Shield, Target, UserCog } from 'lucide-react';
 import { APP_NAME } from '@/lib/appConstants';
+import { ShowGettingStartedButton } from '@/components/dashboard/GettingStarted';
 
 // Help: getting started, a guide to each page, the goal types, data safety, hotkeys and troubleshooting.
 // The hotkey lists are kept in sync with use-keyboard-shortcuts.ts, DataEntryContent.tsx and data-entry-hotkeys.ts.
@@ -22,7 +23,7 @@ const HOTKEYS: { group: string; note?: string; keys: Hotkey[] }[] = [
       { keys: 'Alt + 3', description: 'Reports' },
       { keys: 'Alt + 4', description: 'Students' },
       { keys: 'Alt + 5', description: 'Goals' },
-      { keys: 'Alt + 6', description: 'Changelog' },
+      { keys: 'Alt + 6', description: "What's New" },
       { keys: 'Alt + 7', description: 'Settings' },
       { keys: 'Alt + H', description: 'Help (this page)' },
       { keys: 'Alt + M', description: 'Add a student' },
@@ -125,7 +126,7 @@ export default function HelpPage() {
               <CardTitle role="heading" aria-level={1} className="text-3xl font-bold">Help</CardTitle>
               <CardDescription>
                 How to use {APP_NAME} to record session data, track IEP goals and write progress reports. Everything
-                stays on this device.
+                stays on this device. See <Link href="/changelog" className="underline hover:text-primary">What&apos;s New</Link> for recent changes.
               </CardDescription>
             </div>
           </div>
@@ -146,11 +147,13 @@ export default function HelpPage() {
       <Section id="start" icon={Rocket} title="Getting started" description="Five steps from a new device to your first progress report.">
         <ol className="list-decimal space-y-2 pl-5">
           <li><B>Set up.</B> In <Link href="/settings" className="underline hover:text-primary">Settings</Link>, add your school or district name (it heads printed documents), check the school year dates, and consider turning on Passcode Protection.</li>
-          <li><B>Add students.</B> Press <kbd>Alt + M</kbd> or use the + in the sidebar. On a student&apos;s profile, add IEP dates and required service minutes with Edit IEP Details. To add many at once, use <B>Settings → Import Students</B> with an IEP at a Glance PDF (a page per student) or a spreadsheet (Excel or CSV, one row per student): names, IEP dates, service minutes and goals come in together, and you check each goal&apos;s type before saving. Importing again (for example the PDF after the spreadsheet) updates the same students and skips goals they already have. If a student&apos;s IEP in the file has already ended, the import moves it to the current IEP year (starting the day after it ended, with the annual review a year less a day later); untick that in the review to keep the file&apos;s dates.</li>
+          <li><B>Add students.</B> Use Add Student on the Dashboard, the + in the sidebar or <kbd>Alt + M</kbd>. Added from the Dashboard or the Students page, the new student&apos;s profile opens so you can give them goals; anywhere else, a message offers Add goals. On a student&apos;s profile, add IEP dates and required service minutes with Edit IEP Details. To add many at once, use <B>Settings → Import Students</B> with an IEP at a Glance PDF (a page per student) or a spreadsheet (Excel or CSV, one row per student): names, IEP dates, service minutes and goals come in together, and you check each goal&apos;s type before saving. Importing again (for example the PDF after the spreadsheet) updates the same students and skips goals they already have. If a student&apos;s IEP in the file has already ended, the import moves it to the current IEP year (starting the day after it ended, with the annual review a year less a day later); untick that in the review to keep the file&apos;s dates.</li>
           <li><B>Assign goals.</B> Pick goals from the goal bank on the student&apos;s profile (or write your own). Set the target, target date, baseline and mastery criteria when you edit a goal.</li>
           <li><B>Record sessions.</B> In <Link href="/data-entry" className="underline hover:text-primary">Data Entry</Link>, add students (or load a saved group), record data during the session, then Save All.</li>
           <li><B>Report.</B> In <Link href="/analysis-report" className="underline hover:text-primary">Reports</Link>, choose a student to see charts, write a narrative, or open the printable Progress Report.</li>
         </ol>
+        <p>Until these steps are done, the Dashboard shows a Getting Started checklist that ticks each one off. If you hid it, bring it back here:</p>
+        <ShowGettingStartedButton />
         <p>Back up regularly from Settings → Backup &amp; Restore. The <Link href="/dashboard" className="underline hover:text-primary">Dashboard</Link> reminds you when the last backup is more than a week old. It also shows <B>Today&apos;s Work</B> (unsaved Data Entry, and a button for each saved group that opens Data Entry with that group loaded), <B>Due Soon</B> (annual reviews and re-evaluations that are overdue or within 60 days) and <B>Service Minutes</B> (who still needs minutes this week or month, and who was short last time). The last two come from the IEP dates and required minutes on each student&apos;s profile; each shows 4 students at a time and scrolls for the rest, and tapping its title collapses it to the title and count (remembered on the device).</p>
       </Section>
 
@@ -158,7 +161,7 @@ export default function HelpPage() {
         <Accordion type="multiple" defaultValue={['de-basics']}>
           <Topic value="de-basics" title="Recording a session">
             <p>Set the session date and start and end times at the top (Reset Time to Now starts the clock again). The start and end times are what count toward service minutes.</p>
-            <p>Each student gets a card with their goals. Tap a card or press <kbd>1</kbd>–<kbd>4</kbd> to focus it; the focused goal is outlined, and hotkeys add data to it. Add an activity and notes, then use <B>Save Focused</B> for one student or <B>Save All</B> (<kbd>Ctrl + Enter</kbd>).</p>
+            <p>Each student gets a card with their goals (<B>Add a Student</B> adds another card). Tap a card or press <kbd>1</kbd>–<kbd>4</kbd> to highlight it; the highlighted goal is outlined, and hotkeys add data to it. <B>Pick Student</B> and <B>Pick Goal</B> choose which card and goal are highlighted. Add an activity and notes, then use <B>Save Student</B> for the highlighted student or <B>Save All</B> (<kbd>Ctrl + Enter</kbd>).</p>
             <p>Unsaved work is kept if you switch pages or close the app, until you save or reset it. Timers keep running meanwhile.</p>
           </Topic>
           <Topic value="de-students" title="Adding students and groups">
@@ -258,7 +261,7 @@ export default function HelpPage() {
       <Section id="troubleshooting" icon={LifeBuoy} title="Troubleshooting">
         <Accordion type="multiple">
           <Topic value="ts-update" title="I don't see the latest changes">
-            <p>Updates download in the background and apply the next time the app opens. Close the app fully (swipe it away on an iPad) and open it again. The <Link href="/changelog" className="underline hover:text-primary">Changelog</Link> lists what changed.</p>
+            <p>Updates download in the background and apply the next time the app opens. Close the app fully (swipe it away on an iPad) and open it again. <Link href="/changelog" className="underline hover:text-primary">What&apos;s New</Link> (in the account menu) lists what changed.</p>
           </Topic>
           <Topic value="ts-offline" title="Using it without internet">
             <p>After it has been opened once online, the app works offline. Open it from the Home Screen while online now and then to get updates.</p>

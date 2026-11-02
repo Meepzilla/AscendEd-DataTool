@@ -86,8 +86,8 @@ export default function TouchControls({
                 size="icon"
                 onClick={() => setSelectionModalType('student')}
                 disabled={studentSlots.length <= 1}
-                aria-label="Select Student"
-                title="Select Focused Student (Alt+U)"
+                aria-label="Pick student"
+                title="Choose which student's card to highlight (Alt+U)"
             >
                 <Users className="h-5 w-5" />
             </Button>
@@ -97,8 +97,8 @@ export default function TouchControls({
                 size="icon"
                 onClick={() => setSelectionModalType('goal')}
                 disabled={visibleGoals.length <= 1}
-                aria-label="Select Goal"
-                title="Select Focused Goal (Alt+T)"
+                aria-label="Pick goal"
+                title="Choose which goal to highlight on the student's card (Alt+T)"
             >
                 <Target className="h-5 w-5" />
             </Button>
@@ -116,11 +116,11 @@ export default function TouchControls({
           disabled={!studentSlots || studentSlots.length <= 1}
           size="sm"
           className="w-full justify-start short:w-auto"
-          aria-label="Select Student"
-          title="Select Focused Student (Alt+U)"
+          aria-label="Pick student"
+          title="Choose which student's card to highlight (Alt+U)"
         >
           <Users className="mr-2 h-4 w-4" />
-          <span>Student</span>
+          <span>Pick Student</span>
         </Button>
 
         <Button
@@ -130,11 +130,11 @@ export default function TouchControls({
           disabled={!visibleGoals || visibleGoals.length <= 1}
           size="sm"
           className="w-full justify-start short:w-auto"
-          aria-label="Select Goal"
-          title="Select Focused Goal (Alt+T)"
+          aria-label="Pick goal"
+          title="Choose which goal to highlight on the student's card (Alt+T)"
         >
           <Target className="mr-2 h-4 w-4" />
-          <span>Goal</span>
+          <span>Pick Goal</span>
         </Button>
       </div>
       

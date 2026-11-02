@@ -12,11 +12,18 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useStudentData } from '@/hooks/use-student-data';
 import { StudentSchema } from '@/lib/types'; // Assuming you have Zod schemas defined in types.ts
+import { usePathname, useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
+import { ToastAction } from '@/components/ui/toast';
+import { studentProfilePath } from '@/lib/helpers';
 
 type AddStudentFormData = z.infer<typeof StudentSchema>;
 
 export default function AddStudentModal() {
   const { isAddStudentModalOpen, closeAddStudentModal, addStudent, loading: dataLoading } = useStudentData();
+  const router = useRouter();
+  const pathname = usePathname();
+  const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const form = useForm<AddStudentFormData>({
     resolver: zodResolver(StudentSchema),
@@ -36,10 +43,23 @@ export default function AddStudentModal() {
 
   const onSubmit = async (data: AddStudentFormData) => {
     setIsSubmitting(true);
-    const newStudent = await addStudent(data.name);
+    const newStudent = await addStudent(data.name, { quiet: true });
     setIsSubmitting(false);
     if (newStudent) {
       closeAddStudentModal();
+      // Next: their goals. From the dashboard or Students, go to the new profile; elsewhere (Data Entry in the
+      // middle of a session) leave the page as it is and offer the way there.
+      const profile = studentProfilePath(newStudent.id);
+      if (pathname?.startsWith('/dashboard') || pathname === '/student-profile' || pathname === '/student-profile/') {
+        toast({ title: `${newStudent.name} added`, description: 'Next, give them goals with Assign / Create Goal.' });
+        router.push(profile);
+      } else {
+        toast({
+          title: `${newStudent.name} added`,
+          description: 'Give them goals on their profile.',
+          action: <ToastAction altText={`Add goals for ${newStudent.name}`} onClick={() => router.push(profile)}>Add goals</ToastAction>,
+        });
+      }
     }
     // Error handling is done within addStudent via toast
   };
