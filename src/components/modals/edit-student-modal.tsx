@@ -176,7 +176,7 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
                           </div>
                         ) : (
                         <div className={cn("flex-grow min-w-0 break-words", goal.isArchived && "opacity-60")}>
-                            <GoalTextPopover name={fillNameBlanks(goal)} smartGoal={goalStatement(goal, currentStudent.name)} />
+                            <GoalTextPopover name={fillNameBlanks(goal)} smartGoal={goalStatement(goal, currentStudent.name, currentStudent.iep)} />
                             <Badge variant="outline" className="ml-1">{goalTypeLabel(goal.dataCaptureType || goal.type)}</Badge>
                             {goal.isArchived && <Badge variant="destructive" className="ml-1">Archived</Badge>}
                         </div>
