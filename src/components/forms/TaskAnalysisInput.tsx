@@ -52,8 +52,8 @@ export default function TaskAnalysisInput({ steps, data, update, interact, disab
                     className={cn(
                       'h-9 min-w-11 rounded-md border px-2 text-sm font-semibold touch-manipulation disabled:opacity-50',
                       selected
-                        ? level === 'Independent' ? 'border-green-500 bg-green-500/20 text-green-300'
-                          : level === 'NotDone' ? 'border-red-400 bg-red-400/15 text-red-300'
+                        ? level === 'Independent' ? 'border-green-500 bg-green-500/20 text-green-800 dark:text-green-300'
+                          : level === 'NotDone' ? 'border-red-400 bg-red-400/15 text-red-800 dark:text-red-300'
                           : 'border-primary bg-primary/20 text-primary'
                         : 'border-input bg-background text-muted-foreground hover:text-foreground',
                     )}
