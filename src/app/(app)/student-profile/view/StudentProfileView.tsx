@@ -234,7 +234,7 @@ export default function StudentProfileView() {
             <div>
               <div className="flex items-center gap-2">
                 <CardTitle role="heading" aria-level={1} className="text-2xl sm:text-3xl font-bold">{currentStudent.name}</CardTitle>
-                {currentStudent.isArchived && <Badge variant="outline" className="border-orange-500 text-orange-600 bg-orange-50 dark:bg-orange-900/20">Archived</Badge>}
+                {currentStudent.isArchived && <Badge variant="outline" className="border-orange-500 text-orange-700 dark:text-orange-600 bg-orange-50 dark:bg-orange-900/20">Archived</Badge>}
               </div>
               <CardDescription className="text-xs sm:text-sm">
                 Student ID: {currentStudent.id} | Joined: {formatDate(currentStudent.createdAt)}
@@ -265,7 +265,7 @@ export default function StudentProfileView() {
             <Button variant="outline" size="sm" onClick={() => openEditStudentModal(currentStudent)} className="w-full sm:w-auto">
               <Edit3 className="mr-2 h-4 w-4" /> Edit Student Info
             </Button>
-            <Button variant="outline" size="sm" onClick={handleToggleArchiveStudent} className={cn("w-full sm:w-auto", currentStudent.isArchived ? "text-green-600 hover:text-green-700 border-green-500 hover:bg-green-50" : "text-orange-600 hover:text-orange-700 border-orange-500 hover:bg-orange-50")}>
+            <Button variant="outline" size="sm" onClick={handleToggleArchiveStudent} className={cn("w-full sm:w-auto", currentStudent.isArchived ? "text-green-700 dark:text-green-600 hover:text-green-800 dark:hover:text-green-700 border-green-500 hover:bg-green-50" : "text-orange-700 dark:text-orange-600 hover:text-orange-800 dark:hover:text-orange-700 border-orange-500 hover:bg-orange-50")}>
               {currentStudent.isArchived ? <ArchiveRestore className="mr-2 h-4 w-4"/> : <Archive className="mr-2 h-4 w-4"/>}
               {currentStudent.isArchived ? 'Unarchive' : 'Archive'}
             </Button>
@@ -299,11 +299,11 @@ export default function StudentProfileView() {
                         <Badge variant="secondary">{goalTypeLabel(goal.type)}</Badge>
                         {goal.sessionTargetValue !== undefined && (
                           <Badge variant="outline">
-                            <TrendingUp className="mr-1.5 h-3.5 w-3.5 text-green-600" />
+                            <TrendingUp className="mr-1.5 h-3.5 w-3.5 text-green-700 dark:text-green-600" />
                             Target: {formatGoalTarget(captureTypeOf(goal), goal.sessionTargetValue, goal.targetDirection)}
                           </Badge>
                         )}
-                        {goal.isArchived && <Badge variant="outline" className="border-orange-500 text-orange-600">Archived</Badge>}
+                        {goal.isArchived && <Badge variant="outline" className="border-orange-500 text-orange-700 dark:text-orange-600">Archived</Badge>}
                       </div>
                       <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{goalStatement(goal, currentStudent.name)}</p>
                   </div>
@@ -314,8 +314,8 @@ export default function StudentProfileView() {
                     </Button>
                     <Button variant="outline" size="sm" onClick={() => handleToggleArchiveGoal(goal)}>
                       {goal.isArchived
-                        ? <><ArchiveRestore className="mr-2 h-4 w-4 text-green-600" /> Unarchive</>
-                        : <><Archive className="mr-2 h-4 w-4 text-orange-600" /> Archive</>}
+                        ? <><ArchiveRestore className="mr-2 h-4 w-4 text-green-700 dark:text-green-600" /> Unarchive</>
+                        : <><Archive className="mr-2 h-4 w-4 text-orange-700 dark:text-orange-600" /> Archive</>}
                     </Button>
                     <Button variant="outline" size="sm" onClick={() => openDeleteAssignedGoalConfirmationModal(currentStudent.id, goal)}>
                       <Trash2 className="mr-2 h-4 w-4 text-destructive" /> Remove

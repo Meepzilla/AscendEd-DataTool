@@ -42,6 +42,8 @@ It runs entirely on the device: there is no account, no server and no AI. Studen
 - A strict Content Security Policy: only the app's own scripts can run.
 - A [Privacy Notice](src/app/(app)/privacy/page.tsx) page in the app.
 
+Three color themes (Settings → Interface): Dark (the default, navy and gold), Light (white and gold) and High Contrast (black, white and bright yellow), saved on each device. All three meet WCAG AA text contrast.
+
 The menu bar can sit at the top or the bottom of the screen (Settings → Interface); at the bottom it stays in reach while scrolling and sits above the footer.
 
 In the app, the **Help** page (Alt + H) explains each feature, and the **Changelog** lists what changed.

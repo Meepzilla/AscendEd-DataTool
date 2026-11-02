@@ -15,6 +15,7 @@ import DeleteDataCard from '@/components/settings/DeleteDataCard';
 import ImportStudentsCard from '@/components/settings/ImportStudentsCard';
 import DisplaySizeSetting from '@/components/settings/DisplaySizeSetting';
 import MenuPositionSetting from '@/components/settings/MenuPositionSetting';
+import ThemeSetting from '@/components/settings/ThemeSetting';
 import SingleKeyShortcutsSetting from '@/components/settings/SingleKeyShortcutsSetting';
 import OrganizationNameSetting from '@/components/settings/OrganizationNameSetting';
 import SchoolYearSetting from '@/components/settings/SchoolYearSetting';
@@ -87,6 +88,7 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <DisplaySizeSetting />
+          <ThemeSetting />
           <MenuPositionSetting />
           <SingleKeyShortcutsSetting />
           <OrganizationNameSetting />

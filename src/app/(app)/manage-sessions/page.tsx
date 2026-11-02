@@ -218,7 +218,7 @@ export default function ManageSessionsPage() {
                       <TableCell>{session.endTime || 'N/A'}</TableCell>
                       <TableCell className="truncate max-w-xs" title={session.missed ? MISSED_REASON_LABELS[session.missed.reason] : session.activity}>
                         {session.missed ? (
-                          <span className="inline-block rounded-full border border-orange-400/50 bg-orange-400/10 px-2 py-0.5 text-xs font-semibold text-orange-300">
+                          <span className="inline-block rounded-full border border-orange-400/50 bg-orange-400/10 px-2 py-0.5 text-xs font-semibold text-orange-700 dark:text-orange-300">
                             Missed: {MISSED_REASON_SHORT[session.missed.reason]}
                           </span>
                         ) : session.activity}
