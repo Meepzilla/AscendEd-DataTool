@@ -1,8 +1,9 @@
 
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-import type { Goal } from './types';
-import { fillBlanks, matchTextToTarget } from './goal-blanks';
+import type { Goal, StudentIep } from './types';
+import { fillBlanks, matchTextToTarget, percentAsFraction } from './goal-blanks';
+import { replacePlaceholders, type PlaceholderKey } from './goal-placeholders';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -170,12 +171,54 @@ export function compareSessionsOldestFirst(a: { date: string; time?: string }, b
  * and mastery matching the goal's settings, "[date]" with
  * the goal's target date, and "STUDENT" / "the student" with the student's first name. The stored text is unchanged.
  */
-export function goalStatement(goal: Pick<Goal, 'smartGoal' | 'targetDate' | 'sessionTargetValue' | 'masterySessions' | 'blankFills'> & Partial<Pick<Goal, 'type' | 'dataCaptureType' | 'targetDirection'>>, studentName?: string): string {
+type StatementGoal = Pick<Goal, 'smartGoal' | 'targetDate' | 'sessionTargetValue' | 'masterySessions' | 'blankFills'>
+  & Partial<Pick<Goal, 'type' | 'dataCaptureType' | 'targetDirection' | 'baseline' | 'baselineDate'>>;
+
+/**
+ * The value of each placeholder in goal text (goal-placeholders.ts) for a goal and its student. Without a student
+ * (a template), [student] reads "the student"; a placeholder with no value set is left as typed.
+ */
+export function placeholderValue(key: PlaceholderKey, goal: StatementGoal, studentName?: string, iep?: StudentIep): string | undefined {
+  const name = studentName?.trim();
+  const type = goal.dataCaptureType || goal.type || '';
+  const target = goal.sessionTargetValue;
+  // A target shown as a percentage (accuracy, % of intervals…) keeps its "%"; counts and ratings are plain numbers.
+  const percent = target !== undefined && formatGoalTarget(type, target, goal.targetDirection).includes('%');
+  const withUnit = (v: number) => `${v}${percent ? '%' : ''}`;
+  const date = (v?: string) => (v ? formatDateOnly(v) : undefined);
+  switch (key) {
+    case 'student': return name ? name.split(/\s+/)[0] : 'the student';
+    case 'fullName': return name || 'the student';
+    case 'date': return date(goal.targetDate || iep?.annualReviewDate);
+    case 'target': return target === undefined ? undefined : withUnit(target);
+    case 'opportunities': {
+      const fraction = percent && target !== undefined ? percentAsFraction(target) : null;
+      return fraction ? `${fraction[0]} out of ${fraction[1]}` : undefined;
+    }
+    case 'mastery': return String(goal.masterySessions ?? 3); // mastery's default, as in aim-line.ts
+    case 'baseline': return goal.baseline === undefined || goal.baseline === null ? undefined : withUnit(Number(goal.baseline));
+    case 'baselineDate': return date(goal.baselineDate);
+    case 'annualReview': return date(iep?.annualReviewDate);
+    case 'iepDate': return date(iep?.iepDate);
+    case 'reevaluation': return date(iep?.reevaluationDate);
+    case 'serviceMinutes':
+      return iep?.serviceMinutes ? `${iep.serviceMinutes} minutes per ${iep.servicePer === 'year' ? 'school year' : iep.servicePer ?? 'week'}` : undefined;
+  }
+}
+
+/**
+ * A goal's text as shown: blanks ("___") filled, the stated target and mastery following the goal's settings,
+ * placeholders ("[student]", "[date]", "[opportunities]"…) filled from the student and the goal, and "STUDENT" or
+ * "the student" as the student's first name.
+ */
+export function goalStatement(goal: StatementGoal, studentName?: string, iep?: StudentIep): string {
   // Blanks ("___") first: their positions are in the stored text. Then the stated target and mastery follow the
   // goal's settings (goal-blanks.ts).
   let text = matchTextToTarget(fillBlanks(goal.smartGoal ?? '', goal), goal);
-  if (goal.targetDate) text = text.replace(/\[date\]/gi, formatDateOnly(goal.targetDate));
+  text = replacePlaceholders(text, key => placeholderValue(key, goal, studentName, iep));
   const firstName = studentName?.trim().split(/\s+/)[0];
   if (firstName) text = text.replace(/\bSTUDENT\b/g, firstName).replace(/\b[Tt]he student\b/g, firstName);
+  // "[student] will…" at the start of a sentence in a template: "The student will…".
+  else text = text.replace(/(^|[.!?]\s+)the student\b/g, (_, before: string) => `${before}The student`);
   return text;
 }

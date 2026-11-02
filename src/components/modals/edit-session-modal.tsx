@@ -188,6 +188,7 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
                                         onChange={(fieldName,newData) => handleGoalDataChange(sessionGoal.goalId, fieldName,newData)}
                                         isArchived={originalGoal.isArchived}
                                         studentName={currentSession.studentName}
+                                        studentIep={students.find(s => s.id === currentSession.studentId)?.iep}
                                         />
                                     );
                                 })}

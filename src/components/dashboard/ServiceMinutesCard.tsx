@@ -32,7 +32,7 @@ function Row({ item }: { item: ServiceItem }) {
         <Progress value={Math.min(100, (item.delivered / item.required) * 100)} className="h-1.5" aria-label={`${item.studentName}: ${item.delivered} of ${item.required} minutes this ${period}`} />
         <span className="flex flex-wrap items-center justify-between gap-x-3 text-xs text-muted-foreground">
           <span>{formatMinutes(item.delivered)} of {formatMinutes(item.required)} this {period}</span>
-          {item.lastShort > 0 && <span className="font-medium text-amber-300">{formatMinutes(item.lastShort)} short last {period}</span>}
+          {item.lastShort > 0 && <span className="font-medium text-amber-700 dark:text-amber-300">{formatMinutes(item.lastShort)} short last {period}</span>}
         </span>
       </Link>
     </li>
