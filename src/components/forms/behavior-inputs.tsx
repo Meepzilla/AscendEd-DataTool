@@ -15,7 +15,8 @@ import {
   summarizeFrequency, summarizeDuration, summarizeAbc, summarizeIntervals, summarizeLatency,
   formatSeconds, formatLatency, alignTimes, joinAbcChoices, joinWithAnd, topTied, type AbcIncident, type BehaviorFunction, type IntervalSetup,
 } from '@/lib/goal-constants';
-import { formatClockTime } from '@/lib/behavior-timing';
+import { clockInputValue, formatClockTime, withClockTime } from '@/lib/behavior-timing';
+import { useSessionDate } from './session-date-context';
 import { useAbcLists } from '@/hooks/use-abc-lists';
 
 // Data entry for the behavior goal types. `update` merges fields into the goal's session data;
@@ -81,6 +82,53 @@ const Notes: React.FC<BehaviorInputProps & { placeholder: string }> = ({ data, u
   </Field>
 );
 
+/**
+ * "Edit times": a time box for each recorded entry, to correct when it happened (or add a time for one entered by
+ * hand). A changed time is put on the session's day, so time-of-day reports count it. Without `clearable`, emptying a
+ * box keeps the time it had.
+ */
+const TimesEditor: React.FC<{
+  times: (string | null)[];
+  rowLabel: (index: number) => string;
+  onChange: (times: (string | null)[]) => void;
+  disabled?: boolean;
+  clearable?: boolean;
+}> = ({ times, rowLabel, onChange, disabled, clearable = true }) => {
+  const [open, setOpen] = useState(false);
+  const sessionDay = useSessionDate();
+  if (times.length === 0) return null;
+  const change = (index: number, hhmm: string) => {
+    if (!clearable && hhmm === '') return;
+    onChange(times.map((t, i) => (i === index ? withClockTime(t, hhmm, sessionDay) : t)));
+  };
+  return (
+    <div className="space-y-1">
+      <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => setOpen(o => !o)} aria-expanded={open}>
+        {open ? 'Done editing times' : 'Edit times'}
+      </Button>
+      {open && (
+        <ol className="space-y-1">
+          {times.map((t, i) => (
+            <li key={i} className="flex items-center gap-2 text-xs">
+              <label htmlFor={`time-${i}-${rowLabel(i)}`} className="min-w-0 flex-1 truncate">{rowLabel(i)}</label>
+              <Input
+                id={`time-${i}-${rowLabel(i)}`}
+                type="time"
+                value={clockInputValue(t)}
+                onChange={(e) => change(i, e.target.value)}
+                className="h-8 w-28 text-sm"
+                aria-label={`Time of ${rowLabel(i)}`}
+                disabled={disabled}
+              />
+              {!t && <span className="text-muted-foreground">not recorded</span>}
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
+  );
+};
+
 export const FrequencyInput: React.FC<BehaviorInputProps> = (props) => {
   const { data, update, interact, disabled } = props;
   const { count, ratePerHour } = summarizeFrequency(data);
@@ -102,6 +150,7 @@ export const FrequencyInput: React.FC<BehaviorInputProps> = (props) => {
         {knownTimes.length > 0 && (
           <p className="text-[11px] text-muted-foreground">At {knownTimes.slice(-8).map(t => formatClockTime(new Date(t))).join(', ')}{knownTimes.length > 8 ? ' (latest 8)' : ''}</p>
         )}
+        <TimesEditor times={times} rowLabel={i => `Occurrence ${i + 1}`} onChange={next => update({ occurrenceTimes: next })} disabled={disabled || props.isLocked} />
       </Field>
       <ObservationMinutes {...props} hint="for a rate per hour" />
       <Summary label="Frequency">
@@ -174,6 +223,7 @@ export const DurationInput: React.FC<BehaviorInputProps> = (props) => {
           ))}
         </div>
       )}
+      <TimesEditor times={starts} rowLabel={i => `Episode ${i + 1} (${formatSeconds(episodes[i])}) started`} onChange={next => update({ episodeStarts: next })} disabled={disabled || isLocked} />
       <Field label="Add an Episode by Hand (minutes)">
         <div className="flex items-center gap-1">
           <Input
@@ -283,7 +333,7 @@ export const AbcInput: React.FC<BehaviorInputProps> = (props) => {
         <ol className="space-y-1 text-xs">
           {incidents.map((incident, i) => (
             <li key={i} className="flex items-start gap-1 rounded border p-1">
-              <span className="text-muted-foreground shrink-0">{new Date(incident.time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
+              <span className="text-muted-foreground shrink-0">{clockInputValue(incident.time) ? formatClockTime(new Date(incident.time)) : '—'}</span>
               <span className="flex-grow">
                 {[incident.antecedent || '?', incident.behavior, incident.consequence || '?'].join(' → ')}
                 {incident.note && <span className="text-muted-foreground"> · {incident.note}</span>}
@@ -296,6 +346,13 @@ export const AbcInput: React.FC<BehaviorInputProps> = (props) => {
           ))}
         </ol>
       )}
+      <TimesEditor
+        times={incidents.map(incident => incident.time || null)}
+        rowLabel={i => `Incident ${i + 1}: ${incidents[i].behavior}`}
+        onChange={next => update({ incidents: incidents.map((incident, i) => (next[i] ? { ...incident, time: next[i]! } : incident)) })}
+        disabled={disabled || isLocked}
+        clearable={false}
+      />
       <Summary label="ABC Summary">
         {summary.incidentCount} {summary.incidentCount === 1 ? 'incident' : 'incidents'} ({summary.problemCount} problem behavior, {summary.replacementCount} replacement skill)
         {summary.replacementPercent !== null && ` · replacement ${summary.replacementPercent.toFixed(0)}%`}
@@ -587,6 +644,7 @@ export const LatencyInput: React.FC<BehaviorInputProps> = (props) => {
           ))}
         </div>
       )}
+      <TimesEditor times={trialTimes} rowLabel={i => `Trial ${i + 1} cue`} onChange={next => update({ trialTimes: next })} disabled={disabled || isLocked} />
       <Field label="Add a Trial by Hand (seconds)">
         <div className="flex items-center gap-1">
           <Input
