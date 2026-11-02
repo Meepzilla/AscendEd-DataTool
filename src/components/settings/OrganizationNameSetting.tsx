@@ -27,7 +27,7 @@ export default function OrganizationNameSetting() {
         id="organization-name"
         value={name}
         onChange={e => { setName(e.target.value); setOrganizationName(e.target.value); }}
-        placeholder="e.g., Lane Education Service District"
+        placeholder="e.g., Riverside School District"
         className="w-full sm:w-80"
         autoComplete="organization"
       />

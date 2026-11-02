@@ -1,4 +1,4 @@
-package us.or.k12.lesd.ascended;
+package io.github.meepzilla.ascended;
 
 import com.getcapacitor.BridgeActivity;
 
