@@ -16,7 +16,7 @@ import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 import type { GoalType } from '@/lib/types';
 import type { CellValue } from '@/lib/xlsx-read';
 import {
-  goalDirectionFor, goalTarget, iepGlanceRows, matchExistingStudents, moveIepToCurrentYear, readStudentRows, type ImportGoal, type ImportStudent,
+  goalDirectionFor, goalTarget, iepGlanceRows, importedIep, matchExistingStudents, moveIepToCurrentYear, readStudentRows, type ImportGoal, type ImportStudent,
 } from '@/lib/student-import';
 
 // Settings → Import Students: reads a spreadsheet with one row per student (name, IEP dates, service minutes,
@@ -41,6 +41,14 @@ async function readRows(file: File): Promise<CellValue[][]> {
 }
 
 type Row = Omit<ImportStudent, 'goals'> & { include: boolean; goals: (ImportGoal & { include: boolean })[] };
+
+/**
+ * A row as it will be imported. Rows hold the IEP dates moved to the current year (with the file's dates in
+ * iepFromFile); with moving turned off, the file's dates are used and nothing moved is kept.
+ */
+function forMode<T extends Pick<ImportStudent, 'iep' | 'iepFromFile' | 'savedIep'>>(row: T, move: boolean): T {
+  return move ? row : { ...row, iep: row.iepFromFile ?? row.iep, iepFromFile: undefined, savedIep: undefined };
+}
 
 export default function ImportStudentsCard() {
   const { students: existing, importStudents } = useStudentData();
@@ -73,8 +81,23 @@ export default function ImportStudentsCard() {
     }
   };
 
-  /** A row's IEP dates as they will be saved: moved to the current year, or as in the file. */
-  const iepOf = (row: Row) => (moveDates ? row.iep : row.iepFromFile ?? row.iep);
+  /** A row's IEP details as they will be saved (dates moved or as in the file, over what the student has). */
+  const iepOf = (row: Row) => importedIep(forMode(row, moveDates), existing.find(e => e.id === row.existingId)?.iep);
+  /**
+   * Turning moving on or off matches each row again with the dates it will then have, since a student can be
+   * matched by the IEP start date. A row's goal ticks are reset only if it now matches a different student.
+   */
+  const changeMoveDates = (move: boolean) => {
+    setMoveDates(move);
+    setRows(prev => prev && prev.map(row => {
+      const [match] = matchExistingStudents([forMode(row, move)], existing);
+      const sameStudent = match.existingId === row.existingId;
+      return {
+        ...row, existingId: match.existingId, existingName: match.existingName, savedIep: match.savedIep,
+        goals: sameStudent ? row.goals : row.goals.map((g, i) => ({ ...g, duplicate: match.goals[i].duplicate, include: !match.goals[i].duplicate })),
+      };
+    }));
+  };
   const movedCount = (rows ?? []).filter(r => r.iepFromFile).length;
   const included = useMemo(() => (rows ?? []).filter(r => r.include), [rows]);
   const goalCount = included.reduce((n, s) => n + s.goals.filter(g => g.include).length, 0);
@@ -91,8 +114,8 @@ export default function ImportStudentsCard() {
 
   const runImport = () => {
     // Goals not ticked are left out, as goals the student already has are.
-    const result = importStudents(included.map(({ include: _, ...s }) => ({
-      ...s, iep: iepOf({ ...s, include: true }), goals: s.goals.map(({ include, ...g }) => ({ ...g, duplicate: !include })),
+    const result = importStudents(included.map(({ include: _, ...row }) => ({
+      ...forMode(row, moveDates), goals: row.goals.map(({ include, ...g }) => ({ ...g, duplicate: !include })),
     })));
     if (!result) return;
     setRows(null);
@@ -145,7 +168,7 @@ export default function ImportStudentsCard() {
         )}
         {movedCount > 0 && (
           <div className="mb-3 flex items-start gap-2 rounded-md border p-3">
-            <Checkbox id="import-move-dates" className="mt-0.5" checked={moveDates} onCheckedChange={v => setMoveDates(v === true)} />
+            <Checkbox id="import-move-dates" className="mt-0.5" checked={moveDates} onCheckedChange={v => changeMoveDates(v === true)} />
             <label htmlFor="import-move-dates" className="text-sm">
               <span className="font-medium">Move IEP dates that have passed to the current IEP year</span>
               <span className="block text-xs text-muted-foreground">
@@ -165,7 +188,8 @@ export default function ImportStudentsCard() {
               dates.reevaluationDate && `re-evaluation ${formatDateOnly(dates.reevaluationDate)}`,
               dates.serviceMinutes && `${dates.serviceMinutes} min per ${dates.servicePer}`,
             ].filter(Boolean).join(' · ');
-            const moved = moveDates && row.iepFromFile;
+            const moved = moveDates && row.iepFromFile && !row.savedIep;
+            const fileDates = row.iepFromFile;
             const checkboxId = `import-student-${si}`;
             return (
               <li key={`${row.row}-${row.name}`} className={`rounded-md border p-3 ${row.include ? '' : 'opacity-60'}`}>
@@ -177,9 +201,16 @@ export default function ImportStudentsCard() {
                   </Badge>
                 </div>
                 {iep && <p className="mt-1 text-xs text-muted-foreground">{iep}</p>}
-                {moved && row.iepFromFile?.annualReviewDate && (
+                {moved && fileDates?.annualReviewDate && (
                   <p className="text-xs text-muted-foreground">
-                    Moved from the file&apos;s IEP{row.iepFromFile.iepDate ? ` (${formatDateOnly(row.iepFromFile.iepDate)}` : ' (ending'} to {formatDateOnly(row.iepFromFile.annualReviewDate)}), which has ended.
+                    Moved from the file&apos;s IEP (
+                    {fileDates.iepDate ? `${formatDateOnly(fileDates.iepDate)} to ${formatDateOnly(fileDates.annualReviewDate)}` : `ending ${formatDateOnly(fileDates.annualReviewDate)}`}
+                    ), which has ended.
+                  </p>
+                )}
+                {moveDates && row.savedIep && (
+                  <p className="text-xs text-muted-foreground">
+                    Keeps the newer IEP already saved for {row.existingName ?? 'this student'} (from {formatDateOnly(row.savedIep.iepDate!)}), since the file&apos;s IEP has ended.
                   </p>
                 )}
                 {row.goals.length === 0 && <p className="mt-2 text-sm text-muted-foreground">No goals in the file.</p>}
@@ -214,7 +245,7 @@ export default function ImportStudentsCard() {
                           </Select>
                           <span className="text-xs text-muted-foreground">
                             Target {formatGoalTarget(goal.type, goal.target, goal.direction)}
-                            {goal.targetDate && ` by ${formatDateOnly(goal.targetDate)}`}
+                            {(goal.targetDate ?? dates.annualReviewDate) && ` by ${formatDateOnly((goal.targetDate ?? dates.annualReviewDate)!)}`}
                           </span>
                         </div>
                       </div>
