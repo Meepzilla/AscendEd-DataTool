@@ -4,7 +4,7 @@ import React from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import TallyButton from '../TallyButton';
-import { COMMUNICATION_FUNCTIONS, STORY_PARTS, STORY_PART_SCORE_LABELS, STORY_LINKING_WORDS, linkingWordField } from '@/lib/goal-constants';
+import { COMMUNICATION_FUNCTIONS, STORY_PARTS, STORY_PART_SCORE_LABELS, STORY_PART_NOT_ASSESSED, STORY_LINKING_WORDS, linkingWordField } from '@/lib/goal-constants';
 import { FormItem, FormLabel, type GoalInputContext } from './shared';
 
 // Data Entry inputs for goal types (see goal-data-input.tsx, which picks the inputs for a goal's type).
@@ -66,13 +66,21 @@ export function CommunicationFunctionsInputs({ ctx }: { ctx: GoalInputContext })
   );
 }
 
-/** Story elements: each story part scored 0-2, and linking words. */
+// The choices for each story part: its score, or not assessed (left out of the story score).
+const STORY_PART_CHOICES = [
+  { value: 0, text: '0', title: STORY_PART_SCORE_LABELS[0] },
+  { value: 1, text: '1', title: STORY_PART_SCORE_LABELS[1] },
+  { value: 2, text: '2', title: STORY_PART_SCORE_LABELS[2] },
+  { value: STORY_PART_NOT_ASSESSED, text: 'N/A', title: 'Not assessed (left out of the story score)' },
+];
+
+/** Story elements: each story part scored 0-2 or marked not assessed, and linking words. */
 export function StoryElementsInputs({ ctx }: { ctx: GoalInputContext }) {
   const { data, isArchived, isLocked, handleChange, handleInteraction, calculateAccuracy } = ctx;
   return (
     <>
       <FormItem>
-        <FormLabel>Story Parts (0 Missing · 1 Partial · 2 Complete)</FormLabel>
+        <FormLabel>Story Parts (0 Missing · 1 Partial · 2 Complete · N/A Not assessed)</FormLabel>
         <div className="grid grid-cols-[1fr_auto] items-center gap-x-2 gap-y-1">
           {STORY_PARTS.map(({ key, label }) => {
             const score = Number(data[key]) || 0;
@@ -80,7 +88,7 @@ export function StoryElementsInputs({ ctx }: { ctx: GoalInputContext }) {
               <React.Fragment key={key}>
                 <span className="text-xs">{label}</span>
                 <div className="flex gap-1" role="radiogroup" aria-label={label}>
-                  {[0, 1, 2].map(value => (
+                  {STORY_PART_CHOICES.map(({ value, text, title }) => (
                     <Button
                       key={value}
                       type="button"
@@ -88,12 +96,13 @@ export function StoryElementsInputs({ ctx }: { ctx: GoalInputContext }) {
                       variant={score === value ? 'default' : 'outline'}
                       role="radio"
                       aria-checked={score === value}
-                      className="h-7 w-8 px-0 text-xs touch-manipulation"
-                      title={`${label}: ${STORY_PART_SCORE_LABELS[value]}`}
+                      aria-label={`${label}: ${title}`}
+                      className={`h-7 px-0 text-xs touch-manipulation ${value === STORY_PART_NOT_ASSESSED ? 'w-10' : 'w-8'}`}
+                      title={`${label}: ${title}`}
                       onClick={(e) => handleInteraction(e, () => handleChange(key, value))}
                       disabled={isArchived}
                     >
-                      {value}
+                      {text}
                     </Button>
                   ))}
                 </div>

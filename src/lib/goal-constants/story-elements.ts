@@ -1,6 +1,7 @@
 import type { GoalTemplate } from '../types';
 
-// Story grammar (story elements): the parts of a simple story, each scored 0 (missing), 1 (partial/unclear) or 2 (clear and complete).
+// Story grammar (story elements): the parts of a simple story, each scored 0 (missing), 1 (partial/unclear) or 2 (clear and complete),
+// or marked not assessed (STORY_PART_NOT_ASSESSED), which leaves that part out of the score.
 export const STORY_PARTS = [
   { key: 'character', label: 'Character' },
   { key: 'setting', label: 'Setting' },
@@ -14,6 +15,24 @@ export const STORY_PARTS = [
 export const STORY_PART_SCORE_LABELS = ['Missing', 'Partial', 'Complete'] as const;
 export const STORY_MAX_SCORE = STORY_PARTS.length * 2;
 
+/**
+ * A story part that wasn't assessed this session. Stored as a number so it survives CSV export and import, and so
+ * merging sessions (the best score of each part) keeps any real score over it.
+ */
+export const STORY_PART_NOT_ASSESSED = -1;
+
+/** A story part's score (0-2), or null when it wasn't assessed. */
+export function storyPartScore(value: unknown): number | null {
+  const n = Number(value) || 0;
+  return n === STORY_PART_NOT_ASSESSED ? null : Math.min(2, Math.max(0, n));
+}
+
+/** The average score (0-2) of one story part over sessions, counting only those where it was assessed; null if none. */
+export function averageStoryPart(data: Record<string, any>[], key: string): number | null {
+  const scores = data.map(d => storyPartScore(d[key])).filter((v): v is number => v !== null);
+  return scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
+}
+
 // Linking (complexity) words tallied during the story, stored as `word${Word}` (e.g. wordBecause).
 export const STORY_LINKING_WORDS = ['because', 'then', 'when', 'so', 'after', 'but'] as const;
 export const linkingWordField = (word: string) => `word${word.charAt(0).toUpperCase()}${word.slice(1)}`;
@@ -26,17 +45,23 @@ export const STORY_ELEMENTS_FIELDS: Record<string, Record<string, any>> = {
   },
 };
 
-/** Story grammar score for a STORY_ELEMENTS session: points out of STORY_MAX_SCORE, and parts included. */
+/**
+ * Story grammar score for a STORY_ELEMENTS session: points out of the most possible for the parts assessed (2 each;
+ * parts marked not assessed are left out), and parts included. With no part assessed, maxPoints and percent are 0.
+ */
 export function scoreStory(data: Record<string, any> = {}) {
   let points = 0;
   let partsIncluded = 0;
+  let notAssessed = 0;
   for (const { key } of STORY_PARTS) {
-    const score = Math.min(2, Math.max(0, Number(data[key]) || 0));
+    const score = storyPartScore(data[key]);
+    if (score === null) { notAssessed += 1; continue; }
     points += score;
     if (score > 0) partsIncluded += 1;
   }
+  const maxPoints = (STORY_PARTS.length - notAssessed) * 2;
   const linkingWords = STORY_LINKING_WORDS.reduce((sum, w) => sum + (Number(data[linkingWordField(w)]) || 0), 0);
-  return { points, maxPoints: STORY_MAX_SCORE, percent: (points / STORY_MAX_SCORE) * 100, partsIncluded, linkingWords };
+  return { points, maxPoints, percent: maxPoints > 0 ? (points / maxPoints) * 100 : 0, partsIncluded, notAssessed, linkingWords };
 }
 
 export const STORY_ELEMENTS_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'userId'>[] = [
