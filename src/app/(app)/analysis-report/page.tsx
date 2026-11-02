@@ -19,6 +19,7 @@ import { compareSessionsOldestFirst, formatDate } from '@/lib/helpers';
 import NarrativeDialog from '@/components/charts/NarrativeDialog';
 import { attendanceSummary, attendanceText, isMissed } from '@/lib/attendance';
 import { markReportViewed } from '@/lib/onboarding';
+import { useAuth } from '@/hooks/use-auth';
 
 // Dynamically import the heavy charting component
 const AnalysisCharts = lazy(() => import('@/components/charts/AnalysisCharts'));
@@ -27,6 +28,8 @@ const TrialStatusChart = lazy(() => import('@/components/charts/analysis-charts/
 
 export default function AnalysisReportPage() {
   const { students, sessions, loading: studentsLoading, sessionsLoading, importSessions } = useStudentData();
+  const { currentUser } = useAuth();
+  const uid = currentUser?.uid;
   const searchParams = useSearchParams();
   const router = useRouter();
   const { toast } = useToast();
@@ -41,7 +44,8 @@ export default function AnalysisReportPage() {
   const selectedStudent = useMemo(() => students.find(s => s.id === selectedStudentId), [students, selectedStudentId]);
   const activeStudentGoals = useMemo(() => selectedStudent?.goals.filter(g => !g.isArchived) || [], [selectedStudent]);
   // A student's report has been seen: ticks off "See their progress" on the dashboard's Getting Started.
-  useEffect(() => { if (selectedStudent) markReportViewed(); }, [selectedStudent]);
+  const hasSelectedStudent = !!selectedStudent;
+  useEffect(() => { if (uid && hasSelectedStudent) markReportViewed(uid); }, [uid, hasSelectedStudent]);
 
   useEffect(() => {
     const studentIdFromQuery = searchParams.get('studentId');

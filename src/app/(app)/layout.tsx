@@ -27,7 +27,7 @@ const PAGE_TITLES: [string, string][] = [
   ['/analysis-report', 'Reports'],
   ['/student-profile', 'Students'],
   ['/goal-templates', 'Goals'],
-  ['/changelog', 'Changelog'],
+  ['/changelog', "What's New"],
   ['/settings', 'Settings'],
   ['/help', 'Help'],
   ['/privacy', 'Privacy Notice'],
