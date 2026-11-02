@@ -5,6 +5,8 @@ import type { Student } from '@/lib/types';
 import { goalMeasure, withoutRunningTimers } from '@/lib/goal-measures';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Sigma, Percent, CheckCircle, XCircle, HelpCircle, Target } from 'lucide-react';
+import StatTile from './StatTile';
+import { summaryExplanations } from '@/lib/report-formulas';
 
 interface DataSummaryProps {
   studentSessions: any[];
@@ -51,14 +53,19 @@ const DataSummary: React.FC<DataSummaryProps> = ({ studentSessions, selectedStud
     };
   }, [chartData, studentSessions, selectedGoal]);
 
+  // How each figure is worked out, shown when it is tapped or hovered.
+  const explain = summaryExplanations({
+    correct: summaryStats.totalCorrect, incorrect: summaryStats.totalIncorrect,
+    approximate: summaryStats.totalApproximate, opportunities: summaryStats.totalOpportunities,
+  }, !!selectedGoal);
   const stats = [
-    { label: 'Total Sessions', value: summaryStats.sessionCount, icon: Sigma },
+    { label: 'Total Sessions', value: summaryStats.sessionCount, icon: Sigma, explanation: explain.sessions },
     // All trials pooled (each goal card shows its average per session). None for goals that aren't trial-based.
-    { label: 'Overall Accuracy (all trials)', value: summaryStats.totalOpportunities > 0 ? `${summaryStats.avgAccuracy}%` : '—', icon: Percent },
-    { label: 'Total Opportunities', value: summaryStats.totalOpportunities, icon: Target },
-    { label: 'Total Correct', value: summaryStats.totalCorrect, icon: CheckCircle, color: 'text-green-500' },
-    { label: 'Total Incorrect', value: summaryStats.totalIncorrect, icon: XCircle, color: 'text-red-500' },
-    { label: 'Total Approximate', value: summaryStats.totalApproximate, icon: HelpCircle, color: 'text-yellow-500' },
+    { label: 'Overall Accuracy (all trials)', value: summaryStats.totalOpportunities > 0 ? `${summaryStats.avgAccuracy}%` : '—', icon: Percent, explanation: explain.accuracy },
+    { label: 'Total Opportunities', value: summaryStats.totalOpportunities, icon: Target, explanation: explain.opportunities },
+    { label: 'Total Correct', value: summaryStats.totalCorrect, icon: CheckCircle, color: 'text-green-500', explanation: explain.correct },
+    { label: 'Total Incorrect', value: summaryStats.totalIncorrect, icon: XCircle, color: 'text-red-500', explanation: explain.incorrect },
+    { label: 'Total Approximate', value: summaryStats.totalApproximate, icon: HelpCircle, color: 'text-yellow-500', explanation: explain.approximate },
   ];
 
   return (
@@ -66,17 +73,14 @@ const DataSummary: React.FC<DataSummaryProps> = ({ studentSessions, selectedStud
       <CardHeader>
         <CardTitle>Data Summary</CardTitle>
         <CardDescription>
-          A quantitative overview of the selected data for {selectedStudent?.name || 'the student'}.
+          A quantitative overview of the selected data for {selectedStudent?.name || 'the student'}. Tap a figure to see how it is worked out.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-center">
-          {stats.map((stat, index) => (
-            <div key={index} className="p-4 rounded-lg bg-muted/50 flex flex-col items-center justify-center">
-              <stat.icon className={`h-6 w-6 mb-2 ${stat.color || 'text-primary'}`} />
-              <p className="text-2xl font-bold">{stat.value}</p>
-              <p className="text-xs text-muted-foreground">{stat.label}</p>
-            </div>
+          {stats.map(stat => (
+            <StatTile key={stat.label} label={stat.label} value={stat.value} explanation={stat.explanation} className="p-4" valueClassName="text-2xl"
+              icon={<stat.icon className={`h-6 w-6 mb-2 ${stat.color || 'text-primary'}`} aria-hidden />} />
           ))}
         </div>
       </CardContent>

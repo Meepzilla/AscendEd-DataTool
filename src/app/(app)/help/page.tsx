@@ -212,7 +212,7 @@ export default function HelpPage() {
             <p><B>Merge Selected</B> joins the records of one session that was saved in parts (saved, then more data collected and saved again), so its minutes count once. Tick the records of the same student on the same day, then choose Merge Selected.</p>
           </Topic>
           <Topic value="rp-charts" title="Charts and Goal by Goal">
-            <p>On <Link href="/analysis-report" className="underline hover:text-primary">Reports</Link>, choose a student, a goal and a date range. Each goal gets a chart of its own measure, with the target line, the aim line (from the baseline to the target by the target date) and how many sessions met the target, plus breakdowns for its type (prompt levels, story parts, ABC patterns, time of day…).</p>
+            <p>On <Link href="/analysis-report" className="underline hover:text-primary">Reports</Link>, choose a student, a goal and a date range. Each goal gets a chart of its own measure, with the target line, the aim line (from the baseline to the target by the target date) and how many sessions met the target, plus breakdowns for its type (prompt levels, story parts, ABC patterns, time of day…). Tap (or hover over) a figure marked ⓘ, such as Average or Overall Accuracy, to see how it is worked out, with the numbers behind it.</p>
           </Topic>
           <Topic value="rp-narrative" title="Write Narrative">
             <p>Writes a progress summary of what is shown: for each goal, the sessions with data, the average and range, the latest result against the target, the trend, whether the student is on track with the aim line, and recent notes. Choose a brief or detailed style, edit it, then copy it or save it as a file.</p>
