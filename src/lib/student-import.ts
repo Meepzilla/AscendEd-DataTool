@@ -14,7 +14,7 @@ export interface ImportGoal {
   type: GoalType;
   target: number;
   direction?: TargetDirection;
-  /** YYYY-MM-DD: the month in "by Oct 2026" (its last day), else the IEP end date. */
+  /** YYYY-MM-DD: the month in "by Oct 2026" (its last day). Without one, the goal gets the annual review date. */
   targetDate?: string;
   /** The student already has this goal (the same or nearly the same wording), so it isn't added unless chosen. */
   duplicate?: boolean;
@@ -31,6 +31,13 @@ export interface ImportStudent {
   iep: StudentIep;
   /** The IEP dates as the file has them, when they had passed and `iep` was moved to the current IEP year. */
   iepFromFile?: StudentIep;
+  /** The file has no end date, so the annual review is worked out from the start (and doesn't replace a saved one). */
+  annualReviewDerived?: boolean;
+  /**
+   * The existing student's own IEP, kept because it is newer than the file's (a new IEP was saved after the one in
+   * the file ended), so the dates moved from the file don't replace it.
+   */
+  savedIep?: Pick<StudentIep, 'iepDate' | 'annualReviewDate'>;
   goals: ImportGoal[];
 }
 
@@ -340,12 +347,15 @@ export function readStudentRows(rows: CellValue[][]): ImportPreview {
     const name = String(cell(row, 'name') ?? '').replace(/\s+/g, ' ').trim();
     if (!name) { warnings.push(`Row ${rowNumber} was skipped: it has no student name.`); return; }
 
+    const start = parseDate(cell(row, 'iepDate'));
+    const end = parseDate(cell(row, 'annualReviewDate'));
+    const reevaluation = parseDate(cell(row, 'reevaluationDate'));
+    // Without an end date, the annual review is a year less a day after the IEP started.
+    const annualReview = end ?? (start ? yearLessADay(start) : undefined);
     const iep: StudentIep = {
-      ...(parseDate(cell(row, 'iepDate')) ? { iepDate: parseDate(cell(row, 'iepDate')) } : {}),
-      // Without an end date, the annual review is a year less a day after the IEP started.
-      ...((parseDate(cell(row, 'annualReviewDate')) ?? (parseDate(cell(row, 'iepDate')) && yearLessADay(parseDate(cell(row, 'iepDate'))!)))
-        ? { annualReviewDate: parseDate(cell(row, 'annualReviewDate')) ?? yearLessADay(parseDate(cell(row, 'iepDate'))!) } : {}),
-      ...(parseDate(cell(row, 'reevaluationDate')) ? { reevaluationDate: parseDate(cell(row, 'reevaluationDate')) } : {}),
+      ...(start ? { iepDate: start } : {}),
+      ...(annualReview ? { annualReviewDate: annualReview } : {}),
+      ...(reevaluation ? { reevaluationDate: reevaluation } : {}),
       ...parseService(cell(row, 'service')),
     };
     const goalTexts = (columns.get('goals') ?? []).flatMap(index => splitGoals(row[index] ?? null));
@@ -360,10 +370,11 @@ export function readStudentRows(rows: CellValue[][]): ImportPreview {
       return {
         name: goalNameText, smartGoal: text, type, target: goalTarget(type, text),
         ...(direction ? { direction } : {}),
-        ...((goalTargetDate(text) ?? iep.annualReviewDate) ? { targetDate: goalTargetDate(text) ?? iep.annualReviewDate } : {}),
+        // A goal without "by <month>" gets the annual review date when saved, from the IEP dates actually used.
+        ...(goalTargetDate(text) ? { targetDate: goalTargetDate(text) } : {}),
       };
     });
-    students.push({ row: rowNumber, name, iep, goals });
+    students.push({ row: rowNumber, name, iep, goals, ...(!end && annualReview ? { annualReviewDerived: true } : {}) });
   });
 
   // Two rows with the same name are different students: the later ones are numbered so they can be told apart.
@@ -441,12 +452,18 @@ export function iepGlanceRows(pages: string[][]): CellValue[][] {
 export function matchExistingStudents(students: ImportStudent[], existing: Pick<Student, 'id' | 'name' | 'goals' | 'iep'>[]): ImportStudent[] {
   return students.map(s => {
     const match = findExistingStudent(s, existing);
-    if (!match) return { ...s, existingId: undefined, existingName: undefined, goals: s.goals.map(g => ({ ...g, duplicate: false })) };
+    if (!match) return { ...s, existingId: undefined, existingName: undefined, savedIep: undefined, goals: s.goals.map(g => ({ ...g, duplicate: false })) };
     const known = (match.goals ?? []).map(g => g.smartGoal ?? '');
+    // The student already has an IEP that started after the file's one (a new IEP saved since): keep it rather
+    // than the dates moved from the file, which are only a guess at it.
+    const saved = match.iep?.iepDate;
+    const fileStart = s.iepFromFile?.iepDate ?? s.iepFromFile?.annualReviewDate;
+    const keepSaved = !!saved && !!fileStart && saved > fileStart && saved !== s.iep.iepDate;
     return {
       ...s,
       existingId: match.id,
       existingName: normalize(match.name) === normalize(s.name) ? undefined : match.name,
+      savedIep: keepSaved ? { iepDate: saved, ...(match.iep?.annualReviewDate ? { annualReviewDate: match.iep.annualReviewDate } : {}) } : undefined,
       goals: s.goals.map(g => ({ ...g, duplicate: known.some(k => normalize(k) === normalize(g.smartGoal) || goalSimilarity(k, g.smartGoal) >= SAME_GOAL) })),
     };
   });
@@ -454,7 +471,8 @@ export function matchExistingStudents(students: ImportStudent[], existing: Pick<
 
 /**
  * The existing student a row is for: the one with the same name, or else the one whose name starts the same way
- * ("Sam (SJ)" for "Sam (SJ) Pemberton", "Nora (2)" for "Nora Lindqvist") and whose IEP started the same day.
+ * ("Sam (SJ)" for "Sam (SJ) Pemberton", "Nora (2)" for "Nora Lindqvist") and whose IEP started the same day
+ * (or, failing that, the only one with a newer IEP saved, up to two years after the file's).
  */
 function findExistingStudent<T extends Pick<Student, 'name' | 'iep'>>(s: ImportStudent, existing: T[]): T | undefined {
   const exact = existing.filter(e => normalize(e.name) === normalize(s.name));
@@ -465,8 +483,15 @@ function findExistingStudent<T extends Pick<Student, 'name' | 'iep'>>(s: ImportS
   const mine = words(s.name);
   // The IEP start in the file or, when it was moved to the current year, the moved one (either may be stored).
   const starts = [s.iep.iepDate, s.iepFromFile?.iepDate];
-  const similar = existing.filter(e => !!e.iep?.iepDate && starts.includes(e.iep.iepDate) && (startsLike(words(e.name), mine) || startsLike(mine, words(e.name))));
-  return similar.length === 1 ? similar[0] : undefined;
+  const named = existing.filter(e => !!e.iep?.iepDate && (startsLike(words(e.name), mine) || startsLike(mine, words(e.name))));
+  const sameStart = named.filter(e => starts.includes(e.iep!.iepDate));
+  if (sameStart.length) return sameStart.length === 1 ? sameStart[0] : undefined;
+  // Or the one whose saved IEP started after the file's, within two years: a new IEP saved since the file was made.
+  const fileStart = s.iepFromFile?.iepDate ?? s.iep.iepDate;
+  const [y, m, d] = fileStart.split('-');
+  const twoYearsOn = `${Number(y) + 2}-${m}-${d}`;
+  const newer = named.filter(e => e.iep!.iepDate! > fileStart && e.iep!.iepDate! <= twoYearsOn);
+  return newer.length === 1 ? newer[0] : undefined;
 }
 
 /** Goals with this much of the shorter one's wording in common are the same goal, written out more or less fully. */
@@ -482,19 +507,38 @@ export function goalSimilarity(a: string, b: string): number {
   return shared / Math.min(A.size, B.size);
 }
 
-const toGoal = (g: ImportGoal): Goal => ({
-  id: generateUUID(),
-  name: g.name,
-  type: g.type,
-  smartGoal: g.smartGoal,
-  sessionTargetValue: g.target,
-  ...(g.direction ? { targetDirection: g.direction } : {}),
-  ...(g.targetDate ? { targetDate: g.targetDate } : {}),
-});
+/**
+ * The IEP details a student ends up with: the file's (or the dates moved from it) over what is saved, except an
+ * annual review the file doesn't give (worked out from its start) and a newer IEP already saved, which are kept.
+ */
+export function importedIep(s: Pick<ImportStudent, 'iep' | 'annualReviewDerived' | 'savedIep'>, current?: StudentIep): StudentIep {
+  const iep: StudentIep = { ...current, ...s.iep };
+  if (s.annualReviewDerived && current?.annualReviewDate) iep.annualReviewDate = current.annualReviewDate;
+  if (s.savedIep) {
+    iep.iepDate = s.savedIep.iepDate;
+    if (s.savedIep.annualReviewDate) iep.annualReviewDate = s.savedIep.annualReviewDate;
+    else delete iep.annualReviewDate;
+  }
+  return iep;
+}
+
+/** A goal without its own target date ("by Oct 2026") gets the IEP's annual review date. */
+const toGoal = (g: ImportGoal, iep: StudentIep): Goal => {
+  const targetDate = g.targetDate ?? iep.annualReviewDate;
+  return {
+    id: generateUUID(),
+    name: g.name,
+    type: g.type,
+    smartGoal: g.smartGoal,
+    sessionTargetValue: g.target,
+    ...(g.direction ? { targetDirection: g.direction } : {}),
+    ...(targetDate ? { targetDate } : {}),
+  };
+};
 
 /**
  * The student list after the import: new students added; existing ones given the IEP details from the
- * spreadsheet (what it leaves blank is kept) and the goals they don't already have.
+ * spreadsheet (what it leaves blank is kept, see importedIep) and the goals they don't already have.
  */
 export function applyStudentImport(existing: Student[], students: ImportStudent[], userId: string, now = new Date()): { students: Student[]; added: number; updated: number; goals: number } {
   const stamp = now.toISOString();
@@ -502,14 +546,15 @@ export function applyStudentImport(existing: Student[], students: ImportStudent[
   let added = 0, updated = 0, goals = 0;
   const created: Student[] = [];
   for (const s of students) {
-    const newGoals = s.goals.filter(g => !g.duplicate).map(toGoal);
-    goals += newGoals.length;
     const current = s.existingId ? byId.get(s.existingId) : undefined;
+    const iep = importedIep(s, current?.iep);
+    const newGoals = s.goals.filter(g => !g.duplicate).map(g => toGoal(g, iep));
+    goals += newGoals.length;
     if (current) {
-      byId.set(current.id, { ...current, iep: { ...current.iep, ...s.iep }, goals: [...(current.goals ?? []), ...newGoals], updatedAt: stamp });
+      byId.set(current.id, { ...current, iep, goals: [...(current.goals ?? []), ...newGoals], updatedAt: stamp });
       updated++;
     } else {
-      created.push({ id: generateUUID(), name: s.name, goals: newGoals, iep: s.iep, createdAt: stamp, updatedAt: stamp, userId, isArchived: false });
+      created.push({ id: generateUUID(), name: s.name, goals: newGoals, iep, createdAt: stamp, updatedAt: stamp, userId, isArchived: false });
       added++;
     }
   }

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { strToU8, zipSync } from 'fflate';
 import { readXlsx, serialToDate } from '../xlsx-read';
 import {
-  applyStudentImport, classifyGoal, goalName, goalSimilarity, goalTarget, goalTargetDate, iepGlanceRows, matchExistingStudents, moveIepToCurrentYear, parseDate, parseService,
+  applyStudentImport, classifyGoal, goalName, goalSimilarity, goalTarget, goalTargetDate, iepGlanceRows, importedIep, matchExistingStudents, moveIepToCurrentYear, parseDate, parseService,
   readStudentRows, splitGoals, yearLessADay,
 } from '../student-import';
 import type { Student } from '../types';
@@ -300,5 +300,46 @@ describe('IEP dates from last year', () => {
     const after = [{ id: 'b', name: 'Pat', iep: { iepDate: '2026-10-29' }, goals: [] }] as unknown as Student[];
     expect(matchExistingStudents([{ ...moved, name: 'Pat Lee' }], before)[0].existingId).toBe('a');
     expect(matchExistingStudents([{ ...moved, name: 'Pat Lee' }], after)[0].existingId).toBe('b');
+  });
+});
+
+describe('IEP details when importing again (review fixes)', () => {
+  const NOW = new Date(2026, 10, 1, 12);
+  const saved = (iep: Record<string, string>) => [{ id: 'a', name: 'Pat', userId: 'u', createdAt: '2026-01-01', iep, goals: [] }] as unknown as Student[];
+
+  it('keeps a saved annual review when the file only has a start date', () => {
+    const existing = saved({ iepDate: '2026-04-17', annualReviewDate: '2027-05-20' });
+    const rows = matchExistingStudents(readStudentRows([['Student', 'IEP Start Date'], ['Pat', '2026-04-17']]).students, existing);
+    expect(rows[0].annualReviewDerived).toBe(true);
+    const pat = applyStudentImport(existing, rows, 'u', NOW).students[0];
+    expect(pat.iep).toEqual({ iepDate: '2026-04-17', annualReviewDate: '2027-05-20' });
+    // A new student gets the worked-out one.
+    expect(applyStudentImport([], rows.map(r => ({ ...r, existingId: undefined })), 'u', NOW).students[0].iep?.annualReviewDate).toBe('2027-04-16');
+  });
+
+  it('gives goals without their own date the annual review of the dates actually used', () => {
+    const read = readStudentRows([['Student', 'IEP Start Date', 'IEP End Date', 'Goals'], ['Pat', '2025-10-29', '2026-10-28', 'Use AAC to greet peers | Use 2 plurals by June 2027']]).students;
+    expect(read[0].goals.map(g => g.targetDate)).toEqual([undefined, '2027-06-30']);
+    const moved = applyStudentImport([], moveIepToCurrentYear(read, NOW), 'u', NOW).students[0];
+    expect(moved.goals.map(g => g.targetDate)).toEqual(['2027-10-28', '2027-06-30']);
+    const asInFile = applyStudentImport([], read, 'u', NOW).students[0];
+    expect(asInFile.goals.map(g => g.targetDate)).toEqual(['2026-10-28', '2027-06-30']);
+  });
+
+  it('keeps a newer IEP already saved instead of moving the file\'s dates over it', () => {
+    const existing = saved({ iepDate: '2026-11-15', annualReviewDate: '2027-11-14' });
+    const read = readStudentRows([['Student', 'IEP Start Date', 'IEP End Date', 'Goals'], ['Pat', '2025-10-29', '2026-10-28', 'Use AAC to greet peers']]).students;
+    const [row] = matchExistingStudents(moveIepToCurrentYear(read, NOW), existing);
+    expect(row.savedIep).toEqual({ iepDate: '2026-11-15', annualReviewDate: '2027-11-14' });
+    const pat = applyStudentImport(existing, [row], 'u', NOW).students[0];
+    expect(pat.iep).toEqual({ iepDate: '2026-11-15', annualReviewDate: '2027-11-14' });
+    expect(pat.goals[0].targetDate).toBe('2027-11-14');
+    // The same with the name written more fully in the file.
+    const [fuller] = matchExistingStudents(moveIepToCurrentYear([{ ...read[0], name: 'Pat Lee' }], NOW), existing);
+    expect([fuller.existingId, fuller.savedIep?.iepDate]).toEqual(['a', '2026-11-15']);
+    // A student whose saved IEP is the file's (or older) gets the moved dates.
+    const [older] = matchExistingStudents(moveIepToCurrentYear(read, NOW), saved({ iepDate: '2025-10-29', annualReviewDate: '2026-10-28' }));
+    expect(older.savedIep).toBeUndefined();
+    expect(importedIep(older, { iepDate: '2025-10-29', annualReviewDate: '2026-10-28' })).toEqual({ iepDate: '2026-10-29', annualReviewDate: '2027-10-28' });
   });
 });

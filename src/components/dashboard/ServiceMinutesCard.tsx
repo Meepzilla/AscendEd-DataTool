@@ -50,7 +50,7 @@ export default function ServiceMinutesCard() {
       icon={<Clock className="h-5 w-5 text-primary" aria-hidden />}
       description="Students who still need minutes to meet their IEP, those short last week or month first."
       count={sessionsLoading ? undefined : behind.length}
-      countLabel={`${plural(behind.length, 'student')} still need minutes`}
+      countLabel={`${plural(behind.length, 'student')} still ${behind.length === 1 ? 'needs' : 'need'} minutes`}
     >
         {sessionsLoading ? (
           <p className="text-sm text-muted-foreground">Loading…</p>

@@ -18,6 +18,13 @@ interface ChangelogEntry {
 
 const allChangelogEntries: ChangelogEntry[] = [
   {
+    date: '2026-11-02',
+    title: 'Importing Again Keeps Newer IEP Dates',
+    description: 'Fixes from a code review of the import and dashboard changes. Importing a file again no longer replaces a newer IEP already saved for a student (for example one entered after the file was made) with dates moved from the file; the review says it is kept. A file with only an IEP start date no longer replaces a saved annual review date. Goals without their own date ("by Oct 2026") now get the annual review of the IEP dates actually used, so after moving they aren\'t already past their target date, and they follow the "Move IEP dates" box. Turning that box off or on also re-checks which existing student each row updates. On the dashboard, a collapsed card no longer shows open for a moment when the page loads.',
+    type: 'fix',
+    icon: CalendarClock,
+  },
+  {
     date: '2026-11-01',
     title: 'Imported IEP Dates Move to the Current IEP Year',
     description: 'An IEP at a Glance (PDF or spreadsheet) can hold last year\'s IEP, so students came in with an annual review that had already passed. Now, when a student\'s IEP in the file has ended, the import gives them the next IEP: it starts the day after the old one ended, and the annual review is due a year less a day later (an IEP from Oct 29, 2025 to Oct 28, 2026 becomes Oct 29, 2026 to Oct 28, 2027). The review says which students were moved and from which dates, and a box at the top keeps the file\'s dates instead (for a review that really is overdue). A file with only an IEP start date gets the annual review a year less a day later. To fix students already imported, import the file again: the same students are updated and no goals are added twice.',

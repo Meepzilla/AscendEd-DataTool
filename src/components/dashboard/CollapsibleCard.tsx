@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useId, useState } from 'react';
+import React, { useEffect, useId, useLayoutEffect, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +10,10 @@ import { cn } from '@/lib/utils';
 // attention). Whether each card is collapsed is remembered on this device.
 
 const STORAGE_KEY = 'ascended_dashboard_collapsed';
+
+// Before the browser paints, so a card saved as collapsed doesn't show open for a moment and then shrink
+// (useEffect on the server, where there is nothing to paint and useLayoutEffect would warn).
+const useBeforePaint = typeof window === 'undefined' ? useEffect : useLayoutEffect;
 
 function readCollapsed(id: string): boolean {
   try {
@@ -44,9 +48,13 @@ interface Props {
 export default function CollapsibleCard({ id, title, icon, description, count, countLabel, children }: Props) {
   const [collapsed, setCollapsed] = useState(false);
   const contentId = useId();
-  // Read after the first render, so the page made at build time matches (it has no stored state).
-  useEffect(() => setCollapsed(readCollapsed(id)), [id]);
-  const toggle = () => setCollapsed(prev => { writeCollapsed(id, !prev); return !prev; });
+  // Read after hydrating, so the page made at build time (which has no stored state) matches, but before paint.
+  useBeforePaint(() => setCollapsed(readCollapsed(id)), [id]);
+  const toggle = () => {
+    const next = !collapsed;
+    writeCollapsed(id, next);
+    setCollapsed(next);
+  };
 
   return (
     <Card>
