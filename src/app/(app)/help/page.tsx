@@ -82,7 +82,7 @@ const GOAL_TYPE_HELP: { type: GoalType; does: string }[] = [
   { type: 'QUALITATIVE_OBSERVATION', does: 'Give a 1–5 rating and tally the prompt level of each response, with notes.' },
   { type: 'COMMUNICATION_FUNCTIONS', does: 'Tally each function (requesting, protesting, commenting, greeting, and others), spontaneous or prompted. The measure counts the functions used spontaneously.' },
   { type: 'FLUENCY_SYLLABLE_STUTTER', does: 'Count total syllables and each kind of dysfluency (repetitions, prolongations, blocks, interjections, secondary behaviors). The measure is the share of fluent syllables.' },
-  { type: 'STORY_ELEMENTS', does: 'Score each story part (character, setting, problem, feeling, action, ending, end feeling) 0 (missing), 1 (partial) or 2 (complete), and tally linking words (because, then, when, so). The measure is the share of points.' },
+  { type: 'STORY_ELEMENTS', does: 'Score each story part (character, setting, problem, feeling, action, ending, end feeling) 0 (missing), 1 (partial) or 2 (complete), or N/A when it wasn’t assessed, and tally linking words (because, then, when, so, after, but). The measure is the share of points for the parts assessed; N/A parts are left out.' },
   { type: 'TASK_ANALYSIS', does: 'Score each step of a routine as Independent, with a prompt level, or Not done. The measure is the share of steps done independently.' },
   { type: 'BEHAVIOR_FREQUENCY', does: 'Count each occurrence, with the observation time for a rate per hour.' },
   { type: 'BEHAVIOR_DURATION', does: 'Time each episode with Start and Stop. The measure is the total minutes.' },

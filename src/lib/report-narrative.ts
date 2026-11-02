@@ -2,7 +2,7 @@ import type { Goal, SessionData, Student } from './types';
 import {
   BEHAVIOR_GOAL_TYPES, INTERVAL_METHODS, captureTypeOf, goalDirection, summarizeAbc, summarizeCommunicationFunctions,
   median, summarizeDuration, summarizeFrequency, summarizeIntervals, summarizeLatency,
-  COMMUNICATION_FUNCTIONS, STORY_PARTS, STORY_LINKING_WORDS, linkingWordField, topTied, joinWithAnd, type AbcIncident,
+  COMMUNICATION_FUNCTIONS, STORY_PARTS, averageStoryPart, STORY_LINKING_WORDS, linkingWordField, topTied, joinWithAnd, type AbcIncident,
 } from './goal-constants';
 import { goalMeasure, goalMeasureInfo, goalNotes, goalResponses, meetsTarget, promptTotals, usesPromptCounters, withoutRunningTimers } from './goal-measures';
 import { compareSessionsOldestFirst, formatDate, formatGoalTarget, goalTypeLabel, plural } from './helpers';
@@ -276,7 +276,11 @@ function detailSentences(name: string, goal: Goal, data: Record<string, any>[]):
   }
 
   if (type === 'STORY_ELEMENTS') {
-    const parts = STORY_PARTS.map(p => ({ label: p.label, score: avg(data.map(d => Math.min(2, Number(d[p.key]) || 0))) }));
+    // Each part's average over the sessions where it was assessed; parts never assessed are left out.
+    const parts = STORY_PARTS.flatMap(p => {
+      const score = averageStoryPart(data, p.key);
+      return score === null ? [] : [{ label: p.label as string, score }];
+    });
     const strong = parts.filter(p => p.score >= 1.5).map(p => p.label.toLowerCase());
     const weak = parts.filter(p => p.score < 1).map(p => p.label.toLowerCase());
     if (strong.length) lines.push(`Story parts ${name} included most consistently: ${strong.join(', ')}.`);
