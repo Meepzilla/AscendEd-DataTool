@@ -199,42 +199,83 @@ html.zoomed-rects [data-radix-popper-content-wrapper] > * {
     --sidebar-ring: 35 75% 55%; /* Ring color for focus states (Golden Brown) */
   }
 
-  /* High contrast theme (Settings → Interface, theme.ts): black, white text, bright yellow for actions and
-     focus, and light outlines, for low vision. Builds on the dark theme (the "dark" class stays on). */
-  .dark.theme-contrast {
-    --background: 0 0% 0%;
-    --foreground: 0 0% 100%;
-    --card: 0 0% 5%;
-    --card-foreground: 0 0% 100%;
-    --popover: 0 0% 8%;
-    --popover-foreground: 0 0% 100%;
-    --primary: 50 100% 55%;
-    --primary-foreground: 0 0% 0%;
-    --secondary: 0 0% 22%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 88%;
-    --accent: 50 100% 22%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 85% 40%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 72%;
-    --input: 0 0% 72%;
-    --ring: 50 100% 60%;
-    --chart-1: 200 100% 62%;
-    --chart-2: 140 75% 50%;
-    --chart-3: 50 100% 55%;
-    --chart-4: 300 90% 72%;
-    --chart-5: 15 100% 60%;
-    --sidebar-background: 0 0% 4%;
-    --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 50 100% 55%;
-    --sidebar-primary-foreground: 0 0% 0%;
-    --sidebar-accent: 0 0% 20%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 0 0% 60%;
-    --sidebar-ring: 50 100% 60%;
-  }
+}
+
+/* The extra themes are outside @layer base: Tailwind drops rules in a layer whose classes it doesn't find in the
+   files it scans, and these classes are only set from src/lib (theme.ts, display-scale.ts). */
+/* Pastel theme (Settings → Interface, theme.ts): soft lavender background, white cards, a baby-blue sidebar and
+   mint hover highlights, built on the light theme (no "dark" class). Buttons, links and focus use a muted plum,
+   deep enough for text to read at 4.5:1 (true pastels can't be read as text on a pale background). */
+html.theme-pastel {
+  --background: 260 45% 97%;
+  --foreground: 255 25% 22%;
+  --card: 0 0% 100%;
+  --card-foreground: 255 25% 22%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 255 25% 22%;
+  --primary: 268 38% 42%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 200 60% 93%;
+  --secondary-foreground: 255 25% 22%;
+  --muted: 262 40% 94%;
+  --muted-foreground: 255 15% 36%;
+  --accent: 158 45% 90%;
+  --accent-foreground: 165 35% 18%;
+  --destructive: 350 60% 42%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 262 35% 84%;
+  --input: 262 35% 80%;
+  --ring: 268 38% 42%;
+  --chart-1: 268 55% 62%;
+  --chart-2: 165 45% 45%;
+  --chart-3: 22 80% 62%;
+  --chart-4: 200 65% 55%;
+  --chart-5: 340 65% 65%;
+  --sidebar-background: 200 60% 96%;
+  --sidebar-foreground: 255 25% 22%;
+  --sidebar-primary: 268 38% 42%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 158 45% 90%;
+  --sidebar-accent-foreground: 165 35% 18%;
+  --sidebar-border: 200 40% 82%;
+  --sidebar-ring: 268 38% 42%;
+}
+
+/* High contrast theme (Settings → Interface, theme.ts): black, white text, bright yellow for actions and
+   focus, and light outlines, for low vision. Builds on the dark theme (the "dark" class stays on). */
+.dark.theme-contrast {
+  --background: 0 0% 0%;
+  --foreground: 0 0% 100%;
+  --card: 0 0% 5%;
+  --card-foreground: 0 0% 100%;
+  --popover: 0 0% 8%;
+  --popover-foreground: 0 0% 100%;
+  --primary: 50 100% 55%;
+  --primary-foreground: 0 0% 0%;
+  --secondary: 0 0% 22%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 0 0% 15%;
+  --muted-foreground: 0 0% 88%;
+  --accent: 50 100% 22%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 85% 40%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 72%;
+  --input: 0 0% 72%;
+  --ring: 50 100% 60%;
+  --chart-1: 200 100% 62%;
+  --chart-2: 140 75% 50%;
+  --chart-3: 50 100% 55%;
+  --chart-4: 300 90% 72%;
+  --chart-5: 15 100% 60%;
+  --sidebar-background: 0 0% 4%;
+  --sidebar-foreground: 0 0% 100%;
+  --sidebar-primary: 50 100% 55%;
+  --sidebar-primary-foreground: 0 0% 0%;
+  --sidebar-accent: 0 0% 20%;
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-border: 0 0% 60%;
+  --sidebar-ring: 50 100% 60%;
 }
 
 @layer base {

@@ -27,13 +27,15 @@ export function applyDisplayScale(scale?: number) {
   try {
     // The menu bar's position (menu-position.ts), set here too so the first paint already has it.
     if (scale === undefined) document.documentElement.classList.toggle('menu-bottom', window.localStorage.getItem('ascended_menu_position') === 'bottom');
-    // The color theme (theme.ts): light takes off "dark"; high contrast adds "theme-contrast". Only on the first
+    // The color theme (theme.ts): light and pastel take off "dark"; high contrast adds "theme-contrast" and pastel
+    // "theme-pastel". Only on the first
     // run (the page still has the default classes), so it isn't re-applied on every viewport change.
     if (scale === undefined && !(window as unknown as { __themeApplied?: boolean }).__themeApplied) {
       (window as unknown as { __themeApplied?: boolean }).__themeApplied = true;
       const theme = window.localStorage.getItem('ascended_theme');
-      document.documentElement.classList.toggle('dark', theme !== 'light');
+      document.documentElement.classList.toggle('dark', theme !== 'light' && theme !== 'pastel');
       document.documentElement.classList.toggle('theme-contrast', theme === 'contrast');
+      document.documentElement.classList.toggle('theme-pastel', theme === 'pastel');
     }
     const state = window as unknown as { __displayScale?: number; __displayScaleObserver?: MutationObserver };
     if (scale !== undefined) state.__displayScale = scale;

@@ -263,7 +263,7 @@ export default function HelpPage() {
             <p>After it has been opened once online, the app works offline. Open it from the Home Screen while online now and then to get updates.</p>
           </Topic>
           <Topic value="ts-size" title="Text or buttons are too small or too large">
-            <p>Settings → Interface → Theme changes the app&apos;s colors: Dark (navy and gold), Light (white and gold, for bright rooms) or High Contrast (black, white and bright yellow, for low vision). It is saved on this device; printed reports stay black on white.</p>
+            <p>Settings → Interface → Theme changes the app&apos;s colors: Dark (navy and gold), Light (white and gold, for bright rooms), High Contrast (black, white and bright yellow, for low vision) or Pastel (soft lavender, baby blue and mint). It is saved on this device; printed reports stay black on white.</p>
             <p>Settings → Interface → Display Size changes the size of everything. You can also move the menu bar to the bottom of the screen (it stays in reach while you scroll, with the footer below it at the end of a page) or hide the student sidebar there.</p>
           </Topic>
           <Topic value="ts-hotkeys" title="Letters I type set off shortcuts">

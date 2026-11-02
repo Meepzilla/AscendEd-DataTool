@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Contrast, Moon, Sun } from 'lucide-react';
+import { Contrast, Flower2, Moon, Sun } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { type Theme, THEMES, getTheme, setTheme } from '@/lib/theme';
 
-const ICONS: Record<Theme, typeof Moon> = { dark: Moon, light: Sun, contrast: Contrast };
+const ICONS: Record<Theme, typeof Moon> = { dark: Moon, light: Sun, contrast: Contrast, pastel: Flower2 };
 
 /** Settings row for the color theme. Changes apply immediately and are saved on this device. */
 export default function ThemeSetting() {
