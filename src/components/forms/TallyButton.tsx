@@ -23,7 +23,9 @@ const TallyButton: React.FC<TallyButtonProps> = ({ label, count, title, classNam
       type="button"
       variant="outline"
       size="sm"
-      className={cn("h-7 min-w-[3.25rem] px-2 text-xs justify-center touch-manipulation", className)}
+      // 36px tall like the other counter buttons (28px was easy to miss on a touch screen), and it dips the moment it is
+      // pressed so a tap shows before the count changes.
+      className={cn("h-9 min-w-[3.25rem] px-2 text-xs justify-center touch-manipulation transition-transform active:scale-95 active:bg-accent", className)}
       style={longPressStyle}
       onClick={onIncrement}
       {...longPressHandlers}

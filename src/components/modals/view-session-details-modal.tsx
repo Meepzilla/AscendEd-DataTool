@@ -6,7 +6,7 @@ import GenericModal from './generic-modal';
 import { Button } from '@/components/ui/button';
 import type { SessionData } from '@/lib/types';
 import { formatDate, formatDataValue, goalTypeLabel } from '@/lib/helpers';
-import { STORY_PARTS, STORY_PART_NOT_ASSESSED } from '@/lib/goal-constants';
+import { STORY_PARTS, STORY_PART_NOT_ASSESSED, captureTypeOf } from '@/lib/goal-constants';
 
 // Story parts marked not assessed are stored as STORY_PART_NOT_ASSESSED; shown in words rather than the number.
 const STORY_PART_KEYS = new Set<string>(STORY_PARTS.map(p => p.key));
@@ -79,7 +79,8 @@ export default function ViewSessionDetailsModal({ session, isOpen, onClose }: Vi
                       <CardHeader className="bg-card p-3">
                         <div className="flex justify-between items-center">
                            <h4 className="font-semibold text-md text-primary">{goalData.goalName}</h4>
-                           <Badge variant="secondary">{goalTypeLabel(goalData.goalType)}</Badge>
+                           {/* The type the data was recorded as (the goal's data capture type when it was saved). */}
+                           <Badge variant="secondary">{goalTypeLabel(originalGoal ? captureTypeOf(originalGoal) : goalData.goalType)}</Badge>
                         </div>
                         {originalGoal?.smartGoal && <CardDescription className="text-xs mt-1 line-clamp-2">{originalGoal.smartGoal}</CardDescription>}
                       </CardHeader>

@@ -307,7 +307,7 @@ export default function StudentProfileView() {
                   <div>
                       <h3 className="text-lg font-semibold text-primary">{fillNameBlanks(goal)}</h3>
                       <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                        <Badge variant="secondary">{goalTypeLabel(goal.type)}</Badge>
+                        <Badge variant="secondary">{goalTypeLabel(captureTypeOf(goal))}</Badge>
                         {goal.sessionTargetValue !== undefined && (
                           <Badge variant="outline">
                             <TrendingUp className="mr-1.5 h-3.5 w-3.5 text-green-700 dark:text-green-600" />

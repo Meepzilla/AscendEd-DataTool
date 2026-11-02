@@ -218,7 +218,8 @@ export default function GoalDataInputComponent({
                     <div className="flex justify-between items-start">
                         <GoalTextPopover name={fillNameBlanks(goal)} smartGoal={goalStatement(goal, studentName, studentIep)} className="whitespace-normal break-words mr-1" />
                         <Badge variant="outline" className="text-xs px-1.5 py-0.5 shrink-0 max-w-[45%] text-center leading-tight">
-                            {goalTypeLabel(goal.type)}
+                            {/* The type data is recorded as (set in Edit Goal), the same as the inputs below. */}
+                            {goalTypeLabel(captureType)}
                         </Badge>
                     </div>
                 </CardTitle>
