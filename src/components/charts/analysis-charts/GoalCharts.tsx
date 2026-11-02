@@ -12,6 +12,8 @@ import {
 import { goalMeasure, goalMeasureInfo, goalResponses, goalNotes, meetsTarget, promptTotals, usesPromptCounters, withoutRunningTimers } from '@/lib/goal-measures';
 import { formatDate, formatGoalTarget, goalTypeLabel } from '@/lib/helpers';
 import BehaviorTimeCharts from './BehaviorTimeCharts';
+import StatTile from './StatTile';
+import { goalStatExplanations } from '@/lib/report-formulas';
 import type { TaskStepScore } from '@/lib/task-analysis';
 import { AIM_STATUS_LABELS, aimLine, aimStatus, aimValueAt, masterySessions } from '@/lib/aim-line';
 
@@ -182,12 +184,14 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[] }> = ({ goal
   const notes = recorded.map(r => ({ date: r.session.date, text: goalNotes(r.data) })).filter(n => n.text).slice(-3).reverse();
   const storyWords = type === 'STORY_ELEMENTS' ? recorded.reduce((total, r) => total + scoreStory(r.data).linkingWords, 0) : null;
 
+  // How each figure is worked out, shown when it is tapped or hovered.
+  const explain = goalStatExplanations(goal, recorded.map(r => ({ date: r.session.date, value: r.value, data: r.data })), aim, mastery);
   const stats = [
-    { label: 'Sessions with data', value: String(points.length) },
-    { label: 'Latest', value: values.length ? `${values[values.length - 1]}${info.unit}` : '—' },
-    { label: 'Average', value: average === null ? '—' : `${average}${info.unit}` },
-    ...(metCount === null ? [] : [{ label: 'Met target', value: points.length ? `${metCount} of ${points.length}` : '—' }]),
-    ...(onTrack ? [{ label: 'Aim line', value: AIM_STATUS_LABELS[onTrack] }] : []),
+    { label: 'Sessions with data', value: String(points.length), explanation: explain.sessions },
+    { label: 'Latest', value: values.length ? `${values[values.length - 1]}${info.unit}` : '—', explanation: values.length ? explain.latest : undefined },
+    { label: 'Average', value: average === null ? '—' : `${average}${info.unit}`, explanation: average === null ? undefined : explain.average },
+    ...(metCount === null ? [] : [{ label: 'Met target', value: points.length ? `${metCount} of ${points.length}` : '—', explanation: points.length ? explain.metTarget : undefined }]),
+    ...(onTrack ? [{ label: 'Aim line', value: AIM_STATUS_LABELS[onTrack], explanation: explain.aimLine }] : []),
   ];
   // Mastered: the target met in the last `mastery` sessions in a row.
   const mastered = target !== undefined && values.length >= mastery && values.slice(-mastery).every(v => meetsTarget(goal, v, target));
@@ -207,10 +211,7 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[] }> = ({ goal
       <CardContent className="space-y-4">
         <div className={`grid grid-cols-2 gap-2 text-center ${stats.length > 4 ? 'sm:grid-cols-5' : 'sm:grid-cols-4'}`}>
           {stats.map(stat => (
-            <div key={stat.label} className="rounded-lg bg-muted/50 p-2">
-              <p className="text-lg font-bold">{stat.value}</p>
-              <p className="text-xs text-muted-foreground">{stat.label}</p>
-            </div>
+            <StatTile key={stat.label} label={stat.label} value={stat.value} explanation={stat.explanation} className="p-2" valueClassName="text-lg" />
           ))}
         </div>
         {points.length === 0 ? (
