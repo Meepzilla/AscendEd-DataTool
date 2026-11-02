@@ -19,6 +19,7 @@ import { planRestore, restoreBackupSettings } from '@/lib/restore';
 import { loadCustomAbcLists } from '@/lib/abc-lists';
 import { applyStudentImport, type ImportStudent } from '@/lib/student-import';
 import { getStudentGroups } from '@/lib/student-groups';
+import { visibleTemplates, deletedBuiltInTemplates as listDeletedBuiltIns, restoreBuiltInTemplates as restoreBuiltInList } from '@/lib/builtin-goals';
 import { mergeProblem, mergeSessions } from '@/lib/session-merge';
 
 // All student data for the app (students, goal templates, sessions) and the actions that change it. Storage
@@ -29,6 +30,9 @@ import { mergeProblem, mergeSessions } from '@/lib/session-merge';
 interface StudentDataContextType {
   students: Student[];
   goalTemplates: GoalTemplate[];
+  /** Built-in templates the user deleted (Settings → Built-in goals restores them). */
+  deletedBuiltInTemplates: GoalTemplate[];
+  restoreBuiltInTemplates: (templateIds: string[]) => Promise<void>;
   sessions: SessionData[];
   currentUser: any;
   selectedStudent: Student | null;
@@ -109,7 +113,10 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const { addErrorLog } = useErrorLog();
 
   const [students, setStudents] = useState<Student[]>([]);
-  const [goalTemplates, setGoalTemplates] = useState<GoalTemplate[]>([]);
+  // Every stored template, including built-in ones the user deleted (see builtin-goals.ts).
+  const [templateList, setTemplateList] = useState<GoalTemplate[]>([]);
+  const goalTemplates = useMemo(() => visibleTemplates(templateList), [templateList]);
+  const deletedBuiltInTemplates = useMemo(() => listDeletedBuiltIns(templateList), [templateList]);
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [loading, setLoading] = useState(true);
@@ -146,7 +153,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const commitTemplates = useCallback((next: GoalTemplate[]) => {
     if (!saveToLocal(templatesKey, next)) return false;
     templatesRef.current = next;
-    setGoalTemplates(next);
+    setTemplateList(next);
     return true;
   }, [saveToLocal, templatesKey]);
   const commitSessions = useCallback((next: SessionData[]) => {
@@ -215,8 +222,19 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const deleteGoalTemplate = useCallback(async (templateId: string) => {
     if (!currentUser) return;
-    if (!commitTemplates(templatesRef.current.filter(t => t.id !== templateId))) return;
-    toast({ title: "Success", description: "Goal template deleted." });
+    const target = templatesRef.current.find(t => t.id === templateId);
+    // A built-in template is marked deleted rather than removed, so it isn't added back when the app loads.
+    const next = target?.isDefault
+      ? templatesRef.current.map(t => t.id === templateId ? { ...t, deleted: true, isArchived: true } : t)
+      : templatesRef.current.filter(t => t.id !== templateId);
+    if (!commitTemplates(next)) return;
+    toast({ title: "Success", description: target?.isDefault ? "Built-in goal deleted. Restore it in Settings → Built-in goals." : "Goal template deleted." });
+  }, [currentUser, toast, commitTemplates]);
+
+  const restoreBuiltInTemplates = useCallback(async (templateIds: string[]) => {
+    if (!currentUser || templateIds.length === 0) return;
+    if (!commitTemplates(restoreBuiltInList(templatesRef.current, templateIds))) return;
+    toast({ title: "Built-in goals restored", description: `${templateIds.length} goal${templateIds.length === 1 ? '' : 's'} back in the Goals library.` });
   }, [currentUser, toast, commitTemplates]);
 
   const archiveGoalTemplates = useCallback(async (templateIds: string[]) => {
@@ -297,8 +315,8 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   }, [currentUser, commitSessions, commitStudents]);
 
   const exportBackup = useCallback(
-    () => createBackup({ students, goalTemplates, sessions }, { abcLists: loadCustomAbcLists() ?? undefined, studentGroups: getStudentGroups(currentUser?.uid) }),
-    [students, goalTemplates, sessions, currentUser],
+    () => createBackup({ students, goalTemplates: templateList, sessions }, { abcLists: loadCustomAbcLists() ?? undefined, studentGroups: getStudentGroups(currentUser?.uid) }),
+    [students, templateList, sessions, currentUser],
   );
 
   /**
@@ -345,7 +363,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     templatesRef.current = nextTemplates;
     sessionsRef.current = nextSessions;
     setStudents(nextStudents);
-    setGoalTemplates(nextTemplates);
+    setTemplateList(nextTemplates);
     setSessions(nextSessions);
     setSelectedStudent(null);
     // Custom ABC lists and saved groups. The student data is restored even if the ABC lists don't fit.
@@ -364,7 +382,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
     if (!currentUser) {
       setStudents([]);
-      setGoalTemplates([]);
+      setTemplateList([]);
       setSessions([]);
       setSelectedStudent(null);
       setLoading(false);
@@ -400,7 +418,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       saveToLocal(studentsKey, nextStudents);
     }
     templatesRef.current = prepared.templates;
-    setGoalTemplates(prepared.templates);
+    setTemplateList(prepared.templates);
     studentsRef.current = nextStudents;
     setStudents(nextStudents);
 
@@ -443,6 +461,8 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const contextValue: StudentDataContextType = {
     students,
     goalTemplates,
+    deletedBuiltInTemplates,
+    restoreBuiltInTemplates,
     sessions,
     currentUser,
     selectedStudent,
