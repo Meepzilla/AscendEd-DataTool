@@ -36,6 +36,20 @@ export function applyDisplayScale(scale?: number) {
       document.documentElement.classList.toggle('dark', theme !== 'light' && theme !== 'pastel');
       document.documentElement.classList.toggle('theme-contrast', theme === 'contrast');
       document.documentElement.classList.toggle('theme-pastel', theme === 'pastel');
+      // A hardware keyboard (an iPad's keyboard case): "has-keyboard" brings back the keyboard shortcut hints that
+      // touch screens hide (the `touch:` variant). Noted from a key pressed with Alt/Ctrl/Cmd, a key the on-screen
+      // keyboard doesn't have, or any key outside a text box (the on-screen keyboard only types into text boxes),
+      // and remembered on the device.
+      if (window.localStorage.getItem('ascended_has_keyboard') === '1') document.documentElement.classList.add('has-keyboard');
+      const noteKeyboard = (e: KeyboardEvent) => {
+        const target = e.target as HTMLElement | null;
+        const typing = !!target && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName));
+        if (!(e.altKey || e.ctrlKey || e.metaKey || /^(Tab|Escape|Arrow)/.test(e.key) || !typing)) return;
+        document.documentElement.classList.add('has-keyboard');
+        try { window.localStorage.setItem('ascended_has_keyboard', '1'); } catch { /* for this visit */ }
+        document.removeEventListener('keydown', noteKeyboard, true);
+      };
+      if (!document.documentElement.classList.contains('has-keyboard')) document.addEventListener('keydown', noteKeyboard, true);
     }
     const state = window as unknown as { __displayScale?: number; __displayScaleObserver?: MutationObserver };
     if (scale !== undefined) state.__displayScale = scale;

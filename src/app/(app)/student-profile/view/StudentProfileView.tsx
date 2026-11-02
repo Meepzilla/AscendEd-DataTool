@@ -259,26 +259,27 @@ export default function StudentProfileView() {
             <Button variant="outline" size="sm" onClick={() => openEditStudentModal(currentStudent)} className="w-full sm:w-auto">
               <Edit3 className="mr-2 h-4 w-4" /> Edit Student Info
             </Button>
-            {/* Used less often, so kept in a menu: moving data in and out, archiving and deleting. */}
-            <DropdownMenu>
+            {/* Used less often, so kept in a menu: moving data in and out, archiving and deleting. Not modal, and the
+                items act on select, so a dialog opened from it gets the focus and leaves the page usable when closed. */}
+            <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="w-full sm:w-auto" aria-label={`More actions for ${currentStudent.name}`}>
                   <MoreHorizontal className="mr-2 h-4 w-4" aria-hidden /> More
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem onClick={handleExportData} disabled={studentSessions.length === 0}>
+                <DropdownMenuItem onSelect={handleExportData} disabled={studentSessions.length === 0}>
                   <Download className="mr-2 h-4 w-4" aria-hidden /> Export Data (CSV)
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setIsImportModalOpen(true)}>
+                <DropdownMenuItem onSelect={() => setIsImportModalOpen(true)}>
                   <Upload className="mr-2 h-4 w-4" aria-hidden /> Import Data
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleToggleArchiveStudent}>
+                <DropdownMenuItem onSelect={handleToggleArchiveStudent}>
                   {currentStudent.isArchived ? <ArchiveRestore className="mr-2 h-4 w-4" aria-hidden /> : <Archive className="mr-2 h-4 w-4" aria-hidden />}
                   {currentStudent.isArchived ? 'Unarchive Student' : 'Archive Student'}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleDeleteStudent} className="text-destructive focus:text-destructive">
+                <DropdownMenuItem onSelect={handleDeleteStudent} className="text-destructive focus:text-destructive">
                   <Trash2 className="mr-2 h-4 w-4" aria-hidden /> Delete Student
                 </DropdownMenuItem>
               </DropdownMenuContent>
