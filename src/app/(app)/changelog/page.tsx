@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-02',
+    title: 'Fix: Communication Function Goals Labeled Behavior Frequency',
+    description: 'A goal whose type was changed in Edit Goal (for example from Behavior Frequency to Communication Functions) kept its old type on the Data Entry card, the student profile and the session details, though it recorded data as the new type. Those labels now show the type the goal records. Importing goals, or writing a custom goal, now reads goals that name communicative functions ("a variety of communicative functions", "3 different purposes", "communicative intents") as Communication Functions even when they also give a number of times. The Communication Functions tally buttons (and the other tally buttons) are bigger, the same 36 px as the other counters, and dip when pressed, so taps land and show right away.',
+    type: 'fix',
+    icon: Bug,
+  },
+  {
+    date: '2026-11-02',
     title: 'Fix: Edit Session Showed Only the First Goal',
     description: 'Editing a saved session with several goals showed only the first goal, and the window wouldn\'t scroll to the others (most noticeable on an iPad). The whole form now scrolls, every goal included. The student list in Goals → Assign to Students scrolled the same way and is fixed too.',
     type: 'fix',
