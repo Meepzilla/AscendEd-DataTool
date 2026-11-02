@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import GenericModal from './generic-modal';
+import { SessionDateProvider } from '@/components/forms/session-date-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { TimePicker } from '@/components/ui/time-picker';
@@ -172,6 +173,7 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
                     />
                 </div>
 
+                <SessionDateProvider date={formData.date ? fromLocalDay(formData.date) : undefined}>
                 <React.Suspense fallback={<div>Loading Goal Inputs...</div>}>
                     {formData.goals && formData.goals.length > 0 && (
                         <div className="rounded-md border p-2">
@@ -197,6 +199,7 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
                         </div>
                     )}
                 </React.Suspense>
+                </SessionDateProvider>
 
                 <div>
                     <Label htmlFor="sessionNotesEdit">General Notes</Label>

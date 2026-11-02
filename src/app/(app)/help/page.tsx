@@ -84,11 +84,11 @@ const GOAL_TYPE_HELP: { type: GoalType; does: string }[] = [
   { type: 'FLUENCY_SYLLABLE_STUTTER', does: 'Count total syllables and each kind of dysfluency (repetitions, prolongations, blocks, interjections, secondary behaviors). The measure is the share of fluent syllables.' },
   { type: 'STORY_ELEMENTS', does: 'Score each story part (character, setting, problem, feeling, action, ending, end feeling) 0 (missing), 1 (partial) or 2 (complete), or N/A when it wasn’t assessed, and tally linking words (because, then, when, so, after, but). The measure is the share of points for the parts assessed; N/A parts are left out.' },
   { type: 'TASK_ANALYSIS', does: 'Score each step of a routine as Independent, with a prompt level, or Not done. The measure is the share of steps done independently.' },
-  { type: 'BEHAVIOR_FREQUENCY', does: 'Count each occurrence, with the observation time for a rate per hour.' },
-  { type: 'BEHAVIOR_DURATION', does: 'Time each episode with Start and Stop. The measure is the total minutes.' },
+  { type: 'BEHAVIOR_FREQUENCY', does: 'Count each occurrence, with the observation time for a rate per hour. Each tap records the time; Edit times corrects it.' },
+  { type: 'BEHAVIOR_DURATION', does: 'Time each episode with Start and Stop. The measure is the total minutes. Edit times corrects when an episode started, or adds it for one entered by hand.' },
   { type: 'BEHAVIOR_INTERVAL', does: 'Score each interval with a timer as partial, whole or momentary. The measure is the share of intervals with the behavior.' },
-  { type: 'BEHAVIOR_LATENCY', does: 'Time how long the student takes to respond after a cue. The measure is the average in seconds.' },
-  { type: 'BEHAVIOR_ABC', does: 'Record each incident’s antecedents, behaviors and consequences (select as many as apply), and whether the replacement skill was used. Decrease goals chart the incidents; increase goals chart the share of incidents with the replacement skill. The lists can be edited in Settings.' },
+  { type: 'BEHAVIOR_LATENCY', does: 'Time how long the student takes to respond after a cue. The measure is the average in seconds. Edit times corrects when each cue was given.' },
+  { type: 'BEHAVIOR_ABC', does: 'Record each incident’s antecedents, behaviors and consequences (select as many as apply), and whether the replacement skill was used. Decrease goals chart the incidents; increase goals chart the share of incidents with the replacement skill. Edit times corrects when each incident happened. The lists can be edited in Settings.' },
 ];
 
 function Section({ id, icon: Icon, title, description, children }: {
