@@ -305,7 +305,7 @@ export default function StudentProfileView() {
                         )}
                         {goal.isArchived && <Badge variant="outline" className="border-orange-500 text-orange-700 dark:text-orange-600">Archived</Badge>}
                       </div>
-                      <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{goalStatement(goal, currentStudent.name)}</p>
+                      <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{goalStatement(goal, currentStudent.name, currentStudent.iep)}</p>
                   </div>
                   {/* Labelled actions, in one row (they wrap on a phone). */}
                   <div className="mt-3 pt-3 border-t flex flex-wrap items-center gap-2">

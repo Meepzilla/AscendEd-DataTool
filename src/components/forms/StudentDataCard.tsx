@@ -191,6 +191,7 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
                       isArchived={goal.isArchived}
                       isLocked={isStudentAccessLocked}
                       studentName={student.name}
+                      studentIep={student.iep}
                     />
                   );
                 })}
