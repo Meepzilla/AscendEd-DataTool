@@ -129,6 +129,12 @@ GitHub Actions builds an APK on every push to `master` and on pull requests (`.g
 
 Every build is signed with the same key (`android/app/ascended-debug.keystore`), so a new APK installs over the old one and keeps the data. Don't uninstall to update: uninstalling deletes the data.
 
+**Moving to the new app ID (one time).** The app's ID is now `io.github.meepzilla.ascended` (it no longer names a school district), so Android treats it as a different app: it installs next to the old one, doesn't update it, and starts empty. On each device that has the old app:
+1. In the old app, open Settings → Backup & Restore and save a backup.
+2. Install the new APK.
+3. In the new app, open Settings → Backup & Restore and restore that backup (Replace).
+4. Check the students and sessions, then uninstall the old app. Uninstalling the old app deletes its data, so only do this after step 3.
+
 To build it locally you need Node.js 22, JDK 21 and the Android SDK:
 
 ```bash
