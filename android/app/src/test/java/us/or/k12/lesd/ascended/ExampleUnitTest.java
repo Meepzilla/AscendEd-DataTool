@@ -1,4 +1,4 @@
-package com.getcapacitor.myapp;
+package us.or.k12.lesd.ascended;
 
 import static org.junit.Assert.*;
 
