@@ -1,4 +1,4 @@
-package com.getcapacitor.myapp;
+package us.or.k12.lesd.ascended;
 
 import static org.junit.Assert.*;
 
@@ -21,6 +21,6 @@ public class ExampleInstrumentedTest {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
 
-        assertEquals("com.getcapacitor.app", appContext.getPackageName());
+        assertEquals("us.or.k12.lesd.ascended", appContext.getPackageName());
     }
 }
