@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'us.or.k12.lesd.ascended',
+  appId: 'io.github.meepzilla.ascended',
   appName: 'AscendEd',
   webDir: 'out'
 };

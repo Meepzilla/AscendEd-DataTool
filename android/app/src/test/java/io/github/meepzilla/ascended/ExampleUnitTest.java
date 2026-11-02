@@ -1,4 +1,4 @@
-package com.getcapacitor.myapp;
+package io.github.meepzilla.ascended;
 
 import static org.junit.Assert.*;
 
