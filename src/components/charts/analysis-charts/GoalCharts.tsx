@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, ReferenceLine, BarChart, Bar } from 'recharts';
 import {
-  BEHAVIOR_GOAL_TYPES, captureTypeOf, summarizeLatency, goalDirection, summarizeAbc, scoreStory, STORY_PARTS, STORY_LINKING_WORDS, linkingWordField, COMMUNICATION_FUNCTIONS,
+  BEHAVIOR_GOAL_TYPES, captureTypeOf, summarizeLatency, goalDirection, summarizeAbc, scoreStory, averageStoryPart, STORY_PARTS, STORY_LINKING_WORDS, linkingWordField, COMMUNICATION_FUNCTIONS,
   type AbcIncident,
 } from '@/lib/goal-constants';
 import { goalMeasure, goalMeasureInfo, goalResponses, goalNotes, meetsTarget, promptTotals, usesPromptCounters, withoutRunningTimers } from '@/lib/goal-measures';
@@ -100,7 +100,10 @@ const GoalBreakdowns: React.FC<{ goal: Goal; recorded: Recorded[] }> = ({ goal, 
   if (type === 'STORY_ELEMENTS') {
     panels.push(
       <HBars key="parts" title="Average score by story part (0-2)" max={2} series={[{ key: 'average', label: 'Average score', color: 'hsl(var(--chart-2))' }]}
-        rows={STORY_PARTS.map(p => ({ name: p.label, average: round(sum(d => Math.min(2, Number(d[p.key]) || 0)) / data.length) }))} />,
+        rows={STORY_PARTS.flatMap(p => {
+          const average = averageStoryPart(data, p.key);
+          return average === null ? [] : [{ name: p.label as string, average: round(average) }];
+        })} />,
       <HBars key="words" title="Linking words" series={COUNT_SERIES}
         rows={tallyRows(STORY_LINKING_WORDS.map(w => [w, sum(d => Number(d[linkingWordField(w)]) || 0)]))} />,
     );

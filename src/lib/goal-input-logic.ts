@@ -42,7 +42,9 @@ export function goalAccuracyText(captureType: string, data: Record<string, any>)
     }
     case 'STORY_ELEMENTS': {
       const story = scoreStory(data);
-      return `${story.percent.toFixed(1)}% (${story.points}/${story.maxPoints} points)`;
+      if (story.maxPoints === 0) return 'N/A (no story parts assessed)';
+      const skipped = story.notAssessed ? `, ${story.notAssessed} not assessed` : '';
+      return `${story.percent.toFixed(1)}% (${story.points}/${story.maxPoints} points${skipped})`;
     }
   }
   const responses = goalResponses(captureType, data);
