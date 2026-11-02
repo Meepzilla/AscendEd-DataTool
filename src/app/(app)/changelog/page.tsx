@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-02',
+    title: 'See How Report Figures Are Worked Out',
+    description: 'On the Reports page, the figures in the Data Summary and on each goal\'s card (Sessions with data, Latest, Average, Met target, Aim line, Overall Accuracy, Total Opportunities and the totals) are marked ⓘ. Tap one, or hover over it with a mouse, to see how it is worked out with the numbers behind it: for example, Average shows "(60 + 70 + 90) ÷ 3 = 73.3%", Latest shows how that session\'s accuracy was counted, and Overall Accuracy shows total correct ÷ total opportunities and why it can differ from a goal\'s Average.',
+    type: 'feature',
+    icon: BarChartHorizontalBig,
+  },
+  {
+    date: '2026-11-02',
     title: 'Importing Again Keeps Newer IEP Dates',
     description: 'Fixes from a code review of the import and dashboard changes. Importing a file again no longer replaces a newer IEP already saved for a student (for example one entered after the file was made) with dates moved from the file; the review says it is kept. A file with only an IEP start date no longer replaces a saved annual review date. Goals without their own date ("by Oct 2026") now get the annual review of the IEP dates actually used, so after moving they aren\'t already past their target date, and they follow the "Move IEP dates" box. Turning that box off or on also re-checks which existing student each row updates. On the dashboard, a collapsed card no longer shows open for a moment when the page loads.',
     type: 'fix',
