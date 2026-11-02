@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Menu, FileText, UserPlus, Lock } from 'lucide-react';
+import { Menu, FileText, UserPlus, Lock, ScrollText } from 'lucide-react';
 import { isPasscodeEnabled, lockNow } from '@/lib/secure-store';
 import { useAuth } from '@/hooks/use-auth';
 import { APP_NAME } from '@/lib/appConstants';
@@ -156,10 +156,6 @@ export default function AppHeader({ atBottom = false }: { atBottom?: boolean }) 
               <Lock className="h-5 w-5" />
             </Button>
           )}
-          <Button variant="ghost" size="icon" onClick={toggleErrorLogModal} title="Error Log (Alt+J)">
-            <FileText className="h-5 w-5" />
-            <span className="sr-only">Error Log</span>
-          </Button>
           
           <div className="flex items-center gap-2 border-l border-border pl-1 sm:pl-2">
              {currentUser ? (
@@ -180,6 +176,14 @@ export default function AppHeader({ atBottom = false }: { atBottom?: boolean }) 
                       </p>
                     </div>
                   </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {/* Less used: kept here rather than in the menu bar (Alt+6 and Alt+J still open them). */}
+                  <DropdownMenuItem asChild>
+                    <Link href="/changelog"><ScrollText className="mr-2 h-4 w-4" aria-hidden />What&apos;s New</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={toggleErrorLogModal}>
+                    <FileText className="mr-2 h-4 w-4" aria-hidden />Error Log
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={signOut}>
                     Sign out

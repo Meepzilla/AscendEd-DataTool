@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { compareSessionsOldestFirst, formatDate } from '@/lib/helpers';
 import NarrativeDialog from '@/components/charts/NarrativeDialog';
 import { attendanceSummary, attendanceText, isMissed } from '@/lib/attendance';
+import { markReportViewed } from '@/lib/onboarding';
 
 // Dynamically import the heavy charting component
 const AnalysisCharts = lazy(() => import('@/components/charts/AnalysisCharts'));
@@ -39,6 +40,8 @@ export default function AnalysisReportPage() {
   const activeStudents = useMemo(() => students.filter(s => !s.isArchived), [students]);
   const selectedStudent = useMemo(() => students.find(s => s.id === selectedStudentId), [students, selectedStudentId]);
   const activeStudentGoals = useMemo(() => selectedStudent?.goals.filter(g => !g.isArchived) || [], [selectedStudent]);
+  // A student's report has been seen: ticks off "See their progress" on the dashboard's Getting Started.
+  useEffect(() => { if (selectedStudent) markReportViewed(); }, [selectedStudent]);
 
   useEffect(() => {
     const studentIdFromQuery = searchParams.get('studentId');

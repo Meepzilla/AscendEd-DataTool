@@ -49,6 +49,7 @@ export default function DataEntryContent() {
     students,
     studentFromContext,
     openEditStudentModal,
+    openAddStudentModal,
     addSession,
     addErrorLog,
   } = useStudentData();
@@ -602,8 +603,8 @@ export default function DataEntryContent() {
               isOpen={isResetConfirmationOpen}
               onClose={() => setIsResetConfirmationOpen(false)}
               onConfirm={handleReset}
-              title="Reset Focused Student Data?"
-              description="Are you sure you want to clear all current unsaved activity, notes, and goal data for the selected student? This action cannot be undone."
+              title="Reset This Student?"
+              description="This clears the activity, notes and data entered but not saved for the highlighted student. It can't be undone."
               confirmText="Yes, Reset Data"
             />
           )}
@@ -699,11 +700,16 @@ export default function DataEntryContent() {
                   <div className="flex flex-wrap justify-center gap-2">
                     <Button variant="outline" onClick={addStudentSlot}>
                       <PlusCircle className="mr-2 h-5 w-5" />
-                      Add Student Slot
+                      Add a Student
                     </Button>
                     <LoadGroupMenu onLoad={loadGroup} disabled={isStudentAccessLocked} />
                   </div>
-                  {students.length === 0 && <p className="mt-4 text-sm">You don&apos;t have any students yet. Go to Students or press (Alt+M) to add one.</p>}
+                  {students.length === 0 && (
+                    <div className="mt-4 space-y-2 text-sm">
+                      <p>You don&apos;t have any students yet. Add one first, then come back to record a session.</p>
+                      <Button onClick={openAddStudentModal}><PlusCircle className="mr-2 h-4 w-4" aria-hidden />Add Student</Button>
+                    </div>
+                  )}
               </CardContent>
             </Card>
           )}

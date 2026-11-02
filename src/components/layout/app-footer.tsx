@@ -41,6 +41,8 @@ export default function AppFooter() {
         <div className="flex flex-col md:flex-row justify-between items-center text-sm text-muted-foreground">
           <p>&copy; {currentYear} {APP_NAME}. All rights reserved.</p>
           <div className="mt-2 text-center md:mt-0 md:text-left">
+            {/* Keyboard shortcuts mean nothing on a touch screen without a keyboard (iPad, phone): hidden there. */}
+            <div className="touch:hidden">
             <h3 className="mb-0.5 flex justify-center md:justify-start">
               <button
                 type="button"
@@ -61,7 +63,13 @@ export default function AppFooter() {
                 </li>
               ))}
             </ul>
-            <p className="text-xs mt-0.5">See <Link href="/help" className="underline hover:text-primary">Help Page</Link> for Data Entry hotkeys. <Link href="/privacy" className="underline hover:text-primary">Privacy Notice</Link></p>
+            </div>
+            <p className="text-xs mt-0.5">
+              <Link href="/help" className="underline hover:text-primary">Help</Link>
+              <span className="touch:hidden"> (and Data Entry hotkeys)</span>
+              {' · '}<Link href="/changelog" className="underline hover:text-primary">What&apos;s New</Link>
+              {' · '}<Link href="/privacy" className="underline hover:text-primary">Privacy Notice</Link>
+            </p>
           </div>
         </div>
       </div>
