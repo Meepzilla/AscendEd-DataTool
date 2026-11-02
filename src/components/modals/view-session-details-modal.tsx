@@ -6,6 +6,12 @@ import GenericModal from './generic-modal';
 import { Button } from '@/components/ui/button';
 import type { SessionData } from '@/lib/types';
 import { formatDate, formatDataValue, goalTypeLabel } from '@/lib/helpers';
+import { STORY_PARTS, STORY_PART_NOT_ASSESSED } from '@/lib/goal-constants';
+
+// Story parts marked not assessed are stored as STORY_PART_NOT_ASSESSED; shown in words rather than the number.
+const STORY_PART_KEYS = new Set<string>(STORY_PARTS.map(p => p.key));
+const showValue = (key: string, value: unknown) =>
+  STORY_PART_KEYS.has(key) && Number(value) === STORY_PART_NOT_ASSESSED ? 'N/A (not assessed)' : formatDataValue(value);
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Activity, CalendarDays, Clock, FileText, Target, Info } from 'lucide-react';
@@ -83,7 +89,7 @@ export default function ViewSessionDetailsModal({ session, isOpen, onClose }: Vi
                           <div key={key} className="flex justify-between items-center">
                             <span className="text-muted-foreground capitalize">{key.replace(/([A-Z])/g, ' $1')}:</span>
                             <span className="font-medium text-foreground text-right">
-                                {formatDataValue(value)}
+                                {showValue(key, value)}
                             </span>
                           </div>
                         ))}

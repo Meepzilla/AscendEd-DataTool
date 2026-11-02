@@ -18,7 +18,7 @@ export function measureFormula(goal: Pick<Goal, 'type' | 'dataCaptureType' | 'ta
   if (goalResponses(type) !== null) return 'Correct ÷ (correct + approximate + incorrect) × 100. Approximate responses count as not correct.';
   switch (type) {
     case 'FLUENCY_SYLLABLE_STUTTER': return '(Total syllables − stuttered syllables, blocks, repetitions and interjections) ÷ total syllables × 100.';
-    case 'STORY_ELEMENTS': return 'Points for the story parts (0, 1 or 2 each) ÷ the most points possible × 100.';
+    case 'STORY_ELEMENTS': return 'Points for the story parts assessed (0, 1 or 2 each) ÷ 2 × the number of parts assessed × 100. Parts marked N/A (not assessed) are left out.';
     case 'COMMUNICATION_FUNCTIONS': return 'The number of different functions used without a prompt in the session.';
     case 'QUALITATIVE_OBSERVATION':
     case 'COGNITIVE': return 'The 1–5 rating given in the session.';

@@ -121,6 +121,8 @@ export function goalMeasure(goal: MeasuredGoal, data: Record<string, any> = {}):
     }
     case 'STORY_ELEMENTS': {
       const story = scoreStory(data);
+      // No part assessed: there is no score to chart.
+      if (story.maxPoints === 0) return null;
       return story.points > 0 || story.linkingWords > 0 ? story.percent : null;
     }
     case 'COMMUNICATION_FUNCTIONS': {
