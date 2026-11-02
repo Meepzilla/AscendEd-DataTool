@@ -5,7 +5,6 @@ import { UserPlus } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useStudentData } from '@/hooks/use-student-data';
 import { useToast } from '@/hooks/use-toast';
 import { hasTemplateGoal } from '@/lib/goal-templates';
@@ -44,7 +43,8 @@ export default function AssignTemplateDialog({ template, onClose }: { template: 
         {activeStudents.length === 0 ? (
           <p className="text-sm text-muted-foreground">Add a student first.</p>
         ) : (
-          <ScrollArea className="max-h-[50vh] border rounded-md [&_[data-radix-scroll-area-viewport]>div]:!block">
+          // A plain scrolling list: the styled ScrollArea only scrolls with a fixed height, and cut a long list off.
+          <div className="max-h-[50vh] overflow-y-auto overscroll-contain rounded-md border">
             <ul className="p-1">
               {activeStudents.map(student => {
                 const has = !!template && hasTemplateGoal(student, template);
@@ -59,7 +59,7 @@ export default function AssignTemplateDialog({ template, onClose }: { template: 
                 );
               })}
             </ul>
-          </ScrollArea>
+          </div>
         )}
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>

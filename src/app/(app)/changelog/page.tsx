@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-02',
+    title: 'Fix: Edit Session Showed Only the First Goal',
+    description: 'Editing a saved session with several goals showed only the first goal, and the window wouldn\'t scroll to the others (most noticeable on an iPad). The whole form now scrolls, every goal included. The student list in Goals → Assign to Students scrolled the same way and is fixed too.',
+    type: 'fix',
+    icon: Bug,
+  },
+  {
+    date: '2026-11-02',
     title: 'Story Parts Can Be Marked Not Assessed',
     description: 'Each story part in a Story Elements goal has a fourth choice, N/A (not assessed), next to 0, 1 and 2. A part marked N/A is left out of the story score: with End Feeling not assessed, 9 points out of 12 is 75%, instead of 9 out of 14. The Data Entry card shows how many parts were not assessed. Reports average each story part over the sessions where it was assessed, the session details show N/A, and a session with no part assessed has no score to chart.',
     type: 'improvement',

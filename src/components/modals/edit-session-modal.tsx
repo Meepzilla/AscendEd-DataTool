@@ -10,7 +10,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { DatePicker } from '@/components/ui/date-picker';
 import { useStudentData } from '@/hooks/use-student-data';
 import type { SessionData, Goal, SessionGoalData } from '@/lib/types';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { GOAL_TYPE_FIELDS, captureTypeOf, finalizeBehaviorData } from '@/lib/goal-constants';
@@ -140,8 +139,10 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
         }}
         className="space-y-4"
       >
-        <ScrollArea className="max-h-[60vh]">
-            <div className="space-y-4 p-4"> {/* Apply padding to the inner div */}
+        {/* One plain scrolling area for the whole form (every goal in the session included). The styled ScrollArea
+            only scrolls with a fixed height: with just a maximum it cut the goals off, so only the first could be seen. */}
+        <div className="max-h-[60vh] overflow-y-auto overscroll-contain">
+            <div className="space-y-4 p-4">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                         <Label htmlFor="sessionDateEdit">Session Date</Label>
@@ -173,7 +174,7 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
 
                 <React.Suspense fallback={<div>Loading Goal Inputs...</div>}>
                     {formData.goals && formData.goals.length > 0 && (
-                        <ScrollArea className="max-h-[300px] border rounded-md p-2">
+                        <div className="rounded-md border p-2">
                             <div className="space-y-3">
                                 {formData.goals.map((sessionGoal) => {
                                     const originalGoal = goalHeaders.find(og => og.id === sessionGoal.goalId);
@@ -193,7 +194,7 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
                                     );
                                 })}
                             </div>
-                        </ScrollArea>
+                        </div>
                     )}
                 </React.Suspense>
 
@@ -208,7 +209,7 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
                     />
                 </div>
             </div>
-        </ScrollArea>
+        </div>
 
         <div className="flex justify-end gap-2 pt-4 border-t p-4">
           <Button type="button" variant="outline" onClick={closeEditSessionModal} disabled={isSubmitting || dataLoading}>
