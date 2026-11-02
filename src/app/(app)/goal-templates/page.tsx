@@ -102,9 +102,10 @@ export default function GoalTemplatesPage() {
     return templates;
   }, [goalTemplates, filterType, filterCategory, searchTerm, sortOrder, showArchived, hideBuiltIn]);
 
+  // Only the skill areas of the goals this page shows (not those used only by hidden built-in goals).
   const categories = useMemo(
-    () => Array.from(new Set(goalTemplates.map(t => t.category).filter((c): c is string => !!c))).sort((a, b) => a.localeCompare(b)),
-    [goalTemplates]
+    () => Array.from(new Set(goalTemplates.filter(t => !(hideBuiltIn && t.isDefault)).map(t => t.category).filter((c): c is string => !!c))).sort((a, b) => a.localeCompare(b)),
+    [goalTemplates, hideBuiltIn]
   );
 
   // Start again from the top when the list changes.
