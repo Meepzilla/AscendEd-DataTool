@@ -4,6 +4,7 @@
 import React, { lazy, useState, useEffect, useCallback, Suspense, useMemo, useRef } from 'react';
 import { useStudentData } from '@/hooks/use-student-data';
 import { useAuth } from '@/hooks/use-auth';
+import { SessionDateProvider } from '@/components/forms/session-date-context';
 import { loadDataEntryDraft, saveDataEntryDraft, hasUnsavedEntry, type DataEntryDraft } from '@/lib/data-entry-draft';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -643,6 +644,8 @@ export default function DataEntryContent() {
             className="h-full w-full" 
           >
             <Suspense fallback={<div>Loading student cards...</div>}>
+              {/* The session's date, for behavior times changed by hand (they go on the session's day). */}
+              <SessionDateProvider date={validSessionDate}>
               <StudentCardsList
                   dataEntrySelectedStudentIds={selectedStudentIds}
                   students={students}
@@ -666,6 +669,7 @@ export default function DataEntryContent() {
                   addStudentSlot={addStudentSlot}
                   isStudentAccessLocked={isStudentAccessLocked}
               />
+              </SessionDateProvider>
             </Suspense>
           </ScrollArea>
         </div>

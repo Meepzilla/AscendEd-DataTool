@@ -230,3 +230,25 @@ export function timePatterns(type: string, sessions: { session: Pick<SessionData
 }
 
 export { timeOf as formatClockTime };
+
+const pad = (n: number) => String(n).padStart(2, '0');
+
+/** A recorded time as "HH:MM" (24-hour, local), the value a time input takes; '' when there is none. */
+export function clockInputValue(value: unknown): string {
+  const at = parseDate(value);
+  return at ? `${pad(at.getHours())}:${pad(at.getMinutes())}` : '';
+}
+
+/**
+ * A recorded time changed by hand to `hhmm` ("14:05"), as an ISO string. It is put on the session's day when that is
+ * known (reports only use times on the session's day), else on the day it was recorded, else today. An empty `hhmm`
+ * clears it (null); an unreadable one leaves it as it was.
+ */
+export function withClockTime(value: unknown, hhmm: string, sessionDay?: Date | null): string | null {
+  if (hhmm.trim() === '') return null;
+  const match = /^(\d{1,2}):(\d{2})/.exec(hhmm);
+  const current = parseDate(value);
+  if (!match || Number(match[1]) > 23 || Number(match[2]) > 59) return current ? current.toISOString() : null;
+  const day = sessionDay && !Number.isNaN(sessionDay.getTime()) ? sessionDay : current ?? new Date();
+  return new Date(day.getFullYear(), day.getMonth(), day.getDate(), Number(match[1]), Number(match[2])).toISOString();
+}
