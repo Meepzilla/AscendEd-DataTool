@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
+import { GAS_LEVELS, formatGasLevel } from '@/lib/gas';
 import TargetDirectionField from './TargetDirectionField';
 import { goalStatement, goalTypeLabel } from '@/lib/helpers';
 import { automaticBlankValues, findBlanks } from '@/lib/goal-blanks';
@@ -62,6 +63,7 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
         taskSteps: (goalToEdit.taskSteps ?? []).join('\n') as unknown as string[],
         baseline: goalToEdit.baseline ?? ('' as unknown as number),
         baselineDate: goalToEdit.baselineDate ?? '',
+        gasLevelDescriptions: Array.from({ length: 5 }, (_, i) => goalToEdit.gasLevelDescriptions?.[i] ?? ''),
         masterySessions: goalToEdit.masterySessions ?? ('' as unknown as number),
         blankFills: goalToEdit.blankFills ?? [],
         targetDirection: goalToEdit.targetDirection,
@@ -78,7 +80,10 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
       // One fill per blank in the (possibly edited) text; empty ones use the automatic value.
       const blankCount = findBlanks(data.smartGoal).length;
       const blankFills = Array.from({ length: blankCount }, (_, i) => (data.blankFills?.[i] ?? '').trim());
-      await updateStudentGoal(studentId, goalToEdit.id, { ...data, blankFills: blankFills.some(Boolean) ? blankFills : undefined });
+      // Five level descriptions, one per level from -2 to +2; all blank means no custom descriptions.
+      const descriptions = Array.from({ length: 5 }, (_, i) => (data.gasLevelDescriptions?.[i] ?? '').trim());
+      const gasLevelDescriptions = descriptions.some(Boolean) ? descriptions : undefined;
+      await updateStudentGoal(studentId, goalToEdit.id, { ...data, blankFills: blankFills.some(Boolean) ? blankFills : undefined, gasLevelDescriptions });
       toast({ title: 'Success', description: 'Goal updated successfully.' });
       onClose();
     } catch (error) {
@@ -201,6 +206,10 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
             />
           )}
 
+          {(form.watch('dataCaptureType') || goalToEdit?.type) === 'GOAL_ATTAINMENT_SCALE' && (
+            <GasLevelDescriptions form={form} />
+          )}
+
           <TargetDirectionField control={form.control} goalType={form.watch('dataCaptureType') || goalToEdit?.type} />
 
           <FormField
@@ -255,7 +264,7 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
                 <FormItem>
                   <FormLabel>Baseline (Optional)</FormLabel>
                   <FormControl>
-                    <Input type="number" min="0" placeholder="e.g., 40" {...field} value={field.value ?? ''}
+                    <Input type="number" min="-2" placeholder="e.g., 40" {...field} value={field.value ?? ''}
                       onChange={e => field.onChange(e.target.value === '' ? '' : Number(e.target.value))} />
                   </FormControl>
                   <FormMessage />
@@ -368,6 +377,44 @@ function BlankFills({ form }: { form: ReturnType<typeof useForm<EditAssignedGoal
           />
         </div>
       ))}
+    </fieldset>
+  );
+}
+
+/**
+ * Goal Attainment Scaling: one optional text field per level (-2 to +2) describing what that level means
+ * for this goal. A level left blank uses the generic label in Data Entry and reports.
+ */
+function GasLevelDescriptions({ form }: { form: ReturnType<typeof useForm<EditAssignedGoalFormData>> }) {
+  const values = form.watch('gasLevelDescriptions') ?? [];
+  const setDescription = (index: number, value: string) => {
+    const next = Array.from({ length: 5 }, (_, i) => values[i] ?? '');
+    next[index] = value;
+    form.setValue('gasLevelDescriptions', next, { shouldDirty: true });
+  };
+  return (
+    <fieldset className="space-y-2 rounded-md border p-3">
+      <legend className="px-1 text-sm font-medium">Level Descriptions (Optional)</legend>
+      <p className="text-xs text-muted-foreground">
+        What each attainment level means for this goal. Data Entry shows these under the level picker; a level left
+        blank uses its generic label instead.
+      </p>
+      {GAS_LEVELS.map(info => {
+        const index = info.level + 2;
+        return (
+          <div key={info.level} className="space-y-1">
+            <label htmlFor={`gas-level-${info.level}`} className="block text-xs text-muted-foreground">
+              {formatGasLevel(info.level)} — {info.description}
+            </label>
+            <Input
+              id={`gas-level-${info.level}`}
+              value={values[index] ?? ''}
+              placeholder={info.description}
+              onChange={e => setDescription(index, e.target.value)}
+            />
+          </div>
+        );
+      })}
     </fieldset>
   );
 }

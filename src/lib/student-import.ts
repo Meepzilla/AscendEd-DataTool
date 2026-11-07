@@ -227,6 +227,8 @@ export function classifyGoal(text: string, area = ''): { type: GoalType } {
   const a = area.toLowerCase();
   const opportunities = has(t, /\d+\s+(?:out\s+)?of\s+\d+/, /\d+\s*\/\s*\d+\s+(?:opportunit|trials|attempts)/, /\d+\s*%/, /accuracy/);
 
+  // Named as a GAS goal ("goal attainment scale", "GAS", "attainment level"): the scale is what is measured.
+  if (has(t, /\bgoal attainment scal|\battainment level\b|\bgas\b/)) return { type: 'GOAL_ATTAINMENT_SCALE' };
   if (has(t, /replacement (skill|behavior)/)) return { type: 'BEHAVIOR_ABC' };
   if (has(t, /\b(aggress|tantrum|elop|self-injur|hitting|kicking|disruptive|problem behavior)/) && has(t, /\b(reduce|decrease|no more than|fewer than)\b/)) {
     return { type: 'BEHAVIOR_FREQUENCY' };
@@ -292,6 +294,9 @@ const lastMatch = (pattern: RegExp, text: string) => {
 export function goalTarget(type: GoalType, text: string): number {
   const t = forMatching(text);
   switch (type) {
+    case 'GOAL_ATTAINMENT_SCALE':
+      // The target is the expected level, 0 — never a percentage.
+      return 0;
     case 'COMMUNICATION_FUNCTIONS': {
       // The number of functions asked for, else the number listed ("requesting, commenting, protesting" = 3), else 2.
       const listed = listedFunctions(t);

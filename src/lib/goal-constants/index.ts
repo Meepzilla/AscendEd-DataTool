@@ -16,6 +16,7 @@ import { COMMUNICATION_FIELDS, COMMUNICATION_TEMPLATES } from './communication';
 import { STORY_ELEMENTS_FIELDS, STORY_ELEMENTS_TEMPLATES } from './story-elements';
 import { BEHAVIOR_FIELDS, BEHAVIOR_GOAL_TYPES, BEHAVIOR_TEMPLATES } from './behavior';
 import { TASK_ANALYSIS_FIELDS, TASK_ANALYSIS_TEMPLATES } from './task-analysis';
+import { GAS_FIELDS, GAS_TEMPLATES } from './gas';
 // The SLP goal bank, generated from the goal bank CSV by scripts/import-goal-bank.py.
 import goalBank from './goal-bank.json';
 // Goal bank templates whose type changed since an earlier import (written by the importer).
@@ -44,6 +45,7 @@ export const GOAL_TYPE_FIELDS: Record<GoalType, Record<string, any>> = {
   ...STORY_ELEMENTS_FIELDS,
   ...BEHAVIOR_FIELDS,
   ...TASK_ANALYSIS_FIELDS,
+  ...GAS_FIELDS,
 } as Record<GoalType, Record<string, any>>;
 
 // Dynamically generate the GOAL_TYPES object from the keys of GOAL_TYPE_FIELDS.
@@ -90,6 +92,7 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
   ...STORY_ELEMENTS_TEMPLATES,
   ...BEHAVIOR_TEMPLATES,
   ...TASK_ANALYSIS_TEMPLATES,
+  ...GAS_TEMPLATES,
   ...(goalBank as Omit<GoalTemplate, 'id' | 'createdAt' | 'userId'>[]),
 ]
   .filter(template => !RETIRED_NAMES.has(template.name))
@@ -312,4 +315,4 @@ export function applyAssignedGoalRenames<T extends Student>(students: T[]): { st
 
 // Goal types that record prompting in their own fields, so the general prompt level counters are hidden.
 // Task analysis scores a prompt level per step instead of tallying prompts.
-export const GOAL_TYPES_WITHOUT_PROMPT_COUNTERS: GoalType[] = ['COMMUNICATION_FUNCTIONS', 'STORY_ELEMENTS', 'TASK_ANALYSIS', ...BEHAVIOR_GOAL_TYPES];
+export const GOAL_TYPES_WITHOUT_PROMPT_COUNTERS: GoalType[] = ['COMMUNICATION_FUNCTIONS', 'STORY_ELEMENTS', 'TASK_ANALYSIS', 'GOAL_ATTAINMENT_SCALE', ...BEHAVIOR_GOAL_TYPES];
