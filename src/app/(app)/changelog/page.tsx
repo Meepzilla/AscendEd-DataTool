@@ -19,6 +19,20 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-07',
+    title: 'New Installs Ask for a Passcode Again',
+    description: 'Since 6 November the app skipped the first-run passcode setup (and the one-time offer on devices that already had data) and opened straight away. It asks again now. Going without a passcode takes a second confirmation that says what stays unencrypted, with "Set a passcode instead" first and the opt-out button working after a few seconds. Passcode Protection also gains a Lock after choice of "As soon as the app is put away".',
+    type: 'fix',
+    icon: ShieldCheck,
+  },
+  {
+    date: '2026-11-07',
+    title: 'Safer CSV Exports and Android Builds',
+    description: 'In a session CSV, notes or activities that start with = + - or @ are saved as text, so opening the file in a spreadsheet can\'t run them as formulas; importing the file again restores them unchanged. The Android app is now published only when it is signed with a private release key; the development key that was in the source code has been removed. Devices with an earlier Android build need a one-time move: back up, uninstall, install the new APK and restore.',
+    type: 'fix',
+    icon: Lock,
+  },
+  {
+    date: '2026-11-07',
     title: 'Always Opens Over a Secure Connection',
     description: 'Opening the app with a plain http:// address now redirects to the secure https:// address, for every page and file, so the app never loads over an unencrypted connection.',
     type: 'improvement',
