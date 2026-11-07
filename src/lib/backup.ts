@@ -433,15 +433,21 @@ export function parseBackup(text: string): ParsedBackup {
   }
   const droppedRecords: DroppedRecord[] = [];
   const students = result.data.data.students.filter(s => {
-    if (s.createdAt === undefined) return true;
+    if (s.createdAt === undefined || s.createdAt === null) return true;
     if (asIsoDate(s.createdAt) === null) {
       droppedRecords.push({ kind: 'student', id: s.id, reason: 'createdAt is not a valid date' });
       return false;
     }
     return true;
-  }).map(s => ({ ...s, createdAt: s.createdAt === undefined ? s.createdAt : asIsoDate(s.createdAt) }));
+  }).map(s => ({
+    ...s,
+    // null (an invalid Date saved by an older app) is backfilled from the export date, like a template's.
+    createdAt: s.createdAt === undefined ? s.createdAt : s.createdAt === null ? new Date(result.data.exportedAt).toISOString() : asIsoDate(s.createdAt),
+  }));
+  // A template's createdAt is only a sort hint. An invalid Date in an older app was saved to JSON as null: treat
+  // it like a missing one (backfilled below) rather than dropping the template, as older versions restored it.
   const goalTemplates = result.data.data.goalTemplates.filter(t => {
-    if (t.createdAt === undefined) return true;
+    if (t.createdAt === undefined || t.createdAt === null) return true;
     if (asIsoDate(t.createdAt) === null) {
       droppedRecords.push({ kind: 'goalTemplate', id: t.id, reason: 'createdAt is not a valid date' });
       return false;
@@ -451,7 +457,7 @@ export function parseBackup(text: string): ParsedBackup {
     ...t,
     // Template dates are stored as strings in JSON; the app works with Date objects.
     // A missing createdAt is backfilled from the export date, so it is never Invalid Date.
-    createdAt: t.createdAt === undefined ? new Date(result.data.exportedAt) : new Date(asIsoDate(t.createdAt)!),
+    createdAt: t.createdAt === undefined || t.createdAt === null ? new Date(result.data.exportedAt) : new Date(asIsoDate(t.createdAt)!),
   }));
   const sessions = result.data.data.sessions.filter(s => {
     if (!validDateValue(s.date)) {

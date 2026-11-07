@@ -26,6 +26,20 @@ export const MISSED_REASON_SHORT: Record<MissedReason, string> = {
 
 export const isMissed = (session: Pick<SessionData, 'missed'>) => !!session.missed;
 
+/**
+ * The missed reason from a CSV export's Attendance cell ("Missed: Student absent"), so an imported missed session
+ * stays missed with its reason; null for "Held" or an empty cell. A reason it doesn't recognize is "other".
+ */
+export function missedReasonFromCsv(cell: unknown): MissedReason | null {
+  const text = String(cell ?? '').trim();
+  const match = /^missed\b\s*:?\s*(.*)$/i.exec(text);
+  if (!match) return null;
+  const label = match[1].trim().toLowerCase();
+  const found = MISSED_REASONS.find(reason =>
+    MISSED_REASON_SHORT[reason].toLowerCase() === label || MISSED_REASON_LABELS[reason].toLowerCase() === label || reason === label);
+  return found ?? 'other';
+}
+
 export interface AttendanceSummary {
   held: number;
   missed: number;
