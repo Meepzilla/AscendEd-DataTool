@@ -1,5 +1,6 @@
 import type {Config} from 'tailwindcss';
 import plugin from 'tailwindcss/plugin';
+import animate from 'tailwindcss-animate';
 
 // Tailwind CSS configuration file.
 // This file defines how Tailwind generates its utility classes,
@@ -121,7 +122,7 @@ export default {
   // Tailwind CSS plugins.
   // These extend Tailwind's functionality with new features or utilities.
   plugins: [
-    require('tailwindcss-animate'),
+    animate,
     // Short screens, such as a phone turned sideways: `short:` styles keep bars to one line there. A variant, not a
     // screen: a screen written as a media query turns off Tailwind's min-[…] and max-[…] variants.
     plugin(({ addVariant }) => addVariant('short', '@media (max-height: 560px)')),

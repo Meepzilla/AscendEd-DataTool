@@ -54,7 +54,7 @@ In the app, a **Getting Started** checklist on the Dashboard walks a new user th
 
 ## Tech stack
 
-- [Next.js 15](https://nextjs.org/) (App Router) with a static export, plus [React 19](https://react.dev/) and [TypeScript](https://www.typescriptlang.org/)
+- [Next.js 16](https://nextjs.org/) (App Router) with a static export, plus [React 19](https://react.dev/) and [TypeScript](https://www.typescriptlang.org/)
 - [Tailwind CSS](https://tailwindcss.com/), [shadcn/ui](https://ui.shadcn.com/) and Radix UI
 - [Recharts](https://recharts.org/) for charts
 - IndexedDB for students, goal templates and sessions (one row per record) and `localStorage` for smaller items, with Web Crypto for passcode encryption; the app requests persistent storage

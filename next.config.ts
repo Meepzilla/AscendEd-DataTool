@@ -13,12 +13,6 @@ const appVersionEnv = {
 };
 
 const nextConfig: NextConfig = {
-  // ESLint configuration for Next.js build.
-  // 'ignoreDuringBuilds: true' is set to skip ESLint checks during the build process.
-  // This can speed up builds but means linting issues won't halt the build.
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   env: appVersionEnv,
   // The app loads no remote images, so none are allowed.
   images: {
