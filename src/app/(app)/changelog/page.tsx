@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-07',
+    title: 'Merge Selected Counts Only Sessions That Still Exist',
+    description: 'On the Sessions page, deleting sessions that were ticked for merging left them counted: Merge Selected could show (8) while saying to select at least two. A deleted session now leaves the selection, so the count and the check match the sessions still ticked.',
+    type: 'fix',
+    icon: GitMerge,
+  },
+  {
+    date: '2026-11-07',
     title: 'Library Updates',
     description: 'The app\'s building blocks are up to date: Next.js 15.5, React 19, the form and date-picker libraries, the PDF reader used to import IEP at a Glance files, and the form checks behind every editor. Nothing about how the app works changes; the calendars, forms, CSV import and PDF import were checked after the update.',
     type: 'improvement',

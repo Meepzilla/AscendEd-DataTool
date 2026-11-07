@@ -44,6 +44,16 @@ export default function ManageSessionsPage() {
   const [isMergeOpen, setIsMergeOpen] = useState(false);
   const selectedSessions = useMemo(() => sessions.filter(s => selectedIds.has(s.sessionId)), [sessions, selectedIds]);
   const mergeBlocked = mergeProblem(selectedSessions);
+  // A ticked session that is deleted (or merged away) leaves the selection, so the count and the merge check only
+  // ever see sessions that still exist.
+  useEffect(() => {
+    setSelectedIds(prev => {
+      if (prev.size === 0) return prev;
+      const existing = new Set(sessions.map(s => s.sessionId));
+      const kept = [...prev].filter(id => existing.has(id));
+      return kept.length === prev.size ? prev : new Set(kept);
+    });
+  }, [sessions]);
   const toggleSelected = (id: string, on: boolean) => setSelectedIds(prev => {
     const next = new Set(prev);
     if (on) next.add(id); else next.delete(id);
@@ -130,9 +140,9 @@ export default function ManageSessionsPage() {
             </div>
             <div className="flex flex-col items-start gap-1 sm:items-end">
               <Button size="sm" variant="outline" disabled={!!mergeBlocked} onClick={() => setIsMergeOpen(true)}>
-                <Merge className="mr-2 h-4 w-4" />Merge Selected{selectedIds.size ? ` (${selectedIds.size})` : ''}
+                <Merge className="mr-2 h-4 w-4" />Merge Selected{selectedSessions.length ? ` (${selectedSessions.length})` : ''}
               </Button>
-              {selectedIds.size > 0 && mergeBlocked && <p className="text-xs text-muted-foreground" role="status">{mergeBlocked}</p>}
+              {selectedSessions.length > 0 && mergeBlocked && <p className="text-xs text-muted-foreground" role="status">{mergeBlocked}</p>}
             </div>
             {/* Optional: Button to navigate to Data Entry Page */}
             {/* <Link href="/data-entry"><Button size="sm"><PlusCircle className="mr-2 h-4 w-4" /> New Session</Button></Link> */}
