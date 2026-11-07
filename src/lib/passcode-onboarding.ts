@@ -9,6 +9,7 @@
 // authority on whether protection is on.
 
 import { isPasscodeEnabled } from './secure-store';
+import { LAST_BACKUP_KEY } from './backup';
 
 /** Plain localStorage key for the first-run decision. Device-wide, like the passcode config. */
 export const PASSCODE_DECISION_KEY = 'ascended_passcode_decision_v1';
@@ -108,4 +109,58 @@ export function needsFirstRunPrompt(): boolean {
  */
 export function needsPasscodeOffer(): boolean {
   return !isPasscodeEnabled() && getPasscodeDecision() === null && hasExistingStudentData();
+}
+
+// ---- Backup before enabling the passcode ----
+
+// Turning the passcode on is the point where a forgotten passcode first becomes total loss,
+// so the enable flow prompts for a backup first. The prompt is a decision, not a block: a
+// user who explicitly declines after the warning can still set up the passcode, and the
+// decline is remembered so the prompt does not nag on every later enable. A backup already
+// on record skips the prompt too. The decision is plain localStorage, like the first-run
+// decision above: it only records what was chosen.
+
+/** Plain localStorage key for a backup decline made while turning passcode protection on. */
+export const PASSCODE_BACKUP_DECLINED_KEY = 'ascended_passcode_backup_declined_v1';
+
+export interface PasscodeBackupDeclined {
+  v: 1;
+  /** When the decline was made (ISO date string). */
+  at: string;
+}
+
+/** Whether a backup of this device's data has ever been saved (see use-backup). */
+export function hasBackupOnRecord(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const value = localStorage.getItem(LAST_BACKUP_KEY);
+    return !!value && !Number.isNaN(Date.parse(value));
+  } catch {
+    return false;
+  }
+}
+
+/** Whether the user already declined to back up first, while turning passcode protection on. */
+export function hasDeclinedBackupBeforePasscode(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return localStorage.getItem(PASSCODE_BACKUP_DECLINED_KEY) !== null;
+  } catch {
+    return false;
+  }
+}
+
+/** Records that the user declined to back up first, after the warning, so setup can proceed. */
+export function recordBackupDeclinedBeforePasscode(): PasscodeBackupDeclined {
+  const record: PasscodeBackupDeclined = { v: 1, at: new Date().toISOString() };
+  localStorage.setItem(PASSCODE_BACKUP_DECLINED_KEY, JSON.stringify(record));
+  return record;
+}
+
+/**
+ * Whether turning passcode protection on should first prompt for a backup: no backup on
+ * record, and the user has not already declined after the warning.
+ */
+export function shouldPromptForBackupBeforePasscode(): boolean {
+  return !hasBackupOnRecord() && !hasDeclinedBackupBeforePasscode();
 }

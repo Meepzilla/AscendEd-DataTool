@@ -1,7 +1,9 @@
 import { z } from 'zod';
 import { reviveGoalTypes } from './legacy-goal-types';
 import type { GoalTemplate, SessionData, Student } from './types';
-import { AbcListsSchema, type AbcLists } from './abc-lists';
+import { AbcListsSchema, type AbcLists, loadCustomAbcLists } from './abc-lists';
+import { getStudentGroups } from './student-groups';
+import { hydrateLists, readList, storageKeys } from './data-store';
 import { defaultTemplateKey } from './goal-constants';
 import { decryptWithPassword, encryptWithPassword, type PasswordProtected } from './secure-store';
 
@@ -222,6 +224,27 @@ export function createBackup(data: BackupData, settings: BackupSettings = {}): A
   };
   if (Object.keys(kept).length) backup.settings = kept;
   return backup;
+}
+
+/**
+ * Builds a backup from what is stored on this device, without the data provider: the
+ * first-run setup screen turns the passcode on before the provider has loaded, so its
+ * backup step reads storage directly. Lists are hydrated first (localStorage blobs migrate
+ * into IndexedDB, exactly as the normal load does), then read from the cache. `incomplete`
+ * is true when a list could not be read: that list is left out of the backup, so an older
+ * full backup should be kept rather than replaced by this one.
+ */
+export async function buildBackupFromStorage(uid: string | undefined): Promise<{ backup: AppBackup; incomplete: boolean }> {
+  const keys = storageKeys(uid);
+  await hydrateLists(keys);
+  const students = readList<Student>(keys.students);
+  const goalTemplates = readList<GoalTemplate>(keys.templates);
+  const sessions = readList<SessionData>(keys.sessions);
+  const backup = createBackup(
+    { students: students ?? [], goalTemplates: goalTemplates ?? [], sessions: sessions ?? [] },
+    { abcLists: loadCustomAbcLists() ?? undefined, studentGroups: getStudentGroups(uid) },
+  );
+  return { backup, incomplete: students === undefined || goalTemplates === undefined || sessions === undefined };
 }
 
 export function backupFileName(date = new Date()): string {

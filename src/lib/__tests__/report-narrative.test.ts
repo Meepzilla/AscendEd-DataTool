@@ -52,6 +52,51 @@ describe('buildNarrative', () => {
   });
 });
 
+describe('trend fitted by elapsed days, not session index', () => {
+  // Same scores, different spacing: 50, 60, 70. A day apart the line runs 50% to 70% (10 points
+  // per day); with the last session a month later the same scores give a much shallower per-day
+  // slope, so the fitted value at the first session is about 54.7%, not 50%.
+  it('spaces sessions by elapsed days, so a month apart is shallower than a day apart', () => {
+    const close = [scored('2026-10-01T09:00:00Z', 5, 5), scored('2026-10-02T09:00:00Z', 6, 4), scored('2026-10-03T09:00:00Z', 7, 3)];
+    expect(buildNarrative({ student, goals: [artic], sessions: close }))
+      .toContain('the trend went from about 50% at the start of the period to about 70% at the end');
+    const spread = [scored('2026-10-01T09:00:00Z', 5, 5), scored('2026-10-02T09:00:00Z', 6, 4), scored('2026-11-01T09:00:00Z', 7, 3)];
+    expect(buildNarrative({ student, goals: [artic], sessions: spread }))
+      .toContain('the trend went from about 54.7% at the start of the period to about 70.2% at the end');
+  });
+
+  it('fits unsorted sessions in date order', () => {
+    const reversed = [scored('2026-10-03T09:00:00Z', 7, 3), scored('2026-10-01T09:00:00Z', 5, 5), scored('2026-10-02T09:00:00Z', 6, 4)];
+    expect(buildNarrative({ student, goals: [artic], sessions: reversed }))
+      .toContain('the trend went from about 50% at the start of the period to about 70% at the end');
+  });
+
+  it('reports the unclamped fitted ends, even past the observed range', () => {
+    // 50, 60, 70, 71 with the last session a month later: the fitted line ends at about 71.6%,
+    // above the highest value actually recorded (71%).
+    const data = [scored('2026-10-01T09:00:00Z', 5, 5), scored('2026-10-02T09:00:00Z', 6, 4), scored('2026-10-03T09:00:00Z', 7, 3), scored('2026-11-01T09:00:00Z', 7.1, 2.9)];
+    expect(buildNarrative({ student, goals: [artic], sessions: data }))
+      .toContain('the trend went from about 59.4% at the start of the period to about 71.6% at the end');
+  });
+
+  it('calls a single session too few for a trend', () => {
+    const text = buildNarrative({ student, goals: [artic], sessions: [scored('2026-10-01T09:00:00Z', 6, 4)] });
+    expect(text).toContain('Data were recorded in 1 session');
+    expect(text).not.toContain('trend went');
+  });
+
+  it('calls two sessions too few for a trend', () => {
+    const text = buildNarrative({ student, goals: [artic], sessions: [scored('2026-10-01T09:00:00Z', 5, 5), scored('2026-10-02T09:00:00Z', 9, 1)] });
+    expect(text).not.toContain('trend went');
+  });
+
+  it('calls sessions all on the same day steady, with no elapsed span to fit against', () => {
+    const sameDay = [scored('2026-10-01T09:00:00Z', 5, 5), scored('2026-10-01T09:00:00Z', 6, 4), scored('2026-10-01T09:00:00Z', 7, 3)];
+    const text = buildNarrative({ student, goals: [artic], sessions: sameDay });
+    expect(text).toContain("stayed fairly steady over the period (about 60%)");
+  });
+});
+
 describe('ABC narrative', () => {
   const abc = goal({ id: 'g3', name: 'Calm down', type: 'BEHAVIOR_ABC', sessionTargetValue: 80, targetDirection: 'increase' });
   const withIncidents = (incidents: object[]) => buildNarrative({ student, goals: [abc], sessions: [

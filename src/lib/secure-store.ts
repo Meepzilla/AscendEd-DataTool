@@ -1,9 +1,12 @@
 // Passcode protection: student data (students, sessions and unsaved Data Entry work) is stored encrypted on the
 // device, readable only after the passcode is entered.
 //
-// - The passcode is never stored. A key is derived from it (PBKDF2-SHA-256, 600,000 rounds, random salt) and
-//   used for AES-256-GCM. Only the salt and a small encrypted check value are kept, to tell a right passcode
-//   from a wrong one.
+// - The passcode is never stored. A key is derived from it (PBKDF2-SHA-256, 600,000 rounds, random salt),
+//   and that key wraps a random data key (AES-256-GCM) that encrypts the data. Only the salt, the wrapped
+//   data key, and a small encrypted check value are kept, to tell a right passcode from a wrong one.
+//   Changing the passcode re-wraps the data key instead of re-encrypting the data. A recovery key,
+//   shown once at setup, wraps the same data key a second time, so it can unlock the data when the
+//   passcode is forgotten. Neither the passcode nor the recovery key is stored anywhere on the device.
 // - After unlocking, the decrypted data is held in memory for the app (which reads and writes storage
 //   synchronously); each write is encrypted and stored, in order. Locking reloads the page,
 //   which clears the memory and the key.
@@ -11,34 +14,49 @@
 //
 // Durability: a write is not reported as saved until it has landed. setItemAsync resolves only after the
 // value is in durable storage and read back, and flushWrites throws when a background write failed, so
-// callers can roll back instead of showing success for data that never reached disk. The synchronous
+// callers can roll back instead of showing success for data that never reached disk. A background write
+// that fails transiently is retried (up to PERSIST_MAX_ATTEMPTS); a quota failure is not retried, since
+// waiting cannot free space. The synchronous
 // setItem is kept for fire-and-forget writes (the Data Entry draft) only; committed data uses setItemAsync.
 //
 // Storage backend: the three main lists (students, goal templates, sessions) live as per-record rows in
 // IndexedDB (see indexed-db-store.ts), one row per record, each record encrypted the same way as before
-// when protection is on (templates were never encrypted and stay plaintext, as before). Other keys, and
-// lists that have not migrated yet (a corrupt localStorage blob is never migrated), stay in localStorage.
-// The in-memory cache is still the synchronous read path: it is filled from IndexedDB by hydrateLists
-// (data-store.ts) when the app loads, before anything reads a list.
+// when protection is on. Student groups and custom ABC lists are single localStorage values, encrypted
+// the same way. Other keys, and lists that have not migrated yet (a corrupt localStorage blob is never
+// migrated), stay in localStorage. The in-memory cache is still the synchronous read path: it is filled
+// from IndexedDB by hydrateLists (data-store.ts) when the app loads, before anything reads a list.
 //
-// A forgotten passcode can't be recovered: the data can only be erased and restored from a backup.
+// A forgotten passcode can be recovered with the recovery key (see unlockWithRecoveryKey). Without
+// either, the data can only be erased and restored from a backup.
 
-import { isLockedOut, recordAttempt } from './attempt-lockout';
+import { getLockoutRemainingMs, isLockedOut, recordAttempt } from './attempt-lockout';
 import * as idb from './indexed-db-store';
+import { isQuotaError } from './storage-failure';
 
 const CONFIG_KEY = 'ascended_passcode_v1';
 const ITERATIONS = 600_000;
 const PREFIX = 'enc1:';
-const CHECK_TEXT = 'ascended-passcode-check';
+/** Known plaintext encrypted under the data key, to tell a right passcode or recovery key from a wrong one. Not a secret. */
+export const CHECK_TEXT = 'ascended-passcode-check';
 const SPACE_CHECK_KEY = '__ascended_space_check';
+/** LocalStorage flag: an IndexedDB scan found no rows still encrypted under the old passcode key. */
+const DEK_IDB_FLAG_KEY = 'ascended_dek_idb_migrated_v1';
 /** localStorage key holding { [storageKey]: true } for lists already moved to IndexedDB. */
 const MIGRATION_FLAG_KEY = 'ascended_idb_migrated_v1';
 /** localStorage key set by eraseProtectedData so a reload ignores IndexedDB rows even if it lands first. */
 const ERASED_KEY = 'ascended_idb_erased_v1';
 export const MIN_PASSCODE_LENGTH = 6;
 
-/** Keys holding student data. Templates and display settings aren't student data and stay as they are. */
-const SENSITIVE = /^ascended_(students_v2|sessions_v2|data_entry_draft_v1)_/;
+/**
+ * Keys holding student data, encrypted when passcode protection is on. The goal templates list is
+ * included whole, built-ins and all: custom templates share the list with the 903 seeded built-ins,
+ * so splitting it per record would need a second store, and a renamed built-in can carry the user's
+ * own wording. The built-ins themselves are public content shipped in the app, so encrypting them
+ * buys uniformity rather than secrecy — the point is that no custom template can leak through a
+ * plaintext list. Student groups (student IDs) and custom ABC lists (behavior wording) are in too.
+ * Display settings stay as they are.
+ */
+const SENSITIVE = /^ascended_(students_v2|sessions_v2|data_entry_draft_v1|goal_templates_v2|student_groups_v1|abc_lists)(_|$)/;
 export const isSensitiveKey = (key: string) => SENSITIVE.test(key);
 
 /** The three main lists, whatever their backend: base key, IndexedDB store, id field. */
@@ -142,6 +160,49 @@ export function markListUndecryptable(key: string) {
   cache.set(key, '\u0000damaged');
 }
 
+/**
+ * Forgets that a stored value couldn't be read, so it may be replaced. Only a restore may do this:
+ * it is how damaged data is recovered, and ordinary saves must never overwrite damaged data.
+ */
+export function clearUndecryptable(storageKey: string) {
+  undecryptable.delete(storageKey);
+}
+
+/**
+ * Re-reads one localStorage-backed sensitive key from durable storage into the cache, so a change
+ * made in another tab (which the cache would otherwise not see) shows up. Returns whether the cached
+ * value changed. Only for single-value localStorage keys (student groups, ABC lists, the draft):
+ * the three main lists refresh through hydrateLists instead. A damaged value stays marked and is
+ * never refreshed over.
+ */
+export async function refreshFromStorage(storageKey: string): Promise<boolean> {
+  if (!isSensitiveKey(storageKey) || !isPasscodeEnabled() || !key) return false;
+  if (undecryptable.has(storageKey)) return false;
+  let raw: string | null;
+  try {
+    raw = localStorage.getItem(storageKey);
+  } catch {
+    return false;
+  }
+  if (raw === null) {
+    if (cache.get(storageKey) === undefined || cache.get(storageKey) === null) return false;
+    cache.set(storageKey, null);
+    return true;
+  }
+  if (!raw.startsWith(PREFIX)) return false;
+  let plain: string;
+  try {
+    plain = await decryptStoredValue(storageKey, raw);
+  } catch {
+    undecryptable.add(storageKey);
+    cache.set(storageKey, '\u0000damaged');
+    return false;
+  }
+  if (cache.get(storageKey) === plain) return false;
+  cache.set(storageKey, plain);
+  return true;
+}
+
 /** Bytes this key last persisted (IndexedDB lists) or holds now (localStorage keys). */
 export function getCurrentKeyBytes(key: string): number {
   if (isListKey(key) && getListBackend(key) === 'idb') return persistedBytes.get(key) ?? 0;
@@ -157,15 +218,60 @@ export function getPersistedListBytes(): number {
   return [...persistedBytes.values()].reduce((sum, n) => sum + n, 0);
 }
 
-interface PasscodeConfig { v: 1; salt: string; iterations: number; check: string; autoLockMinutes?: number }
+/**
+ * Passcode config, versioned. v1 (before the wrapped-key scheme) encrypted the data directly
+ * under the passcode-derived key, with the check value encrypted under that same key. v2 keeps
+ * a random data key that encrypts the data, wrapped once under the passcode-derived key
+ * (wrappedDek) and, when a recovery key was set up, once under the recovery-key-derived key
+ * (wrappedDekRecovery). The check value is encrypted under the data key in v2.
+ */
+interface PasscodeConfigV1 { v: 1; salt: string; iterations: number; check: string; autoLockMinutes?: number }
+interface PasscodeConfigV2 {
+  v: 2; salt: string; iterations: number; check: string; autoLockMinutes?: number;
+  /** The data key, AES-GCM-wrapped under the passcode-derived key (IV-prefixed, base64, `enc1:`). */
+  wrappedDek: string;
+  /** Salt for the recovery-key-derived key, when a recovery key was set up. */
+  recoverySalt?: string;
+  recoveryIterations?: number;
+  /** The data key, AES-GCM-wrapped under the recovery-key-derived key. */
+  wrappedDekRecovery?: string;
+}
+type PasscodeConfig = PasscodeConfigV1 | PasscodeConfigV2;
+
+/** A stored list that could not be read and was left exactly as stored (damaged, quarantined). */
+export interface QuarantinedList { key: string; label: string; }
 
 let key: CryptoKey | null = null;
+/**
+ * The passcode-derived key for this session, kept only in memory. It opens values an
+ * interrupted migration left encrypted under it (see decryptStoredValue), and it is cleared
+ * on lock, on erase, and when the passcode is reset with a recovery key. It is never stored.
+ */
+let legacyKey: CryptoKey | null = null;
+/** LocalStorage-backed keys still stored under the old passcode key (their re-encryption failed or is pending). */
+const legacyKeys = new Set<string>();
+/** IndexedDB stores holding rows still stored under the old passcode key. */
+const legacyStores = new Set<idb.ListStoreName>();
 const cache = new Map<string, string | null>();
 const writing = new Map<string, Promise<void>>();
 const dirty = new Set<string>();
 /** Stored student-data values that couldn't be decrypted at unlock (damaged); they are left as stored. */
 const undecryptable = new Set<string>();
-let onWriteError: ((error: unknown) => void) | null = null;
+let onWriteError: ((error: unknown, storageKey?: string) => void) | null = null;
+
+/**
+ * How many times a background write is attempted before it is reported as failed. A transient
+ * failure (an IndexedDB write interrupted, a locked store) can land on a retry; a full quota
+ * cannot clear itself by waiting, so quota failures are not retried (see persist).
+ */
+export const PERSIST_MAX_ATTEMPTS = 3;
+export const PERSIST_RETRY_DELAYS_MS = [250, 1000];
+let persistRetryDelays = [...PERSIST_RETRY_DELAYS_MS];
+/** Test-only: shorten the wait between persist retries (module reload restores the defaults). */
+export function setPersistRetryDelaysForTests(delays: number[]) {
+  persistRetryDelays = delays;
+}
+const delay = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
 
 const b64 = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes));
 const b64Chunked = (bytes: Uint8Array) => {
@@ -197,14 +303,14 @@ export function setAutoLockMinutes(minutes: number) {
   const config = readConfig();
   if (config) localStorage.setItem(CONFIG_KEY, JSON.stringify({ ...config, autoLockMinutes: minutes }));
 }
-/** Called when a background write fails (e.g. storage full), so the app can say so. */
-export function setWriteErrorHandler(handler: ((error: unknown) => void) | null) {
+/** Called when a background write fails (e.g. storage full), so the app can say so. The key is passed so the app knows what failed to save (the Data Entry draft, the student groups, a list). */
+export function setWriteErrorHandler(handler: ((error: unknown, storageKey?: string) => void) | null) {
   onWriteError = handler;
 }
 
 async function deriveKey(passcode: string, salt: Uint8Array, iterations: number): Promise<CryptoKey> {
   const material = await crypto.subtle.importKey('raw', new TextEncoder().encode(passcode), 'PBKDF2', false, ['deriveKey']);
-  return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations, hash: 'SHA-256' }, material, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+  return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations, hash: 'SHA-256' }, material, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt', 'wrapKey', 'unwrapKey']);
 }
 
 async function encryptWith(k: CryptoKey, text: string): Promise<string> {
@@ -225,8 +331,8 @@ async function decryptWith(k: CryptoKey, stored: string): Promise<string> {
 
 /**
  * Encrypts one stored string with the current key, exactly as the whole-blob path did: sensitive keys
- * (students, sessions) are encrypted when protection is on, everything else (templates were never
- * encrypted) is stored as it is.
+ * (students, sessions, goal templates, student groups, ABC lists, the Data Entry draft) are encrypted
+ * when protection is on, everything else is stored as it is.
  */
 export async function encryptStoredValue(storageKey: string, text: string): Promise<string> {
   if (isSensitiveKey(storageKey) && isPasscodeEnabled()) {
@@ -236,11 +342,23 @@ export async function encryptStoredValue(storageKey: string, text: string): Prom
   return text;
 }
 
-/** Decrypts one stored string; throws when it is encrypted and the key is wrong or missing. */
+/** Decrypts one stored string; throws when it is encrypted and neither the data key nor the old passcode key opens it. */
 export async function decryptStoredValue(storageKey: string, stored: string): Promise<string> {
   if (!stored.startsWith(PREFIX)) return stored;
   if (!isSensitiveKey(storageKey) || !key) throw new Error('Locked');
-  return decryptWith(key, stored);
+  try {
+    return await decryptWith(key, stored);
+  } catch (error) {
+    // Still stored under the old passcode key (an interrupted migration): readable this session.
+    if (legacyKey) {
+      try {
+        return await decryptWith(legacyKey, stored);
+      } catch {
+        /* fall through to the original error */
+      }
+    }
+    throw error;
+  }
 }
 
 /** JSON with object keys sorted, so the same value always compares equal whatever its key order. */
@@ -321,6 +439,8 @@ async function persistListRecords(storageKey: string): Promise<void> {
     if (readBack !== JSON.stringify(records[i])) throw new Error('Save verification failed: a stored record does not match.');
   }
   persistedBytes.set(storageKey, bytes);
+  // The rows are now under the data key (or plaintext when protection is off), not the old passcode key.
+  if (isPasscodeEnabled()) legacyStores.delete(info.store);
 }
 
 /** Waits until no write is pending for the key (including one re-queued while waiting). Throws if it failed. */
@@ -330,25 +450,46 @@ async function awaitPersisted(storageKey: string): Promise<void> {
   }
 }
 
+/** One attempt to write a key's cached value to durable storage. Throws on any failure. */
+async function persistOnce(storageKey: string): Promise<void> {
+  if (isListKey(storageKey) && getListBackend(storageKey) === 'idb') {
+    await persistListRecords(storageKey);
+  } else {
+    const value = cache.get(storageKey);
+    const stored = value === null || value === undefined ? null : await encryptWith(key!, value);
+    // A damaged value put back as it was stored (restoreItem) is left alone.
+    if (undecryptable.has(storageKey)) return;
+    if (stored === null) localStorage.removeItem(storageKey);
+    else localStorage.setItem(storageKey, stored);
+  }
+  // The stored value is now under the data key, not the old passcode key.
+  legacyKeys.delete(storageKey);
+}
+
 function persist(storageKey: string) {
   if (writing.has(storageKey)) { dirty.add(storageKey); return; }
   const run = (async () => {
-    try {
-      if (isListKey(storageKey) && getListBackend(storageKey) === 'idb') {
-        await persistListRecords(storageKey);
-      } else {
-        const value = cache.get(storageKey);
-        const stored = value === null || value === undefined ? null : await encryptWith(key!, value);
-        // A damaged value put back as it was stored (restoreItem) is left alone.
-        if (undecryptable.has(storageKey)) return;
-        if (stored === null) localStorage.removeItem(storageKey);
-        else localStorage.setItem(storageKey, stored);
+    // A failed write is retried (a transient IndexedDB failure can land on a retry), except a
+    // quota failure, which waiting cannot fix. Only when the attempts are used up is the failure
+    // reported — once, not once per attempt — and the write promise rejects, so flushWrites
+    // throws on it and setItemAsync (which awaits the same write) rejects: no caller can report
+    // success for it. The cache keeps the unsaved value, so the next save of this key tries
+    // again from where it left off instead of silently dropping the change.
+    let lastError: unknown;
+    for (let attempt = 0; attempt < PERSIST_MAX_ATTEMPTS; attempt++) {
+      try {
+        await persistOnce(storageKey);
+        lastError = undefined;
+        break;
+      } catch (error) {
+        lastError = error;
+        if (isQuotaError(error)) break;
+        if (attempt < PERSIST_MAX_ATTEMPTS - 1) await delay(persistRetryDelays[attempt] ?? 1000);
       }
-    } catch (error) {
-      // A failed write is reported and the write promise rejects, so flushWrites throws on it and
-      // setItemAsync (which awaits the same write) rejects: no caller can report success for it.
-      onWriteError?.(error);
-      throw error;
+    }
+    if (lastError !== undefined) {
+      onWriteError?.(lastError, storageKey);
+      throw lastError;
     }
   })().finally(() => {
     writing.delete(storageKey);
@@ -460,6 +601,22 @@ export function isUndecryptable(storageKey: string) {
   return undecryptable.has(storageKey);
 }
 
+/** A human-readable name for a stored list, for telling the user which list could not be read. */
+export function labelForStorageKey(storageKey: string): string {
+  if (storageKey.startsWith('ascended_students_v2_')) return 'Students';
+  if (storageKey.startsWith('ascended_sessions_v2_')) return 'Sessions';
+  if (storageKey.startsWith('ascended_goal_templates_v2_')) return 'Goal templates';
+  if (storageKey.startsWith('ascended_data_entry_draft_v1_')) return 'Data Entry draft';
+  if (storageKey.startsWith('ascended_student_groups_v1_')) return 'Student groups';
+  if (storageKey === 'ascended_abc_lists') return 'ABC lists';
+  return storageKey;
+}
+
+/** Lists that could not be read and were left exactly as stored (damaged, quarantined). */
+export function getQuarantinedLists(): QuarantinedList[] {
+  return [...undecryptable].map(storageKey => ({ key: storageKey, label: labelForStorageKey(storageKey) }));
+}
+
 /** A stored value as it is, to put back with restoreItem (damaged values exactly as stored, not as read). */
 export type ItemSnapshot = { damaged: boolean; value: string | null };
 export function snapshotItem(storageKey: string): ItemSnapshot {
@@ -561,14 +718,320 @@ const sensitiveKeysInStorage = () => {
 
 // ---- Passcode ----
 
-/** The key for the passcode, or null if it is wrong. */
+// The data key is a random AES-256-GCM key, generated once and wrapped (AES-GCM key wrap)
+// under each credential that may open it: the passcode-derived key and, when one was set up,
+// the recovery-key-derived key. The wrapped keys are stored; the data key itself is never
+// stored. Changing the passcode re-wraps the data key, so the data is not re-encrypted.
+
+/** Wraps the data key under a credential-derived key; IV-prefixed, base64, `enc1:`. */
+async function wrapDek(dek: CryptoKey, kek: CryptoKey): Promise<string> {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const wrapped = new Uint8Array(await crypto.subtle.wrapKey('raw', dek, kek, { name: 'AES-GCM', iv }));
+  const all = new Uint8Array(12 + wrapped.length);
+  all.set(iv);
+  all.set(wrapped, 12);
+  return PREFIX + b64Chunked(all);
+}
+
+/** Unwraps a data key wrapped with wrapDek; throws when the credential key is wrong. */
+async function unwrapDek(wrapped: string, kek: CryptoKey): Promise<CryptoKey> {
+  if (!wrapped.startsWith(PREFIX)) throw new Error('Not a wrapped key');
+  const all = unb64(wrapped.slice(PREFIX.length));
+  return crypto.subtle.unwrapKey(
+    'raw', all.subarray(12), kek, { name: 'AES-GCM', iv: all.subarray(0, 12) },
+    { name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt'],
+  );
+}
+
+/** A fresh random data key. Extractable, so it can be wrapped under a credential key. */
+async function newDataKey(): Promise<CryptoKey> {
+  return crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']);
+}
+
+// ---- Recovery key ----
+
+// A recovery key is 20 random bytes (160 bits) shown as 32 Crockford base32 characters in
+// 8 groups of 4 (e.g. `7K3Q-9X2M-...`). Crockford leaves out I, L, O and U, so what the user
+// types back is unambiguous; typing still accepts lowercase, dashes, spaces, and I/L as 1
+// and O as 0. The key itself is never stored: only a wrapped copy of the data key, under a
+// key derived from it with the same PBKDF2 parameters as the passcode.
+
+const RECOVERY_KEY_BYTES = 20;
+const CROCKFORD_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+
+/** Generates a recovery key to show the user once, in `XXXX-XXXX-...` form. */
+export function generateRecoveryKey(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(RECOVERY_KEY_BYTES));
+  const chars: string[] = [];
+  // 5 bits at a time; the buffer is masked down after each character, so it never grows past 12 bits.
+  let value = 0;
+  let bits = 0;
+  for (const byte of bytes) {
+    value = (value << 8) | byte;
+    bits += 8;
+    while (bits >= 5) {
+      bits -= 5;
+      chars.push(CROCKFORD_ALPHABET[(value >> bits) & 31]);
+      value &= (1 << bits) - 1;
+    }
+  }
+  if (bits > 0) chars.push(CROCKFORD_ALPHABET[(value << (5 - bits)) & 31]);
+  return [0, 1, 2, 3, 4, 5, 6, 7].map(g => chars.slice(g * 4, g * 4 + 4).join('')).join('-');
+}
+
+/** The canonical form of a typed recovery key, or null when it cannot be one. */
+export function normalizeRecoveryKey(input: string): string | null {
+  const cleaned = input.toUpperCase().replace(/[\s-]/g, '').replace(/I/g, '1').replace(/L/g, '1').replace(/O/g, '0');
+  if (cleaned.length !== RECOVERY_KEY_BYTES * 8 / 5) return null;
+  if ([...cleaned].some(c => !CROCKFORD_ALPHABET.includes(c))) return null;
+  return cleaned;
+}
+
+/** The data key for the passcode, or null if it is wrong. For a v1 config the passcode-derived key itself. */
 async function keyFor(passcode: string, config: PasscodeConfig): Promise<CryptoKey | null> {
-  const candidate = await deriveKey(passcode, unb64(config.salt), config.iterations);
+  const kek = await deriveKey(passcode, unb64(config.salt), config.iterations);
+  if (config.v === 1) {
+    try {
+      return (await decryptWith(kek, config.check)) === CHECK_TEXT ? kek : null;
+    } catch {
+      return null;
+    }
+  }
   try {
-    return await decryptWith(candidate, config.check) === CHECK_TEXT ? candidate : null;
+    const dek = await unwrapDek(config.wrappedDek, kek);
+    return (await decryptWith(dek, config.check)) === CHECK_TEXT ? dek : null;
   } catch {
     return null;
   }
+}
+
+/** The data key for a recovery key, or null when it is wrong or none is set up. */
+async function dekFromRecoveryKey(input: string, config: PasscodeConfig): Promise<CryptoKey | null> {
+  if (config.v !== 2 || !config.wrappedDekRecovery || !config.recoverySalt) return null;
+  const normalized = normalizeRecoveryKey(input);
+  if (!normalized) return null;
+  try {
+    const rkek = await deriveKey(normalized, unb64(config.recoverySalt), config.recoveryIterations ?? ITERATIONS);
+    const dek = await unwrapDek(config.wrappedDekRecovery, rkek);
+    return (await decryptWith(dek, config.check)) === CHECK_TEXT ? dek : null;
+  } catch {
+    return null;
+  }
+}
+
+function clearDekIdbFlag() {
+  try {
+    localStorage.removeItem(DEK_IDB_FLAG_KEY);
+  } catch {
+    /* the flag is a hint */
+  }
+}
+
+/**
+ * Moves a v1 install (data encrypted directly under the passcode key) to the wrapped-key
+ * scheme. The new config is written first: from that point the data key is recoverable from
+ * storage, so a migration interrupted after this line still leaves every value readable on
+ * the next unlock, through the legacy-key fallback. Returns the new data key.
+ */
+async function migrateV1ToWrappedKey(kek: CryptoKey, config: PasscodeConfigV1): Promise<CryptoKey> {
+  const dek = await newDataKey();
+  const nextConfig: PasscodeConfigV2 = {
+    v: 2, salt: config.salt, iterations: config.iterations,
+    check: await encryptWith(dek, CHECK_TEXT), wrappedDek: await wrapDek(dek, kek),
+    autoLockMinutes: config.autoLockMinutes,
+  };
+  localStorage.setItem(CONFIG_KEY, JSON.stringify(nextConfig));
+  key = dek;
+  return dek;
+}
+
+/**
+ * Reads every sensitive localStorage value into the cache, decrypting with the data key and
+ * falling back to the old passcode key for values an interrupted migration left behind.
+ * Values still under the old key are re-encrypted under the data key; values that decrypt
+ * under neither key stay exactly as stored, marked unreadable. With fillCache false the
+ * in-memory cache is left alone (a change or disable on an already-unlocked app).
+ */
+async function loadAndMigrateValues(kek: CryptoKey | null, dek: CryptoKey, fillCache: boolean, configJson: string): Promise<void> {
+  if (fillCache) {
+    cache.clear();
+    undecryptable.clear();
+  }
+  legacyKeys.clear();
+  const toRewrite: [string, string][] = [];
+  for (const storageKey of sensitiveKeysInStorage()) {
+    const stored = localStorage.getItem(storageKey)!;
+    let plain: string | null = null;
+    let legacy = false;
+    if (!stored.startsWith(PREFIX)) {
+      // Stored plaintext (written before protection was on): readable, needs encrypting.
+      plain = stored;
+      legacy = true;
+    } else {
+      try {
+        plain = await decryptWith(dek, stored);
+      } catch {
+        if (kek) {
+          try {
+            plain = await decryptWith(kek, stored);
+            legacy = true;
+          } catch {
+            plain = null;
+          }
+        }
+      }
+    }
+    if (plain === null) {
+      undecryptable.add(storageKey);
+      if (fillCache) cache.set(storageKey, '\u0000damaged');
+      continue;
+    }
+    if (fillCache) cache.set(storageKey, plain);
+    if (legacy) toRewrite.push([storageKey, await encryptWith(dek, plain)]);
+  }
+  if (toRewrite.length) {
+    try {
+      rewriteAll(toRewrite, configJson);
+    } catch {
+      // rewriteAll puts everything back as it was: the values stay under the old key and are
+      // still readable this session (and on the next unlock); the next save migrates them.
+      for (const [storageKey] of toRewrite) legacyKeys.add(storageKey);
+    }
+  }
+}
+
+/**
+ * Finds IndexedDB rows still encrypted under the old passcode key. Rows are never rewritten
+ * here: they stay readable through the legacy-key fallback, migrate when the list is next
+ * saved, and are re-encrypted before any passcode change (see reencryptLegacyValues). A row
+ * that decrypts under neither key is damaged, not legacy: hydrateLists marks that list
+ * unreadable, and it is left exactly as stored. Once a scan finds no legacy rows, the flag
+ * is set and later unlocks skip the scan.
+ */
+async function scanIdbLegacy(kek: CryptoKey | null, dek: CryptoKey): Promise<void> {
+  if (!kek || !idb.isIndexedDbSupported()) return;
+  try {
+    if (localStorage.getItem(DEK_IDB_FLAG_KEY) === '1') return;
+  } catch {
+    return;
+  }
+  const candidates = new Set<string>();
+  for (const storageKey of cache.keys()) if (isListKey(storageKey)) candidates.add(storageKey);
+  for (let i = 0; i < localStorage.length; i++) {
+    const storageKey = localStorage.key(i);
+    if (storageKey && isListKey(storageKey)) candidates.add(storageKey);
+  }
+  for (const storageKey of Object.keys(migrationFlags())) if (isListKey(storageKey)) candidates.add(storageKey);
+  let anyLegacy = false;
+  for (const storageKey of candidates) {
+    if (getListBackend(storageKey) !== 'idb') continue;
+    const info = listKeyInfo(storageKey);
+    if (!info) continue;
+    let rows: idb.IdRecord[];
+    try {
+      rows = await idb.getAllRecords(info.store);
+    } catch {
+      continue;
+    }
+    let legacy = false;
+    let damaged = false;
+    for (const row of rows) {
+      if (!row.v.startsWith(PREFIX)) {
+        legacy = true;
+        continue;
+      }
+      try {
+        await decryptWith(dek, row.v);
+      } catch {
+        try {
+          await decryptWith(kek, row.v);
+          legacy = true;
+        } catch {
+          damaged = true;
+        }
+      }
+    }
+    if (damaged) continue;
+    if (legacy) {
+      legacyStores.add(info.store);
+      anyLegacy = true;
+    }
+  }
+  if (!anyLegacy) {
+    try {
+      localStorage.setItem(DEK_IDB_FLAG_KEY, '1');
+    } catch {
+      /* the flag is a hint */
+    }
+  }
+}
+
+/**
+ * Re-encrypts every readable value still stored under the old passcode key under the data
+ * key, so the data key can then be re-wrapped under a new passcode without stranding it.
+ * Throws (before anything is re-wrapped) when a value cannot be written, e.g. storage full.
+ * Damaged lists are not touched: they are quarantined by the caller, not re-encrypted.
+ */
+async function reencryptLegacyValues(): Promise<void> {
+  for (const storageKey of [...legacyKeys]) {
+    if (isUndecryptable(storageKey)) {
+      legacyKeys.delete(storageKey);
+      continue;
+    }
+    const plain = cache.get(storageKey);
+    if (plain === undefined || plain === null || plain === '\u0000damaged') {
+      legacyKeys.delete(storageKey);
+      continue;
+    }
+    if (isListKey(storageKey) && getListBackend(storageKey) === 'idb') {
+      await persistListRecords(storageKey);
+    } else {
+      await setItemAsync(storageKey, plain);
+    }
+    legacyKeys.delete(storageKey);
+  }
+  for (const info of LIST_KEYS) {
+    if (!legacyStores.has(info.store)) continue;
+    const storageKey = [...cache.keys()].find(k => k.startsWith(`${info.base}_`));
+    if (!storageKey) {
+      throw new Error('Some saved data is still stored under the old passcode and is not loaded. Lock the app and unlock it again, then try.');
+    }
+    if (isUndecryptable(storageKey)) {
+      legacyStores.delete(info.store);
+      continue;
+    }
+    await persistListRecords(storageKey);
+    legacyStores.delete(info.store);
+  }
+  if (legacyStores.size === 0 && legacyKeys.size === 0) {
+    try {
+      localStorage.setItem(DEK_IDB_FLAG_KEY, '1');
+    } catch {
+      /* the flag is a hint */
+    }
+  }
+}
+
+/**
+ * Moves a v1 install to the wrapped-key scheme on an already-unlocked app (change or
+ * disable). Unlocking already migrates, so this only runs when a v1 config is somehow
+ * still present while unlocked; it never clears the in-memory cache.
+ */
+async function ensureWrappedKey(currentPasscode: string): Promise<void> {
+  const config = readConfig();
+  if (!config || config.v !== 1) return;
+  const kek = await deriveKey(currentPasscode, unb64(config.salt), config.iterations);
+  let ok = false;
+  try {
+    ok = (await decryptWith(kek, config.check)) === CHECK_TEXT;
+  } catch {
+    ok = false;
+  }
+  if (!ok) throw new Error('The current passcode is wrong.');
+  await migrateV1ToWrappedKey(kek, config);
+  legacyKey = kek;
+  await loadAndMigrateValues(kek, key!, false, JSON.stringify(readConfig()));
+  await scanIdbLegacy(kek, key!);
 }
 
 /** Unlocks with the passcode: true if it is right (the data is then decrypted into memory). */
@@ -578,32 +1041,68 @@ export async function unlock(passcode: string): Promise<boolean> {
   // Locked out after repeated wrong passcodes: fail immediately, without recording another failure
   // (a locked-out attempt must not extend the lockout) and without deriving a key.
   if (isLockedOut('passcode')) return false;
-  const candidate = await keyFor(passcode, config);
-  if (!candidate) {
+  if (config.v === 1) {
+    const kek = await deriveKey(passcode, unb64(config.salt), config.iterations);
+    let ok = false;
+    try {
+      ok = (await decryptWith(kek, config.check)) === CHECK_TEXT;
+    } catch {
+      ok = false;
+    }
+    if (!ok) {
+      recordAttempt('passcode', false);
+      return false;
+    }
+    recordAttempt('passcode', true);
+    // Migrate to the wrapped-key scheme on this unlock: the data is re-encrypted under the
+    // new data key, and a recovery key can be set up from Settings once migrated.
+    const dek = await migrateV1ToWrappedKey(kek, config);
+    legacyKey = kek;
+    await loadAndMigrateValues(kek, dek, true, JSON.stringify(readConfig()));
+    await scanIdbLegacy(kek, dek);
+    return true;
+  }
+  const kek = await deriveKey(passcode, unb64(config.salt), config.iterations);
+  let dek: CryptoKey | null = null;
+  try {
+    dek = await unwrapDek(config.wrappedDek, kek);
+    if ((await decryptWith(dek, config.check)) !== CHECK_TEXT) dek = null;
+  } catch {
+    dek = null;
+  }
+  if (!dek) {
     recordAttempt('passcode', false);
     return false;
   }
   recordAttempt('passcode', true);
-  cache.clear();
-  undecryptable.clear();
-  for (const storageKey of sensitiveKeysInStorage()) {
-    const stored = localStorage.getItem(storageKey)!;
-    try {
-      cache.set(storageKey, await decryptWith(candidate, stored));
-    } catch {
-      // Left as stored; the app reports it as unreadable and doesn't write over it.
-      undecryptable.add(storageKey);
-      cache.set(storageKey, '\u0000damaged');
-    }
-  }
-  key = candidate;
+  key = dek;
+  legacyKey = kek;
+  await loadAndMigrateValues(kek, dek, true, JSON.stringify(config));
+  await scanIdbLegacy(kek, dek);
   return true;
 }
 
-async function newConfig(passcode: string, autoLockMinutes = 15): Promise<{ config: PasscodeConfig; key: CryptoKey }> {
+/**
+ * A fresh data key wrapped under a new passcode (and, when given, a recovery key).
+ * Throws when the recovery key is not a valid one.
+ */
+async function newWrappedKey(passcode: string, recoveryKey?: string): Promise<{
+  dek: CryptoKey; kek: CryptoKey; wrappedDek: string; salt: string;
+  recovery?: { salt: string; iterations: number; wrappedDek: string };
+}> {
+  const dek = await newDataKey();
   const salt = crypto.getRandomValues(new Uint8Array(16));
-  const k = await deriveKey(passcode, salt, ITERATIONS);
-  return { key: k, config: { v: 1, salt: b64(salt), iterations: ITERATIONS, check: await encryptWith(k, CHECK_TEXT), autoLockMinutes } };
+  const kek = await deriveKey(passcode, salt, ITERATIONS);
+  const wrappedDek = await wrapDek(dek, kek);
+  let recovery: { salt: string; iterations: number; wrappedDek: string } | undefined;
+  if (recoveryKey !== undefined) {
+    const normalized = normalizeRecoveryKey(recoveryKey);
+    if (!normalized) throw new Error('That recovery key is not valid.');
+    const recoverySalt = crypto.getRandomValues(new Uint8Array(16));
+    const rkek = await deriveKey(normalized, recoverySalt, ITERATIONS);
+    recovery = { salt: b64(recoverySalt), iterations: ITERATIONS, wrappedDek: await wrapDek(dek, rkek) };
+  }
+  return { dek, kek, wrappedDek, salt: b64(salt), recovery };
 }
 
 /**
@@ -666,16 +1165,21 @@ async function reencryptIdbLists() {
   }
 }
 
-/** Turns protection on: encrypts the student data with a new passcode. */
-export async function enablePasscode(passcode: string, autoLockMinutes = 15) {
+/** Turns protection on: encrypts the student data with a new passcode. When a recovery key is given, it is set up too (see generateRecoveryKey). */
+export async function enablePasscode(passcode: string, autoLockMinutes = 15, recoveryKey?: string) {
   if (passcode.length < MIN_PASSCODE_LENGTH) throw new Error(`Use at least ${MIN_PASSCODE_LENGTH} characters.`);
   if (isPasscodeEnabled()) throw new Error('Passcode protection is already on.');
-  const { config, key: k } = await newConfig(passcode, autoLockMinutes);
+  const { dek, kek, wrappedDek, salt, recovery } = await newWrappedKey(passcode, recoveryKey);
+  const config: PasscodeConfigV2 = {
+    v: 2, salt, iterations: ITERATIONS, check: await encryptWith(dek, CHECK_TEXT), wrappedDek, autoLockMinutes,
+    ...(recovery ? { recoverySalt: recovery.salt, recoveryIterations: recovery.iterations, wrappedDekRecovery: recovery.wrappedDek } : {}),
+  };
   const readStorage = () => sensitiveKeysInStorage().map(storageKey => [storageKey, localStorage.getItem(storageKey)] as [string, string | null]);
-  const encrypted = await encodeCurrent(readStorage, value => encryptWith(k, value), false);
+  const encrypted = await encodeCurrent(readStorage, value => encryptWith(dek, value), false);
   const plain = readStorage();
   rewriteAll(encrypted, JSON.stringify(config));
-  key = k;
+  key = dek;
+  legacyKey = kek;
   // Lists already in IndexedDB have no localStorage blob, so they are not in `plain`: keep their
   // in-memory values and re-encrypt their rows with the new key instead of dropping them.
   const listCache = [...cache].filter(([storageKey]) => isListKey(storageKey) && getListBackend(storageKey) === 'idb');
@@ -700,32 +1204,53 @@ async function confirmPasscode(current: string, wrong: string) {
 // write them back as localStorage blobs.
 const cachedValues = () => [...cache].filter(([k]) => !undecryptable.has(k) && !(isListKey(k) && getListBackend(k) === 'idb'));
 
-/** Changes the passcode (the data is re-encrypted). Needs the current passcode. */
-export async function changePasscode(current: string, next: string) {
+/**
+ * Changes the passcode. The data itself is not re-encrypted: the data key is re-wrapped under
+ * the new passcode. Needs the current passcode. Lists that cannot be read are quarantined, not
+ * a reason to refuse: they stay exactly as stored, stay marked unreadable, and are reported
+ * in the return value (restoring a backup is the way to recover them). Readable lists convert.
+ */
+export async function changePasscode(current: string, next: string): Promise<{ quarantined: QuarantinedList[] }> {
   if (next.length < MIN_PASSCODE_LENGTH) throw new Error(`Use at least ${MIN_PASSCODE_LENGTH} characters.`);
   await confirmPasscode(current, 'The current passcode is wrong.');
-  if (undecryptable.size) throw new Error("Some saved data can't be read, so the passcode can't be changed. Restore a backup first.");
-  const { config, key: k } = await newConfig(next, getAutoLockMinutes());
-  // Pending writes (with the old key) are finished before the last check, so none land after the rewrite.
-  const encrypted = await encodeCurrent(cachedValues, value => encryptWith(k, value), true);
-  rewriteAll(encrypted, JSON.stringify(config));
-  key = k;
-  await reencryptIdbLists();
+  await ensureWrappedKey(current);
+  // Values still stored under the old passcode key must be under the data key before it is
+  // re-wrapped, or the new passcode could not open them. Damaged lists are skipped, not touched.
+  await reencryptLegacyValues();
+  const config = readConfig();
+  if (!config || config.v !== 2 || !key) throw new Error('Passcode protection is off.');
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const newKek = await deriveKey(next, salt, ITERATIONS);
+  const wrappedDek = await wrapDek(key, newKek);
+  const nextConfig: PasscodeConfigV2 = { ...config, salt: b64(salt), iterations: ITERATIONS, wrappedDek };
+  localStorage.setItem(CONFIG_KEY, JSON.stringify(nextConfig));
+  legacyKey = newKek;
+  return { quarantined: getQuarantinedLists() };
 }
 
-/** Turns protection off: the student data is stored unencrypted again. Needs the passcode. */
-export async function disablePasscode(current: string) {
+/**
+ * Turns protection off: the student data is stored unencrypted again. Needs the passcode.
+ * Lists that cannot be read are quarantined, not a reason to refuse: they stay exactly as
+ * stored, stay marked unreadable, and are reported in the return value.
+ */
+export async function disablePasscode(current: string): Promise<{ quarantined: QuarantinedList[] }> {
   await confirmPasscode(current, 'The passcode is wrong.');
-  if (undecryptable.size) throw new Error("Some saved data can't be read, so protection can't be turned off. Restore a backup first.");
+  await ensureWrappedKey(current);
+  const quarantined = getQuarantinedLists();
   const plain = await encodeCurrent(cachedValues, async value => value, true);
   rewriteAll(plain, null);
   // cache.clear() below would drop the IndexedDB lists (they have no localStorage value to restore
   // from), so keep them and store their rows unencrypted.
   const listCache = [...cache].filter(([storageKey]) => isListKey(storageKey) && getListBackend(storageKey) === 'idb');
   key = null;
+  legacyKey = null;
+  legacyKeys.clear();
+  legacyStores.clear();
+  clearDekIdbFlag();
   cache.clear();
   listCache.forEach(([storageKey, value]) => cache.set(storageKey, value));
   await reencryptIdbLists();
+  return { quarantined };
 }
 
 /** Forgotten passcode: erases the student data on this device and turns protection off. */
@@ -741,7 +1266,107 @@ export function eraseProtectedData() {
   }
   void deleteAllListData().catch(() => {});
   key = null;
+  legacyKey = null;
+  legacyKeys.clear();
+  legacyStores.clear();
+  clearDekIdbFlag();
   cache.clear();
+}
+
+/** Whether a recovery key is set up for this device. */
+export function hasRecoveryKey(): boolean {
+  const config = readConfig();
+  return !!config && config.v === 2 && !!config.wrappedDekRecovery;
+}
+
+/**
+ * Sets up a recovery key for an install that already has a passcode (for example one
+ * migrated from the v1 scheme on unlock). Returns the key to show the user once: it is
+ * never stored and never displayed again after the setup screen is left.
+ */
+export async function createRecoveryKey(): Promise<string> {
+  if (!isPasscodeEnabled() || !key) throw new Error('Passcode protection is off or the app is locked.');
+  const config = readConfig();
+  if (!config || config.v !== 2) throw new Error('Passcode protection needs to finish setting up. Lock the app and unlock it again, then try.');
+  const recoveryKey = generateRecoveryKey();
+  const normalized = normalizeRecoveryKey(recoveryKey)!;
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const rkek = await deriveKey(normalized, salt, ITERATIONS);
+  const nextConfig: PasscodeConfigV2 = {
+    ...config, recoverySalt: b64(salt), recoveryIterations: ITERATIONS, wrappedDekRecovery: await wrapDek(key, rkek),
+  };
+  localStorage.setItem(CONFIG_KEY, JSON.stringify(nextConfig));
+  return recoveryKey;
+}
+
+/**
+ * Unlocks with the recovery key, after the passcode is forgotten: true if the key is right
+ * (the data is then decrypted into memory). Wrong recovery keys count against their own
+ * lockout, so a forgotten passcode that was guessed at first does not block recovery, and
+ * recovery guesses do not weaken the passcode lockout either. Values still stored under
+ * the forgotten passcode key cannot be opened with the recovery key: they stay exactly as
+ * stored, marked unreadable, until the passcode is remembered or a backup is restored.
+ */
+export async function unlockWithRecoveryKey(input: string): Promise<boolean> {
+  const config = readConfig();
+  if (!config) return true;
+  if (config.v !== 2 || !config.wrappedDekRecovery || !config.recoverySalt) return false;
+  // Locked out after repeated wrong recovery keys: fail immediately, without recording another failure.
+  if (isLockedOut('recovery-key')) return false;
+  const dek = await dekFromRecoveryKey(input, config);
+  if (!dek) {
+    recordAttempt('recovery-key', false);
+    return false;
+  }
+  recordAttempt('recovery-key', true);
+  recordAttempt('passcode', true);
+  key = dek;
+  legacyKey = null;
+  await loadAndMigrateValues(null, dek, true, JSON.stringify(config));
+  return true;
+}
+
+/**
+ * Sets a new passcode with the recovery key, after the passcode is forgotten. The data key
+ * does not change, so the data is not re-encrypted and the same recovery key keeps working.
+ * Unlocks the app when locked. Lists that cannot be read stay exactly as stored, marked
+ * unreadable, and are reported in the return value.
+ */
+export async function resetPasscodeWithRecoveryKey(recoveryKey: string, next: string): Promise<{ quarantined: QuarantinedList[] }> {
+  if (next.length < MIN_PASSCODE_LENGTH) throw new Error(`Use at least ${MIN_PASSCODE_LENGTH} characters.`);
+  const config = readConfig();
+  if (!config) throw new Error('Passcode protection is off.');
+  if (config.v !== 2 || !config.wrappedDekRecovery || !config.recoverySalt) throw new Error('No recovery key is set up for this device.');
+  if (isLockedOut('recovery-key')) {
+    const minutes = Math.ceil(getLockoutRemainingMs('recovery-key') / 60_000);
+    throw new Error(`Too many wrong recovery keys. Try again in ${minutes} minute${minutes === 1 ? '' : 's'}.`);
+  }
+  const dek = await dekFromRecoveryKey(recoveryKey, config);
+  if (!dek) {
+    recordAttempt('recovery-key', false);
+    throw new Error('That recovery key is not right.');
+  }
+  recordAttempt('recovery-key', true);
+  recordAttempt('passcode', true);
+  // Unlock with the recovered data key when locked, so the app opens and the data is readable.
+  if (!key) {
+    key = dek;
+    legacyKey = null;
+    await loadAndMigrateValues(null, dek, true, JSON.stringify(config));
+  } else {
+    key = dek;
+    legacyKey = null;
+  }
+  // Values still stored under the forgotten passcode key cannot be read without it: they stay
+  // as stored (marked unreadable) and are reported, never written over.
+  await reencryptLegacyValues();
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const newKek = await deriveKey(next, salt, ITERATIONS);
+  const wrappedDek = await wrapDek(dek, newKek);
+  const nextConfig: PasscodeConfigV2 = { ...config, salt: b64(salt), iterations: ITERATIONS, wrappedDek };
+  localStorage.setItem(CONFIG_KEY, JSON.stringify(nextConfig));
+  legacyKey = newKek;
+  return { quarantined: getQuarantinedLists() };
 }
 
 /** Locks the app: waits for pending writes, then reloads, which clears the data and key from memory. */

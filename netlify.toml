@@ -23,6 +23,8 @@
 
 # Keep the app out of search engines, and out of other sites' frames (so a page can't overlay it to
 # trick taps); don't send the app's address to links it opens; the page may only send data to this site.
+# Force HTTPS for a year on this host and its subdomains, and switch off browser features the app never
+# uses (camera, microphone, location, payments, USB and motion sensors).
 # Which scripts may run (only the app's own) is set per page by scripts/add-csp.mjs in a <meta> tag, since it
 # lists each page's own inline scripts by hash.
 [[headers]]
@@ -33,3 +35,5 @@
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "no-referrer"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()"

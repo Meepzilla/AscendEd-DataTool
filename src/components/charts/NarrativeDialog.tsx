@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useErrorLog } from '@/hooks/use-error-log';
+import { toSafeErrorMessage } from '@/lib/error-message';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { buildNarrative, type NarrativeInput, type NarrativeStyle } from '@/lib/report-narrative';
@@ -16,6 +18,7 @@ import { saveTextFile } from '@/lib/save-file';
 export default function NarrativeDialog(props: NarrativeInput & { disabled?: boolean }) {
   const { disabled, ...input } = props;
   const { toast } = useToast();
+  const { addErrorLog } = useErrorLog();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
   const [generated, setGenerated] = useState('');
@@ -51,9 +54,17 @@ export default function NarrativeDialog(props: NarrativeInput & { disabled?: boo
     if (!confirmExport()) return;
     const safeName = input.student.name.replace(/[^a-z0-9]+/gi, '_');
     const date = new Date().toISOString().split('T')[0];
-    await saveTextFile(`narrative_${safeName}_${date}.txt`, text, 'text/plain').catch(() => {
-      toast({ title: "Couldn't save the file", variant: 'destructive' });
-    });
+    // A failed save used to be swallowed (an empty catch): the narrative stayed on screen with
+    // nothing saying the file never landed. It is logged and toasted now; a cancelled share
+    // (saveTextFile returns false) is not a failure and says nothing.
+    try {
+      const saved = await saveTextFile(`narrative_${safeName}_${date}.txt`, text, 'text/plain');
+      if (!saved) return;
+      toast({ title: 'Narrative saved', description: 'The text file is in your downloads, or was shared from the share sheet.' });
+    } catch (error) {
+      addErrorLog({ message: `Saving the narrative failed: ${error instanceof Error ? error.message : String(error)}`, source: 'NarrativeDialog.save', type: 'error' });
+      toast({ title: "Couldn't save the file", description: toSafeErrorMessage(error), variant: 'destructive' });
+    }
   };
 
   // Same confirm pattern as the CSV export warning: the narrative names the student and is plain text

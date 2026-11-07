@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useAbcLists } from '@/hooks/use-abc-lists';
-import { DEFAULT_ABC_LISTS, saveAbcLists, type AbcLists } from '@/lib/abc-lists';
+import { DEFAULT_ABC_LISTS, isAbcListsDamaged, saveAbcLists, type AbcLists } from '@/lib/abc-lists';
 import { ABC_REPLACEMENT_BEHAVIOR, BEHAVIOR_FUNCTIONS, type BehaviorFunction } from '@/lib/goal-constants';
 
 const NO_FUNCTION = 'none';
@@ -74,7 +74,23 @@ const ListEditor: React.FC<{
 export default function AbcListsCard() {
   const lists = useAbcLists();
   const { toast } = useToast();
-  const save = (next: AbcLists) => saveAbcLists(next);
+  // A list that couldn't be read is shown as the defaults and must not be written over; the save
+  // refuses, so say so instead of letting the edit look saved.
+  const save = (next: AbcLists) => {
+    try {
+      saveAbcLists(next);
+    } catch (error) {
+      toast({ title: "Couldn't save", description: error instanceof Error ? error.message : 'The ABC lists could not be saved.', variant: 'destructive' });
+    }
+  };
+  const reset = () => {
+    try {
+      saveAbcLists(null);
+      toast({ title: 'ABC lists reset', description: 'The default antecedents, behaviors and consequences are back.' });
+    } catch (error) {
+      toast({ title: "Couldn't reset", description: error instanceof Error ? error.message : 'The ABC lists could not be reset.', variant: 'destructive' });
+    }
+  };
 
   const consequenceLabels = lists.consequences.map(c => c.label);
   const setConsequenceLabels = (labels: string[]) =>
@@ -94,6 +110,9 @@ export default function AbcListsCard() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
+        {isAbcListsDamaged() && (
+          <p className="text-sm text-destructive">The saved ABC lists could not be read, so the defaults are shown and changes won&apos;t be saved. Restore a backup in Settings to replace them.</p>
+        )}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
           <ListEditor
             title="A: Antecedents"
@@ -134,10 +153,7 @@ export default function AbcListsCard() {
             variant="outline"
             size="sm"
             disabled={isDefault}
-            onClick={() => {
-              saveAbcLists(null);
-              toast({ title: 'ABC lists reset', description: 'The default antecedents, behaviors and consequences are back.' });
-            }}
+            onClick={reset}
           >
             <RotateCcw className="mr-2 h-4 w-4" /> Reset to Defaults
           </Button>

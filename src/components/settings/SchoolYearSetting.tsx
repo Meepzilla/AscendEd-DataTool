@@ -9,6 +9,8 @@ import { getSchoolYearSetting, schoolYearRange, setSchoolYearSetting } from '@/l
 export default function SchoolYearSetting() {
   const [first, setFirst] = useState('');
   const [last, setLast] = useState('');
+  // Whether the last save failed: the dates still apply for this visit, but they won't be kept.
+  const [saveFailed, setSaveFailed] = useState(false);
 
   const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   useEffect(() => {
@@ -20,10 +22,10 @@ export default function SchoolYearSetting() {
   // Only the month and day are kept: the dates repeat each school year.
   const save = (nextFirst: string, nextLast: string) => {
     const current = getSchoolYearSetting();
-    setSchoolYearSetting({
+    setSaveFailed(!setSchoolYearSetting({
       start: nextFirst ? nextFirst.slice(5) : current.start,
       end: nextLast ? nextLast.slice(5) : current.end,
-    });
+    }));
   };
 
   return (
@@ -35,6 +37,11 @@ export default function SchoolYearSetting() {
           profiles, and School year to date on the Progress Report. The month and day repeat each year. Saved on this
           device only.
         </p>
+        {saveFailed && (
+          <p className="text-sm text-destructive" role="alert">
+            The school year could not be saved on this device (storage is full or unavailable), so it applies for this visit only.
+          </p>
+        )}
       </div>
       <div className="flex flex-wrap gap-3 [&_input]:block [&_input]:w-40 [&_input]:appearance-none">
         <div className="space-y-1">
