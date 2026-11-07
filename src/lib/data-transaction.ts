@@ -22,11 +22,30 @@ export const MAIN_LIST_KEYS: MainListKey[] = ['students', 'goalTemplates', 'sess
 /** BroadcastChannel name posted after a verified save of any of the three lists. */
 export const DATA_CHANGED_CHANNEL = 'ascended-data-changed';
 
+/**
+ * Identifies this tab in data-changed messages. A BroadcastChannel message is delivered to every
+ * other channel object with the same name, including a different channel object in the same tab,
+ * so the listener must be able to tell its own tab's saves apart from another tab's.
+ */
+const TAB_ID: string = (() => {
+  try {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  } catch {
+    // Fall through to the random fallback below.
+  }
+  return `tab-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+})();
+
+/** Whether a received data-changed message was posted by this tab's own save. */
+export function isOwnDataChangedMessage(data: unknown): boolean {
+  return !!data && typeof data === 'object' && (data as { senderId?: unknown }).senderId === TAB_ID;
+}
+
 /** Posts a data-changed message for other tabs. Only call after the write has landed. */
 export function postDataChanged() {
   try {
     if (typeof BroadcastChannel !== 'undefined') {
-      new BroadcastChannel(DATA_CHANGED_CHANNEL).postMessage({ type: 'data-changed', at: Date.now() });
+      new BroadcastChannel(DATA_CHANGED_CHANNEL).postMessage({ type: 'data-changed', senderId: TAB_ID, at: Date.now() });
     }
   } catch {
     // Another tab simply will not reload; this tab's data is still stored.
