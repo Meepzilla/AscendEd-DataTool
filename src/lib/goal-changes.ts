@@ -30,6 +30,12 @@ const formatTarget = (v: unknown): string => {
   return n === undefined ? 'No target' : String(n);
 };
 
+/** A baseline: a number, or "Not set" (not "No target", which is the target's wording). */
+const formatBaseline = (v: unknown): string => {
+  const n = toNumber(v);
+  return n === undefined ? NOT_SET : String(n);
+};
+
 const formatDirection = (v: unknown): string => {
   if (v === 'decrease') return 'Decrease (target is a maximum)';
   if (v === 'increase') return 'Increase (target is a minimum)';
@@ -103,7 +109,7 @@ export function assignedGoalChanges(original: Goal, values: AssignedGoalFormValu
       if (normText(desc) !== normText(originalGas[i])) {
         changes.push({
           label: `Level ${formatGasLevel(i - 2)} description`,
-          from: normText(originalGas[i]) || BLANK,
+          from: truncate(normText(originalGas[i]) || BLANK, 80),
           to: truncate(normText(desc) || BLANK, 80),
         });
       }
@@ -116,8 +122,8 @@ export function assignedGoalChanges(original: Goal, values: AssignedGoalFormValu
   if (values.targetDate !== undefined && formatDate(values.targetDate) !== formatDate(original.targetDate)) {
     changes.push({ label: 'Target date', from: formatDate(original.targetDate), to: formatDate(values.targetDate) });
   }
-  if (values.baseline !== undefined && formatTarget(values.baseline) !== formatTarget(original.baseline)) {
-    changes.push({ label: 'Baseline', from: formatTarget(original.baseline), to: formatTarget(values.baseline) });
+  if (values.baseline !== undefined && formatBaseline(values.baseline) !== formatBaseline(original.baseline)) {
+    changes.push({ label: 'Baseline', from: formatBaseline(original.baseline), to: formatBaseline(values.baseline) });
   }
   if (values.baselineDate !== undefined && formatDate(values.baselineDate) !== formatDate(original.baselineDate)) {
     changes.push({ label: 'Baseline date', from: formatDate(original.baselineDate), to: formatDate(values.baselineDate) });

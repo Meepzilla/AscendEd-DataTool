@@ -227,8 +227,11 @@ export function classifyGoal(text: string, area = ''): { type: GoalType } {
   const a = area.toLowerCase();
   const opportunities = has(t, /\d+\s+(?:out\s+)?of\s+\d+/, /\d+\s*\/\s*\d+\s+(?:opportunit|trials|attempts)/, /\d+\s*%/, /accuracy/);
 
-  // Named as a GAS goal ("goal attainment scale", "GAS", "attainment level"): the scale is what is measured.
-  if (has(t, /\bgoal attainment scal|\battainment level\b|\bgas\b/)) return { type: 'GOAL_ATTAINMENT_SCALE' };
+  // Named as a GAS goal ("goal attainment scale", "attainment level", or "GAS" in capitals): the scale is what is
+  // measured. The word "gas" in ordinary text ("signs such as gas, poison and exit") is not; nor is "GAS" in a goal
+  // written all in capitals.
+  const namesGas = /\bGAS\b/.test(text) && text !== text.toUpperCase();
+  if (has(t, /\bgoal attainment scal|\battainment level\b/) || namesGas) return { type: 'GOAL_ATTAINMENT_SCALE' };
   if (has(t, /replacement (skill|behavior)/)) return { type: 'BEHAVIOR_ABC' };
   if (has(t, /\b(aggress|tantrum|elop|self-injur|hitting|kicking|disruptive|problem behavior)/) && has(t, /\b(reduce|decrease|no more than|fewer than)\b/)) {
     return { type: 'BEHAVIOR_FREQUENCY' };

@@ -7,7 +7,7 @@ import {
 import { goalMeasure, goalMeasureInfo, goalNotes, goalResponses, meetsTarget, promptTotals, usesPromptCounters, withoutRunningTimers } from './goal-measures';
 import { compareSessionsOldestFirst, formatDate, formatDateOnly, formatGoalTarget, goalTypeLabel, plural } from './helpers';
 import { timePatterns, TIMING_MEASURE_LABELS, WEEKDAY_NAMES } from './behavior-timing';
-import { gasLevelLabel } from './gas';
+import { formatGasLevel, gasLevelLabel } from './gas';
 import type { TaskStepScore } from './task-analysis';
 import { AIM_RULE_SESSIONS, aimLine, aimStatus, aimValueAt, masterySessions, type AimLine, type AimStatus } from './aim-line';
 
@@ -52,6 +52,12 @@ function measureName(goal: Goal): string {
     case 'GOAL_ATTAINMENT_SCALE': return 'the attainment level';
     default: return 'accuracy';
   }
+}
+
+/** Like formatValue, but a GAS level is just its number: used inside brackets and ranges, where the level's
+ *  wording in brackets would nest ("range -2 (much less than expected) to +1 (...)"). */
+function formatValueShort(goal: Goal, value: number): string {
+  return captureTypeOf(goal) === 'GOAL_ATTAINMENT_SCALE' ? formatGasLevel(round(value)) : formatValue(goal, value);
 }
 
 /** A value with the goal's unit, e.g. "72%", "3.5 min", "4 out of 5"; counts are plain numbers. */
@@ -209,9 +215,9 @@ function aimSentence(name: string, a: GoalAnalysis): string | null {
 
 function trendSentence(name: string, a: GoalAnalysis): string {
   const { kind, from, to } = a.trend;
-  const span = `from about ${formatValue(a.goal, from)} at the start of the period to about ${formatValue(a.goal, to)} at the end`;
+  const span = `from about ${formatValueShort(a.goal, from)} at the start of the period to about ${formatValueShort(a.goal, to)} at the end`;
   if (kind === 'too few') return '';
-  if (kind === 'stable') return `${name}'s performance stayed fairly steady over the period (about ${formatValue(a.goal, avg([from, to]))}).`;
+  if (kind === 'stable') return `${name}'s performance stayed fairly steady over the period (about ${formatValueShort(a.goal, avg([from, to]))}).`;
   return `Across all sessions, the trend went ${span}, ${kind === 'improving' ? 'showing progress toward the goal' : 'moving away from the goal'}.`;
 }
 
@@ -320,11 +326,12 @@ function detailSentences(name: string, goal: Goal, data: Record<string, any>[]):
   if (type === 'GOAL_ATTAINMENT_SCALE') {
     // The T-score is a per-student composite over all GAS goals, so it is not computed here; the
     // GAS section of the analysis report shows it. This branch names the per-goal picture.
+    // The latest level, and how many sessions met the target, are already stated with every goal type's
+    // summary, so this only names what 0 means when the target isn't 0 (where "met" differs from "expected").
     const levels = data.map(d => goalMeasure(goal, d)).filter((v): v is number => v !== null);
-    if (levels.length) {
-      const latest = levels[levels.length - 1];
+    if (levels.length && Number(goal.sessionTargetValue ?? 0) !== 0) {
       const atOrAbove = levels.filter(v => v >= 0).length;
-      lines.push(`The most recent attainment level was ${gasLevelLabel(latest)} (0 is the expected outcome). ${name} reached or exceeded the expected level in ${atOrAbove} of ${plural(levels.length, 'session')}.`);
+      lines.push(`${name} reached or exceeded the expected outcome (level 0) in ${atOrAbove} of ${plural(levels.length, 'session')}.`);
     }
   }
 
@@ -419,7 +426,7 @@ function timingSentence(type: string, recorded: { session: SessionData; data: Re
 
 function goalHeading(a: GoalAnalysis): string {
   const type = captureTypeOf(a.goal);
-  return `Goal ${a.number}: ${a.goal.name} (${goalTypeLabel(type)}${a.target !== undefined ? `; target ${formatGoalTarget(type, a.target, a.goal.targetDirection)}` : ''})`;
+  return `Goal ${a.number}: ${a.goal.name} (${goalTypeLabel(type)}${a.target !== undefined ? `; target ${type === 'GOAL_ATTAINMENT_SCALE' ? `level ${formatGasLevel(a.target)}` : formatGoalTarget(type, a.target, a.goal.targetDirection)}` : ''})`;
 }
 
 function targetSentence(a: GoalAnalysis): string | null {
@@ -448,7 +455,7 @@ function goalParagraph(name: string, a: GoalAnalysis, options: Required<Narrativ
   if (a.values.length === 1) {
     sentences.push(`Data were recorded in 1 session (${formatDateOnly(a.latest.date)}). ${capitalized} was ${formatValue(goal, a.latest.value)}.`);
   } else {
-    const range = round(a.low) === round(a.high) ? 'the same in every session' : `range ${formatValue(goal, a.low)} to ${formatValue(goal, a.high)}`;
+    const range = round(a.low) === round(a.high) ? 'the same in every session' : `range ${formatValueShort(goal, a.low)} to ${formatValueShort(goal, a.high)}`;
     sentences.push(`Across ${a.values.length} sessions with data, ${measure} averaged ${formatValue(goal, a.average)} (${range}).`);
     sentences.push(`In the most recent session${a.latestUnanswered ? ' with a response' : ''} (${formatDateOnly(a.latest.date)}), ${measure} was ${formatValue(goal, a.latest.value)}.`);
   }

@@ -18,6 +18,20 @@ interface ChangelogEntry {
 
 const allChangelogEntries: ChangelogEntry[] = [
   {
+    date: '2026-11-07',
+    title: 'Safer Saving with a Passcode, and Across Tabs',
+    description: 'Turning the passcode on now encrypts every saved student, goal and session, not only new saves, and a device that already holds student data is no longer treated as a fresh install. Turning the passcode off is refused while any list can\'t be read, so the key is never removed from data that still needs it, and a failed attempt no longer leaves records locked. A recovery key now also covers records saved under an older passcode. A storage read that fails for a moment (common on iPad) is no longer treated as damaged data: the app asks you to close and reopen it instead of restoring a backup over good data. Saves made in two open tabs at once are no longer lost, the app asks the browser to keep its storage, and the "couldn\'t save" notice clears only after the save has really finished.',
+    type: 'fix',
+    icon: ShieldCheck,
+  },
+  {
+    date: '2026-11-07',
+    title: 'Merged Sessions, CSV Attendance and GAS Fixes',
+    description: 'Merging sessions no longer erases a task analysis step, text field or rating that an earlier part recorded and a later part left empty. Importing a session CSV keeps "Missed" attendance with its reason. Backups with a blank created date restore those students and templates instead of skipping them. For Goal Attainment Scale goals: the progress sidebar shows progress from -2 toward the target instead of 0% or a negative value; the goal text\'s percentage is no longer rewritten to "0%"; importing goals no longer treats the word "gas" (as in "gas, poison and exit") as a GAS goal; chart dates no longer show a day early; the T-score uses all of the student\'s GAS goals and earlier levels whatever date range is chosen; the GAS target is kept to the -2 to +2 scale, and other goal types can no longer save a negative baseline. The progress summary no longer repeats the GAS level or nests brackets.',
+    type: 'fix',
+    icon: Target,
+  },
+  {
     date: '2026-11-06',
     title: 'Larger Goal Editor on Tablet and a Changes Summary',
     description: 'Both goal editors, a student goal from their profile and a goal template from the templates page, now open wider on tablet instead of the narrow 576px window. Each editor also lists what saving will change, old value to new value, above the Save button: session target, baseline, target date, data capture method, goal direction, task steps, GAS level descriptions, blank fills and the goal text itself. Nothing shows when nothing changed.',

@@ -35,6 +35,17 @@ export function gasLevelLabel(level: number): string {
   return info ? `${formatGasLevel(level)} (${info.description.toLowerCase()})` : formatGasLevel(level);
 }
 
+/**
+ * Progress (0-100) toward a GAS target, from the bottom of the scale (-2): with the usual target of 0 (the expected
+ * outcome), level 0 or above is 100, -1 is 50 and -2 is 0. Never negative.
+ */
+export function gasProgress(level: number, target = 0): number {
+  const floor = -2;
+  if (level >= target) return 100;
+  if (target <= floor) return 0;
+  return Math.max(0, Math.min(100, ((level - floor) / (target - floor)) * 100));
+}
+
 /** The correlation between goals in the T-score formula (Kiresuk & Sherman). */
 export const GAS_RHO = 0.3;
 

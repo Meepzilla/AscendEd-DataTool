@@ -85,8 +85,12 @@ describe.skipIf(!gasMeasureWired)('GAS goal through analyzeGoal (buildProgressRe
   it('names the current level and sessions at or above expected in the narrative', () => {
     const text = buildNarrative({ student, goals: [goal], sessions });
     expect(text).toContain('the attainment level averaged -0.5');
-    expect(text).toContain('most recent attainment level was +1 (somewhat more than expected)');
-    expect(text).toContain('reached or exceeded the expected level in 2 of 4 sessions');
+    expect(text).toContain('the attainment level was +1 (somewhat more than expected).');
+    // The latest level is stated once, with no doubled brackets.
+    expect(text.match(/somewhat more than expected/g)).toHaveLength(1);
+    expect(text).not.toMatch(/\) \(/);
+    expect(text).toContain('The target was met in 2 of 4 sessions');
+    expect(text).toContain('range -2 to +1');
   });
 
   it('treats a recorded 0 as a real value, not no data', () => {
