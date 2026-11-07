@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-07',
+    title: 'Readable GAS Goal Charts',
+    description: 'On a GAS goal\'s report card the level wording no longer crowds the side of the chart, where it wrapped onto itself on a tablet. The chart now shows just the levels (+2 to -2), joined with straight lines, and a key under it lists what each level means for that goal, in its own written descriptions where set. The "Sessions at each attainment level" bars are labeled by level, highest first, and every bar chart\'s labels now stay on one line, shortened to fit, with the full label on hover.',
+    type: 'fix',
+    icon: BarChartHorizontalBig,
+  },
+  {
+    date: '2026-11-07',
     title: 'Safer Saving with a Passcode, and Across Tabs',
     description: 'Turning the passcode on now encrypts every saved student, goal and session, not only new saves, and a device that already holds student data is no longer treated as a fresh install. Turning the passcode off is refused while any list can\'t be read, so the key is never removed from data that still needs it, and a failed attempt no longer leaves records locked. A recovery key now also covers records saved under an older passcode. A storage read that fails for a moment (common on iPad) is no longer treated as damaged data: the app asks you to close and reopen it instead of restoring a backup over good data. Saves made in two open tabs at once are no longer lost, the app asks the browser to keep its storage, and the "couldn\'t save" notice clears only after the save has really finished.',
     type: 'fix',
