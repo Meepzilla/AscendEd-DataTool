@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isMainListStorageKey, runListTransactionAsync, type AsyncListTransactionStore, type MainListKey } from '../data-transaction';
+import { DATA_CHANGED_CHANNEL, isMainListStorageKey, isOwnDataChangedMessage, postDataChanged, runListTransactionAsync, type AsyncListTransactionStore, type MainListKey } from '../data-transaction';
 
 // An in-memory store for the transaction helper: writes can be made to fail per list,
 // and reads can be made to disagree with what was written (a failed verify). Every
@@ -105,5 +105,37 @@ describe('multi-tab storage events', () => {
     expect(isMainListStorageKey(null, keys)).toBe(true);
     expect(isMainListStorageKey('ascended_abc_lists', keys)).toBe(false);
     expect(isMainListStorageKey('ascended_display_scale', keys)).toBe(false);
+  });
+});
+
+describe('data-changed messages ignore this tab\'s own saves', () => {
+  it('a message from another tab, or from an older app version without a sender id, is not this tab\'s own', () => {
+    expect(isOwnDataChangedMessage({ type: 'data-changed', senderId: 'some-other-tab', at: 1 })).toBe(false);
+    expect(isOwnDataChangedMessage({ type: 'data-changed', at: 1 })).toBe(false);
+    expect(isOwnDataChangedMessage(null)).toBe(false);
+    expect(isOwnDataChangedMessage('data-changed')).toBe(false);
+  });
+
+  // BroadcastChannel delivers a message to every other channel object with the same
+  // name, including a different channel object in the same tab, so this is the
+  // behaviour the sender id exists to guard against: without the check, a tab
+  // reloads itself after every save and shows "Data changed in another tab".
+  it('postDataChanged reaches another channel object in the same tab, carrying this tab\'s sender id', async () => {
+    if (typeof BroadcastChannel === 'undefined') return;
+    const received = new Promise<unknown>((resolve, reject) => {
+      const listener = new BroadcastChannel(DATA_CHANGED_CHANNEL);
+      const timer = setTimeout(() => {
+        listener.close();
+        reject(new Error('no data-changed message arrived'));
+      }, 1000);
+      listener.onmessage = (event) => {
+        clearTimeout(timer);
+        listener.close();
+        resolve(event.data);
+      };
+    });
+    postDataChanged();
+    const data = await received;
+    expect(isOwnDataChangedMessage(data)).toBe(true);
   });
 });
