@@ -35,6 +35,24 @@ export function gasLevelLabel(level: number): string {
   return info ? `${formatGasLevel(level)} (${info.description.toLowerCase()})` : formatGasLevel(level);
 }
 
+/**
+ * What a level means for one goal: the goal's own written description where set (an entry in
+ * gasLevelDescriptions, index level + 2), falling back to the generic description. This is the
+ * goal-specific value representation: reports show this instead of the generic label.
+ */
+export function gasLevelDescription(goal: { gasLevelDescriptions?: string[] }, level: number): string {
+  const custom = goal.gasLevelDescriptions?.[level + 2];
+  if (typeof custom === 'string' && custom.trim() !== '') return custom.trim();
+  return GAS_LEVEL_BY_VALUE[level]?.description ?? '';
+}
+
+/** A level as shown for one goal: "+1 (Uses targeted words on their own...)", or the generic label when the goal has no description for that level. */
+export function gasLevelText(goal: { gasLevelDescriptions?: string[] }, level: number): string {
+  const custom = goal.gasLevelDescriptions?.[level + 2];
+  if (typeof custom === 'string' && custom.trim() !== '') return `${formatGasLevel(level)} (${custom.trim()})`;
+  return gasLevelLabel(level);
+}
+
 /** The correlation between goals in the T-score formula (Kiresuk & Sherman). */
 export const GAS_RHO = 0.3;
 

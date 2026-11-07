@@ -4,7 +4,7 @@ import React from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { FormItem, FormLabel, type GoalInputContext } from './shared';
-import { GAS_LEVELS, formatGasLevel, type GasLevel } from '@/lib/gas';
+import { GAS_LEVELS, formatGasLevel, gasLevelDescription, type GasLevel } from '@/lib/gas';
 
 // Data Entry inputs for Goal Attainment Scaling (see goal-data-input.tsx, which picks the inputs for a goal's type).
 // Level labels and descriptions live in src/lib/gas.ts; this file only renders them.
@@ -15,11 +15,7 @@ import { GAS_LEVELS, formatGasLevel, type GasLevel } from '@/lib/gas';
  * left blank. Blank entries fall back per level, not all-or-nothing.
  */
 export function gasLevelDescriptions(goal: GoalInputContext['goal']): string[] {
-  const custom = (goal as { gasLevelDescriptions?: string[] }).gasLevelDescriptions;
-  return GAS_LEVELS.map((info, i) => {
-    const text = Array.isArray(custom) ? custom[i] : undefined;
-    return typeof text === 'string' && text.trim() !== '' ? text.trim() : info.description;
-  });
+  return GAS_LEVELS.map((info) => gasLevelDescription(goal, info.level));
 }
 
 /** Goal Attainment Scaling: a five-level picker, the level descriptions in full, and notes. */

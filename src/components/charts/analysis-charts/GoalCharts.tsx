@@ -16,6 +16,9 @@ import StatTile from './StatTile';
 import { goalStatExplanations } from '@/lib/report-formulas';
 import type { TaskStepScore } from '@/lib/task-analysis';
 import { AIM_STATUS_LABELS, aimLine, aimStatus, aimValueAt, masterySessions } from '@/lib/aim-line';
+import ExpandableGoalName from './ExpandableGoalName';
+import { gasLevelText } from '@/lib/gas';
+import type { StudentIep } from '@/lib/types';
 
 // A report card for each goal: its measure per session against the target, summary numbers, and a
 // breakdown that fits the goal type (responses, prompt levels, story parts, communication functions,
@@ -24,6 +27,8 @@ import { AIM_STATUS_LABELS, aimLine, aimStatus, aimValueAt, masterySessions } fr
 interface GoalChartsProps {
   studentSessions: SessionData[]; // oldest first
   goals: Goal[];
+  studentName?: string;
+  studentIep?: StudentIep;
 }
 
 const round = (n: number) => Math.round(n * 10) / 10;
@@ -157,13 +162,17 @@ const GoalBreakdowns: React.FC<{ goal: Goal; recorded: Recorded[] }> = ({ goal, 
     );
   }
   if (type === 'GOAL_ATTAINMENT_SCALE') {
-    // All five levels, including zeros, so the distribution is visible at a glance.
+    // All five levels, including zeros, so the distribution is visible at a glance. The row names
+    // use this goal's own level descriptions where written, so the values read as the goal's scale.
     panels.push(
       <HBars key="gas-levels" title="Sessions at each attainment level" series={COUNT_SERIES}
-        rows={GAS_LEVELS.map(level => ({
-          name: gasLevelTick(level),
-          count: recorded.filter(r => r.value === level).length,
-        }))} />,
+        rows={GAS_LEVELS.map(level => {
+          const custom = goal.gasLevelDescriptions?.[level + 2]?.trim();
+          return {
+            name: custom ? `${level > 0 ? `+${level}` : level} — ${custom.length > 40 ? `${custom.slice(0, 40)}…` : custom}` : gasLevelTick(level),
+            count: recorded.filter(r => r.value === level).length,
+          };
+        })} />,
     );
   }
   if (type === 'BEHAVIOR_ABC') {
@@ -184,13 +193,20 @@ const GoalBreakdowns: React.FC<{ goal: Goal; recorded: Recorded[] }> = ({ goal, 
   return <div className="grid grid-cols-1 md:grid-cols-3 gap-4">{panels}</div>;
 };
 
-const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[] }> = ({ goal, sessions }) => {
+const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName?: string; studentIep?: StudentIep }> = ({ goal, sessions, studentName, studentIep }) => {
   const info = goalMeasureInfo(goal);
   const type = captureTypeOf(goal);
   const direction = goalDirection(goal);
   const target = goal.sessionTargetValue;
   const recorded = useMemo(() => recordedSessions(goal, sessions), [goal, sessions]);
   const behaviorRecorded = useMemo(() => recordedSessions(goal, sessions, true), [goal, sessions]);
+  // GAS axis ticks use this goal's own level descriptions where written (shortened to fit the axis),
+  // falling back to the generic short labels.
+  const gasTick = (level: number) => {
+    const custom = goal.gasLevelDescriptions?.[level + 2]?.trim();
+    if (custom) return `${level > 0 ? `+${level}` : level} ${custom.length > 28 ? `${custom.slice(0, 28)}…` : custom}`;
+    return gasLevelTick(level);
+  };
 
   // The aim line (baseline to target by the target date), as the value expected on each session's date.
   const aim = aimLine(goal, recorded[0]?.session.date);
@@ -226,7 +242,7 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[] }> = ({ goal
   return (
     <Card className="lg:col-span-2">
       <CardHeader>
-        <CardTitle>{goal.name}</CardTitle>
+        <CardTitle><ExpandableGoalName goal={goal} studentName={studentName} studentIep={studentIep} /></CardTitle>
         <CardDescription>
           {goalTypeLabel(type)} · {info.label} per session
           {target !== undefined && ` · Target ${formatGoalTarget(type, target, goal.targetDirection)}`}
@@ -252,9 +268,24 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[] }> = ({ goal
                   <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} />
                   <YAxis domain={[info.min ?? 0, yMax]} unit={info.unit === '%' ? '%' : undefined} tickLine={false} axisLine={false} tickMargin={8}
                     ticks={isGas ? [...GAS_LEVELS] : (info.max !== undefined && info.max <= 10 ? Array.from({ length: info.max + 1 }, (_, i) => i) : undefined)}
-                    tickFormatter={isGas ? gasLevelTick : undefined}
+                    tickFormatter={isGas ? gasTick : undefined}
                     allowDecimals={type === 'BEHAVIOR_DURATION' || type === 'BEHAVIOR_LATENCY'} />
-                  <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
+                  {isGas ? (
+                    <ChartTooltip
+                      content={({ active, payload, label }: any) => {
+                        if (!active || !payload?.length) return null;
+                        const value = payload[0].payload.value as number;
+                        return (
+                          <div className="rounded-lg border bg-background px-3 py-2 text-xs shadow-md">
+                            <p className="font-medium">{label}</p>
+                            <p>{gasLevelText(goal, value)}</p>
+                          </div>
+                        );
+                      }}
+                    />
+                  ) : (
+                    <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
+                  )}
                   {isGas ? (
                     <ReferenceLine y={0} stroke="hsl(var(--chart-5))" strokeDasharray="6 4"
                       label={{ value: 'Expected', position: 'insideTopRight', fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
@@ -309,9 +340,9 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[] }> = ({ goal
   );
 };
 
-const GoalCharts: React.FC<GoalChartsProps> = ({ studentSessions, goals }) => (
+const GoalCharts: React.FC<GoalChartsProps> = ({ studentSessions, goals, studentName, studentIep }) => (
   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    {goals.map(goal => <GoalChartCard key={goal.id} goal={goal} sessions={studentSessions} />)}
+    {goals.map(goal => <GoalChartCard key={goal.id} goal={goal} sessions={studentSessions} studentName={studentName} studentIep={studentIep} />)}
   </div>
 );
 

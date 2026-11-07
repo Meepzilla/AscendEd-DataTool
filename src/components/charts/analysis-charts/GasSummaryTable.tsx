@@ -7,16 +7,31 @@ import { goalMeasure, withoutRunningTimers } from '@/lib/goal-measures';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { gasLevelShortLabel } from './GasTScoreLineChart';
+import ExpandableGoalName from './ExpandableGoalName';
+import type { StudentIep } from '@/lib/types';
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
 
-/** A level with its label, e.g. "+1 (Somewhat more)"; averages show a plain signed number. */
-function levelText(level: number | null, withLabel = true): string {
-  if (level === null || !Number.isFinite(level)) return '—';
+/**
+ * A baseline or current level for one goal: the signed number, with the goal's own written
+ * description for that level underneath where one is set, or the generic short label beside it.
+ * Averages show a plain signed number (an average is not a level).
+ */
+function LevelCell({ goal, level }: { goal: Goal; level: number | null }) {
+  if (level === null || !Number.isFinite(level)) return <>—</>;
   const signed = level > 0 ? `+${round1(level)}` : String(round1(level));
-  if (!withLabel || !Number.isInteger(level)) return signed;
+  if (!Number.isInteger(level)) return <>{signed}</>;
+  const custom = goal.gasLevelDescriptions?.[level + 2]?.trim();
+  if (custom) {
+    return (
+      <>
+        <span className="block">{signed}</span>
+        <span className="block text-xs text-muted-foreground">{custom}</span>
+      </>
+    );
+  }
   const label = gasLevelShortLabel(level);
-  return label ? `${signed} (${label})` : signed;
+  return <>{label ? `${signed} (${label})` : signed}</>;
 }
 
 /** The recorded level for one session's data: the goal measure once Track A wires it, falling back to the stored gasLevel. */
@@ -30,13 +45,15 @@ function recordedLevel(goal: Goal, data: Record<string, any>): number | null {
 interface GasSummaryTableProps {
   sessions: SessionData[]; // oldest first
   goals: Goal[]; // the student's GAS goals in view
+  studentName?: string;
+  studentIep?: StudentIep;
 }
 
 /**
  * One row per GAS goal — baseline, current level, sessions recorded, average level, sessions
  * at or above expected — with the student's latest and average T-score in the header.
  */
-const GasSummaryTable: React.FC<GasSummaryTableProps> = ({ sessions, goals }) => {
+const GasSummaryTable: React.FC<GasSummaryTableProps> = ({ sessions, goals, studentName, studentIep }) => {
   const rows = useMemo(() => goals.map(goal => {
     const levels: number[] = [];
     for (const session of sessions) {
@@ -88,11 +105,11 @@ const GasSummaryTable: React.FC<GasSummaryTableProps> = ({ sessions, goals }) =>
           <TableBody>
             {rows.map(row => (
               <TableRow key={row.goal.id}>
-                <TableCell className="font-medium">{row.goal.name}</TableCell>
-                <TableCell>{levelText(row.baseline)}</TableCell>
-                <TableCell>{levelText(row.current)}</TableCell>
+                <TableCell className="font-medium"><ExpandableGoalName goal={row.goal} studentName={studentName} studentIep={studentIep} /></TableCell>
+                <TableCell><LevelCell goal={row.goal} level={row.baseline} /></TableCell>
+                <TableCell><LevelCell goal={row.goal} level={row.current} /></TableCell>
                 <TableCell>{row.sessions}</TableCell>
-                <TableCell>{row.average === null ? '—' : levelText(round1(row.average), false)}</TableCell>
+                <TableCell>{row.average === null ? '—' : (row.average > 0 ? `+${round1(row.average)}` : String(round1(row.average)))}</TableCell>
                 <TableCell>{row.sessions ? `${row.atOrAbove} of ${row.sessions}` : '—'}</TableCell>
               </TableRow>
             ))}

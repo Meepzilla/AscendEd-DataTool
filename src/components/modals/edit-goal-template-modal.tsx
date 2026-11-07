@@ -16,6 +16,7 @@ import { useStudentData } from '@/hooks/use-student-data';
 import { GoalTemplateSchema, GoalType, type GoalTemplate } from '@/lib/types';
 import { GOAL_TYPES, GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 import TargetDirectionField from './TargetDirectionField';
+import GasLevelDescriptionsField from './GasLevelDescriptionsField';
 import GoalChangeSummary from './GoalChangeSummary';
 import { goalTemplateChanges } from '@/lib/goal-changes';
 import { goalTypeLabel } from '@/lib/helpers';
@@ -45,6 +46,7 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
       dataCaptureType: Object.keys(GOAL_TYPE_FIELDS)[0] as GoalType,
       smartGoalPrompt: '',
       generatedSmartGoal: '',
+      gasLevelDescriptions: [],
       sessionTargetValue: undefined,
     },
   });
@@ -61,6 +63,7 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
         dataCaptureType: currentTemplate.dataCaptureType || currentTemplate.type,
         smartGoalPrompt: currentTemplate.smartGoalPrompt,
         generatedSmartGoal: currentTemplate.generatedSmartGoal,
+        gasLevelDescriptions: Array.from({ length: 5 }, (_, i) => currentTemplate.gasLevelDescriptions?.[i] ?? ''),
         sessionTargetValue: currentTemplate.sessionTargetValue,
         targetDirection: currentTemplate.targetDirection,
       });
@@ -78,9 +81,12 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
   const onSubmit = async (data: EditGoalTemplateFormData) => {
     if (!currentTemplate) return;
     setIsSubmitting(true);
-    await updateGoalTemplate(currentTemplate.id, data);
+    // Five level descriptions, one per level from -2 to +2; all blank means no custom descriptions.
+    const descriptions = Array.from({ length: 5 }, (_, i) => (data.gasLevelDescriptions?.[i] ?? '').trim());
+    const gasLevelDescriptions = descriptions.some(Boolean) ? descriptions : undefined;
+    await updateGoalTemplate(currentTemplate.id, { ...data, gasLevelDescriptions });
     setIsSubmitting(false);
-    closeEditGoalTemplateModal(); 
+    closeEditGoalTemplateModal();
   };
 
   if (!currentTemplate) return null;
@@ -91,7 +97,7 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
       onClose={closeEditGoalTemplateModal}
       title={`Edit Goal Template: ${currentTemplate.name}`}
       description="Changes apply to this template, the starting point for goals assigned from now on. Goals already assigned to students don't change; edit a student's goal from their profile to change it for that student."
-      size="xl"
+      size="3xl"
     >
       <Form {...form}>
         <form 
@@ -220,6 +226,13 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
           />
 
           <TargetDirectionField control={form.control} goalType={form.watch('dataCaptureType') || form.watch('type')} />
+
+          {(form.watch('dataCaptureType') || form.watch('type')) === 'GOAL_ATTAINMENT_SCALE' && (
+            <GasLevelDescriptionsField
+              values={form.watch('gasLevelDescriptions') ?? []}
+              onChange={next => form.setValue('gasLevelDescriptions', next, { shouldDirty: true })}
+            />
+          )}
 
           <FormField
             control={form.control}

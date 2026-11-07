@@ -18,9 +18,9 @@ import { useToast } from '@/hooks/use-toast';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
-import { GAS_LEVELS, formatGasLevel } from '@/lib/gas';
 import TargetDirectionField from './TargetDirectionField';
 import GoalChangeSummary from './GoalChangeSummary';
+import GasLevelDescriptionsField from './GasLevelDescriptionsField';
 import { assignedGoalChanges } from '@/lib/goal-changes';
 import { goalStatement, goalTypeLabel } from '@/lib/helpers';
 import { automaticBlankValues, findBlanks } from '@/lib/goal-blanks';
@@ -112,7 +112,7 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
       onClose={onClose}
       title={`Edit Assigned Goal: ${goalToEdit?.name}`}
       description={`Changes apply only to ${studentName ?? 'this student'}. The goal template and other students with this goal stay as they are.`}
-      size="xl"
+      size="3xl"
     >
       <Form {...form}>
         <form
@@ -219,7 +219,10 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
           )}
 
           {(form.watch('dataCaptureType') || goalToEdit?.type) === 'GOAL_ATTAINMENT_SCALE' && (
-            <GasLevelDescriptions form={form} />
+            <GasLevelDescriptionsField
+              values={form.watch('gasLevelDescriptions') ?? []}
+              onChange={next => form.setValue('gasLevelDescriptions', next, { shouldDirty: true })}
+            />
           )}
 
           <TargetDirectionField control={form.control} goalType={form.watch('dataCaptureType') || goalToEdit?.type} />
@@ -395,43 +398,6 @@ function BlankFills({ form }: { form: ReturnType<typeof useForm<EditAssignedGoal
   );
 }
 
-/**
- * Goal Attainment Scaling: one optional text field per level (-2 to +2) describing what that level means
- * for this goal. A level left blank uses the generic label in Data Entry and reports.
- */
-function GasLevelDescriptions({ form }: { form: ReturnType<typeof useForm<EditAssignedGoalFormData>> }) {
-  const values = form.watch('gasLevelDescriptions') ?? [];
-  const setDescription = (index: number, value: string) => {
-    const next = Array.from({ length: 5 }, (_, i) => values[i] ?? '');
-    next[index] = value;
-    form.setValue('gasLevelDescriptions', next, { shouldDirty: true });
-  };
-  return (
-    <fieldset className="space-y-2 rounded-md border p-3">
-      <legend className="px-1 text-sm font-medium">Level Descriptions (Optional)</legend>
-      <p className="text-xs text-muted-foreground">
-        What each attainment level means for this goal. Data Entry shows these under the level picker; a level left
-        blank uses its generic label instead.
-      </p>
-      {GAS_LEVELS.map(info => {
-        const index = info.level + 2;
-        return (
-          <div key={info.level} className="space-y-1">
-            <label htmlFor={`gas-level-${info.level}`} className="block text-xs text-muted-foreground">
-              {formatGasLevel(info.level)} — {info.description}
-            </label>
-            <Input
-              id={`gas-level-${info.level}`}
-              value={values[index] ?? ''}
-              placeholder={info.description}
-              onChange={e => setDescription(index, e.target.value)}
-            />
-          </div>
-        );
-      })}
-    </fieldset>
-  );
-}
 
 /**
  * The goal as it will be shown: blanks filled, the stated target ("80%", "4 out of 5") and consecutive sessions
