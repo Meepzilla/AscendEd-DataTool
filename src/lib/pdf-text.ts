@@ -38,11 +38,13 @@ const loadPdfJs = createCachedLoader(async (): Promise<PdfJs> => {
 /** Lines of text on each page. Throws if the file isn't a PDF or has no text (a scan). */
 export async function readPdfLines(data: Uint8Array): Promise<string[][]> {
   const lib = await loadPdfJs();
+  // A copy: pdf.js takes over the buffer it is given.
+  const task = lib.getDocument({ data: data.slice(), useSystemFonts: false, disableFontFace: true });
   let doc;
   try {
-    // A copy: pdf.js takes over the buffer it is given.
-    doc = await lib.getDocument({ data: data.slice(), useSystemFonts: false, disableFontFace: true }).promise;
+    doc = await task.promise;
   } catch {
+    void task.destroy();
     throw new Error('This file couldn\'t be read as a PDF.');
   }
   try {
@@ -56,7 +58,8 @@ export async function readPdfLines(data: Uint8Array): Promise<string[][]> {
     if (!pages.some(lines => lines.length > 0)) throw new Error('This PDF has no text to read (it may be a scan). Export it from the program that made it instead.');
     return pages;
   } finally {
-    void doc.destroy();
+    // pdf.js 6 closes a document through its loading task (PDFDocumentProxy.destroy was removed).
+    void task.destroy();
   }
 }
 
