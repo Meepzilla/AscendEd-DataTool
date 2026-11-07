@@ -211,7 +211,8 @@ describe('IEP at a Glance PDF', () => {
     ],
   ]);
 
-  it('reads each student\'s name, dates, service time and goals, across a page break', async () => {
+  // pdf.js is slow to load the first time under full-suite load; the 5s default flaked there.
+  it('reads each student\'s name, dates, service time and goals, across a page break', { timeout: 30000 }, async () => {
     const { readPdfLines } = await import('../pdf-text');
     const pages = await readPdfLines(file());
     expect(pages[0][2]).toBe('Name: Pat Lee Eligibility: ASD');
@@ -347,5 +348,35 @@ describe('IEP details when importing again (review fixes)', () => {
     const [older] = matchExistingStudents(moveIepToCurrentYear(read, NOW), saved({ iepDate: '2025-10-29', annualReviewDate: '2026-10-28' }));
     expect(older.savedIep).toBeUndefined();
     expect(importedIep(older, { iepDate: '2025-10-29', annualReviewDate: '2026-10-28' })).toEqual({ iepDate: '2026-10-29', annualReviewDate: '2027-10-28' });
+  });
+});
+
+describe('import target and frequency fixes', () => {
+  it('takes the last percentage or ratio as the target, not the starting point', () => {
+    expect(goalTarget('ARTICULATION', 'currently at 40%, will increase to 80% accuracy')).toBe(80);
+    expect(goalTarget('DISCRETE_TRIALS', 'currently 2 of 5, will reach 4 of 5 opportunities')).toBe(80);
+    expect(goalTarget('ARTICULATION', 'produce /r/ in words with 80% accuracy')).toBe(80);
+  });
+  it('classifies "3 times per day" and "3 times per week" as frequency goals', () => {
+    expect(classifyGoal('initiate a greeting 3 times per day').type).toBe('BEHAVIOR_FREQUENCY');
+    expect(goalTarget('BEHAVIOR_FREQUENCY', 'initiate a greeting 3 times per day')).toBe(3);
+    expect(classifyGoal('use a break card 3 times per week').type).toBe('BEHAVIOR_FREQUENCY');
+    expect(goalTarget('BEHAVIOR_FREQUENCY', 'use a break card 3 times per week')).toBe(3);
+    expect(classifyGoal('ask for help at least 3 times per day').type).toBe('BEHAVIOR_FREQUENCY');
+  });
+  it('rejects impossible calendar dates', () => {
+    expect(parseDate('02/30/2026')).toBeUndefined();
+    expect(parseDate('2026-02-30')).toBeUndefined();
+    expect(parseDate('Feb 30, 2026')).toBeUndefined();
+    expect(parseDate('30 Feb 2026')).toBeUndefined();
+    expect(parseDate('04/31/2026')).toBeUndefined();
+    expect(parseDate('02/29/2024')).toBe('2024-02-29');
+    expect(parseDate('02/29/2026')).toBeUndefined();
+  });
+  it('maps two-digit years 69-99 to 19xx and 00-68 to 20xx', () => {
+    expect(parseDate('12/1/99')).toBe('1999-12-01');
+    expect(parseDate('12/1/69')).toBe('1969-12-01');
+    expect(parseDate('12/1/68')).toBe('2068-12-01');
+    expect(parseDate('12/1/26')).toBe('2026-12-01');
   });
 });

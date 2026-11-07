@@ -97,7 +97,7 @@ export function StoryElementsInputs({ ctx }: { ctx: GoalInputContext }) {
                       role="radio"
                       aria-checked={score === value}
                       aria-label={`${label}: ${title}`}
-                      className={`h-7 px-0 text-xs touch-manipulation ${value === STORY_PART_NOT_ASSESSED ? 'w-10' : 'w-8'}`}
+                      className={`h-7 min-h-11 min-w-11 px-0 text-xs touch-manipulation ${value === STORY_PART_NOT_ASSESSED ? 'w-10' : 'w-8'}`}
                       title={`${label}: ${title}`}
                       onClick={(e) => handleInteraction(e, () => handleChange(key, value))}
                       disabled={isArchived}

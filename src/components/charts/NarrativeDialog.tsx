@@ -38,6 +38,7 @@ export default function NarrativeDialog(props: NarrativeInput & { disabled?: boo
   }, [open, style, nextSteps]);
 
   const copy = async () => {
+    if (!confirmExport()) return;
     try {
       await navigator.clipboard.writeText(text);
       toast({ title: 'Narrative copied', description: 'Paste it into a progress report or email.' });
@@ -47,12 +48,22 @@ export default function NarrativeDialog(props: NarrativeInput & { disabled?: boo
   };
 
   const save = async () => {
+    if (!confirmExport()) return;
     const safeName = input.student.name.replace(/[^a-z0-9]+/gi, '_');
     const date = new Date().toISOString().split('T')[0];
     await saveTextFile(`narrative_${safeName}_${date}.txt`, text, 'text/plain').catch(() => {
       toast({ title: "Couldn't save the file", variant: 'destructive' });
     });
   };
+
+  // Same confirm pattern as the CSV export warning: the narrative names the student and is plain text
+  // once it leaves the app, and the saved file's name holds the student name.
+  const confirmExport = () =>
+    window.confirm(
+      `This narrative names ${input.student.name} and is plain text once it leaves the app. ` +
+        'Save or paste it only somewhere your district approves for student records, don\'t email it ' +
+        'unencrypted, and delete the file when you no longer need it. Continue?',
+    );
 
   return (
     <>

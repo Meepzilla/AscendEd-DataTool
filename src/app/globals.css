@@ -342,6 +342,19 @@ html.theme-pastel {
   color-scheme: light;
 }
 
+/* Reduced motion: with the OS "Reduce Motion" setting on, confetti and non-essential animation and
+   transition are off (the confetti hook gates itself the same way, since canvas confetti is not CSS). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* Only the report is printed: it is also rendered straight into <body> (outside the app's fixed-height layout)
    for printing, and everything else is hidden. Printed at full size, without the app's zoom. */
 .print-only {

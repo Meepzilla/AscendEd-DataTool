@@ -41,6 +41,15 @@ describe('buildNarrative', () => {
     expect(text).toMatch(/aim line \(from a baseline of 40%/);
     expect(text).toMatch(/on track with the aim line/);
   });
+
+  it('shows stored date-only sessions on their own day, not the day before (America/Los_Angeles)', () => {
+    const data = [scored('2026-10-01', 5, 5), scored('2026-10-08', 6, 4), scored('2026-10-15', 9, 1)];
+    const text = buildNarrative({ student, goals: [artic], sessions: data });
+    expect(text).toContain('from Oct 1, 2026 to Oct 15, 2026');
+    expect(text).toContain('In the most recent session (Oct 15, 2026)');
+    expect(text).not.toContain('Sep 30');
+    expect(text).not.toContain('Oct 14');
+  });
 });
 
 describe('ABC narrative', () => {

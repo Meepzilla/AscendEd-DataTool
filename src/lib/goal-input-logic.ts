@@ -12,15 +12,22 @@ export function applyFieldChange(captureType: string, data: Record<string, any>,
   const next: Record<string, any> = { ...data, [field]: value };
   // A dysfluent syllable is also a syllable, so changing a dysfluency count changes total syllables by the
   // same amount (up or down, so a mistaken tap taken back leaves the total as it was).
-  if (captureType === 'FLUENCY_SYLLABLE_STUTTER' && ['stutteredSyllables', 'blocks', 'repetitions', 'interjections'].includes(field)) {
+  if (captureType === 'FLUENCY_SYLLABLE_STUTTER' && ['stutteredSyllables', 'blocks', 'repetitions', 'prolongations', 'interjections'].includes(field)) {
     const change = (Number(value) || 0) - (Number(data[field]) || 0);
     next.totalSyllables = Math.max(0, (Number(next.totalSyllables) || 0) + change);
   }
-  // A cleared or partly typed count leaves the trials as they are until a number is entered.
-  if (field === 'numberOfTrials' && Number(value) >= 1) {
-    const size = Math.min(MAX_TRIALS, Math.floor(Number(value)));
-    const old: TrialStatus[] = Array.isArray(data.trials) ? data.trials : [];
-    next.trials = Array.from({ length: size }, (_, i) => old[i] ?? 'untouched');
+  // A cleared or partly typed count leaves the trials as they are until a number is entered. A number is
+  // floored and clamped to the grid's limits and stored as entered, so the stored count and the grid agree;
+  // entering 0 gives a 1-trial grid, not the 5-trial fallback.
+  if (field === 'numberOfTrials') {
+    const raw = typeof value === 'string' ? value.trim() : value;
+    const num = Number(raw);
+    if (raw !== '' && raw !== null && raw !== undefined && Number.isFinite(num)) {
+      const size = Math.min(MAX_TRIALS, Math.max(1, Math.floor(num)));
+      next.numberOfTrials = size;
+      const old: TrialStatus[] = Array.isArray(data.trials) ? data.trials : [];
+      next.trials = Array.from({ length: size }, (_, i) => old[i] ?? 'untouched');
+    }
   }
   return next;
 }
@@ -33,7 +40,7 @@ export function goalAccuracyText(captureType: string, data: Record<string, any>)
   switch (captureType) {
     case 'FLUENCY_SYLLABLE_STUTTER': {
       const total = Number(data.totalSyllables || 0);
-      const dysfluencies = Number(data.stutteredSyllables || 0) + Number(data.blocks || 0) + Number(data.repetitions || 0) + Number(data.interjections || 0);
+      const dysfluencies = Number(data.stutteredSyllables || 0) + Number(data.blocks || 0) + Number(data.repetitions || 0) + Number(data.prolongations || 0) + Number(data.interjections || 0);
       return total === 0 ? 'N/A (0%)' : `${((Math.max(0, total - dysfluencies) / total) * 100).toFixed(1)}% (${Math.max(0, total - dysfluencies)}/${total})`;
     }
     case 'COMMUNICATION_FUNCTIONS': {
@@ -65,6 +72,8 @@ const NEXT_STATUS: Record<TrialStatus, TrialStatus> = { untouched: 'correct', co
 /** Tapping a trial cycles it: not scored → correct → approximate → incorrect → not scored. */
 export function cycleTrial(data: Record<string, any>, index: number): TrialStatus[] {
   const trials = currentTrials(data);
+  // An out-of-range index changes nothing (it would otherwise extend the grid with holes).
+  if (index < 0 || index >= trials.length) return trials;
   trials[index] = NEXT_STATUS[trials[index] || 'untouched'];
   return trials;
 }

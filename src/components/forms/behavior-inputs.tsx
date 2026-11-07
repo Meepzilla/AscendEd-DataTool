@@ -103,7 +103,7 @@ const TimesEditor: React.FC<{
   };
   return (
     <div className="space-y-1">
-      <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => setOpen(o => !o)} aria-expanded={open}>
+      <Button type="button" variant="link" size="sm" className="h-auto min-h-11 p-0 text-xs" onClick={() => setOpen(o => !o)} aria-expanded={open}>
         {open ? 'Done editing times' : 'Edit times'}
       </Button>
       {open && (
@@ -204,8 +204,9 @@ export const DurationInput: React.FC<BehaviorInputProps> = (props) => {
             type="button"
             variant="outline"
             size="icon"
-            className="h-9 w-9"
+            className="h-9 w-9 min-h-11 min-w-11"
             title="Remove the last episode"
+            aria-label="Remove the last episode"
             onClick={(e) => interact(e, () => update({ episodeSeconds: episodes.slice(0, -1), episodeStarts: starts.slice(0, -1) }))}
             disabled={disabled || episodes.length === 0}
           >
@@ -236,7 +237,7 @@ export const DurationInput: React.FC<BehaviorInputProps> = (props) => {
             className="h-8 text-sm w-24"
             disabled={disabled || isLocked}
           />
-          <Button type="button" variant="outline" size="sm" className="h-8" onClick={(e) => interact(e, addManual)} disabled={disabled || !(Number(manualMinutes) > 0)}>
+          <Button type="button" variant="outline" size="sm" className="h-8 min-h-11" onClick={(e) => interact(e, addManual)} disabled={disabled || !(Number(manualMinutes) > 0)}>
             <Plus className="mr-1 h-3.5 w-3.5" /> Add
           </Button>
         </div>
@@ -276,7 +277,7 @@ const ChipGroup: React.FC<{ label: string; options: readonly string[]; value: st
                 size="sm"
                 aria-pressed={on}
                 variant={on ? 'default' : 'outline'}
-                className={cn('h-7 px-2 text-xs touch-manipulation', option === exclusive && !on && 'border-green-600 text-green-700 dark:text-green-400')}
+                className={cn('h-7 min-h-11 px-2 text-xs touch-manipulation', option === exclusive && !on && 'border-green-600 text-green-700 dark:text-green-400')}
                 onClick={() => toggle(option)}
                 disabled={disabled}
               >
@@ -325,7 +326,7 @@ export const AbcInput: React.FC<BehaviorInputProps> = (props) => {
       <ChipGroup label="C: Consequence (what happened after)" options={lists.consequences.map(c => c.label)} value={consequences} onChange={setConsequences} disabled={disabled || isLocked} />
       <div className="flex items-center gap-1">
         <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note (optional)" className="h-8 text-sm" disabled={disabled || isLocked} />
-        <Button type="button" size="sm" className="h-8 shrink-0" onClick={(e) => interact(e, addIncident)} disabled={disabled || behaviors.length === 0}>
+        <Button type="button" size="sm" className="h-8 min-h-11 shrink-0" onClick={(e) => interact(e, addIncident)} disabled={disabled || behaviors.length === 0}>
           <Plus className="mr-1 h-3.5 w-3.5" /> Add Incident
         </Button>
       </div>
@@ -338,7 +339,7 @@ export const AbcInput: React.FC<BehaviorInputProps> = (props) => {
                 {[incident.antecedent || '?', incident.behavior, incident.consequence || '?'].join(' → ')}
                 {incident.note && <span className="text-muted-foreground"> · {incident.note}</span>}
               </span>
-              <Button type="button" variant="ghost" size="icon" className="h-5 w-5 shrink-0" title="Remove incident"
+              <Button type="button" variant="ghost" size="icon" className="h-5 w-5 min-h-11 min-w-11 shrink-0" title="Remove incident" aria-label="Remove incident"
                 onClick={(e) => interact(e, () => removeIncident(i))} disabled={disabled}>
                 <X className="h-3 w-3" />
               </Button>
@@ -605,7 +606,7 @@ export const LatencyInput: React.FC<BehaviorInputProps> = (props) => {
             <Button type="button" variant="outline" className="h-12 touch-manipulation" onClick={(e) => interact(e, () => record(null))} disabled={disabled}>
               <Ban className="mr-2 h-4 w-4" /> No Response
             </Button>
-            <Button type="button" variant="ghost" size="sm" className="h-8" title="Cancel this trial without recording it"
+            <Button type="button" variant="ghost" size="sm" className="h-8 min-h-11" title="Cancel this trial without recording it"
               onClick={(e) => interact(e, () => update({ cueGivenAt: null }))} disabled={disabled}>
               Cancel
             </Button>
@@ -624,8 +625,9 @@ export const LatencyInput: React.FC<BehaviorInputProps> = (props) => {
               type="button"
               variant="outline"
               size="icon"
-              className="h-9 w-9"
+              className="h-9 w-9 min-h-11 min-w-11"
               title="Remove the last trial"
+              aria-label="Remove the last trial"
               onClick={(e) => interact(e, () => update({ latencies: summary.latencies.slice(0, -1), trialTimes: trialTimes.slice(0, -1) }))}
               disabled={disabled || summary.trialCount === 0}
             >
@@ -657,7 +659,7 @@ export const LatencyInput: React.FC<BehaviorInputProps> = (props) => {
             className="h-8 text-sm w-24"
             disabled={disabled || isLocked}
           />
-          <Button type="button" variant="outline" size="sm" className="h-8" onClick={(e) => interact(e, addManual)} disabled={disabled || manualSeconds === '' || !(Number(manualSeconds) >= 0)}>
+          <Button type="button" variant="outline" size="sm" className="h-8 min-h-11" onClick={(e) => interact(e, addManual)} disabled={disabled || manualSeconds === '' || !(Number(manualSeconds) >= 0)}>
             <Plus className="mr-1 h-3.5 w-3.5" /> Add
           </Button>
         </div>

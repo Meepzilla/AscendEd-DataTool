@@ -9,9 +9,11 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useBackup } from '@/hooks/use-backup';
 import { MIN_PASSCODE_LENGTH } from '@/lib/secure-store';
+import { isPlaintextBackupAcknowledged, PLAINTEXT_BACKUP_ACKNOWLEDGEMENT } from '@/lib/backup';
 
 // "Back Up Now": asks for a password to protect the backup file (it contains student information). A file without
-// a password can still be saved, after ticking that it will be stored somewhere secure.
+// a password can still be saved, but only after ticking the box AND typing PLAINTEXT, so an unencrypted backup
+// is a deliberate choice. Password protection is the default: the password fields are shown unless that box is ticked.
 
 export default function BackUpNowButton({ size }: { size?: ButtonProps['size'] }) {
   const { backUpNow, isBackingUp } = useBackup();
@@ -19,13 +21,19 @@ export default function BackUpNowButton({ size }: { size?: ButtonProps['size'] }
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [noPassword, setNoPassword] = useState(false);
+  const [plaintextAck, setPlaintextAck] = useState('');
   const [error, setError] = useState('');
 
-  const close = () => { setOpen(false); setPassword(''); setConfirm(''); setNoPassword(false); setError(''); };
+  const close = () => { setOpen(false); setPassword(''); setConfirm(''); setNoPassword(false); setPlaintextAck(''); setError(''); };
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!noPassword) {
+    if (noPassword) {
+      if (!isPlaintextBackupAcknowledged(plaintextAck)) {
+        setError(`To save without a password, type ${PLAINTEXT_BACKUP_ACKNOWLEDGEMENT} in the box below.`);
+        return;
+      }
+    } else {
       if (password.length < MIN_PASSCODE_LENGTH) { setError(`Use at least ${MIN_PASSCODE_LENGTH} characters.`); return; }
       if (password !== confirm) { setError("The passwords don't match."); return; }
     }
@@ -68,6 +76,17 @@ export default function BackUpNowButton({ size }: { size?: ButtonProps['size'] }
                 Save without a password. I&apos;ll keep the file somewhere secure (anyone with the file can read the student data).
               </Label>
             </div>
+            {noPassword && (
+              <div className="space-y-1">
+                <Label htmlFor="backup-plaintext-ack">Type {PLAINTEXT_BACKUP_ACKNOWLEDGEMENT} to confirm an unencrypted backup</Label>
+                <Input id="backup-plaintext-ack" autoComplete="off" value={plaintextAck}
+                  onChange={e => { setPlaintextAck(e.target.value); setError(''); }}
+                  placeholder={PLAINTEXT_BACKUP_ACKNOWLEDGEMENT} />
+                <p className="text-xs text-muted-foreground">
+                  The backup is unencrypted plain text: anyone with the file can read every student name, goal, and session note in it.
+                </p>
+              </div>
+            )}
             {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
             <DialogFooter className="gap-2">
               <Button type="button" variant="outline" onClick={close}>Cancel</Button>

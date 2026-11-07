@@ -37,7 +37,7 @@ export default function MissedSessionDialog({ studentName, disabled, onRecord }:
       <Button
         variant="ghost"
         size="icon"
-        className="h-8 w-8"
+        className="h-8 w-8 min-h-11 min-w-11"
         disabled={disabled}
         onClick={e => { e.stopPropagation(); setOpen(true); }}
         title="Record a missed session"

@@ -5,7 +5,7 @@ import {
   COMMUNICATION_FUNCTIONS, STORY_PARTS, averageStoryPart, STORY_LINKING_WORDS, linkingWordField, topTied, joinWithAnd, type AbcIncident,
 } from './goal-constants';
 import { goalMeasure, goalMeasureInfo, goalNotes, goalResponses, meetsTarget, promptTotals, usesPromptCounters, withoutRunningTimers } from './goal-measures';
-import { compareSessionsOldestFirst, formatDate, formatGoalTarget, goalTypeLabel, plural } from './helpers';
+import { compareSessionsOldestFirst, formatDate, formatDateOnly, formatGoalTarget, goalTypeLabel, plural } from './helpers';
 import { timePatterns, TIMING_MEASURE_LABELS, WEEKDAY_NAMES } from './behavior-timing';
 import type { TaskStepScore } from './task-analysis';
 import { AIM_RULE_SESSIONS, aimLine, aimStatus, aimValueAt, masterySessions, type AimLine, type AimStatus } from './aim-line';
@@ -418,11 +418,11 @@ function goalParagraph(name: string, a: GoalAnalysis, options: Required<Narrativ
   const measure = measureName(goal);
   const capitalized = measure.charAt(0).toUpperCase() + measure.slice(1);
   if (a.values.length === 1) {
-    sentences.push(`Data were recorded in 1 session (${formatDate(a.latest.date)}). ${capitalized} was ${formatValue(goal, a.latest.value)}.`);
+    sentences.push(`Data were recorded in 1 session (${formatDateOnly(a.latest.date)}). ${capitalized} was ${formatValue(goal, a.latest.value)}.`);
   } else {
     const range = round(a.low) === round(a.high) ? 'the same in every session' : `range ${formatValue(goal, a.low)} to ${formatValue(goal, a.high)}`;
     sentences.push(`Across ${a.values.length} sessions with data, ${measure} averaged ${formatValue(goal, a.average)} (${range}).`);
-    sentences.push(`In the most recent session${a.latestUnanswered ? ' with a response' : ''} (${formatDate(a.latest.date)}), ${measure} was ${formatValue(goal, a.latest.value)}.`);
+    sentences.push(`In the most recent session${a.latestUnanswered ? ' with a response' : ''} (${formatDateOnly(a.latest.date)}), ${measure} was ${formatValue(goal, a.latest.value)}.`);
   }
   const targetText = targetSentence(a);
   if (targetText) sentences.push(targetText);
@@ -432,7 +432,7 @@ function goalParagraph(name: string, a: GoalAnalysis, options: Required<Narrativ
   if (aimText) sentences.push(aimText);
   if (a.unmeasured.length) {
     const n = a.unmeasured.length;
-    sentences.push(`In ${n === 1 ? '1 more session' : `${n} more sessions`} (${a.unmeasuredDates.map(d => formatDate(d)).join(', ')}), ${name} did not respond in any trial; ${n === 1 ? 'it is' : 'they are'} not included in the average time.`);
+    sentences.push(`In ${n === 1 ? '1 more session' : `${n} more sessions`} (${a.unmeasuredDates.map(d => formatDateOnly(d)).join(', ')}), ${name} did not respond in any trial; ${n === 1 ? 'it is' : 'they are'} not included in the average time.`);
   }
   sentences.push(...detailSentences(name, goal, [...a.recorded.map(r => r.data), ...a.unmeasured]));
   if (BEHAVIOR_GOAL_TYPES.includes(type)) {
@@ -440,7 +440,7 @@ function goalParagraph(name: string, a: GoalAnalysis, options: Required<Narrativ
     if (timing) sentences.push(timing);
   }
   const notes = a.recorded.map(r => ({ date: r.session.date, text: goalNotes(r.data) })).filter(n => n.text).slice(-2);
-  if (notes.length) sentences.push(`Session notes: ${notes.map(n => `${formatDate(n.date)}: "${n.text}"`).join('; ')}.`);
+  if (notes.length) sentences.push(`Session notes: ${notes.map(n => `${formatDateOnly(n.date)}: "${n.text}"`).join('; ')}.`);
 
   const step = options.nextSteps ? nextStep(a) : null;
   return `${heading}\n${sentences.join(' ')}${step ? `\nSuggested next step: ${step}` : ''}`;
@@ -500,7 +500,7 @@ export function buildNarrative({ student, goals, sessions, rangeLabel, options =
   const name = student.name.trim().split(/\s+/)[0] || student.name;
   const sorted = [...sessions].sort(compareSessionsOldestFirst);
   const period = rangeLabel
-    ?? (sorted.length ? `${formatDate(sorted[0].date)} to ${formatDate(sorted[sorted.length - 1].date)}` : 'the selected period');
+    ?? (sorted.length ? `${formatDateOnly(sorted[0].date)} to ${formatDateOnly(sorted[sorted.length - 1].date)}` : 'the selected period');
 
   if (sorted.length === 0) {
     return [`Progress Summary: ${student.name}`, `No sessions were recorded for ${name} ${rangeLabel ? `from ${period}` : 'in the selected period'}.`].join('\n\n');

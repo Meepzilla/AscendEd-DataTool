@@ -17,11 +17,19 @@ export interface SchoolYearSetting {
 export const DEFAULT_SCHOOL_YEAR: SchoolYearSetting = { start: '08-01', end: '07-31' };
 
 const MONTH_DAY = /^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
+/** Days each month can hold (February allows 29: the setting repeats each year, leap or not). */
+const DAYS_IN_MONTH = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+/** A real "MM-DD": the shape, and a day that month actually has (so 02-31 is rejected, not rolled to Mar 3). */
+export function isMonthDay(value: string): boolean {
+  const m = MONTH_DAY.exec(value);
+  return !!m && Number(m[2]) <= DAYS_IN_MONTH[Number(m[1]) - 1];
+}
 
 export function getSchoolYearSetting(): SchoolYearSetting {
   try {
     const saved = JSON.parse(localStorage.getItem(SCHOOL_YEAR_KEY) || 'null');
-    if (saved && MONTH_DAY.test(saved.start) && MONTH_DAY.test(saved.end)) return saved;
+    if (saved && isMonthDay(saved.start) && isMonthDay(saved.end)) return saved;
   } catch { /* the default */ }
   return DEFAULT_SCHOOL_YEAR;
 }
