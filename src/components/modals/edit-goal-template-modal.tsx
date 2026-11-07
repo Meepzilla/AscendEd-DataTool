@@ -16,6 +16,8 @@ import { useStudentData } from '@/hooks/use-student-data';
 import { GoalTemplateSchema, GoalType, type GoalTemplate } from '@/lib/types';
 import { GOAL_TYPES, GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 import TargetDirectionField from './TargetDirectionField';
+import GoalChangeSummary from './GoalChangeSummary';
+import { goalTemplateChanges } from '@/lib/goal-changes';
 import { goalTypeLabel } from '@/lib/helpers';
 
 type EditGoalTemplateFormData = z.infer<typeof GoalTemplateSchema>;
@@ -65,6 +67,14 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
     }
   }, [currentTemplate, form]);
 
+  // What changed, old to new, so the editor says plainly what saving will change. Compared against
+  // the template as it was, not against the form's dirty flags, so only real differences are listed.
+  const watched = form.watch(['name', 'type', 'dataCaptureType', 'smartGoalPrompt', 'generatedSmartGoal', 'sessionTargetValue', 'targetDirection']);
+  const changes = React.useMemo(() => currentTemplate ? goalTemplateChanges(currentTemplate, {
+    name: watched[0], type: watched[1], dataCaptureType: watched[2], smartGoalPrompt: watched[3],
+    generatedSmartGoal: watched[4], sessionTargetValue: watched[5], targetDirection: watched[6],
+  }) : [], [currentTemplate, watched]);
+
   const onSubmit = async (data: EditGoalTemplateFormData) => {
     if (!currentTemplate) return;
     setIsSubmitting(true);
@@ -81,7 +91,7 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
       onClose={closeEditGoalTemplateModal}
       title={`Edit Goal Template: ${currentTemplate.name}`}
       description="Changes apply to this template, the starting point for goals assigned from now on. Goals already assigned to students don't change; edit a student's goal from their profile to change it for that student."
-      size="lg"
+      size="xl"
     >
       <Form {...form}>
         <form 
@@ -235,6 +245,8 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
               </FormItem>
             )}
           />
+
+          <GoalChangeSummary changes={changes} />
 
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={closeEditGoalTemplateModal} disabled={isSubmitting || dataLoading}>
