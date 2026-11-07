@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import GenericModal from './generic-modal';
@@ -31,7 +31,8 @@ export default function AddGoalTemplateModal() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<AddGoalTemplateFormData>({
-    resolver: zodResolver(GoalTemplateSchema),
+    // zod 4 types a preprocessed field's input as unknown; the form holds values of the output's types.
+    resolver: zodResolver(GoalTemplateSchema) as Resolver<AddGoalTemplateFormData>,
     defaultValues: {
       name: '',
       type: Object.keys(GOAL_TYPES)[0] as GoalType, 

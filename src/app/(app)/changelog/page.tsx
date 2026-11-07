@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-07',
+    title: 'Library Updates',
+    description: 'The app\'s building blocks are up to date: Next.js 15.5, React 19, the form and date-picker libraries, the PDF reader used to import IEP at a Glance files, and the form checks behind every editor. Nothing about how the app works changes; the calendars, forms, CSV import and PDF import were checked after the update.',
+    type: 'improvement',
+    icon: Rocket,
+  },
+  {
+    date: '2026-11-07',
     title: 'Readable GAS Goal Charts',
     description: 'On a GAS goal\'s report card the level wording no longer crowds the side of the chart, where it wrapped onto itself on a tablet. The chart now shows just the levels (+2 to -2), joined with straight lines, and a key under it lists what each level means for that goal, in its own written descriptions where set. The "Sessions at each attainment level" bars are labeled by level, highest first, and every bar chart\'s labels now stay on one line, shortened to fit, with the full label on hover.',
     type: 'fix',
