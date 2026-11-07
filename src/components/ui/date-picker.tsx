@@ -54,7 +54,7 @@ export function DatePicker({ date, setDate, className, disabled, id }: DatePicke
             if (picked) setDate(picked)
             setOpen(false)
           }}
-          initialFocus
+          autoFocus
           disabled={disabled}
         />
       </PopoverContent>
