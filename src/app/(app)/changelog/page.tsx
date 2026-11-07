@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-07',
+    title: 'The App No Longer Shows Its Framework Version',
+    description: 'The published app no longer includes the version number of the web framework it is built with, which tools can read to look up known weaknesses in that release. The build now checks that the number stays out. Keeping the framework up to date (done monthly) remains the real protection.',
+    type: 'improvement',
+    icon: ShieldCheck,
+  },
+  {
+    date: '2026-11-07',
     title: 'Merge Selected Counts Only Sessions That Still Exist',
     description: 'On the Sessions page, deleting sessions that were ticked for merging left them counted: Merge Selected could show (8) while saying to select at least two. A deleted session now leaves the selection, so the count and the check match the sessions still ticked.',
     type: 'fix',
