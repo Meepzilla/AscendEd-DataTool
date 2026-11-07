@@ -105,4 +105,14 @@ describe('goalTemplateChanges', () => {
       { label: 'Session target', from: '80', to: 'No target' },
     ]);
   });
+
+  it('lists a changed GAS level description', () => {
+    const original = template({ gasLevelDescriptions: ['', '', 'Does it sometimes', '', ''] });
+    const changes = goalTemplateChanges(original, {
+      gasLevelDescriptions: ['', '', 'Does it sometimes', '', 'Does it every time'],
+    });
+    expect(changes).toEqual([
+      { label: 'Level +2 description', from: '(blank)', to: 'Does it every time' },
+    ]);
+  });
 });
