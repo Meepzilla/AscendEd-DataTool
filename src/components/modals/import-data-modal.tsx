@@ -14,6 +14,7 @@ import { checkImportFileSize } from '@/lib/helpers';
 import { sanitizeErrorMessage, toSafeErrorMessage } from '@/lib/error-message';
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 import { missedReasonFromCsv } from '@/lib/attendance';
+import { unescapeCsvFormula } from '@/lib/session-csv';
 
 /** A session read from the file, with the Session ID it had (kept, so a later backup merge matches it). */
 export type { ImportedSession };
@@ -75,6 +76,8 @@ export default function ImportDataModal({ onClose, onImport }: ImportDataModalPr
       Papa.parse<any>(selectedFile, {
         header: true,
         skipEmptyLines: true,
+        // The export writes formula-like cells with a leading apostrophe (session-csv.ts); take it off again.
+        transform: (value: string) => unescapeCsvFormula(value),
         complete: (results) => {
           try {
             const rows = results.data;
