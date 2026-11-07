@@ -58,6 +58,52 @@ describe('mergeGoalData', () => {
     ]);
     expect(merged.steps.map((s: { level: string }) => s.level)).toEqual(['Independent', '']);
   });
+
+  it('does not count the same trial grid twice when it was saved in two parts', () => {
+    const merged = mergeGoalData([
+      { trials: ['correct', 'untouched'], numberOfTrials: 2 },
+      { trials: ['correct', 'untouched'], numberOfTrials: 2 },
+    ]);
+    expect(merged.trials).toEqual(['correct']);
+    expect(merged.numberOfTrials).toBe(1);
+  });
+
+  it('does not count the same ABC incident twice, but keeps different ones', () => {
+    const incident = { time: '09:05', antecedent: 'Transition', behavior: 'Elopement', consequence: 'Break given' };
+    const other = { time: '09:12', antecedent: 'Noise', behavior: 'Elopement', consequence: 'Break given' };
+    const merged = mergeGoalData([
+      { incidents: [incident, other] },
+      { incidents: [incident] },
+    ]);
+    expect(merged.incidents).toEqual([incident, other]);
+  });
+
+  it('does not count the same intervals or latencies twice, but joins different parts', () => {
+    const merged = mergeGoalData([
+      { intervals: [true, false], latencies: [2, null] },
+      { intervals: [true, false], latencies: [2, null] },
+    ]);
+    expect(merged.intervals).toEqual([true, false]);
+    expect(merged.latencies).toEqual([2, null]);
+    const joined = mergeGoalData([
+      { intervals: [true, false], latencies: [2] },
+      { intervals: [true, true], latencies: [3, null] },
+    ]);
+    expect(joined.intervals).toEqual([true, false, true, true]);
+    expect(joined.latencies).toEqual([2, 3, null]);
+  });
+
+  it('lets a cleared step, text or single value in a later part overwrite the earlier one', () => {
+    const merged = mergeGoalData([
+      { steps: [{ label: 'a', level: 'Independent' }], notes: 'first', rating: 4, food: 'cracker' },
+      { steps: [{ label: 'a', level: '' }], notes: '', rating: null, food: '' },
+    ]);
+    expect(merged.steps).toEqual([{ label: 'a', level: '' }]);
+    // Notes are joined, not single values, so an empty note in the later part adds nothing and keeps the first.
+    expect(merged.notes).toBe('first');
+    expect(merged.rating).toBeNull();
+    expect(merged.food).toBe('');
+  });
 });
 
 describe('mergeSessions', () => {
@@ -74,5 +120,20 @@ describe('mergeSessions', () => {
   it('caps behavior observation minutes at the merged session\'s length', () => {
     const part = () => session({ time: '09:00', endTime: '09:20', goals: [{ goalId: 'g', goalName: 'G', goalType: 'BEHAVIOR_FREQUENCY', data: { count: 1, observationMinutes: 20 } }] });
     expect(mergeSessions([part(), part()]).goals[0].data.observationMinutes).toBe(20);
+  });
+
+  it('does not use a part\'s start time as the merged end time', () => {
+    const a = session({ time: '09:00', endTime: '09:20', goals: [] });
+    const b = session({ time: '09:30', endTime: undefined, goals: [] });
+    const merged = mergeSessions([a, b]);
+    expect([merged.time, merged.endTime]).toEqual(['09:00', '09:20']);
+  });
+
+  it('still caps observation minutes when the merged session runs past 600 minutes', () => {
+    const part = (time: string, endTime: string) => session({ time, endTime, goals: [{ goalId: 'g', goalName: 'G', goalType: 'BEHAVIOR_FREQUENCY', data: { count: 1, observationMinutes: 800 } }] });
+    const merged = mergeSessions([part('08:00', '13:00'), part('13:00', '19:00')]);
+    expect(merged.endTime).toBe('19:00');
+    expect(merged.goals[0].data.observationMinutes).toBe(660);
+    expect(mergedMinutes([part('08:00', '13:00'), part('13:00', '19:00')])).toEqual({ before: 660, after: 0 });
   });
 });

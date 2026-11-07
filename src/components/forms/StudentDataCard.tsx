@@ -97,7 +97,7 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 p-0 flex-shrink-0"
+              className="h-8 w-8 min-h-11 min-w-11 p-0 flex-shrink-0"
               onClick={(e) => {
                 e.stopPropagation();
                 openEditStudentModal(student);
@@ -130,7 +130,7 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
               onRecord={(reason, note) => recordMissedSession(student.id, reason, note)}
             />
             {dataEntrySelectedStudentIds.length > 0 && (
-              <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); removeStudentSlot(slotIndex); }} className="h-8 w-8" title="Remove Student Slot">
+              <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); removeStudentSlot(slotIndex); }} className="h-8 w-8 min-h-11 min-w-11" title="Remove Student Slot" aria-label="Remove Student Slot">
                 <XCircle className="h-5 w-5 text-red-500" />
               </Button>
             )}
@@ -202,7 +202,7 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
                         variant="outline"
                         size="sm"
                         onClick={() => setDataEntryVisibleGoalCountByStudentId(prev => ({ ...prev, [student.id]: filteredStudentGoals.length }))}
-                        className="text-xs"
+                        className="text-xs min-h-11"
                       >
                         <Eye className="mr-1.5 h-3.5 w-3.5" />
                         Show More ({filteredStudentGoals.length - visibleGoalCount} more)
@@ -212,7 +212,7 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
                         variant="outline"
                         size="sm"
                         onClick={() => setDataEntryVisibleGoalCountByStudentId(prev => ({ ...prev, [student.id]: 10 }))}
-                        className="text-xs"
+                        className="text-xs min-h-11"
                       >
                         <EyeOff className="mr-1.5 h-3.5 w-3.5" />
                         Show Less

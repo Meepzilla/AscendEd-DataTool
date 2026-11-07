@@ -32,11 +32,11 @@ export function TrialInputs({ ctx }: { ctx: GoalInputContext }) {
             disabled={isArchived || isLocked}
           />
            <div className="flex flex-wrap gap-1">
-              <Button type="button" size="sm" className="h-7 px-2 text-xs bg-green-500 hover:bg-green-600" onClick={(e) => handleFillNextTrial('correct', e)} disabled={isArchived || isLocked}>Correct</Button>
-              <Button type="button" size="sm" className="h-7 px-2 text-xs bg-yellow-500 hover:bg-yellow-600" onClick={(e) => handleFillNextTrial('approximate', e)} disabled={isArchived || isLocked}>Approx.</Button>
-              <Button type="button" size="sm" className="h-7 px-2 text-xs bg-red-500 hover:bg-red-600" onClick={(e) => handleFillNextTrial('incorrect', e)} disabled={isArchived || isLocked}>Incorrect</Button>
-              <Button type="button" size="icon" variant="outline" className="h-7 w-7" onClick={(e) => handleUndoLastTrial(e)} disabled={isArchived || isLocked} title="Undo Last"><Undo2 className="h-3.5 w-3.5" /></Button>
-              <Button type="button" size="icon" variant="outline" className="h-7 w-7" onClick={(e) => handleClearTrials(e)} disabled={isArchived || isLocked} title="Reset All"><RotateCcw className="h-3.5 w-3.5" /></Button>
+              <Button type="button" size="sm" className="h-7 min-h-11 px-2 text-xs bg-green-500 hover:bg-green-600" onClick={(e) => handleFillNextTrial('correct', e)} disabled={isArchived || isLocked}>Correct</Button>
+              <Button type="button" size="sm" className="h-7 min-h-11 px-2 text-xs bg-yellow-500 hover:bg-yellow-600" onClick={(e) => handleFillNextTrial('approximate', e)} disabled={isArchived || isLocked}>Approx.</Button>
+              <Button type="button" size="sm" className="h-7 min-h-11 px-2 text-xs bg-red-500 hover:bg-red-600" onClick={(e) => handleFillNextTrial('incorrect', e)} disabled={isArchived || isLocked}>Incorrect</Button>
+              <Button type="button" size="icon" variant="outline" className="h-7 w-7 min-h-11 min-w-11" onClick={(e) => handleUndoLastTrial(e)} disabled={isArchived || isLocked} title="Undo Last" aria-label="Undo Last"><Undo2 className="h-3.5 w-3.5" /></Button>
+              <Button type="button" size="icon" variant="outline" className="h-7 w-7 min-h-11 min-w-11" onClick={(e) => handleClearTrials(e)} disabled={isArchived || isLocked} title="Reset All" aria-label="Reset All"><RotateCcw className="h-3.5 w-3.5" /></Button>
           </div>
         </div>
       </FormItem>
@@ -64,10 +64,11 @@ export function TrialInputs({ ctx }: { ctx: GoalInputContext }) {
                 type="button"
                 variant="outline"
                 size="icon"
-                className={cn("h-8 w-8 rounded-full transition-all", statusClasses[status], isFocused && index === focusedTrialIndex && "ring-2 ring-primary ring-offset-2")}
+                className={cn("h-8 w-8 min-h-11 min-w-11 rounded-full transition-all", statusClasses[status], isFocused && index === focusedTrialIndex && "ring-2 ring-primary ring-offset-2")}
                 onClick={(e) => handleTrialClick(index, e)}
                 disabled={isArchived}
                 title={`Trial ${index + 1}: ${status}. Click to change.`}
+                aria-label={`Trial ${index + 1}: ${status}. Click to change.`}
               >
                 <Icon className="h-4 w-4" />
               </Button>

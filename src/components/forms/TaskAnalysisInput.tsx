@@ -50,7 +50,7 @@ export default function TaskAnalysisInput({ steps, data, update, interact, disab
                     disabled={disabled}
                     onClick={e => interact(e, () => update(setStepLevel(data, steps, i, level)))}
                     className={cn(
-                      'h-9 min-w-11 rounded-md border px-2 text-sm font-semibold touch-manipulation disabled:opacity-50',
+                      'h-9 min-h-11 min-w-11 rounded-md border px-2 text-sm font-semibold touch-manipulation disabled:opacity-50',
                       selected
                         ? level === 'Independent' ? 'border-green-500 bg-green-500/20 text-green-800 dark:text-green-300'
                           : level === 'NotDone' ? 'border-red-400 bg-red-400/15 text-red-800 dark:text-red-300'

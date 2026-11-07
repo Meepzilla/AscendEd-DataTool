@@ -18,7 +18,10 @@ export interface GoalMeasureInfo {
 
 /** Correct, incorrect and approximate responses for the trial-based goal types; null for other types. */
 export function goalResponses(type: string, data: Record<string, any> = {}): { correct: number; incorrect: number; approximate: number } | null {
-  const n = (v: unknown) => Number(v) || 0;
+  // Counts are never negative (a stored -5 is bad data, not -5 responses); non-numbers read as 0.
+  const n = (v: unknown) => { const num = Number(v); return Number.isFinite(num) ? Math.max(0, num) : 0; };
+  // The first count field that was actually entered: a real 0 must not fall through to another field's count.
+  const first = (...values: unknown[]) => { for (const v of values) if (v !== null && v !== undefined && v !== '') return v; return undefined; };
   switch (type) {
     case 'ARTICULATION':
     case 'AAC':
@@ -28,8 +31,8 @@ export function goalResponses(type: string, data: Record<string, any> = {}): { c
       // These types name their counts differently; a goal can also be entered with another type's
       // inputs (its data capture type), so any of the names is accepted.
       return {
-        correct: n(data.correct || data.questionsCorrect || data.successfulResponses || data.correctProductions),
-        incorrect: n(data.incorrect || data.questionsIncorrect || data.unsuccessfulResponses || data.incorrectProductions),
+        correct: n(first(data.correct, data.questionsCorrect, data.successfulResponses, data.correctProductions)),
+        incorrect: n(first(data.incorrect, data.questionsIncorrect, data.unsuccessfulResponses, data.incorrectProductions)),
         approximate: n(data.approximate),
       };
     case 'FEEDING_SWALLOWING':
@@ -52,7 +55,7 @@ export function goalResponses(type: string, data: Record<string, any> = {}): { c
 }
 
 export function promptTotals(data: Record<string, any> = {}): Record<string, number> {
-  return Object.fromEntries(PROMPT_TYPES.map(p => [p, Number(data[p]) || 0]));
+  return Object.fromEntries(PROMPT_TYPES.map(p => [p, Math.max(0, Number(data[p]) || 0)]));
 }
 
 const RATING_TYPES: string[] = ['QUALITATIVE_OBSERVATION', 'COGNITIVE'];
@@ -101,8 +104,12 @@ export function goalMeasure(goal: MeasuredGoal, data: Record<string, any> = {}):
   if (BEHAVIOR_GOAL_TYPES.includes(type)) {
     // A behavior goal left untouched in a session reads as 0; it counts only if Data Entry marked it as
     // worked on (so an observed 0 is kept) or something was recorded.
-    const value = behaviorMeasure(type, withoutRunningTimers(data), goalDirection(goal));
-    return value !== null && (data.recorded === true || value !== 0) ? value : null;
+    const raw = behaviorMeasure(type, withoutRunningTimers(data), goalDirection(goal));
+    if (raw === null) return null;
+    // Counts and seconds can't go below 0; percentages (intervals, replacement skill) are 0-100.
+    const isPercent = type === 'BEHAVIOR_INTERVAL' || (type === 'BEHAVIOR_ABC' && goalDirection(goal) === 'increase');
+    const value = isPercent ? Math.min(100, Math.max(0, raw)) : Math.max(0, raw);
+    return data.recorded === true || value !== 0 ? value : null;
   }
 
   const responses = goalResponses(type, data);
@@ -114,20 +121,20 @@ export function goalMeasure(goal: MeasuredGoal, data: Record<string, any> = {}):
   const promptCount = Object.values(prompts).reduce((a, b) => a + b, 0);
   switch (type) {
     case 'FLUENCY_SYLLABLE_STUTTER': {
-      const total = Number(data.totalSyllables) || 0;
-      // The same dysfluencies Data Entry counts (prolongations are tallied but not subtracted there either).
-      const dysfluent = ['stutteredSyllables', 'blocks', 'repetitions', 'interjections'].reduce((sum, field) => sum + (Number(data[field]) || 0), 0);
-      return total > 0 ? (Math.max(0, total - dysfluent) / total) * 100 : null;
+      const total = Math.max(0, Number(data.totalSyllables) || 0);
+      // Prolongations are dysfluent, like the other tallies (and as the narrative names them).
+      const dysfluent = ['stutteredSyllables', 'blocks', 'repetitions', 'prolongations', 'interjections'].reduce((sum, field) => sum + Math.max(0, Number(data[field]) || 0), 0);
+      return total > 0 ? Math.min(100, (Math.max(0, total - dysfluent) / total) * 100) : null;
     }
     case 'STORY_ELEMENTS': {
       const story = scoreStory(data);
-      // No part assessed: there is no score to chart.
+      // No part assessed: there is no score to chart. A part assessed at 0 is a real score of 0%, not no data.
       if (story.maxPoints === 0) return null;
-      return story.points > 0 || story.linkingWords > 0 ? story.percent : null;
+      return story.percent;
     }
     case 'COMMUNICATION_FUNCTIONS': {
       const summary = summarizeCommunicationFunctions(data);
-      return summary.spontaneous + summary.prompted > 0 ? summary.functionsUsedSpontaneously : null;
+      return summary.spontaneous + summary.prompted > 0 ? Math.max(0, summary.functionsUsedSpontaneously) : null;
     }
     case 'PROMPTING':
       return promptCount > 0 ? (prompts.Independent / promptCount) * 100 : null;
@@ -140,7 +147,8 @@ export function goalMeasure(goal: MeasuredGoal, data: Record<string, any> = {}):
     const rating = Number(data.rating);
     if (!rating) return null;
     const touched = data.recorded === true || rating !== DEFAULT_RATING || String(data.notes || '').trim() !== '' || promptCount > 0;
-    return touched ? rating : null;
+    // Ratings are 1-5; a stored 6 (or 0) is bad data, not a 6.
+    return touched ? Math.min(5, Math.max(1, rating)) : null;
   }
   return null;
 }

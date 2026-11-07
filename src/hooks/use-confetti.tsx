@@ -18,6 +18,8 @@ export const useConfetti = () => useContext(ConfettiContext) ?? NO_CONFETTI;
 
 export const ConfettiProvider = ({ children }: { children: ReactNode }) => {
   const fire = useCallback(() => {
+    // Reduced motion: with the OS setting on, no celebration (globals.css covers the CSS side).
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const duration = 5 * 1000;
     const animationEnd = Date.now() + duration;
 

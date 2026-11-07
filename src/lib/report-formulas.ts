@@ -2,7 +2,7 @@ import type { Goal, TargetDirection } from './types';
 import { captureTypeOf, goalDirection } from './goal-constants';
 import { goalMeasureInfo, goalResponses, meetsTarget } from './goal-measures';
 import { AIM_RULE_SESSIONS, aimValueAt, type AimLine } from './aim-line';
-import { formatDate, formatGoalTarget } from './helpers';
+import { formatDate, formatDateOnly, formatGoalTarget } from './helpers';
 
 // How each figure on the Reports page is worked out, in words and with the numbers behind it, for the
 // explanation shown when a figure is tapped or hovered.
@@ -17,7 +17,7 @@ export function measureFormula(goal: Pick<Goal, 'type' | 'dataCaptureType' | 'ta
   if (type === 'FEEDING_SWALLOWING') return 'Trials accepted ÷ (accepted + refused) × 100.';
   if (goalResponses(type) !== null) return 'Correct ÷ (correct + approximate + incorrect) × 100. Approximate responses count as not correct.';
   switch (type) {
-    case 'FLUENCY_SYLLABLE_STUTTER': return '(Total syllables − stuttered syllables, blocks, repetitions and interjections) ÷ total syllables × 100.';
+    case 'FLUENCY_SYLLABLE_STUTTER': return '(Total syllables − stuttered syllables, blocks, repetitions, prolongations and interjections) ÷ total syllables × 100.';
     case 'STORY_ELEMENTS': return 'Points for the story parts assessed (0, 1 or 2 each) ÷ 2 × the number of parts assessed × 100. Parts marked N/A (not assessed) are left out.';
     case 'COMMUNICATION_FUNCTIONS': return 'The number of different functions used without a prompt in the session.';
     case 'QUALITATIVE_OBSERVATION':
@@ -101,7 +101,7 @@ export function goalStatExplanations(
   return {
     sessions: 'Sessions in the date range where something was recorded for this goal. Missed sessions, and sessions where the goal wasn\'t worked on, aren\'t counted.',
     latest: last
-      ? `The ${label} in the most recent session (${formatDate(last.date)}). ${measureFormula(goal)}${working ? ` That session: ${working}.` : ''}`
+      ? `The ${label} in the most recent session (${formatDateOnly(last.date)}). ${measureFormula(goal)}${working ? ` That session: ${working}.` : ''}`
       : `The ${label} in the most recent session. ${measureFormula(goal)}`,
     average: average
       ? `The average of each session's ${label}: ${average}. Each session counts the same, however many trials it had.`

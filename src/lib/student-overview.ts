@@ -1,6 +1,7 @@
 import type { ServicePer, SessionData, StudentIep } from './types';
 import { attendanceSummary, type AttendanceSummary } from './attendance';
 import { dateValue } from './aim-line';
+import { parseDateOnly } from './helpers';
 import { schoolYearRange } from './school-year';
 
 // Figures for the student profile's Overview: IEP dates (days until each is due), service minutes delivered
@@ -8,17 +9,23 @@ import { schoolYearRange } from './school-year';
 
 export { schoolYearStart } from './school-year';
 
-/** Minutes between a session's start and end time ("HH:MM"); 0 when either is missing or the span isn't sensible. */
-export function sessionMinutes(session: Pick<SessionData, 'time' | 'endTime'>): number {
+/**
+ * Minutes between a session's start and end time ("HH:MM"); null when either is missing or invalid, or the
+ * span isn't sensible (over 600 minutes, negative, or end before start). Null is untimed, not 0 minutes:
+ * callers must not add it to a total.
+ */
+export function sessionMinutes(session: Pick<SessionData, 'time' | 'endTime'>): number | null {
   const toMinutes = (t?: string) => {
-    const m = /^(\d{1,2}):(\d{2})/.exec(t ?? '');
-    return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+    const m = /^(\d{1,2}):(\d{2})$/.exec(t ?? '');
+    if (!m) return null;
+    const hours = Number(m[1]), minutes = Number(m[2]);
+    return hours <= 23 && minutes <= 59 ? hours * 60 + minutes : null;
   };
   const start = toMinutes(session.time);
   const end = toMinutes(session.endTime);
-  if (start === null || end === null) return 0;
+  if (start === null || end === null) return null;
   const span = end - start;
-  return span > 0 && span <= 600 ? span : 0;
+  return span > 0 && span <= 600 ? span : null;
 }
 
 /** The current week (Monday to Sunday), month or school year containing `now`, and the one before it. */
@@ -59,25 +66,27 @@ export interface StudentOverview {
 
 export function studentOverview(sessions: SessionData[], iep: StudentIep | undefined, now = new Date()): StudentOverview {
   const year = schoolYearRange(now);
-  const inYear = sessions.filter(s => { const t = new Date(s.date).getTime(); return t >= year.start.getTime() && t < year.end.getTime(); });
+  // A stored YYYY-MM-DD reads as that day at local midnight; new Date on it would be UTC midnight and put
+  // a first-day session (e.g. Aug 1) before the school year's first day in US timezones.
+  const inYear = sessions.filter(s => { const t = parseDateOnly(s.date).getTime(); return t >= year.start.getTime() && t < year.end.getTime(); });
   const held = sessions.filter(s => !s.missed);
   const per = iep?.servicePer ?? 'week';
   const { current, previous } = servicePeriods(per, now);
   const minutesIn = (from: Date, to: Date) => held
-    .filter(s => { const t = new Date(s.date).getTime(); return t >= from.getTime() && t < to.getTime(); })
-    .reduce((sum, s) => sum + sessionMinutes(s), 0);
+    .filter(s => { const t = parseDateOnly(s.date).getTime(); return t >= from.getTime() && t < to.getTime(); })
+    .reduce((sum, s) => sum + (sessionMinutes(s) ?? 0), 0);
   const heldInYear = inYear.filter(s => !s.missed);
   const attendance = attendanceSummary(inYear);
   const total = attendance.held + attendance.missed;
-  const last = held.reduce<string | null>((latest, s) => (!latest || new Date(s.date) > new Date(latest) ? s.date : latest), null);
+  const last = held.reduce<string | null>((latest, s) => (!latest || parseDateOnly(s.date) > parseDateOnly(latest) ? s.date : latest), null);
   return {
     service: {
       required: iep?.serviceMinutes && iep.serviceMinutes > 0 ? iep.serviceMinutes : null,
       per,
       thisPeriod: minutesIn(current.start, current.end),
       lastPeriod: minutesIn(previous.start, previous.end),
-      schoolYear: heldInYear.reduce((sum, s) => sum + sessionMinutes(s), 0),
-      untimed: heldInYear.filter(s => sessionMinutes(s) === 0).length,
+      schoolYear: heldInYear.reduce((sum, s) => sum + (sessionMinutes(s) ?? 0), 0),
+      untimed: heldInYear.filter(s => sessionMinutes(s) === null).length,
     },
     attendance,
     attendanceRate: total ? Math.round((attendance.held / total) * 100) : null,
@@ -114,7 +123,7 @@ export interface PeriodService {
 /** Service minutes over a reporting period (Progress Report), against the IEP's requirement. */
 export function periodService(sessions: SessionData[], iep: StudentIep | undefined, from: Date, to: Date): PeriodService {
   const held = sessions.filter(s => !s.missed);
-  const delivered = held.reduce((sum, s) => sum + sessionMinutes(s), 0);
+  const delivered = held.reduce((sum, s) => sum + (sessionMinutes(s) ?? 0), 0);
   const per = iep?.servicePer ?? 'week';
   const required = iep?.serviceMinutes && iep.serviceMinutes > 0 ? iep.serviceMinutes : null;
   // Whole days, first and last included.
@@ -123,7 +132,7 @@ export function periodService(sessions: SessionData[], iep: StudentIep | undefin
   const periods = per === 'week' ? days / 7 : per === 'month' ? days / 30.44 : 1;
   return {
     delivered,
-    untimed: held.filter(s => sessionMinutes(s) === 0).length,
+    untimed: held.filter(s => sessionMinutes(s) === null).length,
     required,
     per,
     periods: Math.round(periods * 10) / 10,

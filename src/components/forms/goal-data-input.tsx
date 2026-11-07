@@ -203,12 +203,12 @@ export default function GoalDataInputComponent({
         <div className="flex justify-between items-start">
             <div className="flex items-center space-y-0.5 shrink-0 mr-1">
                 {onMoveUp && (
-                    <Button type="button" variant="ghost" size="icon" className="h-5 w-5 p-0" onClick={(e) => handleInteraction(e, onMoveUp!)} disabled={!canMoveUp || isArchived} title="Move goal up">
+                    <Button type="button" variant="ghost" size="icon" className="h-5 w-5 min-h-11 min-w-11 p-0" onClick={(e) => handleInteraction(e, onMoveUp!)} disabled={!canMoveUp || isArchived} title="Move goal up" aria-label="Move goal up">
                         <ArrowUp className="h-3.5 w-3.5" />
                     </Button>
                 )}
                 {onMoveDown && (
-                     <Button type="button" variant="ghost" size="icon" className="h-5 w-5 p-0" onClick={(e) => handleInteraction(e, onMoveDown!)} disabled={!canMoveDown || isArchived} title="Move goal down">
+                     <Button type="button" variant="ghost" size="icon" className="h-5 w-5 min-h-11 min-w-11 p-0" onClick={(e) => handleInteraction(e, onMoveDown!)} disabled={!canMoveDown || isArchived} title="Move goal down" aria-label="Move goal down">
                         <ArrowDown className="h-3.5 w-3.5" />
                     </Button>
                 )}
@@ -225,7 +225,7 @@ export default function GoalDataInputComponent({
                 </CardTitle>
                 <div className="mt-1 flex items-center gap-2">
                   {!isFocused && onSetFocus && (
-                    <Button type="button" variant="link" size="sm" onClick={isLocked ? undefined : onSetFocus} className="h-auto p-0 text-xs" disabled={isLocked}>
+                    <Button type="button" variant="link" size="sm" onClick={isLocked ? undefined : onSetFocus} className="h-auto min-h-11 p-0 text-xs" disabled={isLocked}>
                       <Pin className="mr-1 h-3 w-3" /> Set Focus
                     </Button>
                   )}
