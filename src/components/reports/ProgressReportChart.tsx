@@ -1,6 +1,7 @@
 import React from 'react';
 import { formatDate } from '@/lib/helpers';
 import { dateValue } from '@/lib/aim-line';
+import { captureTypeOf } from '@/lib/goal-constants';
 import type { GoalProgress } from '@/lib/report-narrative';
 
 // A small line chart of one goal's sessions for the printed progress report: one point per session, the target
@@ -24,10 +25,14 @@ function niceMax(value: number): number {
 }
 
 export default function ProgressReportChart({ progress }: { progress: GoalProgress }) {
-  const { points, target, unit, max, measureLabel, aim } = progress;
+  const { points, target, unit, max, measureLabel, aim, goal } = progress;
   if (points.length === 0) return null;
 
-  const top = max ?? niceMax(Math.max(...points.map(p => p.value), target ?? 0, aim?.start.value ?? 0) * 1.1);
+  // GAS levels run -2 to +2: the scale spans the negative domain instead of clamping at 0,
+  // which would plot every level at the baseline. Other types keep the [0, top] scale.
+  const isGas = captureTypeOf(goal) === 'GOAL_ATTAINMENT_SCALE';
+  const min = isGas ? -2 : 0;
+  const top = isGas ? 2 : (max ?? niceMax(Math.max(...points.map(p => p.value), target ?? 0, aim?.start.value ?? 0) * 1.1));
   const innerW = W - PAD.left - PAD.right;
   const innerH = H - PAD.top - PAD.bottom;
   // Placed by date along the aim line's span when there is one; otherwise evenly, one step per session.
@@ -36,8 +41,8 @@ export default function ProgressReportChart({ progress }: { progress: GoalProgre
   const t1 = aim ? Math.max(aim.end.time, times[times.length - 1]) : 0;
   const xTime = (t: number) => PAD.left + (t1 > t0 ? ((t - t0) / (t1 - t0)) * innerW : innerW / 2);
   const x = (i: number) => aim ? xTime(times[i]) : PAD.left + (points.length === 1 ? innerW / 2 : (i / (points.length - 1)) * innerW);
-  const y = (v: number) => PAD.top + innerH - (Math.min(Math.max(v, 0), top) / top) * innerH;
-  const ticks = [0, top / 2, top];
+  const y = (v: number) => PAD.top + innerH - ((Math.min(Math.max(v, min), top) - min) / (top - min)) * innerH;
+  const ticks = isGas ? [-2, 0, 2] : [0, top / 2, top];
   const label = (v: number) => `${Number(v.toFixed(1))}${unit.trim() === '%' ? '%' : ''}`;
   const line = points.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.value).toFixed(1)}`).join(' ');
   const firstDate = aim ? formatDate(new Date(t0)) : formatDate(points[0].date);

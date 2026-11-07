@@ -47,6 +47,9 @@ export interface Goal {
   baselineDate?: string;
   /** Mastery: the target met in this many sessions in a row (3 when not set). */
   masterySessions?: number;
+  /** Goal Attainment Scaling: the five level descriptions, one per level from -2 to +2
+      (index 0 is level -2, index 4 is level +2); a blank entry falls back to the generic label. */
+  gasLevelDescriptions?: string[];
   /** Task analysis goals: the steps of the skill, in order (task-analysis.ts). */
   taskSteps?: string[];
   /** What fills each blank ("___") in the goal text, by position; empty uses the automatic value (goal-blanks.ts). */
@@ -76,6 +79,7 @@ export const GOAL_TYPE_VALUES = [
   'BEHAVIOR_INTERVAL',
   'BEHAVIOR_LATENCY',
   'TASK_ANALYSIS',
+  'GOAL_ATTAINMENT_SCALE',
 ] as const;
 
 export type GoalType = typeof GOAL_TYPE_VALUES[number];
@@ -100,6 +104,8 @@ export interface GoalTemplate {
   bankId?: string; // Key into public/goal-bank/details.json (purpose, activity ideas, tags)
   targetDirection?: TargetDirection;
   retired?: boolean; // Built-in duplicate archived once by the app (see RETIRED_DEFAULT_TEMPLATES)
+  /** Where the student started, in the goal's measure; templates that set one pass it to the assigned goal (goalFromTemplate). GAS templates start at -2. */
+  baseline?: number;
   taskSteps?: string[]; // Task analysis templates: the steps copied to a student's goal
   defaultKey?: string; // Built-in templates: the name they were added under, kept if the user renames them
   deleted?: boolean; // Built-in templates: deleted by the user. Kept so they aren't added back; restorable in Settings (builtin-goals.ts)
@@ -194,6 +200,11 @@ export interface AacData {
   approximate: number;
 }
 
+export interface GasAttainmentData {
+  gasLevel?: -2 | -1 | 0 | 1 | 2;
+  notes?: string;
+}
+
 
 export type PromptType = "Independent" | "Visual" | "Verbal" | "Gestural" | "PartialPhysical" | "Imitation";
 
@@ -253,8 +264,10 @@ export const AssignedGoalEditSchema = z.object({
   ),
   baseline: z.preprocess(
     (val) => (val === '' || val === undefined || val === null ? undefined : Number(val)),
-    z.number().min(0, 'Baseline must be 0 or greater.').optional()
+    z.number().min(-2, 'Baseline must be -2 or greater.').optional()
   ),
+  /** Goal Attainment Scaling: the five level descriptions, one per level from -2 to +2 (index 0 is level -2). */
+  gasLevelDescriptions: z.array(z.string()).max(5, 'At most 5 level descriptions.').optional(),
   baselineDate: z.preprocess(
     (val) => (val === '' || val === null ? undefined : val),
     z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter a valid date.').optional()

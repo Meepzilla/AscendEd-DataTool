@@ -24,6 +24,7 @@ import { ComprehensionInputs, CorrectIncorrectInputs, ExpressionInputs, FeedingI
 import { TrialInputs } from './goal-inputs/trials';
 import { FluencyInputs } from './goal-inputs/fluency';
 import { ObservationInputs, PromptingInputs } from './goal-inputs/observation';
+import { GasInputs } from './goal-inputs/gas';
 import { CommunicationFunctionsInputs, StoryElementsInputs } from './goal-inputs/communication';
 
 // A goal's card in Data Entry: its name, target and move arrows, the inputs for its type (in goal-inputs/, or the
@@ -128,6 +129,8 @@ export default function GoalDataInputComponent({
         return <FeedingInputs ctx={ctx} />;
       case 'FLUENCY_SYLLABLE_STUTTER':
         return <FluencyInputs ctx={ctx} />;
+      case 'GOAL_ATTAINMENT_SCALE':
+        return <GasInputs ctx={ctx} />;
       case 'QUALITATIVE_OBSERVATION':
       case 'COGNITIVE':
         return <ObservationInputs ctx={ctx} />;
