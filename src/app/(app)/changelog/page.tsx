@@ -19,8 +19,22 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-06',
+    title: 'Larger Goal Editor on Tablet and a Changes Summary',
+    description: 'Both goal editors, a student goal from their profile and a goal template from the templates page, now open wider on tablet instead of the narrow 576px window. Each editor also lists what saving will change, old value to new value, above the Save button: session target, baseline, target date, data capture method, goal direction, task steps, GAS level descriptions, blank fills and the goal text itself. Nothing shows when nothing changed.',
+    type: 'improvement',
+    icon: Pencil,
+  },
+  {
+    date: '2026-11-06',
+    title: 'Eight Default GAS Goals with Written Scales',
+    description: 'Goal Attainment Scale gains eight built-in goals with a full written scale for every level: targeted vocabulary and answering questions about a story for language development, asking for help and commenting to share information for communication functions, combining words to describe and retelling a story in order for expressive language, and using a calm-down strategy and transitioning between activities for behavior. Each goal starts at level -2 with 0 as the expected outcome, and assigning one copies its five level descriptions onto the student goal, where they can still be edited.',
+    type: 'feature',
+    icon: Target,
+  },
+  {
+    date: '2026-11-06',
     title: 'Goal Attainment Scale Goals and T-Score Reports',
-    description: 'Goal Attainment Scale is now a goal type, the 21st in the app. Each GAS goal records one of five levels per session, from -2 (much less than expected) to +2 (much more than expected), with 0 as the expected outcome; the five level descriptions can be written in your own words in Edit Goal, and the Data Entry picker shows them with the levels. The analysis report gains a T-score scatter plot over time with an Expected (T = 50) line, a summary table with each goal\'s current level, average level, and sessions at or above expected, and an attainment distribution; each GAS goal card charts its levels from -2 to +2 with its own Expected line, and the printable progress report does the same. T-scores combine all of a student\'s GAS goals with the standard formula, carrying each goal\'s latest level forward to each date.',
+    description: 'Goal Attainment Scale is now a goal type, the 21st in the app. Each GAS goal records one of five levels per session, from -2 (much less than expected) to +2 (much more than expected), with 0 as the expected outcome; the five level descriptions can be written in your own words in Edit Goal, and the Data Entry picker shows them with the levels. The analysis report gains a T-score line graph over time with an Expected (T = 50) line, a summary table with each goal\'s current level, average level, and sessions at or above expected, and an attainment distribution; each GAS goal card charts its levels from -2 to +2 with its own Expected line, and the printable progress report does the same. T-scores combine all of a student\'s GAS goals with the standard formula, carrying each goal\'s latest level forward to each date.',
     type: 'feature',
     icon: Target,
   },
