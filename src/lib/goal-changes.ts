@@ -161,6 +161,7 @@ export interface GoalTemplateFormValues {
   dataCaptureType?: string;
   smartGoalPrompt?: string;
   generatedSmartGoal?: string;
+  gasLevelDescriptions?: string[];
   sessionTargetValue?: number | string;
   targetDirection?: TargetDirection;
 }
@@ -184,6 +185,19 @@ export function goalTemplateChanges(original: GoalTemplate, values: GoalTemplate
   }
   if (values.sessionTargetValue !== undefined && formatTarget(values.sessionTargetValue) !== formatTarget(original.sessionTargetValue)) {
     changes.push({ label: 'Session target', from: formatTarget(original.sessionTargetValue), to: formatTarget(values.sessionTargetValue) });
+  }
+  if (values.gasLevelDescriptions !== undefined) {
+    const originalGas = Array.from({ length: 5 }, (_, i) => original.gasLevelDescriptions?.[i] ?? '');
+    values.gasLevelDescriptions.forEach((desc, i) => {
+      if (i >= 5) return;
+      if (normText(desc) !== normText(originalGas[i])) {
+        changes.push({
+          label: `Level ${formatGasLevel(i - 2)} description`,
+          from: normText(originalGas[i]) || BLANK,
+          to: truncate(normText(desc) || BLANK, 80),
+        });
+      }
+    });
   }
   if (values.targetDirection !== undefined && formatDirection(values.targetDirection) !== formatDirection(original.targetDirection)) {
     changes.push({ label: 'Goal direction', from: formatDirection(original.targetDirection), to: formatDirection(values.targetDirection) });

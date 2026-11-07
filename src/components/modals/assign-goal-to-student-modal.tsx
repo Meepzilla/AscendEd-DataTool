@@ -91,7 +91,7 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
       onClose={onClose}
       title={`Assign Goals to ${student.name}`}
       description="Select from existing templates or create a new custom goal to assign to the student."
-      size="2xl" 
+      size="3xl" 
     >
       <Tabs defaultValue="templates">
         <TabsList className="grid w-full grid-cols-2">
@@ -106,7 +106,7 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
           </p>
           <TemplatePickerFilters picker={picker} />
 
-          <ScrollArea className="flex-grow border rounded-md p-1.5 h-[200px] [&_[data-radix-scroll-area-viewport]>div]:!block"> {/* Adjusted height and padding */}
+          <ScrollArea className="flex-grow border rounded-md p-1.5 h-[min(55vh,560px)] [&_[data-radix-scroll-area-viewport]>div]:!block"> {/* Taller list so more goals show at once */}
             {picker.templates.length === 0 ? (
               <p className="text-center text-sm text-muted-foreground py-8">
                 No available templates match criteria or all are assigned.
