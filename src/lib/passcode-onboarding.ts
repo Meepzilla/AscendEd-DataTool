@@ -166,3 +166,22 @@ export function recordBackupDeclinedBeforePasscode(): PasscodeBackupDeclined {
 export function shouldPromptForBackupBeforePasscode(): boolean {
   return !hasBackupOnRecord() && !hasDeclinedBackupBeforePasscode();
 }
+
+// ---- What the passcode gate shows ----
+
+export type GateStatus = 'open' | 'locked' | 'setup' | 'offer';
+
+/**
+ * What the app shows when it opens. With a passcode on: the lock screen until it is unlocked. Without one:
+ * the first-run setup on a fresh install, the one-time offer on an install that already has data (unless put
+ * off for this session), else the app. The passcode check comes first because "unlocked" is also true when no
+ * passcode is set: checking it first opened every fresh install without ever asking for a passcode.
+ */
+export function passcodeGateStatus(state: {
+  passcodeOn: boolean; unlocked: boolean; firstRun: boolean; offer: boolean; offerPutOff: boolean;
+}): GateStatus {
+  if (state.passcodeOn) return state.unlocked ? 'open' : 'locked';
+  if (state.firstRun) return 'setup';
+  if (state.offer && !state.offerPutOff) return 'offer';
+  return 'open';
+}

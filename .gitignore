@@ -45,3 +45,8 @@ next-env.d.ts
 
 # Python
 __pycache__/
+
+# Signing keys never belong in the repository.
+*.keystore
+*.jks
+*.keystore.b64

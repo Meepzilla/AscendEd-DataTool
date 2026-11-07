@@ -32,9 +32,12 @@ jobs:
       - name: Build web app and copy it into the Android project
         run: npm run android:sync
 
-      # With the release key in the repository's secrets, the APK is a release build (not debuggable, so student
-      # data can't be copied off a phone over USB). Without them, a debug build as before.
+      # The APK teachers install is a release build, signed with the private release key from the repository's
+      # secrets (not debuggable, so student data can't be copied off a phone over USB). Without those secrets the
+      # app is still built, as a check that it compiles, but nothing is published: a debug build is signed with
+      # this runner's throwaway key and is never handed out.
       - name: Build APK
+        id: apk
         working-directory: android
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -47,12 +50,16 @@ jobs:
             export ANDROID_KEYSTORE_FILE="$RUNNER_TEMP/release.keystore"
             ./gradlew assembleRelease
             cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/AscendEd.apk"
+            rm -f "$RUNNER_TEMP/release.keystore"
+            echo "release=true" >> "$GITHUB_OUTPUT"
           else
             ./gradlew assembleDebug
-            cp app/build/outputs/apk/debug/app-debug.apk "$RUNNER_TEMP/AscendEd.apk"
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=No APK published::The release signing key isn't set in this repository's secrets, so the app was built as a check only. Add ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS and ANDROID_KEY_PASSWORD to publish an installable APK."
           fi
 
       - uses: actions/upload-artifact@v7
+        if: steps.apk.outputs.release == 'true'
         with:
           name: AscendEd-apk
           path: ${{ runner.temp }}/AscendEd.apk
