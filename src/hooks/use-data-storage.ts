@@ -6,6 +6,9 @@ import { useErrorLog } from './use-error-log';
 import * as secureStore from '@/lib/secure-store';
 import { hydrateLists, readList, storageKeys } from '@/lib/data-store';
 import { checkSaveFits, formatBytes, serializedBytes } from '@/lib/storage-size';
+import { toSafeErrorMessage } from '@/lib/error-message';
+import { clearStorageFailure, reportStorageFailure, sourceForStorageKey } from '@/lib/storage-failure';
+import { setSafeStorageErrorHandler } from '@/lib/safe-storage';
 
 // Reading and saving the student data lists for useStudentData: the user's storage keys, a read that remembers
 // lists that couldn't be read, and a save that reports failures (storage full, or a list that couldn't be read and
@@ -84,28 +87,55 @@ export function useDataStorage(uid: string | undefined) {
       if (!(await secureStore.verifyStoredList(key, data))) {
         throw new Error('Save verification failed: the stored data does not match.');
       }
+      clearStorageFailure('save');
       return true;
     } catch (error) {
-      console.error(`Error writing localStorage key "${key}":`, error);
+      // Message only, sanitised: the error object itself is never logged. The key holds only
+      // the constant local-guest-user id, not a student id.
+      console.error(`Error writing localStorage key "${key}": ${toSafeErrorMessage(error)}`);
       addErrorLog({ message: `Saving failed: ${error instanceof Error ? error.message : String(error)}`, source: 'storage', type: 'error' });
-      toast({
-        title: "Couldn't save",
-        description: "This device's storage is full or unavailable, so the change was not saved. Back up your data in Settings, then delete old sessions to make room.",
-        variant: 'destructive',
-      });
+      // The failure is recorded once (persistent warning) and toasted once per failure, not once
+      // per save attempt while storage stays full.
+      if (reportStorageFailure('save', error)) {
+        toast({
+          title: "Couldn't save",
+          description: "This device's storage is full or unavailable, so the change was not saved. Back up your data in Settings, then delete old sessions to make room.",
+          variant: 'destructive',
+        });
+      }
       return false;
     }
   }, [toast, addErrorLog, fallbackBytes]);
 
   // With passcode protection, data is encrypted into storage in the background; a write that fails there
   // is reported the same way. (Committed saves await the write themselves; this covers the fire-and-
-  // forget Data Entry draft.)
+  // forget Data Entry draft, student groups and ABC lists.) The key says what failed, so the failure
+  // is recorded against the right thing (the draft gets its own warning on the Data Entry screen)
+  // and toasted once per failure, not once per attempt while storage stays full. Settings saved
+  // through safe-storage report the same way.
   useEffect(() => {
-    secureStore.setWriteErrorHandler(error => {
+    secureStore.setWriteErrorHandler((error, storageKey) => {
+      const source = storageKey ? sourceForStorageKey(storageKey) : 'save';
       addErrorLog({ message: `Saving (encrypted) failed: ${error instanceof Error ? error.message : String(error)}`, source: 'storage', type: 'error' });
-      toast({ title: "Couldn't save", description: "This device's storage is full or unavailable, so the latest change was not saved. Back up your data in Settings.", variant: 'destructive' });
+      if (reportStorageFailure(source, error)) {
+        toast({
+          title: "Couldn't save",
+          description:
+            source === 'draft'
+              ? 'The Data Entry draft could not be saved — storage is full or unavailable. Your entries are still on this screen; save the sessions now.'
+              : "This device's storage is full or unavailable, so the latest change was not saved. Back up your data in Settings.",
+          variant: 'destructive',
+        });
+      }
     });
-    return () => secureStore.setWriteErrorHandler(null);
+    setSafeStorageErrorHandler(failure => {
+      addErrorLog({ message: `A setting could not be saved: ${failure.detail}`, source: 'storage', type: 'error' });
+      toast({ title: "Couldn't save a setting", description: failure.detail, variant: 'destructive' });
+    });
+    return () => {
+      secureStore.setWriteErrorHandler(null);
+      setSafeStorageErrorHandler(null);
+    };
   }, [toast, addErrorLog]);
 
   /** A stored list; [] when it can't be read, which is remembered (the list is then never written over). */

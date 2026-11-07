@@ -4,6 +4,11 @@ import {
   PASSCODE_DECISION_KEY, getPasscodeDecision, hasExistingStudentData, needsFirstRunPrompt,
   needsPasscodeOffer, recordPasscodeDecision,
 } from '../passcode-onboarding';
+import {
+  PASSCODE_BACKUP_DECLINED_KEY, hasBackupOnRecord, hasDeclinedBackupBeforePasscode,
+  recordBackupDeclinedBeforePasscode, shouldPromptForBackupBeforePasscode,
+} from '../passcode-onboarding';
+import { LAST_BACKUP_KEY } from '../backup';
 
 // First-run passcode onboarding decisions, with an in-memory localStorage. The passcode config key
 // (ascended_passcode_v1) stands in for protection being on: the onboarding module only reads it
@@ -96,5 +101,33 @@ describe('passcode onboarding decisions', () => {
     recordPasscodeDecision('opted-out');
     expect(needsFirstRunPrompt()).toBe(false);
     expect(needsPasscodeOffer()).toBe(false);
+  });
+});
+
+describe('backup before enabling the passcode', () => {
+  it('prompts when there is no backup on record and no decline', () => {
+    expect(hasBackupOnRecord()).toBe(false);
+    expect(hasDeclinedBackupBeforePasscode()).toBe(false);
+    expect(shouldPromptForBackupBeforePasscode()).toBe(true);
+  });
+
+  it('a decline lets setup proceed and stops prompting', () => {
+    const record = recordBackupDeclinedBeforePasscode();
+    expect(record).toMatchObject({ v: 1 });
+    expect(storage.getItem(PASSCODE_BACKUP_DECLINED_KEY)).toBe(JSON.stringify(record));
+    expect(hasDeclinedBackupBeforePasscode()).toBe(true);
+    expect(shouldPromptForBackupBeforePasscode()).toBe(false);
+  });
+
+  it('a backup on record skips the prompt without a decline', () => {
+    storage.setItem(LAST_BACKUP_KEY, new Date().toISOString());
+    expect(hasBackupOnRecord()).toBe(true);
+    expect(shouldPromptForBackupBeforePasscode()).toBe(false);
+  });
+
+  it('ignores a backup timestamp that is not a real date', () => {
+    storage.setItem(LAST_BACKUP_KEY, 'not a date');
+    expect(hasBackupOnRecord()).toBe(false);
+    expect(shouldPromptForBackupBeforePasscode()).toBe(true);
   });
 });

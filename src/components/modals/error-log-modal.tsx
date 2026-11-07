@@ -22,7 +22,7 @@ export default function ErrorLogModal() {
       isOpen={isErrorLogModalOpen}
       onClose={toggleErrorLogModal} // Use toggleErrorLogModal for closing
       title="Application Error Log"
-      description="Recent errors and warnings. For detailed debugging, check browser console."
+      description="Recent errors and warnings, newest first. Identifiers are removed from any console copy; the full entry stays here only."
       size="xl"
     >
       <div className="space-y-4">

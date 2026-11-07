@@ -11,13 +11,15 @@ const ICONS: Record<Theme, typeof Moon> = { dark: Moon, light: Sun, contrast: Co
 /** Settings row for the color theme. Changes apply immediately and are saved on this device. */
 export default function ThemeSetting() {
   const [theme, setThemeState] = useState<Theme | null>(null);
+  // Whether the last save failed: the theme still applies for this visit, but it won't be kept.
+  const [saveFailed, setSaveFailed] = useState(false);
 
   useEffect(() => {
     setThemeState(getTheme());
   }, []);
 
   const choose = (value: Theme) => {
-    setTheme(value);
+    setSaveFailed(!setTheme(value));
     setThemeState(value);
   };
   const current = THEMES.find(t => t.value === theme);
@@ -30,6 +32,11 @@ export default function ThemeSetting() {
           The app&apos;s colors{current ? `: ${current.description}` : '.'} Printed reports are always black on white. This
           setting is saved on this device only.
         </p>
+        {saveFailed && (
+          <p className="text-sm text-destructive" role="alert">
+            The theme could not be saved on this device (storage is full or unavailable), so it applies for this visit only.
+          </p>
+        )}
       </div>
       <div className="flex flex-wrap gap-1" role="radiogroup" aria-label="Theme">
         {THEMES.map(({ value, label }) => {

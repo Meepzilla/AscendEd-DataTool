@@ -1,4 +1,5 @@
 import { formatDate } from './helpers';
+import { clearStorageFailure, reportStorageFailure } from './storage-failure';
 
 // The school year's first and last day (Settings → Interface → School Year), as month and day so it repeats each
 // year. Used for school-year attendance and service minutes, and the Progress Report's "School year to date".
@@ -34,9 +35,18 @@ export function getSchoolYearSetting(): SchoolYearSetting {
   return DEFAULT_SCHOOL_YEAR;
 }
 
-export function setSchoolYearSetting(setting: SchoolYearSetting) {
-  try { localStorage.setItem(SCHOOL_YEAR_KEY, JSON.stringify(setting)); } catch { /* this visit only */ }
+/** Saves the setting; false when storage is full or unavailable (it then applies for this visit only, and the failure is recorded as a persistent warning). */
+export function setSchoolYearSetting(setting: SchoolYearSetting): boolean {
+  try {
+    localStorage.setItem(SCHOOL_YEAR_KEY, JSON.stringify(setting));
+    clearStorageFailure('school-year');
+  } catch (error) {
+    reportStorageFailure('school-year', error);
+    window.dispatchEvent(new Event(SCHOOL_YEAR_EVENT));
+    return false;
+  }
   window.dispatchEvent(new Event(SCHOOL_YEAR_EVENT));
+  return true;
 }
 
 function onDay(year: number, monthDay: string): Date {

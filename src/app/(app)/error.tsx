@@ -4,13 +4,22 @@ import { useEffect } from 'react';
 import { AlertTriangle, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useErrorLogIfAvailable } from '@/hooks/use-error-log';
+import { GENERIC_ERROR_MESSAGE } from '@/lib/error-message';
 
-// Shown instead of a blank page when something on a page fails. The details help find the cause
-// (a photo of this screen is enough); the app's data is not affected.
+// Shown instead of a blank page when something on a page fails. The screen shows a generic message
+// only: the raw error can carry student IDs and other identifiers, so it goes in the in-memory
+// error log (capped at 50 entries, never transmitted) and is never rendered or console-logged.
+// The app's data is not affected.
 export default function AppError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  const errorLog = useErrorLogIfAvailable();
+  // addErrorLog is stable (useCallback with no dependencies), so this logs the error once
+  // even though the provider value itself is a fresh object on every render.
+  const addErrorLog = errorLog?.addErrorLog;
+
   useEffect(() => {
-    console.error(error);
-  }, [error]);
+    addErrorLog?.({ message: 'Page error.', source: 'AppError', details: error.message || String(error), type: 'error' });
+  }, [error, addErrorLog]);
 
   const version = process.env.NEXT_PUBLIC_APP_VERSION;
   return (
@@ -24,10 +33,8 @@ export default function AppError({ error, reset }: { error: Error & { digest?: s
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <pre className="whitespace-pre-wrap break-words rounded-md bg-muted p-3 text-xs">
-          {error.message || String(error)}
-          {version ? `\nVersion ${version}` : ''}
-        </pre>
+        <p className="text-sm text-muted-foreground">{GENERIC_ERROR_MESSAGE} Details are in the error log, under the app menu.</p>
+        {version ? <p className="text-xs text-muted-foreground">Version {version}</p> : null}
         <div className="flex gap-2">
           <Button onClick={reset}><RotateCcw className="mr-2 h-4 w-4" /> Try Again</Button>
           <Button variant="outline" onClick={() => window.history.back()}>Go Back</Button>

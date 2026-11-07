@@ -1,5 +1,7 @@
 'use client';
 
+import { toSafeErrorMessage } from './error-message';
+
 /**
  * Saves a text file in the way that works on each platform:
  * - Android app: writes the file to a `shares` subdirectory of the app's cache and opens the share sheet (Drive, email, Files…).
@@ -25,7 +27,15 @@ export async function saveTextFile(fileName: string, text: string, mimeType = 'a
     } catch {
       // The directory may already exist; the write below still decides whether the share can go ahead.
     }
-    const { uri } = await Filesystem.writeFile({ path: cachePath, data: text, directory: Directory.Cache, encoding: Encoding.UTF8 });
+    // The write itself used to run outside any try block, so a failure (storage full, no permission)
+    // rejected with nothing catching it at this level. It is wrapped now: the caller gets a
+    // sanitised error it can report, and nothing is left behind in the cache either way.
+    let uri: string;
+    try {
+      ({ uri } = await Filesystem.writeFile({ path: cachePath, data: text, directory: Directory.Cache, encoding: Encoding.UTF8 }));
+    } catch (error) {
+      throw new Error(`The file could not be written on this device: ${toSafeErrorMessage(error)}`);
+    }
     try {
       await Share.share({ title: fileName, files: [uri] });
       return true;
@@ -55,14 +65,18 @@ export async function saveTextFile(fileName: string, text: string, mimeType = 'a
     }
   }
 
-  const url = URL.createObjectURL(file);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = fileName;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  try {
+    const url = URL.createObjectURL(file);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch (error) {
+    throw new Error(`The file could not be downloaded: ${toSafeErrorMessage(error)}`);
+  }
   return true;
 }
 

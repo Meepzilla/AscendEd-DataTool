@@ -3,6 +3,7 @@
 
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { generateUUID } from '@/lib/helpers';
+import { sanitizeErrorMessage } from '@/lib/error-message';
 
 // Interface defining the structure of an individual error log entry.
 export interface AppErrorLogEntry {
@@ -42,7 +43,9 @@ export const ErrorLogProvider: React.FC<{ children: ReactNode }> = ({ children }
   /**
    * Adds a new error log entry.
    * It generates a unique ID and timestamp for the log, adds it to the state (keeping only the last 50),
-   * and logs it to the console (warning or error based on type).
+   * and logs a sanitised copy to the console (warning or error based on type). The raw message and
+   * details stay in the in-memory log only: error text can carry student IDs and other identifiers,
+   * and the console is not a safe place for them. The log itself is never transmitted.
    */
   const addErrorLog = useCallback((log: Omit<AppErrorLogEntry, 'id' | 'timestamp'>) => {
     const newLogEntry: AppErrorLogEntry = {
@@ -53,11 +56,12 @@ export const ErrorLogProvider: React.FC<{ children: ReactNode }> = ({ children }
     // Update errorLogs state, adding the new log and keeping only the most recent 50.
     setErrorLogs(prevLogs => [newLogEntry, ...prevLogs].slice(0, 50)); 
     
-    // Log to console based on the log type.
+    // Log a sanitised copy to the console based on the log type; the raw entry stays in state only.
+    const safeDetails = log.details ? sanitizeErrorMessage(log.details) : undefined;
     if (log.type === 'warning') {
-      console.warn(`Logged [${log.type}]: ${log.message}`, {source: log.source, details: log.details});
+      console.warn(`Logged [${log.type}]: ${sanitizeErrorMessage(log.message)}`, {source: log.source, details: safeDetails});
     } else {
-      console.error(`Logged [${log.type}]: ${log.message}`, {source: log.source, details: log.details});
+      console.error(`Logged [${log.type}]: ${sanitizeErrorMessage(log.message)}`, {source: log.source, details: safeDetails});
     }
   }, []); // Empty dependency array means this function is memoized and doesn't change.
 
@@ -102,3 +106,10 @@ export const useErrorLog = (): ErrorLogContextType => {
   }
   return context;
 };
+
+/**
+ * The same context, without throwing: the (app) error boundary uses this, since the provider
+ * itself may be what failed. Returns undefined outside of an ErrorLogProvider.
+ */
+export const useErrorLogIfAvailable = (): ErrorLogContextType | undefined =>
+  useContext(ErrorLogContext);
