@@ -58,11 +58,18 @@ export function resetMemoryIndexedDb() {
   memoryStores.clear();
   memoryMeta.clear();
   failWrites = false;
+  failReads = 0;
 }
 
 /** Makes writes throw a QuotaExceededError until turned off (tests only). */
 export function setIndexedDbWriteFailure(fail: boolean) {
   failWrites = fail;
+}
+
+// Test hook: makes reads fail the next `count` times (like iPad Safari's "connection to Indexed Database server lost").
+let failReads = 0;
+export function setIndexedDbReadFailures(count: number) {
+  failReads = count;
 }
 
 export function isIndexedDbSupported(): boolean {
@@ -144,6 +151,10 @@ export async function deleteRecords(storeName: ListStoreName, keys: string[]): P
 
 /** All rows in list order. */
 export async function getAllRecords(storeName: ListStoreName): Promise<IdRecord[]> {
+  if (failReads > 0) {
+    failReads--;
+    throw new Error('Connection to Indexed Database server lost. Refresh the page to try again');
+  }
   if (memoryMode) return [...memoryStore(storeName).values()].sort((a, b) => a.o - b.o);
   const rows = await withStore(storeName, 'readonly', store => runRequest(store.getAll() as IDBRequest<IdRecord[]>));
   return [...rows].sort((a, b) => a.o - b.o);
