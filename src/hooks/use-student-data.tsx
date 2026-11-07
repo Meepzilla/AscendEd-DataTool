@@ -12,7 +12,7 @@ import { goalFromTemplate, hasTemplateGoal, recordRecentTemplates } from '@/lib/
 import { generateUUID } from '@/lib/helpers';
 import * as secureStore from '@/lib/secure-store';
 import { byDateDesc, byName, hydrateLists, readList } from '@/lib/data-store';
-import { DATA_CHANGED_CHANNEL, isMainListStorageKey, postDataChanged, runListTransactionAsync, type AsyncListTransactionStore, type MainListKey } from '@/lib/data-transaction';
+import { DATA_CHANGED_CHANNEL, isMainListStorageKey, isOwnDataChangedMessage, postDataChanged, runListTransactionAsync, type AsyncListTransactionStore, type MainListKey } from '@/lib/data-transaction';
 import { prepareLoadedData } from '@/lib/data-migrations';
 import { planSessionImport, type ImportedSession } from '@/lib/session-import';
 import { createBackup, type AppBackup, type ParsedBackup, type RestoreMode, type RestoreSummary } from '@/lib/backup';
@@ -518,8 +518,10 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   // tab's unsaved edits are already stored (every change writes to storage first).
   // IndexedDB writes do not fire a storage event, so the other tab's verified saves also
   // post on a BroadcastChannel; the storage event still covers the localStorage-backed
-  // lists and storage being cleared. Storage events and channel messages only fire in
-  // other tabs, so this tab's own saves never trigger a reload here.
+  // lists and storage being cleared. Storage events only fire in other tabs, but a
+  // BroadcastChannel message reaches every other channel object with the same name,
+  // including one in this tab, so the listener ignores messages carrying this tab's own
+  // sender id (see isOwnDataChangedMessage) instead of reloading on its own saves.
   useEffect(() => {
     if (typeof window === 'undefined' || !currentUser) return;
     let lastReload = 0;
@@ -554,7 +556,10 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     try {
       if (typeof BroadcastChannel !== 'undefined') {
         channel = new BroadcastChannel(DATA_CHANGED_CHANNEL);
-        channel.onmessage = () => void reload();
+        channel.onmessage = (event) => {
+          if (isOwnDataChangedMessage(event.data)) return; // this tab's own save, not another tab
+          void reload();
+        };
       }
     } catch {
       // No channel: the storage event still covers the localStorage-backed lists.
