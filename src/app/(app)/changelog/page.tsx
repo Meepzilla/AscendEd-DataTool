@@ -18,6 +18,13 @@ interface ChangelogEntry {
 
 const allChangelogEntries: ChangelogEntry[] = [
   {
+    date: '2026-11-06',
+    title: 'Fixes to Dates, Scoring, Backups and Exports',
+    description: 'Dates no longer shift a day back: a session dated Aug 1 now counts in the school year, week and month starting Aug 1, and exported CSV dates land on the right day. Scoring is corrected too: a story session where every part scored 0 now charts as 0% instead of vanishing, counts of 0 no longer fall through to another field, and prolongations count in the fluency score. Importing a goal like "currently at 40%, will increase to 80%" now reads the target as 80%, and "3 times per day" or "3 times per week" goals are read as frequency goals. Saving a session in parts and merging no longer counts trials twice, and a cleared value in the later part now wins. Backups are password protected by default (plain text needs typing PLAINTEXT), carry a checksum so a damaged file is rejected, and report anything dropped instead of discarding it silently. CSV export has a de-identified option with IDs only, no names, notes or free text. Data Entry and Settings buttons are now at least 44 px, with labels for screen readers, and animations respect reduced motion.',
+    type: 'fix',
+    icon: Bug,
+  },
+  {
     date: '2026-11-02',
     title: 'Behavior Times Can Be Changed by Hand',
     description: 'Behavior goals record when each thing happened: each frequency tap, each duration episode\'s start, each latency cue and each ABC incident. An "Edit times" link under each now opens a time box for every entry, to correct a time (for example, a tap made a few minutes late) or add one for an episode or trial entered by hand. It works in Data Entry and in Edit Session. A changed time is put on the session\'s day, so the time-of-day reports count it, even when the session is edited on a later day.',
