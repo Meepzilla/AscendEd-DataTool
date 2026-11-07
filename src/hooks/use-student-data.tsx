@@ -13,6 +13,7 @@ import { generateUUID } from '@/lib/helpers';
 import * as secureStore from '@/lib/secure-store';
 import { byDateDesc, byName, hydrateLists, readList } from '@/lib/data-store';
 import { requestPersistentStorage } from '@/lib/storage-size';
+import { coalesce } from '@/lib/coalesce';
 import { DATA_CHANGED_CHANNEL, isMainListStorageKey, isOwnDataChangedMessage, postDataChanged, runListTransactionAsync, type AsyncListTransactionStore, type MainListKey } from '@/lib/data-transaction';
 import { prepareLoadedData } from '@/lib/data-migrations';
 import { planSessionImport, type ImportedSession } from '@/lib/session-import';
@@ -564,11 +565,10 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   // sender id (see isOwnDataChangedMessage) instead of reloading on its own saves.
   useEffect(() => {
     if (typeof window === 'undefined' || !currentUser) return;
-    let lastReload = 0;
-    const reload = async () => {
-      const now = Date.now();
-      if (now - lastReload < 1000) return; // one reload per burst of saves
-      lastReload = now;
+    // Once after a burst of saves ends, and again if more arrive while reloading: every save from the other tab is
+    // picked up. (Reloading only on the first message of a burst missed the rest, and this tab's next save then
+    // wrote its incomplete list back, deleting the other tab's newer records.)
+    const doReload = async () => {
       await hydrateLists({ students: studentsKey, templates: templatesKey, sessions: sessionsKey });
       const nextStudents = readList<Student>(studentsKey);
       const nextTemplates = readList<GoalTemplate>(templatesKey);
@@ -588,8 +588,10 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       });
       toast({ title: 'Data changed in another tab', description: 'Students, goal templates and sessions were reloaded from this device.' });
     };
+    const reloader = coalesce(doReload, 400);
+    const reload = () => reloader.trigger();
     const onStorage = (event: StorageEvent) => {
-      if (isMainListStorageKey(event.key, { students: studentsKey, templates: templatesKey, sessions: sessionsKey })) void reload();
+      if (isMainListStorageKey(event.key, { students: studentsKey, templates: templatesKey, sessions: sessionsKey })) reload();
     };
     window.addEventListener('storage', onStorage);
     let channel: BroadcastChannel | null = null;
@@ -598,7 +600,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         channel = new BroadcastChannel(DATA_CHANGED_CHANNEL);
         channel.onmessage = (event) => {
           if (isOwnDataChangedMessage(event.data)) return; // this tab's own save, not another tab
-          void reload();
+          reload();
         };
       }
     } catch {
@@ -607,6 +609,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return () => {
       window.removeEventListener('storage', onStorage);
       channel?.close();
+      reloader.cancel();
     };
   }, [currentUser, studentsKey, templatesKey, sessionsKey, toast, applyListsQuiet]);
   
