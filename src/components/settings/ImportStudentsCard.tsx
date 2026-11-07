@@ -135,7 +135,7 @@ export default function ImportStudentsCard() {
           (such as &quot;120 min/month&quot;) and Goals (several goals in one cell separated by &quot;|&quot;, or one goal per
           column). Each goal&apos;s type is chosen from its wording, and you can check and change it before anything is saved.
           Students already here get the IEP dates from the file and any goals they don&apos;t have yet (a name such as
-          &quot;Jeremy&quot; is matched to &quot;Jeremy Taylor&quot; when their IEPs started the same day).
+          &quot;Sam&quot; is matched to &quot;Sam Rivera&quot; when their IEPs started the same day).
         </CardDescription>
       </CardHeader>
       <CardContent>

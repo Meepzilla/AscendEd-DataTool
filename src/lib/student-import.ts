@@ -26,7 +26,7 @@ export interface ImportStudent {
   name: string;
   /** The existing student this row updates (same name), if any. */
   existingId?: string;
-  /** That student's name, when it isn't written the same way (the file has "Jeremy Taylor", the app "Jeremy"). */
+  /** That student's name, when it isn't written the same way (the file has "Sam Rivera", the app "Sam"). */
   existingName?: string;
   iep: StudentIep;
   /** The IEP dates as the file has them, when they had passed and `iep` was moved to the current IEP year. */
@@ -510,7 +510,7 @@ export function matchExistingStudents(students: ImportStudent[], existing: Pick<
 
 /**
  * The existing student a row is for: the one with the same name, or else the one whose name starts the same way
- * ("Jeremy (JJ)" for "Jeremy (JJ) Taylor", "Aiden (2)" for "Aiden Curnutte") and whose IEP started the same day
+ * ("Sam (SJ)" for "Sam (SJ) Rivera", "Maya (2)" for "Maya Lindqvist") and whose IEP started the same day
  * (or, failing that, the only one with a newer IEP saved, up to two years after the file's).
  */
 function findExistingStudent<T extends Pick<Student, 'name' | 'iep'>>(s: ImportStudent, existing: T[]): T | undefined {

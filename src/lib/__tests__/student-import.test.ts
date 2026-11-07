@@ -112,7 +112,7 @@ describe('goal wording', () => {
   it('names a goal by what the student will do, without its conditions or criteria', () => {
     expect(goalName('By Oct 2026, given unrestricted AAC access, modeling, and 10s wait-time, use symbolic communication at least 3 times')).toBe('Use symbolic communication');
     expect(goalName('Given visual support, produce a complete sentence with articles in 4 of 5 opportunities')).toBe('Produce a complete sentence with articles');
-    expect(goalName('By Oct 2026 JJ will: i. eliminate weak syllable deletion, ii. consonant deletion')).toBe('Eliminate weak syllable deletion, consonant deletion');
+    expect(goalName('By May 2027 SJ will: i. eliminate cluster reduction, ii. final consonant deletion')).toBe('Eliminate cluster reduction, final consonant deletion');
     expect(goalName('Communicate at least 10 times within a 30-minute period using a preferred modality for 3 functions').length).toBeLessThanOrEqual(61);
   });
 
@@ -237,26 +237,26 @@ describe('IEP at a Glance PDF', () => {
 
 describe('matching students and goals written differently', () => {
   const existing = [
-    { id: 'j', name: 'Jeremy (JJ)', iep: { iepDate: '2025-10-29' }, goals: [{ smartGoal: 'Speech: JJ will eliminate weak syllable deletion, consonant deletion and glottal replacement over 70% (7/10 trials) by Oct 2026.' }] },
-    { id: 'a1', name: 'Aiden', iep: { iepDate: '2026-02-18' }, goals: [] },
-    { id: 'a2', name: 'Aiden (2)', iep: { iepDate: '2026-04-15' }, goals: [] },
+    { id: 'j', name: 'Sam (SJ)', iep: { iepDate: '2025-10-29' }, goals: [{ smartGoal: 'Speech: SJ will eliminate cluster reduction, final consonant deletion and stopping over 80% (8/10 trials) by May 2027.' }] },
+    { id: 'a1', name: 'Maya', iep: { iepDate: '2026-02-18' }, goals: [] },
+    { id: 'a2', name: 'Maya (2)', iep: { iepDate: '2026-04-15' }, goals: [] },
   ] as unknown as Student[];
   const row = (name: string, iepDate: string, goals: string[] = []) => ({ row: 2, name, iep: { iepDate }, goals: goals.map(smartGoal => ({ name: 'G', smartGoal, type: 'DISCRETE_TRIALS' as const, target: 80 })) });
 
   it('matches a fuller name when the IEP started the same day', () => {
-    const [jj, aidenE, aidenC, other] = matchExistingStudents([
-      row('Jeremy (JJ) Taylor', '2025-10-29'), row('Aiden Eckart', '2026-02-18'), row('Aiden Curnutte', '2026-04-15'), row('Jeremy Stone', '2026-01-01'),
+    const [sj, mayaO, mayaL, other] = matchExistingStudents([
+      row('Sam (SJ) Rivera', '2025-10-29'), row('Maya Okafor', '2026-02-18'), row('Maya Lindqvist', '2026-04-15'), row('Sam Brooks', '2026-01-01'),
     ], existing);
-    expect([jj.existingId, aidenE.existingId, aidenC.existingId, other.existingId]).toEqual(['j', 'a1', 'a2', undefined]);
-    expect(jj.existingName).toBe('Jeremy (JJ)');
+    expect([sj.existingId, mayaO.existingId, mayaL.existingId, other.existingId]).toEqual(['j', 'a1', 'a2', undefined]);
+    expect(sj.existingName).toBe('Sam (SJ)');
   });
 
   it('marks a goal the student has in other words, but not a different goal', () => {
-    const [jj] = matchExistingStudents([row('Jeremy (JJ) Taylor', '2025-10-29', [
-      'Speech: Given further characterization of JJ\'s articulation differences, JJ will: i. eliminate his use of Weak Syllable Deletion, ii. Consonant Deletion, iii. and Glottal Replacement to afford correct productions over 70% (7/10 trials) by October 2026.',
-      'Language: by October 2026 JJ will produce 3 multiword utterances per session.',
+    const [sj] = matchExistingStudents([row('Sam (SJ) Rivera', '2025-10-29', [
+      'Speech: Given a full description of SJ\'s speech sound patterns, SJ will: i. eliminate their use of Cluster Reduction, ii. Final Consonant Deletion, iii. and Stopping to produce correct sounds over 80% (8/10 trials) by May 2027.',
+      'Language: by May 2027 SJ will produce 3 multiword utterances per session.',
     ])], existing);
-    expect(jj.goals.map(g => g.duplicate)).toEqual([true, false]);
+    expect(sj.goals.map(g => g.duplicate)).toEqual([true, false]);
     expect(goalSimilarity('use AAC to greet', 'answer wh- questions')).toBe(0);
   });
 
