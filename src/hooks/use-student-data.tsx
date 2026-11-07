@@ -11,10 +11,11 @@ import { useDataStorage } from './use-data-storage';
 import { goalFromTemplate, hasTemplateGoal, recordRecentTemplates } from '@/lib/goal-templates';
 import { generateUUID } from '@/lib/helpers';
 import * as secureStore from '@/lib/secure-store';
-import { byDateDesc, byName } from '@/lib/data-store';
+import { byDateDesc, byName, readList } from '@/lib/data-store';
+import { isMainListStorageKey, runListTransaction, type ListTransactionStore, type MainListKey } from '@/lib/data-transaction';
 import { prepareLoadedData } from '@/lib/data-migrations';
 import { planSessionImport, type ImportedSession } from '@/lib/session-import';
-import { createBackup, type AppBackup, type RestoreMode, type RestoreSummary } from '@/lib/backup';
+import { createBackup, type AppBackup, type ParsedBackup, type RestoreMode, type RestoreSummary } from '@/lib/backup';
 import { planRestore, restoreBackupSettings } from '@/lib/restore';
 import { loadCustomAbcLists } from '@/lib/abc-lists';
 import { applyStudentImport, type ImportStudent } from '@/lib/student-import';
@@ -163,6 +164,33 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return true;
   }, [saveToLocal, sessionsKey]);
 
+  /**
+   * Writes all three lists as one transaction (see data-transaction.ts): every list is
+   * written and read back, and on any failure all three are rolled back to what was
+   * stored. Only when it returns true may the caller show the new lists. The save
+   * itself already shows the error when storage is full.
+   */
+  const applyTransaction = useCallback((next: { students: Student[]; goalTemplates: GoalTemplate[]; sessions: SessionData[] }) => {
+    const keyOf: Record<MainListKey, string | null> = { students: studentsKey, goalTemplates: templatesKey, sessions: sessionsKey };
+    const store: ListTransactionStore = {
+      snapshot: key => (keyOf[key] ? secureStore.snapshotItem(keyOf[key]!) : null),
+      restore: (key, snapshot) => { if (keyOf[key]) secureStore.restoreItem(keyOf[key]!, snapshot as secureStore.ItemSnapshot); },
+      write: (key, value) => saveToLocal(keyOf[key], value),
+      read: key => readStored(keyOf[key]),
+    };
+    return runListTransaction({ store, next });
+  }, [studentsKey, templatesKey, sessionsKey, saveToLocal, readStored]);
+
+  /** Shows transaction results in state, after applyTransaction said they are stored. */
+  const applyLists = useCallback((next: { students: Student[]; goalTemplates: GoalTemplate[]; sessions: SessionData[] }) => {
+    studentsRef.current = next.students;
+    templatesRef.current = next.goalTemplates;
+    sessionsRef.current = next.sessions;
+    setStudents(next.students);
+    setTemplateList(next.goalTemplates);
+    setSessions(next.sessions);
+  }, []);
+
   const addStudent = useCallback(async (name: string, options?: { quiet?: boolean }) => {
     if (!currentUser) return null;
     const newStudent: Omit<Student, 'id'> = { name, goals: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), userId: currentUser.uid, isArchived: false };
@@ -181,21 +209,32 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const deleteStudent = useCallback(async (studentId: string) => {
     if (!currentUser) return;
-    // Sessions first: if that fails, the student (and so the sessions' owner) is still there.
-    if (!commitSessions(sessionsRef.current.filter(s => s.studentId !== studentId))) return;
-    if (!commitStudents(studentsRef.current.filter(s => s.id !== studentId))) return;
+    const next = {
+      students: studentsRef.current.filter(s => s.id !== studentId),
+      goalTemplates: templatesRef.current,
+      sessions: sessionsRef.current.filter(s => s.studentId !== studentId),
+    };
+    // One transaction: a quota failure part way must not leave the sessions deleted
+    // while the student remains (or the other way round).
+    if (!applyTransaction(next)) return;
+    applyLists(next);
     toast({ title: "Success", description: "Student and sessions deleted." });
-  }, [currentUser, toast, commitStudents, commitSessions]);
+  }, [currentUser, toast, applyTransaction, applyLists]);
 
   /** Deletes several students and all their sessions at once (end-of-year clean-up). Returns whether it worked. */
   const deleteStudents = useCallback((studentIds: string[]): boolean => {
     if (!currentUser || studentIds.length === 0) return false;
     const ids = new Set(studentIds);
-    if (!commitSessions(sessionsRef.current.filter(s => !ids.has(s.studentId)))) return false;
-    if (!commitStudents(studentsRef.current.filter(s => !ids.has(s.id)))) return false;
+    const next = {
+      students: studentsRef.current.filter(s => !ids.has(s.id)),
+      goalTemplates: templatesRef.current,
+      sessions: sessionsRef.current.filter(s => !ids.has(s.studentId)),
+    };
+    if (!applyTransaction(next)) return false;
+    applyLists(next);
     setSelectedStudent(prev => (prev && ids.has(prev.id) ? null : prev));
     return true;
-  }, [currentUser, commitStudents, commitSessions]);
+  }, [currentUser, applyTransaction, applyLists]);
 
   const importStudents = useCallback((imported: ImportStudent[]) => {
     if (!currentUser || imported.length === 0) return null;
@@ -304,19 +343,23 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const importSessions = useCallback(async (sessionsToImport: ImportedSession[]) => {
     if (!currentUser) throw new Error("Not authenticated.");
     const plan = planSessionImport(studentsRef.current, sessionsRef.current, sessionsToImport, currentUser.uid);
-    if (plan.addedGoalCount > 0 && !commitStudents(plan.students)) {
-      throw new Error("The device's storage is full, so the sessions couldn't be saved.");
-    }
-    if (plan.newCount > 0 && !commitSessions(plan.sessions)) {
-      throw new Error("The device's storage is full, so the sessions couldn't be saved.");
-    }
     const { newCount, duplicateCount, unmatchedCount, addedGoalCount } = plan;
+    if (newCount === 0 && addedGoalCount === 0) return { newCount, duplicateCount, unmatchedCount, addedGoalCount };
+    const next = { students: plan.students, goalTemplates: templatesRef.current, sessions: plan.sessions };
+    // One transaction: new goals on the students and the sessions that use them are
+    // stored together, so a quota failure cannot leave one without the other.
+    if (!applyTransaction(next)) {
+      throw new Error("The device's storage is full, so the sessions couldn't be saved.");
+    }
+    applyLists(next);
     return { newCount, duplicateCount, unmatchedCount, addedGoalCount };
-  }, [currentUser, commitSessions, commitStudents]);
+  }, [currentUser, applyTransaction, applyLists]);
 
+  // The refs, not React state: a backup taken right after a rapid change exports what
+  // is stored, not the state from the last render.
   const exportBackup = useCallback(
-    () => createBackup({ students, goalTemplates: templateList, sessions }, { abcLists: loadCustomAbcLists() ?? undefined, studentGroups: getStudentGroups(currentUser?.uid) }),
-    [students, templateList, sessions, currentUser],
+    () => createBackup({ students: studentsRef.current, goalTemplates: templatesRef.current, sessions: sessionsRef.current }, { abcLists: loadCustomAbcLists() ?? undefined, studentGroups: getStudentGroups(currentUser?.uid) }),
+    [currentUser],
   );
 
   /**
@@ -336,41 +379,35 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
 
     const { next, summary } = planRestore(current, backup, mode);
-    const { students: nextStudents, goalTemplates: nextTemplates, sessions: nextSessions } = next;
     // Replacing is how damaged data is recovered, so those lists may be overwritten now. If storage fills
-    // part way, each list is put back exactly as it was stored (damaged ones too).
-    const stored = keys.map(key => (key ? secureStore.snapshotItem(key) : null));
+    // part way, the transaction puts each list back exactly as it was stored (damaged ones too).
     unmark(damaged);
-    const writes: [string | null, unknown][] = [
-      [studentsKey, nextStudents],
-      [templatesKey, nextTemplates],
-      [sessionsKey, nextSessions],
-    ];
-    for (let i = 0; i < writes.length; i++) {
-      if (!saveToLocal(writes[i][0], writes[i][1])) {
-        keys.slice(0, i).forEach((key, j) => {
-          if (!key) return;
-          try {
-            secureStore.restoreItem(key, stored[j]!);
-          } catch { /* the earlier value fit before, so it fits again */ }
-        });
-        mark(damaged);
-        throw new Error("The backup couldn't be saved on this device (storage is full). Nothing was changed.");
-      }
+    if (!applyTransaction(next)) {
+      mark(damaged);
+      throw new Error("The backup couldn't be saved on this device (storage is full). Nothing was changed.");
     }
     if (damaged.length > 0) setError(null);
-    studentsRef.current = nextStudents;
-    templatesRef.current = nextTemplates;
-    sessionsRef.current = nextSessions;
-    setStudents(nextStudents);
-    setTemplateList(nextTemplates);
-    setSessions(nextSessions);
+    applyLists(next);
     setSelectedStudent(null);
     // Custom ABC lists and saved groups. The student data is restored even if the ABC lists don't fit.
     restoreBackupSettings(backup, mode, currentUser?.uid, error =>
       addErrorLog({ message: `Restoring ABC lists failed: ${error instanceof Error ? error.message : String(error)}`, source: 'storage', type: 'error' }));
+    // Tell the user what parseBackup had to leave out, instead of restoring silently short.
+    const dropped = (backup as Partial<ParsedBackup>).droppedSettings ?? [];
+    const droppedRecords = (backup as Partial<ParsedBackup>).droppedRecords ?? [];
+    if (dropped.length > 0 || droppedRecords.length > 0) {
+      const parts = [
+        ...dropped.map(name => `the ${name === 'abcLists' ? 'ABC lists' : name === 'studentGroups' ? 'student groups' : name} settings`),
+        ...droppedRecords.map(r => `a ${r.kind === 'goalTemplate' ? 'goal template' : r.kind} (${r.id})`),
+      ];
+      toast({
+        title: 'Backup restored, but some data was left out',
+        description: `These were damaged and could not be restored: ${parts.join('; ')}.`,
+        variant: 'destructive',
+      });
+    }
     return summary;
-  }, [currentUser, studentsKey, templatesKey, sessionsKey, saveToLocal, addErrorLog, isUnreadable, unmark, mark]);
+  }, [currentUser, studentsKey, templatesKey, sessionsKey, addErrorLog, isUnreadable, unmark, mark, applyTransaction, applyLists, toast]);
 
   // --- End Data Actions ---
 
@@ -428,6 +465,42 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setLoading(false);
     setSessionsLoading(false);
   }, [authLoading, currentUser, studentsKey, templatesKey, sessionsKey, saveToLocal, toast, readStored, resetUnreadable, isUnreadable]);
+
+  // Another tab changed the data: reload the three lists from storage as they are and
+  // say so. No merge is attempted — the other tab's save is the newer copy, and this
+  // tab's unsaved edits are already stored (every change writes to storage first).
+  // Storage events only fire in other tabs, so this tab's own saves never trigger it.
+  useEffect(() => {
+    if (typeof window === 'undefined' || !currentUser) return;
+    let lastReload = 0;
+    const reload = () => {
+      const now = Date.now();
+      if (now - lastReload < 1000) return; // one reload per burst of saves
+      lastReload = now;
+      const nextStudents = readList<Student>(studentsKey);
+      const nextTemplates = readList<GoalTemplate>(templatesKey);
+      const nextSessions = readList<SessionData>(sessionsKey);
+      if (nextStudents === undefined || nextTemplates === undefined || nextSessions === undefined) {
+        toast({
+          title: "Data changed in another tab, but it couldn't be reloaded",
+          description: "Some of this device's data couldn't be read, so what you see here is unchanged. Restore a backup in Settings if data looks wrong.",
+          variant: 'destructive',
+        });
+        return;
+      }
+      applyLists({
+        students: [...nextStudents].sort(byName),
+        goalTemplates: [...nextTemplates].sort(byName),
+        sessions: [...nextSessions].sort(byDateDesc),
+      });
+      toast({ title: 'Data changed in another tab', description: 'Students, goal templates and sessions were reloaded from this device.' });
+    };
+    const onStorage = (event: StorageEvent) => {
+      if (isMainListStorageKey(event.key, { students: studentsKey, templates: templatesKey, sessions: sessionsKey })) reload();
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [currentUser, studentsKey, templatesKey, sessionsKey, toast, applyLists]);
   
 
   const getSessionsForStudent = useCallback((studentId: string) => {

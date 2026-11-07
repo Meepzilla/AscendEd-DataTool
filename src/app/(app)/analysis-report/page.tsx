@@ -151,7 +151,7 @@ export default function AnalysisReportPage() {
                     studentName={selectedStudent.name}
                     open={isCsvWarningOpen}
                     onCancel={() => setIsCsvWarningOpen(false)}
-                    onConfirm={() => { setIsCsvWarningOpen(false); downloadSessionsCsv(periodSessions, selectedStudent.name); }}
+                    onConfirm={(deidentified) => { setIsCsvWarningOpen(false); downloadSessionsCsv(periodSessions, selectedStudent.name, { deidentified }); }}
                   />
                 )}
              </div>

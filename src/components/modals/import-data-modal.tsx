@@ -10,6 +10,7 @@ import Papa from 'papaparse';
 import type { GoalType, SessionGoalData } from '@/lib/types';
 import { currentGoalType } from '@/lib/legacy-goal-types';
 import type { ImportedSession } from '@/lib/session-import';
+import { checkImportFileSize } from '@/lib/helpers';
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 
 /** A session read from the file, with the Session ID it had (kept, so a later backup merge matches it). */
@@ -60,6 +61,12 @@ export default function ImportDataModal({ onClose, onImport }: ImportDataModalPr
 
   const handleFileChange = (selectedFile: File) => {
     if (selectedFile) {
+      try {
+        checkImportFileSize(selectedFile.size);
+      } catch (error) {
+        toast({ title: 'File too large', description: error instanceof Error ? error.message : String(error), variant: 'destructive' });
+        return;
+      }
       setIsParsing(true);
       setParsedSessions([]);
       setFile(selectedFile);

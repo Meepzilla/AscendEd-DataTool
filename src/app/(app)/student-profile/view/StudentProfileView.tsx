@@ -253,7 +253,7 @@ export default function StudentProfileView() {
                     studentName={currentStudent.name}
                     open={isCsvWarningOpen}
                     onCancel={() => setIsCsvWarningOpen(false)}
-                    onConfirm={() => { setIsCsvWarningOpen(false); downloadSessionsCsv(studentSessions, currentStudent.name); }}
+                    onConfirm={(deidentified) => { setIsCsvWarningOpen(false); downloadSessionsCsv(studentSessions, currentStudent.name, { deidentified }); }}
                   />
                 )}
             <Button variant="outline" size="sm" onClick={() => openEditStudentModal(currentStudent)} className="w-full sm:w-auto">

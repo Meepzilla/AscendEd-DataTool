@@ -120,6 +120,14 @@ function ProgressReportPage() {
   }));
 
   const print = () => {
+    // Same confirm pattern as the CSV export warning: the report names the student, and the PDF file name
+    // holds the student name and date when saving as PDF. A synchronous confirm keeps window.print() in
+    // the same user gesture, so the print flow is not broken.
+    if (!window.confirm(
+      `This report names ${student?.name ?? ''} and is plain text once it leaves the app (the PDF file name ` +
+        'holds the student name too). Print it or save it as a PDF only somewhere your district approves for ' +
+        'student records, don\'t email it unencrypted, and delete the file when you no longer need it. Continue?',
+    )) return;
     // The title becomes the PDF's file name when saving as PDF.
     const title = document.title;
     document.title = `Progress Report - ${student?.name ?? ''} - ${new Date().toISOString().slice(0, 10)}`;

@@ -77,7 +77,7 @@ function PromptCounterButton({ promptType, count, hotkey, disabled, onIncrement,
       type="button"
       variant="outline"
       size="sm"
-      className="px-2 py-1.5 h-auto text-xs justify-center w-full touch-manipulation"
+      className="px-2 py-1.5 h-auto min-h-11 text-xs justify-center w-full touch-manipulation"
       style={{
         // The theme's shade (globals.css), else the chart color.
         borderColor: `var(--prompt-${promptType.toLowerCase()}, ${PROMPT_COLORS[promptType]})`,

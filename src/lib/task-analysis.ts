@@ -24,16 +24,19 @@ export function taskSteps(goal: Pick<Goal, 'taskSteps'>): string[] {
   return Array.isArray(goal.taskSteps) ? goal.taskSteps.map(s => String(s).trim()).filter(Boolean) : [];
 }
 
-/** A session's step scores, lined up with the goal's current steps (scores kept by position). */
+/** A session's step scores, as saved: the labels stored in the session are kept, so renaming, reordering or
+ * adding steps on the goal later doesn't rewrite past data. Only a session with no saved steps is lined up
+ * with the goal's current steps. */
 export function stepScores(data: Record<string, any> = {}, steps: string[]): TaskStepScore[] {
   const saved: TaskStepScore[] = Array.isArray(data.steps) ? data.steps : [];
-  if (steps.length === 0) return saved;
-  return steps.map((label, i) => ({ label, level: saved[i]?.level ?? '' }));
+  if (saved.length > 0) return saved.map(s => ({ ...s }));
+  return steps.map(label => ({ label, level: '' as const }));
 }
 
-/** Scored steps and how many were independent (from what a session saved). */
+/** Scored steps and how many were independent (from what a session saved). Only levels that mean the step was
+ * done count as scored: NotDone is a step not done, not a scored step. */
 export function taskAnalysisSummary(data: Record<string, any> = {}) {
-  const scored = (Array.isArray(data.steps) ? data.steps as TaskStepScore[] : []).filter(s => s && s.level);
+  const scored = (Array.isArray(data.steps) ? data.steps as TaskStepScore[] : []).filter(s => s && s.level && s.level !== 'NotDone');
   const independent = scored.filter(s => s.level === 'Independent').length;
   return { scored: scored.length, independent, percent: scored.length ? (independent / scored.length) * 100 : null };
 }

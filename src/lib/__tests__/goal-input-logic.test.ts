@@ -9,13 +9,27 @@ describe('applyFieldChange', () => {
     const up = applyFieldChange('FLUENCY_SYLLABLE_STUTTER', { totalSyllables: 10, blocks: 0 }, 'blocks', 1);
     expect(up).toMatchObject({ blocks: 1, totalSyllables: 11 });
     expect(applyFieldChange('FLUENCY_SYLLABLE_STUTTER', up, 'blocks', 0)).toMatchObject({ blocks: 0, totalSyllables: 10 });
-    expect(applyFieldChange('FLUENCY_SYLLABLE_STUTTER', { totalSyllables: 10 }, 'prolongations', 1).totalSyllables).toBe(10);
+    // Prolongations are dysfluent syllables too, so they move the total like the other tallies.
+    expect(applyFieldChange('FLUENCY_SYLLABLE_STUTTER', { totalSyllables: 10 }, 'prolongations', 1)).toMatchObject({ prolongations: 1, totalSyllables: 11 });
   });
   it('resizes the trial grid, keeping scored trials, and ignores a cleared count', () => {
     expect(applyFieldChange('DISCRETE_TRIALS', { trials: ['correct', 'incorrect', 'untouched'] }, 'numberOfTrials', 5).trials)
       .toEqual(['correct', 'incorrect', 'untouched', 'untouched', 'untouched']);
     expect(applyFieldChange('DISCRETE_TRIALS', { trials: ['correct', 'incorrect'] }, 'numberOfTrials', 1).trials).toEqual(['correct']);
     expect(applyFieldChange('DISCRETE_TRIALS', { trials: ['correct'] }, 'numberOfTrials', undefined).trials).toEqual(['correct']);
+  });
+  it('floors and clamps the number of trials, and stores the count the grid has', () => {
+    const sized = applyFieldChange('DISCRETE_TRIALS', { trials: ['correct', 'incorrect', 'untouched'] }, 'numberOfTrials', 5.9);
+    expect(sized.numberOfTrials).toBe(5);
+    expect(sized.trials).toHaveLength(5);
+    const clamped = applyFieldChange('DISCRETE_TRIALS', { trials: ['correct'] }, 'numberOfTrials', 150);
+    expect(clamped.numberOfTrials).toBe(100);
+    expect(clamped.trials).toHaveLength(100);
+  });
+  it('entering 0 gives a 1-trial grid, not the 5-trial fallback', () => {
+    const zero = applyFieldChange('DISCRETE_TRIALS', { trials: ['correct', 'incorrect'] }, 'numberOfTrials', 0);
+    expect(zero.numberOfTrials).toBe(1);
+    expect(zero.trials).toEqual(['correct']);
   });
 });
 
@@ -40,6 +54,11 @@ describe('trial grid', () => {
     const seen = [];
     for (let i = 0; i < 4; i++) { data = { trials: cycleTrial(data, 0) }; seen.push(data.trials[0]); }
     expect(seen).toEqual(['correct', 'approximate', 'incorrect', 'untouched']);
+  });
+  it('ignores an out-of-range index instead of extending the grid with holes', () => {
+    expect(cycleTrial({ trials: ['correct', 'untouched'] }, 5)).toEqual(['correct', 'untouched']);
+    expect(cycleTrial({ trials: ['correct', 'untouched'] }, -1)).toEqual(['correct', 'untouched']);
+    expect(cycleTrial({ numberOfTrials: 2 }, 2)).toEqual(['untouched', 'untouched']);
   });
   it('scores the next trial, and reports a full grid', () => {
     expect(scoreNextTrial({ trials: ['correct', 'untouched'] }, 'incorrect')).toEqual(['correct', 'incorrect']);

@@ -11,6 +11,8 @@ describe('how report figures are worked out', () => {
     expect(measureFormula(goal({ type: 'BEHAVIOR_ABC', targetDirection: 'increase' }))).toMatch(/replacement skill was used ÷ all incidents/);
     // A goal entered with another type's inputs is described by those.
     expect(measureFormula(goal({ type: 'LANGUAGE_EXPRESSION', dataCaptureType: 'PROMPTING' }))).toMatch(/^Independent ÷/);
+    // Fluency counts prolongations as dysfluent, as the narrative does.
+    expect(measureFormula(goal({ type: 'FLUENCY_SYLLABLE_STUTTER' }))).toMatch(/prolongations/);
   });
 
   it('works through a session\'s responses and an average with the numbers', () => {
@@ -34,6 +36,13 @@ describe('how report figures are worked out', () => {
     expect(e.metTarget).toBe('Sessions where the accuracy was at or above the target (80%): 1 of 2. Mastery is the target met in 3 sessions in a row.');
     expect(e.aimLine).toMatch(/from the baseline \(40% on .*\) to the target \(80% by .*\).*Behind when the last 3 sessions are all below it/);
     expect(e.aimLine).toMatch(/In the latest session the aim line was at 59\.\d% and the accuracy was 85%\./);
+  });
+
+  it('shows a stored date-only latest session on its own day (America/Los_Angeles)', () => {
+    const g = goal({ type: 'ARTICULATION', sessionTargetValue: 80 });
+    const e = goalStatExplanations(g, [{ date: '2026-10-15', value: 85, data: { correct: 17, incorrect: 2, approximate: 1 } }], null, 3);
+    expect(e.latest).toContain('(Oct 15, 2026)');
+    expect(e.latest).not.toContain('Oct 14');
   });
 
   it('explains a decrease goal\'s target the other way round', () => {

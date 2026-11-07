@@ -23,14 +23,18 @@ export interface ImportPlan {
  * by name and type; a goal the student doesn't have is added to them (otherwise its data would be stored but
  * never shown). Sessions for students not on this device are skipped (unmatchedCount). A session keeps the
  * Session ID it had in the file, so a later backup merge recognizes it. It is skipped as already here
- * (duplicateCount) when that id is on this device, or when a session of the same student, day and start time
- * with the same data is (sessions imported before ids were kept). Importing a file twice adds nothing.
+ * (duplicateCount) when that id is on this device, or when a session of the same student, day, start and end
+ * time, activity and missed status with the same data is (sessions imported before ids were kept). Importing
+ * a file twice adds nothing.
  */
 export function planSessionImport(currentStudents: Student[], currentSessions: SessionData[], toImport: ImportedSession[], userId: string): ImportPlan {
-  const contentKey = (s: { studentId?: string; date?: string; time?: string; notes?: string; goals?: SessionGoalData[] }) => {
+  const contentKey = (s: { studentId?: string; date?: string; time?: string; endTime?: string; activity?: string; missed?: { reason: string } | null; notes?: string; goals?: SessionGoalData[] }) => {
     const day = new Date(s.date ?? '');
     const goals = (s.goals || []).map(g => [g.goalId, g.data]).sort((x, y) => String(x[0]).localeCompare(String(y[0])));
-    return JSON.stringify([s.studentId, Number.isNaN(day.getTime()) ? s.date : day.toDateString(), s.time ?? '', s.notes ?? '', goals]);
+    // End time, activity and missed status are part of what makes a session distinct: two sessions on a day
+    // with the same start, notes and goals but different ends, activities, or one held and one missed are not
+    // the same session.
+    return JSON.stringify([s.studentId, Number.isNaN(day.getTime()) ? s.date : day.toDateString(), s.time ?? '', s.endTime ?? '', s.activity ?? '', s.missed ? s.missed.reason : '', s.notes ?? '', goals]);
   };
   const nameKey = (name?: string) => (name || '').trim().toLowerCase();
   const students = currentStudents.map(st => ({ ...st, goals: [...(st.goals || [])] }));

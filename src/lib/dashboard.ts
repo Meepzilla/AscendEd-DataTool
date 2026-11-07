@@ -79,7 +79,7 @@ export function serviceStatus(
     const held = sessions.filter(s => s.studentId === student.id && !s.missed);
     const minutesIn = (from: Date, to: Date) => held
       .filter(s => { const t = new Date(s.date).getTime(); return t >= from.getTime() && t < to.getTime(); })
-      .reduce((sum, s) => sum + sessionMinutes(s), 0);
+      .reduce((sum, s) => sum + (sessionMinutes(s) ?? 0), 0);
     const { current, previous } = servicePeriods(per, now);
     const delivered = minutesIn(current.start, current.end);
     const base = { studentId: student.id, studentName: student.name, required, per, delivered };

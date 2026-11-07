@@ -1,4 +1,5 @@
 import { strFromU8, unzipSync } from 'fflate';
+import { checkImportFileSize } from './helpers';
 
 // Reads the first worksheet of an Excel workbook (.xlsx) into rows of cell values, for importing students.
 // An .xlsx file is a zip of XML files: the worksheet holds numbers and pointers into a shared list of strings,
@@ -8,8 +9,13 @@ import { strFromU8, unzipSync } from 'fflate';
 export type CellValue = string | number | boolean | null;
 
 const ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
-const decode = (s: string) => s.replace(/&(#x[0-9a-f]+|#\d+|\w+);/gi, (m, e: string) =>
-  e[0] === '#' ? String.fromCodePoint(e[1] === 'x' || e[1] === 'X' ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10)) : ENTITIES[e] ?? m);
+const decode = (s: string) => s.replace(/&(#x[0-9a-f]+|#\d+|\w+);/gi, (m, e: string) => {
+  if (e[0] !== '#') return ENTITIES[e] ?? m;
+  const code = e[1] === 'x' || e[1] === 'X' ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10);
+  // A code point above 0x10FFFF (or otherwise invalid) becomes the replacement character instead of
+  // throwing and aborting the whole import.
+  try { return String.fromCodePoint(code); } catch { return '\uFFFD'; }
+});
 
 /** All the text in an element, joining rich-text runs (<r><t>…</t></r>) and leaving out phonetic hints (<rPh>). */
 const textOf = (xml: string) => [...xml.replace(/<rPh\b[\s\S]*?<\/rPh>/g, '').matchAll(/<t\b[^>]*>([\s\S]*?)<\/t>/g)].map(m => decode(m[1])).join('');
@@ -38,7 +44,13 @@ function dateStyles(stylesXml: string | undefined): Set<number> {
 /** A spreadsheet date number as YYYY-MM-DD (days since 30 Dec 1899, or since 1 Jan 1904 in 1904 workbooks). */
 export function serialToDate(serial: number, date1904 = false): string {
   const days = Math.floor(serial) + (date1904 ? 1462 : 0);
-  return new Date(Date.UTC(1899, 11, 30) + days * 86_400_000).toISOString().slice(0, 10);
+  // Excel's 1900 system counts a leap day that never happened (1900 wasn't a leap year), so serials below
+  // 60 are one day short of the real date: 1 is 1900-01-01 and 59 is 1900-02-28. Serial 60 stays the
+  // phantom leap day, 1900-02-29 (a Date can't hold it: it normalizes to Mar 1), and 61 onwards are
+  // already right.
+  if (!date1904 && days === 60) return '1900-02-29';
+  const adjusted = !date1904 && days < 60 ? days + 1 : days;
+  return new Date(Date.UTC(1899, 11, 30) + adjusted * 86_400_000).toISOString().slice(0, 10);
 }
 
 /** Column letters ("A", "AB") as a 0-based index. */
@@ -46,6 +58,7 @@ const columnIndex = (ref: string) => [...ref.replace(/\d+$/, '')].reduce((n, c) 
 
 /** The rows of the workbook's first worksheet. Throws if the file isn't a workbook. */
 export function readXlsx(data: Uint8Array): CellValue[][] {
+  checkImportFileSize(data.length);
   let files: Record<string, Uint8Array>;
   try {
     files = unzipSync(data, { filter: f => f.name.startsWith('xl/') && f.name.endsWith('.xml') || f.name.endsWith('.rels') });

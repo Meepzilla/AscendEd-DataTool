@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
-    <external-path name="my_images" path="." />
-    <cache-path name="my_cache_images" path="." />
+    <!-- Only the cache subdirectory shares are written to (save-file.ts SHARE_CACHE_DIR); the rest of the
+         cache and external storage are not exposed. -->
+    <cache-path name="shared_files" path="shares/" />
 </paths>
