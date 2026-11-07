@@ -83,3 +83,78 @@ describe('passcode protection', () => {
     expect(store.getItem(D)).toBe('fresh');
   }, 20000);
 });
+
+describe('write durability', () => {
+  let idb: typeof import('../indexed-db-store');
+
+  beforeEach(async () => {
+    storage = memoryStorage();
+    vi.stubGlobal('localStorage', storage);
+    vi.stubGlobal('window', globalThis);
+    vi.resetModules();
+    idb = await import('../indexed-db-store');
+    idb.useMemoryIndexedDb();
+    idb.resetMemoryIndexedDb();
+    store = await import('../secure-store');
+  });
+
+  it('setItemAsync resolves only after the value is in durable storage', async () => {
+    // With the memory IndexedDB store, the list goes to IndexedDB, not localStorage.
+    const dataStore = await import('../data-store');
+    await dataStore.hydrateLists({ students: S, templates: null, sessions: null });
+    await store.setItemAsync(S, '[{"id":"s1","name":"Ava"}]');
+    expect(storage.getItem(S)).toBe(null);
+    expect(await store.readDurableList(S)).toEqual([{ id: 's1', name: 'Ava' }]);
+    expect(await store.verifyStoredList(S, [{ id: 's1', name: 'Ava' }])).toBe(true);
+  });
+
+  it('setItemAsync rejects when the write fails, and the old value stays stored', async () => {
+    const dataStore = await import('../data-store');
+    await dataStore.hydrateLists({ students: S, templates: null, sessions: null });
+    await store.setItemAsync(S, '[{"id":"s1","name":"Ava"}]');
+    idb.setIndexedDbWriteFailure(true);
+    await expect(store.setItemAsync(S, '[{"id":"s2","name":"Ben"}]')).rejects.toThrow();
+    expect(await store.readDurableList(S)).toEqual([{ id: 's1', name: 'Ava' }]);
+    expect(await store.verifyStoredList(S, [{ id: 's2', name: 'Ben' }])).toBe(false);
+    idb.setIndexedDbWriteFailure(false);
+    await store.setItemAsync(S, '[{"id":"s2","name":"Ben"}]');
+    expect(await store.readDurableList(S)).toEqual([{ id: 's2', name: 'Ben' }]);
+  });
+
+  it('verifyStoredList notices a row that changed after the write', async () => {
+    const dataStore = await import('../data-store');
+    await dataStore.hydrateLists({ students: S, templates: null, sessions: null });
+    await store.setItemAsync(S, '[{"id":"s1","name":"Ava"}]');
+    await idb.putRecords('students', [{ k: 's1', v: '{"id":"s1","name":"Mallory"}', o: 0 }]);
+    expect(await store.verifyStoredList(S, [{ id: 's1', name: 'Ava' }])).toBe(false);
+  });
+
+  it('setItemAsync rejects when localStorage is full, and the old value stays stored', async () => {
+    // No IndexedDB in this path: fresh modules without the memory store.
+    vi.resetModules();
+    store = await import('../secure-store');
+    storage.setItem(S, '[{"id":"s1"}]');
+    const originalSetItem = storage.setItem;
+    storage.setItem = (k: string, v: string) => {
+      if (k === S) throw new DOMException('Storage is full', 'QuotaExceededError');
+      return originalSetItem(k, v);
+    };
+    await expect(store.setItemAsync(S, '[{"id":"s2"}]')).rejects.toThrow('Storage is full');
+    expect(storage.getItem(S)).toBe('[{"id":"s1"}]');
+    storage.setItem = originalSetItem;
+  });
+
+  it('flushWrites throws when a background write fails, instead of resolving as if it landed', async () => {
+    storage.setItem(S, 'v1');
+    await store.enablePasscode('passcode1');
+    const originalSetItem = storage.setItem;
+    store.setItem(S, 'v2');
+    // The encrypted persist runs after setItem returns; make the storage write fail then.
+    storage.setItem = (k: string, v: string) => {
+      if (k === S) throw new DOMException('Storage is full', 'QuotaExceededError');
+      return originalSetItem(k, v);
+    };
+    await expect(store.flushWrites()).rejects.toThrow('Storage is full');
+    storage.setItem = originalSetItem;
+  }, 20000);
+});

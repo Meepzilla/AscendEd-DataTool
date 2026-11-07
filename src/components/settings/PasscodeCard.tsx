@@ -78,7 +78,9 @@ export default function PasscodeCard() {
         <CardDescription>
           Encrypts the student data stored on this device (students, sessions and unsaved Data Entry work) so it can only be
           opened with a passcode. The app asks for the passcode when it opens and locks again after a while without use.
-          The passcode can&apos;t be recovered if it is forgotten, so back up first and keep the passcode somewhere safe.
+          Passcode protection is the default for new installs: the app asks for a passcode the first time it opens, and
+          a device that already has student data is offered it once instead. The passcode can&apos;t be recovered if it is
+          forgotten, so back up first and keep the passcode somewhere safe.
           Backup and CSV files aren&apos;t encrypted; store them somewhere protected.
         </CardDescription>
       </CardHeader>

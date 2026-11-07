@@ -27,7 +27,7 @@ import { useDataEntryShortcuts } from '@/hooks/use-data-entry-shortcuts';
 import GoalFocusManager from './GoalFocusManager';
 import AccessLockDialog, { type AccessLockDialogMode } from './AccessLockDialog';
 import DataEntrySaveBar from './DataEntrySaveBar';
-import { clearAccessPin, hasAccessPin } from '@/lib/access-pin';
+import { hasAccessPin } from '@/lib/access-pin';
 import { getStudentGroups } from '@/lib/student-groups';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -565,11 +565,12 @@ export default function DataEntryContent() {
           onClose={() => setAccessLockDialog(null)}
           onDone={() => { setIsStudentAccessLocked(accessLockDialog === 'set'); setAccessLockDialog(null); }}
           onForgot={() => {
+            // Discarding unsaved entries unlocks only this Data Entry session. The stored PIN stays
+            // set, so the next lock still needs it; forgetting the PIN is no longer a way to clear it.
             Object.keys(studentSessionStates).forEach(resetSessionStateForStudent);
-            clearAccessPin(uid);
             setIsStudentAccessLocked(false);
             setAccessLockDialog(null);
-            toast({ title: 'Unlocked', description: 'Unsaved entries were discarded and the PIN was removed.' });
+            toast({ title: 'Unlocked', description: 'Unsaved entries were discarded. The PIN is still set and will be needed the next time you lock.' });
           }}
         />
         <Suspense fallback={null}>

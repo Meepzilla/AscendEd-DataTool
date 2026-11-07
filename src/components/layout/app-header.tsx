@@ -186,7 +186,7 @@ export default function AppHeader({ atBottom = false }: { atBottom?: boolean }) 
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={signOut}>
-                    Sign out
+                    Leave local profile
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
