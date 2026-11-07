@@ -19,6 +19,20 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-07',
+    title: 'Library Security Updates',
+    description: 'Sixteen security findings in the app\'s libraries are fixed, so the dependency check is clear. Nothing about how the app works changes.',
+    type: 'fix',
+    icon: ShieldCheck,
+  },
+  {
+    date: '2026-11-07',
+    title: 'Example Names in IEP Import Are Invented',
+    description: 'The example student names and goal text shown in the IEP import screens now use invented names throughout.',
+    type: 'fix',
+    icon: Pencil,
+  },
+  {
+    date: '2026-11-07',
     title: 'New Installs Ask for a Passcode Again',
     description: 'Since 6 November the app skipped the first-run passcode setup (and the one-time offer on devices that already had data) and opened straight away. It asks again now. Going without a passcode takes a second confirmation that says what stays unencrypted, with "Set a passcode instead" first and the opt-out button working after a few seconds. Passcode Protection also gains a Lock after choice of "As soon as the app is put away".',
     type: 'fix',

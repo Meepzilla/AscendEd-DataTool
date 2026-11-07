@@ -45,6 +45,7 @@ It runs entirely on the device: there is no account, no server and no AI. Studen
 - A Student Access Lock with a PIN.
 - A strict Content Security Policy: only the app's own scripts can run.
 - A [Privacy Notice](src/app/(app)/privacy/page.tsx) page in the app.
+- Found a security problem? See [SECURITY.md](SECURITY.md) for how to report it. Do not include real student data in a report.
 
 Four color themes (Settings → Interface): Dark (the default, navy and gold), Light (white and gold), High Contrast (black, white and bright yellow) and Pastel (soft lavender, baby blue and mint, with plum buttons), saved on each device. All four meet WCAG AA text contrast.
 
