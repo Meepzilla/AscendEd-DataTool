@@ -12,7 +12,7 @@ import {
   MIN_PASSCODE_LENGTH, enablePasscode, eraseProtectedData, generateRecoveryKey, getAutoLockMinutes, isPasscodeEnabled,
   isUnlocked, lockNow, resetPasscodeWithRecoveryKey, unlock,
 } from '@/lib/secure-store';
-import { hasExistingStudentData, needsFirstRunPrompt, needsPasscodeOffer, recordPasscodeDecision, recordBackupDeclinedBeforePasscode, shouldPromptForBackupBeforePasscode } from '@/lib/passcode-onboarding';
+import { hasExistingStudentData, needsFirstRunPrompt, needsPasscodeOffer, passcodeGateStatus, recordPasscodeDecision, recordBackupDeclinedBeforePasscode, shouldPromptForBackupBeforePasscode } from '@/lib/passcode-onboarding';
 import { useAuth } from '@/hooks/use-auth';
 import { LAST_BACKUP_KEY, backupFileName, backupFileText, buildBackupFromStorage, isPlaintextBackupAcknowledged, PLAINTEXT_BACKUP_ACKNOWLEDGEMENT } from '@/lib/backup';
 import { saveTextFile } from '@/lib/save-file';
@@ -39,11 +39,15 @@ export default function PasscodeGate({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     const check = () => {
-      setProtectedOn(isPasscodeEnabled());
-      if (isUnlocked()) { setStatus('open'); return; }
-      if (needsFirstRunPrompt()) { setStatus('setup'); return; }
-      if (needsPasscodeOffer() && !offerDismissed.current) { setStatus('offer'); return; }
-      setStatus('locked');
+      const passcodeOn = isPasscodeEnabled();
+      setProtectedOn(passcodeOn);
+      setStatus(passcodeGateStatus({
+        passcodeOn,
+        unlocked: isUnlocked(),
+        firstRun: !passcodeOn && needsFirstRunPrompt(),
+        offer: !passcodeOn && needsPasscodeOffer(),
+        offerPutOff: offerDismissed.current,
+      }));
     };
     check();
     window.addEventListener(PASSCODE_CHANGE_EVENT, check);
@@ -55,18 +59,25 @@ export default function PasscodeGate({ children }: { children: React.ReactNode }
   useEffect(() => {
     if (status !== 'open' || !protectedOn) return;
     const touch = () => { lastActive.current = Date.now(); };
+    // "As soon as the app is put away" (0): lock when the page is hidden (another app opened, the screen
+    // turned off), and after 5 minutes without use while it stays open.
+    const idleMinutes = () => getAutoLockMinutes() || 5;
     const checkIdle = () => {
-      if (Date.now() - lastActive.current > getAutoLockMinutes() * 60_000) lockNow();
+      if (Date.now() - lastActive.current > idleMinutes() * 60_000) lockNow();
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden' && getAutoLockMinutes() === 0) lockNow();
+      else checkIdle();
     };
     touch();
     window.addEventListener('pointerdown', touch, { passive: true });
     window.addEventListener('keydown', touch);
-    document.addEventListener('visibilitychange', checkIdle);
+    document.addEventListener('visibilitychange', onVisibility);
     const timer = setInterval(checkIdle, 30_000);
     return () => {
       window.removeEventListener('pointerdown', touch);
       window.removeEventListener('keydown', touch);
-      document.removeEventListener('visibilitychange', checkIdle);
+      document.removeEventListener('visibilitychange', onVisibility);
       clearInterval(timer);
     };
   }, [status, protectedOn]);
@@ -324,7 +335,7 @@ function SetupShell({ title, intro, children }: { title: string; intro: string; 
           <div className="flex flex-col items-center gap-2 text-center">
             <ShieldCheck className="h-10 w-10 text-primary" />
             <h1 className="text-xl font-semibold">{title}</h1>
-            <p className="text-sm text-muted-foreground">{intro}</p>
+            {intro && <p className="text-sm text-muted-foreground">{intro}</p>}
           </div>
           {children}
         </div>
@@ -333,10 +344,48 @@ function SetupShell({ title, intro, children }: { title: string; intro: string; 
   );
 }
 
+// The second, deliberate step before going without a passcode: it says plainly what is left unprotected, puts
+// "Set a passcode instead" first, and only lets the opt-out button work after a few seconds, so the insecure
+// choice can't be made by a quick double tap or by accident.
+export const OPT_OUT_DELAY_SECONDS = 5;
+function OptOutConfirm({ onConfirm, onBack }: { onConfirm: () => void; onBack: () => void }) {
+  const [wait, setWait] = useState(OPT_OUT_DELAY_SECONDS);
+  useEffect(() => {
+    if (wait <= 0) return;
+    const t = setTimeout(() => setWait(w => w - 1), 1000);
+    return () => clearTimeout(t);
+  }, [wait]);
+  return (
+    <div className="space-y-3" role="alertdialog" aria-labelledby="opt-out-title" aria-describedby="opt-out-desc">
+      <h2 id="opt-out-title" className="text-base font-semibold">Continue without encryption?</h2>
+      <div id="opt-out-desc" className="space-y-2 text-sm text-muted-foreground">
+        <p>Without a passcode, student names, goals, session notes and IEP dates are stored unencrypted on this device.</p>
+        <p>Anyone who picks up this device and opens {APP_NAME}, or copies the browser&apos;s storage, can read them. The app won&apos;t lock.</p>
+      </div>
+      <Button type="button" className="w-full" onClick={onBack} autoFocus>Set a passcode instead</Button>
+      <Button type="button" variant="outline" className="w-full" disabled={wait > 0} onClick={onConfirm}>
+        {wait > 0 ? `Continue without a passcode (${wait})` : 'Continue without a passcode'}
+      </Button>
+    </div>
+  );
+}
+
 // First run on a fresh install: the app does not open until a passcode is set or the user explicitly
 // continues without one, after acknowledging the data will not be encrypted.
 function FirstRunSetup({ onDone }: { onDone: () => void }) {
   const [acknowledged, setAcknowledged] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+
+  if (confirming) {
+    return (
+      <SetupShell title="Protect student data on this device" intro="">
+        <OptOutConfirm
+          onBack={() => { setConfirming(false); setAcknowledged(false); }}
+          onConfirm={() => { recordPasscodeDecision('opted-out'); onDone(); }}
+        />
+      </SetupShell>
+    );
+  }
 
   return (
     <SetupShell
@@ -358,7 +407,7 @@ function FirstRunSetup({ onDone }: { onDone: () => void }) {
         </div>
         <Button
           type="button" variant="outline" className="w-full" disabled={!acknowledged}
-          onClick={() => { recordPasscodeDecision('opted-out'); onDone(); }}
+          onClick={() => setConfirming(true)}
         >
           Continue without a passcode
         </Button>
@@ -372,6 +421,18 @@ function FirstRunSetup({ onDone }: { onDone: () => void }) {
 // data stays accessible without one, and the offer can be put off for this session.
 function PasscodeOffer({ onDone, onLater }: { onDone: () => void; onLater: () => void }) {
   const [showForm, setShowForm] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+
+  if (confirming) {
+    return (
+      <SetupShell title="Passcode protection is now the default" intro="">
+        <OptOutConfirm
+          onBack={() => { setConfirming(false); setShowForm(true); }}
+          onConfirm={() => { recordPasscodeDecision('opted-out'); onDone(); }}
+        />
+      </SetupShell>
+    );
+  }
 
   return (
     <SetupShell
@@ -388,7 +449,7 @@ function PasscodeOffer({ onDone, onLater }: { onDone: () => void; onLater: () =>
           <Button type="button" className="w-full" onClick={() => setShowForm(true)}>Set up a passcode</Button>
           <Button
             type="button" variant="outline" className="w-full"
-            onClick={() => { recordPasscodeDecision('opted-out'); onDone(); }}
+            onClick={() => setConfirming(true)}
           >
             Continue without a passcode
           </Button>

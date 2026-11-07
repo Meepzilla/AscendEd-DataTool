@@ -25,7 +25,10 @@ import BackUpNowButton from '@/components/settings/BackUpNowButton';
 
 type Mode = null | 'enable' | 'change' | 'disable';
 type EnableStep = 'form' | 'backup' | 'recovery';
-const AUTO_LOCK_OPTIONS = [5, 15, 30, 60];
+// 0 = lock as soon as the app is put away (another app opened, the screen turned off), and after 5 minutes
+// without use while it is open.
+const AUTO_LOCK_OPTIONS = [0, 5, 15, 30, 60];
+const autoLockLabel = (m: number) => (m === 0 ? 'As soon as the app is put away' : `${m} minutes without use`);
 
 export default function PasscodeCard() {
   const { toast } = useToast();
@@ -348,7 +351,7 @@ export default function PasscodeCard() {
           <Select value={String(autoLock)} onValueChange={v => { const m = Number(v); setAutoLock(m); setAutoLockMinutes(m); }}>
             <SelectTrigger id="auto-lock" className="w-auto min-w-40 gap-2"><SelectValue /></SelectTrigger>
             <SelectContent>
-              {AUTO_LOCK_OPTIONS.map(m => <SelectItem key={m} value={String(m)}>{m} minutes without use</SelectItem>)}
+              {AUTO_LOCK_OPTIONS.map(m => <SelectItem key={m} value={String(m)}>{autoLockLabel(m)}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
