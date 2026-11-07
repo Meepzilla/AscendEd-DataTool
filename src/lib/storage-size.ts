@@ -111,3 +111,18 @@ export async function checkSaveFits(
   }
   return { fits, projectedBytes, over3MB: projectedBytes > STORAGE_WARN_BYTES };
 }
+
+let persistRequested = false;
+
+/**
+ * Asks the browser to keep this app's storage (IndexedDB and localStorage) even when the device runs low on
+ * space, instead of clearing it like a cache. Once per visit; the browser may say no (that is not an error),
+ * and a backup is still the only protection against the device being lost or the app deleted.
+ */
+export function requestPersistentStorage() {
+  if (persistRequested || typeof navigator === 'undefined' || !navigator.storage?.persist) return;
+  persistRequested = true;
+  navigator.storage.persisted?.()
+    .then(already => (already ? true : navigator.storage.persist()))
+    .catch(() => { /* not available here */ });
+}

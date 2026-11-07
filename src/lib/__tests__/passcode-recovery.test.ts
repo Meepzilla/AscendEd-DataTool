@@ -217,7 +217,7 @@ describe('damaged-list quarantine', () => {
     expect(storage.getItem(D)).toBe('enc1:damaged-data');
   }, 30000);
 
-  it('disable proceeds with damaged groups and ABC lists: they stay byte-identical, students go plaintext', async () => {
+  it('disable is refused while groups or ABC lists are damaged: removing the key would lose them, so nothing changes', async () => {
     storage.setItem(S, '[{"id":"s1","name":"Ava"}]');
     storage.setItem(G, '[{"id":"g1","name":"Room 12","studentIds":["s1"]}]');
     storage.setItem(A, '{"antecedents":["Asked to wait"],"behaviors":[],"consequences":[]}');
@@ -227,15 +227,15 @@ describe('damaged-list quarantine', () => {
     expect(await store.unlock('passcode1')).toBe(true);
     expect(store.isUndecryptable(G)).toBe(true);
     expect(store.isUndecryptable(A)).toBe(true);
+    const studentsBefore = storage.getItem(S);
 
-    const { quarantined } = await store.disablePasscode('passcode1');
-    expect(quarantined.map(q => q.label).sort()).toEqual(['ABC lists', 'Student groups']);
+    await expect(store.disablePasscode('passcode1')).rejects.toThrow(/can't be turned off while some data can't be read \(.*Student groups.*\)/);
+    // Protection stays on and nothing is rewritten: the damaged values, the students and the key are as they were.
+    expect(store.isPasscodeEnabled()).toBe(true);
     expect(storage.getItem(G)).toBe('enc1:damaged-groups');
     expect(storage.getItem(A)).toBe('enc1:damaged-abc');
-    expect(store.isUndecryptable(G)).toBe(true);
-    expect(store.isUndecryptable(A)).toBe(true);
-    expect(storage.getItem(S)).toBe('[{"id":"s1","name":"Ava"}]');
-    expect(store.isPasscodeEnabled()).toBe(false);
+    expect(storage.getItem(S)).toBe(studentsBefore);
+    expect(store.getItem(S)).toBe('[{"id":"s1","name":"Ava"}]');
   }, 30000);
 
   it('change proceeds with a damaged IndexedDB list: its rows stay byte-identical, readable lists convert', async () => {

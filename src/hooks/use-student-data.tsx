@@ -12,6 +12,7 @@ import { goalFromTemplate, hasTemplateGoal, recordRecentTemplates } from '@/lib/
 import { generateUUID } from '@/lib/helpers';
 import * as secureStore from '@/lib/secure-store';
 import { byDateDesc, byName, hydrateLists, readList } from '@/lib/data-store';
+import { requestPersistentStorage } from '@/lib/storage-size';
 import { DATA_CHANGED_CHANNEL, isMainListStorageKey, isOwnDataChangedMessage, postDataChanged, runListTransactionAsync, type AsyncListTransactionStore, type MainListKey } from '@/lib/data-transaction';
 import { prepareLoadedData } from '@/lib/data-migrations';
 import { planSessionImport, type ImportedSession } from '@/lib/session-import';
@@ -477,13 +478,24 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       // Hydration runs first: localStorage blobs migrate into IndexedDB (verified) and the cache
       // is filled from durable storage, so every read below sees what is actually stored.
       resetUnreadable();
+      requestPersistentStorage();
       await hydrate();
       if (cancelled) return;
       rawStudents = readStored<Student>(studentsKey);
       rawTemplates = readStored<GoalTemplate>(templatesKey);
       rawSessions = readStored<SessionData>(sessionsKey);
       const anyUnreadable = [studentsKey, templatesKey, sessionsKey].some(isUnreadable);
-      if (anyUnreadable) {
+      // Storage that couldn't be read this time (not damaged): a reload fixes it, and restoring a backup would
+      // replace intact data with an older copy, so the advice differs.
+      const anyReadFailed = [studentsKey, templatesKey, sessionsKey].some(k => !!k && secureStore.isListReadFailed(k));
+      if (anyReadFailed) {
+        setError(new Error("Some saved data couldn't be opened just now."));
+        toast({
+          title: "Some saved data couldn't be opened just now",
+          description: "Nothing has been changed or lost. Close the app completely and open it again. Don't restore a backup over it: that would replace your data with an older copy.",
+          variant: "destructive",
+        });
+      } else if (anyUnreadable) {
         setError(new Error('Some saved data could not be read.'));
         toast({
           title: "Some saved data couldn't be read",
