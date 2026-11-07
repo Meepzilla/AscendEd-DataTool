@@ -230,7 +230,7 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, studen
   const goalCharts = goalsInView.length > 0 && (
     <Suspense fallback={<ChartSuspenseFallback />}>
       {!selectedGoalId && <h2 className="text-xl font-semibold">Goal by Goal</h2>}
-      <GoalCharts studentSessions={studentSessions} goals={goalsInView} />
+      <GoalCharts studentSessions={studentSessions} goals={goalsInView} studentName={selectedStudent?.name} studentIep={selectedStudent?.iep} />
     </Suspense>
   );
 
@@ -296,7 +296,7 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, studen
             <GasTScoreLineChart sessions={studentSessions} history={studentHistory} goals={allGasGoals} />
           </Suspense>
           <Suspense fallback={<ChartSuspenseFallback />}>
-            <GasSummaryTable sessions={studentSessions} goals={gasGoals} />
+            <GasSummaryTable sessions={studentSessions} goals={gasGoals} studentName={selectedStudent?.name} studentIep={selectedStudent?.iep} />
           </Suspense>
           <GasLevelDistribution studentSessions={studentSessions} goals={gasGoals} />
         </div>

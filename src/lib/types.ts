@@ -244,6 +244,7 @@ export const GoalTemplateSchema = z.object({
   targetDirection: z.enum(['increase', 'decrease']).optional(),
   smartGoalPrompt: z.string().min(10, "SMART goal prompt is required."),
   generatedSmartGoal: z.string().optional(),
+  gasLevelDescriptions: z.array(z.string()).max(5, 'At most 5 level descriptions.').optional(),
   sessionTargetValue: z.preprocess(
     (val) => (val === "" || val === undefined || val === null ? undefined : Number(val)),
     z.number().min(0, "Target must be 0 or greater.").max(100, "Target percentage cannot exceed 100.").optional()
