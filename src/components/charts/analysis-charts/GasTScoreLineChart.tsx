@@ -2,6 +2,7 @@
 
 import React, { useMemo } from 'react';
 import type { Goal, SessionData } from '@/lib/types';
+import { parseDateOnly } from '@/lib/helpers';
 import { gasTScoresOverTime, GAS_LEVELS, gasLevelText } from '@/lib/gas';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
@@ -20,7 +21,9 @@ const formatLevel = (goal: Goal | undefined, level: number) => {
 const shortDate = (time: number) => new Date(time).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
 interface GasTScoreLineChartProps {
-  sessions: SessionData[]; // oldest first
+  sessions: SessionData[]; // oldest first, in the report's date range
+  /** All the student's sessions: a goal's last level from before the range still counts in the composite. */
+  history?: SessionData[];
   goals: Goal[]; // the student's GAS goals in view
 }
 
@@ -36,13 +39,17 @@ interface TScorePoint {
  * straight rescale of its levels; with several goals it is the composite. T-scores sit
  * roughly in 20-80 for the level range -2 to +2.
  */
-const GasTScoreLineChart: React.FC<GasTScoreLineChartProps> = ({ sessions, goals }) => {
+const GasTScoreLineChart: React.FC<GasTScoreLineChartProps> = ({ sessions, history, goals }) => {
   const points = useMemo<TScorePoint[]>(() => {
     // gasTScoresOverTime returns one point per session date with levels by goal id; dates with
     // no level recorded yet (tScore null) have no dot.
-    return gasTScoresOverTime(sessions, goals)
-      .filter(p => p.tScore !== null && !Number.isNaN(new Date(p.date).getTime()))
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    // Levels carry forward over the whole history; only the dates in the range get a dot. Dates are local
+    // days (parseDateOnly): new Date('2026-03-10') is UTC midnight, the day before in US time zones.
+    const inRange = new Set(sessions.map(s => s.date));
+    return gasTScoresOverTime(history ?? sessions, goals)
+      .filter(p => inRange.has(p.date))
+      .filter(p => p.tScore !== null && !Number.isNaN(parseDateOnly(p.date).getTime()))
+      .sort((a, b) => parseDateOnly(a.date).getTime() - parseDateOnly(b.date).getTime())
       .map(p => ({
         date: p.date,
         tScore: p.tScore as number,
@@ -52,10 +59,10 @@ const GasTScoreLineChart: React.FC<GasTScoreLineChartProps> = ({ sessions, goals
           level,
         })),
       }));
-  }, [sessions, goals]);
+  }, [sessions, history, goals]);
 
   const data = useMemo(
-    () => points.map(p => ({ time: new Date(p.date).getTime(), tScore: Math.round(p.tScore * 10) / 10, point: p })),
+    () => points.map(p => ({ time: parseDateOnly(p.date).getTime(), tScore: Math.round(p.tScore * 10) / 10, point: p })),
     [points],
   );
 
@@ -82,7 +89,7 @@ const GasTScoreLineChart: React.FC<GasTScoreLineChartProps> = ({ sessions, goals
                   const p = payload[0].payload.point as TScorePoint;
                   return (
                     <div className="rounded-lg border bg-background px-3 py-2 text-xs shadow-md">
-                      <p className="font-medium">{new Date(p.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                      <p className="font-medium">{parseDateOnly(p.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
                       <p>T-score: {Math.round(p.tScore * 10) / 10}</p>
                       {p.levels.map(l => (
                         <p key={l.goalId} className="text-muted-foreground">{l.goalName}: {formatLevel(goals.find(g => g.id === l.goalId), l.level)}</p>

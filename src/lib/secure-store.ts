@@ -160,12 +160,76 @@ export function markListUndecryptable(key: string) {
   cache.set(key, '\u0000damaged');
 }
 
+/** Lists whose storage could not be read this time (not damaged: reopening the app reads them again). */
+const readFailed = new Set<string>();
+
+/**
+ * Marks a list that could not be read from storage this time (IndexedDB failed, even after retrying). It is
+ * protected like a damaged list (never written over) until the app is opened again, but it is not damaged:
+ * the user is told to reopen the app, not to restore a backup (a restore would replace the intact data).
+ */
+export function markListReadFailed(key: string) {
+  markListUndecryptable(key);
+  readFailed.add(key);
+}
+
+export function isListReadFailed(key: string) {
+  return readFailed.has(key);
+}
+
+// How many records each IndexedDB list held when it was last saved or read, so code that can't wait for
+// IndexedDB (the first-run check, before the app loads) can tell whether a student or session was stored.
+const LIST_COUNTS_KEY = 'ascended_idb_counts_v1';
+
+function readListCounts(): Record<string, number> {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(LIST_COUNTS_KEY) ?? '{}');
+    return parsed && typeof parsed === 'object' ? parsed as Record<string, number> : {};
+  } catch {
+    return {};
+  }
+}
+
+/** Records how many records a list holds in IndexedDB (a hint for idbMayHoldStudentData). */
+export function recordListCount(storageKey: string, count: number) {
+  const info = listKeyInfo(storageKey);
+  if (!info) return;
+  try {
+    const counts = readListCounts();
+    if (counts[info.store] === count) return;
+    counts[info.store] = count;
+    localStorage.setItem(LIST_COUNTS_KEY, JSON.stringify(counts));
+  } catch {
+    // A hint only.
+  }
+}
+
+/**
+ * Whether students or sessions may be stored in IndexedDB, without opening it (synchronous). Uses the record
+ * counts; a list moved to IndexedDB before the counts were kept is assumed to hold data.
+ */
+export function idbMayHoldStudentData(): boolean {
+  const counts = readListCounts();
+  const flags = migrationFlags();
+  for (const info of LIST_KEYS) {
+    if (info.store === idb.LIST_STORES.goalTemplates) continue; // seeded on first load: says nothing
+    const count = counts[info.store];
+    if (count !== undefined) {
+      if (count > 0) return true;
+      continue;
+    }
+    if (Object.entries(flags).some(([k, migrated]) => migrated && k.startsWith(`${info.base}_`))) return true;
+  }
+  return false;
+}
+
 /**
  * Forgets that a stored value couldn't be read, so it may be replaced. Only a restore may do this:
  * it is how damaged data is recovered, and ordinary saves must never overwrite damaged data.
  */
 export function clearUndecryptable(storageKey: string) {
   undecryptable.delete(storageKey);
+  readFailed.delete(storageKey);
 }
 
 /**
@@ -403,6 +467,7 @@ async function persistListRecords(storageKey: string): Promise<void> {
   if (value === null || value === undefined) {
     await idb.clearStore(info.store);
     persistedBytes.delete(storageKey);
+    recordListCount(storageKey, 0);
     return;
   }
   let records: unknown;
@@ -439,6 +504,7 @@ async function persistListRecords(storageKey: string): Promise<void> {
     if (readBack !== JSON.stringify(records[i])) throw new Error('Save verification failed: a stored record does not match.');
   }
   persistedBytes.set(storageKey, bytes);
+  recordListCount(storageKey, records.length);
   // The rows are now under the data key (or plaintext when protection is off), not the old passcode key.
   if (isPasscodeEnabled()) legacyStores.delete(info.store);
 }
@@ -654,14 +720,42 @@ export async function restoreItemAsync(storageKey: string, snapshot: ItemSnapsho
  * in-memory cache, so verification sees what is actually stored. Undefined when it cannot be read.
  */
 export async function readDurableList(storageKey: string): Promise<unknown[] | undefined> {
-  try {
-    if (isListKey(storageKey) && getListBackend(storageKey) === 'idb') {
-      const info = listKeyInfo(storageKey)!;
-      const rows = await idb.getAllRecords(info.store);
+  const result = await readDurableListResult(storageKey);
+  return result.ok ? result.values : undefined;
+}
+
+/**
+ * Like readDurableList, but says why a list couldn't be read: 'read-failed' when storage itself could not be
+ * read (IndexedDB failed even after retrying, e.g. iPad Safari's "connection to Indexed Database server lost",
+ * which a reload fixes), 'unreadable' when it was read but a record can't be decrypted or parsed (damaged).
+ */
+export async function readDurableListResult(storageKey: string): Promise<{ ok: true; values: unknown[] } | { ok: false; reason: 'read-failed' | 'unreadable' }> {
+  if (isListKey(storageKey) && getListBackend(storageKey) === 'idb') {
+    const info = listKeyInfo(storageKey)!;
+    let rows: idb.IdRecord[] | null = null;
+    for (let attempt = 0; attempt < PERSIST_MAX_ATTEMPTS && rows === null; attempt++) {
+      try {
+        rows = await idb.getAllRecords(info.store);
+      } catch {
+        if (attempt < PERSIST_MAX_ATTEMPTS - 1) await delay(persistRetryDelays[attempt] ?? 1000);
+      }
+    }
+    if (rows === null) return { ok: false, reason: 'read-failed' };
+    try {
       const values: unknown[] = [];
       for (const row of rows) values.push(JSON.parse(await decryptStoredValue(storageKey, row.v)));
-      return values;
+      return { ok: true, values };
+    } catch {
+      return { ok: false, reason: 'unreadable' };
     }
+  }
+  const values = await readLocalStorageList(storageKey);
+  return values === undefined ? { ok: false, reason: 'unreadable' } : { ok: true, values };
+}
+
+/** A list stored as one localStorage blob, decrypted when protection is on. Undefined when it cannot be read. */
+async function readLocalStorageList(storageKey: string): Promise<unknown[] | undefined> {
+  try {
     let item: string | null;
     if (isSensitiveKey(storageKey) && isPasscodeEnabled()) {
       const raw = localStorage.getItem(storageKey);
@@ -685,6 +779,18 @@ export async function verifyStoredList(storageKey: string, expected: unknown): P
   return stableStringify(durable) === stableStringify(expected);
 }
 
+/**
+ * Runs `onStored` once the key's latest value is stored: straight away when nothing is pending (protection off
+ * writes synchronously), else after its background write. Not run if that write fails (the failure is reported).
+ */
+export function afterStored(storageKey: string, onStored: () => void) {
+  if (!writing.has(storageKey)) {
+    onStored();
+    return;
+  }
+  awaitPersisted(storageKey).then(onStored, () => { /* reported by the write error handler */ });
+}
+
 /** Waits until every background write has been stored. Throws when any of them failed. */
 export async function flushWrites() {
   while (writing.size) {
@@ -699,6 +805,7 @@ export async function deleteAllListData(): Promise<void> {
   await idb.clearAllListStores();
   try {
     localStorage.removeItem(MIGRATION_FLAG_KEY);
+    localStorage.removeItem(LIST_COUNTS_KEY);
   } catch {
     /* nothing stored */
   }
@@ -1060,6 +1167,7 @@ export async function unlock(passcode: string): Promise<boolean> {
     legacyKey = kek;
     await loadAndMigrateValues(kek, dek, true, JSON.stringify(readConfig()));
     await scanIdbLegacy(kek, dek);
+    await sealPlaintextRows();
     return true;
   }
   const kek = await deriveKey(passcode, unb64(config.salt), config.iterations);
@@ -1079,6 +1187,7 @@ export async function unlock(passcode: string): Promise<boolean> {
   legacyKey = kek;
   await loadAndMigrateValues(kek, dek, true, JSON.stringify(config));
   await scanIdbLegacy(kek, dek);
+  await sealPlaintextRows();
   return true;
 }
 
@@ -1148,20 +1257,55 @@ async function encodeCurrent(read: () => [string, string | null][], encode: (val
 }
 
 /**
- * Re-encrypts every IndexedDB list with the current key (or stores it plaintext when protection is
- * off, after disablePasscode). Pending writes with the previous key finish first, so none lands after.
+ * Rewrites IndexedDB list rows straight from storage, whether or not their list is loaded (the lock screen can
+ * turn protection on before any list is loaded): `transform` maps a stored value to the value to store, null
+ * leaves the row as it is, and throwing refuses. Every row of every list is read and transformed before anything
+ * is written, so a refusal changes nothing. Pending writes finish first. Throws when a write fails; rows already
+ * written stay written, so callers order their steps so that any mix of old and new rows is still readable.
  */
-async function reencryptIdbLists() {
+async function rewriteIdbRows(transform: (stored: string) => Promise<string | null>): Promise<void> {
   if (!idb.isIndexedDbSupported()) return;
   try {
     await flushWrites();
   } catch {
-    // A failed pending write was already reported; re-encrypting what is in memory is still correct.
+    // A failed pending write was already reported; what is stored is what gets rewritten.
   }
-  for (const storageKey of [...cache.keys()]) {
-    if (!isListKey(storageKey) || getListBackend(storageKey) !== 'idb') continue;
-    if (undecryptable.has(storageKey)) continue;
-    await persistListRecords(storageKey);
+  const plan: [idb.ListStoreName, idb.IdRecord[]][] = [];
+  for (const store of Object.values(idb.LIST_STORES)) {
+    const changed: idb.IdRecord[] = [];
+    for (const row of await idb.getAllRecords(store)) {
+      const next = await transform(row.v);
+      if (next !== null && next !== row.v) changed.push({ ...row, v: next });
+    }
+    plan.push([store, changed]);
+  }
+  for (const [store, rows] of plan) if (rows.length) await idb.putRecords(store, rows);
+}
+
+/** A stored value as plaintext: under the data key, else the passcode key of an older install. Throws if neither opens it. */
+async function decryptAny(stored: string): Promise<string> {
+  if (!stored.startsWith(PREFIX)) return stored;
+  if (!key) throw new Error('Locked');
+  try {
+    return await decryptWith(key, stored);
+  } catch (error) {
+    if (legacyKey) return decryptWith(legacyKey, stored);
+    throw error;
+  }
+}
+
+/**
+ * With protection on, every IndexedDB row should be encrypted. Rows left as plaintext (an earlier version could
+ * turn protection on without encrypting lists that weren't loaded yet) are encrypted under the data key. Runs
+ * after unlocking, before the app loads; best effort, tried again on the next unlock.
+ */
+async function sealPlaintextRows() {
+  if (!key) return;
+  const dek = key;
+  try {
+    await rewriteIdbRows(async stored => (stored.startsWith(PREFIX) ? null : encryptWith(dek, stored)));
+  } catch {
+    // Still readable (plaintext passes through decryption); sealed on a later unlock.
   }
 }
 
@@ -1186,7 +1330,10 @@ export async function enablePasscode(passcode: string, autoLockMinutes = 15, rec
   cache.clear();
   plain.forEach(([storageKey, value]) => cache.set(storageKey, value));
   listCache.forEach(([storageKey, value]) => cache.set(storageKey, value));
-  await reencryptIdbLists();
+  // Every IndexedDB row, loaded or not: plaintext rows are encrypted with the new data key. A row that is already
+  // encrypted can't be read without the key it was written with, so it is left as it is (it was already unreadable).
+  // If this stops part way, the rest stay plaintext and readable, and the next unlock encrypts them.
+  await rewriteIdbRows(async stored => (stored.startsWith(PREFIX) ? null : encryptWith(dek, stored)));
 }
 
 /** Checks the passcode for change/disable, without reloading the data the app is using. */
@@ -1230,17 +1377,43 @@ export async function changePasscode(current: string, next: string): Promise<{ q
 
 /**
  * Turns protection off: the student data is stored unencrypted again. Needs the passcode.
- * Lists that cannot be read are quarantined, not a reason to refuse: they stay exactly as
- * stored, stay marked unreadable, and are reported in the return value.
+ *
+ * Refused while any list can't be read: turning protection off deletes the passcode configuration, which holds
+ * the only (wrapped) copy of the data key, so a damaged list's intact records could never be opened again.
+ * Restoring a backup replaces the damaged list; protection can then be turned off.
+ *
+ * Order matters: the IndexedDB rows are made plaintext first, while the configuration is still stored. If that
+ * stops part way (storage full, the app closed), protection is still on and every row, plaintext or encrypted,
+ * still opens, so turning it off can simply be tried again. The configuration is removed only once no row is
+ * left encrypted.
  */
 export async function disablePasscode(current: string): Promise<{ quarantined: QuarantinedList[] }> {
   await confirmPasscode(current, 'The passcode is wrong.');
   await ensureWrappedKey(current);
-  const quarantined = getQuarantinedLists();
+  const damaged = getQuarantinedLists();
+  if (damaged.length) {
+    throw new Error(`Passcode protection can't be turned off while some data can't be read (${damaged.map(q => q.label).join(', ')}): turning it off would remove the only key to it. Restore a backup in Settings first, then turn protection off.`);
+  }
+  const toPlain = async (stored: string) => {
+    if (!stored.startsWith(PREFIX)) return null;
+    try {
+      return await decryptAny(stored);
+    } catch {
+      throw new Error("Passcode protection can't be turned off: some saved data can't be opened with this passcode. Restore a backup in Settings first, then turn protection off.");
+    }
+  };
+  // Until no background write is pending, so none lands encrypted after the rows were made plaintext.
+  for (let pass = 0; pass < 5; pass++) {
+    await rewriteIdbRows(toPlain);
+    if (writing.size === 0) break;
+  }
+  if (writing.size !== 0) throw new Error('Data is still being saved. Wait a moment, then try again.');
   const plain = await encodeCurrent(cachedValues, async value => value, true);
+  // Nothing awaits from here until the configuration is removed, so no write can start in between.
+  if (writing.size !== 0) throw new Error('Data is still being saved. Wait a moment, then try again.');
   rewriteAll(plain, null);
   // cache.clear() below would drop the IndexedDB lists (they have no localStorage value to restore
-  // from), so keep them and store their rows unencrypted.
+  // from), so keep them; their rows are already plaintext.
   const listCache = [...cache].filter(([storageKey]) => isListKey(storageKey) && getListBackend(storageKey) === 'idb');
   key = null;
   legacyKey = null;
@@ -1249,8 +1422,7 @@ export async function disablePasscode(current: string): Promise<{ quarantined: Q
   clearDekIdbFlag();
   cache.clear();
   listCache.forEach(([storageKey, value]) => cache.set(storageKey, value));
-  await reencryptIdbLists();
-  return { quarantined };
+  return { quarantined: [] };
 }
 
 /** Forgotten passcode: erases the student data on this device and turns protection off. */
@@ -1288,12 +1460,34 @@ export async function createRecoveryKey(): Promise<string> {
   if (!isPasscodeEnabled() || !key) throw new Error('Passcode protection is off or the app is locked.');
   const config = readConfig();
   if (!config || config.v !== 2) throw new Error('Passcode protection needs to finish setting up. Lock the app and unlock it again, then try.');
+  // The recovery key opens the data key only. Rows still under the passcode key of an older install (upgraded,
+  // not saved since) would stay locked behind the passcode, and resetting the passcode with the recovery key
+  // would then lose them for good: re-encrypt every such row under the data key first, loaded or not. Rows
+  // neither key opens are damaged already and are left as they are.
+  const dek = key;
+  await rewriteIdbRows(async stored => {
+    if (!stored.startsWith(PREFIX)) return encryptWith(dek, stored);
+    try {
+      await decryptWith(dek, stored);
+      return null;
+    } catch {
+      /* not under the data key */
+    }
+    if (!legacyKey) return null;
+    try {
+      return await encryptWith(dek, await decryptWith(legacyKey, stored));
+    } catch {
+      return null;
+    }
+  });
+  legacyStores.clear();
+  await reencryptLegacyValues();
   const recoveryKey = generateRecoveryKey();
   const normalized = normalizeRecoveryKey(recoveryKey)!;
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const rkek = await deriveKey(normalized, salt, ITERATIONS);
   const nextConfig: PasscodeConfigV2 = {
-    ...config, recoverySalt: b64(salt), recoveryIterations: ITERATIONS, wrappedDekRecovery: await wrapDek(key, rkek),
+    ...config, recoverySalt: b64(salt), recoveryIterations: ITERATIONS, wrappedDekRecovery: await wrapDek(dek, rkek),
   };
   localStorage.setItem(CONFIG_KEY, JSON.stringify(nextConfig));
   return recoveryKey;

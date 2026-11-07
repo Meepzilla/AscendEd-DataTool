@@ -13,6 +13,7 @@ import type { ImportedSession } from '@/lib/session-import';
 import { checkImportFileSize } from '@/lib/helpers';
 import { sanitizeErrorMessage, toSafeErrorMessage } from '@/lib/error-message';
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
+import { missedReasonFromCsv } from '@/lib/attendance';
 
 /** A session read from the file, with the Session ID it had (kept, so a later backup merge matches it). */
 export type { ImportedSession };
@@ -112,6 +113,9 @@ export default function ImportDataModal({ onClose, onImport }: ImportDataModalPr
                   originalGoalHeaders: [], // Not in the file; Edit Session uses the student's goals instead.
                   sourceSessionId: sessionId,
                 };
+                // A missed session comes back missed, with its reason (the export's Attendance column).
+                const missedReason = missedReasonFromCsv(row['Attendance']);
+                if (missedReason) sessionEntry.missed = { reason: missedReason };
                 sessionsMap.set(sessionId, sessionEntry);
               }
 

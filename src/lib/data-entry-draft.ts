@@ -53,7 +53,9 @@ export function saveDataEntryDraft(uid: string | undefined, draft: DataEntryDraf
   if (!uid) return true;
   try {
     secureStore.setItem(draftKey(uid), JSON.stringify(draft));
-    clearStorageFailure('draft');
+    // With protection on the write finishes in the background: the warning clears once it is stored, not
+    // before (clearing early made every later failure look new, so it was reported again on every save).
+    secureStore.afterStored(draftKey(uid), () => clearStorageFailure('draft'));
     return true;
   } catch (error) {
     reportStorageFailure('draft', error);

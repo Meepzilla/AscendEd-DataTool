@@ -51,6 +51,8 @@ const appendList = (current: unknown[], value: unknown[]): unknown[] => {
 const NOT_ADDED = new Set(['rating', 'gasLevel', 'numberOfTrials', 'runningSince', 'intervalSeconds', 'percentIntervals', 'averageSeconds', 'timerStartedAt', 'cueGivenAt']);
 const STORY_PART_KEYS = new Set<string>(STORY_PARTS.map(p => p.key));
 
+const isBlank = (v: unknown) => v === null || (typeof v === 'string' && v.trim() === '');
+
 /** Combines one goal's data from several sessions, oldest first. */
 export function mergeGoalData(parts: Record<string, any>[]): Record<string, any> {
   const result: Record<string, any> = {};
@@ -63,9 +65,11 @@ export function mergeGoalData(parts: Record<string, any>[]): Record<string, any>
       if (current === undefined) { result[key] = Array.isArray(value) ? [...value] : value; continue; }
       if (key === 'steps' && Array.isArray(current) && Array.isArray(value)) {
         // Task analysis: each step's latest score (by position), keeping earlier scores for steps scored once.
-        // A later part that cleared a step (empty level) overwrites the earlier score instead of resurrecting it.
+        // Data Entry saves every step, with an empty level for one not scored, and the parts are separate
+        // recordings: an empty level in a later part means that part didn't score the step, not that the
+        // earlier score was cleared, so it never overwrites a score.
         const length = Math.max(current.length, value.length);
-        result.steps = Array.from({ length }, (_, i) => (i < value.length && value[i] !== undefined ? value[i] : current[i] ?? value[i]));
+        result.steps = Array.from({ length }, (_, i) => (value[i]?.level ? value[i] : current[i] ?? value[i]));
       } else if (key === 'trials' && Array.isArray(current) && Array.isArray(value)) {
         // Trial grids: every scored trial (unscored ones don't count toward anything). The same grid saved
         // in two parts counts once.
@@ -84,9 +88,11 @@ export function mergeGoalData(parts: Record<string, any>[]): Record<string, any>
         result[key] = current || value;
       } else if (key === 'notes' && typeof current === 'string' && typeof value === 'string') {
         result.notes = joinText([current, value], '; ');
+      } else if (isBlank(value) && !isBlank(current)) {
+        // Empty in a later part (Data Entry resets a card's text fields after saving, and saves them empty):
+        // that part didn't record it, so the earlier value (target sound, word list, food...) stays.
       } else {
-        // The latest single value (rating, target sound, food...), even a cleared one: an empty level or
-        // empty text in a later part overwrites the earlier value instead of resurrecting it.
+        // The latest single value (rating, target sound, food...).
         result[key] = value;
       }
     }

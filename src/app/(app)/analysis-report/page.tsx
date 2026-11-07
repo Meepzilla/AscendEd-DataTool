@@ -86,6 +86,11 @@ export default function AnalysisReportPage() {
   }, [sessions, selectedStudentId, dateRange]);
   // Charts and the narrative use the sessions that took place; missed sessions are shown as attendance.
   const studentSessions = useMemo(() => periodSessions.filter(s => !isMissed(s)), [periodSessions]);
+  // Every session of the student, whatever the date range: GAS levels carry forward from before the range.
+  const studentHistory = useMemo(
+    () => (selectedStudentId ? sessions.filter(s => s.studentId === selectedStudentId && !isMissed(s)).reverse().sort(compareSessionsOldestFirst) : []),
+    [sessions, selectedStudentId],
+  );
   const attendance = useMemo(() => attendanceSummary(periodSessions), [periodSessions]);
 
   const handleStudentChange = (value: string) => {
@@ -203,6 +208,7 @@ export default function AnalysisReportPage() {
         <Suspense fallback={<AnalysisReportChartsSkeleton />}>
             <AnalysisCharts 
                 studentSessions={studentSessions}
+                studentHistory={studentHistory}
                 selectedStudent={selectedStudent}
                 selectedGoalId={selectedGoalId}
                 sessionsLoading={sessionsLoading}

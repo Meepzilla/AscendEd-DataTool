@@ -49,7 +49,7 @@ describe('assignedGoalChanges', () => {
       { label: 'Data capture method', from: 'Sequenced Trials', to: 'Behavior Frequency' },
       { label: 'Session target', from: '80', to: '90' },
       { label: 'Target date', from: 'May 15, 2026', to: 'Jun 1, 2026' },
-      { label: 'Baseline', from: '40', to: 'No target' },
+      { label: 'Baseline', from: '40', to: 'Not set' },
       { label: 'Baseline date', from: 'Sep 1, 2026', to: 'Not set' },
     ]);
   });

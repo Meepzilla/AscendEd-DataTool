@@ -17,7 +17,7 @@ import { goalStatExplanations } from '@/lib/report-formulas';
 import type { TaskStepScore } from '@/lib/task-analysis';
 import { AIM_STATUS_LABELS, aimLine, aimStatus, aimValueAt, masterySessions } from '@/lib/aim-line';
 import ExpandableGoalName from './ExpandableGoalName';
-import { gasLevelText } from '@/lib/gas';
+import { gasLevelDescription, gasLevelText } from '@/lib/gas';
 import type { StudentIep } from '@/lib/types';
 
 // A report card for each goal: its measure per session against the target, summary numbers, and a
@@ -34,16 +34,7 @@ interface GoalChartsProps {
 const round = (n: number) => Math.round(n * 10) / 10;
 const PROMPT_LABELS: Record<string, string> = { PartialPhysical: 'Partial physical' };
 
-/** Short labels for the five GAS attainment levels. */
-const GAS_LEVEL_LABELS: Record<number, string> = {
-  [-2]: 'Much less',
-  [-1]: 'Somewhat less',
-  0: 'Expected',
-  1: 'Somewhat more',
-  2: 'Much more',
-};
 const GAS_LEVELS = [-2, -1, 0, 1, 2] as const;
-const gasLevelTick = (level: number) => `${level > 0 ? `+${level}` : level} ${GAS_LEVEL_LABELS[level] ?? ''}`;
 
 interface Recorded {
   session: SessionData;
@@ -75,12 +66,31 @@ export function recordedSessions(goal: Goal, sessions: SessionData[], unanswered
 }
 
 /** Horizontal bars, one row per item, optionally stacked from several series. */
+const HBAR_LABEL_WIDTH = 150;
+/** About how many 11px characters fit in the bar chart's label column. */
+const HBAR_LABEL_CHARS = 24;
+
+/** A bar label on one line, shortened with "…" to fit the label column (recharts would wrap a long label onto
+ *  lines that overlap the next bar, or drop it). The whole label shows on hover and in the tooltip. */
+const OneLineTick = ({ x, y, payload }: { x?: number; y?: number; payload?: { value: string } }) => {
+  const text = String(payload?.value ?? '');
+  const short = text.length > HBAR_LABEL_CHARS ? `${text.slice(0, HBAR_LABEL_CHARS - 1).trimEnd()}…` : text;
+  return (
+    <text x={x} y={y} dy={4} textAnchor="end" fontSize={11} fill="hsl(var(--muted-foreground))">
+      <title>{text}</title>
+      {short}
+    </text>
+  );
+};
+
 const HBars: React.FC<{
   title: string;
   rows: Record<string, string | number>[];
   series: { key: string; label: string; color: string }[];
   max?: number;
-}> = ({ title, rows, series, max }) => (
+  /** Width of the label column (default 150). */
+  labelWidth?: number;
+}> = ({ title, rows, series, max, labelWidth = HBAR_LABEL_WIDTH }) => (
   <div>
     <p className="text-sm font-medium mb-1">{title}</p>
     {rows.length === 0 ? (
@@ -89,11 +99,11 @@ const HBars: React.FC<{
       <ChartContainer
         config={Object.fromEntries(series.map(s => [s.key, { label: s.label, color: s.color }]))}
         className="w-full"
-        style={{ height: 26 * rows.length + (series.length > 1 ? 60 : 30) }}
+        style={{ height: 30 * rows.length + (series.length > 1 ? 60 : 30) }}
       >
         <BarChart data={rows} layout="vertical" margin={{ top: 0, right: 16, left: 0, bottom: 0 }}>
           <XAxis type="number" allowDecimals={max !== undefined} domain={max !== undefined ? [0, max] : undefined} tickLine={false} axisLine={false} />
-          <YAxis type="category" dataKey="name" width={150} tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
+          <YAxis type="category" dataKey="name" width={labelWidth} tickLine={false} axisLine={false} interval={0} tick={<OneLineTick />} />
           <ChartTooltip content={<ChartTooltipContent />} />
           {series.length > 1 && <ChartLegend content={<ChartLegendContent />} />}
           {series.map(s => <Bar key={s.key} dataKey={s.key} stackId="a" fill={`var(--color-${s.key})`} />)}
@@ -162,17 +172,14 @@ const GoalBreakdowns: React.FC<{ goal: Goal; recorded: Recorded[] }> = ({ goal, 
     );
   }
   if (type === 'GOAL_ATTAINMENT_SCALE') {
-    // All five levels, including zeros, so the distribution is visible at a glance. The row names
-    // use this goal's own level descriptions where written, so the values read as the goal's scale.
+    // All five levels, including zeros, so the distribution is visible at a glance, highest first like the line
+    // chart. The rows are named by level only: the key under the line chart says what each level means for this goal.
     panels.push(
-      <HBars key="gas-levels" title="Sessions at each attainment level" series={COUNT_SERIES}
-        rows={GAS_LEVELS.map(level => {
-          const custom = goal.gasLevelDescriptions?.[level + 2]?.trim();
-          return {
-            name: custom ? `${level > 0 ? `+${level}` : level} — ${custom.length > 40 ? `${custom.slice(0, 40)}…` : custom}` : gasLevelTick(level),
-            count: recorded.filter(r => r.value === level).length,
-          };
-        })} />,
+      <HBars key="gas-levels" title="Sessions at each attainment level" series={COUNT_SERIES} labelWidth={36}
+        rows={[...GAS_LEVELS].reverse().map(level => ({
+          name: level > 0 ? `+${level}` : String(level),
+          count: recorded.filter(r => r.value === level).length,
+        }))} />,
     );
   }
   if (type === 'BEHAVIOR_ABC') {
@@ -200,13 +207,9 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
   const target = goal.sessionTargetValue;
   const recorded = useMemo(() => recordedSessions(goal, sessions), [goal, sessions]);
   const behaviorRecorded = useMemo(() => recordedSessions(goal, sessions, true), [goal, sessions]);
-  // GAS axis ticks use this goal's own level descriptions where written (shortened to fit the axis),
-  // falling back to the generic short labels.
-  const gasTick = (level: number) => {
-    const custom = goal.gasLevelDescriptions?.[level + 2]?.trim();
-    if (custom) return `${level > 0 ? `+${level}` : level} ${custom.length > 28 ? `${custom.slice(0, 28)}…` : custom}`;
-    return gasLevelTick(level);
-  };
+  // The GAS axis shows just the level (+2 … -2): words don't fit beside the chart on a tablet and wrapped
+  // onto each other. What each level means for this goal is listed in a key under the chart.
+  const gasTick = (level: number) => (level > 0 ? `+${level}` : String(level));
 
   // The aim line (baseline to target by the target date), as the value expected on each session's date.
   const aim = aimLine(goal, recorded[0]?.session.date);
@@ -294,10 +297,21 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
                       label={{ value: direction === 'decrease' ? 'Target (max)' : 'Target', position: 'insideTopRight', fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
                   )}
                   {aim && <Line type="linear" dataKey="aim" stroke="var(--color-aim)" strokeWidth={1.5} strokeDasharray="2 3" dot={false} />}
-                  <Line type="monotone" dataKey="value" stroke="var(--color-value)" strokeWidth={2} dot={true} />
+                  {/* GAS levels are steps (-2 … +2), so they are joined with straight lines: a curve would suggest levels in between. */}
+                  <Line type={isGas ? 'linear' : 'monotone'} dataKey="value" stroke="var(--color-value)" strokeWidth={2} dot={true} />
                 </LineChart>
               </ChartContainer>
             </div>
+            {isGas && (
+              <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs" aria-label="What each level means">
+                {[...GAS_LEVELS].reverse().map(level => (
+                  <React.Fragment key={level}>
+                    <dt className="font-semibold tabular-nums text-right">{gasTick(level)}</dt>
+                    <dd className="text-muted-foreground">{gasLevelDescription(goal, level)}</dd>
+                  </React.Fragment>
+                ))}
+              </dl>
+            )}
             {hasResponses && (
               <div className="h-[240px] w-full">
                 <ChartContainer

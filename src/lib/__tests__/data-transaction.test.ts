@@ -43,6 +43,18 @@ describe('runListTransactionAsync', () => {
     expect(stored.get('sessions')).toEqual(next.sessions);
   });
 
+  it('puts back the list whose write failed, so an in-memory change from that write is undone', async () => {
+    const { stored, store } = memoryStore();
+    // A write that changes the in-memory copy and then fails to store it (storage full).
+    store.write = async (key, value) => {
+      stored.set(key, value);
+      return key !== 'goalTemplates';
+    };
+    expect(await runListTransactionAsync({ store, next })).toBe(false);
+    expect(stored.get('students')).toEqual([{ id: 's1' }]);
+    expect(stored.get('goalTemplates')).toEqual([{ id: 't1' }]);
+  });
+
   it('rolls every list back when the last write fails (the delete-student shape)', async () => {
     const { stored, store } = memoryStore(new Set(['sessions']));
     // Delete a student: sessions go first, then the student. The sessions write is
