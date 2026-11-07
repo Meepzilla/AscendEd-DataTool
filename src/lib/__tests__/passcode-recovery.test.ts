@@ -13,7 +13,6 @@ import { CHECK_TEXT } from '../secure-store';
 
 const S = 'ascended_students_v2_u';
 const SE = 'ascended_sessions_v2_u';
-const T = 'ascended_goal_templates_v2_u';
 const D = 'ascended_data_entry_draft_v1_u';
 const G = 'ascended_student_groups_v1_u';
 const A = 'ascended_abc_lists';
