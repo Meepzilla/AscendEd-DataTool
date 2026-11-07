@@ -61,11 +61,11 @@ export default function BackupRestoreCard() {
     }
   };
 
-  const handleRestore = (mode: RestoreMode) => {
+  const handleRestore = async (mode: RestoreMode) => {
     if (!pendingBackup) return;
     let summary;
     try {
-      summary = restoreBackup(pendingBackup, mode);
+      summary = await restoreBackup(pendingBackup, mode);
     } catch (error) {
       // Storage full: nothing was changed.
       toast({ title: "Couldn't restore the backup", description: error instanceof Error ? error.message : String(error), variant: 'destructive' });

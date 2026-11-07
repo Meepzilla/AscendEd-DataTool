@@ -35,6 +35,10 @@ export default function LoginPage() {
             <LogIn className="mr-2 h-4 w-4" />
             Continue
           </Button>
+          <p className="text-center text-sm text-muted-foreground">
+            This is a local profile on this device, not an account — anyone with the device can continue.
+            To keep student data private, set a passcode in Settings → Passcode Protection.
+          </p>
         </CardContent>
       </Card>
     </div>

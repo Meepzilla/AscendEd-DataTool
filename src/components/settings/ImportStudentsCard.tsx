@@ -113,9 +113,9 @@ export default function ImportStudentsCard() {
     ...row, goals: row.goals.map((g, i) => (i === goalIndex ? { ...g, include } : g)),
   }));
 
-  const runImport = () => {
+  const runImport = async () => {
     // Goals not ticked are left out, as goals the student already has are.
-    const result = importStudents(included.map(({ include: _, ...row }) => ({
+    const result = await importStudents(included.map(({ include: _, ...row }) => ({
       ...forMode(row, moveDates), goals: row.goals.map(({ include, ...g }) => ({ ...g, duplicate: !include })),
     })));
     if (!result) return;

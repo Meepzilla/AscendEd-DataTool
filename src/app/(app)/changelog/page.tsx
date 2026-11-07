@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-06',
+    title: 'Passcode by Default, Stronger PIN, Safer Saving and IndexedDB Storage',
+    description: 'On a new install the app now asks for a passcode before it opens, so student data is encrypted from the start; continuing without one needs an explicit acknowledgment that the data will not be encrypted. A device that already has student data is offered a passcode once instead and is never locked out of its own data. The Student Access Lock PIN is now stored as a salted PBKDF2 hash instead of a single SHA-256 hash, with a growing lockout after repeated wrong PINs or passcodes; a PIN set before this change is upgraded automatically the next time it unlocks. Saving now waits until the data is actually stored before saying it worked, and restoring a backup is only reported as done once every list is verified. Student, template and session data now live in IndexedDB instead of one large browser storage entry, with the old copy kept until the move is verified; Settings shows how much storage is used and warns at 70% and 90% of quota and past 3 MB, and prompts for a backup.',
+    type: 'improvement',
+    icon: ShieldCheck,
+  },
+  {
+    date: '2026-11-06',
     title: 'Fixes to Dates, Scoring, Backups and Exports',
     description: 'Dates no longer shift a day back: a session dated Aug 1 now counts in the school year, week and month starting Aug 1, and exported CSV dates land on the right day. Scoring is corrected too: a story session where every part scored 0 now charts as 0% instead of vanishing, counts of 0 no longer fall through to another field, and prolongations count in the fluency score. Importing a goal like "currently at 40%, will increase to 80%" now reads the target as 80%, and "3 times per day" or "3 times per week" goals are read as frequency goals. Saving a session in parts and merging no longer counts trials twice, and a cleared value in the later part now wins. Backups are password protected by default (plain text needs typing PLAINTEXT), carry a checksum so a damaged file is rejected, and report anything dropped instead of discarding it silently. CSV export has a de-identified option with IDs only, no names, notes or free text. Data Entry and Settings buttons are now at least 44 px, with labels for screen readers, and animations respect reduced motion.',
     type: 'fix',

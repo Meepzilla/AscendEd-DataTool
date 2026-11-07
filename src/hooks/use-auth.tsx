@@ -3,8 +3,12 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import type { User } from '@/lib/types';
 
-// The single local user. Data is stored in the browser's localStorage, keyed by this uid,
-// so the uid must stay stable for existing data to keep loading.
+// The single local user: a local profile, not an account and not an auth boundary. There is no password,
+// no server and nothing to check: anyone who can open the app on the device can open this profile
+// (the login page is just a Continue button), and leaving it does not protect the data, which stays
+// in this browser's localStorage. Passcode Protection is the thing that keeps student data private.
+// Data is stored in the browser's localStorage, keyed by this uid, so the uid must stay stable for
+// existing data to keep loading.
 const LOCAL_USER: User = {
   uid: 'local-guest-user',
   email: 'guest@local.com',
@@ -26,7 +30,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 /**
  * AuthProvider component.
- * Provides a local-only "session": the user is either signed in as the local user or signed out.
+ * Provides the local profile: the user is either using the local profile or has left it. This is
+ * not authentication — there is no account, no credential and no check — and it must not be
+ * presented as keeping the data private. (The names signInAsGuest and signOut are kept so the
+ * callers don't change; they open and leave the local profile.)
  */
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -38,14 +45,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   /**
-   * Signs in as the local user.
+   * Opens the local profile. Nothing is checked: this is not a sign-in to an account.
    */
   const signInAsGuest = useCallback(async () => {
     setCurrentUser(LOCAL_USER);
   }, []);
 
   /**
-   * Signs out the local user. Stored data is kept.
+   * Leaves the local profile. Stored data is kept on the device and the profile can be opened
+   * again without anything to check, so this does not lock or protect the data.
    */
   const signOut = useCallback(async () => {
     setCurrentUser(null);
