@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-07',
+    title: 'Always Opens Over a Secure Connection',
+    description: 'Opening the app with a plain http:// address now redirects to the secure https:// address, for every page and file, so the app never loads over an unencrypted connection.',
+    type: 'improvement',
+    icon: Lock,
+  },
+  {
+    date: '2026-11-07',
     title: 'The App No Longer Shows Its Framework Version',
     description: 'The published app no longer includes the version number of the web framework it is built with, which tools can read to look up known weaknesses in that release. The build now checks that the number stays out. Keeping the framework up to date (done monthly) remains the real protection.',
     type: 'improvement',
