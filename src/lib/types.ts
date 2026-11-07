@@ -284,6 +284,20 @@ export const AssignedGoalEditSchema = z.object({
   ),
   blankFills: z.array(z.string()).optional(),
   isArchived: z.boolean().optional(),
+}).superRefine((goal, ctx) => {
+  // Type-specific ranges (when the type is known, as in Edit Goal): a GAS target and baseline are levels from -2 to
+  // +2, and only GAS goals start below 0 (other baselines are percentages, counts or ratings).
+  if (!goal.dataCaptureType) return;
+  if (goal.dataCaptureType === 'GOAL_ATTAINMENT_SCALE') {
+    if (goal.sessionTargetValue !== undefined && goal.sessionTargetValue > 2) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['sessionTargetValue'], message: 'A GAS target is a level from -2 to +2 (0 is the expected outcome).' });
+    }
+    if (goal.baseline !== undefined && goal.baseline > 2) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['baseline'], message: 'A GAS baseline is a level from -2 to +2.' });
+    }
+  } else if (goal.baseline !== undefined && goal.baseline < 0) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['baseline'], message: 'Baseline must be 0 or greater.' });
+  }
 });
 
 
