@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-06',
+    title: 'Larger Goal Editor on Tablet and a Changes Summary',
+    description: 'Both goal editors, a student goal from their profile and a goal template from the templates page, now open wider on tablet instead of the narrow 576px window. Each editor also lists what saving will change, old value to new value, above the Save button: session target, baseline, target date, data capture method, goal direction, task steps, GAS level descriptions, blank fills and the goal text itself. Nothing shows when nothing changed.',
+    type: 'improvement',
+    icon: Pencil,
+  },
+  {
+    date: '2026-11-06',
     title: 'Eight Default GAS Goals with Written Scales',
     description: 'Goal Attainment Scale gains eight built-in goals with a full written scale for every level: targeted vocabulary and answering questions about a story for language development, asking for help and commenting to share information for communication functions, combining words to describe and retelling a story in order for expressive language, and using a calm-down strategy and transitioning between activities for behavior. Each goal starts at level -2 with 0 as the expected outcome, and assigning one copies its five level descriptions onto the student goal, where they can still be edited.',
     type: 'feature',

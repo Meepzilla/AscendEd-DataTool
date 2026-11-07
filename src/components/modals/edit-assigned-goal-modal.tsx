@@ -20,6 +20,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 import { GAS_LEVELS, formatGasLevel } from '@/lib/gas';
 import TargetDirectionField from './TargetDirectionField';
+import GoalChangeSummary from './GoalChangeSummary';
+import { assignedGoalChanges } from '@/lib/goal-changes';
 import { goalStatement, goalTypeLabel } from '@/lib/helpers';
 import { automaticBlankValues, findBlanks } from '@/lib/goal-blanks';
 
@@ -73,6 +75,16 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
     }
   }, [goalToEdit, isOpen, form]);
 
+  // What changed, old to new, so the editor says plainly what saving will change. Compared against
+  // the goal as it was, not against the form's dirty flags, so only real differences are listed.
+  const watched = form.watch(['name', 'smartGoal', 'sessionTargetValue', 'targetDate', 'taskSteps', 'baseline', 'baselineDate', 'gasLevelDescriptions', 'masterySessions', 'blankFills', 'targetDirection', 'isArchived', 'dataCaptureType']);
+  const changes = React.useMemo(() => assignedGoalChanges(goalToEdit, {
+    name: watched[0], smartGoal: watched[1], sessionTargetValue: watched[2], targetDate: watched[3],
+    taskSteps: watched[4], baseline: watched[5], baselineDate: watched[6], gasLevelDescriptions: watched[7],
+    masterySessions: watched[8], blankFills: watched[9], targetDirection: watched[10], isArchived: watched[11],
+    dataCaptureType: watched[12],
+  }), [goalToEdit, watched]);
+
   const onSubmit = async (data: EditAssignedGoalFormData) => {
     if (!goalToEdit) return;
     setIsSubmitting(true);
@@ -100,7 +112,7 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
       onClose={onClose}
       title={`Edit Assigned Goal: ${goalToEdit?.name}`}
       description={`Changes apply only to ${studentName ?? 'this student'}. The goal template and other students with this goal stay as they are.`}
-      size="lg"
+      size="xl"
     >
       <Form {...form}>
         <form
@@ -326,6 +338,8 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
             )}
           />
 
+
+          <GoalChangeSummary changes={changes} />
 
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting || dataLoading}>
