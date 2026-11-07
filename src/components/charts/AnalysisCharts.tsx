@@ -22,7 +22,7 @@ const SyllableFluencyChart = lazy(() => import('./analysis-charts/SyllableFluenc
 const DysfluencyTypesChart = lazy(() => import('./analysis-charts/DysfluencyTypesChart'));
 const DataSummary = lazy(() => import('./analysis-charts/DataSummary'));
 const GoalCharts = lazy(() => import('./analysis-charts/GoalCharts'));
-const GasTScoreChart = lazy(() => import('./analysis-charts/GasTScoreChart'));
+const GasTScoreLineChart = lazy(() => import('./analysis-charts/GasTScoreLineChart'));
 const GasSummaryTable = lazy(() => import('./analysis-charts/GasSummaryTable'));
 
 const GAS_LEVEL_VALUES = GAS_LEVELS.map(info => info.level);
@@ -289,7 +289,7 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, select
         <div className="space-y-6">
           <h2 className="text-xl font-semibold">Goal Attainment Scaling</h2>
           <Suspense fallback={<ChartSuspenseFallback />}>
-            <GasTScoreChart sessions={studentSessions} goals={gasGoals} />
+            <GasTScoreLineChart sessions={studentSessions} goals={gasGoals} />
           </Suspense>
           <Suspense fallback={<ChartSuspenseFallback />}>
             <GasSummaryTable sessions={studentSessions} goals={gasGoals} />
