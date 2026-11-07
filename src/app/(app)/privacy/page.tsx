@@ -9,7 +9,7 @@ import { APP_NAME } from '@/lib/appConstants';
 
 export const metadata = { title: `Privacy Notice | ${APP_NAME}` };
 
-const LAST_UPDATED = 'November 6, 2026';
+const LAST_UPDATED = 'November 7, 2026';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -47,9 +47,11 @@ export default function PrivacyPage() {
         <p>Only what you type or record in the app:</p>
         <ul className="list-disc space-y-1 pl-5">
           <li>Student names (a first name or initials is enough).</li>
-          <li>Each student&apos;s goals: the goal text, type and session target.</li>
-          <li>Session data: dates and times, trial and count results, prompt levels, ratings, behavior (ABC) records, activity descriptions and notes.</li>
-          <li>Goal templates, and app settings such as display size and menu bar position.</li>
+          <li>IEP details you add: IEP, annual review and re-evaluation dates, and required service minutes.</li>
+          <li>Each student&apos;s goals: the goal text, type, session target, target date, baseline, mastery criteria, task steps and, for Goal Attainment Scale goals, the five level descriptions.</li>
+          <li>Session data: dates and times, trial and count results, prompt levels, ratings, attainment levels, behavior records (ABC incidents and the times of behaviors), activity descriptions and notes.</li>
+          <li>Missed sessions and their reason (for example student absent), used for therapy attendance and service minutes. This is not the school&apos;s daily attendance.</li>
+          <li>Goal templates, saved student groups (a name and the students in it), custom ABC lists, and app settings such as the school or district name for printed reports, school-year dates, theme and display size.</li>
           <li>Unsaved Data Entry work, so it isn&apos;t lost if the app closes.</li>
         </ul>
         <p>
@@ -57,23 +59,31 @@ export default function PrivacyPage() {
           identifiers, location or usage data. Please don&apos;t enter medical diagnoses or other information the goals
           don&apos;t need.
         </p>
+        <p>
+          <strong>Importing students</strong> (Settings → Import Students) reads a spreadsheet or an IEP at a Glance PDF on
+          the device. The file is not uploaded or kept: only the names, IEP dates, service minutes and goals you confirm in
+          the review are saved, as if typed in. Other details in the file are ignored.
+        </p>
       </Section>
 
       <Section title="Where it is stored">
         <p>
-          In this browser&apos;s storage on this device only (for example, the iPad&apos;s Home Screen app or Safari). It
-          isn&apos;t synced to other devices or backed up to the cloud by the app. The app works without an internet
-          connection.
+          In this browser&apos;s storage on this device only (for example, the iPad&apos;s Home Screen app, Safari, or the
+          Android app): students, goal templates and sessions in the browser&apos;s database (IndexedDB), and smaller items
+          such as settings in its local storage. It isn&apos;t synced to other devices or backed up to the cloud by the app.
+          The app asks the browser to keep this storage rather than clear it when the device runs low on space. The app
+          works without an internet connection.
         </p>
         <p>
           The app itself (its code, not your data) is downloaded from Cloudflare&apos;s hosting. The browser only allows
-          the app&apos;s own scripts to run, and the app has no third-party code.
+          the app&apos;s own scripts to run, and the app has no third-party code. The PDF reader used for importing runs
+          inside the app, from the app&apos;s own files.
         </p>
       </Section>
 
       <Section title="Who can see it">
         <ul className="list-disc space-y-1 pl-5">
-          <li>Anyone who can open the app on this device. The app is single-device and single-user: there are no accounts, and the device lock is the only access control until <strong>Passcode Protection</strong> is set. New installs are asked to set a passcode when the app first opens; with it on, the student data is encrypted (AES-256) and the app locks after a period without use. Goal templates, student groups, and custom ABC lists are encrypted too, including the built-in goal templates, which share one list with your own templates (the built-in goals themselves are the same on every device and are not private). Turn it on any time in Settings. When you set a passcode the app shows a recovery key once: keep it somewhere safe, since it is the only way back in if you forget the passcode.</li>
+          <li>Anyone who can open the app on this device. The app is single-device and single-user: there are no accounts, and the device lock is the only access control until <strong>Passcode Protection</strong> is set. New installs are asked to set a passcode when the app first opens; with it on, the student data is encrypted (AES-256) and the app locks after a period without use. Goal templates, student groups, and custom ABC lists are encrypted too, including the built-in goal templates, which share one list with your own templates (the built-in goals themselves are the same on every device and are not private). Turn it on any time in Settings; turning it on encrypts everything already saved, not only new work. When you set a passcode the app shows a recovery key once: keep it somewhere safe, since it is the only way back in if you forget the passcode.</li>
           <li>Nobody else. The developer, the hosting company and the district can&apos;t see it unless you share a file.</li>
           <li>Files you create leave the device only where you put them: <strong>backups</strong> (which can be protected with a password) and <strong>CSV exports</strong> (not encrypted). Store them only in district-approved places.</li>
         </ul>

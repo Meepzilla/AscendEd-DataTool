@@ -15,15 +15,17 @@ It runs entirely on the device: there is no account, no server and no AI. Studen
 
 **Data collection**
 - Record several students at once, with no limit on slots. Saved groups (a class or small group) load in one step, and Remove All clears the slots (after asking, and naming anyone with unsaved data).
-- 20 goal types, each with its own controls and measure, including:
+- 21 goal types, each with its own controls and measure, including:
   - accuracy counts and trial grids;
   - prompt levels, fluency, communication functions, story elements and task analysis;
-  - behavior frequency, duration, ABC, interval and latency.
+  - behavior frequency, duration, ABC, interval and latency (behavior times can be corrected by hand);
+  - Goal Attainment Scaling (GAS): a level from −2 to +2 per session, with the goal's own written description of each level.
 - Keyboard shortcuts for fast entry. Unsaved work survives switching pages or closing the app.
 - Missed sessions are recorded with a reason. Sessions saved in parts can be merged so their minutes count once. Saved sessions can be edited, date and times included.
 
 **Students and goals**
-- A goal bank of over 900 templates, searchable by skill area, with purpose and activity ideas.
+- A goal bank of over 900 templates, searchable by skill area, with purpose and activity ideas, including 20 GAS goals with all five levels written out. Built-in goals can be hidden, or deleted and restored later (Settings → Built-in goals).
+- The goal editors list what saving will change, old value to new.
 - Every built-in goal reads the same way: "By [date], the student will … with 80% accuracy across 3 consecutive sessions, as measured by …".
 - Custom goals are written from the goal text alone (Assign / Create Goal → Write a custom goal): the name, goal type, target, direction and target date are suggested from its wording (the same reading as the student import) and can be changed, with the baseline, mastery and an option to save it as a template.
 - Each goal has a target, a direction (increase or decrease), a target date, a baseline and mastery criteria. The goal text follows them: placeholders such as "[student]", "[date]", "[target]", "[opportunities]", "[sessions]", "[annual review]" and "[service minutes]" (`goal-placeholders.ts`, with chips to insert them in the goal and template editors), the student's name, blanks ("___"), the stated percentage and the consecutive sessions are filled in from the goal's settings, in goal bank and custom goals alike. The number of opportunities ("4 out of 5 opportunities") stays as written unless it is the goal's only target.
@@ -31,13 +33,14 @@ It runs entirely on the device: there is no account, no server and no AI. Studen
 - Each student's profile shows IEP dates, service minutes against the IEP (per week, month or school year) and attendance, with a View Report button for that student's charts and Progress Report.
 
 **Reports**
-- A chart per goal, with the target line and the aim line.
+- A chart per goal, with the target line and the aim line; tap a goal's title for its full text, and a figure marked ⓘ for how it is worked out.
+- For GAS goals, a T-score line graph over time (all of a student's GAS goals combined, Kiresuk & Sherman formula), a summary table and the attainment-level distribution.
 - Written progress narratives in brief or detailed style.
 - A printable IEP progress report, with optional service minutes and your school or district name at the top.
-- CSV export.
+- CSV export and import of session data.
 
 **Privacy and safety**
-- Optional passcode protection: student data is encrypted on the device (AES-256).
+- Optional passcode protection: student data is encrypted on the device (AES-256), with a recovery key shown once when the passcode is set.
 - Backups to a file, optionally password-protected; restoring can merge or replace.
 - A Student Access Lock with a PIN.
 - A strict Content Security Policy: only the app's own scripts can run.
@@ -51,10 +54,11 @@ In the app, a **Getting Started** checklist on the Dashboard walks a new user th
 
 ## Tech stack
 
-- [Next.js 15](https://nextjs.org/) (App Router) with a static export, plus [React 18](https://react.dev/) and [TypeScript](https://www.typescriptlang.org/)
+- [Next.js 15](https://nextjs.org/) (App Router) with a static export, plus [React 19](https://react.dev/) and [TypeScript](https://www.typescriptlang.org/)
 - [Tailwind CSS](https://tailwindcss.com/), [shadcn/ui](https://ui.shadcn.com/) and Radix UI
 - [Recharts](https://recharts.org/) for charts
-- Browser `localStorage` for data, with Web Crypto for passcode encryption
+- IndexedDB for students, goal templates and sessions (one row per record) and `localStorage` for smaller items, with Web Crypto for passcode encryption; the app requests persistent storage
+- [zod](https://zod.dev/) for validating forms and backups, and [pdf.js](https://mozilla.github.io/pdf.js/) (bundled, run locally) for reading IEP at a Glance PDFs
 - A service worker for offline use, and [Capacitor](https://capacitorjs.com/) for the Android app
 
 ## Development
