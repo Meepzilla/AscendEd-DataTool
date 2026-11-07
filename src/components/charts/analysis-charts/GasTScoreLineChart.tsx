@@ -2,7 +2,7 @@
 
 import React, { useMemo } from 'react';
 import type { Goal, SessionData } from '@/lib/types';
-import { gasTScoresOverTime, GAS_LEVELS } from '@/lib/gas';
+import { gasTScoresOverTime, GAS_LEVELS, gasLevelText } from '@/lib/gas';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, ReferenceLine } from 'recharts';
@@ -12,10 +12,9 @@ export function gasLevelShortLabel(level: number): string {
   return GAS_LEVELS.find(l => l.level === level)?.label ?? '';
 }
 
-const formatLevel = (level: number) => {
-  const signed = level > 0 ? `+${level}` : String(level);
-  const label = gasLevelShortLabel(level);
-  return label ? `${signed} (${label})` : signed;
+const formatLevel = (goal: Goal | undefined, level: number) => {
+  if (!goal) return level > 0 ? `+${level}` : String(level);
+  return gasLevelText(goal, level);
 };
 
 const shortDate = (time: number) => new Date(time).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -86,7 +85,7 @@ const GasTScoreLineChart: React.FC<GasTScoreLineChartProps> = ({ sessions, goals
                       <p className="font-medium">{new Date(p.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
                       <p>T-score: {Math.round(p.tScore * 10) / 10}</p>
                       {p.levels.map(l => (
-                        <p key={l.goalId} className="text-muted-foreground">{l.goalName}: {formatLevel(l.level)}</p>
+                        <p key={l.goalId} className="text-muted-foreground">{l.goalName}: {formatLevel(goals.find(g => g.id === l.goalId), l.level)}</p>
                       ))}
                     </div>
                   );
