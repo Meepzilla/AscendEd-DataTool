@@ -1,47 +1,75 @@
 // Multi-list transactions and multi-tab change detection for the three main lists
 // (students, goal templates, sessions).
 //
-// The app stores each list as one whole blob. A multi-list change (delete a student and
+// The app stores each list as per-record rows in IndexedDB (or, for a list whose localStorage blob
+// has not migrated, as one localStorage value). A multi-list change (delete a student and
 // their sessions, import sessions, restore a backup) must not leave the lists half
-// updated when storage fills up part way, so writes go through runListTransaction:
-// snapshot all three lists, write all three, verify each one reads back, and roll every
-// list back to its snapshot when any step fails.
+// updated when storage fills up part way, so writes go through runListTransactionAsync:
+// snapshot all three lists, write all three (each write resolves only after it has landed
+// in durable storage), verify each one reads back from durable storage, and roll every
+// list back to its snapshot when any step fails. State is only updated after it returns true.
 //
-// Multi-tab: only the storage event is used, not a BroadcastChannel. Every list reaches
-// localStorage (templates directly, students and sessions through the encrypted persist),
-// so another tab's save fires a storage event here. A channel message sent before the
-// encrypted write lands would make the other tab reload a stale copy, so nothing is
-// posted; the event after the write lands is the signal. On an external change the
-// lists are reloaded from storage as they are, with no merge attempt.
+// Multi-tab: lists in IndexedDB do not fire a storage event, so a successful save also posts
+// on a BroadcastChannel (DATA_CHANGED_CHANNEL). The storage event is still listened for as
+// well: it fires for the localStorage-backed lists and for storage being cleared. A channel
+// message sent before the write lands would make the other tab reload a stale copy, so the
+// message is only posted after the transaction (or single-list save) has been verified.
 
 export type MainListKey = 'students' | 'goalTemplates' | 'sessions';
 
 export const MAIN_LIST_KEYS: MainListKey[] = ['students', 'goalTemplates', 'sessions'];
 
-export interface ListTransactionStore {
+/** BroadcastChannel name posted after a verified save of any of the three lists. */
+export const DATA_CHANGED_CHANNEL = 'ascended-data-changed';
+
+/** Posts a data-changed message for other tabs. Only call after the write has landed. */
+export function postDataChanged() {
+  try {
+    if (typeof BroadcastChannel !== 'undefined') {
+      new BroadcastChannel(DATA_CHANGED_CHANNEL).postMessage({ type: 'data-changed', at: Date.now() });
+    }
+  } catch {
+    // Another tab simply will not reload; this tab's data is still stored.
+  }
+}
+
+export interface AsyncListTransactionStore {
   /** The stored value as it is, for rollback (e.g. secureStore.snapshotItem). */
   snapshot(key: MainListKey): unknown;
-  /** Puts a snapshotted value back. */
-  restore(key: MainListKey, snapshot: unknown): void;
-  /** Writes a list; false when it could not be stored. */
-  write(key: MainListKey, value: unknown): boolean;
-  /** Reads a list back from storage, for verification. */
-  read(key: MainListKey): unknown;
+  /** Puts a snapshotted value back, resolving only after it has landed. */
+  restore(key: MainListKey, snapshot: unknown): Promise<void>;
+  /** Writes a list; false when it could not be stored. Resolves only after the write has landed. */
+  write(key: MainListKey, value: unknown): Promise<boolean>;
+  /** Reads a list back from durable storage (not the in-memory cache), for verification. */
+  read(key: MainListKey): Promise<unknown>;
 }
 
 export interface ListTransactionInput {
-  store: ListTransactionStore;
+  store: AsyncListTransactionStore;
   next: Record<MainListKey, unknown>;
 }
 
+/** JSON with object keys sorted, so the same records compare equal whatever their key order. */
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value) ?? 'null';
+  if (typeof (value as { toJSON?: unknown }).toJSON === 'function') return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
+  const record = value as Record<string, unknown>;
+  const keys = Object.keys(record).filter(k => record[k] !== undefined).sort();
+  return `{${keys.map(k => `${JSON.stringify(k)}:${stableStringify(record[k])}`).join(',')}}`;
+}
+
 /**
- * Writes all three lists and verifies each one reads back as written. Returns true only
- * when all three hold the new values; on any write or verification failure every list
- * already written is put back to its snapshot and false is returned. A failed verify
- * reads through the same path the app reads (the in-memory cache when passcode
- * protection is on), so it catches a rejected write, not a later disk failure.
+ * Writes all three lists and verifies each one reads back from durable storage as written. Returns
+ * true only when all three hold the new values; on any write or verification failure every list
+ * already written is put back to its snapshot (awaited) and false is returned. A failed verify
+ * reads through durable storage, so it catches a write that never reached disk, not just a
+ * rejected one.
+ *
+ * There is no synchronous version: a synchronous write cannot know whether the data reached disk,
+ * which is the failure this helper exists to prevent.
  */
-export function runListTransaction({ store, next }: ListTransactionInput): boolean {
+export async function runListTransactionAsync({ store, next }: ListTransactionInput): Promise<boolean> {
   const snapshots = new Map<MainListKey, unknown>();
   for (const key of MAIN_LIST_KEYS) {
     try {
@@ -51,10 +79,10 @@ export function runListTransaction({ store, next }: ListTransactionInput): boole
     }
   }
   const written: MainListKey[] = [];
-  const rollback = () => {
+  const rollback = async () => {
     for (const key of [...written].reverse()) {
       try {
-        store.restore(key, snapshots.get(key));
+        await store.restore(key, snapshots.get(key));
       } catch {
         // Best effort: the earlier value fit before, so it fits again.
       }
@@ -63,24 +91,24 @@ export function runListTransaction({ store, next }: ListTransactionInput): boole
   for (const key of MAIN_LIST_KEYS) {
     let ok = false;
     try {
-      ok = store.write(key, next[key]);
+      ok = await store.write(key, next[key]);
     } catch {
       ok = false;
     }
     if (!ok) {
-      rollback();
+      await rollback();
       return false;
     }
     written.push(key);
     let readBack: unknown;
     try {
-      readBack = store.read(key);
+      readBack = await store.read(key);
     } catch {
-      rollback();
+      await rollback();
       return false;
     }
-    if (JSON.stringify(readBack) !== JSON.stringify(next[key])) {
-      rollback();
+    if (stableStringify(readBack) !== stableStringify(next[key])) {
+      await rollback();
       return false;
     }
   }

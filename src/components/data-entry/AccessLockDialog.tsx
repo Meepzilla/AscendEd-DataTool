@@ -6,9 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PIN_PATTERN, checkAccessPin, setAccessPin } from '@/lib/access-pin';
+import { getLockoutRemainingMs } from '@/lib/attempt-lockout';
 
 // Choosing the PIN the first time the Student Access Lock is turned on, and entering it to turn the lock off.
-// A forgotten PIN can be bypassed only by discarding the unsaved entries, so a student can't quietly change data.
+// A forgotten PIN unlocks only the current Data Entry session, after discarding the unsaved entries; the
+// stored PIN stays set, so the next lock still needs it.
 
 export type AccessLockDialogMode = 'set' | 'unlock' | null;
 
@@ -41,7 +43,13 @@ const AccessLockDialog: React.FC<AccessLockDialogProps> = ({ uid, mode, onClose,
     } else if (await checkAccessPin(uid, pin)) {
       onDone();
     } else {
-      setError('Wrong PIN.');
+      const remainingMs = getLockoutRemainingMs('access-pin');
+      if (remainingMs > 0) {
+        const minutes = Math.ceil(remainingMs / 60_000);
+        setError(`Too many wrong PINs. Try again in ${minutes} minute${minutes === 1 ? '' : 's'}.`);
+      } else {
+        setError('Wrong PIN.');
+      }
       setPin('');
     }
   };
@@ -57,7 +65,8 @@ const AccessLockDialog: React.FC<AccessLockDialogProps> = ({ uid, mode, onClose,
               <DialogTitle>Forgot the PIN?</DialogTitle>
               <DialogDescription>
                 Unlocking without the PIN discards everything entered on Data Entry that hasn&apos;t been saved, and
-                removes the PIN (you&apos;ll choose a new one next time you lock). Saved sessions aren&apos;t affected.
+                unlocks only this Data Entry session. The PIN stays set, so you&apos;ll still need it the next time
+                you lock. Saved sessions aren&apos;t affected.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter className="gap-2">
