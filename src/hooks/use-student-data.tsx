@@ -11,8 +11,8 @@ import { useDataStorage } from './use-data-storage';
 import { goalFromTemplate, hasTemplateGoal, recordRecentTemplates } from '@/lib/goal-templates';
 import { generateUUID } from '@/lib/helpers';
 import * as secureStore from '@/lib/secure-store';
-import { byDateDesc, byName, readList } from '@/lib/data-store';
-import { isMainListStorageKey, runListTransaction, type ListTransactionStore, type MainListKey } from '@/lib/data-transaction';
+import { byDateDesc, byName, hydrateLists, readList } from '@/lib/data-store';
+import { DATA_CHANGED_CHANNEL, isMainListStorageKey, postDataChanged, runListTransactionAsync, type AsyncListTransactionStore, type MainListKey } from '@/lib/data-transaction';
 import { prepareLoadedData } from '@/lib/data-migrations';
 import { planSessionImport, type ImportedSession } from '@/lib/session-import';
 import { createBackup, type AppBackup, type ParsedBackup, type RestoreMode, type RestoreSummary } from '@/lib/backup';
@@ -48,9 +48,9 @@ interface StudentDataContextType {
   addStudent: (name: string, options?: { quiet?: boolean }) => Promise<Student | null>;
   updateStudent: (studentId: string, data: Partial<Student>) => Promise<void>;
   deleteStudent: (studentId: string) => Promise<void>;
-  deleteStudents: (studentIds: string[]) => boolean;
+  deleteStudents: (studentIds: string[]) => Promise<boolean>;
   /** Adds and updates students from a spreadsheet in one save. Null when it couldn't be saved (the error was shown). */
-  importStudents: (students: ImportStudent[]) => { added: number; updated: number; goals: number } | null;
+  importStudents: (students: ImportStudent[]) => Promise<{ added: number; updated: number; goals: number } | null>;
   assignGoalToStudent: (studentId: string, goal: Goal) => Promise<void>;
   removeGoalFromStudent: (studentId: string, goalId: string) => Promise<void>;
   updateStudentGoal: (studentId: string, goalId: string, updatedGoalData: Partial<Goal>) => Promise<void>;
@@ -72,7 +72,7 @@ interface StudentDataContextType {
   getSessionsForStudent: (studentId: string) => SessionData[];
   importSessions: (sessionsToImport: ImportedSession[]) => Promise<{ newCount: number; duplicateCount: number; unmatchedCount: number; addedGoalCount: number }>;
   exportBackup: () => AppBackup;
-  restoreBackup: (backup: AppBackup, mode: RestoreMode) => RestoreSummary;
+  restoreBackup: (backup: AppBackup, mode: RestoreMode) => Promise<RestoreSummary>;
 
   // Modal State & Actions
   isAddStudentModalOpen: boolean;
@@ -135,54 +135,61 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   //
   // Every change reads the latest records from refs (not the values captured when the callback was made),
   // so changes made one after another, like Save All saving several sessions in a loop, all keep each other.
-  // Each change is written to storage first and only shown once it is stored: if the device's storage is
-  // full, nothing is changed, an error is shown, and the action reports that it failed.
+  // Each change is written to storage first — the save resolves only after the write has landed in
+  // durable storage and read back — and only then shown: if the device's storage is full, nothing is
+  // changed, an error is shown, and the action reports that it failed.
 
   const studentsRef = useRef<Student[]>([]);
   const templatesRef = useRef<GoalTemplate[]>([]);
   const sessionsRef = useRef<SessionData[]>([]);
-  const { keys, save: saveToLocal, read: readStored, resetUnreadable, isUnreadable, unmark, mark } = useDataStorage(currentUser?.uid);
+  const { keys, save: saveToLocal, read: readStored, resetUnreadable, isUnreadable, unmark, mark, hydrate } = useDataStorage(currentUser?.uid);
   const { students: studentsKey, templates: templatesKey, sessions: sessionsKey } = keys;
 
   /** Stores a new list and, only if that worked, shows it. */
-  const commitStudents = useCallback((next: Student[]) => {
-    if (!saveToLocal(studentsKey, next)) return false;
+  const commitStudents = useCallback(async (next: Student[]) => {
+    if (!(await saveToLocal(studentsKey, next))) return false;
     studentsRef.current = next;
     setStudents(next);
+    postDataChanged();
     return true;
   }, [saveToLocal, studentsKey]);
-  const commitTemplates = useCallback((next: GoalTemplate[]) => {
-    if (!saveToLocal(templatesKey, next)) return false;
+  const commitTemplates = useCallback(async (next: GoalTemplate[]) => {
+    if (!(await saveToLocal(templatesKey, next))) return false;
     templatesRef.current = next;
     setTemplateList(next);
+    postDataChanged();
     return true;
   }, [saveToLocal, templatesKey]);
-  const commitSessions = useCallback((next: SessionData[]) => {
-    if (!saveToLocal(sessionsKey, next)) return false;
+  const commitSessions = useCallback(async (next: SessionData[]) => {
+    if (!(await saveToLocal(sessionsKey, next))) return false;
     sessionsRef.current = next;
     setSessions(next);
+    postDataChanged();
     return true;
   }, [saveToLocal, sessionsKey]);
 
   /**
    * Writes all three lists as one transaction (see data-transaction.ts): every list is
-   * written and read back, and on any failure all three are rolled back to what was
+   * written, read back from durable storage, and on any failure all three are rolled back to what was
    * stored. Only when it returns true may the caller show the new lists. The save
    * itself already shows the error when storage is full.
    */
-  const applyTransaction = useCallback((next: { students: Student[]; goalTemplates: GoalTemplate[]; sessions: SessionData[] }) => {
+  const applyTransaction = useCallback(async (next: { students: Student[]; goalTemplates: GoalTemplate[]; sessions: SessionData[] }) => {
     const keyOf: Record<MainListKey, string | null> = { students: studentsKey, goalTemplates: templatesKey, sessions: sessionsKey };
-    const store: ListTransactionStore = {
+    const store: AsyncListTransactionStore = {
       snapshot: key => (keyOf[key] ? secureStore.snapshotItem(keyOf[key]!) : null),
-      restore: (key, snapshot) => { if (keyOf[key]) secureStore.restoreItem(keyOf[key]!, snapshot as secureStore.ItemSnapshot); },
+      restore: async (key, snapshot) => { if (keyOf[key]) await secureStore.restoreItemAsync(keyOf[key]!, snapshot as secureStore.ItemSnapshot); },
       write: (key, value) => saveToLocal(keyOf[key], value),
-      read: key => readStored(keyOf[key]),
+      read: async key => {
+        const value = keyOf[key] ? await secureStore.readDurableList(keyOf[key]!) : undefined;
+        return value === undefined ? null : value;
+      },
     };
-    return runListTransaction({ store, next });
-  }, [studentsKey, templatesKey, sessionsKey, saveToLocal, readStored]);
+    return runListTransactionAsync({ store, next });
+  }, [studentsKey, templatesKey, sessionsKey, saveToLocal]);
 
   /** Shows transaction results in state, after applyTransaction said they are stored. */
-  const applyLists = useCallback((next: { students: Student[]; goalTemplates: GoalTemplate[]; sessions: SessionData[] }) => {
+  const applyListsQuiet = useCallback((next: { students: Student[]; goalTemplates: GoalTemplate[]; sessions: SessionData[] }) => {
     studentsRef.current = next.students;
     templatesRef.current = next.goalTemplates;
     sessionsRef.current = next.sessions;
@@ -191,11 +198,17 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setSessions(next.sessions);
   }, []);
 
+  /** applyListsQuiet, plus telling other tabs the data changed (a reload from another tab must not re-post). */
+  const applyLists = useCallback((next: { students: Student[]; goalTemplates: GoalTemplate[]; sessions: SessionData[] }) => {
+    applyListsQuiet(next);
+    postDataChanged();
+  }, [applyListsQuiet]);
+
   const addStudent = useCallback(async (name: string, options?: { quiet?: boolean }) => {
     if (!currentUser) return null;
     const newStudent: Omit<Student, 'id'> = { name, goals: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), userId: currentUser.uid, isArchived: false };
     const studentWithId = { ...newStudent, id: generateUUID()};
-    if (!commitStudents([...studentsRef.current, studentWithId].sort(byName))) return null;
+    if (!(await commitStudents([...studentsRef.current, studentWithId].sort(byName)))) return null;
     if (!options?.quiet) toast({ title: "Success", description: `Student "${name}" added.` });
     return studentWithId;
   }, [currentUser, toast, commitStudents]);
@@ -203,7 +216,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const updateStudent = useCallback(async (studentId: string, data: Partial<Student>) => {
       if (!currentUser) return;
       const updatedData = { ...data, updatedAt: new Date().toISOString() };
-      if (!commitStudents(studentsRef.current.map(s => s.id === studentId ? { ...s, ...updatedData } : s).sort(byName))) return;
+      if (!(await commitStudents(studentsRef.current.map(s => s.id === studentId ? { ...s, ...updatedData } : s).sort(byName)))) return;
       toast({ title: "Success", description: "Student updated." });
   }, [currentUser, toast, commitStudents]);
 
@@ -216,13 +229,13 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     };
     // One transaction: a quota failure part way must not leave the sessions deleted
     // while the student remains (or the other way round).
-    if (!applyTransaction(next)) return;
+    if (!(await applyTransaction(next))) return;
     applyLists(next);
     toast({ title: "Success", description: "Student and sessions deleted." });
   }, [currentUser, toast, applyTransaction, applyLists]);
 
   /** Deletes several students and all their sessions at once (end-of-year clean-up). Returns whether it worked. */
-  const deleteStudents = useCallback((studentIds: string[]): boolean => {
+  const deleteStudents = useCallback(async (studentIds: string[]): Promise<boolean> => {
     if (!currentUser || studentIds.length === 0) return false;
     const ids = new Set(studentIds);
     const next = {
@@ -230,23 +243,23 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       goalTemplates: templatesRef.current,
       sessions: sessionsRef.current.filter(s => !ids.has(s.studentId)),
     };
-    if (!applyTransaction(next)) return false;
+    if (!(await applyTransaction(next))) return false;
     applyLists(next);
     setSelectedStudent(prev => (prev && ids.has(prev.id) ? null : prev));
     return true;
   }, [currentUser, applyTransaction, applyLists]);
 
-  const importStudents = useCallback((imported: ImportStudent[]) => {
+  const importStudents = useCallback(async (imported: ImportStudent[]) => {
     if (!currentUser || imported.length === 0) return null;
     const result = applyStudentImport(studentsRef.current, imported, currentUser.uid);
-    if (!commitStudents(result.students.sort(byName))) return null;
+    if (!(await commitStudents(result.students.sort(byName)))) return null;
     return { added: result.added, updated: result.updated, goals: result.goals };
   }, [currentUser, commitStudents]);
 
   const addGoalTemplate = useCallback(async (templateData: any) => {
     if (!currentUser) return null;
     const templateWithId = { ...templateData, userId: currentUser.uid, isDefault: false, id: generateUUID(), createdAt: new Date() };
-    if (!commitTemplates([...templatesRef.current, templateWithId].sort(byName))) return null;
+    if (!(await commitTemplates([...templatesRef.current, templateWithId].sort(byName)))) return null;
     toast({ title: "Success", description: `Template "${templateData.name}" added.` });
     return templateWithId;
   }, [currentUser, toast, commitTemplates]);
@@ -255,7 +268,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       if (!currentUser) return;
       // A built-in template keeps the name it was added under (defaultKey) when it is renamed.
       const update = (t: GoalTemplate) => ({ ...t, ...(t.isDefault && !t.defaultKey ? { defaultKey: t.name } : {}), ...data });
-      if (!commitTemplates(templatesRef.current.map(t => t.id === templateId ? update(t) : t).sort(byName))) return;
+      if (!(await commitTemplates(templatesRef.current.map(t => t.id === templateId ? update(t) : t).sort(byName)))) return;
       toast({ title: "Success", description: "Goal template updated." });
   }, [currentUser, toast, commitTemplates]);
 
@@ -266,20 +279,20 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const next = target?.isDefault
       ? templatesRef.current.map(t => t.id === templateId ? { ...t, deleted: true, isArchived: true } : t)
       : templatesRef.current.filter(t => t.id !== templateId);
-    if (!commitTemplates(next)) return;
+    if (!(await commitTemplates(next))) return;
     toast({ title: "Success", description: target?.isDefault ? "Built-in goal deleted. Restore it in Settings → Built-in goals." : "Goal template deleted." });
   }, [currentUser, toast, commitTemplates]);
 
   const restoreBuiltInTemplates = useCallback(async (templateIds: string[]) => {
     if (!currentUser || templateIds.length === 0) return;
-    if (!commitTemplates(restoreBuiltInList(templatesRef.current, templateIds))) return;
+    if (!(await commitTemplates(restoreBuiltInList(templatesRef.current, templateIds)))) return;
     toast({ title: "Built-in goals restored", description: `${templateIds.length} goal${templateIds.length === 1 ? '' : 's'} back in the Goals library.` });
   }, [currentUser, toast, commitTemplates]);
 
   const archiveGoalTemplates = useCallback(async (templateIds: string[]) => {
     if (!currentUser || templateIds.length === 0) return;
     const ids = new Set(templateIds);
-    if (!commitTemplates(templatesRef.current.map(t => ids.has(t.id) ? { ...t, isArchived: true } : t))) return;
+    if (!(await commitTemplates(templatesRef.current.map(t => ids.has(t.id) ? { ...t, isArchived: true } : t)))) return;
     toast({ title: "Templates archived", description: `${templateIds.length} template${templateIds.length === 1 ? '' : 's'} archived. Turn on Show Archived on the Goals page to see or restore them.` });
   }, [currentUser, toast, commitTemplates]);
 
@@ -294,7 +307,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       return { ...s, goals: [...s.goals, goalFromTemplate(template)], updatedAt: new Date().toISOString() };
     });
     if (assigned > 0) {
-      if (!commitStudents(updatedStudents)) return { assigned: 0, skipped };
+      if (!(await commitStudents(updatedStudents))) return { assigned: 0, skipped };
       recordRecentTemplates(currentUser.uid, [template.id]);
     }
     return { assigned, skipped };
@@ -303,14 +316,14 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const addSession = useCallback(async (sessionData: any) => {
     if (!currentUser) return null;
     const sessionWithId = { ...sessionData, userId: currentUser.uid, sessionId: generateUUID() };
-    if (!commitSessions([sessionWithId, ...sessionsRef.current].sort(byDateDesc))) return null;
+    if (!(await commitSessions([sessionWithId, ...sessionsRef.current].sort(byDateDesc)))) return null;
     // Don't toast here; handled by consumer
     return sessionWithId;
   }, [currentUser, commitSessions]);
 
   const updateSession = useCallback(async (sessionId: string, data: any) => {
     if (!currentUser) return false;
-    if (!commitSessions(sessionsRef.current.map(s => s.sessionId === sessionId ? { ...s, ...data } : s).sort(byDateDesc))) return false;
+    if (!(await commitSessions(sessionsRef.current.map(s => s.sessionId === sessionId ? { ...s, ...data } : s).sort(byDateDesc)))) return false;
     toast({ title: "Success", description: "Session updated." });
     return true;
   }, [currentUser, toast, commitSessions]);
@@ -328,14 +341,14 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       .filter(s => s.sessionId === merged.sessionId || !sessionIds.includes(s.sessionId))
       .map(s => (s.sessionId === merged.sessionId ? merged : s))
       .sort(byDateDesc);
-    if (!commitSessions(next)) return false;
+    if (!(await commitSessions(next))) return false;
     toast({ title: 'Sessions merged', description: `${parts.length} sessions for ${merged.studentName} are now one session (${merged.time}–${merged.endTime}).` });
     return true;
   }, [currentUser, toast, commitSessions]);
 
   const deleteSession = useCallback(async (sessionId: string) => {
     if (!currentUser) return;
-    if (!commitSessions(sessionsRef.current.filter(s => s.sessionId !== sessionId))) return;
+    if (!(await commitSessions(sessionsRef.current.filter(s => s.sessionId !== sessionId)))) return;
     toast({ title: "Success", description: "Session deleted." });
   }, [currentUser, toast, commitSessions]);
   
@@ -348,7 +361,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const next = { students: plan.students, goalTemplates: templatesRef.current, sessions: plan.sessions };
     // One transaction: new goals on the students and the sessions that use them are
     // stored together, so a quota failure cannot leave one without the other.
-    if (!applyTransaction(next)) {
+    if (!(await applyTransaction(next))) {
       throw new Error("The device's storage is full, so the sessions couldn't be saved.");
     }
     applyLists(next);
@@ -366,8 +379,10 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
    * Restores a backup. 'replace' swaps all data on this device for the backup's; 'merge' adds the
    * backup's records that aren't already here. Returns how many records were added (merge) or loaded (replace).
    * If storage fills up part way, what was already written is put back so the three lists stay consistent.
+   * The restore only reports success after every list has been written, flushed, and read back from
+   * durable storage; state is not updated before that point.
    */
-  const restoreBackup = useCallback((backup: AppBackup, mode: RestoreMode): RestoreSummary => {
+  const restoreBackup = useCallback(async (backup: AppBackup, mode: RestoreMode): Promise<RestoreSummary> => {
     if (!currentUser) throw new Error("Not authenticated.");
     const current = { students: studentsRef.current, goalTemplates: templatesRef.current, sessions: sessionsRef.current };
 
@@ -382,9 +397,31 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     // Replacing is how damaged data is recovered, so those lists may be overwritten now. If storage fills
     // part way, the transaction puts each list back exactly as it was stored (damaged ones too).
     unmark(damaged);
-    if (!applyTransaction(next)) {
+    if (!(await applyTransaction(next))) {
       mark(damaged);
       throw new Error("The backup couldn't be saved on this device (storage is full). Nothing was changed.");
+    }
+    // Verify every list reads back from durable storage before declaring success. If a list does not,
+    // put the previous lists back and report failure — state still holds the old data.
+    try {
+      await secureStore.flushWrites();
+      const checks: [string | null, unknown][] = [
+        [studentsKey, next.students],
+        [templatesKey, next.goalTemplates],
+        [sessionsKey, next.sessions],
+      ];
+      for (const [storageKey, expected] of checks) {
+        if (storageKey && !(await secureStore.verifyStoredList(storageKey, expected))) {
+          throw new Error('Restore verification failed: the restored data did not read back.');
+        }
+      }
+    } catch (error) {
+      const rolledBack = await applyTransaction(current);
+      mark(damaged);
+      if (!rolledBack) {
+        throw new Error("The backup couldn't be verified on this device, and putting the previous data back also failed. Restore the backup again, or check the error log.");
+      }
+      throw new Error("The backup couldn't be verified on this device. Nothing was changed.");
     }
     if (damaged.length > 0) setError(null);
     applyLists(next);
@@ -428,55 +465,69 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       return;
     }
 
-    // A list that can't be read is kept as it is in storage (never written over) and reported.
-    resetUnreadable();
-    const rawStudents = readStored<Student>(studentsKey);
-    const rawTemplates = readStored<GoalTemplate>(templatesKey);
-    const rawSessions = readStored<SessionData>(sessionsKey);
-    const anyUnreadable = [studentsKey, templatesKey, sessionsKey].some(isUnreadable);
-    if (anyUnreadable) {
-      setError(new Error('Some saved data could not be read.'));
-      toast({
-        title: "Some saved data couldn't be read",
-        description: "It has been left as it is, and changes to it won't be saved. Restore a backup in Settings, or export the error log for help.",
-        variant: "destructive",
-      });
-    }
+    let cancelled = false;
+    const load = async () => {
+      // A list that can't be read is kept as it is in storage (never written over) and reported.
+      // Hydration runs first: localStorage blobs migrate into IndexedDB (verified) and the cache
+      // is filled from durable storage, so every read below sees what is actually stored.
+      resetUnreadable();
+      await hydrate();
+      if (cancelled) return;
+      const rawStudents = readStored<Student>(studentsKey);
+      const rawTemplates = readStored<GoalTemplate>(templatesKey);
+      const rawSessions = readStored<SessionData>(sessionsKey);
+      const anyUnreadable = [studentsKey, templatesKey, sessionsKey].some(isUnreadable);
+      if (anyUnreadable) {
+        setError(new Error('Some saved data could not be read.'));
+        toast({
+          title: "Some saved data couldn't be read",
+          description: "It has been left as it is, and changes to it won't be saved. Restore a backup in Settings, or export the error log for help.",
+          variant: "destructive",
+        });
+      }
 
-    // Renamed and updated built-in goals and templates, and the built-in templates this device doesn't have yet.
-    // A list that couldn't be read is never written over (the warning above covers it). Templates are saved first:
-    // goals are linked to template ids only once those templates are stored, so no goal points at a template
-    // that was never saved. The students are then saved once, with every update.
-    const prepared = prepareLoadedData(rawStudents, rawTemplates, currentUser.uid);
-    const templatesStored = !prepared.templatesChanged
-      || (!isUnreadable(templatesKey) && saveToLocal(templatesKey, prepared.templates));
-    const nextStudents = templatesStored && prepared.linkedStudents ? prepared.linkedStudents : prepared.students;
-    if ((prepared.studentsChanged || nextStudents !== prepared.students) && !isUnreadable(studentsKey)) {
-      saveToLocal(studentsKey, nextStudents);
-    }
-    templatesRef.current = prepared.templates;
-    setTemplateList(prepared.templates);
-    studentsRef.current = nextStudents;
-    setStudents(nextStudents);
+      // Renamed and updated built-in goals and templates, and the built-in templates this device doesn't have yet.
+      // A list that couldn't be read is never written over (the warning above covers it). Templates are saved first:
+      // goals are linked to template ids only once those templates are stored, so no goal points at a template
+      // that was never saved. The students are then saved once, with every update.
+      const prepared = prepareLoadedData(rawStudents, rawTemplates, currentUser.uid);
+      const templatesStored = !prepared.templatesChanged
+        || (!isUnreadable(templatesKey) && (await saveToLocal(templatesKey, prepared.templates)));
+      const nextStudents = templatesStored && prepared.linkedStudents ? prepared.linkedStudents : prepared.students;
+      if ((prepared.studentsChanged || nextStudents !== prepared.students) && !isUnreadable(studentsKey)) {
+        await saveToLocal(studentsKey, nextStudents);
+      }
+      if (cancelled) return;
+      templatesRef.current = prepared.templates;
+      setTemplateList(prepared.templates);
+      studentsRef.current = nextStudents;
+      setStudents(nextStudents);
 
-    const localSessions = [...rawSessions].sort(byDateDesc);
-    sessionsRef.current = localSessions;
-    setSessions(localSessions);
-    setLoading(false);
-    setSessionsLoading(false);
-  }, [authLoading, currentUser, studentsKey, templatesKey, sessionsKey, saveToLocal, toast, readStored, resetUnreadable, isUnreadable]);
+      const localSessions = [...rawSessions].sort(byDateDesc);
+      sessionsRef.current = localSessions;
+      setSessions(localSessions);
+      setLoading(false);
+      setSessionsLoading(false);
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [authLoading, currentUser, studentsKey, templatesKey, sessionsKey, saveToLocal, toast, readStored, resetUnreadable, isUnreadable, hydrate]);
 
   // Another tab changed the data: reload the three lists from storage as they are and
   // say so. No merge is attempted — the other tab's save is the newer copy, and this
   // tab's unsaved edits are already stored (every change writes to storage first).
-  // Storage events only fire in other tabs, so this tab's own saves never trigger it.
+  // IndexedDB writes do not fire a storage event, so the other tab's verified saves also
+  // post on a BroadcastChannel; the storage event still covers the localStorage-backed
+  // lists and storage being cleared. Storage events and channel messages only fire in
+  // other tabs, so this tab's own saves never trigger a reload here.
   useEffect(() => {
     if (typeof window === 'undefined' || !currentUser) return;
     let lastReload = 0;
-    const reload = () => {
+    const reload = async () => {
       const now = Date.now();
       if (now - lastReload < 1000) return; // one reload per burst of saves
       lastReload = now;
+      await hydrateLists({ students: studentsKey, templates: templatesKey, sessions: sessionsKey });
       const nextStudents = readList<Student>(studentsKey);
       const nextTemplates = readList<GoalTemplate>(templatesKey);
       const nextSessions = readList<SessionData>(sessionsKey);
@@ -488,7 +539,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         });
         return;
       }
-      applyLists({
+      applyListsQuiet({
         students: [...nextStudents].sort(byName),
         goalTemplates: [...nextTemplates].sort(byName),
         sessions: [...nextSessions].sort(byDateDesc),
@@ -496,11 +547,23 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       toast({ title: 'Data changed in another tab', description: 'Students, goal templates and sessions were reloaded from this device.' });
     };
     const onStorage = (event: StorageEvent) => {
-      if (isMainListStorageKey(event.key, { students: studentsKey, templates: templatesKey, sessions: sessionsKey })) reload();
+      if (isMainListStorageKey(event.key, { students: studentsKey, templates: templatesKey, sessions: sessionsKey })) void reload();
     };
     window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
-  }, [currentUser, studentsKey, templatesKey, sessionsKey, toast, applyLists]);
+    let channel: BroadcastChannel | null = null;
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        channel = new BroadcastChannel(DATA_CHANGED_CHANNEL);
+        channel.onmessage = () => void reload();
+      }
+    } catch {
+      // No channel: the storage event still covers the localStorage-backed lists.
+    }
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      channel?.close();
+    };
+  }, [currentUser, studentsKey, templatesKey, sessionsKey, toast, applyListsQuiet]);
   
 
   const getSessionsForStudent = useCallback((studentId: string) => {

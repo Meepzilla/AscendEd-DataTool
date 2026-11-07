@@ -16,7 +16,7 @@ import {
 import { useStudentData } from '@/hooks/use-student-data';
 import { useToast } from '@/hooks/use-toast';
 import { formatDate, plural } from '@/lib/helpers';
-import { flushWrites } from '@/lib/secure-store';
+import { deleteAllListData, flushWrites } from '@/lib/secure-store';
 
 // Settings → Delete Data:
 // - End-of-year clean-up: pick students who have left (archived ones can be selected in one tap) and delete them
@@ -51,9 +51,9 @@ export default function DeleteDataCard() {
   const selectedSessions = selectedRows.reduce((sum, r) => sum + r.sessionCount, 0);
   const archivedIds = rows.filter(r => r.student.isArchived).map(r => r.student.id);
 
-  const cleanUp = () => {
+  const cleanUp = async () => {
     const count = selected.size;
-    if (deleteStudents([...selected])) {
+    if (await deleteStudents([...selected])) {
       toast({ title: 'Students deleted', description: `${plural(count, 'student')} and ${plural(selectedSessions, 'session')} were deleted from this device.` });
       setSelected(new Set());
     }
@@ -62,7 +62,14 @@ export default function DeleteDataCard() {
 
   const deleteAll = async () => {
     // Encrypted saves still in progress finish first, so none is written back after the deletion.
-    await flushWrites();
+    // A failed write was already reported; the deletion the user asked for still goes ahead.
+    try {
+      await flushWrites();
+    } catch {
+      /* the write error was already shown */
+    }
+    // The lists live in IndexedDB now: clear their rows (and the migration flag) as well.
+    await deleteAllListData();
     const keys: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);

@@ -9,7 +9,7 @@ import { APP_NAME } from '@/lib/appConstants';
 
 export const metadata = { title: `Privacy Notice | ${APP_NAME}` };
 
-const LAST_UPDATED = 'October 31, 2026';
+const LAST_UPDATED = 'November 6, 2026';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -73,7 +73,7 @@ export default function PrivacyPage() {
 
       <Section title="Who can see it">
         <ul className="list-disc space-y-1 pl-5">
-          <li>Anyone who can open the app on this device. Turn on <strong>Passcode Protection</strong> (Settings) to require a passcode: the student data is then encrypted (AES-256) and the app locks after a period without use.</li>
+          <li>Anyone who can open the app on this device. The app is single-device and single-user: there are no accounts, and the device lock is the only access control until <strong>Passcode Protection</strong> is set. New installs are asked to set a passcode when the app first opens; with it on, the student data is encrypted (AES-256) and the app locks after a period without use. Turn it on any time in Settings.</li>
           <li>Nobody else. The developer, the hosting company and the district can&apos;t see it unless you share a file.</li>
           <li>Files you create leave the device only where you put them: <strong>backups</strong> (which can be protected with a password) and <strong>CSV exports</strong> (not encrypted). Store them only in district-approved places.</li>
         </ul>
