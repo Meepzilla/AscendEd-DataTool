@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { GAS_LEVELS, formatGasLevel, gasLevelLabel, gasProgress, gasTScore, gasTScoresOverTime } from '../gas';
+import { GAS_LEVELS, formatGasLevel, gasLevelDescription, gasLevelLabel, gasLevelText, gasProgress, gasTScore, gasTScoresOverTime } from '../gas';
 import { matchTextToTarget } from '../goal-blanks';
 import { goalMeasure, goalMeasureInfo, goalResponses } from '../goal-measures';
 import { mergeGoalData } from '../session-merge';
@@ -44,6 +44,19 @@ describe('GAS levels', () => {
     expect(formatGasLevel(2)).toBe('+2');
     expect(formatGasLevel(0)).toBe('0');
     expect(formatGasLevel(-2)).toBe('-2');
+  });
+});
+
+describe('goal-specific level descriptions', () => {
+  const goal = gasGoal({ gasLevelDescriptions: ['', '', 'Uses targeted words on their own in conversation, at least twice in an activity.', '', ''] });
+  it('uses the goal\u2019s own description for a level where one is written', () => {
+    expect(gasLevelDescription(goal, 0)).toBe('Uses targeted words on their own in conversation, at least twice in an activity.');
+    expect(gasLevelText(goal, 0)).toBe('0 (Uses targeted words on their own in conversation, at least twice in an activity.)');
+  });
+  it('falls back to the generic description for levels left blank', () => {
+    expect(gasLevelDescription(goal, 1)).toBe('Somewhat more than expected');
+    expect(gasLevelText(goal, 1)).toBe('+1 (somewhat more than expected)');
+    expect(gasLevelText(gasGoal({}), -2)).toBe('-2 (much less than expected)');
   });
 });
 
@@ -200,9 +213,9 @@ describe('GAS backup round-trip', () => {
 });
 
 describe('default GAS goals by area', () => {
-  const areas = ['vocabulary in conversation', 'questions about a story', 'Ask for help', 'Comment to share', 'Combine words to describe', 'Retell a story', 'calm-down strategy', 'Transition between activities'];
+  const areas = ['vocabulary in conversation', 'questions about a story', 'Ask for help', 'Comment to share', 'Combine words to describe', 'Retell a story', 'calm-down strategy', 'Transition between activities', 'Take turns in a conversation', 'Stay on topic', 'Use AAC to comment', 'Use AAC to ask a question', 'Ask for a break', 'do not understand', 'morning routine', 'Pack up belongings'];
   it('every built-in GAS template targets level 0 from a -2 baseline', () => {
-    expect(GAS_TEMPLATES.length).toBeGreaterThanOrEqual(12);
+    expect(GAS_TEMPLATES.length).toBeGreaterThanOrEqual(20);
     for (const template of GAS_TEMPLATES) {
       expect(template.type).toBe('GOAL_ATTAINMENT_SCALE');
       expect(template.sessionTargetValue).toBe(0);

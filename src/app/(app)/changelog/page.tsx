@@ -33,6 +33,13 @@ const allChangelogEntries: ChangelogEntry[] = [
   },
   {
     date: '2026-11-06',
+    title: 'Clickable Goal Titles, Goal-Specific GAS Scales, and Eight More GAS Goals',
+    description: 'On the analysis report, each goal title now opens to show the full goal text, on the per-goal cards and in the GAS summary table. GAS levels are shown in each goal\u2019s own words wherever a level is displayed: the summary table, the per-goal chart and its tooltip, and the T-score tooltip, falling back to the generic labels where a goal has no written scale. The goal template editor gains the five level-description fields, so a template\u2019s scale can be customized there as well as in Edit Goal. The Assign Goals window is wider and its template list taller, so more goals show at once and the custom-goal form has more room. Eight more built-in GAS goals arrive in four new areas: taking turns and staying on topic for social communication, commenting and asking questions with AAC, asking for a break and saying when something is not understood for self-advocacy, and the morning routine and packing up for daily routines. Each starts at level -2 with 0 as the expected outcome and a full written scale.',
+    type: 'feature',
+    icon: Target,
+  },
+  {
+    date: '2026-11-06',
     title: 'Larger Goal Editor on Tablet and a Changes Summary',
     description: 'Both goal editors, a student goal from their profile and a goal template from the templates page, now open wider on tablet instead of the narrow 576px window. Each editor also lists what saving will change, old value to new value, above the Save button: session target, baseline, target date, data capture method, goal direction, task steps, GAS level descriptions, blank fills and the goal text itself. Nothing shows when nothing changed.',
     type: 'improvement',
