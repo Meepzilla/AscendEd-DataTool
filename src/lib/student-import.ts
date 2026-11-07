@@ -78,16 +78,26 @@ function findColumns(header: CellValue[]): Map<Column, number[]> {
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
+/** Whether a year, month and day are a real calendar date (so 02/30/2026 is rejected, not rolled to Mar 3). */
+const isRealDate = (year: number, month: number, day: number) => {
+  if (month < 1 || month > 12 || day < 1) return false;
+  // The last day of the month: the day before the 1st of the next month (leap years included).
+  return day <= new Date(year, month, 0).getDate();
+};
+
+/** A two-digit year: 69-99 is 19xx, 00-68 is 20xx (so 99 is 1999, not 2099). */
+const twoDigitYear = (yy: number) => (yy >= 69 ? 1900 + yy : 2000 + yy);
+
 /** A date cell as YYYY-MM-DD: already that form (from an .xlsx), M/D/YYYY or M/D/YY, or a written date. */
 export function parseDate(value: CellValue): string | undefined {
   if (value === null || value === undefined || value === '') return undefined;
   const text = String(value).trim();
   let m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(text);
-  if (m) return `${m[1]}-${pad(+m[2])}-${pad(+m[3])}`;
+  if (m) return isRealDate(+m[1], +m[2], +m[3]) ? `${m[1]}-${pad(+m[2])}-${pad(+m[3])}` : undefined;
   m = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{2}|\d{4})$/.exec(text);
   if (m) {
-    const year = m[3].length === 2 ? 2000 + +m[3] : +m[3];
-    return +m[1] >= 1 && +m[1] <= 12 && +m[2] >= 1 && +m[2] <= 31 ? `${year}-${pad(+m[1])}-${pad(+m[2])}` : undefined;
+    const year = m[3].length === 2 ? twoDigitYear(+m[3]) : +m[3];
+    return isRealDate(year, +m[1], +m[2]) ? `${year}-${pad(+m[1])}-${pad(+m[2])}` : undefined;
   }
   // "Oct 29, 2025", "October 29 2025" or "29 Oct 2025": read here, since browsers parse written dates differently.
   m = /^([a-z]{3,9})\.?\s+(\d{1,2}),?\s+(\d{4})$/i.exec(text) ?? null;
@@ -99,9 +109,9 @@ export function parseDate(value: CellValue): string | undefined {
     if (!dayFirst) return undefined;
     month = MONTHS.indexOf(dayFirst[2].slice(0, 3).toLowerCase());
     year = +dayFirst[3];
-    return month >= 0 && +dayFirst[1] >= 1 && +dayFirst[1] <= 31 ? `${year}-${pad(month + 1)}-${pad(+dayFirst[1])}` : undefined;
+    return month >= 0 && isRealDate(year, month + 1, +dayFirst[1]) ? `${year}-${pad(month + 1)}-${pad(+dayFirst[1])}` : undefined;
   }
-  return month >= 0 && day >= 1 && day <= 31 ? `${year}-${pad(month + 1)}-${pad(day)}` : undefined;
+  return month >= 0 && isRealDate(year, month + 1, day) ? `${year}-${pad(month + 1)}-${pad(day)}` : undefined;
 }
 
 /** The first "N min/week|month|year" in a service description ("120 min/month Related + 240 min/year …"). */
@@ -202,8 +212,9 @@ const listedFunctions = (t: string) => new Set(t.match(FUNCTION_WORDS) ?? []).si
 
 /** "at least 5 times", "3 instances per session", "3 multiword utterances per session", "at least once". */
 const timesCount = (t: string) => {
-  // Counted per session or period ("in a 20-minute period"), not once in each trial or task.
-  const perPeriod = has(t, /\b(per|within|in|during) (a |an |each )?(session|\d+[- ]minute|period|observation|activity)/);
+  // Counted per session or period ("in a 20-minute period", "3 times per day", "3 times per week"),
+  // not once in each trial or task.
+  const perPeriod = has(t, /\b(per|within|in|during) (a |an |each )?(session|\d+[- ]minute|period|observation|activity|day|week)/);
   if (/\bat least once\b/.test(t)) return perPeriod ? 1 : null;
   // "3times": PDFs sometimes run words together.
   const m = /(?:at least\s+)?(\d+)\s*(?:times?|instances|(?:multi-?word |novel |spontaneous )?(?:utterances|initiations|requests|comments))\b/.exec(t);
@@ -270,6 +281,13 @@ export function goalDirectionFor(type: GoalType, text: string): TargetDirection 
   return /\b(reduce|decrease|no more than|fewer than)\b/i.test(text) ? 'decrease' : 'increase';
 }
 
+/** The last match of a pattern in a goal's wording: the target is the number it is working toward ("currently at
+ * 40%, will increase to 80%" targets 80), not where it starts. */
+const lastMatch = (pattern: RegExp, text: string) => {
+  const matches = [...text.matchAll(pattern)];
+  return matches.length ? matches[matches.length - 1] : null;
+};
+
 /** The goal's target in its type's measure: a percentage, a count, a number of functions, minutes or a 1-5 rating. */
 export function goalTarget(type: GoalType, text: string): number {
   const t = forMatching(text);
@@ -294,11 +312,11 @@ export function goalTarget(type: GoalType, text: string): number {
     case 'COGNITIVE':
       return 4;
     default: {
-      const percent = /(\d{1,3})\s*%/.exec(t);
+      const percent = lastMatch(/(\d{1,3})\s*%/g, t);
       if (percent) return Math.min(100, Number(percent[1]));
-      const ratio = /(\d+)\s+(?:out\s+)?of\s+(\d+)/.exec(t);
+      const ratio = lastMatch(/(\d+)\s+(?:out\s+)?of\s+(\d+)/g, t);
       if (ratio && Number(ratio[2]) > 0 && Number(ratio[1]) <= Number(ratio[2])) return Math.round((Number(ratio[1]) / Number(ratio[2])) * 100);
-      const trials = /(\d+)\s*\/\s*(\d+)\s+(?:trials|opportunit|attempts)/.exec(t);
+      const trials = lastMatch(/(\d+)\s*\/\s*(\d+)\s+(?:trials|opportunit|attempts)/g, t);
       if (trials && Number(trials[2]) > 0) return Math.round((Number(trials[1]) / Number(trials[2])) * 100);
       return 80;
     }

@@ -35,7 +35,7 @@ export default function GoalTextPopover({ name, smartGoal, description, classNam
         {iconOnly ? (
           <button
             type="button"
-            className={cn('inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-primary touch-manipulation', className)}
+            className={cn('inline-flex h-9 w-9 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-primary touch-manipulation', className)}
             title="Read the full goal"
             aria-label={`Read the full goal: ${name}`}
           >

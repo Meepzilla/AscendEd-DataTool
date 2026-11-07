@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import GenericModal from '@/components/modals/generic-modal';
 import { useStudentData } from '@/hooks/use-student-data';
 import { useToast } from '@/hooks/use-toast';
-import { formatDateOnly, formatGoalTarget, goalTypeLabel, plural } from '@/lib/helpers';
+import { formatDateOnly, formatGoalTarget, goalTypeLabel, plural, checkImportFileSize } from '@/lib/helpers';
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 import type { GoalType } from '@/lib/types';
 import type { CellValue } from '@/lib/xlsx-read';
@@ -65,6 +65,7 @@ export default function ImportStudentsCard() {
     if (!file) return;
     setReading(true);
     try {
+      checkImportFileSize(file.size);
       const preview = readStudentRows(await readRows(file));
       if (preview.students.length === 0) throw new Error('No students were found in the file.');
       setMoveDates(true);

@@ -154,13 +154,13 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
                   {currentStudent.goals.map(goal => (
                     <li key={goal.id} className="flex items-center p-1.5 bg-muted/50 rounded-md text-sm gap-2">
                         <div className="flex items-center gap-0.5">
-                            <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => handleToggleArchiveGoal(goal)} title={goal.isArchived ? "Unarchive Goal" : "Archive Goal"}>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 min-h-11 min-w-11 shrink-0" onClick={() => handleToggleArchiveGoal(goal)} title={goal.isArchived ? "Unarchive Goal" : "Archive Goal"} aria-label={goal.isArchived ? "Unarchive Goal" : "Archive Goal"}>
                                 {goal.isArchived ? <ArchiveRestore className="h-4 w-4 text-green-600" /> : <Archive className="h-4 w-4 text-orange-600" />}
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => setEditingGoal(goal)} title="Edit Goal" aria-label={`Edit goal ${goal.name}`}>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 min-h-11 min-w-11 shrink-0" onClick={() => setEditingGoal(goal)} title="Edit Goal" aria-label={`Edit goal ${goal.name}`}>
                                 <Pencil className="h-4 w-4 text-primary" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => setGoalToRemove(goal.id)} title="Remove Goal Assignment">
+                            <Button variant="ghost" size="icon" className="h-6 w-6 min-h-11 min-w-11 shrink-0" onClick={() => setGoalToRemove(goal.id)} title="Remove Goal Assignment" aria-label={`Remove goal ${goal.name}`}>
                                 <XIcon className="h-4 w-4 text-destructive" />
                             </Button>
                         </div>
@@ -169,9 +169,9 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
                           <div className="flex-grow min-w-0 space-y-1">
                             <p className="text-xs">Remove <strong>{goal.name}</strong>? Its recorded data will no longer show in reports. Archive keeps it.</p>
                             <div className="flex flex-wrap gap-1">
-                              <Button type="button" size="sm" variant="destructive" className="h-7" onClick={() => { setGoalToRemove(null); removeGoalFromStudent(currentStudent.id, goal.id); }}>Remove</Button>
-                              {!goal.isArchived && <Button type="button" size="sm" variant="outline" className="h-7" onClick={() => { setGoalToRemove(null); handleToggleArchiveGoal(goal); }}>Archive instead</Button>}
-                              <Button type="button" size="sm" variant="ghost" className="h-7" onClick={() => setGoalToRemove(null)}>Cancel</Button>
+                              <Button type="button" size="sm" variant="destructive" className="h-7 min-h-11" onClick={() => { setGoalToRemove(null); removeGoalFromStudent(currentStudent.id, goal.id); }}>Remove</Button>
+                              {!goal.isArchived && <Button type="button" size="sm" variant="outline" className="h-7 min-h-11" onClick={() => { setGoalToRemove(null); handleToggleArchiveGoal(goal); }}>Archive instead</Button>}
+                              <Button type="button" size="sm" variant="ghost" className="h-7 min-h-11" onClick={() => setGoalToRemove(null)}>Cancel</Button>
                             </div>
                           </div>
                         ) : (
@@ -201,9 +201,10 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="h-7 w-7 shrink-0" 
+                        className="h-7 w-7 min-h-11 min-w-11 shrink-0" 
                         onClick={() => handleAssignTemplateGoal(template)}
                         title={`Assign ${template.name}`}
+                        aria-label={`Assign ${template.name}`}
                       >
                         <PlusCircleIcon className="h-4 w-4 text-primary" />
                       </Button>

@@ -32,6 +32,21 @@ export function formatDateOnly(value: string): string {
   return formatDate(/^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T00:00`) : value);
 }
 
+/** A stored date as a Date: a YYYY-MM-DD value reads as that day at local midnight, anything else as given. */
+export function parseDateOnly(value: string): Date {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T00:00`) : new Date(value);
+}
+
+/** The largest file an import accepts (10 MB); bigger files are rejected before they are read. */
+export const MAX_IMPORT_FILE_BYTES = 10 * 1024 * 1024;
+
+/** Throws when an import file is over the size limit, naming the limit so the message can be shown as-is. */
+export function checkImportFileSize(bytes: number): void {
+  if (bytes > MAX_IMPORT_FILE_BYTES) {
+    throw new Error(`This file is larger than 10 MB (${(bytes / (1024 * 1024)).toFixed(1)} MB), so it can't be imported. Split it into smaller files and try again.`);
+  }
+}
+
 export function formatTime(date: Date | string): string {
    let d: Date;
   if (typeof date === 'string') {
@@ -155,7 +170,7 @@ export function getInitialAuthTokenFromGlobals(): string | null {
  * every session saved from one sitting with the same date, so two sessions on a day differ only by time).
  */
 export function sessionTimestamp(session: { date: string; time?: string }): number {
-  const date = new Date(session.date);
+  const date = parseDateOnly(session.date);
   const match = /^(\d{1,2}):(\d{2})/.exec(session.time || '');
   if (Number.isNaN(date.getTime()) || !match) return date.getTime();
   return new Date(date.getFullYear(), date.getMonth(), date.getDate(), Number(match[1]), Number(match[2])).getTime();
@@ -163,7 +178,7 @@ export function sessionTimestamp(session: { date: string; time?: string }): numb
 
 /** Orders sessions oldest first (by sessionTimestamp, then the stored date). */
 export function compareSessionsOldestFirst(a: { date: string; time?: string }, b: { date: string; time?: string }): number {
-  return sessionTimestamp(a) - sessionTimestamp(b) || new Date(a.date).getTime() - new Date(b.date).getTime();
+  return sessionTimestamp(a) - sessionTimestamp(b) || parseDateOnly(a.date).getTime() - parseDateOnly(b.date).getTime();
 }
 
 /**

@@ -84,6 +84,7 @@ export default function TouchControls({
                 type="button"
                 variant="ghost"
                 size="icon"
+                className="min-h-11 min-w-11"
                 onClick={() => setSelectionModalType('student')}
                 disabled={studentSlots.length <= 1}
                 aria-label="Pick student"
@@ -95,6 +96,7 @@ export default function TouchControls({
                 type="button"
                 variant="ghost"
                 size="icon"
+                className="min-h-11 min-w-11"
                 onClick={() => setSelectionModalType('goal')}
                 disabled={visibleGoals.length <= 1}
                 aria-label="Pick goal"
@@ -115,7 +117,7 @@ export default function TouchControls({
           onClick={() => setSelectionModalType('student')}
           disabled={!studentSlots || studentSlots.length <= 1}
           size="sm"
-          className="w-full justify-start short:w-auto"
+          className="w-full justify-start short:w-auto min-h-11"
           aria-label="Pick student"
           title="Choose which student's card to highlight (Alt+U)"
         >
@@ -129,7 +131,7 @@ export default function TouchControls({
           onClick={() => setSelectionModalType('goal')}
           disabled={!visibleGoals || visibleGoals.length <= 1}
           size="sm"
-          className="w-full justify-start short:w-auto"
+          className="w-full justify-start short:w-auto min-h-11"
           aria-label="Pick goal"
           title="Choose which goal to highlight on the student's card (Alt+T)"
         >
