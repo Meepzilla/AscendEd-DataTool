@@ -119,6 +119,7 @@ const BackupTemplateSchema = z.object({
   retired: z.boolean().optional(),
   baseline: z.number().optional(),
   taskSteps: z.array(z.string()).optional(),
+  gasLevelDescriptions: z.array(z.string()).optional(),
   defaultKey: z.string().optional(),
   deleted: z.boolean().optional(),
 });
@@ -187,7 +188,7 @@ function extractSettings(raw: unknown): { settings?: BackupSettings; droppedSett
 const KNOWN_KEYS: Record<string, Set<string>> = {
   student: new Set(['id', 'name', 'goals', 'createdAt', 'updatedAt', 'userId', 'isArchived', 'iep']),
   goal: new Set(['id', 'name', 'type', 'dataCaptureType', 'smartGoal', 'sessionTargetValue', 'targetDirection', 'isArchived', 'templateId', 'targetDate', 'baseline', 'baselineDate', 'masterySessions', 'taskSteps', 'blankFills', 'gasLevelDescriptions']),
-  template: new Set(['id', 'name', 'type', 'dataCaptureType', 'smartGoalPrompt', 'generatedSmartGoal', 'sessionTargetValue', 'createdAt', 'isDefault', 'userId', 'isArchived', 'category', 'source', 'bankId', 'targetDirection', 'retired', 'baseline', 'taskSteps', 'defaultKey', 'deleted']),
+  template: new Set(['id', 'name', 'type', 'dataCaptureType', 'smartGoalPrompt', 'generatedSmartGoal', 'sessionTargetValue', 'createdAt', 'isDefault', 'userId', 'isArchived', 'category', 'source', 'bankId', 'targetDirection', 'retired', 'baseline', 'taskSteps', 'defaultKey', 'deleted', 'gasLevelDescriptions']),
   session: new Set(['sessionId', 'studentId', 'studentName', 'date', 'time', 'endTime', 'activity', 'notes', 'goals', 'originalGoalHeaders', 'missed', 'userId']),
   sessionGoal: new Set(['goalId', 'goalName', 'goalType', 'data']),
   iep: new Set(['iepDate', 'annualReviewDate', 'reevaluationDate', 'serviceMinutes', 'servicePer']),
