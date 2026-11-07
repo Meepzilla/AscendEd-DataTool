@@ -14,6 +14,7 @@ export function goalFromTemplate(template: GoalTemplate): Goal {
     targetDirection: template.targetDirection,
     ...(template.baseline !== undefined ? { baseline: template.baseline } : {}),
     ...(template.taskSteps?.length ? { taskSteps: [...template.taskSteps] } : {}),
+    ...(template.gasLevelDescriptions?.length ? { gasLevelDescriptions: [...template.gasLevelDescriptions] } : {}),
   };
 }
 

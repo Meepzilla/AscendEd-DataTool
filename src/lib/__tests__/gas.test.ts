@@ -189,3 +189,38 @@ describe('GAS backup round-trip', () => {
     expect(parsed.strippedUnknownFields).toBe(false);
   });
 });
+
+describe('default GAS goals by area', () => {
+  const areas = ['vocabulary in conversation', 'questions about a story', 'Ask for help', 'Comment to share', 'Combine words to describe', 'Retell a story', 'calm-down strategy', 'Transition between activities'];
+  it('every built-in GAS template targets level 0 from a -2 baseline', () => {
+    expect(GAS_TEMPLATES.length).toBeGreaterThanOrEqual(12);
+    for (const template of GAS_TEMPLATES) {
+      expect(template.type).toBe('GOAL_ATTAINMENT_SCALE');
+      expect(template.sessionTargetValue).toBe(0);
+      expect(template.baseline).toBe(-2);
+    }
+  });
+  it('each area goal carries five written level descriptions, -2 first', () => {
+    for (const name of areas) {
+      const template = GAS_TEMPLATES.find(t => t.name.includes(name));
+      expect(template, name).toBeDefined();
+      expect(template!.gasLevelDescriptions).toHaveLength(5);
+      for (const text of template!.gasLevelDescriptions!) expect(text.trim().length).toBeGreaterThan(0);
+    }
+  });
+  it('assigning an area goal copies its descriptions and baseline to the student goal', () => {
+    const template = { ...GAS_TEMPLATES.find(t => t.name.includes('calm-down strategy'))!, id: 't1', createdAt: new Date() };
+    const assigned = goalFromTemplate(template);
+    expect(assigned.gasLevelDescriptions).toHaveLength(5);
+    expect(assigned.gasLevelDescriptions?.[2]).toContain('on their own after a reminder');
+    expect(assigned.baseline).toBe(-2);
+  });
+  it('a template\'s level descriptions survive a backup round-trip', async () => {
+    const template = { ...GAS_TEMPLATES.find(t => t.name.includes('Retell a story'))!, id: 't1', createdAt: new Date() };
+    const backup = createBackup({ students: [], goalTemplates: [template], sessions: [] });
+    const parsed = parseBackup(await backupFileText(backup));
+    expect(parsed.data.goalTemplates[0].gasLevelDescriptions).toHaveLength(5);
+    expect(parsed.data.goalTemplates[0].gasLevelDescriptions?.[2]).toContain('beginning, middle, and end');
+    expect(parsed.strippedUnknownFields).toBe(false);
+  });
+});
