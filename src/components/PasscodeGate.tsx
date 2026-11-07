@@ -9,10 +9,13 @@ import { Label } from '@/components/ui/label';
 import { APP_NAME } from '@/lib/appConstants';
 import TopEdgeBar from '@/components/layout/TopEdgeBar';
 import {
-  MIN_PASSCODE_LENGTH, enablePasscode, eraseProtectedData, getAutoLockMinutes, isPasscodeEnabled,
-  isUnlocked, lockNow, unlock,
+  MIN_PASSCODE_LENGTH, enablePasscode, eraseProtectedData, generateRecoveryKey, getAutoLockMinutes, isPasscodeEnabled,
+  isUnlocked, lockNow, resetPasscodeWithRecoveryKey, unlock,
 } from '@/lib/secure-store';
-import { needsFirstRunPrompt, needsPasscodeOffer, recordPasscodeDecision } from '@/lib/passcode-onboarding';
+import { hasExistingStudentData, needsFirstRunPrompt, needsPasscodeOffer, recordPasscodeDecision, recordBackupDeclinedBeforePasscode, shouldPromptForBackupBeforePasscode } from '@/lib/passcode-onboarding';
+import { useAuth } from '@/hooks/use-auth';
+import { LAST_BACKUP_KEY, backupFileName, backupFileText, buildBackupFromStorage, isPlaintextBackupAcknowledged, PLAINTEXT_BACKUP_ACKNOWLEDGEMENT } from '@/lib/backup';
+import { saveTextFile } from '@/lib/save-file';
 import { getLockoutRemainingMs } from '@/lib/attempt-lockout';
 
 // With passcode protection on (Settings), the app opens to this lock screen; the student data is decrypted
@@ -92,22 +95,89 @@ export default function PasscodeGate({ children }: { children: React.ReactNode }
 }
 
 // The passcode form shared by the first-run setup and the one-time offer: two entries, then
-// enablePasscode encrypts whatever student data is already on the device and records the choice.
+// a backup step when there is data to protect and no backup on record, then a recovery key
+// shown once, and only then enablePasscode encrypts whatever student data is already on the
+// device and records the choice. The typed passcode is kept in state through every step, so
+// the backup prompt never loses it. Skipping the backup needs an explicit acknowledgement,
+// and skipping the recovery key is a choice, not a dead end.
+type SetupStep = 'passcode' | 'backup' | 'recovery';
+
 function SetPasscodeForm({ onEnabled }: { onEnabled: () => void }) {
+  const { currentUser } = useAuth();
   const [passcode, setPasscode] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [step, setStep] = useState<SetupStep>('passcode');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  // Backup step: a password-protected backup first, or an explicit decline after the warning.
+  const [backupPassword, setBackupPassword] = useState('');
+  const [backupConfirm, setBackupConfirm] = useState('');
+  const [noBackupPassword, setNoBackupPassword] = useState(false);
+  const [plaintextAck, setPlaintextAck] = useState('');
+  const [backupDeclined, setBackupDeclined] = useState(false);
+  const [backupIncomplete, setBackupIncomplete] = useState(false);
+  // Recovery step: generated once here, shown once, passed to enablePasscode at the end.
+  const [recoveryKey, setRecoveryKey] = useState<string | null>(null);
+  const [recoverySaved, setRecoverySaved] = useState(false);
+  const [copied, setCopied] = useState(false);
 
-  const submit = useCallback(async (e: React.FormEvent) => {
+  const goRecovery = useCallback(() => {
+    setRecoveryKey(generateRecoveryKey());
+    setStep('recovery');
+  }, []);
+
+  const submitPasscode = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy) return;
     if (passcode.length < MIN_PASSCODE_LENGTH) { setError(`Use at least ${MIN_PASSCODE_LENGTH} characters.`); return; }
     if (passcode !== confirm) { setError("The passcodes don't match."); return; }
+    setError('');
+    // Nothing to back up on a fresh install, and no prompt when a backup is already on
+    // record or the user already declined after the warning: go straight to the recovery key.
+    if (hasExistingStudentData() && shouldPromptForBackupBeforePasscode()) setStep('backup');
+    else goRecovery();
+  }, [passcode, confirm, busy, goRecovery]);
+
+  const exportBackup = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (busy) return;
+    if (noBackupPassword) {
+      if (!isPlaintextBackupAcknowledged(plaintextAck)) {
+        setError(`To save without a password, type ${PLAINTEXT_BACKUP_ACKNOWLEDGEMENT} in the box below.`);
+        return;
+      }
+    } else {
+      if (backupPassword.length < MIN_PASSCODE_LENGTH) { setError(`Use at least ${MIN_PASSCODE_LENGTH} characters.`); return; }
+      if (backupPassword !== backupConfirm) { setError("The passwords don't match."); return; }
+    }
     setBusy(true);
     setError('');
     try {
-      await enablePasscode(passcode);
+      const { backup, incomplete } = await buildBackupFromStorage(currentUser?.uid);
+      const saved = await saveTextFile(backupFileName(), await backupFileText(backup, noBackupPassword ? undefined : backupPassword));
+      if (!saved) { setBusy(false); return; }
+      window.localStorage.setItem(LAST_BACKUP_KEY, backup.exportedAt);
+      setBackupIncomplete(incomplete);
+      goRecovery();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'The backup file could not be saved.');
+    } finally {
+      setBusy(false);
+    }
+  }, [backupPassword, backupConfirm, noBackupPassword, plaintextAck, busy, currentUser, goRecovery]);
+
+  const declineBackup = useCallback(() => {
+    recordBackupDeclinedBeforePasscode();
+    goRecovery();
+  }, [goRecovery]);
+
+  const finish = useCallback(async (withRecovery: boolean) => {
+    if (busy) return;
+    setBusy(true);
+    setError('');
+    try {
+      if (withRecovery && recoveryKey) await enablePasscode(passcode, 15, recoveryKey);
+      else await enablePasscode(passcode);
     } catch (err) {
       setBusy(false);
       setError(err instanceof Error && err.name === 'QuotaExceededError'
@@ -119,10 +189,112 @@ function SetPasscodeForm({ onEnabled }: { onEnabled: () => void }) {
     }
     recordPasscodeDecision('passcode');
     onEnabled();
-  }, [passcode, confirm, busy, onEnabled]);
+  }, [passcode, recoveryKey, busy, onEnabled]);
+
+  const copyRecoveryKey = useCallback(async () => {
+    if (!recoveryKey) return;
+    try {
+      await navigator.clipboard.writeText(recoveryKey);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard unavailable: the key is in a selectable box below, so it can still be copied by hand.
+    }
+  }, [recoveryKey]);
+
+  if (step === 'backup') {
+    return (
+      <form onSubmit={exportBackup} className="space-y-3">
+        <p className="text-sm">
+          Back up first. If the passcode is forgotten, the data on this device can only be got back
+          from a backup (or with the recovery key on the next step), so save one now while the data is open.
+        </p>
+        {!noBackupPassword && (
+          <div className="space-y-2">
+            <div className="space-y-1">
+              <Label htmlFor="setup-backup-password">Backup password (at least {MIN_PASSCODE_LENGTH} characters)</Label>
+              <Input id="setup-backup-password" type="password" autoComplete="new-password" value={backupPassword}
+                onChange={e => { setBackupPassword(e.target.value); setError(''); }} disabled={busy} />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="setup-backup-password-confirm">Enter it again</Label>
+              <Input id="setup-backup-password-confirm" type="password" autoComplete="new-password" value={backupConfirm}
+                onChange={e => { setBackupConfirm(e.target.value); setError(''); }} disabled={busy} />
+            </div>
+          </div>
+        )}
+        <div className="flex items-start gap-2">
+          <Checkbox id="setup-backup-no-password" checked={noBackupPassword} onCheckedChange={v => { setNoBackupPassword(v === true); setError(''); }} />
+          <Label htmlFor="setup-backup-no-password" className="text-sm font-normal leading-snug">
+            Save without a password. I&apos;ll keep the file somewhere secure (anyone with the file can read the student data).
+          </Label>
+        </div>
+        {noBackupPassword && (
+          <div className="space-y-1">
+            <Label htmlFor="setup-backup-plaintext-ack">Type {PLAINTEXT_BACKUP_ACKNOWLEDGEMENT} to confirm an unencrypted backup</Label>
+            <Input id="setup-backup-plaintext-ack" autoComplete="off" value={plaintextAck}
+              onChange={e => { setPlaintextAck(e.target.value); setError(''); }} disabled={busy}
+              placeholder={PLAINTEXT_BACKUP_ACKNOWLEDGEMENT} />
+          </div>
+        )}
+        {backupIncomplete && (
+          <p className="text-sm text-destructive" role="alert">Some of this device&apos;s data couldn&apos;t be read, so it isn&apos;t in this backup. Keep your earlier backup files.</p>
+        )}
+        {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
+        <Button type="submit" className="w-full" disabled={busy}>
+          {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {busy ? 'Saving backup…' : noBackupPassword ? 'Save Backup' : 'Save Protected Backup'}
+        </Button>
+        <div className="space-y-3 border-t pt-3">
+          <div className="flex items-start gap-2">
+            <Checkbox id="setup-backup-decline" checked={backupDeclined} onCheckedChange={v => setBackupDeclined(v === true)} />
+            <Label htmlFor="setup-backup-decline" className="text-sm font-normal leading-snug">
+              I understand that without a backup, forgetting the passcode means the student data on this device is lost.
+            </Label>
+          </div>
+          <Button type="button" variant="outline" className="w-full" disabled={!backupDeclined || busy} onClick={declineBackup}>
+            Continue without a backup
+          </Button>
+        </div>
+      </form>
+    );
+  }
+
+  if (step === 'recovery') {
+    return (
+      <div className="space-y-3">
+        <p className="text-sm">
+          Save this recovery key somewhere safe, separate from the passcode. It is the only way back in
+          if the passcode is forgotten. It is shown once and never again.
+        </p>
+        <div className="space-y-1">
+          <Label htmlFor="setup-recovery-key">Recovery key</Label>
+          <Input id="setup-recovery-key" readOnly value={recoveryKey ?? ''} autoComplete="off"
+            onFocus={e => e.target.select()} className="font-mono text-sm" />
+        </div>
+        <Button type="button" variant="outline" className="w-full" onClick={copyRecoveryKey}>
+          {copied ? 'Copied' : 'Copy recovery key'}
+        </Button>
+        <div className="flex items-start gap-2">
+          <Checkbox id="setup-recovery-saved" checked={recoverySaved} onCheckedChange={v => setRecoverySaved(v === true)} />
+          <Label htmlFor="setup-recovery-saved" className="text-sm font-normal leading-snug">
+            I have written down the recovery key somewhere safe.
+          </Label>
+        </div>
+        {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
+        <Button type="button" className="w-full" disabled={!recoverySaved || busy} onClick={() => finish(true)}>
+          {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {busy ? 'Setting up…' : 'Set passcode and continue'}
+        </Button>
+        <Button type="button" variant="link" className="w-full" disabled={busy} onClick={() => finish(false)}>
+          Continue without a recovery key
+        </Button>
+      </div>
+    );
+  }
 
   return (
-    <form onSubmit={submit} className="space-y-3">
+    <form onSubmit={submitPasscode} className="space-y-3">
       <div className="space-y-1">
         <Label htmlFor="setup-passcode">Passcode (at least {MIN_PASSCODE_LENGTH} characters)</Label>
         <Input id="setup-passcode" type="password" autoComplete="new-password" autoFocus value={passcode}
@@ -137,7 +309,7 @@ function SetPasscodeForm({ onEnabled }: { onEnabled: () => void }) {
       {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
       <Button type="submit" className="w-full" disabled={!passcode || !confirm || busy}>
         {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        {busy ? 'Setting up…' : 'Set passcode and continue'}
+        {busy ? 'Setting up…' : 'Continue'}
       </Button>
     </form>
   );
@@ -234,6 +406,11 @@ function LockScreen({ onUnlocked }: { onUnlocked: () => void }) {
   const [error, setError] = useState('');
   const [forgot, setForgot] = useState(false);
   const [eraseText, setEraseText] = useState('');
+  const [recoveryKey, setRecoveryKey] = useState('');
+  const [newPasscode, setNewPasscode] = useState('');
+  const [newConfirm, setNewConfirm] = useState('');
+  const [recoveryBusy, setRecoveryBusy] = useState(false);
+  const [recoveryError, setRecoveryError] = useState('');
 
   const submit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -291,22 +468,66 @@ function LockScreen({ onUnlocked }: { onUnlocked: () => void }) {
             <Button type="button" variant="link" className="w-full" onClick={() => setForgot(true)}>Forgot passcode?</Button>
           </form>
         ) : (
-          <div className="space-y-3 text-sm">
-            <p>
-              The passcode can&apos;t be recovered, and the data can&apos;t be decrypted without it. The only way to use the
-              app again is to <strong>erase the student data on this device</strong> and then restore your most recent backup
-              (Settings → Backup &amp; Restore).
-            </p>
-            <div className="space-y-1">
-              <Label htmlFor="erase-confirm">Type ERASE to confirm</Label>
-              <Input id="erase-confirm" value={eraseText} onChange={e => setEraseText(e.target.value)} autoComplete="off" />
-            </div>
-            <div className="flex gap-2">
-              <Button type="button" variant="outline" className="flex-1" onClick={() => { setForgot(false); setEraseText(''); }}>Back</Button>
-              <Button type="button" variant="destructive" className="flex-1" disabled={eraseText.trim().toUpperCase() !== 'ERASE'}
-                onClick={() => { eraseProtectedData(); window.location.reload(); }}>
-                Erase and Start Over
+          <div className="space-y-4 text-sm">
+            <div className="space-y-3">
+              <p>
+                If you saved a recovery key when the passcode was set up, it opens the data and lets
+                you set a new passcode. The same recovery key keeps working afterwards.
+              </p>
+              <div className="space-y-1">
+                <Label htmlFor="recovery-key">Recovery key</Label>
+                <Input id="recovery-key" value={recoveryKey} autoComplete="off" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX"
+                  onChange={e => { setRecoveryKey(e.target.value); setRecoveryError(''); }} disabled={recoveryBusy} />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="recovery-new-passcode">New passcode (at least {MIN_PASSCODE_LENGTH} characters)</Label>
+                <Input id="recovery-new-passcode" type="password" autoComplete="new-password" value={newPasscode}
+                  onChange={e => { setNewPasscode(e.target.value); setRecoveryError(''); }} disabled={recoveryBusy} />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="recovery-new-passcode-confirm">Enter the new passcode again</Label>
+                <Input id="recovery-new-passcode-confirm" type="password" autoComplete="new-password" value={newConfirm}
+                  onChange={e => { setNewConfirm(e.target.value); setRecoveryError(''); }} disabled={recoveryBusy} />
+              </div>
+              {recoveryError && <p className="text-sm text-destructive" role="alert">{recoveryError}</p>}
+              <Button
+                type="button" className="w-full"
+                disabled={!recoveryKey || !newPasscode || !newConfirm || recoveryBusy}
+                onClick={async () => {
+                  if (newPasscode.length < MIN_PASSCODE_LENGTH) { setRecoveryError(`Use at least ${MIN_PASSCODE_LENGTH} characters.`); return; }
+                  if (newPasscode !== newConfirm) { setRecoveryError("The passcodes don't match."); return; }
+                  setRecoveryBusy(true);
+                  setRecoveryError('');
+                  try {
+                    await resetPasscodeWithRecoveryKey(recoveryKey, newPasscode);
+                    onUnlocked();
+                  } catch (err) {
+                    setRecoveryError(err instanceof Error ? err.message : 'That recovery key is not right.');
+                    setRecoveryBusy(false);
+                  }
+                }}
+              >
+                {recoveryBusy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {recoveryBusy ? 'Unlocking…' : 'Unlock with recovery key and set new passcode'}
               </Button>
+            </div>
+            <div className="space-y-3 border-t pt-3">
+              <p>
+                Without the passcode or the recovery key, the data can&apos;t be decrypted. The only way to use the
+                app again is to <strong>erase the student data on this device</strong> and then restore your most recent backup
+                (Settings → Backup &amp; Restore).
+              </p>
+              <div className="space-y-1">
+                <Label htmlFor="erase-confirm">Type ERASE to confirm</Label>
+                <Input id="erase-confirm" value={eraseText} onChange={e => setEraseText(e.target.value)} autoComplete="off" />
+              </div>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" className="flex-1" onClick={() => { setForgot(false); setEraseText(''); }}>Back</Button>
+                <Button type="button" variant="destructive" className="flex-1" disabled={eraseText.trim().toUpperCase() !== 'ERASE'}
+                  onClick={() => { eraseProtectedData(); window.location.reload(); }}>
+                  Erase and Start Over
+                </Button>
+              </div>
             </div>
           </div>
         )}

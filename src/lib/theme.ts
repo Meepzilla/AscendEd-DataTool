@@ -6,6 +6,8 @@
 // Applied as classes on <html> ("dark", plus "theme-contrast"; or "theme-pastel") before the first paint by the display-size script
 // (display-scale.ts); the colors are the CSS variables in globals.css.
 
+import { clearStorageFailure, reportStorageFailure } from './storage-failure';
+
 export type Theme = 'dark' | 'light' | 'contrast' | 'pastel';
 export const THEME_KEY = 'ascended_theme';
 export const THEMES: { value: Theme; label: string; description: string }[] = [
@@ -39,11 +41,16 @@ export function applyTheme(theme: Theme) {
   document.querySelectorAll('meta[name="theme-color"]').forEach(meta => meta.setAttribute('content', THEME_COLORS[theme]));
 }
 
-export function setTheme(theme: Theme) {
+/** Saves the theme; false when storage is full or unavailable (it is still applied for this visit, and the failure is recorded as a persistent warning). */
+export function setTheme(theme: Theme): boolean {
   try {
     localStorage.setItem(THEME_KEY, theme);
-  } catch {
-    // Not saved; still applied for this visit.
+    clearStorageFailure('theme');
+  } catch (error) {
+    reportStorageFailure('theme', error);
+    applyTheme(theme);
+    return false;
   }
   applyTheme(theme);
+  return true;
 }

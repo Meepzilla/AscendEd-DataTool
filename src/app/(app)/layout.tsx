@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import AppHeader, { TopStrip } from '@/components/layout/app-header';
+import StorageFailureBanner from '@/components/StorageFailureBanner';
 import { MENU_POSITION_EVENT, getMenuPosition } from '@/lib/menu-position';
 import TopEdgeBar from '@/components/layout/TopEdgeBar';
 import AppFooter from '@/components/layout/app-footer';
@@ -162,6 +163,8 @@ export default function AppLayout({
             </>
           ) : null}
           <main ref={mainRef} id="main-content" tabIndex={-1} className="flex flex-1 min-w-0 min-h-0 flex-col overflow-y-auto focus:outline-none">
+            {/* Storage failures stay visible on every page until fixed or dismissed. */}
+            <StorageFailureBanner />
             <div className="flex-1 p-4 sm:p-6 lg:p-8">
               {children}
             </div>

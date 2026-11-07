@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
-import { backupFileText, createBackup, decryptBackupText, isProtectedBackup, mergeBackupData, parseBackup } from '../backup';
-import { session } from './helpers';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { backupFileText, buildBackupFromStorage, createBackup, decryptBackupText, isProtectedBackup, mergeBackupData, parseBackup } from '../backup';
+import { memoryStorage, session } from './helpers';
 import type { Student } from '../types';
 
 const student = (id: string, goalIds: string[] = []) => ({ id, name: id, userId: 'u', createdAt: '2026-01-01', goals: goalIds.map(g => ({ id: g, name: g, type: 'ARTICULATION', smartGoal: '' })) }) as unknown as Student;
@@ -41,5 +41,34 @@ describe('backups', () => {
     const { merged, added } = mergeBackupData(data(), incoming);
     expect(added).toEqual({ students: 1, goalTemplates: 0, sessions: 1, goals: 1 });
     expect(merged.students.find(s => s.id === 'ava')!.goals.map(g => g.id)).toEqual(['g1', 'g2']);
+  });
+});
+
+describe('backup from storage (first-run setup screen)', () => {
+  let storage: ReturnType<typeof memoryStorage>;
+
+  beforeEach(async () => {
+    storage = memoryStorage();
+    vi.stubGlobal('localStorage', storage);
+    vi.stubGlobal('window', globalThis);
+    vi.resetModules();
+  });
+
+  it('builds a backup from the stored lists, without the data provider', async () => {
+    storage.setItem('ascended_students_v2_local-guest-user', JSON.stringify([student('ava', ['g1'])]));
+    storage.setItem('ascended_sessions_v2_local-guest-user', JSON.stringify([session({ sessionId: 'x1' })]));
+    const { backup, incomplete } = await buildBackupFromStorage('local-guest-user');
+    expect(incomplete).toBe(false);
+    expect(backup.data.students.map(s => s.id)).toEqual(['ava']);
+    expect(backup.data.sessions.map(s => s.sessionId)).toEqual(['x1']);
+  });
+
+  it('reports incomplete when a stored list cannot be read', async () => {
+    storage.setItem('ascended_students_v2_local-guest-user', '{damaged');
+    storage.setItem('ascended_sessions_v2_local-guest-user', JSON.stringify([session({ sessionId: 'x1' })]));
+    const { backup, incomplete } = await buildBackupFromStorage('local-guest-user');
+    expect(incomplete).toBe(true);
+    expect(backup.data.students).toEqual([]);
+    expect(backup.data.sessions.map(s => s.sessionId)).toEqual(['x1']);
   });
 });

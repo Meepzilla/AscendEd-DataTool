@@ -11,6 +11,7 @@ import type { GoalType, SessionGoalData } from '@/lib/types';
 import { currentGoalType } from '@/lib/legacy-goal-types';
 import type { ImportedSession } from '@/lib/session-import';
 import { checkImportFileSize } from '@/lib/helpers';
+import { sanitizeErrorMessage, toSafeErrorMessage } from '@/lib/error-message';
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 
 /** A session read from the file, with the Session ID it had (kept, so a later backup merge matches it). */
@@ -64,7 +65,7 @@ export default function ImportDataModal({ onClose, onImport }: ImportDataModalPr
       try {
         checkImportFileSize(selectedFile.size);
       } catch (error) {
-        toast({ title: 'File too large', description: error instanceof Error ? error.message : String(error), variant: 'destructive' });
+        toast({ title: 'File too large', description: sanitizeErrorMessage(error instanceof Error ? error.message : String(error)), variant: 'destructive' });
         return;
       }
       setIsParsing(true);
@@ -86,7 +87,8 @@ export default function ImportDataModal({ onClose, onImport }: ImportDataModalPr
             for (const row of rows) {
               const sessionId = row['Session ID'];
               if (!sessionId) {
-                console.warn("Skipping row with missing Session ID:", row);
+                // No row content here: a row is one student's session data, including their name.
+                console.warn('Skipping row with missing Session ID.');
                 continue;
               }
 
@@ -95,7 +97,8 @@ export default function ImportDataModal({ onClose, onImport }: ImportDataModalPr
               // If it's the first time seeing this session ID, create the base session object.
               if (!sessionEntry) {
                  if (!row['Student ID'] || !row['Date'] || !row['Student Name']) {
-                    throw new Error(`Row for session ${sessionId} is missing required fields (Student ID, Date, Student Name).`);
+                    // No session ID in the message: it is shown in the toast below.
+                    throw new Error('A row is missing required fields (Student ID, Date, Student Name).');
                 }
                 sessionEntry = {
                   studentId: row['Student ID'],
@@ -151,12 +154,13 @@ export default function ImportDataModal({ onClose, onImport }: ImportDataModalPr
               description: `Found ${finalSessions.length} session records to import.`,
             });
           } catch (error: any) {
-            console.error("Error parsing CSV data:", error);
+            // Log the message only, sanitised: the error object can carry row content.
+            console.error('Error parsing CSV data:', toSafeErrorMessage(error));
             setFile(null);
             setParsedSessions([]);
             toast({
               title: "Parsing Error",
-              description: error.message || "Could not parse session data from CSV file. Please check the file format.",
+              description: error instanceof Error && error.message ? sanitizeErrorMessage(error.message) : "Could not parse session data from CSV file. Please check the file format.",
               variant: "destructive",
             });
           } finally {
@@ -164,7 +168,7 @@ export default function ImportDataModal({ onClose, onImport }: ImportDataModalPr
           }
         },
         error: (error: Error) => {
-          console.error("PapaParse error:", error);
+          console.error('PapaParse error:', toSafeErrorMessage(error));
           setFile(null);
           setParsedSessions([]);
           toast({
@@ -197,7 +201,7 @@ export default function ImportDataModal({ onClose, onImport }: ImportDataModalPr
     } catch (error: any) {
       toast({
         title: "Import Failed",
-        description: error.message || "An unexpected error occurred during import.",
+        description: error instanceof Error && error.message ? sanitizeErrorMessage(error.message) : "An unexpected error occurred during import.",
         variant: "destructive",
       });
     } finally {

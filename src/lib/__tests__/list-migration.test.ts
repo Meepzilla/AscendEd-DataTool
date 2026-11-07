@@ -109,6 +109,32 @@ describe('hydrateLists with IndexedDB', () => {
     expect(storage.getItem(S)).toBe(null);
   });
 
+  it('migrates an encrypted templates blob per record, still encrypted', async () => {
+    storage.setItem(T, templatesBlob);
+    await store.enablePasscode('passcode1');
+    const results = await dataStore.hydrateLists({ students: S, templates: T, sessions: X });
+    expect(results.find(r => r.key === T)?.status).toBe('migrated');
+    const rows = await idb.getAllRecords('goalTemplates');
+    expect(rows).toHaveLength(1);
+    expect(rows[0].v.startsWith('enc1:')).toBe(true);
+    expect(await store.readDurableList(T)).toMatchObject([{ id: 't1' }]);
+    expect(storage.getItem(T)).toBe(null);
+  }, 30000);
+
+  it('re-encrypts template rows on passcode change and stores them plain on disable', async () => {
+    await dataStore.hydrateLists({ students: S, templates: T, sessions: X });
+    await store.setItemAsync(T, templatesBlob);
+    await store.enablePasscode('passcode1');
+    expect((await idb.getAllRecords('goalTemplates'))[0].v.startsWith('enc1:')).toBe(true);
+    await store.changePasscode('passcode1', 'passcode2');
+    expect(await store.readDurableList(T)).toMatchObject([{ id: 't1', name: 'Goal' }]);
+    await store.disablePasscode('passcode2');
+    const rows = await idb.getAllRecords('goalTemplates');
+    expect(rows[0].v.startsWith('enc1:')).toBe(false);
+    expect(await store.readDurableList(T)).toMatchObject([{ id: 't1', name: 'Goal' }]);
+    expect(dataStore.readList(T)).toMatchObject([{ id: 't1' }]);
+  }, 60000);
+
   it('migrates an encrypted blob per record, still encrypted', async () => {
     storage.setItem(S, studentsBlob);
     await store.enablePasscode('passcode1');

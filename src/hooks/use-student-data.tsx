@@ -428,7 +428,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setSelectedStudent(null);
     // Custom ABC lists and saved groups. The student data is restored even if the ABC lists don't fit.
     restoreBackupSettings(backup, mode, currentUser?.uid, error =>
-      addErrorLog({ message: `Restoring ABC lists failed: ${error instanceof Error ? error.message : String(error)}`, source: 'storage', type: 'error' }));
+      addErrorLog({ message: `Restoring ABC lists or student groups failed: ${error instanceof Error ? error.message : String(error)}`, source: 'storage', type: 'error' }));
     // Tell the user what parseBackup had to leave out, instead of restoring silently short.
     const dropped = (backup as Partial<ParsedBackup>).droppedSettings ?? [];
     const droppedRecords = (backup as Partial<ParsedBackup>).droppedRecords ?? [];
@@ -467,15 +467,21 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
     let cancelled = false;
     const load = async () => {
+      // What could be read without migration, so a failure in the load below can still show the
+      // data instead of leaving the app empty.
+      let rawStudents: Student[] = [];
+      let rawTemplates: GoalTemplate[] = [];
+      let rawSessions: SessionData[] = [];
+      try {
       // A list that can't be read is kept as it is in storage (never written over) and reported.
       // Hydration runs first: localStorage blobs migrate into IndexedDB (verified) and the cache
       // is filled from durable storage, so every read below sees what is actually stored.
       resetUnreadable();
       await hydrate();
       if (cancelled) return;
-      const rawStudents = readStored<Student>(studentsKey);
-      const rawTemplates = readStored<GoalTemplate>(templatesKey);
-      const rawSessions = readStored<SessionData>(sessionsKey);
+      rawStudents = readStored<Student>(studentsKey);
+      rawTemplates = readStored<GoalTemplate>(templatesKey);
+      rawSessions = readStored<SessionData>(sessionsKey);
       const anyUnreadable = [studentsKey, templatesKey, sessionsKey].some(isUnreadable);
       if (anyUnreadable) {
         setError(new Error('Some saved data could not be read.'));
@@ -508,10 +514,32 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       setSessions(localSessions);
       setLoading(false);
       setSessionsLoading(false);
+      } catch (error) {
+        // prepareLoadedData (or hydration) throwing used to surface only through the route error
+        // boundary, with the app unusable. It is logged and toasted here instead, and what could
+        // be read is shown unmigrated, so the data stays visible and a backup can still be taken.
+        if (cancelled) return;
+        addErrorLog({ message: `Loading saved data failed: ${error instanceof Error ? error.message : String(error)}`, source: 'StudentDataProvider.load', type: 'error' });
+        toast({
+          title: "Couldn't load your saved data",
+          description: 'What could be read is shown below, without the usual updates. Check the error log, or restore a backup in Settings.',
+          variant: 'destructive',
+        });
+        setError(error instanceof Error ? error : new Error('Loading saved data failed.'));
+        templatesRef.current = rawTemplates;
+        setTemplateList(rawTemplates);
+        studentsRef.current = rawStudents;
+        setStudents(rawStudents);
+        const localSessions = [...rawSessions].sort(byDateDesc);
+        sessionsRef.current = localSessions;
+        setSessions(localSessions);
+        setLoading(false);
+        setSessionsLoading(false);
+      }
     };
     load();
     return () => { cancelled = true; };
-  }, [authLoading, currentUser, studentsKey, templatesKey, sessionsKey, saveToLocal, toast, readStored, resetUnreadable, isUnreadable, hydrate]);
+  }, [authLoading, currentUser, studentsKey, templatesKey, sessionsKey, saveToLocal, toast, readStored, resetUnreadable, isUnreadable, hydrate, addErrorLog]);
 
   // Another tab changed the data: reload the three lists from storage as they are and
   // say so. No merge is attempted — the other tab's save is the newer copy, and this
