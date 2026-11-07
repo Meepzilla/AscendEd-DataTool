@@ -9,14 +9,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useStudentData } from '@/hooks/use-student-data';
-import { useStudentGroups, type StudentGroup } from '@/lib/student-groups';
+import { useToast } from '@/hooks/use-toast';
+import { isStudentGroupsDamaged, useStudentGroups, type StudentGroup } from '@/lib/student-groups';
 
 // Students → Groups (and Data Entry → Load Group → Manage Groups): create, rename, change and delete saved
 // groups of students, e.g. a class or a small group, to load into Data Entry together.
 
 export default function ManageGroupsDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { students, currentUser } = useStudentData();
+  const { toast } = useToast();
   const { groups, saveGroup, deleteGroup } = useStudentGroups(currentUser?.uid);
+  const groupsDamaged = isStudentGroupsDamaged(currentUser?.uid);
+  // A list that couldn't be read must not be written over; the save refuses, so say so.
+  const saveFailed = (error: unknown) =>
+    toast({ title: "Couldn't save", description: error instanceof Error ? error.message : 'The student groups could not be saved.', variant: 'destructive' });
   const [editing, setEditing] = useState<{ id?: string; name: string; studentIds: Set<string> } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<StudentGroup | null>(null);
   const activeStudents = useMemo(() => students.filter(s => !s.isArchived).sort((a, b) => a.name.localeCompare(b.name)), [students]);
@@ -35,7 +41,12 @@ export default function ManageGroupsDialog({ open, onOpenChange }: { open: boole
     // Keeps the group's order, adding new students in alphabetical order.
     const original = groups.find(g => g.id === editing.id)?.studentIds ?? [];
     const ids = [...original.filter(id => editing.studentIds.has(id)), ...activeStudents.map(s => s.id).filter(id => editing.studentIds.has(id) && !original.includes(id))];
-    saveGroup({ id: editing.id, name: editing.name, studentIds: ids });
+    try {
+      saveGroup({ id: editing.id, name: editing.name, studentIds: ids });
+    } catch (error) {
+      saveFailed(error);
+      return;
+    }
     setEditing(null);
   };
 
@@ -78,11 +89,14 @@ export default function ManageGroupsDialog({ open, onOpenChange }: { open: boole
             <p className="text-sm">Delete the group <strong>{confirmDelete.name}</strong>? The students and their data aren&apos;t affected.</p>
             <DialogFooter className="gap-2">
               <Button variant="outline" onClick={() => setConfirmDelete(null)}>Cancel</Button>
-              <Button variant="destructive" onClick={() => { deleteGroup(confirmDelete.id); setConfirmDelete(null); }}>Delete Group</Button>
+              <Button variant="destructive" onClick={() => { try { deleteGroup(confirmDelete.id); } catch (error) { saveFailed(error); return; } setConfirmDelete(null); }}>Delete Group</Button>
             </DialogFooter>
           </div>
         ) : (
           <div className="space-y-3">
+            {groupsDamaged && (
+              <p className="text-sm text-destructive">The saved student groups could not be read, so none are shown and changes won&apos;t be saved. Restore a backup in Settings to replace them.</p>
+            )}
             {groups.length === 0 ? (
               <p className="text-sm text-muted-foreground">No groups yet.</p>
             ) : (

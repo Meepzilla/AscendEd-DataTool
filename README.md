@@ -93,7 +93,7 @@ When you change features, add an entry at the top of `src/app/(app)/changelog/pa
 
 ## Hosting
 
-The static build in `out/` is all that needs hosting. There is no server code.
+The static build in `out/` is all that needs hosting. There is no server code. It is also the only supported deployment: the plain `next build` / `next start` server path is not supported. It produces no `out/` directory, so `scripts/add-csp.mjs` (which adds the per-page script-src CSP) has nothing to run on, and a dev or server deployment gets no script-src CSP. Do not deploy from `npm run build` or `npm run start`.
 
 ### Cloudflare (the live site)
 

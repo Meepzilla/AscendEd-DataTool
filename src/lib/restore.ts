@@ -1,7 +1,7 @@
 import type { AppBackup, BackupData, RestoreMode, RestoreSummary } from './backup';
 import { mergeBackupData } from './backup';
-import { loadAbcLists, mergeAbcLists, saveAbcLists } from './abc-lists';
-import { getStudentGroups, saveStudentGroups } from './student-groups';
+import { loadAbcLists, mergeAbcLists, saveAbcLists, saveAbcListsForRestore } from './abc-lists';
+import { getStudentGroups, saveStudentGroups, saveStudentGroupsForRestore } from './student-groups';
 import { byDateDesc, byName } from './data-store';
 
 // Restoring a backup (Settings → Backup & Restore): what the device's lists become, and the backup's settings.
@@ -26,21 +26,26 @@ export function planRestore(current: BackupData, backup: AppBackup, mode: Restor
 
 /**
  * Restores the backup's settings: custom ABC lists and saved student groups. Replace uses the backup's (clearing
- * custom ABC lists when it has none); merge adds what this device doesn't have. A failure saving the ABC lists
- * is passed to onError (the student data is already restored).
+ * custom ABC lists when it has none); merge adds what this device doesn't have. A failure saving either is
+ * passed to onError (the student data is already restored). Replace may overwrite lists that couldn't be
+ * read — that is how damaged settings are recovered; merge never does.
  */
 export function restoreBackupSettings(backup: AppBackup, mode: RestoreMode, userId: string | undefined, onError: (error: unknown) => void) {
   const abcLists = backup.settings?.abcLists;
   try {
-    if (mode === 'replace') saveAbcLists(abcLists ?? null);
+    if (mode === 'replace') saveAbcListsForRestore(abcLists ?? null);
     else if (abcLists) saveAbcLists(mergeAbcLists(loadAbcLists(), abcLists));
   } catch (error) {
     onError(error);
   }
   const groups = backup.settings?.studentGroups;
-  if (mode === 'replace') saveStudentGroups(userId, groups ?? []);
-  else if (groups?.length) {
-    const existing = getStudentGroups(userId);
-    saveStudentGroups(userId, [...existing, ...groups.filter(g => !existing.some(e => e.id === g.id))]);
+  try {
+    if (mode === 'replace') saveStudentGroupsForRestore(userId, groups ?? []);
+    else if (groups?.length) {
+      const existing = getStudentGroups(userId);
+      saveStudentGroups(userId, [...existing, ...groups.filter(g => !existing.some(e => e.id === g.id))]);
+    }
+  } catch (error) {
+    onError(error);
   }
 }

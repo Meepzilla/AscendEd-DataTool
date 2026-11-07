@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-06',
+    title: 'Recovery Key, Encrypted Templates and Groups, and Safer Errors and Saving',
+    description: 'Setting a passcode now shows a recovery key once, which unlocks the app and sets a new passcode if the passcode is forgotten, and asks for a backup first where data already exists (you can decline and continue). Goal templates, student groups, and custom ABC lists are now encrypted when protection is on, including the built-in templates, which share one list with your own. If a saved list cannot be read, changing or turning off the passcode still works for the lists that can be read, and only the damaged list is left as it is until a backup is restored. Error screens no longer show raw error messages or IDs, imported rows are no longer written to the console, and the app now reports storage-full failures with a warning banner and a draft recovery prompt on Data Entry instead of losing the work silently. Report trends are now fitted against the days between sessions instead of spacing sessions evenly, and the site sends HSTS and Permissions-Policy headers.',
+    type: 'improvement',
+    icon: ShieldCheck,
+  },
+  {
+    date: '2026-11-06',
     title: 'Fix: Saving No Longer Reloads the Same Tab',
     description: 'Saving a session used to pop up a "Data changed in another tab" message and reload the data right after the save, even with no other tab open. The save message is now tagged with the tab that sent it, so a tab ignores its own saves and only reloads when another tab really did change the data.',
     type: 'fix',

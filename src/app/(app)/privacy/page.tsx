@@ -73,7 +73,7 @@ export default function PrivacyPage() {
 
       <Section title="Who can see it">
         <ul className="list-disc space-y-1 pl-5">
-          <li>Anyone who can open the app on this device. The app is single-device and single-user: there are no accounts, and the device lock is the only access control until <strong>Passcode Protection</strong> is set. New installs are asked to set a passcode when the app first opens; with it on, the student data is encrypted (AES-256) and the app locks after a period without use. Turn it on any time in Settings.</li>
+          <li>Anyone who can open the app on this device. The app is single-device and single-user: there are no accounts, and the device lock is the only access control until <strong>Passcode Protection</strong> is set. New installs are asked to set a passcode when the app first opens; with it on, the student data is encrypted (AES-256) and the app locks after a period without use. Goal templates, student groups, and custom ABC lists are encrypted too, including the built-in goal templates, which share one list with your own templates (the built-in goals themselves are the same on every device and are not private). Turn it on any time in Settings. When you set a passcode the app shows a recovery key once: keep it somewhere safe, since it is the only way back in if you forget the passcode.</li>
           <li>Nobody else. The developer, the hosting company and the district can&apos;t see it unless you share a file.</li>
           <li>Files you create leave the device only where you put them: <strong>backups</strong> (which can be protected with a password) and <strong>CSV exports</strong> (not encrypted). Store them only in district-approved places.</li>
         </ul>
@@ -99,7 +99,7 @@ export default function PrivacyPage() {
       <Section title="If a device is lost">
         <p>
           Follow your district&apos;s procedure for a lost device. With Passcode Protection on, the student data on it
-          stays encrypted and can&apos;t be read without the passcode.
+          stays encrypted and can&apos;t be read without the passcode or the recovery key shown when the passcode was set.
         </p>
       </Section>
 

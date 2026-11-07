@@ -113,22 +113,31 @@ interface GoalAnalysis {
 }
 
 /**
- * The trend as a straight line fitted through every session (least squares), so one unusual session
- * moves it less than comparing halves would. Reported as the line's value at the first and last session.
+ * The trend as a straight line fitted through every session (least squares), with x as elapsed days
+ * from the first session, so sessions a month apart count more than sessions a day apart. Reported
+ * as the line's value at the first and last session dates, unclamped: a steep line through few
+ * sessions can overshoot the values actually recorded (e.g. 108% or -2 occurrences), and those ends
+ * are the fitted values at those dates, not observed ones.
  */
-function fitTrend(goal: Goal, values: number[]): GoalAnalysis['trend'] {
+function fitTrend(goal: Goal, points: { date: string; value: number }[]): GoalAnalysis['trend'] {
+  const sorted = [...points].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const values = sorted.map(p => p.value);
   const n = values.length;
   if (n < MIN_TREND_SESSIONS) return { kind: 'too few', from: values[0] ?? 0, to: values[n - 1] ?? 0 };
-  const meanX = (n - 1) / 2;
+  const first = new Date(sorted[0].date).getTime();
+  // Elapsed days from the first session; falls back to session order if a date does not parse.
+  const xs = Number.isNaN(first) || sorted.some(p => Number.isNaN(new Date(p.date).getTime()))
+    ? sorted.map((_, i) => i)
+    : sorted.map(p => (new Date(p.date).getTime() - first) / 86400000);
+  const meanX = avg(xs);
   const meanY = avg(values);
+  // All sessions on the same day: no elapsed span to fit against, so the line is flat at the mean.
+  if (xs[n - 1] - xs[0] <= 0) return { kind: 'stable', from: meanY, to: meanY };
   let num = 0, den = 0;
-  values.forEach((y, x) => { num += (x - meanX) * (y - meanY); den += (x - meanX) ** 2; });
+  xs.forEach((x, i) => { num += (x - meanX) * (values[i] - meanY); den += (x - meanX) ** 2; });
   const slope = den ? num / den : 0;
-  // The line's ends are kept within the values actually recorded, so it never reports e.g. -2 occurrences
-  // or 108% (a steep line through few sessions can overshoot).
-  const clamp = (v: number) => Math.min(Math.max(...values), Math.max(Math.min(...values), v));
-  const from = clamp(meanY - slope * meanX);
-  const to = clamp(meanY + slope * meanX);
+  const from = meanY + slope * (xs[0] - meanX);
+  const to = meanY + slope * (xs[n - 1] - meanX);
   if (Math.abs(to - from) < trendThreshold(goal, values)) return { kind: 'stable', from, to };
   const better = goalDirection(goal) === 'decrease' ? to < from : to > from;
   return { kind: better ? 'improving' : 'declining', from, to };
@@ -142,7 +151,11 @@ function analyzeGoal(goal: Goal, number: number, sessions: SessionData[]): GoalA
     })
     .filter((r): r is { session: SessionData; data: Record<string, any> } => !!r.data)
     .map(r => ({ ...r, value: goalMeasure(goal, r.data) }));
-  const recorded = withData.filter((r): r is typeof r & { value: number } => r.value !== null);
+  const recorded = withData
+    .filter((r): r is typeof r & { value: number } => r.value !== null)
+    // Oldest first, whatever order the caller passed the sessions in, so the latest session, the
+    // target streak and the trend all read the sessions in date order.
+    .sort((x, y) => compareSessionsOldestFirst(x.session, y.session));
   // Latency sessions where the student never responded have no time to average, but they are data (and a
   // target can't have been met in them).
   const unmeasuredRows = captureTypeOf(goal) === 'BEHAVIOR_LATENCY'
@@ -157,7 +170,7 @@ function analyzeGoal(goal: Goal, number: number, sessions: SessionData[]): GoalA
   let streak = 0;
   for (let i = met.length - 1; i >= 0 && met[i]; i--) streak++;
   if (latestUnanswered) streak = 0;
-  const trend = fitTrend(goal, values);
+  const trend = fitTrend(goal, recorded.map(r => ({ date: r.session.date, value: r.value })));
   const last = recorded[recorded.length - 1];
   const mastery = masterySessions(goal);
   const status: GoalStatus = recorded.length === 0 ? 'no data'

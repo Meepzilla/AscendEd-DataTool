@@ -3,6 +3,7 @@ import { compareSessionsOldestFirst } from './helpers';
 import * as secureStore from './secure-store';
 import * as idb from './indexed-db-store';
 import { reviveGoalTypes } from './legacy-goal-types';
+import { toSafeErrorMessage } from './error-message';
 
 // Where the student data lives on the device: one list each of students, goal templates and sessions,
 // per user. Student data goes through secure-store (encrypted when passcode protection is on).
@@ -48,7 +49,8 @@ export function readList<T>(key: string | null): T[] | undefined {
     const value = item ? JSON.parse(item, reviveGoalTypes) : [];
     return Array.isArray(value) ? value : undefined;
   } catch (error) {
-    console.warn(`Error reading from localStorage key "${key}":`, error);
+    // Message only, sanitised: a read failure is a storage error, but the error object is never logged.
+    console.warn(`Error reading from localStorage key "${key}": ${toSafeErrorMessage(error)}`);
     return undefined;
   }
 }

@@ -5,18 +5,35 @@
 import type { TextItem } from 'pdfjs-dist/types/src/display/api';
 
 type PdfJs = typeof import('pdfjs-dist/legacy/build/pdf.mjs');
-let pdfjs: Promise<PdfJs> | null = null;
 
-function loadPdfJs(): Promise<PdfJs> {
-  pdfjs ??= import('pdfjs-dist/legacy/build/pdf.mjs').then(lib => {
-    if (typeof window !== 'undefined' && !lib.GlobalWorkerOptions.workerSrc) {
-      // Served from this site (the bundler copies the worker), so it works offline and within the site's CSP.
-      lib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/legacy/build/pdf.worker.min.mjs', import.meta.url).toString();
+/**
+ * A loader whose result is cached — but only while it succeeds. A failed load used to stay rejected
+ * forever for the session (the cached promise was never reset), so one failed pdf.js load meant
+ * every later PDF import failed too. Here a rejection clears the cache, so the next call tries
+ * again; concurrent callers still share the one in-flight load.
+ */
+export function createCachedLoader<T>(load: () => Promise<T>): () => Promise<T> {
+  let cached: Promise<T> | null = null;
+  return () => {
+    if (!cached) {
+      cached = load();
+      cached = cached.catch(error => {
+        cached = null;
+        throw error;
+      });
     }
-    return lib;
-  });
-  return pdfjs;
+    return cached;
+  };
 }
+
+const loadPdfJs = createCachedLoader(async (): Promise<PdfJs> => {
+  const lib = await import('pdfjs-dist/legacy/build/pdf.mjs');
+  if (typeof window !== 'undefined' && !lib.GlobalWorkerOptions.workerSrc) {
+    // Served from this site (the bundler copies the worker), so it works offline and within the site's CSP.
+    lib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/legacy/build/pdf.worker.min.mjs', import.meta.url).toString();
+  }
+  return lib;
+});
 
 /** Lines of text on each page. Throws if the file isn't a PDF or has no text (a scan). */
 export async function readPdfLines(data: Uint8Array): Promise<string[][]> {

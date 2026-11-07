@@ -50,6 +50,16 @@ describe('hosting configuration', () => {
     expect(csp).toContain("frame-ancestors 'none'");
     expect(csp).toContain("connect-src 'self'");
   });
+
+  it('both send HSTS and a Permissions-Policy that disables features the app never uses', () => {
+    // The parity test above pins netlify.toml to the same values, so asserting on the Cloudflare copy
+    // covers both hosts.
+    const rules = parseHeadersFile(read('public/_headers'))['/*'];
+    expect(rules['Strict-Transport-Security']).toBe('max-age=31536000; includeSubDomains');
+    expect(rules['Permissions-Policy']).toBe(
+      'camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()',
+    );
+  });
 });
 
 describe('goal bank data', () => {

@@ -1,15 +1,17 @@
 
 'use client';
 
-import React, { lazy, useState, useEffect, useCallback, Suspense, useMemo, useRef } from 'react';
+import React, { lazy, useState, useEffect, useCallback, Suspense, useMemo, useRef, useSyncExternalStore } from 'react';
 import { useStudentData } from '@/hooks/use-student-data';
 import { useAuth } from '@/hooks/use-auth';
 import { SessionDateProvider } from '@/components/forms/session-date-context';
 import { loadDataEntryDraft, saveDataEntryDraft, hasUnsavedEntry, type DataEntryDraft } from '@/lib/data-entry-draft';
 import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
-import { Info, PlusCircle } from 'lucide-react';
+import { Info, PlusCircle, TriangleAlert } from 'lucide-react';
+import { getStorageFailure, subscribeStorageFailures } from '@/lib/storage-failure';
 import type { Student, StudentSessionState } from '@/lib/types';
 import { MISSED_REASON_SHORT, type MissedReason } from '@/lib/attendance';
 import { taskSteps } from '@/lib/task-analysis';
@@ -117,14 +119,14 @@ export default function DataEntryContent() {
     setStudentSessionStates(prev => syncSessionStates(prev, students, draftRef.current?.students));
   }, [students]);
 
-  // Keep the draft up to date. Only students with unsaved entries are stored.
-  useEffect(() => {
+  // The draft as it stands now, for the autosave below and for retrying a failed save by hand.
+  const buildDraft = useCallback((): DataEntryDraft => {
     const studentsWithEntries = Object.fromEntries(
       Object.values(studentSessionStates)
         .filter(state => selectedStudentIds.includes(state.studentId) && hasUnsavedEntry(state, goalDefaults))
         .map(state => [state.studentId, { activity: state.activity, notes: state.notes, goalData: state.goalData }]),
     );
-    saveDataEntryDraft(uid, {
+    return {
       savedAt: new Date().toISOString(),
       sessionDate: sessionDate?.toISOString(),
       sessionTime,
@@ -136,9 +138,42 @@ export default function DataEntryContent() {
       isHeaderCardCollapsed,
       // Until every student's state is built (first render), keep the draft's entries.
       students: Object.keys(studentSessionStates).length === 0 ? draftRef.current?.students ?? {} : studentsWithEntries,
-    });
-  }, [uid, studentSessionStates, sessionDate, sessionTime, sessionEndTime, selectedStudentIds, focusedStudentSlotIndex,
-      focusedGoalIndexByStudentId, isStudentAccessLocked, isHeaderCardCollapsed, goalDefaults]);
+    };
+  }, [studentSessionStates, sessionDate, sessionTime, sessionEndTime, selectedStudentIds, focusedStudentSlotIndex,
+    focusedGoalIndexByStudentId, isStudentAccessLocked, isHeaderCardCollapsed, goalDefaults]);
+
+  // Whether a draft-save failure toast has already been shown for the current failure, so typing
+  // while storage stays full doesn't stack a toast per keystroke.
+  const draftFailureToastShown = useRef(false);
+  // A draft save that failed in the background (passcode protection on: the encrypted write lands
+  // after the synchronous save returns) is recorded the same way as a synchronous failure.
+  const draftFailure = useSyncExternalStore(subscribeStorageFailures, () => getStorageFailure('draft'));
+
+  // Keep the draft up to date. Only students with unsaved entries are stored.
+  useEffect(() => {
+    const ok = saveDataEntryDraft(uid, buildDraft());
+    if (!ok && !draftFailureToastShown.current) {
+      draftFailureToastShown.current = true;
+      toast({ title: "Couldn't save the draft", description: "This device's storage is full or unavailable, so your unsaved entries are only kept on this screen. Save the sessions now.", variant: 'destructive' });
+    } else if (ok) {
+      draftFailureToastShown.current = false;
+    }
+  }, [uid, buildDraft, toast]);
+
+  // Retries the draft save with the entries as they stand now. The indicator clears itself when
+  // the save lands; if it still fails, the toast says so and the entries stay on screen.
+  const retryDraftSave = useCallback(() => {
+    const ok = saveDataEntryDraft(uid, buildDraft());
+    if (ok) toast({ title: 'Draft saved', description: 'Your unsaved entries are stored on this device again.' });
+    else toast({ title: "Still couldn't save the draft", description: "This device's storage is full or unavailable. Save the sessions now to keep the entries.", variant: 'destructive' });
+  }, [uid, buildDraft, toast]);
+
+  // Students whose unsaved entries the failed draft is (not) keeping, for the recovery indicator.
+  const unsavedStudentNames = useMemo(() =>
+    selectedStudentIds
+      .filter(id => hasUnsavedEntry(studentSessionStates[id], goalDefaults))
+      .map(id => studentSessionStates[id]?.studentName ?? 'A student'),
+    [selectedStudentIds, studentSessionStates, goalDefaults]);
 
   useEffect(() => {
     if (draftHadEntries && !openedSinceAppLoad) {
@@ -205,7 +240,7 @@ export default function DataEntryContent() {
     const state = studentSessionStates[focusedStudentId];
     if (!state) {
         toast({ title: "Error", description: "Session data for the focused student is missing.", variant: "destructive" });
-        addErrorLog({ message: 'Session state missing for focused student on save.', source: 'DataEntryContent.handleSave', details: `Student ID: ${focusedStudentId}`, type: 'error' });
+        addErrorLog({ message: 'Session state missing for focused student on save.', source: 'DataEntryContent.handleSave', type: 'error' });
         return;
     }
     if (isStudentAccessLocked) {
@@ -622,6 +657,26 @@ export default function DataEntryContent() {
           )}
         </Suspense>
         
+        {/* Draft recovery: the autosave could not store the unsaved entries on this device, so they
+            live only in memory on this screen. The indicator names whose entries are at risk and
+            offers a retry; saving the sessions keeps them regardless of the draft. It shows only
+            while there are unsaved entries to lose. */}
+        {draftFailure && unsavedStudentNames.length > 0 && (
+          <Alert variant="destructive" className="mb-3 flex-shrink-0">
+            <TriangleAlert className="h-4 w-4" />
+            <AlertTitle>Unsaved work could not be saved on this device{ draftFailure.quota ? ' — storage is full' : '' }</AlertTitle>
+            <AlertDescription className="space-y-2">
+              <p>
+                {unsavedStudentNames.join(', ')} {unsavedStudentNames.length === 1 ? 'has' : 'have'} entries that are
+                only kept on this screen. If you leave Data Entry before saving, they will be lost.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" size="sm" variant="outline" onClick={retryDraftSave}>Try saving the draft again</Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div ref={headerRef} className="flex-shrink-0">
           <Suspense fallback={<Card><CardContent>Loading header...</CardContent></Card>}>
             <DataEntryHeaderCard
