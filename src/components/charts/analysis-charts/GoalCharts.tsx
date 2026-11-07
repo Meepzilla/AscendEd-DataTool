@@ -29,6 +29,17 @@ interface GoalChartsProps {
 const round = (n: number) => Math.round(n * 10) / 10;
 const PROMPT_LABELS: Record<string, string> = { PartialPhysical: 'Partial physical' };
 
+/** Short labels for the five GAS attainment levels. */
+const GAS_LEVEL_LABELS: Record<number, string> = {
+  [-2]: 'Much less',
+  [-1]: 'Somewhat less',
+  0: 'Expected',
+  1: 'Somewhat more',
+  2: 'Much more',
+};
+const GAS_LEVELS = [-2, -1, 0, 1, 2] as const;
+const gasLevelTick = (level: number) => `${level > 0 ? `+${level}` : level} ${GAS_LEVEL_LABELS[level] ?? ''}`;
+
 interface Recorded {
   session: SessionData;
   data: Record<string, any>;
@@ -145,6 +156,16 @@ const GoalBreakdowns: React.FC<{ goal: Goal; recorded: Recorded[] }> = ({ goal, 
           .map(k => [k.charAt(0).toUpperCase() + k.slice(1), sum(d => Number(d[k]) || 0)]))} />,
     );
   }
+  if (type === 'GOAL_ATTAINMENT_SCALE') {
+    // All five levels, including zeros, so the distribution is visible at a glance.
+    panels.push(
+      <HBars key="gas-levels" title="Sessions at each attainment level" series={COUNT_SERIES}
+        rows={GAS_LEVELS.map(level => ({
+          name: gasLevelTick(level),
+          count: recorded.filter(r => r.value === level).length,
+        }))} />,
+    );
+  }
   if (type === 'BEHAVIOR_ABC') {
     const abc = summarizeAbc({ incidents: data.flatMap(d => (Array.isArray(d.incidents) ? d.incidents : []) as AbcIncident[]) });
     panels.push(
@@ -183,6 +204,9 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[] }> = ({ goal
   const values = recorded.map(r => r.value);
   const average = values.length ? round(values.reduce((a, b) => a + b, 0) / values.length) : null;
   const metCount = target === undefined ? null : values.filter(v => meetsTarget(goal, v, target)).length;
+  // GAS levels run -2 to +2, so the card's Y scale must span the negative domain; every other
+  // type keeps its [0, yMax] scale. The bottom comes from GoalMeasureInfo.min (Track A).
+  const isGas = type === 'GOAL_ATTAINMENT_SCALE';
   const yMax = info.max ?? Math.ceil(Math.max(...values, target ?? 0, 1) * 1.1);
   const notes = recorded.map(r => ({ date: r.session.date, text: goalNotes(r.data) })).filter(n => n.text).slice(-3).reverse();
   const storyWords = type === 'STORY_ELEMENTS' ? recorded.reduce((total, r) => total + scoreStory(r.data).linkingWords, 0) : null;
@@ -226,11 +250,15 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[] }> = ({ goal
                 <LineChart data={points} margin={{ top: 10, right: 20, left: -10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} />
-                  <YAxis domain={[0, yMax]} unit={info.unit === '%' ? '%' : undefined} tickLine={false} axisLine={false} tickMargin={8}
-                    ticks={info.max !== undefined && info.max <= 10 ? Array.from({ length: info.max + 1 }, (_, i) => i) : undefined}
+                  <YAxis domain={[info.min ?? 0, yMax]} unit={info.unit === '%' ? '%' : undefined} tickLine={false} axisLine={false} tickMargin={8}
+                    ticks={isGas ? [...GAS_LEVELS] : (info.max !== undefined && info.max <= 10 ? Array.from({ length: info.max + 1 }, (_, i) => i) : undefined)}
+                    tickFormatter={isGas ? gasLevelTick : undefined}
                     allowDecimals={type === 'BEHAVIOR_DURATION' || type === 'BEHAVIOR_LATENCY'} />
                   <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
-                  {target !== undefined && (
+                  {isGas ? (
+                    <ReferenceLine y={0} stroke="hsl(var(--chart-5))" strokeDasharray="6 4"
+                      label={{ value: 'Expected', position: 'insideTopRight', fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
+                  ) : target !== undefined && (
                     <ReferenceLine y={target} stroke="hsl(var(--chart-5))" strokeDasharray="6 4"
                       label={{ value: direction === 'decrease' ? 'Target (max)' : 'Target', position: 'insideTopRight', fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
                   )}

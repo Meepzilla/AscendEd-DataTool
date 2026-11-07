@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { currentGoalType, reviveGoalTypes } from '../legacy-goal-types';
-import { applyAssignedGoalRenames, applyDefaultTemplateRenames, DEFAULT_GOAL_TEMPLATES } from '../goal-constants';
+import { applyAssignedGoalRenames, applyDefaultTemplateRenames, DEFAULT_GOAL_TEMPLATES, GOAL_TYPE_FIELDS, GOAL_TYPES_WITHOUT_PROMPT_COUNTERS } from '../goal-constants';
 import { goalTypeLabel } from '../helpers';
 import type { GoalTemplate, Student } from '../types';
+import { GOAL_TYPE_VALUES } from '../types';
 
 // The earlier story key and template names are built here rather than written out.
 const EARLIER_KEY = ['STORY', 'OLD'].join('_');
@@ -24,6 +25,26 @@ describe('earlier goal type keys', () => {
   it('labels goal types from their keys', () => {
     expect(goalTypeLabel('STORY_ELEMENTS')).toBe('Story Elements');
     expect(goalTypeLabel('BEHAVIOR_ABC')).toBe('Behavior ABC');
+  });
+});
+
+describe('GOAL_ATTAINMENT_SCALE type', () => {
+  it('is a goal type with its label and fields, and hides the prompt counters', () => {
+    expect(GOAL_TYPE_VALUES).toContain('GOAL_ATTAINMENT_SCALE');
+    expect(goalTypeLabel('GOAL_ATTAINMENT_SCALE')).toBe('Goal Attainment Scale');
+    expect(GOAL_TYPE_FIELDS.GOAL_ATTAINMENT_SCALE).toEqual({ gasLevel: undefined, notes: '' });
+    expect(GOAL_TYPES_WITHOUT_PROMPT_COUNTERS).toContain('GOAL_ATTAINMENT_SCALE');
+  });
+  it('seeds built-in templates at the expected level with baseline -2', () => {
+    const gas = DEFAULT_GOAL_TEMPLATES.filter(t => t.type === 'GOAL_ATTAINMENT_SCALE');
+    expect(gas.length).toBeGreaterThanOrEqual(3);
+    for (const t of gas) {
+      expect(t.sessionTargetValue).toBe(0);
+      expect(t.baseline).toBe(-2);
+      // The goal statement names an attainment level, never "0% accuracy".
+      expect(t.generatedSmartGoal).toContain('attainment level');
+      expect(t.generatedSmartGoal).not.toContain('0% accuracy');
+    }
   });
 });
 

@@ -48,7 +48,7 @@ const appendList = (current: unknown[], value: unknown[]): unknown[] => {
 
 // Numbers that are settings, times or summaries rather than counts: they keep the latest value (summaries are
 // worked out again afterwards).
-const NOT_ADDED = new Set(['rating', 'numberOfTrials', 'runningSince', 'intervalSeconds', 'percentIntervals', 'averageSeconds', 'timerStartedAt', 'cueGivenAt']);
+const NOT_ADDED = new Set(['rating', 'gasLevel', 'numberOfTrials', 'runningSince', 'intervalSeconds', 'percentIntervals', 'averageSeconds', 'timerStartedAt', 'cueGivenAt']);
 const STORY_PART_KEYS = new Set<string>(STORY_PARTS.map(p => p.key));
 
 /** Combines one goal's data from several sessions, oldest first. */
@@ -56,6 +56,9 @@ export function mergeGoalData(parts: Record<string, any>[]): Record<string, any>
   const result: Record<string, any> = {};
   for (const part of parts) {
     for (const [key, value] of Object.entries(part ?? {})) {
+      // Absent, not cleared: a part that never recorded a field (e.g. an untouched GAS goal whose
+      // gasLevel is undefined) must not wipe the level an earlier part recorded.
+      if (value === undefined) continue;
       const current = result[key];
       if (current === undefined) { result[key] = Array.isArray(value) ? [...value] : value; continue; }
       if (key === 'steps' && Array.isArray(current) && Array.isArray(value)) {

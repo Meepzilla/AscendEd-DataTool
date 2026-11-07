@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-06',
+    title: 'Goal Attainment Scale Goals and T-Score Reports',
+    description: 'Goal Attainment Scale is now a goal type, the 21st in the app. Each GAS goal records one of five levels per session, from -2 (much less than expected) to +2 (much more than expected), with 0 as the expected outcome; the five level descriptions can be written in your own words in Edit Goal, and the Data Entry picker shows them with the levels. The analysis report gains a T-score scatter plot over time with an Expected (T = 50) line, a summary table with each goal\'s current level, average level, and sessions at or above expected, and an attainment distribution; each GAS goal card charts its levels from -2 to +2 with its own Expected line, and the printable progress report does the same. T-scores combine all of a student\'s GAS goals with the standard formula, carrying each goal\'s latest level forward to each date.',
+    type: 'feature',
+    icon: Target,
+  },
+  {
+    date: '2026-11-06',
     title: 'Recovery Key, Encrypted Templates and Groups, and Safer Errors and Saving',
     description: 'Setting a passcode now shows a recovery key once, which unlocks the app and sets a new passcode if the passcode is forgotten, and asks for a backup first where data already exists (you can decline and continue). Goal templates, student groups, and custom ABC lists are now encrypted when protection is on, including the built-in templates, which share one list with your own. If a saved list cannot be read, changing or turning off the passcode still works for the lists that can be read, and only the damaged list is left as it is until a backup is restored. Error screens no longer show raw error messages or IDs, imported rows are no longer written to the console, and the app now reports storage-full failures with a warning banner and a draft recovery prompt on Data Entry instead of losing the work silently. Report trends are now fitted against the days between sessions instead of spacing sessions evenly, and the site sends HSTS and Permissions-Policy headers.',
     type: 'improvement',

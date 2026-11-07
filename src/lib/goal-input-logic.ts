@@ -1,5 +1,6 @@
 import type { TrialStatus } from './types';
 import { goalResponses } from './goal-measures';
+import { gasLevelLabel } from './gas';
 import { scoreStory, summarizeCommunicationFunctions } from './goal-constants';
 
 /** The most trials a trial grid can have (the Number of Trials input's maximum). */
@@ -38,6 +39,14 @@ export function applyFieldChange(captureType: string, data: Record<string, any>,
  */
 export function goalAccuracyText(captureType: string, data: Record<string, any>): string {
   switch (captureType) {
+    case 'GOAL_ATTAINMENT_SCALE': {
+      // No level recorded yet means no data, never a 0: 0 is the expected outcome, a real value.
+      const level = data.gasLevel;
+      if (level === undefined || level === null || ![-2, -1, 0, 1, 2].includes(Number(level))) {
+        return 'N/A (no level recorded yet)';
+      }
+      return gasLevelLabel(Number(level));
+    }
     case 'FLUENCY_SYLLABLE_STUTTER': {
       const total = Number(data.totalSyllables || 0);
       const dysfluencies = Number(data.stutteredSyllables || 0) + Number(data.blocks || 0) + Number(data.repetitions || 0) + Number(data.prolongations || 0) + Number(data.interjections || 0);

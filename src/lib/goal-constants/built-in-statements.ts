@@ -24,6 +24,10 @@ function criterion(type: GoalType, target: number | undefined): string {
     case 'QUALITATIVE_OBSERVATION':
     case 'COGNITIVE':
       return `, with a rating of at least ${t} out of 5,`;
+    case 'GOAL_ATTAINMENT_SCALE':
+      // The target is a level, not a percentage: 0 is the expected outcome, and the `?? 80` default above
+      // must never reach a GAS goal.
+      return `, with an attainment level of at least ${target ?? 0} (the expected outcome),`;
     case 'COMMUNICATION_FUNCTIONS':
     case 'BEHAVIOR_FREQUENCY':
     case 'BEHAVIOR_DURATION':
