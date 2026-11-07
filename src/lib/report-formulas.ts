@@ -22,6 +22,7 @@ export function measureFormula(goal: Pick<Goal, 'type' | 'dataCaptureType' | 'ta
     case 'COMMUNICATION_FUNCTIONS': return 'The number of different functions used without a prompt in the session.';
     case 'QUALITATIVE_OBSERVATION':
     case 'COGNITIVE': return 'The 1–5 rating given in the session.';
+    case 'GOAL_ATTAINMENT_SCALE': return 'The attainment level recorded in the session, -2 to +2; 0 is the expected outcome.';
     case 'PROMPTING': return 'Independent ÷ all prompt-level tallies × 100.';
     case 'TASK_ANALYSIS': return 'Steps done independently ÷ steps scored × 100.';
     case 'BEHAVIOR_FREQUENCY': return 'The number of times the behavior was counted in the session.';

@@ -7,6 +7,7 @@ import {
 import { goalMeasure, goalMeasureInfo, goalNotes, goalResponses, meetsTarget, promptTotals, usesPromptCounters, withoutRunningTimers } from './goal-measures';
 import { compareSessionsOldestFirst, formatDate, formatDateOnly, formatGoalTarget, goalTypeLabel, plural } from './helpers';
 import { timePatterns, TIMING_MEASURE_LABELS, WEEKDAY_NAMES } from './behavior-timing';
+import { gasLevelLabel } from './gas';
 import type { TaskStepScore } from './task-analysis';
 import { AIM_RULE_SESSIONS, aimLine, aimStatus, aimValueAt, masterySessions, type AimLine, type AimStatus } from './aim-line';
 
@@ -48,6 +49,7 @@ function measureName(goal: Goal): string {
     case 'BEHAVIOR_INTERVAL': return 'the percentage of intervals with the behavior';
     case 'BEHAVIOR_LATENCY': return 'the average time to respond';
     case 'BEHAVIOR_ABC': return goalDirection(goal) === 'decrease' ? 'the number of problem behavior incidents' : 'the percentage of incidents with the replacement skill';
+    case 'GOAL_ATTAINMENT_SCALE': return 'the attainment level';
     default: return 'accuracy';
   }
 }
@@ -56,6 +58,8 @@ function measureName(goal: Goal): string {
 function formatValue(goal: Goal, value: number): string {
   const v = round(value);
   switch (captureTypeOf(goal)) {
+    // Averages and trend ends are rounded to 0.1 first, so they read as a plain signed number.
+    case 'GOAL_ATTAINMENT_SCALE': return gasLevelLabel(v);
     case 'BEHAVIOR_FREQUENCY':
     case 'COMMUNICATION_FUNCTIONS': return String(v);
     case 'BEHAVIOR_DURATION': return `${v} min`;
@@ -311,6 +315,17 @@ function detailSentences(name: string, goal: Goal, data: Record<string, any>[]):
       .filter(f => f.s > 0).sort((x, y) => y.s - x.s);
     lines.push(`${name} used communicative functions ${spontaneous} times spontaneously and ${prompted} times with a prompt.`);
     if (byFunction.length) lines.push(`The functions used most often without a prompt were ${byFunction.slice(0, 3).map(f => `${f.label} (${f.s})`).join(', ')}.`);
+  }
+
+  if (type === 'GOAL_ATTAINMENT_SCALE') {
+    // The T-score is a per-student composite over all GAS goals, so it is not computed here; the
+    // GAS section of the analysis report shows it. This branch names the per-goal picture.
+    const levels = data.map(d => goalMeasure(goal, d)).filter((v): v is number => v !== null);
+    if (levels.length) {
+      const latest = levels[levels.length - 1];
+      const atOrAbove = levels.filter(v => v >= 0).length;
+      lines.push(`The most recent attainment level was ${gasLevelLabel(latest)} (0 is the expected outcome). ${name} reached or exceeded the expected level in ${atOrAbove} of ${plural(levels.length, 'session')}.`);
+    }
   }
 
   if (type === 'BEHAVIOR_FREQUENCY') {

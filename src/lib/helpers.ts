@@ -78,6 +78,8 @@ export function formatGoalTarget(type: string, target: number, direction?: 'incr
     return direction === 'increase' ? `≥ ${target}% replacement skill` : `≤ ${plural(target, 'incident')}`;
   }
   if (type === 'COMMUNICATION_FUNCTIONS') return plural(target, 'function');
+  // Goal Attainment Scaling: the target is a level, not a percentage — 0 is the expected outcome.
+  if (type === 'GOAL_ATTAINMENT_SCALE') return target === 0 ? 'level 0 (expected outcome)' : `level ${target}`;
   // Observation and cognitive goals are rated 1-5.
   if (type.startsWith('QUALITATIVE') || type === 'COGNITIVE') return `${target} out of 5`;
   return `${target}%`;

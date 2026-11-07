@@ -14,6 +14,7 @@ export interface GoalMeasureInfo {
   label: string;
   unit: string; // appended to values, e.g. '%', ' min'
   max?: number; // fixed top of the chart scale, when there is one
+  min?: number; // fixed bottom of the chart scale, when it isn't 0 (GAS levels run -2 to +2)
 }
 
 /** Correct, incorrect and approximate responses for the trial-based goal types; null for other types. */
@@ -71,6 +72,7 @@ export function goalMeasureInfo(goal: MeasuredGoal): GoalMeasureInfo {
     case 'COMMUNICATION_FUNCTIONS': return { label: 'Functions used spontaneously', unit: '', max: COMMUNICATION_FUNCTIONS.length };
     case 'QUALITATIVE_OBSERVATION':
     case 'COGNITIVE': return { label: 'Rating (1-5)', unit: '', max: 5 };
+    case 'GOAL_ATTAINMENT_SCALE': return { label: 'Attainment level', unit: '', max: 2, min: -2 };
     case 'PROMPTING': return { label: '% independent', unit: '%', max: 100 };
     case 'TASK_ANALYSIS': return { label: '% of steps independent', unit: '%', max: 100 };
     case 'BEHAVIOR_FREQUENCY': return { label: 'Occurrences', unit: '' };
@@ -138,6 +140,12 @@ export function goalMeasure(goal: MeasuredGoal, data: Record<string, any> = {}):
     }
     case 'PROMPTING':
       return promptCount > 0 ? (prompts.Independent / promptCount) * 100 : null;
+    case 'GOAL_ATTAINMENT_SCALE': {
+      // The attained level itself; no level recorded yet is no data, never 0 — 0 is the expected outcome
+      // and charts as a real value.
+      const level = data.gasLevel;
+      return typeof level === 'number' && level >= -2 && level <= 2 ? level : null;
+    }
     case 'TASK_ANALYSIS':
       return taskAnalysisSummary(data).percent;
   }

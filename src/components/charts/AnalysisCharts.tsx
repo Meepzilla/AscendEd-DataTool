@@ -5,8 +5,9 @@ import React, { useMemo, lazy, Suspense } from 'react';
 import type { Student, SessionData, Goal, PromptType } from '@/lib/types';
 import { BEHAVIOR_GOAL_TYPES, captureTypeOf } from '@/lib/goal-constants';
 import { goalMeasure, goalResponses, withoutRunningTimers } from '@/lib/goal-measures';
+import { GAS_LEVELS } from '@/lib/gas';
 import { PROMPT_TYPES } from '@/lib/promptConstants';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertTriangle } from 'lucide-react';
 
@@ -21,6 +22,50 @@ const SyllableFluencyChart = lazy(() => import('./analysis-charts/SyllableFluenc
 const DysfluencyTypesChart = lazy(() => import('./analysis-charts/DysfluencyTypesChart'));
 const DataSummary = lazy(() => import('./analysis-charts/DataSummary'));
 const GoalCharts = lazy(() => import('./analysis-charts/GoalCharts'));
+const GasTScoreChart = lazy(() => import('./analysis-charts/GasTScoreChart'));
+const GasSummaryTable = lazy(() => import('./analysis-charts/GasSummaryTable'));
+
+const GAS_LEVEL_VALUES = GAS_LEVELS.map(info => info.level);
+const GAS_LEVEL_LABELS: Record<number, string> = Object.fromEntries(GAS_LEVELS.map(info => [info.level, info.description]));
+
+/** Sessions at each attainment level across the GAS goals in view (plain bars, no chart library). */
+const GasLevelDistribution: React.FC<{ studentSessions: SessionData[]; goals: Goal[] }> = ({ studentSessions, goals }) => {
+  const counts = useMemo(() => {
+    const tally = new Map<number, number>(GAS_LEVEL_VALUES.map(l => [l, 0]));
+    for (const session of studentSessions) {
+      for (const goal of goals) {
+        const data = session.goals.find(g => g.goalId === goal.id)?.data;
+        if (!data) continue;
+        // The goal measure once Track A wires it; the stored level until then.
+        const value = goalMeasure(goal, withoutRunningTimers(data)) ?? Number(data.gasLevel);
+        if (Number.isFinite(value) && tally.has(value)) tally.set(value, (tally.get(value) ?? 0) + 1);
+      }
+    }
+    return GAS_LEVEL_VALUES.map(level => ({ level, count: tally.get(level) ?? 0 }));
+  }, [studentSessions, goals]);
+  const total = counts.reduce((a, r) => a + r.count, 0);
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Attainment-level distribution</CardTitle>
+        <CardDescription>Sessions at each level across all GAS goals in view{total ? ` (${total} sessions with a recorded level).` : '.'}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {total === 0 ? (
+          <p className="text-sm text-muted-foreground">No GAS levels recorded in the selected date range.</p>
+        ) : counts.map(({ level, count }) => (
+          <div key={level} className="flex items-center gap-3 text-sm">
+            <span className="w-40 shrink-0">{level > 0 ? `+${level}` : level} · {GAS_LEVEL_LABELS[level]}</span>
+            <div className="h-4 flex-1 rounded bg-muted">
+              <div className="h-4 rounded bg-primary" style={{ width: `${(count / total) * 100}%` }} />
+            </div>
+            <span className="w-16 shrink-0 text-right text-muted-foreground">{count} ({Math.round((count / total) * 100)}%)</span>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+};
 
 
 // Helper to transform session data for charts
@@ -163,6 +208,9 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, select
     return activeStudentGoals.some(g => captureTypeOf(g) === 'FLUENCY_SYLLABLE_STUTTER');
   }, [activeStudentGoals, selectedGoalId]);
 
+  const hasGasGoals = goalsInView.some(g => captureTypeOf(g) === 'GOAL_ATTAINMENT_SCALE');
+  const gasGoals = useMemo(() => goalsInView.filter(g => captureTypeOf(g) === 'GOAL_ATTAINMENT_SCALE'), [goalsInView]);
+
 
   if (sessionsLoading) {
     return <AnalysisReportChartsSkeleton />;
@@ -237,6 +285,18 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, select
         </Suspense>
        
       </div>
+      {hasGasGoals && (
+        <div className="space-y-6">
+          <h2 className="text-xl font-semibold">Goal Attainment Scaling</h2>
+          <Suspense fallback={<ChartSuspenseFallback />}>
+            <GasTScoreChart sessions={studentSessions} goals={gasGoals} />
+          </Suspense>
+          <Suspense fallback={<ChartSuspenseFallback />}>
+            <GasSummaryTable sessions={studentSessions} goals={gasGoals} />
+          </Suspense>
+          <GasLevelDistribution studentSessions={studentSessions} goals={gasGoals} />
+        </div>
+      )}
       {!selectedGoalId && goalCharts}
     </div>
   );

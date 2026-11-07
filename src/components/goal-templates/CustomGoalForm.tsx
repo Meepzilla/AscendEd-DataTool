@@ -172,7 +172,7 @@ export default function CustomGoalForm({ student, disabled }: { student: Student
         </div>
         <div className="space-y-1">
           <Label htmlFor="customGoalBaseline">Baseline (optional)</Label>
-          <Input id="customGoalBaseline" type="number" inputMode="decimal" min={0} value={baseline} onChange={e => setBaseline(e.target.value)}
+          <Input id="customGoalBaseline" type="number" inputMode="decimal" min={-2} value={baseline} onChange={e => setBaseline(e.target.value)}
             placeholder={info.unit === '%' ? 'e.g. 40' : ''} disabled={busy} />
         </div>
         <div className="space-y-1">
