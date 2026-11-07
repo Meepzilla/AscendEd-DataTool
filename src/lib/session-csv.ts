@@ -7,6 +7,17 @@ import { sessionMinutes } from './student-overview';
 // Session export as CSV, one row per goal in each session (one row for a session without goals). Goal data
 // fields become "Goal Data: ..." columns; the import (import-data-modal) reads this same layout back.
 
+// CSV formula injection (CWE-1236): a cell that starts with = + - @, a tab or a carriage return is run as a formula
+// by Excel, Numbers and Sheets, so a note such as =HYPERLINK(...) could act when the export is opened. Those cells
+// are written with a leading apostrophe, which spreadsheets show as text. A plain number (a GAS level of -1, say)
+// isn't a formula and stays as it is.
+export const CSV_FORMULA_START = /^(?:[=+@\t\r]|-(?!\d+(?:\.\d+)?$))/;
+
+/** Undoes the export's formula escape when a CSV is imported, so a note exported and imported again is unchanged. */
+export function unescapeCsvFormula(value: string): string {
+  return value.startsWith("'") && CSV_FORMULA_START.test(value.slice(1)) ? value.slice(1) : value;
+}
+
 function sessionRows(sessions: SessionData[]): Record<string, unknown>[] {
   return sessions.flatMap(session => {
     const base = {
@@ -93,7 +104,7 @@ export function buildSessionsCsv(
   const rows = options.deidentified ? deidentifiedSessionRows(sessions) : sessionRows(sessions);
   // Every column any row has (goal types have different data fields), not just the first row's.
   const columns = [...new Set(rows.flatMap(row => Object.keys(row)))];
-  return { csv: Papa.unparse(rows, { columns }), fileName: sessionsCsvFileName(studentName, options, date) };
+  return { csv: Papa.unparse(rows, { columns, escapeFormulae: CSV_FORMULA_START }), fileName: sessionsCsvFileName(studentName, options, date) };
 }
 
 /** Downloads the sessions as a CSV file named for the student (or de-identified, with no name in it). */
