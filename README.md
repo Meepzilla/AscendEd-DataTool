@@ -125,13 +125,20 @@ Updates download in the background and apply the next time the app is opened.
 
 ## Android app
 
-GitHub Actions builds an APK on every push to `master` and on pull requests (`.github/workflows/android-apk.yml`).
+GitHub Actions builds the app on every push to `master` and on pull requests (`.github/workflows/android-apk.yml`). It publishes an installable APK only when the private release key is in the repository's secrets; without it the build is a check only. No signing key is kept in the repository: debug builds use each machine's own debug key and are for testing only.
 
-1. Open the latest **Android APK** run in the repository's **Actions** tab, or start one with **Run workflow**.
-2. Download the **AscendEd-apk** artifact and unzip it to get `app-debug.apk`.
-3. Open the APK on the device and allow installing from that source.
+**Setting up the release key (one time).** On your own computer (not in the repository), with a JDK installed:
 
-Every build is signed with the same key (`android/app/ascended-debug.keystore`), so a new APK installs over the old one and keeps the data. Don't uninstall to update: uninstalling deletes the data.
+```bash
+keytool -genkeypair -v -keystore ascended-release.keystore -alias ascended -keyalg RSA -keysize 4096 -validity 10000
+base64 -w0 ascended-release.keystore > ascended-release.keystore.b64   # macOS: base64 -i ascended-release.keystore
+```
+
+Then in GitHub: Settings → Secrets and variables → Actions → New repository secret, add `ANDROID_KEYSTORE_BASE64` (the contents of the `.b64` file), `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` (`ascended`) and `ANDROID_KEY_PASSWORD`. Keep the keystore file and passwords somewhere safe outside the repository (a password manager): every future update must be signed with the same key, and a lost key means teachers have to reinstall.
+
+**Installing.** Open the latest **Android APK** run in the repository's **Actions** tab (or start one with **Run workflow**), download the **AscendEd-apk** artifact, unzip it to get `AscendEd.apk`, and open it on the device (allow installing from that source). Later APKs install over it and keep the data. Don't uninstall to update: uninstalling deletes the data.
+
+**Moving from an earlier build (one time).** APKs built before 7 November 2026 were signed with a development key that was published in this repository, so Android won't let the new, release-signed APK update them. On each device: save a backup in the old app (Settings → Backup & Restore), uninstall it, install the new APK and restore the backup (Replace).
 
 **Moving to the new app ID (one time).** The app's ID is now `io.github.meepzilla.ascended` (it no longer names a school district), so Android treats it as a different app: it installs next to the old one, doesn't update it, and starts empty. On each device that has the old app:
 1. In the old app, open Settings → Backup & Restore and save a backup.
@@ -143,7 +150,7 @@ To build it locally you need Node.js 22, JDK 21 and the Android SDK:
 
 ```bash
 npm run android:sync
-cd android && ./gradlew assembleDebug    # android/app/build/outputs/apk/debug/app-debug.apk
+cd android && ./gradlew assembleDebug    # a test build: android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
 ## Goal bank
