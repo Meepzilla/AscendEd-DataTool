@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import GenericModal from './generic-modal';
@@ -45,7 +45,8 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
 
 
   const form = useForm<EditAssignedGoalFormData>({
-    resolver: zodResolver(AssignedGoalEditSchema),
+    // zod 4 types a preprocessed field's input as unknown; the form holds values of the output's types.
+    resolver: zodResolver(AssignedGoalEditSchema) as Resolver<EditAssignedGoalFormData>,
     defaultValues: {
       name: '',
       smartGoal: '',

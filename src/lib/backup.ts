@@ -138,7 +138,7 @@ const BackupSessionSchema = z.object({
     goalId: z.string(),
     goalName: z.string(),
     goalType: z.string(),
-    data: z.record(z.any()).optional(),
+    data: z.record(z.string(), z.any()).optional(),
   })).optional(),
   originalGoalHeaders: z.array(BackupGoalSchema).optional(),
   missed: z.object({ reason: z.string(), note: z.string().optional() }).optional(),
