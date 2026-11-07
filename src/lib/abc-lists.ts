@@ -74,7 +74,8 @@ function saveAbcListsNow(lists: AbcLists | null) {
   try {
     if (lists) secureStore.setItem(ABC_LISTS_KEY, JSON.stringify(lists));
     else secureStore.removeItem(ABC_LISTS_KEY);
-    clearStorageFailure('abc-lists');
+    // Cleared once actually stored (with protection on the write finishes in the background).
+    secureStore.afterStored(ABC_LISTS_KEY, () => clearStorageFailure('abc-lists'));
   } catch (error) {
     // Locked (passcode on, not unlocked) is not a storage failure: keep the original error.
     if (error instanceof Error && error.message === 'Locked') throw error;

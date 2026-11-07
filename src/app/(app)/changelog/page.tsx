@@ -18,6 +18,27 @@ interface ChangelogEntry {
 
 const allChangelogEntries: ChangelogEntry[] = [
   {
+    date: '2026-11-07',
+    title: 'Readable GAS Goal Charts',
+    description: 'On a GAS goal\'s report card the level wording no longer crowds the side of the chart, where it wrapped onto itself on a tablet. The chart now shows just the levels (+2 to -2), joined with straight lines, and a key under it lists what each level means for that goal, in its own written descriptions where set. The "Sessions at each attainment level" bars are labeled by level, highest first, and every bar chart\'s labels now stay on one line, shortened to fit, with the full label on hover.',
+    type: 'fix',
+    icon: BarChartHorizontalBig,
+  },
+  {
+    date: '2026-11-07',
+    title: 'Safer Saving with a Passcode, and Across Tabs',
+    description: 'Turning the passcode on now encrypts every saved student, goal and session, not only new saves, and a device that already holds student data is no longer treated as a fresh install. Turning the passcode off is refused while any list can\'t be read, so the key is never removed from data that still needs it, and a failed attempt no longer leaves records locked. A recovery key now also covers records saved under an older passcode. A storage read that fails for a moment (common on iPad) is no longer treated as damaged data: the app asks you to close and reopen it instead of restoring a backup over good data. Saves made in two open tabs at once are no longer lost, the app asks the browser to keep its storage, and the "couldn\'t save" notice clears only after the save has really finished.',
+    type: 'fix',
+    icon: ShieldCheck,
+  },
+  {
+    date: '2026-11-07',
+    title: 'Merged Sessions, CSV Attendance and GAS Fixes',
+    description: 'Merging sessions no longer erases a task analysis step, text field or rating that an earlier part recorded and a later part left empty. Importing a session CSV keeps "Missed" attendance with its reason. Backups with a blank created date restore those students and templates instead of skipping them. For Goal Attainment Scale goals: the progress sidebar shows progress from -2 toward the target instead of 0% or a negative value; the goal text\'s percentage is no longer rewritten to "0%"; importing goals no longer treats the word "gas" (as in "gas, poison and exit") as a GAS goal; chart dates no longer show a day early; the T-score uses all of the student\'s GAS goals and earlier levels whatever date range is chosen; the GAS target is kept to the -2 to +2 scale, and other goal types can no longer save a negative baseline. The progress summary no longer repeats the GAS level or nests brackets.',
+    type: 'fix',
+    icon: Target,
+  },
+  {
     date: '2026-11-06',
     title: 'Clickable Goal Titles, Goal-Specific GAS Scales, and Eight More GAS Goals',
     description: 'On the analysis report, each goal title now opens to show the full goal text, on the per-goal cards and in the GAS summary table. GAS levels are shown in each goal\u2019s own words wherever a level is displayed: the summary table, the per-goal chart and its tooltip, and the T-score tooltip, falling back to the generic labels where a goal has no written scale. The goal template editor gains the five level-description fields, so a template\u2019s scale can be customized there as well as in Edit Goal. The Assign Goals window is wider and its template list taller, so more goals show at once and the custom-goal form has more room. Eight more built-in GAS goals arrive in four new areas: taking turns and staying on topic for social communication, commenting and asking questions with AAC, asking for a break and saying when something is not understood for self-advocacy, and the morning routine and packing up for daily routines. Each starts at level -2 with 0 as the expected outcome and a full written scale.',

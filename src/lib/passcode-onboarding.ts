@@ -8,7 +8,7 @@
 // records which choice was made, and the passcode config itself (ascended_passcode_v1) is the
 // authority on whether protection is on.
 
-import { isPasscodeEnabled } from './secure-store';
+import { idbMayHoldStudentData, isPasscodeEnabled } from './secure-store';
 import { LAST_BACKUP_KEY } from './backup';
 
 /** Plain localStorage key for the first-run decision. Device-wide, like the passcode config. */
@@ -91,7 +91,9 @@ export function hasExistingStudentData(): boolean {
     const key = localStorage.key(i);
     if (key && STUDENT_DATA_KEYS.test(key) && valueHoldsData(localStorage.getItem(key))) return true;
   }
-  return false;
+  // Once the lists move to IndexedDB their localStorage copies are removed, so ask the store too (without
+  // this, an existing install looked like a fresh one: the first-run setup, with no backup step).
+  return idbMayHoldStudentData();
 }
 
 /**

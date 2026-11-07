@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { TrendingUp, ListChecks, BarChart2 } from 'lucide-react';
 import { compareSessionsOldestFirst, formatGoalTarget, studentProfilePath } from '@/lib/helpers';
+import { gasProgress } from '@/lib/gas';
 
 /**
  * Progress (0-100) toward a goal's session target, from the latest session that has data for it: the goal's
@@ -30,6 +31,9 @@ const calculateProgressForGoal = (goal: Goal, latestSessionForGoal: SessionData 
   const value = goalMeasure(goal, data);
   if (value === null) return 0;
   const target = goal.sessionTargetValue;
+  // GAS levels run -2 to +2 with a target of 0 (the expected outcome): measured from the bottom of the scale, not
+  // as a share of the top (which showed level 0 as 0% and -1 as -50%).
+  if (captureTypeOf(goal) === 'GOAL_ATTAINMENT_SCALE') return gasProgress(value, target ?? 0);
   if (target !== undefined && (target > 0 || goalDirection(goal) === 'decrease')) {
     // The value as shown (to 0.1), as meetsTarget compares it.
     return progressTowardTarget(Math.round(value * 10) / 10, target, goalDirection(goal));
@@ -37,7 +41,7 @@ const calculateProgressForGoal = (goal: Goal, latestSessionForGoal: SessionData 
   // No target: how far along the scale, from the bottom (or for a decrease goal, from the top).
   const max = goalMeasureInfo(goal).max;
   if (!max) return 0;
-  const share = Math.min(100, (value / max) * 100);
+  const share = Math.max(0, Math.min(100, (value / max) * 100));
   return goalDirection(goal) === 'decrease' ? 100 - share : share;
 };
 

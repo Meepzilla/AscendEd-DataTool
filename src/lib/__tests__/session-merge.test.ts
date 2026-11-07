@@ -93,16 +93,24 @@ describe('mergeGoalData', () => {
     expect(joined.latencies).toEqual([2, 3, null]);
   });
 
-  it('lets a cleared step, text or single value in a later part overwrite the earlier one', () => {
+  it('keeps step scores from every part: an unscored step in a later part does not erase an earlier score', () => {
+    // Part 1 scored steps a and b; part 2 scored c and d (Data Entry saves every step, unscored ones empty).
     const merged = mergeGoalData([
-      { steps: [{ label: 'a', level: 'Independent' }], notes: 'first', rating: 4, food: 'cracker' },
-      { steps: [{ label: 'a', level: '' }], notes: '', rating: null, food: '' },
+      { steps: [{ label: 'a', level: 'Verbal' }, { label: 'b', level: 'Independent' }, { label: 'c', level: '' }, { label: 'd', level: '' }] },
+      { steps: [{ label: 'a', level: '' }, { label: 'b', level: '' }, { label: 'c', level: 'Independent' }, { label: 'd', level: 'Independent' }] },
     ]);
-    expect(merged.steps).toEqual([{ label: 'a', level: '' }]);
-    // Notes are joined, not single values, so an empty note in the later part adds nothing and keeps the first.
-    expect(merged.notes).toBe('first');
-    expect(merged.rating).toBeNull();
-    expect(merged.food).toBe('');
+    expect(merged.steps.map((s: { level: string }) => s.level)).toEqual(['Verbal', 'Independent', 'Independent', 'Independent']);
+  });
+
+  it('keeps text and single values an earlier part recorded when a later part left them empty', () => {
+    // After saving, Data Entry resets the card, so the next part is saved with empty text fields.
+    const merged = mergeGoalData([
+      { correct: 8, targetSound: '/s/', wordList: 'sun, sock', notes: 'first', rating: 4, food: 'cracker' },
+      { correct: 5, targetSound: '', wordList: '', notes: '', rating: null, food: '' },
+    ]);
+    expect(merged).toMatchObject({ correct: 13, targetSound: '/s/', wordList: 'sun, sock', notes: 'first', rating: 4, food: 'cracker' });
+    // A value the later part did record still wins.
+    expect(mergeGoalData([{ targetSound: '/s/' }, { targetSound: '/z/' }]).targetSound).toBe('/z/');
   });
 });
 

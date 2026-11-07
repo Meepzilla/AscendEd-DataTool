@@ -101,6 +101,20 @@ describe('backup createdAt and date validation', () => {
     expect(parsed.droppedRecords).toEqual([]);
   });
 
+  it('keeps a template or student whose createdAt is null (an invalid Date saved by an older app), backfilled from the export date', () => {
+    const text = legacyText();
+    const exportedAt = (JSON.parse(text) as { exportedAt: string }).exportedAt;
+    const json = JSON.parse(text);
+    json.data.goalTemplates[0].createdAt = null;
+    json.data.students[0].createdAt = null;
+    const parsed = parseBackup(JSON.stringify(json));
+    expect(parsed.data.goalTemplates.map(t => t.id)).toEqual(['t1']);
+    expect(parsed.data.goalTemplates[0].createdAt.toISOString()).toBe(exportedAt);
+    expect(parsed.data.students.map(s => s.id)).toEqual(['ava']);
+    expect(parsed.data.students[0].createdAt).toBe(exportedAt);
+    expect(parsed.droppedRecords).toEqual([]);
+  });
+
   it('drops a student with an invalid createdAt and a session with an invalid date', () => {
     const parsed = parseBackup(mutateLegacy(j => {
       j.data.students.push({ id: 'bad', name: 'Bad', goals: [], createdAt: 'garbage' });

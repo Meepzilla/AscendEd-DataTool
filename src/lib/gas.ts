@@ -36,6 +36,17 @@ export function gasLevelLabel(level: number): string {
 }
 
 /**
+ * Progress (0-100) toward a GAS target, from the bottom of the scale (-2): with the usual target of 0 (the expected
+ * outcome), level 0 or above is 100, -1 is 50 and -2 is 0. Never negative.
+ */
+export function gasProgress(level: number, target = 0): number {
+  const floor = -2;
+  if (level >= target) return 100;
+  if (target <= floor) return 0;
+  return Math.max(0, Math.min(100, ((level - floor) / (target - floor)) * 100));
+}
+
+/**
  * What a level means for one goal: the goal's own written description where set (an entry in
  * gasLevelDescriptions, index level + 2), falling back to the generic description. This is the
  * goal-specific value representation: reports show this instead of the generic label.

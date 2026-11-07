@@ -56,7 +56,8 @@ export function saveStudentGroupsForRestore(userId: string | undefined, groups: 
 function saveStudentGroupsNow(userId: string | undefined, groups: StudentGroup[]) {
   try {
     secureStore.setItem(studentGroupsKey(userId), JSON.stringify(groups));
-    clearStorageFailure('student-groups');
+    // Cleared once actually stored (with protection on the write finishes in the background).
+    secureStore.afterStored(studentGroupsKey(userId), () => clearStorageFailure('student-groups'));
   } catch (error) {
     // Locked (passcode on, not unlocked) is not a storage failure: keep the original error.
     if (error instanceof Error && error.message === 'Locked') throw error;

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { GAS_LEVELS, formatGasLevel, gasLevelDescription, gasLevelLabel, gasLevelText, gasTScore, gasTScoresOverTime } from '../gas';
+import { GAS_LEVELS, formatGasLevel, gasLevelDescription, gasLevelLabel, gasLevelText, gasProgress, gasTScore, gasTScoresOverTime } from '../gas';
+import { matchTextToTarget } from '../goal-blanks';
 import { goalMeasure, goalMeasureInfo, goalResponses } from '../goal-measures';
 import { mergeGoalData } from '../session-merge';
 import { formatGoalTarget } from '../helpers';
@@ -172,9 +173,17 @@ describe('GAS goal editing', () => {
     expect(parsed.gasLevelDescriptions?.[2]).toBe('Joins with prompts');
   });
   it('allows a -2 baseline (the GAS starting point) and rejects -3', () => {
-    const base = { name: 'GAS goal', smartGoal: 'Student will participate in group work.' };
+    const base = { name: 'GAS goal', smartGoal: 'Student will participate in group work.', dataCaptureType: 'GOAL_ATTAINMENT_SCALE' as const };
     expect(AssignedGoalEditSchema.parse({ ...base, baseline: -2 }).baseline).toBe(-2);
     expect(() => AssignedGoalEditSchema.parse({ ...base, baseline: -3 })).toThrow();
+  });
+  it('keeps a GAS target to the scale, and other goals to baselines of 0 or more', () => {
+    const gas = { name: 'GAS goal', smartGoal: 'Student will participate in group work.', dataCaptureType: 'GOAL_ATTAINMENT_SCALE' as const };
+    expect(AssignedGoalEditSchema.parse({ ...gas, sessionTargetValue: 1 }).sessionTargetValue).toBe(1);
+    expect(() => AssignedGoalEditSchema.parse({ ...gas, sessionTargetValue: 3 })).toThrow(/level from -2 to \+2/);
+    const percent = { name: 'Produce /s/', smartGoal: 'Student will produce /s/ in words.', dataCaptureType: 'ARTICULATION' as const };
+    expect(AssignedGoalEditSchema.parse({ ...percent, baseline: 40 }).baseline).toBe(40);
+    expect(() => AssignedGoalEditSchema.parse({ ...percent, baseline: -2 })).toThrow(/0 or greater/);
   });
   it('passes a template baseline of -2 to the assigned goal', () => {
     const template = { ...GAS_TEMPLATES[0], id: 't1', createdAt: new Date() };
@@ -235,5 +244,38 @@ describe('default GAS goals by area', () => {
     expect(parsed.data.goalTemplates[0].gasLevelDescriptions).toHaveLength(5);
     expect(parsed.data.goalTemplates[0].gasLevelDescriptions?.[2]).toContain('beginning, middle, and end');
     expect(parsed.strippedUnknownFields).toBe(false);
+  });
+});
+
+describe('GAS review fixes', () => {
+  it('shows progress toward the target level instead of 0% or a negative share', () => {
+    expect(gasProgress(-2, 0)).toBe(0);
+    expect(gasProgress(-1, 0)).toBe(50);
+    expect(gasProgress(0, 0)).toBe(100);
+    expect(gasProgress(2, 0)).toBe(100);
+    expect(gasProgress(0, 2)).toBe(50);
+    expect(gasProgress(-2, -2)).toBe(100);
+  });
+
+  it('does not rewrite the percentage in a GAS goal\'s text to its level target', () => {
+    const text = 'Student will join group work with 80% accuracy.';
+    expect(matchTextToTarget(text, { type: 'GOAL_ATTAINMENT_SCALE', sessionTargetValue: 0 })).toBe(text);
+  });
+
+  it('treats the word "gas" in ordinary goal text as not a GAS goal', () => {
+    expect(classifyGoal('Student will identify safety signs such as gas, poison and exit with 80% accuracy').type).not.toBe('GOAL_ATTAINMENT_SCALE');
+    expect(classifyGoal('STUDENT WILL IDENTIFY SAFETY SIGNS SUCH AS GAS AND POISON WITH 80% ACCURACY').type).not.toBe('GOAL_ATTAINMENT_SCALE');
+    expect(classifyGoal('GAS: Student will take turns in a group game').type).toBe('GOAL_ATTAINMENT_SCALE');
+    expect(classifyGoal('Student will reach attainment level 0 when joining group work').type).toBe('GOAL_ATTAINMENT_SCALE');
+  });
+
+  it('carries earlier levels forward, so a later date range still counts every goal', () => {
+    const g1 = gasGoal({ id: 'g1' });
+    const g2 = gasGoal({ id: 'g2' });
+    const history = [gasSession('2026-09-01', { g1: -1, g2: -2 }), gasSession('2026-09-08', { g1: 0 })];
+    const points = gasTScoresOverTime(history, [g1, g2]);
+    const last = points[points.length - 1];
+    expect(last.levels).toEqual({ g1: 0, g2: -2 });
+    expect(last.tScore).toBe(gasTScore([0, -2]));
   });
 });

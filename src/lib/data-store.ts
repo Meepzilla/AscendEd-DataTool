@@ -60,6 +60,7 @@ export type MigrationStatus =
   | 'already' // already in IndexedDB; cache filled from its rows
   | 'empty' // nothing stored; the list now writes straight to IndexedDB
   | 'skipped-corrupt' // blob could not be read; left in localStorage, never written over
+  | 'read-failed' // IndexedDB could not be read this time (even after retrying); protected until the app reopens
   | 'skipped-no-idb' // no IndexedDB here; the list stays in localStorage
   | 'failed'; // migration was attempted but verification failed; blob kept, localStorage kept
 
@@ -176,14 +177,24 @@ export async function hydrateLists(keys: StorageKeys): Promise<MigrationResult[]
         results.push({ key, status: await migrateBlob(key, plain) });
         continue;
       }
-      const durable = await secureStore.readDurableList(key);
-      if (durable === undefined) {
+      const read = await secureStore.readDurableListResult(key);
+      if (!read.ok && read.reason === 'read-failed') {
+        // Storage couldn't be read this time (not damaged data): protected from being written over until the
+        // app is opened again, and the user is told to reopen it, not to restore a backup over intact data.
+        secureStore.markListReadFailed(key);
+        secureStore.markListHydrated(key);
+        results.push({ key, status: 'read-failed' });
+        continue;
+      }
+      if (!read.ok) {
         // A row that cannot be decrypted: the whole list stays unreadable, never written over.
         secureStore.markListUndecryptable(key);
         secureStore.markListHydrated(key);
         results.push({ key, status: 'skipped-corrupt' });
         continue;
       }
+      const durable = read.values;
+      secureStore.recordListCount(key, durable.length);
       secureStore.setCachedValue(key, JSON.stringify(durable));
       secureStore.markListHydrated(key);
       results.push({ key, status: 'already' });

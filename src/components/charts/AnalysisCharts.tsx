@@ -169,6 +169,8 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
 
 export interface AnalysisChartsProps {
   studentSessions: SessionData[];
+  /** All the student's sessions, outside the date range too (GAS levels carry forward from before it). */
+  studentHistory?: SessionData[];
   selectedStudent?: Student;
   selectedGoalId?: string;
   sessionsLoading: boolean;
@@ -181,7 +183,7 @@ const ChartSuspenseFallback = () => (
     </Card>
 );
 
-const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, selectedStudent, selectedGoalId, sessionsLoading }) => {
+const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, studentHistory, selectedStudent, selectedGoalId, sessionsLoading }) => {
   
   const activeStudentGoals = useMemo(() => selectedStudent?.goals.filter(g => !g.isArchived) || [], [selectedStudent]);
   const chartData = useMemo(() => transformSessionDataForChart(studentSessions, selectedStudent?.goals || [], selectedGoalId), [studentSessions, selectedStudent?.goals, selectedGoalId]);
@@ -210,6 +212,8 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, select
 
   const hasGasGoals = goalsInView.some(g => captureTypeOf(g) === 'GOAL_ATTAINMENT_SCALE');
   const gasGoals = useMemo(() => goalsInView.filter(g => captureTypeOf(g) === 'GOAL_ATTAINMENT_SCALE'), [goalsInView]);
+  // The composite T-score is the student's, over all their GAS goals, whichever goal is selected.
+  const allGasGoals = useMemo(() => activeStudentGoals.filter(g => captureTypeOf(g) === 'GOAL_ATTAINMENT_SCALE'), [activeStudentGoals]);
 
 
   if (sessionsLoading) {
@@ -289,7 +293,7 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, select
         <div className="space-y-6">
           <h2 className="text-xl font-semibold">Goal Attainment Scaling</h2>
           <Suspense fallback={<ChartSuspenseFallback />}>
-            <GasTScoreLineChart sessions={studentSessions} goals={gasGoals} />
+            <GasTScoreLineChart sessions={studentSessions} history={studentHistory} goals={allGasGoals} />
           </Suspense>
           <Suspense fallback={<ChartSuspenseFallback />}>
             <GasSummaryTable sessions={studentSessions} goals={gasGoals} studentName={selectedStudent?.name} studentIep={selectedStudent?.iep} />

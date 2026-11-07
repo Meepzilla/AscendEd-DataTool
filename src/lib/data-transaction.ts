@@ -115,6 +115,9 @@ export async function runListTransactionAsync({ store, next }: ListTransactionIn
       ok = false;
     }
     if (!ok) {
+      // The failing list is put back too: its write may have changed the in-memory copy before failing (the
+      // durable copy is still the old one), and a later transaction would otherwise snapshot that unsaved value.
+      written.push(key);
       await rollback();
       return false;
     }
