@@ -18,7 +18,7 @@ import { join } from 'node:path';
 
 const OUT = 'out';
 const version = JSON.parse(readFileSync('node_modules/next/package.json', 'utf8')).version;
-const escaped = version.replace(/\./g, '\\.');
+const escaped = version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const quoted = new RegExp(`(["'])${escaped}\\1`, 'g');
 const templateSuffix = new RegExp(`(\`[^\`]*@)${escaped}(\`)`, 'g');
 
