@@ -39,21 +39,10 @@ export default function ManageSessionsPage() {
     deletingSession, // For ConfirmationModal
     mergeSessionRecords,
   } = useStudentData();
-  // Sessions ticked to merge (records of one session saved in parts).
+  // Ticked session ids (records of one session saved in parts, to merge). What counts as selected is worked out
+  // from the sessions on screen below, not from this set alone.
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isMergeOpen, setIsMergeOpen] = useState(false);
-  const selectedSessions = useMemo(() => sessions.filter(s => selectedIds.has(s.sessionId)), [sessions, selectedIds]);
-  const mergeBlocked = mergeProblem(selectedSessions);
-  // A ticked session that is deleted (or merged away) leaves the selection, so the count and the merge check only
-  // ever see sessions that still exist.
-  useEffect(() => {
-    setSelectedIds(prev => {
-      if (prev.size === 0) return prev;
-      const existing = new Set(sessions.map(s => s.sessionId));
-      const kept = [...prev].filter(id => existing.has(id));
-      return kept.length === prev.size ? prev : new Set(kept);
-    });
-  }, [sessions]);
   const toggleSelected = (id: string, on: boolean) => setSelectedIds(prev => {
     const next = new Set(prev);
     if (on) next.add(id); else next.delete(id);
@@ -92,6 +81,15 @@ export default function ManageSessionsPage() {
       .sort((a, b) => compareSessionsOldestFirst(b, a)); // Newest first
   }, [sessions, selectedStudentId, searchTerm, dateRange]);
 
+  // The selection is the ticked sessions that are on screen: one rule covers a session that was deleted, merged
+  // away, or edited out of the filters, so the count, the merge check and the merge itself never include a record
+  // the user can't see.
+  const selectedSessions = useMemo(() => filteredSessions.filter(s => selectedIds.has(s.sessionId)), [filteredSessions, selectedIds]);
+  const mergeBlocked = mergeProblem(selectedSessions);
+  // If the selection stops being mergeable while the dialog is open (a part deleted, say from another tab), close it
+  // for good rather than hiding it, so it can't reappear later without a click on Merge Selected.
+  if (isMergeOpen && mergeBlocked) setIsMergeOpen(false);
+
   if (studentsLoading && students.length === 0) { // Only show global skeleton if students are also loading
     return <SessionsPageSkeleton />;
   }
@@ -112,7 +110,7 @@ export default function ManageSessionsPage() {
         )}
         <MergeSessionsDialog
           sessions={selectedSessions}
-          open={isMergeOpen && !mergeBlocked}
+          open={isMergeOpen}
           onCancel={() => setIsMergeOpen(false)}
           onConfirm={async () => {
             if (await mergeSessionRecords(selectedSessions.map(s => s.sessionId))) setSelectedIds(new Set());
