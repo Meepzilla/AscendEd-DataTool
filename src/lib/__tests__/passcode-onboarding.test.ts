@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { memoryStorage } from './helpers';
 import {
   PASSCODE_DECISION_KEY, getPasscodeDecision, hasExistingStudentData, needsFirstRunPrompt,
-  needsPasscodeOffer, recordPasscodeDecision,
+  needsPasscodeOffer, passcodeGateStatus, recordPasscodeDecision,
 } from '../passcode-onboarding';
 import {
   PASSCODE_BACKUP_DECLINED_KEY, hasBackupOnRecord, hasDeclinedBackupBeforePasscode,
@@ -129,5 +129,23 @@ describe('backup before enabling the passcode', () => {
     storage.setItem(LAST_BACKUP_KEY, 'not a date');
     expect(hasBackupOnRecord()).toBe(false);
     expect(shouldPromptForBackupBeforePasscode()).toBe(true);
+  });
+});
+
+describe('passcodeGateStatus', () => {
+  const base = { passcodeOn: false, unlocked: true, firstRun: false, offer: false, offerPutOff: false };
+  it('asks for a passcode on a fresh install, even though no passcode means "unlocked"', () => {
+    expect(passcodeGateStatus({ ...base, firstRun: true })).toBe('setup');
+  });
+  it('offers a passcode once on an install with data, unless put off for this session', () => {
+    expect(passcodeGateStatus({ ...base, offer: true })).toBe('offer');
+    expect(passcodeGateStatus({ ...base, offer: true, offerPutOff: true })).toBe('open');
+  });
+  it('opens without a passcode once the user has decided', () => {
+    expect(passcodeGateStatus(base)).toBe('open');
+  });
+  it('shows the lock screen until a set passcode is entered', () => {
+    expect(passcodeGateStatus({ ...base, passcodeOn: true, unlocked: false })).toBe('locked');
+    expect(passcodeGateStatus({ ...base, passcodeOn: true, unlocked: true })).toBe('open');
   });
 });

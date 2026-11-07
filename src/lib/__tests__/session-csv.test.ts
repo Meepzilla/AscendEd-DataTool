@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import Papa from 'papaparse';
-import { buildSessionsCsv, deidentifiedSessionRows, sessionsCsvFileName } from '../session-csv';
+import { buildSessionsCsv, deidentifiedSessionRows, sessionsCsvFileName, unescapeCsvFormula } from '../session-csv';
 import { isPlaintextBackupAcknowledged, PLAINTEXT_BACKUP_ACKNOWLEDGEMENT } from '../backup';
 import { session } from './helpers';
 
@@ -113,5 +113,26 @@ describe('plaintext backup acknowledgement', () => {
     expect(isPlaintextBackupAcknowledged('PLAIN')).toBe(false);
     expect(isPlaintextBackupAcknowledged('PLAINTEXT!')).toBe(false);
     expect(isPlaintextBackupAcknowledged('yes')).toBe(false);
+  });
+});
+
+describe('CSV formula injection (CWE-1236)', () => {
+  it('writes formula-like text as text, and leaves numbers alone', () => {
+    const s = session({ notes: '=HYPERLINK("http://example.com","click")', activity: '-cmd|calc', goals: [{ goalId: 'g', goalName: '@SUM(A1)', goalType: 'GOAL_ATTAINMENT_SCALE', data: { gasLevel: -1 } }] });
+    const { csv } = buildSessionsCsv([s], 'Ava');
+    expect(csv).toContain(`"'=HYPERLINK(""http://example.com"",""click"")"`);
+    expect(csv).toContain(`"'-cmd|calc"`);
+    expect(csv).toContain(`"'@SUM(A1)"`);
+    expect(csv).not.toMatch(/,=|,@|,\+/);
+    expect(csv).toMatch(/,-1(,|\r?\n|$)/); // a GAS level of -1 stays a number
+  });
+
+  it('comes back unchanged when the CSV is imported again', () => {
+    const notes = '=1+2 and +plus, -minus @at';
+    const { csv } = buildSessionsCsv([session({ notes, activity: 'plain words' })], 'Ava');
+    const rows = Papa.parse<Record<string, string>>(csv, { header: true, skipEmptyLines: true, transform: (v: string) => unescapeCsvFormula(v) }).data;
+    expect(rows[0]['Session Notes']).toBe(notes);
+    expect(rows[0]['Activity']).toBe('plain words');
+    expect(unescapeCsvFormula("'plain")).toBe("'plain"); // an apostrophe the user typed stays
   });
 });
