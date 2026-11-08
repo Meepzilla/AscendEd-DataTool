@@ -13,6 +13,7 @@ const STORY_PART_KEYS = new Set<string>(STORY_PARTS.map(p => p.key));
 const showValue = (key: string, value: unknown) =>
   STORY_PART_KEYS.has(key) && Number(value) === STORY_PART_NOT_ASSESSED ? 'N/A (not assessed)' : formatDataValue(value);
 import { Badge } from '@/components/ui/badge';
+import { ServiceMinutesSummary } from '@/components/ServiceMinutesField';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Activity, CalendarDays, Clock, FileText, Target, Info } from 'lucide-react';
 
@@ -49,6 +50,12 @@ export default function ViewSessionDetailsModal({ session, isOpen, onClose }: Vi
                 <Clock className="h-5 w-5 text-muted-foreground"/>
                 <strong>Time:</strong> {session.time} {session.endTime ? `- ${session.endTime}`: ''}
               </div>
+              {session.serviceMinutes && (
+                <div className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-muted-foreground"/>
+                  <strong>Service minutes:</strong> <ServiceMinutesSummary session={session} />
+                </div>
+              )}
               <div className="md:col-span-2 flex items-start gap-2">
                 <FileText className="h-5 w-5 text-muted-foreground mt-0.5"/>
                 <div>

@@ -16,6 +16,20 @@ export interface Student {
 
 export type ServicePer = 'week' | 'month' | 'year';
 
+/** The kinds of service a session's minutes can count toward (Related Service versus AAC). */
+export type ServiceType = 'related' | 'aac';
+
+export const SERVICE_TYPE_LABELS: Record<ServiceType, string> = { related: 'Related Service', aac: 'AAC' };
+
+export const SERVICE_TYPES: ServiceType[] = ['related', 'aac'];
+
+/** One required-minutes line on the IEP, for a single service type. */
+export interface ServiceRequirement {
+  type: ServiceType;
+  minutes: number;
+  per: ServicePer;
+}
+
 export interface StudentIep {
   /** Date of the current IEP meeting (YYYY-MM-DD). */
   iepDate?: string;
@@ -26,6 +40,8 @@ export interface StudentIep {
   /** Service minutes the IEP requires, per week, month or school year. */
   serviceMinutes?: number;
   servicePer?: ServicePer;
+  /** Required minutes per service type. When present, this replaces the legacy single serviceMinutes line. */
+  services?: ServiceRequirement[];
 }
 
 export interface Goal {
@@ -126,7 +142,9 @@ export interface SessionData {
   originalGoalHeaders: Goal[]; 
   /** A session that didn't take place (no goal data), with the reason (attendance.ts). */
   missed?: { reason: import('./attendance').MissedReason; note?: string };
-  userId?: string; 
+  /** Explicit per-type minutes for the session; absent means the whole session counts as Related Service. */
+  serviceMinutes?: Partial<Record<ServiceType, number>>;
+  userId?: string;
 }
 
 export interface SessionGoalData {
@@ -224,6 +242,8 @@ export interface StudentSessionState {
   studentName: string;
   activity: string;
   notes: string;
+  /** The session's minutes split across service types; undefined counts the whole session as Related Service. */
+  serviceMinutes?: Partial<Record<ServiceType, number>>;
   goalData: Record<string, SessionGoalData['data']>;
   originalGoalHeaders: Goal[];
 }

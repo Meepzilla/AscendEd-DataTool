@@ -1,8 +1,9 @@
 import Papa from 'papaparse';
 import type { SessionData } from './types';
+import { SERVICE_TYPE_LABELS, SERVICE_TYPES } from './types';
 import { formatDateOnly } from './helpers';
 import { MISSED_REASON_SHORT } from './attendance';
-import { sessionMinutes } from './student-overview';
+import { sessionMinutes, sessionServiceMinutes } from './student-overview';
 
 // Session export as CSV, one row per goal in each session (one row for a session without goals). Goal data
 // fields become "Goal Data: ..." columns; the import (import-data-modal) reads this same layout back.
@@ -20,6 +21,7 @@ export function unescapeCsvFormula(value: string): string {
 
 function sessionRows(sessions: SessionData[]): Record<string, unknown>[] {
   return sessions.flatMap(session => {
+    const allocation = sessionServiceMinutes(session);
     const base = {
       'Session ID': session.sessionId,
       'Student ID': session.studentId,
@@ -27,6 +29,11 @@ function sessionRows(sessions: SessionData[]): Record<string, unknown>[] {
       'Date': formatDateOnly(session.date),
       'Start Time': session.time,
       'End Time': session.endTime || 'N/A',
+      'Minutes': sessionMinutes(session),
+      'Service Minutes by Type': SERVICE_TYPES
+        .filter(type => allocation[type])
+        .map(type => `${SERVICE_TYPE_LABELS[type]}: ${allocation[type]}`)
+        .join('; '),
       'Activity': session.activity,
       'Session Notes': session.notes,
       'Attendance': session.missed ? `Missed: ${MISSED_REASON_SHORT[session.missed.reason]}` : 'Held',

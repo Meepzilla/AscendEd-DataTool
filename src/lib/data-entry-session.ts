@@ -36,7 +36,7 @@ const goalSignature = (goals: Goal[]) =>
 export function syncSessionStates(
   prev: Record<string, StudentSessionState>,
   students: Student[],
-  drafted: Record<string, Pick<StudentSessionState, 'activity' | 'notes' | 'goalData'>> | undefined,
+  drafted: Record<string, Pick<StudentSessionState, 'activity' | 'notes' | 'goalData' | 'serviceMinutes'>> | undefined,
 ): Record<string, StudentSessionState> {
   const next: Record<string, StudentSessionState> = {};
   let changed = false;
@@ -77,6 +77,7 @@ export function syncSessionStates(
       studentName: student.name,
       activity: existing?.activity || draft?.activity || '',
       notes: existing?.notes || draft?.notes || '',
+      ...(existing?.serviceMinutes ?? draft?.serviceMinutes ? { serviceMinutes: existing?.serviceMinutes ?? draft?.serviceMinutes } : {}),
       originalGoalHeaders: goals,
       goalData,
     };
@@ -105,6 +106,7 @@ export function sessionFromState(
     endTime: when.endTime,
     activity: state.activity,
     notes: state.notes,
+    ...(state.serviceMinutes ? { serviceMinutes: state.serviceMinutes } : {}),
     goals,
     originalGoalHeaders: state.originalGoalHeaders,
   };

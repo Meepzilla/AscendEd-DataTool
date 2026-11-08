@@ -2,7 +2,7 @@
 'use client';
 
 import React, { Suspense, lazy } from 'react';
-import type { Student, StudentSessionState, Goal } from '@/lib/types';
+import type { ServiceType, Student, StudentSessionState, Goal } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -16,6 +16,7 @@ import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 import MissedSessionDialog from '@/components/data-entry/MissedSessionDialog';
+import ServiceMinutesField from '@/components/ServiceMinutesField';
 import type { MissedReason } from '@/lib/attendance';
 
 const GoalDataInputComponent = lazy(() => import('@/components/forms/goal-data-input'));
@@ -36,6 +37,9 @@ interface StudentDataCardProps {
   handleStudentSelect: (studentId: string, index: number) => void;
   removeStudentSlot: (index: number) => void;
   handleInputChange: (studentId: string, field: 'activity' | 'notes', value: string) => void;
+  /** The session's length from the shared start and end times; null while either is unset. */
+  sessionDuration: number | null;
+  handleServiceMinutesChange: (studentId: string, next: Partial<Record<ServiceType, number>> | undefined) => void;
   setDataEntryShowArchivedByStudentId: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
   setDataEntryVisibleGoalCountByStudentId: React.Dispatch<React.SetStateAction<Record<string, number>>>;
   handleGoalDataChange: (studentId: string, goalId: string, updatedField: any, newData: any) => void;
@@ -60,6 +64,8 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
   handleStudentSelect,
   removeStudentSlot,
   handleInputChange,
+  sessionDuration,
+  handleServiceMinutesChange,
   setDataEntryShowArchivedByStudentId,
   setDataEntryVisibleGoalCountByStudentId,
   handleGoalDataChange,
@@ -233,6 +239,15 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
               onChange={(e) => handleInputChange(student.id, 'notes', e.target.value)}
               rows={3}
               disabled={isStudentAccessLocked}
+            />
+          </div>
+          <div>
+            <Label>Service Minutes</Label>
+            <ServiceMinutesField
+              duration={sessionDuration}
+              value={state.serviceMinutes}
+              onChange={(next) => handleServiceMinutesChange(student.id, next)}
+              idSuffix={student.id}
             />
           </div>
         </CardContent>

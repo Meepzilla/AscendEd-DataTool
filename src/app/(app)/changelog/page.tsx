@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-08',
+    title: 'Service Minutes by Type',
+    description: 'Required minutes in Edit IEP Details can now be set per service type, Related Service and AAC, each with its own minutes and period. A session\'s minutes can be split between the types on the student\'s card in Data Entry (Split by type) or when editing a session, so a 30 minute session can count 20 minutes of one type and 10 of the other. The Overview, the Progress Report and the session CSV export now break minutes down by type. Sessions recorded before this change count in full as Related Service.',
+    type: 'feature',
+    icon: Clock,
+  },
+  {
+    date: '2026-11-08',
     title: 'Session Dates Show the Right Day',
     description: 'Session dates in the session list, the session viewers, and goal chart notes could show one day early in timezones behind UTC. Date-only values are now read as the day they record everywhere they are shown, and service minute totals no longer round up to a 60-minute hour (119.6 minutes showed as 1 h 60 min). Two libraries the app never used were removed.',
     type: 'fix',

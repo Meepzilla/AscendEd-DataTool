@@ -12,9 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useStudentData } from '@/hooks/use-student-data';
 import { formatDate, formatDateOnly } from '@/lib/helpers';
 import { MISSED_REASON_SHORT } from '@/lib/attendance';
-import { daysUntil, formatMinutes, studentOverview } from '@/lib/student-overview';
+import { daysUntil, formatMinutes, serviceLines, sessionServiceMinutes, studentOverview, type ServiceLineSummary } from '@/lib/student-overview';
 import { schoolYearLabel } from '@/lib/school-year';
-import type { ServicePer, SessionData, Student, StudentIep } from '@/lib/types';
+import type { ServicePer, ServiceRequirement, ServiceType, SessionData, Student, StudentIep } from '@/lib/types';
+import { SERVICE_TYPE_LABELS, SERVICE_TYPES } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 // The student profile's Overview: IEP dates (with how soon each is due), service minutes delivered against what
@@ -46,12 +47,44 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   );
 }
 
+/** One service type's block in the multi-type layout: its own requirement, period and progress. */
+function ServiceLineBlock({ line }: { line: ServiceLineSummary }) {
+  const periodWord = line.per === 'year' ? 'school year' : line.per === 'month' ? 'month' : 'week';
+  const required = line.required ?? 0;
+  return (
+    <div className="space-y-2">
+      <p className="text-sm font-semibold">{line.label}</p>
+      <Row label="Required">{required} min per {periodWord}</Row>
+      <Row label={`This ${periodWord}`}>{line.thisPeriod} of {required} min</Row>
+      <Progress
+        value={required > 0 ? Math.min(100, (line.thisPeriod / required) * 100) : 0}
+        className="h-2"
+        indicatorClassName={line.thisPeriod >= required ? 'bg-green-500' : 'bg-primary'}
+        aria-label={`${line.label} service minutes this ${periodWord}`}
+      />
+      {line.per === 'year' ? (
+        <Row label="Remaining">{Math.max(0, required - line.thisPeriod)} min</Row>
+      ) : (
+        <Row label={`Last ${periodWord}`}>
+          {line.lastPeriod} min
+          {line.lastPeriod < required && <span className="text-xs text-amber-700 dark:text-amber-300">({required - line.lastPeriod} min short)</span>}
+        </Row>
+      )}
+    </div>
+  );
+}
+
 export default function StudentOverviewCard({ student, sessions }: { student: Student; sessions: SessionData[] }) {
   const [editing, setEditing] = useState(false);
   const overview = useMemo(() => studentOverview(sessions, student.iep), [sessions, student.iep]);
   const iep = student.iep ?? {};
   const { service, attendance } = overview;
   const periodWord = service.per === 'year' ? 'school year' : service.per === 'month' ? 'month' : 'week';
+  // Per-type layout once the IEP splits minutes across types, or minutes of a second type were delivered.
+  const lineTypes = new Set(overview.lines.map(l => l.type));
+  const otherTypeDelivered = overview.lines.length === 1 && sessions.some(s =>
+    Object.entries(sessionServiceMinutes(s)).some(([t, v]) => (v ?? 0) > 0 && !lineTypes.has(t as ServiceType)));
+  const multiType = overview.lines.length > 1 || otherTypeDelivered;
   const dates: [string, string | undefined, boolean][] = [
     ['IEP date', iep.iepDate, false],
     ['Annual review due', iep.annualReviewDate, true],
@@ -79,7 +112,15 @@ export default function StudentOverviewCard({ student, sessions }: { student: St
         </Panel>
 
         <Panel icon={Clock} title="Service Minutes">
-          {service.required ? (
+          {multiType ? (
+            <>
+              {overview.lines.map(line => <ServiceLineBlock key={line.type} line={line} />)}
+              <Row label="School year total">{formatMinutes(service.schoolYear)}</Row>
+              {service.untimed > 0 && (
+                <p className="text-xs text-muted-foreground">{service.untimed} session{service.untimed === 1 ? '' : 's'} without start and end times {service.untimed === 1 ? 'isn\'t' : 'aren\'t'} counted.</p>
+              )}
+            </>
+          ) : service.required ? (
             <>
               <Row label="Required">{service.required} min per {periodWord}</Row>
               <Row label={`This ${periodWord}`}>{service.thisPeriod} of {service.required} min</Row>
@@ -134,19 +175,31 @@ export default function StudentOverviewCard({ student, sessions }: { student: St
 function IepDetailsDialog({ student, onClose }: { student: Student; onClose: () => void }) {
   const { updateStudent } = useStudentData();
   const [form, setForm] = useState<StudentIep>({ servicePer: 'week', ...student.iep });
+  const [rows, setRows] = useState<ServiceRequirement[]>(() => {
+    const initial = serviceLines(student.iep);
+    return initial.length > 0 ? initial : [{ type: 'related', minutes: 0, per: 'week' }];
+  });
   const [saving, setSaving] = useState(false);
   const set = (change: Partial<StudentIep>) => setForm(prev => ({ ...prev, ...change }));
+  const setRow = (index: number, change: Partial<ServiceRequirement>) =>
+    setRows(prev => prev.map((row, i) => (i === index ? { ...row, ...change } : row)));
+  const unusedTypes = SERVICE_TYPES.filter(t => !rows.some(r => r.type === t));
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    const minutes = Number(form.serviceMinutes);
+    const services = rows
+      .filter(row => row.minutes > 0)
+      .map(row => ({ type: row.type, minutes: Math.round(row.minutes), per: row.per }));
+    const first = services[0];
     const iep: StudentIep = {
       ...(form.iepDate ? { iepDate: form.iepDate } : {}),
       ...(form.annualReviewDate ? { annualReviewDate: form.annualReviewDate } : {}),
       ...(form.reevaluationDate ? { reevaluationDate: form.reevaluationDate } : {}),
-      ...(minutes > 0 ? { serviceMinutes: Math.round(minutes) } : {}),
-      servicePer: form.servicePer ?? 'week',
+      // The per-type lines are the record; the legacy fields mirror the first line so an older build
+      // reading the same data still shows the primary requirement.
+      ...(first ? { serviceMinutes: first.minutes, servicePer: first.per } : {}),
+      ...(services.length > 0 ? { services } : {}),
     };
     await updateStudent(student.id, { iep });
     setSaving(false);
@@ -177,23 +230,48 @@ function IepDetailsDialog({ student, onClose }: { student: Student; onClose: () 
               <Input id="iep-reeval" type="date" value={form.reevaluationDate ?? ''} onChange={e => set({ reevaluationDate: e.target.value })} />
             </div>
           </div>
-          <div className="flex flex-wrap items-end gap-4">
-            <div className="space-y-1">
-              <Label htmlFor="iep-minutes">Service minutes required</Label>
-              <Input id="iep-minutes" type="number" min="0" step="5" className="w-40" placeholder="e.g., 60"
-                value={form.serviceMinutes ?? ''} onChange={e => set({ serviceMinutes: e.target.value === '' ? undefined : Number(e.target.value) })} />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="iep-per">Per</Label>
-              <Select value={form.servicePer ?? 'week'} onValueChange={v => set({ servicePer: v as ServicePer })}>
-                <SelectTrigger id="iep-per" className="w-40"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="week">Week</SelectItem>
-                  <SelectItem value="month">Month</SelectItem>
-                  <SelectItem value="year">School year</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="space-y-2">
+            <Label>Service minutes required</Label>
+            {rows.map((row, index) => (
+              <div key={row.type} className="flex flex-wrap items-end gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor={`iep-type-${index}`} className="sr-only">Service type</Label>
+                  <Select value={row.type} onValueChange={v => setRow(index, { type: v as ServiceType })}>
+                    <SelectTrigger id={`iep-type-${index}`} className="w-44"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {SERVICE_TYPES
+                        .filter(t => t === row.type || !rows.some(r => r.type === t))
+                        .map(t => <SelectItem key={t} value={t}>{SERVICE_TYPE_LABELS[t]}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor={`iep-minutes-${index}`} className="sr-only">Minutes</Label>
+                  <Input id={`iep-minutes-${index}`} type="number" min="0" step="5" className="w-32" placeholder="e.g., 60"
+                    value={row.minutes || ''} onChange={e => setRow(index, { minutes: e.target.value === '' ? 0 : Number(e.target.value) })} />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor={`iep-per-${index}`} className="sr-only">Per</Label>
+                  <Select value={row.per} onValueChange={v => setRow(index, { per: v as ServicePer })}>
+                    <SelectTrigger id={`iep-per-${index}`} className="w-40"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="week">Week</SelectItem>
+                      <SelectItem value="month">Month</SelectItem>
+                      <SelectItem value="year">School year</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button type="button" variant="ghost" size="sm" onClick={() => setRows(prev => prev.filter((_, i) => i !== index))}>
+                  Remove
+                </Button>
+              </div>
+            ))}
+            {unusedTypes.length > 0 && (
+              <Button type="button" variant="outline" size="sm"
+                onClick={() => setRows(prev => [...prev, { type: unusedTypes[0], minutes: 0, per: prev[0]?.per ?? 'week' }])}>
+                Add service type
+              </Button>
+            )}
           </div>
           <p className="text-xs text-muted-foreground">
             Minutes delivered come from each session&apos;s start and end times in Data Entry. Missed sessions don&apos;t count.
