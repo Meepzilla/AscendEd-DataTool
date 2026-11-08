@@ -20,7 +20,7 @@ const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-08',
     title: 'Service Minutes by Type',
-    description: 'Required minutes in Edit IEP Details can now be set per service type, Related Service and AAC, each with its own minutes and period. A session\'s minutes can be split between the types on the student\'s card in Data Entry (Split by type) or when editing a session, so a 30 minute session can count 20 minutes of one type and 10 of the other. The Overview, the Progress Report and the session CSV export now break minutes down by type. Sessions recorded before this change count in full as Related Service.',
+    description: 'Required minutes in Edit IEP Details can now be set per service type, Related Service and AAC, each with its own minutes and period. A session\'s minutes can be split between the types on the student\'s card in Data Entry (Split by type) or when editing a session, so a 30 minute session can count 20 minutes of one type and 10 of the other. The Overview, the Progress Report and the session CSV export now break minutes down by type. Importing a session CSV reads the by-type minutes back, so a session keeps its split when it is exported and imported again, and the dashboard Service Minutes card breaks each student\'s minutes down by type as well. Sessions recorded before this change count in full as Related Service.',
     type: 'feature',
     icon: Clock,
   },

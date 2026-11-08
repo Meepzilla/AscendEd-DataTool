@@ -56,7 +56,7 @@ export function serviceLines(iep: StudentIep | undefined): ServiceRequirement[] 
  * sanitizing: known types only, finite numbers over 0, rounded). Without one, the whole timed session
  * counts as Related Service. Missed and untimed sessions contribute nothing.
  */
-export function sessionServiceMinutes(session: SessionData): Partial<Record<ServiceType, number>> {
+export function sessionServiceMinutes(session: Pick<SessionData, 'time' | 'endTime' | 'missed' | 'serviceMinutes'>): Partial<Record<ServiceType, number>> {
   if (session.missed) return {};
   if (session.serviceMinutes) {
     const clean: Partial<Record<ServiceType, number>> = {};

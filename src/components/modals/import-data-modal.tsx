@@ -14,7 +14,7 @@ import { checkImportFileSize } from '@/lib/helpers';
 import { sanitizeErrorMessage, toSafeErrorMessage } from '@/lib/error-message';
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 import { missedReasonFromCsv } from '@/lib/attendance';
-import { unescapeCsvFormula } from '@/lib/session-csv';
+import { unescapeCsvFormula, parseServiceMinutesByType } from '@/lib/session-csv';
 
 /** A session read from the file, with the Session ID it had (kept, so a later backup merge matches it). */
 export type { ImportedSession };
@@ -119,6 +119,10 @@ export default function ImportDataModal({ onClose, onImport }: ImportDataModalPr
                 // A missed session comes back missed, with its reason (the export's Attendance column).
                 const missedReason = missedReasonFromCsv(row['Attendance']);
                 if (missedReason) sessionEntry.missed = { reason: missedReason };
+                // The export's by-type minutes come back as the session's split. The column repeats on
+                // every goal row of the session; this first row's value is the one used.
+                const serviceMinutes = parseServiceMinutesByType(row['Service Minutes by Type']);
+                if (serviceMinutes) sessionEntry.serviceMinutes = serviceMinutes;
                 sessionsMap.set(sessionId, sessionEntry);
               }
 
