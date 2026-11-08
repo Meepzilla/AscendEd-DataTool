@@ -15,6 +15,8 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { GOAL_TYPE_FIELDS, captureTypeOf, finalizeBehaviorData } from '@/lib/goal-constants';
 import { formatDate } from '@/lib/helpers';
+import { sessionMinutes } from '@/lib/student-overview';
+import ServiceMinutesField from '@/components/ServiceMinutesField';
 import { format, parse } from 'date-fns';
 
 // The form keeps the date as a local 'yyyy-MM-dd' (an ISO date string would be read as UTC midnight and show
@@ -161,6 +163,16 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
                         <Label htmlFor="sessionEndTimeEdit">End Time</Label>
                         <TimePicker id="sessionEndTimeEdit" value={formData.endTime || ''} onChange={(v) => handleInputChange('endTime', v)} />
                     </div>
+                </div>
+
+                <div>
+                    <Label>Service Minutes</Label>
+                    <ServiceMinutesField
+                        duration={sessionMinutes({ time: formData.time ?? '', endTime: formData.endTime })}
+                        value={formData.serviceMinutes}
+                        onChange={(next) => setFormData(prev => ({ ...prev, serviceMinutes: next }))}
+                        idSuffix="edit-session"
+                    />
                 </div>
 
                 <div>

@@ -114,3 +114,55 @@ describe('serviceStatus (school-year requirement)', () => {
     expect(behind[0].minutes).toBeLessThan(305);
   });
 });
+
+describe('serviceStatus byType', () => {
+  it('breaks a two-line student down by type, with delivered from a split session', () => {
+    const iep = {
+      serviceMinutes: 90, servicePer: 'week' as const,
+      services: [
+        { type: 'related' as const, minutes: 60, per: 'week' as const },
+        { type: 'aac' as const, minutes: 30, per: 'week' as const },
+      ],
+    };
+    const { behind } = serviceStatus(
+      [student('a', 'Ava', iep)],
+      [session({
+        studentId: 'a', date: new Date(2026, 9, 27, 9, 0).toISOString(), time: '09:00', endTime: '09:30',
+        serviceMinutes: { related: 20, aac: 10 },
+      })],
+      NOW,
+    );
+    expect(behind).toHaveLength(1);
+    expect(behind[0]).toMatchObject({ delivered: 30, required: 90 });
+    expect(behind[0].byType).toEqual([
+      { type: 'related', label: 'Related Service', delivered: 20, required: 60 },
+      { type: 'aac', label: 'AAC', delivered: 10, required: 30 },
+    ]);
+  });
+
+  it('leaves byType undefined for a single-line student', () => {
+    const { behind } = serviceStatus(
+      [student('a', 'Ava', { serviceMinutes: 60, servicePer: 'week' as const })],
+      [on('a', 2026, 9, 27)],
+      NOW,
+    );
+    expect(behind).toHaveLength(1);
+    expect(behind[0].byType).toBeUndefined();
+  });
+
+  it('includes a delivered type that has no requirement line, with a null requirement', () => {
+    const { behind } = serviceStatus(
+      [student('a', 'Ava', { serviceMinutes: 60, servicePer: 'week' as const })],
+      [session({
+        studentId: 'a', date: new Date(2026, 9, 27, 9, 0).toISOString(), time: '09:00', endTime: '09:30',
+        serviceMinutes: { aac: 30 },
+      })],
+      NOW,
+    );
+    expect(behind).toHaveLength(1);
+    expect(behind[0].byType).toEqual([
+      { type: 'related', label: 'Related Service', delivered: 0, required: 60 },
+      { type: 'aac', label: 'AAC', delivered: 30, required: null },
+    ]);
+  });
+});

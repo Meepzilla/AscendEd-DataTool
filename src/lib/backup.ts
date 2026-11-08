@@ -96,6 +96,11 @@ const BackupStudentSchema = z.object({
     reevaluationDate: z.string().optional(),
     serviceMinutes: z.number().optional(),
     servicePer: z.enum(['week', 'month', 'year']).optional(),
+    services: z.array(z.object({
+      type: z.enum(['related', 'aac']),
+      minutes: z.number(),
+      per: z.enum(['week', 'month', 'year']),
+    })).optional(),
   }).optional(),
 });
 
@@ -142,6 +147,7 @@ const BackupSessionSchema = z.object({
   })).optional(),
   originalGoalHeaders: z.array(BackupGoalSchema).optional(),
   missed: z.object({ reason: z.string(), note: z.string().optional() }).optional(),
+  serviceMinutes: z.record(z.string(), z.number()).optional(),
   userId: z.string().optional(),
 });
 
@@ -189,9 +195,9 @@ const KNOWN_KEYS: Record<string, Set<string>> = {
   student: new Set(['id', 'name', 'goals', 'createdAt', 'updatedAt', 'userId', 'isArchived', 'iep']),
   goal: new Set(['id', 'name', 'type', 'dataCaptureType', 'smartGoal', 'sessionTargetValue', 'targetDirection', 'isArchived', 'templateId', 'targetDate', 'baseline', 'baselineDate', 'masterySessions', 'taskSteps', 'blankFills', 'gasLevelDescriptions']),
   template: new Set(['id', 'name', 'type', 'dataCaptureType', 'smartGoalPrompt', 'generatedSmartGoal', 'sessionTargetValue', 'createdAt', 'isDefault', 'userId', 'isArchived', 'category', 'source', 'bankId', 'targetDirection', 'retired', 'baseline', 'taskSteps', 'defaultKey', 'deleted', 'gasLevelDescriptions']),
-  session: new Set(['sessionId', 'studentId', 'studentName', 'date', 'time', 'endTime', 'activity', 'notes', 'goals', 'originalGoalHeaders', 'missed', 'userId']),
+  session: new Set(['sessionId', 'studentId', 'studentName', 'date', 'time', 'endTime', 'activity', 'notes', 'goals', 'originalGoalHeaders', 'missed', 'serviceMinutes', 'userId']),
   sessionGoal: new Set(['goalId', 'goalName', 'goalType', 'data']),
-  iep: new Set(['iepDate', 'annualReviewDate', 'reevaluationDate', 'serviceMinutes', 'servicePer']),
+  iep: new Set(['iepDate', 'annualReviewDate', 'reevaluationDate', 'serviceMinutes', 'servicePer', 'services']),
   missed: new Set(['reason', 'note']),
 };
 

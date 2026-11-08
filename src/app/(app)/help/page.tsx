@@ -173,7 +173,7 @@ export default function HelpPage() {
       <Section id="data-entry" icon={ClipboardList} title="Data Entry">
         <Accordion type="multiple" defaultValue={['de-basics']}>
           <Topic value="de-basics" title="Recording a session">
-            <p>Set the session date and start and end times at the top (Reset Time to Now starts the clock again). The start and end times are what count toward service minutes.</p>
+            <p>Set the session date and start and end times at the top (Reset Time to Now starts the clock again). The start and end times are what count toward service minutes. On a student&apos;s card you can split a session&apos;s minutes between Related Service and AAC with Split by type, so each type counts toward its own requirement.</p>
             <p>Each student gets a card with their goals (<B>Add a Student</B> adds another card). Tap a card or press <kbd>1</kbd>–<kbd>4</kbd> to highlight it; the highlighted goal is outlined, and hotkeys add data to it. <B>Pick Student</B> and <B>Pick Goal</B> choose which card and goal are highlighted. Add an activity and notes, then use <B>Save Student</B> for the highlighted student or <B>Save All</B> (<kbd>Ctrl + Enter</kbd>).</p>
             <p>Unsaved work is kept if you switch pages or close the app, until you save or reset it. Timers keep running meanwhile.</p>
           </Topic>
@@ -194,7 +194,7 @@ export default function HelpPage() {
       <Section id="students" icon={UserCog} title="Students and goals">
         <Accordion type="multiple">
           <Topic value="st-profile" title="Student profiles">
-            <p>Choose a student on the <Link href="/student-profile" className="underline hover:text-primary">Students</Link> page. The <B>Overview</B> shows IEP dates (and how soon reviews are due), service minutes delivered against the IEP (per week, month or school year), and attendance for the school year. Use <B>Edit IEP Details</B> to set the dates and required minutes. <B>View Report</B> opens the Reports page for that student, with the Progress Report from there.</p>
+            <p>Choose a student on the <Link href="/student-profile" className="underline hover:text-primary">Students</Link> page. The <B>Overview</B> shows IEP dates (and how soon reviews are due), service minutes delivered against the IEP (per week, month or school year), and attendance for the school year. Use <B>Edit IEP Details</B> to set the dates and the required minutes, which can be set per service type (Related Service and AAC). <B>View Report</B> opens the Reports page for that student, with the Progress Report from there.</p>
             <p>Students you no longer see can be archived (kept, but hidden) or deleted.</p>
           </Topic>
           <Topic value="st-goals" title="Goals, targets and mastery">

@@ -1,5 +1,6 @@
-import type { ServicePer, SessionData, Student } from './types';
-import { daysUntil, servicePeriods, sessionMinutes } from './student-overview';
+import type { ServicePer, ServiceType, SessionData, Student } from './types';
+import { SERVICE_TYPE_LABELS, SERVICE_TYPES } from './types';
+import { daysUntil, serviceLines, servicePeriods, sessionMinutes, sessionServiceMinutes } from './student-overview';
 
 // What the dashboard's "Due soon" and "Service minutes" sections show, worked out from the students' IEP
 // details and their sessions (the same figures as each student's Overview).
@@ -47,6 +48,12 @@ export interface ServiceItem {
   lastShort: number;
   /** Days left in the week or month, today included (0 for school-year requirements). */
   daysLeft: number;
+  /**
+   * Delivered and required minutes per service type for this item's period. Present only when more than
+   * one type is in play: several requirement lines, or delivered minutes in a type no line covers.
+   * `required` is null for a type with no requirement line.
+   */
+  byType?: { type: ServiceType; label: string; delivered: number; required: number | null }[];
 }
 
 export interface ServiceStatus {
@@ -65,7 +72,7 @@ const DAY = 86_400_000;
  */
 export function serviceStatus(
   students: Pick<Student, 'id' | 'name' | 'isArchived' | 'iep'>[],
-  sessions: Pick<SessionData, 'studentId' | 'date' | 'time' | 'endTime' | 'missed'>[],
+  sessions: Pick<SessionData, 'studentId' | 'date' | 'time' | 'endTime' | 'missed' | 'serviceMinutes'>[],
   now = new Date(),
 ): ServiceStatus {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
@@ -82,7 +89,30 @@ export function serviceStatus(
       .reduce((sum, s) => sum + (sessionMinutes(s) ?? 0), 0);
     const { current, previous } = servicePeriods(per, now);
     const delivered = minutesIn(current.start, current.end);
-    const base = { studentId: student.id, studentName: student.name, required, per, delivered };
+    // Per-type figures, over the same current period (a line with its own period is measured over that
+    // period instead, like the Overview does). The breakdown is attached only when more than one type is
+    // in play; single-type students keep the item exactly as it was.
+    const lines = serviceLines(student.iep);
+    const typeMinutesIn = (type: ServiceType, from: Date, to: Date) => held
+      .filter(s => { const t = new Date(s.date).getTime(); return t >= from.getTime() && t < to.getTime(); })
+      .reduce((sum, s) => sum + (sessionServiceMinutes(s)[type] ?? 0), 0);
+    const lineTypes = new Set(lines.map(l => l.type));
+    const deliveredTypes = new Set(SERVICE_TYPES.filter(type => typeMinutesIn(type, current.start, current.end) > 0));
+    const byType = lines.length > 1 || [...deliveredTypes].some(type => !lineTypes.has(type))
+      ? SERVICE_TYPES
+        .filter(type => lineTypes.has(type) || deliveredTypes.has(type))
+        .map(type => {
+          const line = lines.find(l => l.type === type);
+          const range = line && line.per !== per ? servicePeriods(line.per, now).current : current;
+          return {
+            type,
+            label: SERVICE_TYPE_LABELS[type],
+            delivered: typeMinutesIn(type, range.start, range.end),
+            required: line ? line.minutes : null,
+          };
+        })
+      : undefined;
+    const base = { studentId: student.id, studentName: student.name, required, per, delivered, ...(byType ? { byType } : {}) };
     if (per === 'year') {
       const span = current.end.getTime() - current.start.getTime();
       const elapsed = span > 0 ? Math.min(1, Math.max(0, (now.getTime() - current.start.getTime()) / span)) : 0;

@@ -1,8 +1,9 @@
 import Papa from 'papaparse';
-import type { SessionData } from './types';
+import type { ServiceType, SessionData } from './types';
+import { SERVICE_TYPE_LABELS, SERVICE_TYPES } from './types';
 import { formatDateOnly } from './helpers';
 import { MISSED_REASON_SHORT } from './attendance';
-import { sessionMinutes } from './student-overview';
+import { sessionMinutes, sessionServiceMinutes } from './student-overview';
 
 // Session export as CSV, one row per goal in each session (one row for a session without goals). Goal data
 // fields become "Goal Data: ..." columns; the import (import-data-modal) reads this same layout back.
@@ -18,8 +19,29 @@ export function unescapeCsvFormula(value: string): string {
   return value.startsWith("'") && CSV_FORMULA_START.test(value.slice(1)) ? value.slice(1) : value;
 }
 
+/**
+ * Reads back the export's "Service Minutes by Type" cell ("Related Service: 20; AAC: 10") as a session's
+ * per-type allocation, the inverse of the formatting in sessionRows below. Labels match SERVICE_TYPE_LABELS
+ * case-insensitively; only positive entries are kept, and a cell with no parseable positive entry returns
+ * undefined, so the imported session carries no allocation, as sessions exported before the column existed do.
+ */
+export function parseServiceMinutesByType(value: string | undefined): Partial<Record<ServiceType, number>> | undefined {
+  if (!value) return undefined;
+  const typeByLabel = new Map(SERVICE_TYPES.map(type => [SERVICE_TYPE_LABELS[type].toLowerCase(), type]));
+  const allocation: Partial<Record<ServiceType, number>> = {};
+  for (const entry of value.split(';')) {
+    const match = /^\s*(.+?)\s*:\s*(\d+(?:\.\d+)?)\s*$/.exec(entry);
+    if (!match) continue;
+    const type = typeByLabel.get(match[1].toLowerCase());
+    const minutes = Number(match[2]);
+    if (type && Number.isFinite(minutes) && minutes > 0) allocation[type] = minutes;
+  }
+  return Object.keys(allocation).length > 0 ? allocation : undefined;
+}
+
 function sessionRows(sessions: SessionData[]): Record<string, unknown>[] {
   return sessions.flatMap(session => {
+    const allocation = sessionServiceMinutes(session);
     const base = {
       'Session ID': session.sessionId,
       'Student ID': session.studentId,
@@ -27,6 +49,11 @@ function sessionRows(sessions: SessionData[]): Record<string, unknown>[] {
       'Date': formatDateOnly(session.date),
       'Start Time': session.time,
       'End Time': session.endTime || 'N/A',
+      'Minutes': sessionMinutes(session),
+      'Service Minutes by Type': SERVICE_TYPES
+        .filter(type => allocation[type])
+        .map(type => `${SERVICE_TYPE_LABELS[type]}: ${allocation[type]}`)
+        .join('; '),
       'Activity': session.activity,
       'Session Notes': session.notes,
       'Attendance': session.missed ? `Missed: ${MISSED_REASON_SHORT[session.missed.reason]}` : 'Held',

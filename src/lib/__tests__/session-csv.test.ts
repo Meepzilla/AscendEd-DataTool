@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import Papa from 'papaparse';
-import { buildSessionsCsv, deidentifiedSessionRows, sessionsCsvFileName, unescapeCsvFormula } from '../session-csv';
+import { buildSessionsCsv, deidentifiedSessionRows, parseServiceMinutesByType, sessionsCsvFileName, unescapeCsvFormula } from '../session-csv';
 import { isPlaintextBackupAcknowledged, PLAINTEXT_BACKUP_ACKNOWLEDGEMENT } from '../backup';
 import { session } from './helpers';
 
@@ -134,5 +134,41 @@ describe('CSV formula injection (CWE-1236)', () => {
     expect(rows[0]['Session Notes']).toBe(notes);
     expect(rows[0]['Activity']).toBe('plain words');
     expect(unescapeCsvFormula("'plain")).toBe("'plain"); // an apostrophe the user typed stays
+  });
+});
+
+describe('parseServiceMinutesByType', () => {
+  it('parses a full split', () => {
+    expect(parseServiceMinutesByType('Related Service: 20; AAC: 10')).toEqual({ related: 20, aac: 10 });
+  });
+
+  it('parses a single type', () => {
+    expect(parseServiceMinutesByType('AAC: 15')).toEqual({ aac: 15 });
+  });
+
+  it('matches labels case-insensitively, ignoring surrounding space', () => {
+    expect(parseServiceMinutesByType(' related service : 20 ; aac: 5')).toEqual({ related: 20, aac: 5 });
+  });
+
+  it('returns undefined for garbage, empty, and missing values', () => {
+    expect(parseServiceMinutesByType('nonsense')).toBeUndefined();
+    expect(parseServiceMinutesByType('Related Service: twenty')).toBeUndefined();
+    expect(parseServiceMinutesByType('')).toBeUndefined();
+    expect(parseServiceMinutesByType(undefined)).toBeUndefined();
+  });
+
+  it('returns undefined when every entry is zero, and drops zero entries from a split', () => {
+    expect(parseServiceMinutesByType('Related Service: 0; AAC: 0')).toBeUndefined();
+    expect(parseServiceMinutesByType('Related Service: 0; AAC: 10')).toEqual({ aac: 10 });
+  });
+
+  it('round-trips the export format for a split session', () => {
+    const { csv } = buildSessionsCsv(
+      [session({ time: '09:00', endTime: '09:30', serviceMinutes: { related: 20, aac: 10 } })],
+      'Ava',
+    );
+    const rows = Papa.parse<Record<string, string>>(csv, { header: true, skipEmptyLines: true }).data;
+    expect(rows[0]['Service Minutes by Type']).toBe('Related Service: 20; AAC: 10');
+    expect(parseServiceMinutesByType(rows[0]['Service Minutes by Type'])).toEqual({ related: 20, aac: 10 });
   });
 });

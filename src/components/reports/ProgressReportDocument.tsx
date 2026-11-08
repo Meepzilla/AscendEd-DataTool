@@ -81,6 +81,15 @@ function ServiceSection({ service }: { service: PeriodService }) {
   if (service.required && service.per === 'year') {
     rows.push(['Share of the yearly requirement', `${Math.round((service.delivered / service.required) * 100)}%`]);
   }
+  const byTypeRows: [string, string][] = service.byType.length > 1
+    ? service.byType.flatMap((line): [string, string][] => {
+        const entries: [string, string][] = [[`${line.label} delivered`, `${line.delivered} min`]];
+        if (line.required !== null && line.expected !== null) {
+          entries.push([`${line.label} expected this period`, `${line.expected} min (of ${line.required} min required)`]);
+        }
+        return entries;
+      })
+    : [];
   return (
     <section className="mt-6 report-avoid-break" aria-labelledby="report-service">
       <h2 id="report-service" className="mb-2 text-sm font-bold uppercase tracking-wide text-[hsl(var(--report-accent))]">Service Minutes</h2>
@@ -92,6 +101,16 @@ function ServiceSection({ service }: { service: PeriodService }) {
           </div>
         ))}
       </dl>
+      {byTypeRows.length > 0 && (
+        <dl className="mt-2 grid gap-x-8 gap-y-1 sm:grid-cols-2">
+          {byTypeRows.map(([term, value]) => (
+            <div key={term} className="flex justify-between gap-3 border-b border-border/60 py-1">
+              <dt className="text-muted-foreground">{term}</dt>
+              <dd className="font-semibold">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
       <p className="mt-1 text-[11px] text-muted-foreground">
         From each session&apos;s start and end times; missed sessions aren&apos;t counted
         {service.untimed ? `, and ${service.untimed} session${service.untimed === 1 ? '' : 's'} without times ${service.untimed === 1 ? 'isn\'t' : 'aren\'t'} either` : ''}.
