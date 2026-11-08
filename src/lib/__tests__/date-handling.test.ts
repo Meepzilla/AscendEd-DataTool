@@ -1,8 +1,23 @@
 import { describe, expect, it } from 'vitest';
-import { compareSessionsOldestFirst, formatDateOnly, parseDateOnly, sessionTimestamp } from '../helpers';
+import { compareSessionsOldestFirst, formatDate, formatDateOnly, parseDateOnly, sessionTimestamp } from '../helpers';
 
 // Date-only values (YYYY-MM-DD) are stored days, not instants: in America/Los_Angeles, reading one as UTC
 // midnight lands on the previous evening. These run under TZ=America/Los_Angeles (see the test command).
+
+describe('formatDate', () => {
+  it('shows a date-only string as the stored day, not the day before', () => {
+    expect(formatDate('2026-08-01')).toBe('Aug 1, 2026');
+    expect(formatDate('2026-01-01')).toBe('Jan 1, 2026');
+    expect(formatDate('2026-11-07')).toBe('Nov 7, 2026');
+  });
+  it('leaves full timestamps and Date objects alone', () => {
+    expect(formatDate('2026-10-05T09:00:00.000Z')).toBe('Oct 5, 2026');
+    expect(formatDate(new Date(2026, 10, 7))).toBe('Nov 7, 2026');
+  });
+  it('still reports an invalid date', () => {
+    expect(formatDate('not-a-date')).toBe('Invalid Date');
+  });
+});
 
 describe('formatDateOnly', () => {
   it('shows the stored day, not the day before', () => {

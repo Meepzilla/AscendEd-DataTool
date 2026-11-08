@@ -13,7 +13,10 @@ export function formatDate(date: Date | string): string {
   if (!date) return 'Invalid Date';
   let d: Date;
   if (typeof date === 'string') {
-    d = new Date(date);
+    // A date-only value (YYYY-MM-DD) is a stored day, not an instant, so it reads as that day in local
+    // time, the same rule as formatDateOnly and parseDateOnly. Reading one as UTC midnight shows the
+    // day before in timezones behind UTC.
+    d = parseDateOnly(date);
   } else {
     d = date;
   }

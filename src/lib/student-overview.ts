@@ -100,10 +100,11 @@ export function daysUntil(date: string, now = new Date()): number {
   return Math.round((dateValue(date) - today) / 86_400_000);
 }
 
-/** e.g. "2 h 15 min", "45 min". */
+/** e.g. "2 h 15 min", "45 min". The total is rounded first, so 119.6 shows "2 h", never "1 h 60 min". */
 export function formatMinutes(minutes: number): string {
-  const h = Math.floor(minutes / 60);
-  const m = Math.round(minutes % 60);
+  const total = Math.round(minutes);
+  const h = Math.floor(total / 60);
+  const m = total % 60;
   return h ? `${h} h${m ? ` ${m} min` : ''}` : `${m} min`;
 }
 

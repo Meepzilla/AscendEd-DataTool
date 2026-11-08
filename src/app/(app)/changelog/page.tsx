@@ -18,6 +18,13 @@ interface ChangelogEntry {
 
 const allChangelogEntries: ChangelogEntry[] = [
   {
+    date: '2026-11-08',
+    title: 'Session Dates Show the Right Day',
+    description: 'Session dates in the session list, the session viewers, and goal chart notes could show one day early in timezones behind UTC. Date-only values are now read as the day they record everywhere they are shown, and service minute totals no longer round up to a 60-minute hour (119.6 minutes showed as 1 h 60 min). Two libraries the app never used were removed.',
+    type: 'fix',
+    icon: ShieldCheck,
+  },
+  {
     date: '2026-11-07',
     title: 'Library Security Updates',
     description: 'Sixteen security findings in the app\'s libraries are fixed, so the dependency check is clear. Nothing about how the app works changes.',
