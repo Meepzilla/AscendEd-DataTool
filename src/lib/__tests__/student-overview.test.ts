@@ -1,6 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { sessionMinutes, servicePeriods, studentOverview } from '../student-overview';
+import { formatMinutes, sessionMinutes, servicePeriods, studentOverview } from '../student-overview';
 import { session } from './helpers';
+
+describe('formatMinutes', () => {
+  it('formats whole minutes as before', () => {
+    expect(formatMinutes(0)).toBe('0 min');
+    expect(formatMinutes(45)).toBe('45 min');
+    expect(formatMinutes(120)).toBe('2 h');
+    expect(formatMinutes(135)).toBe('2 h 15 min');
+  });
+  it('never shows 60 minutes in the minutes place', () => {
+    expect(formatMinutes(119.6)).toBe('2 h');
+    expect(formatMinutes(59.5)).toBe('1 h');
+    expect(formatMinutes(59.4)).toBe('59 min');
+    expect(formatMinutes(89.6)).toBe('1 h 30 min');
+  });
+});
 
 describe('sessionMinutes', () => {
   it('is the minutes between start and end', () => {
