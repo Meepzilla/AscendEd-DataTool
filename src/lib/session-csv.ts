@@ -13,10 +13,18 @@ import { sessionMinutes, sessionServiceMinutes } from './student-overview';
 // are written with a leading apostrophe, which spreadsheets show as text. A plain number (a GAS level of -1, say)
 // isn't a formula and stays as it is.
 export const CSV_FORMULA_START = /^(?:[=+@\t\r]|-(?!\d+(?:\.\d+)?$))/;
+// The same starter hiding behind spaces or tabs is also a formula: spreadsheets strip leading
+// whitespace before deciding, so " =HYPERLINK(...)" evaluates exactly like "=HYPERLINK(...)". One
+// pattern covers both, because Papa Parse applies escapeFormulae as a single RegExp. The
+// plain-number guard still applies to the starter once any whitespace is skipped, so a negative
+// number such as " -5" stays a number.
+export const CSV_FORMULA_ESCAPE = /^(?:[\t ]*(?:[=+@]|-(?!\d+(?:\.\d+)?$))|[=+@\t\r]|-(?!\d+(?:\.\d+)?$))/;
 
 /** Undoes the export's formula escape when a CSV is imported, so a note exported and imported again is unchanged. */
 export function unescapeCsvFormula(value: string): string {
-  return value.startsWith("'") && CSV_FORMULA_START.test(value.slice(1)) ? value.slice(1) : value;
+  if (!value.startsWith("'")) return value;
+  const rest = value.slice(1);
+  return CSV_FORMULA_ESCAPE.test(rest) ? rest : value;
 }
 
 /**
@@ -131,7 +139,7 @@ export function buildSessionsCsv(
   const rows = options.deidentified ? deidentifiedSessionRows(sessions) : sessionRows(sessions);
   // Every column any row has (goal types have different data fields), not just the first row's.
   const columns = [...new Set(rows.flatMap(row => Object.keys(row)))];
-  return { csv: Papa.unparse(rows, { columns, escapeFormulae: CSV_FORMULA_START }), fileName: sessionsCsvFileName(studentName, options, date) };
+  return { csv: Papa.unparse(rows, { columns, escapeFormulae: CSV_FORMULA_ESCAPE }), fileName: sessionsCsvFileName(studentName, options, date) };
 }
 
 /** Downloads the sessions as a CSV file named for the student (or de-identified, with no name in it). */
