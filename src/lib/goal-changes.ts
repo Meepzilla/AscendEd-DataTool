@@ -1,4 +1,4 @@
-import type { Goal, GoalTemplate, TargetDirection } from '@/lib/types';
+import type { Goal, GoalTemplate, Student, TargetDirection } from '@/lib/types';
 import { goalTypeLabel } from '@/lib/helpers';
 import { formatGasLevel } from '@/lib/gas';
 
@@ -209,4 +209,36 @@ export function goalTemplateChanges(original: GoalTemplate, values: GoalTemplate
     changes.push({ label: 'Goal direction', from: formatDirection(original.targetDirection), to: formatDirection(values.targetDirection) });
   }
   return changes;
+}
+
+/** A student's goals with one more added (assigning a goal to a student). */
+export function goalsWithAdded(goals: Goal[], goal: Goal): Goal[] {
+  return [...goals, goal];
+}
+
+/** A student's goals without the named one (removing a goal from a student). */
+export function goalsWithout(goals: Goal[], goalId: string): Goal[] {
+  return goals.filter(g => g.id !== goalId);
+}
+
+/** A student's goals with the named one updated in place (editing an assigned goal). */
+export function goalsWithUpdated(goals: Goal[], goalId: string, data: Partial<Goal>): Goal[] {
+  return goals.map(g => (g.id === goalId ? { ...g, ...data } : g));
+}
+
+/**
+ * The students list with one student's goals replaced by `change` applied to that student's
+ * goals as they stand in `students` right now, and the record marked updated at `updatedAt`.
+ * Goal changes are computed through this, from the latest stored list at the moment of the
+ * write: a goals list built from an older snapshot and written back over the record would
+ * silently undo any goal change that landed in between. Null when the student isn't there.
+ */
+export function withStudentGoals(
+  students: Student[],
+  studentId: string,
+  change: (goals: Goal[]) => Goal[],
+  updatedAt: string,
+): Student[] | null {
+  if (!students.some(s => s.id === studentId)) return null;
+  return students.map(s => (s.id === studentId ? { ...s, goals: change(s.goals), updatedAt } : s));
 }
