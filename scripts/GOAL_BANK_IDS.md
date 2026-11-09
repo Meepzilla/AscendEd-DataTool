@@ -2,7 +2,7 @@
 
 Bank IDs are keyed to a persistent name mapping, so they no longer depend on the row order of the
 source CSV. Outputs are written atomically, so an interrupted run cannot leave a mixed set of files.
-This document describes the fixed script staged next to it. The script itself is a drop-in replacement:
+The updated script is a drop-in replacement:
 same command line, same inputs, one new state file.
 
 ## The identity change
