@@ -19,10 +19,10 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-09',
-    title: 'Import and Backup Safety Fixes',
-    description: 'Spreadsheet files now stop cleanly with a clear message when a file is far larger inside than it looks, names rows or columns far beyond any real class list, or carries dates outside the supported range, instead of freezing the app or failing with a confusing error. A backup file whose contents were tampered with is now rejected up front instead of making the app hang while opening it. Session CSV exports also neutralize a formula hidden behind leading spaces, the same protection formulas at the start of a cell already had.',
+    title: 'Chart and Timing Dates Show the Right Day',
+    description: 'Sessions brought in by import carry just a date, and that date was being read as the evening before in US timezones. Behavior timing reports could drop events recorded during those sessions or place them on the wrong day, and the day-of-week patterns shifted by a day. Charts grouped and labeled those sessions under the previous day as well. Service minutes recorded on the first day of a week or month counted toward the week or month before. All of these now use the day the session actually happened.',
     type: 'fix',
-    icon: ShieldCheck,
+    icon: CalendarClock,
   },
   {
     date: '2026-11-08',
