@@ -1,6 +1,7 @@
 import type { ServicePer, ServiceType, SessionData, Student } from './types';
 import { SERVICE_TYPE_LABELS, SERVICE_TYPES } from './types';
 import { daysUntil, serviceLines, servicePeriods, sessionMinutes, sessionServiceMinutes } from './student-overview';
+import { parseDateOnly } from './helpers';
 
 // What the dashboard's "Due soon" and "Service minutes" sections show, worked out from the students' IEP
 // details and their sessions (the same figures as each student's Overview).
@@ -85,7 +86,7 @@ export function serviceStatus(
     const per = student.iep?.servicePer ?? 'week';
     const held = sessions.filter(s => s.studentId === student.id && !s.missed);
     const minutesIn = (from: Date, to: Date) => held
-      .filter(s => { const t = new Date(s.date).getTime(); return t >= from.getTime() && t < to.getTime(); })
+      .filter(s => { const t = parseDateOnly(s.date).getTime(); return t >= from.getTime() && t < to.getTime(); })
       .reduce((sum, s) => sum + (sessionMinutes(s) ?? 0), 0);
     const { current, previous } = servicePeriods(per, now);
     const delivered = minutesIn(current.start, current.end);
@@ -94,7 +95,7 @@ export function serviceStatus(
     // in play; single-type students keep the item exactly as it was.
     const lines = serviceLines(student.iep);
     const typeMinutesIn = (type: ServiceType, from: Date, to: Date) => held
-      .filter(s => { const t = new Date(s.date).getTime(); return t >= from.getTime() && t < to.getTime(); })
+      .filter(s => { const t = parseDateOnly(s.date).getTime(); return t >= from.getTime() && t < to.getTime(); })
       .reduce((sum, s) => sum + (sessionServiceMinutes(s)[type] ?? 0), 0);
     const lineTypes = new Set(lines.map(l => l.type));
     const deliveredTypes = new Set(SERVICE_TYPES.filter(type => typeMinutesIn(type, current.start, current.end) > 0));

@@ -10,7 +10,7 @@ import {
   type AbcIncident,
 } from '@/lib/goal-constants';
 import { goalMeasure, goalMeasureInfo, goalResponses, goalNotes, meetsTarget, promptTotals, usesPromptCounters, withoutRunningTimers } from '@/lib/goal-measures';
-import { formatDate, formatGoalTarget, goalTypeLabel } from '@/lib/helpers';
+import { formatDate, formatGoalTarget, goalTypeLabel, parseDateOnly } from '@/lib/helpers';
 import BehaviorTimeCharts from './BehaviorTimeCharts';
 import StatTile from './StatTile';
 import { goalStatExplanations } from '@/lib/report-formulas';
@@ -58,7 +58,7 @@ export function recordedSessions(goal: Goal, sessions: SessionData[], unanswered
     let value = goalMeasure(goal, data);
     if (value === null && unanswered && captureTypeOf(goal) === 'BEHAVIOR_LATENCY' && summarizeLatency(data).trialCount > 0) value = NaN;
     if (value === null) continue;
-    const day = new Date(session.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const day = parseDateOnly(session.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     seen[day] = (seen[day] || 0) + 1;
     recorded.push({ session, data, value: round(value), label: seen[day] > 1 ? `${day} (${seen[day]})` : day });
   }

@@ -1,5 +1,6 @@
 import type { SessionData } from './types';
 import { isReplacementIncident, summarizeIntervals, type AbcIncident } from './goal-constants';
+import { parseDateOnly } from './helpers';
 
 // When behavior happened, for time-of-day, day-of-week and within-session patterns.
 //
@@ -33,7 +34,7 @@ export const TIMING_MEASURE_LABELS: Record<TimingMeasure, { total: string; unit:
 
 /** The session's start as a date and time (its date with the start time, if one was entered). */
 export function sessionStart(session: Pick<SessionData, 'date' | 'time'>): Date | null {
-  const day = new Date(session.date);
+  const day = parseDateOnly(session.date);
   if (Number.isNaN(day.getTime())) return null;
   const match = /^(\d{1,2}):(\d{2})/.exec(session.time || '');
   const start = new Date(day.getFullYear(), day.getMonth(), day.getDate());
