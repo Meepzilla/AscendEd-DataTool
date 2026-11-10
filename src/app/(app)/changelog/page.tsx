@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-10',
+    title: 'Swipe Between Student Cards',
+    description: 'In Data Entry, the student cards now scroll sideways with a swipe, a trackpad or Shift and the mouse wheel, as well as with the arrow buttons in the bar at the bottom. A thin scrollbar appears under the cards while they scroll.',
+    type: 'improvement',
+    icon: ArrowRightLeft,
+  },
+  {
+    date: '2026-11-10',
     title: 'Date Ranges Include the Right Sessions',
     description: 'The date range on the Progress Report, Reports and Sessions pages now puts imported sessions on the day they actually happened. Before, an imported session on the first day of a range could be left out of it, and one from the day after the range ended could be included. The dashboard\'s recent activity and the last-session date in Settings → Delete Data use the right day too.',
     type: 'fix',

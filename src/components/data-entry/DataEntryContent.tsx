@@ -19,7 +19,7 @@ import type { StudentGroup } from '@/lib/student-groups';
 import LoadGroupMenu from '@/components/student-groups/LoadGroupMenu';
 import { formatDate } from '@/lib/helpers';
 import { ConfettiProvider } from '@/hooks/use-confetti';
-import { ScrollArea } from '../ui/scroll-area';
+import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 import { GOAL_TYPE_FIELDS, captureTypeOf } from '@/lib/goal-constants';
 import { applyGoalHotkey } from '@/lib/data-entry-hotkeys';
 import { freshGoalData, freshStudentState, moveGoal, sessionFromState, syncSessionStates } from '@/lib/data-entry-session';
@@ -742,6 +742,9 @@ export default function DataEntryContent() {
               />
               </SessionDateProvider>
             </Suspense>
+            {/* Without a horizontal scrollbar the scroll area hides sideways overflow, so swiping, a trackpad or
+                Shift+wheel couldn't move the cards (only the arrows in the save bar could). */}
+            <ScrollBar orientation="horizontal" />
           </ScrollArea>
         </div>
         
