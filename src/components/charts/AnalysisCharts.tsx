@@ -5,6 +5,7 @@ import React, { useMemo, lazy, Suspense } from 'react';
 import type { Student, SessionData, Goal, PromptType } from '@/lib/types';
 import { BEHAVIOR_GOAL_TYPES, captureTypeOf } from '@/lib/goal-constants';
 import { goalMeasure, goalResponses, withoutRunningTimers } from '@/lib/goal-measures';
+import { parseDateOnly } from '@/lib/helpers';
 import { GAS_LEVELS } from '@/lib/gas';
 import { PROMPT_TYPES } from '@/lib/promptConstants';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -73,7 +74,7 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
   const dailyData: Record<string, any> = {};
 
   sessions.forEach(session => {
-    const when = new Date(session.date);
+    const when = parseDateOnly(session.date);
     const sessionDate = when.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
     if (!dailyData[sessionDate]) {
       dailyData[sessionDate] = {

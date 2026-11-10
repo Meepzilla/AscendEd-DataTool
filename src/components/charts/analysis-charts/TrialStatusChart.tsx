@@ -8,6 +8,7 @@ import { CheckSquare, Check, X, CircleHelp } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { captureTypeOf } from '@/lib/goal-constants';
+import { parseDateOnly } from '@/lib/helpers';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface TrialSequenceChartProps {
@@ -49,7 +50,7 @@ const TrialStatusSequenceChart: React.FC<TrialSequenceChartProps> = ({ studentSe
       if (validTrials.length === 0) return null;
 
       return {
-        date: new Date(session.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        date: parseDateOnly(session.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         trials: validTrials,
       };
     }).filter(item => item !== null);
