@@ -62,7 +62,9 @@ describe('student groups with passcode protection', () => {
     await store.flushWrites();
     expect(storage.getItem(GROUPS)!.startsWith('enc1:')).toBe(true);
     expect(storage.getItem(GROUPS)).not.toContain('Room 12');
-    expect(storage.getItem(GROUPS)).not.toContain('s1');
+    // Encrypted text is random base64, which can contain any short run of letters and digits, but never a quote
+    // or a space, so the plaintext is looked for with its JSON quotes (a bare 's1' matched by chance in about 2% of runs).
+    expect(storage.getItem(GROUPS)).not.toContain('"s1"');
     expect(groupsMod.getStudentGroups('u')).toEqual(groupList);
 
     await freshModules();
