@@ -84,7 +84,8 @@ export default function DashboardPage() {
         }));
     
     return [...studentActivities, ...templateActivities, ...sessionActivities]
-        .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+        // An entry whose date can't be read sorts last instead of upsetting the order of the rest.
+        .sort((a, b) => (b.timestamp.getTime() || 0) - (a.timestamp.getTime() || 0))
         .slice(0, 5); // Take the 5 most recent activities overall
 
   }, [students, goalTemplates, sessions, loading, sessionsLoading]);
@@ -193,7 +194,7 @@ export default function DashboardPage() {
                     {activity.type === 'student' && <UserPlus className="h-4 w-4 text-primary"/>}
                     {activity.type === 'template' && <ListPlus className="h-4 w-4 text-primary"/>}
                     <span className="text-muted-foreground">{activity.text}</span>
-                    <span className="ml-auto text-xs text-muted-foreground/80 whitespace-nowrap">{formatDate(activity.timestamp)}</span>
+                    <span className="ml-auto text-xs text-muted-foreground/80 whitespace-nowrap">{Number.isNaN(activity.timestamp.getTime()) ? '' : formatDate(activity.timestamp)}</span>
                   </li>
                 ))}
               </ul>

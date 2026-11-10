@@ -1,5 +1,5 @@
 import type { Goal, SessionData, SessionGoalData, Student } from './types';
-import { generateUUID } from './helpers';
+import { generateUUID, parseDateOnly } from './helpers';
 import { byDateDesc, byName } from './data-store';
 
 // Adding sessions imported from a CSV file (Reports → Import) to the ones on this device.
@@ -29,7 +29,7 @@ export interface ImportPlan {
  */
 export function planSessionImport(currentStudents: Student[], currentSessions: SessionData[], toImport: ImportedSession[], userId: string): ImportPlan {
   const contentKey = (s: { studentId?: string; date?: string; time?: string; endTime?: string; activity?: string; missed?: { reason: string } | null; notes?: string; goals?: SessionGoalData[] }) => {
-    const day = new Date(s.date ?? '');
+    const day = parseDateOnly(s.date ?? ''); // a date-only CSV date is that local day, like the stored session's
     const goals = (s.goals || []).map(g => [g.goalId, g.data]).sort((x, y) => String(x[0]).localeCompare(String(y[0])));
     // End time, activity and missed status are part of what makes a session distinct: two sessions on a day
     // with the same start, notes and goals but different ends, activities, or one held and one missed are not

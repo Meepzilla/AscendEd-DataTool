@@ -15,7 +15,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
 import { useStudentData } from '@/hooks/use-student-data';
-import { compareSessionsOldestFirst, formatDate, sessionInDateRange } from '@/lib/helpers';
+import { compareSessionsOldestFirst, formatDate, parseDateOnly, sessionInDateRange } from '@/lib/helpers';
 import { buildProgressReport, type ProgressStatus } from '@/lib/report-narrative';
 import { getOrganizationName } from '@/lib/organization';
 import { attendanceSummary, attendanceText } from '@/lib/attendance';
@@ -140,8 +140,8 @@ function ProgressReportPage() {
   // Service minutes over the period (from the range, or the sessions' first to last day for All data).
   const service = useMemo(() => {
     if (!student || periodSessions.length === 0 && !range?.from) return undefined;
-    const from = range?.from ?? new Date(periodSessions[0].date);
-    const to = range?.to ?? (range?.from ? range.from : new Date(periodSessions[periodSessions.length - 1].date));
+    const from = range?.from ?? parseDateOnly(periodSessions[0].date);
+    const to = range?.to ?? (range?.from ? range.from : parseDateOnly(periodSessions[periodSessions.length - 1].date));
     return periodService(periodSessions, student.iep, from, to);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [student, periodSessions, period, customRange]);

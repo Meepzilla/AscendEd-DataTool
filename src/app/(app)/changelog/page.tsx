@@ -25,6 +25,13 @@ const allChangelogEntries: ChangelogEntry[] = [
     icon: CalendarClock,
   },
   {
+    date: '2026-11-10',
+    title: 'Imported Sessions Keep Their Day Everywhere',
+    description: 'More fixes for sessions brought in by import. Editing one no longer moves it to the day before when you save. The Progress Report\'s trend puts imported and entered sessions in the right order, and its service minutes for All data start and end on the right days. Importing a file of sessions you entered in the app no longer adds them a second time. A session whose date can\'t be read no longer shows as a student\'s last session in Settings → Delete Data or upsets the dashboard\'s recent activity.',
+    type: 'fix',
+    icon: CalendarClock,
+  },
+  {
     date: '2026-11-09',
     title: 'Chart and Timing Dates Show the Right Day',
     description: 'Sessions brought in by import carry just a date, and that date was being read as the evening before in US timezones. Behavior timing reports could drop events recorded during those sessions or place them on the wrong day, and the day-of-week patterns shifted by a day. Charts grouped and labeled those sessions under the previous day as well. Service minutes recorded on the first day of a week or month counted toward the week or month before. All of these now use the day the session actually happened.',

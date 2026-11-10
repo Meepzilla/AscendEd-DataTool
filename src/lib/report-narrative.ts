@@ -5,7 +5,7 @@ import {
   COMMUNICATION_FUNCTIONS, STORY_PARTS, averageStoryPart, STORY_LINKING_WORDS, linkingWordField, topTied, joinWithAnd, type AbcIncident,
 } from './goal-constants';
 import { goalMeasure, goalMeasureInfo, goalNotes, goalResponses, meetsTarget, promptTotals, usesPromptCounters, withoutRunningTimers } from './goal-measures';
-import { compareSessionsOldestFirst, formatDate, formatDateOnly, formatGoalTarget, goalTypeLabel, plural } from './helpers';
+import { compareSessionsOldestFirst, formatDate, formatDateOnly, formatGoalTarget, goalTypeLabel, parseDateOnly, plural } from './helpers';
 import { timePatterns, TIMING_MEASURE_LABELS, WEEKDAY_NAMES } from './behavior-timing';
 import { formatGasLevel, gasLevelLabel } from './gas';
 import type { TaskStepScore } from './task-analysis';
@@ -130,15 +130,15 @@ interface GoalAnalysis {
  * are the fitted values at those dates, not observed ones.
  */
 function fitTrend(goal: Goal, points: { date: string; value: number }[]): GoalAnalysis['trend'] {
-  const sorted = [...points].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const sorted = [...points].sort((a, b) => parseDateOnly(a.date).getTime() - parseDateOnly(b.date).getTime());
   const values = sorted.map(p => p.value);
   const n = values.length;
   if (n < MIN_TREND_SESSIONS) return { kind: 'too few', from: values[0] ?? 0, to: values[n - 1] ?? 0 };
-  const first = new Date(sorted[0].date).getTime();
+  const first = parseDateOnly(sorted[0].date).getTime();
   // Elapsed days from the first session; falls back to session order if a date does not parse.
-  const xs = Number.isNaN(first) || sorted.some(p => Number.isNaN(new Date(p.date).getTime()))
+  const xs = Number.isNaN(first) || sorted.some(p => Number.isNaN(parseDateOnly(p.date).getTime()))
     ? sorted.map((_, i) => i)
-    : sorted.map(p => (new Date(p.date).getTime() - first) / 86400000);
+    : sorted.map(p => (parseDateOnly(p.date).getTime() - first) / 86400000);
   const meanX = avg(xs);
   const meanY = avg(values);
   // All sessions on the same day: no elapsed span to fit against, so the line is flat at the mean.

@@ -71,6 +71,15 @@ describe('trend fitted by elapsed days, not session index', () => {
       .toContain('the trend went from about 50% at the start of the period to about 70% at the end');
   });
 
+  it('orders an imported (date-only) session after one entered the evening before (America/Los_Angeles)', () => {
+    // 8 Nov imported (50%), 9 Nov entered at 5 pm Pacific (60%, stored as 01:00 UTC on the 10th), 10 Nov imported
+    // (70%). Read as UTC midnight, the 10 Nov session would sort before the 9 Nov one and the line would be fitted
+    // through 50, 70, 60.
+    const mixed = [scored('2026-11-08', 5, 5), scored('2026-11-10T01:00:00.000Z', 6, 4), scored('2026-11-10', 7, 3)];
+    expect(buildNarrative({ student, goals: [artic], sessions: mixed }))
+      .toContain('the trend went from about 49.4% at the start of the period to about 66.5% at the end');
+  });
+
   it('reports the unclamped fitted ends, even past the observed range', () => {
     // 50, 60, 70, 71 with the last session a month later: the fitted line ends at about 71.6%,
     // above the highest value actually recorded (71%).

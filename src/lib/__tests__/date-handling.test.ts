@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { compareSessionsOldestFirst, formatDate, formatDateOnly, parseDateOnly, sessionInDateRange, sessionTimestamp } from '../helpers';
+import { compareSessionsOldestFirst, formatDate, formatDateOnly, latestSessionDate, parseDateOnly, sessionInDateRange, sessionTimestamp } from '../helpers';
 
 // Date-only values (YYYY-MM-DD) are stored days, not instants: in America/Los_Angeles, reading one as UTC
 // midnight lands on the previous evening. These run under TZ=America/Los_Angeles (set in vitest.config.mts).
@@ -80,5 +80,21 @@ describe('sessionInDateRange', () => {
   it('keeps a session with an unreadable date out of any range, but not when no range is set', () => {
     expect(sessionInDateRange('not-a-date', nov9, nov10)).toBe(false);
     expect(sessionInDateRange('not-a-date')).toBe(true);
+  });
+});
+
+// "Last session" in Settings → Delete Data.
+describe('latestSessionDate', () => {
+  it('picks the most recent day across imported and entered sessions', () => {
+    // Entered on 9 November at 5 pm Pacific (01:00 UTC on the 10th); the imported 10 November session is later.
+    expect(latestSessionDate(['2026-11-10T01:00:00.000Z', '2026-11-10', '2026-11-08'])).toBe('2026-11-10');
+  });
+  it('passes over dates that cannot be read, wherever they are in the list', () => {
+    expect(latestSessionDate(['N/A', '2026-11-08', '13/11/2026', '2026-11-09'])).toBe('2026-11-09');
+    expect(latestSessionDate(['2026-11-09', 'N/A'])).toBe('2026-11-09');
+  });
+  it('gives null when there are no sessions or none has a readable date', () => {
+    expect(latestSessionDate([])).toBeNull();
+    expect(latestSessionDate(['N/A'])).toBeNull();
   });
 });
