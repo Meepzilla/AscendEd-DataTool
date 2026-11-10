@@ -19,10 +19,12 @@ import type { StudentGroup } from '@/lib/student-groups';
 import LoadGroupMenu from '@/components/student-groups/LoadGroupMenu';
 import { formatDate } from '@/lib/helpers';
 import { ConfettiProvider } from '@/hooks/use-confetti';
-import { ScrollArea } from '../ui/scroll-area';
+import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 import { GOAL_TYPE_FIELDS, captureTypeOf } from '@/lib/goal-constants';
 import { applyGoalHotkey } from '@/lib/data-entry-hotkeys';
 import { freshGoalData, freshStudentState, moveGoal, sessionFromState, syncSessionStates } from '@/lib/data-entry-session';
+import { sessionMinutes } from '@/lib/student-overview';
+import type { ServiceType } from '@/lib/types';
 import { useSessionTimes } from '@/hooks/use-session-times';
 import { useDataEntryLayout } from '@/hooks/use-data-entry-layout';
 import { useDataEntryShortcuts } from '@/hooks/use-data-entry-shortcuts';
@@ -124,7 +126,7 @@ export default function DataEntryContent() {
     const studentsWithEntries = Object.fromEntries(
       Object.values(studentSessionStates)
         .filter(state => selectedStudentIds.includes(state.studentId) && hasUnsavedEntry(state, goalDefaults))
-        .map(state => [state.studentId, { activity: state.activity, notes: state.notes, goalData: state.goalData }]),
+        .map(state => [state.studentId, { activity: state.activity, notes: state.notes, goalData: state.goalData, ...(state.serviceMinutes ? { serviceMinutes: state.serviceMinutes } : {}) }]),
     );
     return {
       savedAt: new Date().toISOString(),
@@ -352,6 +354,17 @@ export default function DataEntryContent() {
     setStudentSessionStates(prev => ({
       ...prev,
       [studentId]: { ...prev[studentId], [field]: value },
+    }));
+  };
+
+  const handleServiceMinutesChange = (studentId: string, next: Partial<Record<ServiceType, number>> | undefined) => {
+    if (isStudentAccessLocked) {
+      toast({ title: 'Access Locked', description: 'Student access is locked. Unlock to make changes.', variant: 'default' });
+      return;
+    }
+    setStudentSessionStates(prev => ({
+      ...prev,
+      [studentId]: { ...prev[studentId], serviceMinutes: next },
     }));
   };
   
@@ -719,6 +732,8 @@ export default function DataEntryContent() {
                   handleStudentSelect={handleStudentSelect}
                   removeStudentSlot={removeStudentSlot}
                   handleInputChange={handleInputChange}
+                  sessionDuration={sessionMinutes({ time: sessionTime, endTime: sessionEndTime })}
+                  handleServiceMinutesChange={handleServiceMinutesChange}
                   handleGoalDataChange={localHandleGoalDataChange}
                   handleMoveGoal={handleMoveGoal}
                   recordMissedSession={recordMissedSession}
@@ -727,6 +742,9 @@ export default function DataEntryContent() {
               />
               </SessionDateProvider>
             </Suspense>
+            {/* Without a horizontal scrollbar the scroll area hides sideways overflow, so swiping, a trackpad or
+                Shift+wheel couldn't move the cards (only the arrows in the save bar could). */}
+            <ScrollBar orientation="horizontal" />
           </ScrollArea>
         </div>
         

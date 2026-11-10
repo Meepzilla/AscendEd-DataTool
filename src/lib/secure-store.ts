@@ -35,6 +35,13 @@ import { isQuotaError } from './storage-failure';
 
 const CONFIG_KEY = 'ascended_passcode_v1';
 const ITERATIONS = 600_000;
+/**
+ * The most PBKDF2 iterations opening a password-protected backup may run. The app writes ITERATIONS
+ * today; the ceiling is a clear multiple of that with headroom for future increases. A backup naming
+ * more is treated as damaged rather than derived, because the count comes from the file and derivation
+ * runs it as stated, so a crafted count in the hundreds of millions would hang the tab.
+ */
+export const MAX_BACKUP_ITERATIONS = 5_000_000;
 const PREFIX = 'enc1:';
 /** Known plaintext encrypted under the data key, to tell a right passcode or recovery key from a wrong one. Not a secret. */
 export const CHECK_TEXT = 'ascended-passcode-check';
@@ -1517,6 +1524,9 @@ export async function unlockWithRecoveryKey(input: string): Promise<boolean> {
   key = dek;
   legacyKey = null;
   await loadAndMigrateValues(null, dek, true, JSON.stringify(config));
+  // Same as a passcode unlock: rows an earlier version left as plaintext in IndexedDB are
+  // encrypted under the data key, so recovery does not leave them readable on disk.
+  await sealPlaintextRows();
   return true;
 }
 
@@ -1554,6 +1564,10 @@ export async function resetPasscodeWithRecoveryKey(recoveryKey: string, next: st
   // Values still stored under the forgotten passcode key cannot be read without it: they stay
   // as stored (marked unreadable) and are reported, never written over.
   await reencryptLegacyValues();
+  // reencryptLegacyValues covers values keyed under the old passcode; rows an earlier version
+  // left as plaintext in IndexedDB are not keyed at all, so seal them under the data key too,
+  // as a passcode unlock does.
+  await sealPlaintextRows();
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const newKek = await deriveKey(next, salt, ITERATIONS);
   const wrappedDek = await wrapDek(dek, newKek);
@@ -1586,6 +1600,9 @@ export async function encryptWithPassword(text: string, password: string): Promi
 
 /** Decrypts text encrypted with encryptWithPassword; throws if the password is wrong or the data damaged. */
 export async function decryptWithPassword(payload: PasswordProtected, password: string): Promise<string> {
+  if (!Number.isInteger(payload.iterations) || payload.iterations < 1 || payload.iterations > MAX_BACKUP_ITERATIONS) {
+    throw new Error('This backup file is damaged or was not written by this app.');
+  }
   const k = await deriveKey(password, unb64(payload.salt), payload.iterations);
   return decryptWith(k, payload.data);
 }

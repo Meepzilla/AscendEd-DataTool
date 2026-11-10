@@ -15,7 +15,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { downloadSessionsCsv } from '@/lib/session-csv';
 import CsvExportWarning from '@/components/CsvExportWarning';
 import { useToast } from '@/hooks/use-toast';
-import { compareSessionsOldestFirst, formatDate } from '@/lib/helpers';
+import { compareSessionsOldestFirst, formatDate, sessionInDateRange } from '@/lib/helpers';
 import NarrativeDialog from '@/components/charts/NarrativeDialog';
 import { attendanceSummary, attendanceText, isMissed } from '@/lib/attendance';
 import { markReportViewed } from '@/lib/onboarding';
@@ -72,14 +72,7 @@ export default function AnalysisReportPage() {
   const periodSessions = useMemo(() => {
     if (!selectedStudentId) return [];
     let filtered = sessions.filter(s => s.studentId === selectedStudentId);
-    if (dateRange?.from) {
-        filtered = filtered.filter(s => new Date(s.date) >= dateRange.from!);
-    }
-    if (dateRange?.to) {
-        const toDate = new Date(dateRange.to);
-        toDate.setHours(23, 59, 59, 999);
-        filtered = filtered.filter(s => new Date(s.date) <= toDate);
-    }
+    filtered = filtered.filter(s => sessionInDateRange(s.date, dateRange?.from, dateRange?.to));
     // Stored sessions are newest first, so sessions with the same date and start time are in reverse saved order;
     // reversing first keeps them in saved order (the last saved is the latest, as in the sidebar).
     return filtered.reverse().sort(compareSessionsOldestFirst);

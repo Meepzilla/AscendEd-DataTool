@@ -26,7 +26,7 @@ export interface DataEntryDraft {
   focusedGoalIndexByStudentId: Record<string, number>;
   isStudentAccessLocked: boolean;
   isHeaderCardCollapsed: boolean;
-  students: Record<string, Pick<StudentSessionState, 'activity' | 'notes' | 'goalData'>>;
+  students: Record<string, Pick<StudentSessionState, 'activity' | 'notes' | 'goalData' | 'serviceMinutes'>>;
 }
 
 export function loadDataEntryDraft(uid: string | undefined): DataEntryDraft | null {
@@ -68,11 +68,12 @@ export function saveDataEntryDraft(uid: string | undefined, draft: DataEntryDraf
  * differs from the goal type's starting values (`defaultsFor`).
  */
 export function hasUnsavedEntry(
-  state: Pick<StudentSessionState, 'activity' | 'notes' | 'goalData'> | undefined,
+  state: Pick<StudentSessionState, 'activity' | 'notes' | 'goalData' | 'serviceMinutes'> | undefined,
   defaultsFor: (goalId: string) => Record<string, any> | undefined,
 ): boolean {
   if (!state) return false;
   if (String(state.activity || '').trim() || String(state.notes || '').trim()) return true;
+  if (state.serviceMinutes && Object.values(state.serviceMinutes).some(v => typeof v === 'number' && v > 0)) return true;
   return Object.entries(state.goalData || {}).some(([goalId, data]) => {
     const defaults = defaultsFor(goalId);
     return defaults !== undefined && JSON.stringify(data) !== JSON.stringify(defaults);

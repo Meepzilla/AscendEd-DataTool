@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { behaviorEvents, clockInputValue, sessionStart, withClockTime } from '../behavior-timing';
+import { behaviorEvents, clockInputValue, sessionStart, timePatterns, withClockTime } from '../behavior-timing';
 
 // Times are built in local time, as Data Entry records them.
 const at = (y: number, m: number, d: number, h: number, min: number) => new Date(y, m - 1, d, h, min).toISOString();
@@ -39,5 +39,36 @@ describe('changing a recorded behavior time by hand', () => {
     expect(after[0]).toMatchObject({ exact: true });
     expect(after[0].at.getHours()).toBe(9);
     expect(after[0].at.getMinutes()).toBe(20);
+  });
+});
+
+// Imported sessions carry a date-only string ('2026-10-28'). Reading it as UTC midnight puts it on the
+// previous local day, which dropped same-day event times and shifted weekday patterns by one day.
+describe('a session dated with a date-only string', () => {
+  it('starts on the named day, at local midnight when no start time was entered', () => {
+    const start = sessionStart({ date: '2026-10-28', time: '' });
+    expect(start?.getFullYear()).toBe(2026);
+    expect(start?.getMonth()).toBe(9);
+    expect(start?.getDate()).toBe(28);
+    expect(start?.getHours()).toBe(0);
+    const timed = sessionStart({ date: '2026-10-28', time: '09:00' });
+    expect(timed?.getDate()).toBe(28);
+    expect(timed?.getHours()).toBe(9);
+  });
+
+  it('counts a tap recorded on the session day as exact, not as a fallback', () => {
+    const session = { date: '2026-10-28', time: '09:00' };
+    const events = behaviorEvents('BEHAVIOR_FREQUENCY', { count: 1, occurrenceTimes: [at(2026, 10, 28, 9, 20)] }, sessionStart(session));
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({ exact: true });
+    expect(events[0].at.getDate()).toBe(28);
+  });
+
+  it('attributes the session to the weekday the date names (Wednesday 28 October 2026)', () => {
+    const patterns = timePatterns('BEHAVIOR_FREQUENCY', [
+      { session: { date: '2026-10-28', time: '09:00', endTime: '09:30' }, data: { count: 1, occurrenceTimes: [at(2026, 10, 28, 9, 20)] } },
+    ]);
+    expect(patterns.byWeekday.find(b => b.name === 'Wed')?.value).toBe(1);
+    expect(patterns.peakWeekday?.name).toBe('Wed');
   });
 });

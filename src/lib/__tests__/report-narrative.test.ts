@@ -71,6 +71,24 @@ describe('trend fitted by elapsed days, not session index', () => {
       .toContain('the trend went from about 50% at the start of the period to about 70% at the end');
   });
 
+  it('orders an imported (date-only) session after one entered the evening before (America/Los_Angeles)', () => {
+    // 8 Nov imported (50%), 9 Nov entered at 5 pm Pacific (60%, stored as 01:00 UTC on the 10th), 10 Nov imported
+    // (70%). Read as UTC midnight, the 10 Nov session would sort before the 9 Nov one and the line would be fitted
+    // through 50, 70, 60.
+    const mixed = [scored('2026-11-08', 5, 5), scored('2026-11-10T01:00:00.000Z', 6, 4), scored('2026-11-10', 7, 3)];
+    expect(buildNarrative({ student, goals: [artic], sessions: mixed }))
+      .toContain('the trend went from about 49.4% at the start of the period to about 66.5% at the end');
+  });
+
+  it('weights each session by its opportunities, so a 1-of-1 session barely moves the trend', () => {
+    // Three sessions of 4 out of 10 (40%), then 1 out of 1 (100%). Counted equally, the line would climb steeply;
+    // weighted by opportunities, the single response pulls it far less.
+    const data = [scored('2026-10-01T09:00:00Z', 4, 6), scored('2026-10-02T09:00:00Z', 4, 6), scored('2026-10-03T09:00:00Z', 4, 6), scored('2026-10-04T09:00:00Z', 1, 0)];
+    // Counted equally, the fitted line runs from 28% to 82%; weighted (10, 10, 10 and 1 opportunities), 36.8% to 51.4%.
+    expect(buildNarrative({ student, goals: [artic], sessions: data }))
+      .toContain('the trend went from about 36.8% at the start of the period to about 51.4% at the end');
+  });
+
   it('reports the unclamped fitted ends, even past the observed range', () => {
     // 50, 60, 70, 71 with the last session a month later: the fitted line ends at about 71.6%,
     // above the highest value actually recorded (71%).

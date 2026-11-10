@@ -277,3 +277,23 @@ describe('persist retry', () => {
     storage.setItem = originalSetItem;
   }, 20000);
 });
+
+describe('password-protected backups', () => {
+  it('rejects a backup whose iteration count is outside the accepted range, before deriving a key', async () => {
+    const salt = 'AAAAAAAAAAAAAAAAAAAAAA=='; // 16 zero bytes; never reached, the count is rejected first
+    await expect(store.decryptWithPassword({ v: 1, salt, iterations: 500_000_000, data: 'AAAA' }, 'pw'))
+      .rejects.toThrow(/damaged or was not written by this app/);
+    await expect(store.decryptWithPassword({ v: 1, salt, iterations: store.MAX_BACKUP_ITERATIONS + 1, data: 'AAAA' }, 'pw'))
+      .rejects.toThrow(/damaged or was not written by this app/);
+    await expect(store.decryptWithPassword({ v: 1, salt, iterations: 0, data: 'AAAA' }, 'pw'))
+      .rejects.toThrow(/damaged or was not written by this app/);
+    await expect(store.decryptWithPassword({ v: 1, salt, iterations: 1.5, data: 'AAAA' }, 'pw'))
+      .rejects.toThrow(/damaged or was not written by this app/);
+  });
+
+  it('still opens a backup the app itself wrote', async () => {
+    const payload = await store.encryptWithPassword('backup text', 'pw');
+    expect(payload.iterations).toBeLessThanOrEqual(store.MAX_BACKUP_ITERATIONS);
+    expect(await store.decryptWithPassword(payload, 'pw')).toBe('backup text');
+  }, 20000);
+});

@@ -15,7 +15,7 @@ import { Edit, Trash2, Search, Info, Eye, FileText, Merge } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { mergeProblem } from '@/lib/session-merge';
 import MergeSessionsDialog from '@/components/sessions/MergeSessionsDialog';
-import { compareSessionsOldestFirst, formatDate } from '@/lib/helpers';
+import { compareSessionsOldestFirst, formatDate, sessionInDateRange } from '@/lib/helpers';
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
@@ -65,16 +65,8 @@ export default function ManageSessionsPage() {
                             (session.activity || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                             (session.notes || '').toLowerCase().includes(searchTerm.toLowerCase());
         
-        let dateMatch = true;
-        if (dateRange?.from) {
-            dateMatch = new Date(session.date) >= dateRange.from;
-        }
-        if (dateRange?.to && dateMatch) {
-            // Adjust 'to' date to include the whole day
-            const toDate = new Date(dateRange.to);
-            toDate.setHours(23, 59, 59, 999);
-            dateMatch = new Date(session.date) <= toDate;
-        }
+        // The range includes the whole of its last day.
+        const dateMatch = sessionInDateRange(session.date, dateRange?.from, dateRange?.to);
         
         return studentMatch && searchMatch && dateMatch;
       })

@@ -84,6 +84,31 @@ describe('serviceStatus (weekly requirement)', () => {
   });
 });
 
+// Imported sessions carry a date-only string ('2026-10-26'). Reading it as UTC midnight puts it on the
+// previous local day, so a session on a period's first day used to count in the period before.
+describe('serviceStatus with date-only session dates', () => {
+  const iep = { serviceMinutes: 60, servicePer: 'week' as const };
+  it('counts a session on the first day of the week in this week, not last week', () => {
+    const { behind } = serviceStatus(
+      [student('a', 'Ava', iep)],
+      [session({ studentId: 'a', date: '2026-10-26', time: '09:00', endTime: '09:30' })], // Monday 26 October, 30 minutes
+      NOW,
+    );
+    expect(behind).toHaveLength(1);
+    expect(behind[0]).toMatchObject({ delivered: 30, minutes: 30, lastShort: 60 }); // nothing last week, so last week was fully short
+  });
+
+  it('counts a session on the first day of the month in this month, not last month', () => {
+    const { behind } = serviceStatus(
+      [student('a', 'Ava', { serviceMinutes: 120, servicePer: 'month' as const })],
+      [session({ studentId: 'a', date: '2026-10-01', time: '09:00', endTime: '10:00' })], // 60 minutes on 1 October
+      NOW,
+    );
+    expect(behind).toHaveLength(1);
+    expect(behind[0]).toMatchObject({ delivered: 60, minutes: 60, lastShort: 120 }); // nothing last month, so last month was fully short
+  });
+});
+
 describe('serviceStatus across a daylight-saving change', () => {
   it('counts whole days left in a week that is an hour longer', () => {
     // US clocks go back on Sunday 1 November 2026, so that week is 169 hours long.
@@ -112,5 +137,81 @@ describe('serviceStatus (school-year requirement)', () => {
     expect(behind[0]).toMatchObject({ kind: 'pace', delivered: 0, lastShort: 0, daysLeft: 0 });
     expect(behind[0].minutes).toBeGreaterThan(280);
     expect(behind[0].minutes).toBeLessThan(305);
+  });
+});
+
+describe('serviceStatus byType', () => {
+  it('breaks a two-line student down by type, with delivered from a split session', () => {
+    const iep = {
+      serviceMinutes: 90, servicePer: 'week' as const,
+      services: [
+        { type: 'related' as const, minutes: 60, per: 'week' as const },
+        { type: 'aac' as const, minutes: 30, per: 'week' as const },
+      ],
+    };
+    const { behind } = serviceStatus(
+      [student('a', 'Ava', iep)],
+      [session({
+        studentId: 'a', date: new Date(2026, 9, 27, 9, 0).toISOString(), time: '09:00', endTime: '09:30',
+        serviceMinutes: { related: 20, aac: 10 },
+      })],
+      NOW,
+    );
+    expect(behind).toHaveLength(1);
+    expect(behind[0]).toMatchObject({ delivered: 30, required: 90 });
+    expect(behind[0].byType).toEqual([
+      { type: 'related', label: 'Related Service', delivered: 20, required: 60 },
+      { type: 'aac', label: 'AAC', delivered: 10, required: 30 },
+    ]);
+  });
+
+  it('leaves byType undefined for a single-line student', () => {
+    const { behind } = serviceStatus(
+      [student('a', 'Ava', { serviceMinutes: 60, servicePer: 'week' as const })],
+      [on('a', 2026, 9, 27)],
+      NOW,
+    );
+    expect(behind).toHaveLength(1);
+    expect(behind[0].byType).toBeUndefined();
+  });
+
+  it('counts a split session dated with a date-only string on the first day of the week', () => {
+    const iep = {
+      serviceMinutes: 90, servicePer: 'week' as const,
+      services: [
+        { type: 'related' as const, minutes: 60, per: 'week' as const },
+        { type: 'aac' as const, minutes: 30, per: 'week' as const },
+      ],
+    };
+    const { behind } = serviceStatus(
+      [student('a', 'Ava', iep)],
+      [session({
+        studentId: 'a', date: '2026-10-26', time: '09:00', endTime: '09:30', // Monday, the week's first day
+        serviceMinutes: { related: 20, aac: 10 },
+      })],
+      NOW,
+    );
+    expect(behind).toHaveLength(1);
+    expect(behind[0]).toMatchObject({ delivered: 30, required: 90 });
+    expect(behind[0].byType).toEqual([
+      { type: 'related', label: 'Related Service', delivered: 20, required: 60 },
+      { type: 'aac', label: 'AAC', delivered: 10, required: 30 },
+    ]);
+  });
+
+  it('includes a delivered type that has no requirement line, with a null requirement', () => {
+    const { behind } = serviceStatus(
+      [student('a', 'Ava', { serviceMinutes: 60, servicePer: 'week' as const })],
+      [session({
+        studentId: 'a', date: new Date(2026, 9, 27, 9, 0).toISOString(), time: '09:00', endTime: '09:30',
+        serviceMinutes: { aac: 30 },
+      })],
+      NOW,
+    );
+    expect(behind).toHaveLength(1);
+    expect(behind[0].byType).toEqual([
+      { type: 'related', label: 'Related Service', delivered: 0, required: 60 },
+      { type: 'aac', label: 'AAC', delivered: 30, required: null },
+    ]);
   });
 });

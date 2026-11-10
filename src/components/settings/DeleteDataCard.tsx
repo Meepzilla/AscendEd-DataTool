@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useStudentData } from '@/hooks/use-student-data';
 import { useToast } from '@/hooks/use-toast';
-import { formatDate, plural } from '@/lib/helpers';
+import { formatDate, latestSessionDate, plural } from '@/lib/helpers';
 import { deleteAllListData, flushWrites } from '@/lib/secure-store';
 
 // Settings → Delete Data:
@@ -37,7 +37,7 @@ export default function DeleteDataCard() {
 
   const rows = useMemo(() => students.map(student => {
     const own = sessions.filter(s => s.studentId === student.id);
-    const last = own.reduce<string | null>((latest, s) => (!latest || new Date(s.date) > new Date(latest) ? s.date : latest), null);
+    const last = latestSessionDate(own.map(s => s.date));
     return { student, sessionCount: own.length, last };
   }).sort((a, b) => Number(!!b.student.isArchived) - Number(!!a.student.isArchived) || a.student.name.localeCompare(b.student.name)),
   [students, sessions]);

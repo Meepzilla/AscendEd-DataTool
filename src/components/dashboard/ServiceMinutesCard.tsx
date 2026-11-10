@@ -34,6 +34,16 @@ function Row({ item }: { item: ServiceItem }) {
           <span>{formatMinutes(item.delivered)} of {formatMinutes(item.required)} this {period}</span>
           {item.lastShort > 0 && <span className="font-medium text-amber-700 dark:text-amber-300">{formatMinutes(item.lastShort)} short last {period}</span>}
         </span>
+        {item.byType && (
+          <span className="block space-y-0.5 pt-0.5">
+            {item.byType.map(t => (
+              <span key={t.type} className="flex flex-wrap items-baseline justify-between gap-x-3 text-xs text-muted-foreground">
+                <span>{t.label}</span>
+                <span>{t.required !== null ? `${formatMinutes(t.delivered)} of ${formatMinutes(t.required)}` : formatMinutes(t.delivered)}</span>
+              </span>
+            ))}
+          </span>
+        )}
       </Link>
     </li>
   );

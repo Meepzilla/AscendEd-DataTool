@@ -16,6 +16,14 @@ const base: ImportedSession = {
 };
 
 describe('planSessionImport dedup', () => {
+  it('recognizes a session entered in the app when its exported, date-only copy comes back (America/Los_Angeles)', () => {
+    // Entered on 5 October at 9:00 Pacific, so stored as a full timestamp; the CSV carries just "2026-10-05".
+    const stored = new Date(2026, 9, 5, 9, 0).toISOString();
+    const current = [session({ studentId: 'st1', studentName: 'Ava', date: stored, time: '09:00', endTime: '09:30', activity: 'cards', notes: 'good session', goals: [{ goalId: 'g1', goalName: 'Say hi', goalType: 'ARTICULATION', data: { correct: 3 } }] })];
+    const plan = planSessionImport(students, current, [base], 'u');
+    expect(plan.duplicateCount).toBe(1);
+    expect(plan.newCount).toBe(0);
+  });
   it('imports the same session twice only once', () => {
     const plan = planSessionImport(students, [], [base, base], 'u');
     expect(plan.newCount).toBe(1);

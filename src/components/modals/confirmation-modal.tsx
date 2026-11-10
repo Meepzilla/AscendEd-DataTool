@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useSyncExternalStore } from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { buttonVariants } from '@/components/ui/button';
 import { useStudentData } from '@/hooks/use-student-data';
+import { getStorageFailure, subscribeStorageFailures } from '@/lib/storage-failure';
 import type { Student, GoalTemplate, SessionData } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -46,10 +47,24 @@ export default function ConfirmationModal({
 }: ConfirmationModalProps) {
   const { deleteStudent, deleteGoalTemplate, deleteSession, loading: dataLoading } = useStudentData();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const confirmButtonRef = useRef<HTMLButtonElement>(null);
+  // A save that failed (the device's storage is full, say) records a failure instead of
+  // reporting back through the delete and update actions, which return nothing. Watching the
+  // record lets a failed action be told apart from one that was stored: a failure recorded
+  // while this confirmation ran means the change was not saved.
+  const saveFailure = useSyncExternalStore(
+    subscribeStorageFailures,
+    () => getStorageFailure('save'),
+    () => null,
+  );
+  const saveFailureRef = useRef(saveFailure);
+  saveFailureRef.current = saveFailure;
 
   const handleConfirmAction = useCallback(async () => {
     setIsProcessing(true);
+    setActionError(null);
+    const failureBefore = saveFailureRef.current;
     try {
       if (onConfirm) {
         await onConfirm();
@@ -70,11 +85,24 @@ export default function ConfirmationModal({
       }
     } catch (error) {
       console.error(`Error performing confirm action:`, error);
-    } finally {
+      // The action failed: stay open and say so, instead of closing as if it had worked.
+      setActionError('That could not be done. Nothing was changed — you can try again, or cancel.');
       setIsProcessing(false);
-      onClose();
+      return;
     }
+    setIsProcessing(false);
+    if (saveFailureRef.current !== null && saveFailureRef.current !== failureBefore) {
+      // No error was thrown, but the change was not stored either (storage full): stay open.
+      setActionError('That could not be saved on this device. Nothing was changed — you can try again, or cancel.');
+      return;
+    }
+    onClose();
   }, [onConfirm, itemToDelete, deleteActionType, itemToUpdate, updateAction, deleteStudent, deleteGoalTemplate, deleteSession, onClose]);
+
+  // A fresh showing starts without the last attempt's error.
+  useEffect(() => {
+    if (isOpen) setActionError(null);
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -102,6 +130,7 @@ export default function ConfirmationModal({
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
+        {actionError && <p className="text-sm text-destructive" role="alert">{actionError}</p>}
         <AlertDialogFooter>
           <AlertDialogCancel onClick={onClose} disabled={isProcessing || dataLoading}>
             {cancelText}

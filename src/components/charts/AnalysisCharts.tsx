@@ -5,6 +5,8 @@ import React, { useMemo, lazy, Suspense } from 'react';
 import type { Student, SessionData, Goal, PromptType } from '@/lib/types';
 import { BEHAVIOR_GOAL_TYPES, captureTypeOf } from '@/lib/goal-constants';
 import { goalMeasure, goalResponses, withoutRunningTimers } from '@/lib/goal-measures';
+import { parseDateOnly } from '@/lib/helpers';
+import { pooledAccuracy } from '@/lib/trial-weights';
 import { GAS_LEVELS } from '@/lib/gas';
 import { PROMPT_TYPES } from '@/lib/promptConstants';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -73,7 +75,7 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
   const dailyData: Record<string, any> = {};
 
   sessions.forEach(session => {
-    const when = new Date(session.date);
+    const when = parseDateOnly(session.date);
     const sessionDate = when.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
     if (!dailyData[sessionDate]) {
       dailyData[sessionDate] = {
@@ -144,7 +146,7 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
   });
 
   // Only days when a goal in view was worked on (other days would chart as zeros).
-  return Object.values(dailyData).filter(day => day.goalsRecorded > 0).sort((a, b) => a.dayStart - b.dayStart).map(day => {
+  const days = Object.values(dailyData).filter(day => day.goalsRecorded > 0).sort((a, b) => a.dayStart - b.dayStart).map(day => {
     // No accuracy (a gap in the line, not 0%) on days with no trial-based responses.
     const accuracy = day.totalOpportunities > 0 ? parseFloat(((day.totalCorrect / day.totalOpportunities) * 100).toFixed(1)) : null;
     const totalPrompts = Object.entries(day.promptCounts).reduce((sum, [key, value]) => key !== 'Independent' ? sum + (value as number) : sum, 0);
@@ -165,6 +167,9 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
       interjections: day.interjections,
     };
   });
+  // A trend line that pools the trials of the last few days, so a day with one response moves it little.
+  const weighted = pooledAccuracy(days.map(d => ({ correct: d.correct, opportunities: d.opportunities })));
+  return days.map((day, i) => ({ ...day, weightedTrend: weighted[i] }));
 };
 
 export interface AnalysisChartsProps {

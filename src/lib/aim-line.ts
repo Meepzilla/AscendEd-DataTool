@@ -1,5 +1,6 @@
 import type { Goal } from './types';
 import { goalDirection } from './goal-constants';
+import { parseDateOnly } from './helpers';
 
 // Baseline, aim line and mastery criteria for a goal (set in Edit Goal).
 // - The aim line runs from the baseline (at the baseline date, or the first session) to the target at the goal's
@@ -18,7 +19,7 @@ export function masterySessions(goal: Goal): number {
 
 /** A date-only value (YYYY-MM-DD) or an ISO date as a time in ms, read in local time for date-only values. */
 export function dateValue(value: string): number {
-  return new Date(/^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T00:00` : value).getTime();
+  return parseDateOnly(value).getTime();
 }
 
 export interface AimLine {

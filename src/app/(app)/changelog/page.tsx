@@ -18,6 +18,62 @@ interface ChangelogEntry {
 
 const allChangelogEntries: ChangelogEntry[] = [
   {
+    date: '2026-11-10',
+    title: 'Short Sessions Count for Less in Accuracy Trends',
+    description: 'A session with 1 response out of 1 is 100%, the same as 5 out of 5, but says much less. On the Progress Over Time chart, each dot is now sized by its number of opportunities, dots with fewer than 5 are hollow, and tapping a point shows its count (for example 100% (1 of 1)). A dashed trend line pools the responses of the last 3 sessions, so one short session moves it little. The trend in the written summary and the Progress Report now counts each session by its number of opportunities too.',
+    type: 'improvement',
+    icon: BarChartHorizontalBig,
+  },
+  {
+    date: '2026-11-10',
+    title: 'Swipe Between Student Cards',
+    description: 'In Data Entry, the student cards now scroll sideways with a swipe, a trackpad or Shift and the mouse wheel, as well as with the arrow buttons in the bar at the bottom. A thin scrollbar appears under the cards while they scroll.',
+    type: 'improvement',
+    icon: ArrowRightLeft,
+  },
+  {
+    date: '2026-11-10',
+    title: 'Date Ranges Include the Right Sessions',
+    description: 'The date range on the Progress Report, Reports and Sessions pages now puts imported sessions on the day they actually happened. Before, an imported session on the first day of a range could be left out of it, and one from the day after the range ended could be included. The dashboard\'s recent activity and the last-session date in Settings → Delete Data use the right day too.',
+    type: 'fix',
+    icon: CalendarClock,
+  },
+  {
+    date: '2026-11-10',
+    title: 'Imported Sessions Keep Their Day Everywhere',
+    description: 'More fixes for sessions brought in by import. Editing one no longer moves it to the day before when you save. The Progress Report\'s trend puts imported and entered sessions in the right order, and its service minutes for All data start and end on the right days. Importing a file of sessions you entered in the app no longer adds them a second time. A session whose date can\'t be read no longer shows as a student\'s last session in Settings → Delete Data or upsets the dashboard\'s recent activity.',
+    type: 'fix',
+    icon: CalendarClock,
+  },
+  {
+    date: '2026-11-09',
+    title: 'Chart and Timing Dates Show the Right Day',
+    description: 'Sessions brought in by import carry just a date, and that date was being read as the evening before in US timezones. Behavior timing reports could drop events recorded during those sessions or place them on the wrong day, and the day-of-week patterns shifted by a day. Charts grouped and labeled those sessions under the previous day as well. Service minutes recorded on the first day of a week or month counted toward the week or month before. All of these now use the day the session actually happened.',
+    type: 'fix',
+    icon: CalendarClock,
+  },
+  {
+    date: '2026-11-09',
+    title: 'Import and Backup Safety Fixes',
+    description: 'Spreadsheet files now stop cleanly with a clear message when a file is far larger inside than it looks, names rows or columns far beyond any real class list, or carries dates outside the supported range, instead of freezing the app or failing with a confusing error. A backup file whose contents were tampered with is now rejected up front instead of making the app hang while opening it. Session CSV exports also neutralize a formula hidden behind leading spaces, the same protection formulas at the start of a cell already had.',
+    type: 'fix',
+    icon: ShieldCheck,
+  },
+  {
+    date: '2026-11-09',
+    title: 'Fixes for Recovery, Goal Edits, and Delete Confirmations',
+    description: 'Three fixes under the hood. Recovering with your recovery key now encrypts any older data it finds that was stored before passcode protection covered it, the same as unlocking with your passcode already did. Making several goal changes to a student one after another, such as assigning two goals in a row, no longer lets the last change overwrite the earlier ones. And when a deletion or similar change cannot be saved, the confirmation now stays open and tells you instead of closing as if it had worked.',
+    type: 'fix',
+    icon: ShieldCheck,
+  },
+  {
+    date: '2026-11-08',
+    title: 'Service Minutes by Type',
+    description: 'Required minutes in Edit IEP Details can now be set per service type, Related Service and AAC, each with its own minutes and period. A session\'s minutes can be split between the types on the student\'s card in Data Entry (Split by type) or when editing a session, so a 30 minute session can count 20 minutes of one type and 10 of the other. The Overview, the Progress Report and the session CSV export now break minutes down by type. Importing a session CSV reads the by-type minutes back, so a session keeps its split when it is exported and imported again, and the dashboard Service Minutes card breaks each student\'s minutes down by type as well. Sessions recorded before this change count in full as Related Service.',
+    type: 'feature',
+    icon: Clock,
+  },
+  {
     date: '2026-11-08',
     title: 'Session Dates Show the Right Day',
     description: 'Session dates in the session list, the session viewers, and goal chart notes could show one day early in timezones behind UTC. Date-only values are now read as the day they record everywhere they are shown, and service minute totals no longer round up to a 60-minute hour (119.6 minutes showed as 1 h 60 min). Two libraries the app never used were removed.',

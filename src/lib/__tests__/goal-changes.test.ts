@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { assignedGoalChanges, goalTemplateChanges } from '../goal-changes';
-import type { Goal, GoalTemplate } from '../types';
+import { assignedGoalChanges, goalTemplateChanges, goalsWithAdded, goalsWithUpdated, goalsWithout, withStudentGoals } from '../goal-changes';
+import type { Goal, GoalTemplate, Student } from '../types';
 import { goal as goalBuilder } from './helpers';
 
 const assigned = (overrides: Partial<Goal> = {}): Goal =>
@@ -114,5 +114,57 @@ describe('goalTemplateChanges', () => {
     expect(changes).toEqual([
       { label: 'Level +2 description', from: '(blank)', to: 'Does it every time' },
     ]);
+  });
+});
+
+describe('withStudentGoals (goal changes worked out at the moment of the write)', () => {
+  const AT = '2026-11-09T00:00:00.000Z';
+  const ava = (goals: Goal[]): Student => ({ id: 's1', name: 'Ava', userId: 'u', createdAt: '2026-01-01', goals }) as Student;
+
+  // The smallest stand-in for the provider's commit machinery: a stored list that each change
+  // is worked out from and written back to, the way studentsRef and commitStudents pair up.
+  // Each apply() stands for one goal operation run to completion before the next begins, with
+  // no re-render in between — the sequence that used to lose the first change, because the
+  // operations built their goals lists from the snapshot taken before the first one landed.
+  const storedList = (initial: Student[]) => {
+    let stored = initial;
+    return {
+      apply: (studentId: string, change: (goals: Goal[]) => Goal[]) => {
+        const next = withStudentGoals(stored, studentId, change, AT);
+        if (next) stored = next;
+        return next !== null;
+      },
+      goalsOf: (studentId: string) => stored.find(s => s.id === studentId)?.goals ?? [],
+    };
+  };
+
+  it('keeps two assigns run back to back', () => {
+    const store = storedList([ava([])]);
+    expect(store.apply('s1', goals => goalsWithAdded(goals, goalBuilder({ id: 'g1', name: 'First' })))).toBe(true);
+    expect(store.apply('s1', goals => goalsWithAdded(goals, goalBuilder({ id: 'g2', name: 'Second' })))).toBe(true);
+    expect(store.goalsOf('s1').map(g => g.id)).toEqual(['g1', 'g2']);
+  });
+
+  it('keeps an assign and an update run back to back', () => {
+    const store = storedList([ava([goalBuilder({ id: 'g1', name: 'Original', sessionTargetValue: 50 })])]);
+    store.apply('s1', goals => goalsWithAdded(goals, goalBuilder({ id: 'g2', name: 'Added' })));
+    store.apply('s1', goals => goalsWithUpdated(goals, 'g1', { sessionTargetValue: 90 }));
+    const goals = store.goalsOf('s1');
+    expect(goals.map(g => g.id)).toEqual(['g1', 'g2']);
+    expect(goals[0].sessionTargetValue).toBe(90);
+  });
+
+  it('keeps a remove and an assign run back to back', () => {
+    const store = storedList([ava([goalBuilder({ id: 'g1', name: 'Keep' }), goalBuilder({ id: 'g2', name: 'Drop' })])]);
+    store.apply('s1', goals => goalsWithout(goals, 'g2'));
+    store.apply('s1', goals => goalsWithAdded(goals, goalBuilder({ id: 'g3', name: 'Added' })));
+    expect(store.goalsOf('s1').map(g => g.id)).toEqual(['g1', 'g3']);
+  });
+
+  it('marks the record updated, and reports a student who is not there without changing anything', () => {
+    const store = storedList([ava([])]);
+    expect(store.apply('nobody', goals => goalsWithAdded(goals, goalBuilder()))).toBe(false);
+    expect(store.goalsOf('s1')).toEqual([]);
+    expect(withStudentGoals([ava([])], 's1', goals => goals, AT)?.[0].updatedAt).toBe(AT);
   });
 });

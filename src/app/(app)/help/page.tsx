@@ -173,7 +173,7 @@ export default function HelpPage() {
       <Section id="data-entry" icon={ClipboardList} title="Data Entry">
         <Accordion type="multiple" defaultValue={['de-basics']}>
           <Topic value="de-basics" title="Recording a session">
-            <p>Set the session date and start and end times at the top (Reset Time to Now starts the clock again). The start and end times are what count toward service minutes.</p>
+            <p>Set the session date and start and end times at the top (Reset Time to Now starts the clock again). The start and end times are what count toward service minutes. On a student&apos;s card you can split a session&apos;s minutes between Related Service and AAC with Split by type, so each type counts toward its own requirement.</p>
             <p>Each student gets a card with their goals (<B>Add a Student</B> adds another card). Tap a card or press <kbd>1</kbd>–<kbd>4</kbd> to highlight it; the highlighted goal is outlined, and hotkeys add data to it. <B>Pick Student</B> and <B>Pick Goal</B> choose which card and goal are highlighted. Add an activity and notes, then use <B>Save Student</B> for the highlighted student or <B>Save All</B> (<kbd>Ctrl + Enter</kbd>).</p>
             <p>Unsaved work is kept if you switch pages or close the app, until you save or reset it. Timers keep running meanwhile.</p>
           </Topic>
@@ -194,7 +194,7 @@ export default function HelpPage() {
       <Section id="students" icon={UserCog} title="Students and goals">
         <Accordion type="multiple">
           <Topic value="st-profile" title="Student profiles">
-            <p>Choose a student on the <Link href="/student-profile" className="underline hover:text-primary">Students</Link> page. The <B>Overview</B> shows IEP dates (and how soon reviews are due), service minutes delivered against the IEP (per week, month or school year), and attendance for the school year. Use <B>Edit IEP Details</B> to set the dates and required minutes. <B>View Report</B> opens the Reports page for that student, with the Progress Report from there.</p>
+            <p>Choose a student on the <Link href="/student-profile" className="underline hover:text-primary">Students</Link> page. The <B>Overview</B> shows IEP dates (and how soon reviews are due), service minutes delivered against the IEP (per week, month or school year), and attendance for the school year. Use <B>Edit IEP Details</B> to set the dates and the required minutes, which can be set per service type (Related Service and AAC). <B>View Report</B> opens the Reports page for that student, with the Progress Report from there.</p>
             <p>Students you no longer see can be archived (kept, but hidden) or deleted.</p>
           </Topic>
           <Topic value="st-goals" title="Goals, targets and mastery">
@@ -238,6 +238,7 @@ export default function HelpPage() {
           <Topic value="rp-charts" title="Charts and Goal by Goal">
             <p>On <Link href="/analysis-report" className="underline hover:text-primary">Reports</Link>, choose a student, a goal and a date range. Each goal gets a chart of its own measure, with the target line, the aim line (from the baseline to the target by the target date) and how many sessions met the target, plus breakdowns for its type (prompt levels, story parts, ABC patterns, time of day…). Tap (or hover over) a figure marked ⓘ, such as Average or Overall Accuracy, to see how it is worked out, with the numbers behind it. Tap a goal&apos;s title to read its full goal text.</p>
             <p><B>GAS goals</B> chart their level from −2 to +2 with an Expected line at 0, and a key under the chart says what each level means for that goal. When a student has GAS goals, a <B>Goal Attainment Scaling</B> section adds the <B>T-score over time</B> (all the student&apos;s GAS goals combined; 50 is the expected outcome, carrying each goal&apos;s latest level forward to each date), a <B>GAS summary</B> table and the <B>attainment-level distribution</B>.</p>
+            <p><B>Few responses, less weight.</B> A session with 1 response out of 1 is 100%, the same as 5 out of 5, but says much less. On the all-goals <B>Progress Over Time</B> chart, larger dots had more opportunities and hollow dots had fewer than 5; tap a point to see its count (for example &ldquo;100% (1 of 1)&rdquo;). The dashed <B>Trend</B> line pools the responses of the last 3 sessions, so one short session moves it little. The trend in the written summary and the Progress Report counts each session by its number of opportunities in the same way.</p>
           </Topic>
           <Topic value="rp-narrative" title="Write Narrative">
             <p>Writes a progress summary of what is shown: for each goal, the sessions with data, the average and range, the latest result against the target, the trend, whether the student is on track with the aim line, and recent notes. Choose a brief or detailed style, edit it, then copy it or save it as a file.</p>
