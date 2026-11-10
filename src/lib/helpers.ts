@@ -186,6 +186,17 @@ export function compareSessionsOldestFirst(a: { date: string; time?: string }, b
   return sessionTimestamp(a) - sessionTimestamp(b) || parseDateOnly(a.date).getTime() - parseDateOnly(b.date).getTime();
 }
 
+/** The most recent of some session dates, as stored; dates that can't be read are passed over (null if none can). */
+export function latestSessionDate(dates: string[]): string | null {
+  let latest: string | null = null;
+  let latestTime = -Infinity;
+  for (const date of dates) {
+    const time = parseDateOnly(date).getTime();
+    if (time > latestTime) { latest = date; latestTime = time; }
+  }
+  return latest;
+}
+
 /**
  * Whether a session's date is within a range picked in the app: on or after the start of `from`'s day and on or
  * before the end of `to`'s day (either end may be left open). A date-only session date, as imported sessions have,
