@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { compareSessionsOldestFirst, formatDate, formatDateOnly, parseDateOnly, sessionTimestamp } from '../helpers';
+import { compareSessionsOldestFirst, formatDate, formatDateOnly, parseDateOnly, sessionInDateRange, sessionTimestamp } from '../helpers';
 
 // Date-only values (YYYY-MM-DD) are stored days, not instants: in America/Los_Angeles, reading one as UTC
-// midnight lands on the previous evening. These run under TZ=America/Los_Angeles (see the test command).
+// midnight lands on the previous evening. These run under TZ=America/Los_Angeles (set in vitest.config.mts).
 
 describe('formatDate', () => {
   it('shows a date-only string as the stored day, not the day before', () => {
@@ -45,5 +45,40 @@ describe('session ordering', () => {
     expect(sessionTimestamp(aug1)).toBeGreaterThan(sessionTimestamp(jul31));
     expect(compareSessionsOldestFirst(aug1, jul31)).toBeGreaterThan(0);
     expect(new Date(sessionTimestamp(aug1)).getDate()).toBe(1);
+  });
+});
+
+// The date-range filters on the Progress Report, Reports and Sessions pages.
+describe('sessionInDateRange', () => {
+  const nov9 = new Date(2026, 10, 9); // a date picker's choice: local midnight
+  const nov10 = new Date(2026, 10, 10);
+  const nov8 = new Date(2026, 10, 8);
+
+  it('runs in a time zone west of UTC, where the date-only bug shows', () => {
+    expect(new Date('2026-11-09').getDate()).toBe(8); // UTC midnight is the evening before here
+  });
+  it('puts an imported (date-only) session on its own day at both ends of a range', () => {
+    expect(sessionInDateRange('2026-11-09', nov9, nov10)).toBe(true); // first day of the range
+    expect(sessionInDateRange('2026-11-10', nov9, nov10)).toBe(true); // last day of the range
+    expect(sessionInDateRange('2026-11-09', nov8, nov8)).toBe(false); // the day after a range ending 8 November
+    expect(sessionInDateRange('2026-11-08', nov9, nov10)).toBe(false); // the day before
+    expect(sessionInDateRange('2026-11-11', nov9, nov10)).toBe(false); // the day after
+  });
+  it('includes the whole of the last day for sessions saved with a time', () => {
+    expect(sessionInDateRange(new Date(2026, 10, 10, 23, 30).toISOString(), nov9, nov10)).toBe(true);
+    expect(sessionInDateRange(new Date(2026, 10, 11, 0, 0).toISOString(), nov9, nov10)).toBe(false);
+    expect(sessionInDateRange(new Date(2026, 10, 8, 23, 59).toISOString(), nov9, nov10)).toBe(false);
+  });
+  it('counts the start from the beginning of its day even if the picked date has a time', () => {
+    expect(sessionInDateRange('2026-11-09', new Date(2026, 10, 9, 15, 0), nov10)).toBe(true);
+  });
+  it('leaves an open end open', () => {
+    expect(sessionInDateRange('2026-01-01', null, nov10)).toBe(true);
+    expect(sessionInDateRange('2030-01-01', nov9, undefined)).toBe(true);
+    expect(sessionInDateRange('2026-11-09')).toBe(true);
+  });
+  it('keeps a session with an unreadable date out of any range, but not when no range is set', () => {
+    expect(sessionInDateRange('not-a-date', nov9, nov10)).toBe(false);
+    expect(sessionInDateRange('not-a-date')).toBe(true);
   });
 });
