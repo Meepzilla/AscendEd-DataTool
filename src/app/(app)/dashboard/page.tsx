@@ -7,7 +7,7 @@ import { useStudentData } from '@/hooks/use-student-data';
 import Link from 'next/link';
 import { UserPlus, ListPlus, ClipboardList, BarChart2, Users, Target, Activity, CheckSquare } from 'lucide-react';
 import { APP_NAME } from '@/lib/appConstants';
-import { formatDate } from '@/lib/helpers';
+import { formatDate, parseDateOnly } from '@/lib/helpers';
 import { Skeleton } from '@/components/ui/skeleton';
 import BackupReminder from '@/components/settings/BackupReminder';
 import TodaysWork from '@/components/dashboard/TodaysWork';
@@ -79,7 +79,7 @@ export default function DashboardPage() {
         .map(session => ({
             id: `session-${session.sessionId}`,
             type: 'session' as const,
-            timestamp: new Date(session.date),
+            timestamp: parseDateOnly(session.date),
             text: <>Session data entered for <strong>{session.studentName}</strong>.</>
         }));
     

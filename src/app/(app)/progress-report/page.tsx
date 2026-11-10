@@ -15,7 +15,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
 import { useStudentData } from '@/hooks/use-student-data';
-import { compareSessionsOldestFirst, formatDate } from '@/lib/helpers';
+import { compareSessionsOldestFirst, formatDate, sessionInDateRange } from '@/lib/helpers';
 import { buildProgressReport, type ProgressStatus } from '@/lib/report-narrative';
 import { getOrganizationName } from '@/lib/organization';
 import { attendanceSummary, attendanceText } from '@/lib/attendance';
@@ -86,12 +86,12 @@ function ProgressReportPage() {
 
   const range = rangeFor(period, customRange);
   const periodSessions = useMemo(() => {
-    const from = range?.from ? startOfDay(range.from) : null;
-    const to = range?.to ? new Date(range.to) : range?.from ? new Date(range.from) : null;
-    to?.setHours(23, 59, 59, 999);
+    // A range with only a start date covers just that day.
+    const from = range?.from ?? null;
+    const to = range?.to ?? range?.from ?? null;
     return sessions
       .filter(s => s.studentId === studentId)
-      .filter(s => (!from || new Date(s.date) >= from) && (!to || new Date(s.date) <= to))
+      .filter(s => sessionInDateRange(s.date, from, to))
       .reverse()
       .sort(compareSessionsOldestFirst);
     // eslint-disable-next-line react-hooks/exhaustive-deps

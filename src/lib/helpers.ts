@@ -187,6 +187,19 @@ export function compareSessionsOldestFirst(a: { date: string; time?: string }, b
 }
 
 /**
+ * Whether a session's date is within a range picked in the app: on or after the start of `from`'s day and on or
+ * before the end of `to`'s day (either end may be left open). A date-only session date, as imported sessions have,
+ * counts as that local day, not the evening before. A session whose date can't be read is outside any range.
+ */
+export function sessionInDateRange(date: string, from?: Date | null, to?: Date | null): boolean {
+  const when = parseDateOnly(date).getTime();
+  if (Number.isNaN(when)) return !from && !to;
+  if (from && when < new Date(from.getFullYear(), from.getMonth(), from.getDate()).getTime()) return false;
+  if (to && when > new Date(to.getFullYear(), to.getMonth(), to.getDate(), 23, 59, 59, 999).getTime()) return false;
+  return true;
+}
+
+/**
  * The goal statement with the goal bank's placeholders filled in: blanks ("___", see goal-blanks.ts), the stated target
  * and mastery matching the goal's settings, "[date]" with
  * the goal's target date, and "STUDENT" / "the student" with the student's first name. The stored text is unchanged.
