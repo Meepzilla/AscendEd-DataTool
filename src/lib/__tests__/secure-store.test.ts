@@ -27,7 +27,9 @@ describe('passcode protection', () => {
     storage.setItem('ascended_display_scale', '1');
     await store.enablePasscode('passcode1');
     expect(storage.getItem(S)!.startsWith('enc1:')).toBe(true);
-    expect(storage.getItem(S)).not.toContain('Ava');
+    // Encrypted text is random base64, which can contain any short run of letters and digits, but never a quote
+    // or a space, so plaintext is looked for with its JSON quotes.
+    expect(storage.getItem(S)).not.toContain('"Ava"');
     expect(storage.getItem('ascended_display_scale')).toBe('1');
 
     vi.resetModules();
@@ -74,7 +76,7 @@ describe('passcode protection', () => {
     for (const k of [T, G, A]) {
       expect(storage.getItem(k)!.startsWith('enc1:')).toBe(true);
     }
-    expect(storage.getItem(T)).not.toContain('Goal');
+    expect(storage.getItem(T)).not.toContain('"Goal"');
     expect(storage.getItem(G)).not.toContain('Room 12');
     expect(storage.getItem(A)).not.toContain('Asked to wait');
 
