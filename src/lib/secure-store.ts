@@ -35,6 +35,13 @@ import { isQuotaError } from './storage-failure';
 
 const CONFIG_KEY = 'ascended_passcode_v1';
 const ITERATIONS = 600_000;
+/**
+ * The most PBKDF2 iterations opening a password-protected backup may run. The app writes ITERATIONS
+ * today; the ceiling is a clear multiple of that with headroom for future increases. A backup naming
+ * more is treated as damaged rather than derived, because the count comes from the file and derivation
+ * runs it as stated, so a crafted count in the hundreds of millions would hang the tab.
+ */
+export const MAX_BACKUP_ITERATIONS = 5_000_000;
 const PREFIX = 'enc1:';
 /** Known plaintext encrypted under the data key, to tell a right passcode or recovery key from a wrong one. Not a secret. */
 export const CHECK_TEXT = 'ascended-passcode-check';
@@ -1593,6 +1600,9 @@ export async function encryptWithPassword(text: string, password: string): Promi
 
 /** Decrypts text encrypted with encryptWithPassword; throws if the password is wrong or the data damaged. */
 export async function decryptWithPassword(payload: PasswordProtected, password: string): Promise<string> {
+  if (!Number.isInteger(payload.iterations) || payload.iterations < 1 || payload.iterations > MAX_BACKUP_ITERATIONS) {
+    throw new Error('This backup file is damaged or was not written by this app.');
+  }
   const k = await deriveKey(password, unb64(payload.salt), payload.iterations);
   return decryptWith(k, payload.data);
 }

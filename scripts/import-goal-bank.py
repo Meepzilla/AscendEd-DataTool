@@ -8,12 +8,19 @@ session target, from the goal's skill area and how its text says success is meas
   src/lib/goal-constants/goal-bank.json   templates bundled with the app
   public/goal-bank/details.json           purpose, activity ideas and tags, loaded on demand
   docs/goal-bank-review.csv               every goal with its type, target and the reason, for review
+  src/lib/goal-constants/goal-bank-ids.json   persistent goal name -> bankId mapping
+
+A goal's bankId comes from the mapping, keyed by the goal's name, never from its CSV row: reordering,
+inserting or deleting rows cannot renumber other goals, and a removed goal's ID is never reused. When
+the mapping file is absent it is bootstrapped from the current templates file, adopting the IDs in use.
+All outputs are staged in memory and swapped in with os.replace, the mapping last.
 
 Run from the repository root:  python3 scripts/import-goal-bank.py path/to/SLP_Goal_Bank.csv
 To apply changes to tidy_text without the CSV:  python3 scripts/import-goal-bank.py --tidy
 """
 import csv
 import json
+import os
 import re
 import sys
 from collections import Counter
@@ -26,6 +33,9 @@ TYPE_UPDATES_OUT = 'src/lib/goal-constants/goal-bank-type-updates.json'
 # updated: earlier goal texts by hash (keyed by bankId), and earlier names. Cumulative, like the type updates.
 TEXT_UPDATES_OUT = 'src/lib/goal-constants/goal-bank-text-updates.json'
 RENAMES_OUT = 'src/lib/goal-constants/goal-bank-renames.json'
+# Persistent goal name -> bankId mapping. A goal keeps its bankId for as long as its name is unchanged,
+# whatever happens to the CSV's row order; IDs are never reused for a different goal.
+BANK_IDS_OUT = 'src/lib/goal-constants/goal-bank-ids.json'
 MEASURED_BY = 'as measured by SLP or teacher observation and data collection'
 DETAILS_OUT = 'public/goal-bank/details.json'
 REVIEW_OUT = 'docs/goal-bank-review.csv'
@@ -271,9 +281,108 @@ def load_json(path, default):
         return default
 
 
-def record_wording_changes(previous, templates):
+def dump_json(path, data, **kwargs):
+    """Writes JSON via os.replace, so a reader never sees a half-written file."""
+    tmp = f'{path}.tmp'
+    with open(tmp, 'w', encoding='utf-8') as fh:
+        json.dump(data, fh, ensure_ascii=False, **kwargs)
+    os.replace(tmp, path)
+
+
+def stage_json(staged, path, data, **kwargs):
+    """Serializes one output into the in-memory staging dict as (path, bytes, encoding)."""
+    staged.append((path, json.dumps(data, ensure_ascii=False, **kwargs).encode('utf-8'), 'utf-8'))
+
+
+def stage_csv(staged, path, fieldnames, rows):
+    """Serializes the review CSV into the staging dict (utf-8-sig, as the file has always been written)."""
+    import io
+    buf = io.StringIO(newline='')
+    w = csv.DictWriter(buf, fieldnames=fieldnames)
+    w.writeheader()
+    w.writerows(rows)
+    staged.append((path, buf.getvalue().encode('utf-8-sig'), 'utf-8-sig'))
+
+
+def commit_staged(staged):
+    """Swaps every staged output into place with os.replace (atomic per file). Outputs go in list order;
+    callers stage the bankId mapping last, because it is the only file whose correctness depends on a
+    templates file that matches it: a crash before it lands leaves the old self-consistent pair in place."""
+    for path, data, _encoding in staged:
+        tmp = f'{path}.tmp'
+        with open(tmp, 'wb') as fh:
+            fh.write(data)
+        os.replace(tmp, path)
+
+
+def load_bank_ids(previous_templates):
+    """The persistent name -> bankId mapping. When the mapping file does not exist yet, it is bootstrapped
+    from the templates file of the last import (each template already carries its name and bankId), so the
+    IDs in use today are adopted unchanged. Names missing from the current CSV keep their entries."""
+    mapping = load_json(BANK_IDS_OUT, None)
+    if mapping is None:
+        mapping = {t['name']: t['bankId'] for t in previous_templates}
+    return mapping
+
+
+def next_bank_number(mapping):
+    """One past the highest bank number ever handed out (IDs are never reused)."""
+    highest = 0
+    for bank_id in mapping.values():
+        m = re.fullmatch(r'bank-(\d+)', bank_id or '')
+        if m:
+            highest = max(highest, int(m.group(1)))
+    return highest + 1
+
+
+def assign_bank_ids(names, mapping, renames):
+    """Gives each of this run's unique goal names its bankId, mutating the mapping. A name already mapped
+    keeps its ID. A name that is the "to" side of a recorded rename takes the "from" name's ID when the
+    old name is mapped and absent from this run (a known rename), and the mapping key moves to the new
+    name. Anything else is a genuinely new goal and gets the next unused number. Returns (name -> bankId,
+    suspected rename pairs): pairs of (vanished name, appeared name) sharing a skill-area suffix or a
+    long common prefix, for a human to reconcile in the review output."""
+    current = set(names)
+    by_to = {}
+    for r in renames:
+        by_to.setdefault(r['to'], r['from'])
+    assigned, appeared = {}, []
+    next_num = next_bank_number(mapping)
+    for name in names:
+        if name in mapping:
+            assigned[name] = mapping[name]
+            continue
+        old_name = by_to.get(name)
+        if old_name and old_name in mapping and old_name not in current:
+            mapping[name] = mapping.pop(old_name)
+            assigned[name] = mapping[name]
+            continue
+        assigned[name] = f'bank-{next_num:04d}'
+        mapping[name] = assigned[name]
+        next_num += 1
+        appeared.append(name)
+    kept_ids = set(assigned.values())
+    vanished = [n for n, bid in mapping.items() if n not in current and bid not in kept_ids]
+    suspected = []
+    for new_name in appeared:
+        for old_name in vanished:
+            suffix_new = new_name.rsplit(' (', 1)[-1] if ' (' in new_name else ''
+            suffix_old = old_name.rsplit(' (', 1)[-1] if ' (' in old_name else ''
+            common = 0
+            for a, b in zip(new_name, old_name):
+                if a != b:
+                    break
+                common += 1
+            if (suffix_new and suffix_new == suffix_old) or common >= 40:
+                suspected.append((old_name, new_name))
+    return assigned, suspected
+
+
+def record_wording_changes(previous, templates, staged=None):
     """Records each template whose goal text or name changed since the previous version (matched by bankId):
-    its earlier text's hash, and its earlier name. Devices update stored copies that still have the old wording."""
+    its earlier text's hash, and its earlier name. Devices update stored copies that still have the old wording.
+    With `staged`, the two cumulative files join the caller's atomic commit instead of being written
+    directly (the bankId mapping is written by the caller, never here, and always last)."""
     text_updates = load_json(TEXT_UPDATES_OUT, {})
     renames = load_json(RENAMES_OUT, [])
     before = {t['bankId']: t for t in previous}
@@ -291,9 +400,13 @@ def record_wording_changes(previous, templates):
                 if r['to'] == old['name']:
                     r['to'] = t['name']
             renames.append({'from': old['name'], 'to': t['name']})
-    json.dump(text_updates, open(TEXT_UPDATES_OUT, 'w'), ensure_ascii=False, separators=(',', ':'), sort_keys=True)
-    json.dump(renames, open(RENAMES_OUT, 'w'), ensure_ascii=False, indent=1)
-    return len(text_updates), len(renames)
+    if staged is not None:
+        stage_json(staged, TEXT_UPDATES_OUT, text_updates, separators=(',', ':'), sort_keys=True)
+        stage_json(staged, RENAMES_OUT, renames, indent=1)
+    else:
+        dump_json(TEXT_UPDATES_OUT, text_updates, separators=(',', ':'), sort_keys=True)
+        dump_json(RENAMES_OUT, renames, indent=1)
+    return len(text_updates), len(renames), renames
 
 
 def tidy_existing():
@@ -304,14 +417,13 @@ def tidy_existing():
     clashes = [n for n, c in names.items() if c > 1]
     if clashes:
         sys.exit(f'Tidied names would clash: {clashes}')
-    json.dump(templates, open(TEMPLATES_OUT, 'w'), ensure_ascii=False, indent=0)
     rows = list(csv.DictReader(open(REVIEW_OUT, newline='', encoding='utf-8-sig')))
     for row, t in zip(rows, templates):
         row['Template name'], row['Goal text'] = t['name'], t['generatedSmartGoal']
-    with open(REVIEW_OUT, 'w', newline='', encoding='utf-8-sig') as fh:
-        w = csv.DictWriter(fh, fieldnames=list(rows[0].keys()))
-        w.writeheader()
-        w.writerows(rows)
+    staged = []
+    stage_json(staged, TEMPLATES_OUT, templates, indent=0)
+    stage_csv(staged, REVIEW_OUT, list(rows[0].keys()), rows)
+    commit_staged(staged)
     changed_text = sum(a['generatedSmartGoal'] != b['generatedSmartGoal'] for a, b in zip(previous, templates))
     changed_names = sum(a['name'] != b['name'] for a, b in zip(previous, templates))
     record_wording_changes(previous, templates)
@@ -339,7 +451,8 @@ def main():
         groups.setdefault(tidy_text(make_name(r['Goal text']), name=True), []).append(r['Goal text'])
     used = set(existing)
     templates, details, review = [], {}, []
-    for i, r in enumerate(rows, 1):
+    pending = []
+    for r in rows:
         text = re.sub(r'\s+', ' ', r['Goal text']).strip()
         behavior = classify_behavior(r['Skill area'], text)
         if behavior:
@@ -358,7 +471,16 @@ def main():
         while name in used:
             name, n = f'{base} #{n}', n + 1
         used.add(name)
-        bank_id = f'bank-{i:04d}'
+        pending.append((r, name, goal_type, direction, reason, text))
+
+    # Bank identity comes from the persistent name -> bankId mapping, never from row position: a goal
+    # keeps its bankId across reordered, inserted or deleted CSV rows, and a deleted goal's ID is never
+    # reused. Known renames (goal-bank-renames.json) carry the ID to the new name.
+    mapping = load_bank_ids(previous)
+    names = [name for _r, name, *_rest in pending]
+    assigned, suspected = assign_bank_ids(names, mapping, load_json(RENAMES_OUT, []))
+    for r, name, goal_type, direction, reason, text in pending:
+        bank_id = assigned[name]
         target = target_for(goal_type, text)
         old_type = previous_types.get(name)
         if old_type and old_type != goal_type and {'name': name, 'fromType': old_type} not in type_updates:
@@ -374,16 +496,20 @@ def main():
         review.append({'Set': r['Set'], 'Skill area': r['Skill area'], 'Template name': name, 'Data type': TYPE_LABELS[goal_type],
                        'Target': target_label(goal_type, target, direction),
                        'Why': reason, 'Goal text': text})
-
-    json.dump(templates, open(TEMPLATES_OUT, 'w'), ensure_ascii=False, indent=0)
-    # Matched by bankId (the row number), so this assumes the CSV keeps its row order between imports.
-    record_wording_changes(previous, templates)
-    json.dump(type_updates, open(TYPE_UPDATES_OUT, 'w'), ensure_ascii=False, indent=1)
-    json.dump(details, open(DETAILS_OUT, 'w'), ensure_ascii=False, separators=(',', ':'))
-    with open(REVIEW_OUT, 'w', newline='', encoding='utf-8-sig') as fh:
-        w = csv.DictWriter(fh, fieldnames=list(review[0].keys()))
-        w.writeheader()
-        w.writerows(review)
+    for old_name, new_name in suspected:
+        review.append({'Set': '', 'Skill area': '', 'Template name': f'SUSPECTED RENAME: {old_name} -> {new_name} (reconcile in {BANK_IDS_OUT})',
+                       'Data type': '', 'Target': '', 'Why': 'A name vanished and a similar name appeared in the same import; if they are the same goal, move the old name\'s bankId to the new name in the mapping file.', 'Goal text': ''})
+    # Every output is built in memory first, then swapped in with os.replace (atomic per file). The
+    # wording-change files go through the same staging; the bankId mapping is staged last, because a
+    # crash before it lands leaves the previous, self-consistent mapping in place for the old templates.
+    staged = []
+    stage_json(staged, TEMPLATES_OUT, templates, indent=0)
+    record_wording_changes(previous, templates, staged)
+    stage_json(staged, TYPE_UPDATES_OUT, type_updates, indent=1)
+    stage_json(staged, DETAILS_OUT, details, separators=(',', ':'))
+    stage_csv(staged, REVIEW_OUT, list(review[0].keys()), review)
+    stage_json(staged, BANK_IDS_OUT, mapping, indent=1, sort_keys=True)
+    commit_staged(staged)
     print(f'{len(templates)} templates, {len(type_updates)} recorded type changes')
     for k, v in Counter(t['type'] for t in templates).most_common():
         print(f'  {v:4}  {TYPE_LABELS[k]}')

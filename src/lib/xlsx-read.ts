@@ -1,6 +1,18 @@
 import { strFromU8, unzipSync } from 'fflate';
 import { checkImportFileSize } from './helpers';
 
+// Bounds on what a workbook file can make this parser do. The compressed size is already capped at
+// 10 MB (checkImportFileSize), but zip entries expand far past their compressed size, and row and
+// column references are file-controlled numbers used as array indices, so both get their own caps.
+// A student import sheet is a class list: a few hundred rows and a couple of dozen columns at most,
+// so these sit far above any real sheet while keeping a hostile one cheap to reject.
+export const MAX_XLSX_UNCOMPRESSED_BYTES = 100 * 1024 * 1024;
+export const MAX_XLSX_ROWS = 10_000;
+export const MAX_XLSX_COLUMNS = 1_000;
+// Excel serial dates the app can hold as YYYY-MM-DD: serial 1 (1900-01-01) through 9999-12-31
+// (serial 2,958,465 in the 1900 system; the 1904 system runs 1,462 lower, so one ceiling covers both).
+export const MAX_XLSX_DATE_SERIAL = 2_958_465;
+
 // Reads the first worksheet of an Excel workbook (.xlsx) into rows of cell values, for importing students.
 // An .xlsx file is a zip of XML files: the worksheet holds numbers and pointers into a shared list of strings,
 // and a cell's style says whether its number is a date. Only what an import needs is read: text, numbers,
@@ -43,6 +55,11 @@ function dateStyles(stylesXml: string | undefined): Set<number> {
 
 /** A spreadsheet date number as YYYY-MM-DD (days since 30 Dec 1899, or since 1 Jan 1904 in 1904 workbooks). */
 export function serialToDate(serial: number, date1904 = false): string {
+  // A serial from the file can be any number a cell holds. Outside the range Excel dates cover, the
+  // Date below overflows and toISOString throws a raw RangeError; reject with an import error instead.
+  if (!Number.isFinite(serial) || serial < 1 || serial > MAX_XLSX_DATE_SERIAL) {
+    throw new Error(`The workbook holds a date outside the range Excel dates can hold (${serial}), so it can't be imported.`);
+  }
   const days = Math.floor(serial) + (date1904 ? 1462 : 0);
   // Excel's 1900 system counts a leap day that never happened (1900 wasn't a leap year), so serials below
   // 60 are one day short of the real date: 1 is 1900-01-01 and 59 is 1900-02-28. Serial 60 stays the
@@ -65,6 +82,15 @@ export function readXlsx(data: Uint8Array): CellValue[][] {
   } catch {
     throw new Error('This file isn\'t an Excel workbook (.xlsx).');
   }
+  // The 10 MB limit bounds the zip as sent; what matters for memory is how large the XML is once
+  // opened, so the decompressed total gets its own cap, checked before any of it is parsed.
+  let uncompressedBytes = 0;
+  for (const entry of Object.values(files)) {
+    uncompressedBytes += entry.length;
+    if (uncompressedBytes > MAX_XLSX_UNCOMPRESSED_BYTES) {
+      throw new Error('This workbook expands to more than 100 MB of XML when it is opened, so it can\'t be imported. Split it into smaller files and try again.');
+    }
+  }
   const read = (name: string) => (files[name] ? strFromU8(files[name]) : undefined);
   const workbook = read('xl/workbook.xml');
   if (!workbook) throw new Error('This file isn\'t an Excel workbook (.xlsx).');
@@ -86,11 +112,15 @@ export function readXlsx(data: Uint8Array): CellValue[][] {
   const rows: CellValue[][] = [];
   for (const rowMatch of sheet.matchAll(/<row\b([^>]*)>([\s\S]*?)<\/row>/g)) {
     const rowNumber = Number(attr(rowMatch[1], 'r')) || rows.length + 1;
+    // A row number from the file is used as an array index below; one past the cap is skipped rather
+    // than forcing an array that size to exist.
+    if (rowNumber < 1 || rowNumber > MAX_XLSX_ROWS) continue;
     const row: CellValue[] = [];
     for (const cell of rowMatch[2].matchAll(/<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g)) {
       const [, attrs, body = ''] = cell;
       const ref = attr(attrs, 'r');
       const col = ref ? columnIndex(ref) : row.length;
+      if (col < 0 || col >= MAX_XLSX_COLUMNS) continue;
       const type = attr(attrs, 't');
       const raw = /<v>([\s\S]*?)<\/v>/.exec(body)?.[1];
       let value: CellValue = null;

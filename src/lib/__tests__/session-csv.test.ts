@@ -135,6 +135,30 @@ describe('CSV formula injection (CWE-1236)', () => {
     expect(rows[0]['Activity']).toBe('plain words');
     expect(unescapeCsvFormula("'plain")).toBe("'plain"); // an apostrophe the user typed stays
   });
+
+  it('escapes a formula starter hiding behind leading whitespace', () => {
+    const s = session({ notes: ' =HYPERLINK("http://example.com","click")', activity: '\t@SUM(A1)' });
+    const { csv } = buildSessionsCsv([s], 'Ava');
+    const rows = Papa.parse<Record<string, string>>(csv, { header: true, skipEmptyLines: true }).data;
+    expect(rows[0]['Session Notes']).toBe('\' =HYPERLINK("http://example.com","click")');
+    expect(rows[0]['Activity']).toBe('\'\t@SUM(A1)');
+  });
+
+  it('a whitespace-hidden formula note comes back unchanged when the CSV is imported again', () => {
+    const notes = ' =1+2';
+    const { csv } = buildSessionsCsv([session({ notes })], 'Ava');
+    const rows = Papa.parse<Record<string, string>>(csv, { header: true, skipEmptyLines: true, transform: (v: string) => unescapeCsvFormula(v) }).data;
+    expect(rows[0]['Session Notes']).toBe(notes);
+    expect(unescapeCsvFormula("' =1+2")).toBe(' =1+2');
+  });
+
+  it('leaves ordinary text and plain negative numbers alone, with or without leading spaces', () => {
+    const s = session({ notes: '   worked on turn taking', activity: ' -5' });
+    const { csv } = buildSessionsCsv([s], 'Ava');
+    const rows = Papa.parse<Record<string, string>>(csv, { header: true, skipEmptyLines: true }).data;
+    expect(rows[0]['Session Notes']).toBe('   worked on turn taking');
+    expect(rows[0]['Activity']).toBe(' -5');
+  });
 });
 
 describe('parseServiceMinutesByType', () => {
