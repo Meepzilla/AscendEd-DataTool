@@ -9,6 +9,7 @@ import type { Student, Goal, GoalTemplate, SessionData } from '@/lib/types';
 import { useModalState } from './use-modal-state';
 import { useDataStorage } from './use-data-storage';
 import { goalFromTemplate, hasTemplateGoal, recordRecentTemplates } from '@/lib/goal-templates';
+import { goalsWithAdded, goalsWithUpdated, goalsWithout, withStudentGoals } from '@/lib/goal-changes';
 import { generateUUID } from '@/lib/helpers';
 import * as secureStore from '@/lib/secure-store';
 import { byDateDesc, byName, hydrateLists, readList } from '@/lib/data-store';
@@ -221,6 +222,24 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       if (!(await commitStudents(studentsRef.current.map(s => s.id === studentId ? { ...s, ...updatedData } : s).sort(byName)))) return;
       toast({ title: "Success", description: "Student updated." });
   }, [currentUser, toast, commitStudents]);
+
+  /**
+   * Writes one student's goals, worked out from the ref-backed records at the moment of the
+   * write and stored in the same commit (returning whether it was stored). Goal changes go
+   * through here rather than updateStudent with a goals list built earlier: a list built from
+   * a rendered snapshot goes stale as soon as another change lands, and writing it back would
+   * silently undo that change. False when the student isn't there or the save failed; the
+   * save itself shows the storage error, and the caller shows the success message.
+   */
+  const commitStudentGoals = useCallback(async (
+    studentId: string,
+    change: (goals: Goal[]) => Goal[],
+    updatedAt: string,
+  ): Promise<boolean> => {
+    const next = withStudentGoals(studentsRef.current, studentId, change, updatedAt);
+    if (!next) return false;
+    return commitStudents(next.sort(byName));
+  }, [commitStudents]);
 
   const deleteStudent = useCallback(async (studentId: string) => {
     if (!currentUser) return;
@@ -619,28 +638,25 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   }, [sessions]);
 
   const assignGoalToStudent = useCallback(async (studentId: string, goal: Goal) => {
-    const student = students.find(s => s.id === studentId);
-    if (!student) {
+    if (!studentsRef.current.some(s => s.id === studentId)) {
       toast({ title: "Error", description: "Student not found.", variant: "destructive" });
       return;
     }
-    const updatedGoals = [...student.goals, goal];
-    await updateStudent(studentId, { goals: updatedGoals });
-  }, [students, updateStudent, toast]);
-  
+    if (!(await commitStudentGoals(studentId, goals => goalsWithAdded(goals, goal), new Date().toISOString()))) return;
+    toast({ title: "Success", description: "Student updated." });
+  }, [commitStudentGoals, toast]);
+
   const removeGoalFromStudent = useCallback(async (studentId: string, goalId: string) => {
-      const student = students.find(s => s.id === studentId);
-      if (!student) { return; }
-      const updatedGoals = student.goals.filter(g => g.id !== goalId);
-      await updateStudent(studentId, { goals: updatedGoals });
-  }, [students, updateStudent]);
+      if (!studentsRef.current.some(s => s.id === studentId)) { return; }
+      if (!(await commitStudentGoals(studentId, goals => goalsWithout(goals, goalId), new Date().toISOString()))) return;
+      toast({ title: "Success", description: "Student updated." });
+  }, [commitStudentGoals, toast]);
 
   const updateStudentGoal = useCallback(async (studentId: string, goalId: string, data: Partial<Goal>) => {
-      const student = students.find(s => s.id === studentId);
-      if (!student) { return; }
-      const updatedGoals = student.goals.map(g => g.id === goalId ? { ...g, ...data } : g);
-      await updateStudent(studentId, { goals: updatedGoals });
-  }, [students, updateStudent]);
+      if (!studentsRef.current.some(s => s.id === studentId)) { return; }
+      if (!(await commitStudentGoals(studentId, goals => goalsWithUpdated(goals, goalId, data), new Date().toISOString()))) return;
+      toast({ title: "Success", description: "Student updated." });
+  }, [commitStudentGoals, toast]);
 
   const contextValue: StudentDataContextType = {
     students,

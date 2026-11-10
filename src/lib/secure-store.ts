@@ -1524,6 +1524,9 @@ export async function unlockWithRecoveryKey(input: string): Promise<boolean> {
   key = dek;
   legacyKey = null;
   await loadAndMigrateValues(null, dek, true, JSON.stringify(config));
+  // Same as a passcode unlock: rows an earlier version left as plaintext in IndexedDB are
+  // encrypted under the data key, so recovery does not leave them readable on disk.
+  await sealPlaintextRows();
   return true;
 }
 
@@ -1561,6 +1564,10 @@ export async function resetPasscodeWithRecoveryKey(recoveryKey: string, next: st
   // Values still stored under the forgotten passcode key cannot be read without it: they stay
   // as stored (marked unreadable) and are reported, never written over.
   await reencryptLegacyValues();
+  // reencryptLegacyValues covers values keyed under the old passcode; rows an earlier version
+  // left as plaintext in IndexedDB are not keyed at all, so seal them under the data key too,
+  // as a passcode unlock does.
+  await sealPlaintextRows();
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const newKek = await deriveKey(next, salt, ITERATIONS);
   const wrappedDek = await wrapDek(dek, newKek);

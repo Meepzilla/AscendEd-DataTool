@@ -78,6 +78,38 @@ it('rows left plaintext by the earlier bug are encrypted on the next unlock', as
   expect(store.getItem(S)).toContain('Ava');
 }, 30000);
 
+describe('rows left plaintext, recovered with the recovery key', () => {
+  async function enableWithRecoveryKey() {
+    const recoveryKey = store.generateRecoveryKey();
+    await store.enablePasscode('passcode1', 15, recoveryKey);
+    await load({ students: [{ k: 's1', v: '{"id":"s1","name":"Ava"}', o: 0 }] });
+    storage.setItem(MIGRATION_FLAG_KEY, JSON.stringify({ [S]: true }));
+    return recoveryKey;
+  }
+
+  it('are encrypted when unlocking with the recovery key', async () => {
+    const recoveryKey = await enableWithRecoveryKey();
+    expect(await store.unlockWithRecoveryKey(recoveryKey)).toBe(true);
+    const [row] = await idb.getAllRecords('students');
+    expect(row.v.startsWith('enc1:')).toBe(true);
+    await dataStore.hydrateLists(keys);
+    expect(store.getItem(S)).toContain('Ava');
+  }, 30000);
+
+  it('are encrypted when the passcode is reset with the recovery key', async () => {
+    const recoveryKey = await enableWithRecoveryKey();
+    const { quarantined } = await store.resetPasscodeWithRecoveryKey(recoveryKey, 'newpass99');
+    expect(quarantined).toEqual([]);
+    const [row] = await idb.getAllRecords('students');
+    expect(row.v.startsWith('enc1:')).toBe(true);
+    await dataStore.hydrateLists(keys);
+    expect(store.getItem(S)).toContain('Ava');
+    // The new passcode opens the sealed rows on a fresh start.
+    await load(await allRows());
+    expect(await store.unlock('newpass99')).toBe(true);
+  }, 30000);
+});
+
 describe('turning protection off', () => {
   beforeEach(async () => {
     storage.setItem(S, JSON.stringify([{ id: 's1', name: 'Ava' }, { id: 's2', name: 'Ben' }]));
