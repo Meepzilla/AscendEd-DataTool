@@ -9,6 +9,7 @@ import { compareSessionsOldestFirst, formatDate, formatDateOnly, formatGoalTarge
 import { timePatterns, TIMING_MEASURE_LABELS, WEEKDAY_NAMES } from './behavior-timing';
 import { formatGasLevel, gasLevelLabel } from './gas';
 import type { TaskStepScore } from './task-analysis';
+import { trendWeight } from './trial-weights';
 import { AIM_RULE_SESSIONS, aimLine, aimStatus, aimValueAt, masterySessions, type AimLine, type AimStatus } from './aim-line';
 
 // A written summary of a student's data for a date range, built from fixed sentence patterns (no AI).
@@ -129,7 +130,7 @@ interface GoalAnalysis {
  * sessions can overshoot the values actually recorded (e.g. 108% or -2 occurrences), and those ends
  * are the fitted values at those dates, not observed ones.
  */
-function fitTrend(goal: Goal, points: { date: string; value: number }[]): GoalAnalysis['trend'] {
+function fitTrend(goal: Goal, points: { date: string; value: number; weight?: number }[]): GoalAnalysis['trend'] {
   const sorted = [...points].sort((a, b) => parseDateOnly(a.date).getTime() - parseDateOnly(b.date).getTime());
   const values = sorted.map(p => p.value);
   const n = values.length;
@@ -139,12 +140,18 @@ function fitTrend(goal: Goal, points: { date: string; value: number }[]): GoalAn
   const xs = Number.isNaN(first) || sorted.some(p => Number.isNaN(parseDateOnly(p.date).getTime()))
     ? sorted.map((_, i) => i)
     : sorted.map(p => (parseDateOnly(p.date).getTime() - first) / 86400000);
-  const meanX = avg(xs);
-  const meanY = avg(values);
+  // Each session counts by its weight: its opportunities for a trial-based goal (trendWeight), so a session with
+  // 1 response out of 1 pulls the line a fifth as much as one with 5 out of 5. Equal weights give the plain fit.
+  const raw = sorted.map(p => (p.weight !== undefined && Number.isFinite(p.weight) ? Math.max(p.weight, 0) : 1));
+  const weights = raw.some(w => w > 0) ? raw : raw.map(() => 1);
+  const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+  const wavg = (nums: number[]) => nums.reduce((sum, v, i) => sum + v * weights[i], 0) / totalWeight;
+  const meanX = wavg(xs);
+  const meanY = wavg(values);
   // All sessions on the same day: no elapsed span to fit against, so the line is flat at the mean.
   if (xs[n - 1] - xs[0] <= 0) return { kind: 'stable', from: meanY, to: meanY };
   let num = 0, den = 0;
-  xs.forEach((x, i) => { num += (x - meanX) * (values[i] - meanY); den += (x - meanX) ** 2; });
+  xs.forEach((x, i) => { num += weights[i] * (x - meanX) * (values[i] - meanY); den += weights[i] * (x - meanX) ** 2; });
   const slope = den ? num / den : 0;
   const from = meanY + slope * (xs[0] - meanX);
   const to = meanY + slope * (xs[n - 1] - meanX);
@@ -180,7 +187,7 @@ function analyzeGoal(goal: Goal, number: number, sessions: SessionData[]): GoalA
   let streak = 0;
   for (let i = met.length - 1; i >= 0 && met[i]; i--) streak++;
   if (latestUnanswered) streak = 0;
-  const trend = fitTrend(goal, recorded.map(r => ({ date: r.session.date, value: r.value })));
+  const trend = fitTrend(goal, recorded.map(r => ({ date: r.session.date, value: r.value, weight: trendWeight(captureTypeOf(goal), r.data) })));
   const last = recorded[recorded.length - 1];
   const mastery = masterySessions(goal);
   const status: GoalStatus = recorded.length === 0 ? 'no data'

@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-10',
+    title: 'Short Sessions Count for Less in Accuracy Trends',
+    description: 'A session with 1 response out of 1 is 100%, the same as 5 out of 5, but says much less. On the Progress Over Time chart, each dot is now sized by its number of opportunities, dots with fewer than 5 are hollow, and tapping a point shows its count (for example 100% (1 of 1)). A dashed trend line pools the responses of the last 3 sessions, so one short session moves it little. The trend in the written summary and the Progress Report now counts each session by its number of opportunities too.',
+    type: 'improvement',
+    icon: BarChartHorizontalBig,
+  },
+  {
+    date: '2026-11-10',
     title: 'Swipe Between Student Cards',
     description: 'In Data Entry, the student cards now scroll sideways with a swipe, a trackpad or Shift and the mouse wheel, as well as with the arrow buttons in the bar at the bottom. A thin scrollbar appears under the cards while they scroll.',
     type: 'improvement',
