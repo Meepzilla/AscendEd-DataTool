@@ -6,21 +6,60 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Two jobs, so that a pull request never runs in a job that can read the release signing key.
+# - build-check (pull requests only): checks that the Android app still builds. It has no secrets and uploads nothing.
+# - build-release (pushes to master and manual runs only): the release build, signed with the key from the
+#   repository's secrets, and the APK teachers install.
+# Actions are pinned to full commit SHAs (the version tag is in the comment) so a moved tag can't change what runs.
+
 jobs:
-  build:
+  build-check:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       # Checks the committed gradle-wrapper.jar against Gradle's published checksums before it runs.
-      - uses: gradle/actions/wrapper-validation@v6
+      - uses: gradle/actions/wrapper-validation@8da46b539cd8fe6ab27ca75128919a18d757604c # v6
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 22
           cache: npm
 
-      - uses: actions/setup-java@v6
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web app and copy it into the Android project
+        run: npm run android:sync
+
+      # A debug build, signed with this runner's throwaway key, only to check that the app compiles. It is never
+      # uploaded or handed out.
+      - name: Build APK (check only)
+        working-directory: android
+        run: ./gradlew assembleDebug
+
+  build-release:
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      # Checks the committed gradle-wrapper.jar against Gradle's published checksums before it runs.
+      - uses: gradle/actions/wrapper-validation@8da46b539cd8fe6ab27ca75128919a18d757604c # v6
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6
         with:
           distribution: temurin
           java-version: 21
@@ -58,7 +97,7 @@ jobs:
             echo "::notice title=No APK published::The release signing key isn't set in this repository's secrets, so the app was built as a check only. Add ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS and ANDROID_KEY_PASSWORD to publish an installable APK."
           fi
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: steps.apk.outputs.release == 'true'
         with:
           name: AscendEd-apk
