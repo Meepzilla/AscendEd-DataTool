@@ -4,7 +4,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Target, Clock, RotateCcw, ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, LayoutGrid, Minimize2, UserX, UserPlus, ArrowRightLeft, Download, ListPlus, Workflow, Shuffle, CheckSquare, ListChecks, DatabaseZap, UserSearch, Upload, BrainCircuit, PanelLeft, ArrowLeft, MessagesSquare, BookOpen, Lock, ShieldCheck, PanelBottom, CalendarClock, Sun, Rocket } from 'lucide-react';
+import { Target, Clock, RotateCcw, History, ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, LayoutGrid, Minimize2, UserX, UserPlus, ArrowRightLeft, Download, ListPlus, Workflow, Shuffle, CheckSquare, ListChecks, DatabaseZap, UserSearch, Upload, BrainCircuit, PanelLeft, ArrowLeft, MessagesSquare, BookOpen, Lock, ShieldCheck, PanelBottom, CalendarClock, Sun, Rocket } from 'lucide-react';
 import { APP_NAME } from '@/lib/appConstants';
 
 interface ChangelogEntry {
@@ -17,6 +17,13 @@ interface ChangelogEntry {
 }
 
 const allChangelogEntries: ChangelogEntry[] = [
+  {
+    date: '2026-11-12',
+    title: 'Reset Time to Before in Data Entry',
+    description: 'Data Entry has a second time button beside the session date. Reset Time to Before sets the end time to now and the start time to 30 minutes before now, so a session that just happened can be marked and recorded in one tap. Reset Time to Now still starts a new session now, with the end 30 minutes later.',
+    type: 'feature',
+    icon: History,
+  },
   {
     date: '2026-11-12',
     title: 'Fixes for Backups, Service Minutes, Story Goals and Group Links',

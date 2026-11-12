@@ -110,7 +110,7 @@ export default function DataEntryContent() {
   const anyUnsaved = selectedStudentIds.some(id => hasUnsavedEntry(studentSessionStates[id], goalDefaults));
   const statesBuilt = Object.keys(studentSessionStates).length > 0;
   const {
-    sessionDate, sessionTime, sessionEndTime, chooseSessionDate, chooseSessionTime, chooseSessionEndTime, resetSessionToNow,
+    sessionDate, sessionTime, sessionEndTime, chooseSessionDate, chooseSessionTime, chooseSessionEndTime, resetSessionToNow, resetSessionToBefore,
   } = useSessionTimes({
     initial: draftHadEntries ? { date: draft?.sessionDate, time: draft?.sessionTime, endTime: draft?.sessionEndTime } : undefined,
     anyUnsaved,
@@ -704,6 +704,7 @@ export default function DataEntryContent() {
               dataEntrySessionEndTime={sessionEndTime}
               setDataEntrySessionEndTime={chooseSessionEndTime}
               onResetToNow={resetSessionToNow}
+              onResetToBefore={resetSessionToBefore}
               isStudentAccessLocked={isStudentAccessLocked}
               setIsStudentAccessLocked={requestAccessLock}
             />

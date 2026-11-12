@@ -6,8 +6,8 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { TimePicker } from '@/components/ui/time-picker';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { RotateCcw } from 'lucide-react';
-import { defaultSessionTimes, DEFAULT_SESSION_MINUTES } from '@/lib/session-time';
+import { RotateCcw, History } from 'lucide-react';
+import { defaultSessionTimes, previousSessionTimes, DEFAULT_SESSION_MINUTES } from '@/lib/session-time';
 
 interface SessionDateTimePickersProps {
   dataEntrySessionDate: Date | undefined;
@@ -18,6 +18,8 @@ interface SessionDateTimePickersProps {
   setDataEntrySessionEndTime: (time: string) => void;
   /** Reset Time to Now (today, now, and the date and times follow "now" again). */
   onResetToNow?: () => void;
+  /** Reset Time to Before (today, the 30-minute chunk that just ended: now minus 30 minutes to now). */
+  onResetToBefore?: () => void;
   /** Student Access Lock: the date and times can't be changed. */
   locked?: boolean;
 }
@@ -30,6 +32,7 @@ const SessionDateTimePickers: React.FC<SessionDateTimePickersProps> = ({
   dataEntrySessionEndTime,
   setDataEntrySessionEndTime,
   onResetToNow,
+  onResetToBefore,
   locked = false,
 }) => {
   // Starts the session now: today's date, the current time, and the default length.
@@ -42,6 +45,16 @@ const SessionDateTimePickers: React.FC<SessionDateTimePickersProps> = ({
     setDataEntrySessionEndTime(end);
   };
 
+  // Marks the session that just happened: today's date, the end at the current time, the start 30 minutes before.
+  const resetToBefore = () => {
+    if (onResetToBefore) return onResetToBefore();
+    const now = new Date();
+    const { start, end } = previousSessionTimes(now);
+    setDataEntrySessionDate(now);
+    setDataEntrySessionTime(start);
+    setDataEntrySessionEndTime(end);
+  };
+
   return (
     // A disabled fieldset disables every button in it (the pickers open from buttons).
     <fieldset disabled={locked} className="grid grid-cols-2 gap-x-4 gap-y-2 items-center disabled:opacity-60" title={locked ? 'Unlock Student Access to change the date or time' : undefined}>
@@ -49,8 +62,8 @@ const SessionDateTimePickers: React.FC<SessionDateTimePickersProps> = ({
         <Label htmlFor="sessionDate" className="block text-sm font-medium mb-1">Session Date</Label>
         <DatePicker date={dataEntrySessionDate} setDate={setDataEntrySessionDate} />
       </div>
-      {/* Reset sits beside the date, so the start and end times share the next row. */}
-      <div className="w-full self-end">
+      {/* The two resets sit beside the date, so the start and end times share the next row. */}
+      <div className="w-full self-end flex flex-col gap-2">
         <Button
           type="button"
           variant="outline"
@@ -59,6 +72,15 @@ const SessionDateTimePickers: React.FC<SessionDateTimePickersProps> = ({
           title={`Set the date to today, the start time to now and the end time to ${DEFAULT_SESSION_MINUTES} minutes from now`}
         >
           <RotateCcw className="mr-2 h-4 w-4 shrink-0" /> Reset Time to Now
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full h-auto min-h-10 whitespace-normal"
+          onClick={resetToBefore}
+          title={`Set the date to today, the end time to now and the start time to ${DEFAULT_SESSION_MINUTES} minutes before now, for a session that just happened`}
+        >
+          <History className="mr-2 h-4 w-4 shrink-0" /> Reset Time to Before
         </Button>
       </div>
       <div className="w-full">
