@@ -88,3 +88,16 @@ describe('goal text follows the target and mastery', () => {
     expect(goalStatement({ smartGoal: text, type: 'LANGUAGE_EXPRESSION', sessionTargetValue: 60 }, 'Ava')).toBe('By [date], Ava will request help in 3 out of 5 observed opportunities across 3 consecutive sessions.');
   });
 });
+
+// A rating, count or number of functions isn't a percentage, so it doesn't fill "___%" or "___ out of ___".
+describe('automaticBlankValues for targets that are not percentages', () => {
+  it('leaves the blanks for the teacher to fill', () => {
+    expect(automaticBlankValues('in ___ out of ___ opportunities', { type: 'QUALITATIVE_OBSERVATION', sessionTargetValue: 5 })).toEqual([undefined, undefined]);
+    expect(automaticBlankValues('in ___ out of ___ opportunities', { type: 'BEHAVIOR_FREQUENCY', sessionTargetValue: 10 })).toEqual([undefined, undefined]);
+    expect(automaticBlankValues('with ___% accuracy', { type: 'COMMUNICATION_FUNCTIONS', sessionTargetValue: 4 })).toEqual([undefined]);
+  });
+  it('still fills them from a percentage target', () => {
+    expect(automaticBlankValues('in ___ out of ___ opportunities', { type: 'ARTICULATION', sessionTargetValue: 80 })).toEqual(['4', '5']);
+    expect(automaticBlankValues('with ___% accuracy', { type: 'ARTICULATION', sessionTargetValue: 80 })).toEqual(['80']);
+  });
+});

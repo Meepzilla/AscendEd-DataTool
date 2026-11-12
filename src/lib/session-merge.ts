@@ -1,6 +1,6 @@
-import type { SessionData, SessionGoalData } from './types';
 import { compareSessionsOldestFirst, parseDateOnly } from './helpers';
-import { sessionMinutes } from './student-overview';
+import { sessionMinutes, sessionServiceMinutes } from './student-overview';
+import { SERVICE_TYPES, type ServiceType, type SessionData, type SessionGoalData } from './types';
 import { finalizeBehaviorData } from './goal-constants/behavior';
 import { STORY_PARTS } from './goal-constants/story-elements';
 
@@ -53,6 +53,18 @@ const STORY_PART_KEYS = new Set<string>(STORY_PARTS.map(p => p.key));
 
 const isBlank = (v: unknown) => v === null || (typeof v === 'string' && v.trim() === '');
 
+// Single values a goal starts with before it is worked on (a rating starts at 3, a GAS level is unset): a later
+// part that didn't work on the goal still saves them, so they replace an earlier part's value only when the
+// later part recorded the goal (or neither part did, as in sessions saved before the recorded mark).
+const STARTING_VALUES = new Set(['rating']);
+
+/** Observation minutes, stored as typed text ("15") or a number; null when not entered. */
+const minutesValue = (v: unknown): number | null => {
+  if (v === null || v === undefined || (typeof v === 'string' && v.trim() === '')) return null;
+  const n = Number(v);
+  return Number.isFinite(n) && n >= 0 ? n : null;
+};
+
 /** Combines one goal's data from several sessions, oldest first. */
 export function mergeGoalData(parts: Record<string, any>[]): Record<string, any> {
   const result: Record<string, any> = {};
@@ -63,6 +75,13 @@ export function mergeGoalData(parts: Record<string, any>[]): Record<string, any>
       if (value === undefined) continue;
       const current = result[key];
       if (current === undefined) { result[key] = Array.isArray(value) ? [...value] : value; continue; }
+      if (key === 'observationMinutes') {
+        // Observation time adds up across the parts (the app stores it as the text typed, e.g. "15").
+        const a = minutesValue(current), b = minutesValue(value);
+        if (a !== null || b !== null) result.observationMinutes = (a ?? 0) + (b ?? 0);
+        continue;
+      }
+      if (STARTING_VALUES.has(key) && part?.recorded !== true && result.recorded === true) continue;
       if (key === 'steps' && Array.isArray(current) && Array.isArray(value)) {
         // Task analysis: each step's latest score (by position), keeping earlier scores for steps scored once.
         // Data Entry saves every step, with an empty level for one not scored, and the parts are separate
@@ -131,8 +150,26 @@ export function mergeSessions(sessions: SessionData[]): SessionData {
   // session still caps it.
   const span = starts.length && ends.length ? Math.max(...ends) - Math.min(...starts) : null;
   if (span !== null && span > 0) goals.forEach(g => {
-    if (typeof g.data.observationMinutes === 'number') g.data.observationMinutes = Math.min(g.data.observationMinutes, span);
+    const observed = minutesValue(g.data.observationMinutes);
+    if (observed !== null) g.data.observationMinutes = Math.min(observed, span);
   });
+
+  // The split of minutes across service types: each part's split (a part without one counts all its minutes
+  // as Related Service, as it did on its own), added up. Without any split the merged span counts as Related, as
+  // before. When the parts overlap the total can exceed the merged span, so it is scaled down to fit.
+  let serviceMinutes: SessionData['serviceMinutes'] = undefined;
+  if (ordered.some(s => s.serviceMinutes)) {
+    const totals: Partial<Record<ServiceType, number>> = {};
+    for (const part of ordered) {
+      const split = sessionServiceMinutes(part);
+      for (const type of SERVICE_TYPES) if (split[type]) totals[type] = (totals[type] ?? 0) + split[type]!;
+    }
+    const total = SERVICE_TYPES.reduce((sum, type) => sum + (totals[type] ?? 0), 0);
+    if (total > 0) {
+      const scale = span !== null && span > 0 && total > span ? span / total : 1;
+      serviceMinutes = Object.fromEntries(SERVICE_TYPES.filter(t => totals[t]).map(t => [t, Math.round(totals[t]! * scale)]));
+    }
+  }
 
   return {
     ...first,
@@ -142,6 +179,7 @@ export function mergeSessions(sessions: SessionData[]): SessionData {
     notes: joinText(ordered.map(s => s.notes), '\n'),
     goals,
     originalGoalHeaders: latest.originalGoalHeaders,
+    serviceMinutes,
   };
 }
 

@@ -1,5 +1,5 @@
 import type { Goal, SessionData } from './types';
-import { compareSessionsOldestFirst, parseDateOnly } from './helpers';
+import { compareSessionsOldestFirst } from './helpers';
 
 // Goal Attainment Scaling: five levels, -2 (much less than expected) to +2 (much more than expected),
 // with 0 the expected outcome. The composite T-score is a per-student, per-date figure over all the
@@ -95,18 +95,21 @@ export interface GasTScorePoint {
  * its last level rather than dropping out of the composite.
  */
 export function gasTScoresOverTime(sessions: SessionData[], gasGoals: Pick<Goal, 'id'>[]): GasTScorePoint[] {
+  // One order throughout (day and start time, as everywhere else): "on or before" is "this session or an earlier
+  // one in that order". Comparing the stored instants instead disagreed with that order whenever a session's
+  // instant and its start time differ, and could leave out a session's own level.
   const ordered = [...sessions].sort(compareSessionsOldestFirst);
-  const dates = [...new Set(ordered.map(s => s.date))];
-  return dates.map(date => {
-    const cutoff = parseDateOnly(date).getTime();
-    const levels: Record<string, number> = {};
+  const running: Record<string, number> = {};
+  const byDate = new Map<string, Record<string, number>>();
+  for (const session of ordered) {
     for (const goal of gasGoals) {
-      for (const session of ordered) {
-        if (parseDateOnly(session.date).getTime() > cutoff) break;
-        const level = session.goals?.find(g => g.goalId === goal.id)?.data?.gasLevel;
-        if (typeof level === 'number' && level >= -2 && level <= 2) levels[goal.id] = level;
-      }
+      const level = session.goals?.find(g => g.goalId === goal.id)?.data?.gasLevel;
+      if (typeof level === 'number' && level >= -2 && level <= 2) running[goal.id] = level;
     }
+    byDate.set(session.date, { ...running });
+  }
+  return [...byDate.keys()].map(date => {
+    const levels = byDate.get(date)!;
     return { date, tScore: gasTScore(Object.values(levels)), levels };
   });
 }

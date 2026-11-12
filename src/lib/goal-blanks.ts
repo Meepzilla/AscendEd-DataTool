@@ -51,7 +51,8 @@ type BlankGoal = Partial<Pick<Goal, 'smartGoal' | 'sessionTargetValue' | 'master
 export function automaticBlankValues(text: string, goal: BlankGoal): (string | undefined)[] {
   const blanks = findBlanks(text);
   const values: (string | undefined)[] = blanks.map(() => undefined);
-  const target = goal.sessionTargetValue;
+  // Only a percentage target fills "___%" and "___ out of ___": a rating of 5 or a count of 10 isn't a percent.
+  const target = percentTarget(goal) ? goal.sessionTargetValue : undefined;
   const fractionIsTarget = !statesPercent(text);
   blanks.forEach((blank, i) => {
     const after = text.slice(blank.end, blank.end + 20);
