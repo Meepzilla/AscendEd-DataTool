@@ -228,6 +228,11 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const updateStudent = useCallback(async (studentId: string, data: Partial<Student>) => {
       if (!currentUser) return;
+      if (!studentsRef.current.some(s => s.id === studentId)) {
+        // Deleted meanwhile (another tab): say so instead of reporting an update that changed nothing.
+        toast({ title: "Error", description: "Student not found.", variant: "destructive" });
+        return;
+      }
       const updatedData = { ...data, updatedAt: new Date().toISOString() };
       if (!(await commitStudents(studentsRef.current.map(s => s.id === studentId ? { ...s, ...updatedData } : s).sort(byName)))) return;
       toast({ title: "Success", description: "Student updated." });

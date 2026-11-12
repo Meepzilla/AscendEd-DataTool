@@ -70,7 +70,13 @@ export default function DeleteDataCard() {
       /* the write error was already shown */
     }
     // The lists live in IndexedDB now: clear their rows (and the migration flag) as well.
-    await deleteAllListData();
+    try {
+      await deleteAllListData();
+    } catch {
+      // Nothing was deleted: say so instead of leaving the confirmation open with no message.
+      toast({ title: "Couldn't delete the data", description: 'This device\'s storage could not be cleared. Close other tabs with AscendEd open, reopen the app and try again.', variant: 'destructive' });
+      return;
+    }
     const keys: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);

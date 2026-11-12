@@ -38,9 +38,11 @@ export default function ManageGroupsDialog({ open, onOpenChange }: { open: boole
   const save = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editing || !editing.name.trim() || editing.studentIds.size === 0) return;
-    // Keeps the group's order, adding new students in alphabetical order.
+    // Keeps the group's order, adding new students in alphabetical order. An archived student isn't shown in the
+    // editor (so can't be ticked), and stays in the group: they are back in it when un-archived.
     const original = groups.find(g => g.id === editing.id)?.studentIds ?? [];
-    const ids = [...original.filter(id => editing.studentIds.has(id)), ...activeStudents.map(s => s.id).filter(id => editing.studentIds.has(id) && !original.includes(id))];
+    const archived = new Set(students.filter(s => s.isArchived).map(s => s.id));
+    const ids = [...original.filter(id => editing.studentIds.has(id) || archived.has(id)), ...activeStudents.map(s => s.id).filter(id => editing.studentIds.has(id) && !original.includes(id))];
     try {
       saveGroup({ id: editing.id, name: editing.name, studentIds: ids });
     } catch (error) {

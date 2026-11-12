@@ -48,7 +48,9 @@ export function isOwnDataChangedMessage(data: unknown): boolean {
 export function postDataErased() {
   try {
     if (typeof BroadcastChannel !== 'undefined') {
-      new BroadcastChannel(DATA_CHANGED_CHANNEL).postMessage({ type: 'data-erased', senderId: TAB_ID, at: Date.now() });
+      const channel = new BroadcastChannel(DATA_CHANGED_CHANNEL);
+      channel.postMessage({ type: 'data-erased', senderId: TAB_ID, at: Date.now() });
+      channel.close();
     }
   } catch {
     // Another tab keeps its copy until it is reloaded; this tab's deletion still went ahead.
@@ -59,7 +61,10 @@ export function postDataErased() {
 export function postDataChanged() {
   try {
     if (typeof BroadcastChannel !== 'undefined') {
-      new BroadcastChannel(DATA_CHANGED_CHANNEL).postMessage({ type: 'data-changed', senderId: TAB_ID, at: Date.now() });
+      // Closed after posting (the message is already queued for the other tabs): one was left open per save.
+      const channel = new BroadcastChannel(DATA_CHANGED_CHANNEL);
+      channel.postMessage({ type: 'data-changed', senderId: TAB_ID, at: Date.now() });
+      channel.close();
     }
   } catch {
     // Another tab simply will not reload; this tab's data is still stored.

@@ -101,3 +101,11 @@ describe('automaticBlankValues for targets that are not percentages', () => {
     expect(automaticBlankValues('with ___% accuracy', { type: 'ARTICULATION', sessionTargetValue: 80 })).toEqual(['80']);
   });
 });
+
+describe('percentAsFraction at 100%', () => {
+  it('reads 5 out of 5, not 2 out of 2', () => {
+    expect(percentAsFraction(100)).toEqual([5, 5]);
+    expect(percentAsFraction(50)).toEqual([1, 2]);
+    expect(percentAsFraction(80)).toEqual([4, 5]);
+  });
+});

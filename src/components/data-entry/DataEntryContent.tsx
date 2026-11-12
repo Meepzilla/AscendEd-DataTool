@@ -408,6 +408,17 @@ export default function DataEntryContent() {
     if (Object.keys(moves).length) setFocusedGoalIndexByStudentId(prev => ({ ...prev, ...moves }));
   }, [visibleGoalIdsByStudent, focusedGoalIndexByStudentId]);
 
+  // The highlighted goal is always among the goals the card shows: cycling with the hotkeys past the first ten
+  // shows more of the list, instead of scoring a goal that isn't on screen.
+  useEffect(() => {
+    const more: Record<string, number> = {};
+    for (const [studentId, index] of Object.entries(focusedGoalIndexByStudentId)) {
+      const shown = visibleGoalCountByStudentId[studentId] ?? 10;
+      if (index >= shown && index < (visibleGoalIdsByStudent[studentId]?.length ?? 0)) more[studentId] = Math.ceil((index + 1) / 10) * 10;
+    }
+    if (Object.keys(more).length) setVisibleGoalCountByStudentId(prev => ({ ...prev, ...more }));
+  }, [focusedGoalIndexByStudentId, visibleGoalCountByStudentId, visibleGoalIdsByStudent]);
+
   const handleMoveGoal = useCallback((studentId: string, goalId: string, direction: 'up' | 'down') => {
     setStudentSessionStates(prevStates => {
         const studentState = prevStates[studentId];
