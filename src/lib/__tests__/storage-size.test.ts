@@ -48,6 +48,21 @@ describe('estimateStorage', () => {
     expect(estimate.over3MB).toBe(true);
   });
 
+  it('calls estimate as a method of the storage object, as Chromium requires', async () => {
+    // A bare extracted function loses its receiver and throws in Chromium;
+    // the stub reproduces that so the fallback cannot hide the failure.
+    const storage = {
+      estimate: async function (this: unknown) {
+        if (this !== storage) throw new TypeError('Illegal invocation');
+        return { usage: 1024, quota: 2048 };
+      },
+    };
+    vi.stubGlobal('navigator', { storage });
+    const estimate = await estimateStorage(() => 0);
+    expect(estimate.source).toBe('estimate');
+    expect(estimate.quota).toBe(2048);
+  });
+
   it('falls back to the counted bytes with no quota when the browser reports nothing', async () => {
     vi.stubGlobal('navigator', {});
     const estimate = await estimateStorage(() => 4 * 1024 * 1024);

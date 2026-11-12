@@ -366,7 +366,13 @@ export async function backupFileText(backup: AppBackup, password?: string): Prom
   }
   if (!password) return json;
   const file: ProtectedBackupFile = { app: BACKUP_APP, protected: await encryptWithPassword(json, password) };
-  return JSON.stringify(file);
+  const fileText = JSON.stringify(file);
+  // Encryption expands the payload by about a third (base64), so the size
+  // limit has to be checked on the final file text, not only the plaintext.
+  if (new TextEncoder().encode(fileText).length > MAX_BACKUP_FILE_BYTES) {
+    throw new Error(`This backup would be too large to restore (${TOO_LARGE}), so it was not saved. Use Settings → Delete Data to remove students who have left, then back up again.`);
+  }
+  return fileText;
 }
 
 /** Whether a backup file's text is password-protected (then decryptBackupText is needed before parseBackup). */
