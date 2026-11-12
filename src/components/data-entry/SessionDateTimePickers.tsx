@@ -62,12 +62,13 @@ const SessionDateTimePickers: React.FC<SessionDateTimePickersProps> = ({
         <Label htmlFor="sessionDate" className="block text-sm font-medium mb-1">Session Date</Label>
         <DatePicker date={dataEntrySessionDate} setDate={setDataEntrySessionDate} />
       </div>
-      {/* The two resets sit beside the date, so the start and end times share the next row. */}
-      <div className="w-full self-end flex flex-col gap-2">
+      {/* The two resets sit beside the date, so the start and end times share the next row. They stack on
+          narrow screens and share one line from the sm breakpoint up, where the cell is wide enough for both. */}
+      <div className="w-full self-end flex flex-col sm:flex-row gap-2">
         <Button
           type="button"
           variant="outline"
-          className="w-full h-auto min-h-10 whitespace-normal"
+          className="w-full sm:flex-1 h-auto min-h-10 whitespace-normal"
           onClick={resetToNow}
           title={`Set the date to today, the start time to now and the end time to ${DEFAULT_SESSION_MINUTES} minutes from now`}
         >
@@ -76,7 +77,7 @@ const SessionDateTimePickers: React.FC<SessionDateTimePickersProps> = ({
         <Button
           type="button"
           variant="outline"
-          className="w-full h-auto min-h-10 whitespace-normal"
+          className="w-full sm:flex-1 h-auto min-h-10 whitespace-normal"
           onClick={resetToBefore}
           title={`Set the date to today, the end time to now and the start time to ${DEFAULT_SESSION_MINUTES} minutes before now, for a session that just happened`}
         >

@@ -20,7 +20,7 @@ const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-12',
     title: 'Reset Time to Before in Data Entry',
-    description: 'Data Entry has a second time button beside the session date. Reset Time to Before sets the end time to now and the start time to 30 minutes before now, so a session that just happened can be marked and recorded in one tap. Reset Time to Now still starts a new session now, with the end 30 minutes later.',
+    description: 'Data Entry has a second time button beside the session date. Reset Time to Before sets the end time to now and the start time to 30 minutes before now, so a session that just happened can be marked and recorded in one tap. Reset Time to Now still starts a new session now, with the end 30 minutes later. On wider screens the two buttons now share one line instead of stacking; on phones they still stack.',
     type: 'feature',
     icon: History,
   },
