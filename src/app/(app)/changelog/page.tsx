@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-12',
+    title: 'Storage Warnings, Protected Backup Size and Error Logs',
+    description: 'Three small fixes from a follow-up code review. The storage size check now reads the browser\'s real storage estimate, so the warnings at 70% and 90% of the device quota can appear (before, the reading failed quietly and the warnings never showed). A password-protected backup is now measured after encryption, which makes the file about a third larger, so an oversized one is refused instead of being saved past the restore limit. Three dialogs now keep student and session IDs out of the error log, matching the rest of the app.',
+    type: 'fix',
+    icon: ShieldCheck,
+  },
+  {
+    date: '2026-11-12',
     title: 'Fixes for Backups, Service Minutes, Story Goals and Group Links',
     description: 'Four fixes from a review of the whole app. Backup files are now about half the size, and the app can restore much larger ones (up to 50 MB instead of 10 MB); a backup too large to restore is no longer saved as if it had worked. The dashboard\'s Service Minutes card now checks each service on its own, so a student short on one service is listed even when their total minutes look complete. A Story Elements goal that wasn\'t worked on in a session no longer counts as 0% in charts, averages and trends. Opening Data Entry from a group button on the dashboard no longer drops students who had unsaved entries.',
     type: 'fix',
