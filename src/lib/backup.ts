@@ -441,7 +441,10 @@ export function parseBackup(text: string): ParsedBackup {
   // so changing a value (or a date) fails the check instead of silently dropping a record.
   if (typeof result.data.checksum === 'string' && result.data.checksum.length > 0) {
     const expected = sha256HexSync(canonicalJson(settings === undefined ? { data: result.data.data } : { data: result.data.data, settings }));
-    if (expected !== result.data.checksum) {
+    // The writer hashed the payload as it wrote it, which can hold fields this version strips (a newer version's,
+    // or an older record's): the file as written matching its checksum is intact too.
+    const asWritten = () => sha256HexSync(canonicalJson(raw.settings === undefined ? { data: raw.data } : { data: raw.data, settings: raw.settings }));
+    if (expected !== result.data.checksum && asWritten() !== result.data.checksum) {
       throw new Error('This backup file is damaged (its contents do not match its checksum). Restore an earlier backup.');
     }
   }

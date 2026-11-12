@@ -691,13 +691,31 @@ export function getQuarantinedLists(): QuarantinedList[] {
 }
 
 /** A stored value as it is, to put back with restoreItem (damaged values exactly as stored, not as read). */
-export type ItemSnapshot = { damaged: boolean; value: string | null };
+export type ItemSnapshot = {
+  damaged: boolean;
+  value: string | null;
+  /** A damaged list kept in IndexedDB: its rows exactly as stored (it has no localStorage value to put back). */
+  records?: idb.IdRecord[];
+};
 export function snapshotItem(storageKey: string): ItemSnapshot {
   if (isSensitiveKey(storageKey) && isPasscodeEnabled() && undecryptable.has(storageKey)) {
     return { damaged: true, value: localStorage.getItem(storageKey) };
   }
   return { damaged: false, value: getItem(storageKey) };
 }
+/**
+ * Like snapshotItem, and for a damaged list kept in IndexedDB it also copies the rows as stored, so a failed
+ * transaction can put them back (its localStorage value is always empty, so restoring that alone lost the rows).
+ */
+export async function snapshotItemAsync(storageKey: string): Promise<ItemSnapshot> {
+  const store = listStoreName(storageKey);
+  // A list with a row that can't be read is kept as stored with or without a passcode (markListUndecryptable).
+  if (store && getListBackend(storageKey) === 'idb' && undecryptable.has(storageKey)) {
+    return { damaged: true, value: localStorage.getItem(storageKey), records: await idb.getAllRecords(store) };
+  }
+  return snapshotItem(storageKey);
+}
+
 /** Puts back a value taken with snapshotItem. */
 export function restoreItem(storageKey: string, snapshot: ItemSnapshot) {
   if (snapshot.damaged) {
@@ -715,6 +733,12 @@ export function restoreItem(storageKey: string, snapshot: ItemSnapshot) {
 /** Puts back a value taken with snapshotItem, resolving only after it has landed. */
 export async function restoreItemAsync(storageKey: string, snapshot: ItemSnapshot): Promise<void> {
   if (snapshot.damaged) {
+    const store = listStoreName(storageKey);
+    if (snapshot.records && store) {
+      // The damaged rows exactly as they were (a failed write may have replaced or deleted some).
+      await idb.clearStore(store);
+      await idb.putRecords(store, snapshot.records);
+    }
     restoreItem(storageKey, snapshot);
     return;
   }
@@ -1037,6 +1061,9 @@ async function scanIdbLegacy(kek: CryptoKey | null, dek: CryptoKey): Promise<voi
   }
   for (const storageKey of Object.keys(migrationFlags())) if (isListKey(storageKey)) candidates.add(storageKey);
   let anyLegacy = false;
+  // A store that couldn't be read, or had a row neither key opens, wasn't fully scanned: the flag that skips this scan
+  // from now on is then not set, or a later passcode change could strand rows still under the old key.
+  let complete = true;
   for (const storageKey of candidates) {
     if (getListBackend(storageKey) !== 'idb') continue;
     const info = listKeyInfo(storageKey);
@@ -1045,6 +1072,7 @@ async function scanIdbLegacy(kek: CryptoKey | null, dek: CryptoKey): Promise<voi
     try {
       rows = await idb.getAllRecords(info.store);
     } catch {
+      complete = false;
       continue;
     }
     let legacy = false;
@@ -1065,13 +1093,13 @@ async function scanIdbLegacy(kek: CryptoKey | null, dek: CryptoKey): Promise<voi
         }
       }
     }
-    if (damaged) continue;
+    if (damaged) complete = false;
     if (legacy) {
       legacyStores.add(info.store);
       anyLegacy = true;
     }
   }
-  if (!anyLegacy) {
+  if (!anyLegacy && complete) {
     try {
       localStorage.setItem(DEK_IDB_FLAG_KEY, '1');
     } catch {
@@ -1339,8 +1367,13 @@ export async function enablePasscode(passcode: string, autoLockMinutes = 15, rec
   listCache.forEach(([storageKey, value]) => cache.set(storageKey, value));
   // Every IndexedDB row, loaded or not: plaintext rows are encrypted with the new data key. A row that is already
   // encrypted can't be read without the key it was written with, so it is left as it is (it was already unreadable).
-  // If this stops part way, the rest stay plaintext and readable, and the next unlock encrypts them.
-  await rewriteIdbRows(async stored => (stored.startsWith(PREFIX) ? null : encryptWith(dek, stored)));
+  // If this stops part way, the rest stay plaintext and readable, and the next unlock encrypts them. The passcode
+  // is on from here (the config is written), so a failure here must not be reported as the passcode not being set.
+  try {
+    await rewriteIdbRows(async stored => (stored.startsWith(PREFIX) ? null : encryptWith(dek, stored)));
+  } catch {
+    /* the next unlock encrypts the rows left */
+  }
 }
 
 /** Checks the passcode for change/disable, without reloading the data the app is using. */

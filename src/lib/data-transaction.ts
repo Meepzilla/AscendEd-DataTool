@@ -41,6 +41,20 @@ export function isOwnDataChangedMessage(data: unknown): boolean {
   return !!data && typeof data === 'object' && (data as { senderId?: unknown }).senderId === TAB_ID;
 }
 
+/**
+ * Tells other tabs that all data on this device was deleted: they go back to the start instead of keeping (and
+ * later writing back) the lists they hold in memory.
+ */
+export function postDataErased() {
+  try {
+    if (typeof BroadcastChannel !== 'undefined') {
+      new BroadcastChannel(DATA_CHANGED_CHANNEL).postMessage({ type: 'data-erased', senderId: TAB_ID, at: Date.now() });
+    }
+  } catch {
+    // Another tab keeps its copy until it is reloaded; this tab's deletion still went ahead.
+  }
+}
+
 /** Posts a data-changed message for other tabs. Only call after the write has landed. */
 export function postDataChanged() {
   try {
@@ -53,8 +67,8 @@ export function postDataChanged() {
 }
 
 export interface AsyncListTransactionStore {
-  /** The stored value as it is, for rollback (e.g. secureStore.snapshotItem). */
-  snapshot(key: MainListKey): unknown;
+  /** The stored value as it is, for rollback (e.g. secureStore.snapshotItemAsync). */
+  snapshot(key: MainListKey): unknown | Promise<unknown>;
   /** Puts a snapshotted value back, resolving only after it has landed. */
   restore(key: MainListKey, snapshot: unknown): Promise<void>;
   /** Writes a list; false when it could not be stored. Resolves only after the write has landed. */
@@ -92,7 +106,7 @@ export async function runListTransactionAsync({ store, next }: ListTransactionIn
   const snapshots = new Map<MainListKey, unknown>();
   for (const key of MAIN_LIST_KEYS) {
     try {
-      snapshots.set(key, store.snapshot(key));
+      snapshots.set(key, await store.snapshot(key));
     } catch {
       snapshots.set(key, undefined);
     }

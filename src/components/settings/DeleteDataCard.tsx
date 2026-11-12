@@ -17,6 +17,7 @@ import { useStudentData } from '@/hooks/use-student-data';
 import { useToast } from '@/hooks/use-toast';
 import { formatDate, latestSessionDate, plural } from '@/lib/helpers';
 import { deleteAllListData, flushWrites } from '@/lib/secure-store';
+import { postDataErased } from '@/lib/data-transaction';
 
 // Settings → Delete Data:
 // - End-of-year clean-up: pick students who have left (archived ones can be selected in one tap) and delete them
@@ -77,6 +78,8 @@ export default function DeleteDataCard() {
     }
     keys.forEach(key => localStorage.removeItem(key));
     try { sessionStorage.clear(); } catch { /* nothing kept there */ }
+    // Other open tabs start over too, instead of saving the data they hold back to this device.
+    postDataErased();
     // Starts fresh, with nothing of the old data left in memory.
     window.location.href = '/';
   };

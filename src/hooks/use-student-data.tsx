@@ -180,7 +180,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const applyTransaction = useCallback(async (next: { students: Student[]; goalTemplates: GoalTemplate[]; sessions: SessionData[] }) => {
     const keyOf: Record<MainListKey, string | null> = { students: studentsKey, goalTemplates: templatesKey, sessions: sessionsKey };
     const store: AsyncListTransactionStore = {
-      snapshot: key => (keyOf[key] ? secureStore.snapshotItem(keyOf[key]!) : null),
+      snapshot: key => (keyOf[key] ? secureStore.snapshotItemAsync(keyOf[key]!) : null),
       restore: async (key, snapshot) => { if (keyOf[key]) await secureStore.restoreItemAsync(keyOf[key]!, snapshot as secureStore.ItemSnapshot); },
       write: (key, value) => saveToLocal(keyOf[key], value),
       read: async key => {
@@ -619,6 +619,8 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         channel = new BroadcastChannel(DATA_CHANGED_CHANNEL);
         channel.onmessage = (event) => {
           if (isOwnDataChangedMessage(event.data)) return; // this tab's own save, not another tab
+          // Delete All Data in another tab: start over rather than keep this tab's copy and write it back later.
+          if ((event.data as { type?: unknown } | null)?.type === 'data-erased') { window.location.href = '/'; return; }
           reload();
         };
       }
