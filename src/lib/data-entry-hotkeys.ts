@@ -22,12 +22,22 @@ export function hotkeyChar(event: Pick<KeyboardEvent, 'code' | 'key'>): string {
   return (event.key || '').toUpperCase();
 }
 
-/** Whether keyboard input should go to a text field or an open dialog instead of the hotkeys. */
+/** Whether a dialog is open (its own keys, and Ctrl+Enter, belong to it). */
+export function dialogIsOpen(): boolean {
+  return !!document.querySelector('[role="dialog"], [role="alertdialog"]');
+}
+
+/**
+ * Whether keyboard input should go to a text field, an open dialog, or an open list or menu instead of the hotkeys.
+ * A list or menu (a student picker, Load Group, an interval method) takes letters to jump to an item, and focus is
+ * on one of its items, which is not a text field.
+ */
 export function hotkeysBlocked(event: KeyboardEvent): boolean {
   const target = event.target as HTMLElement | null;
   const typing = !!target && (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable);
-  const dialogOpen = !!document.querySelector('[role="dialog"], [role="alertdialog"]');
-  return typing || dialogOpen;
+  const inListOrMenu = !!target?.closest?.('[role="listbox"], [role="menu"], [role="menubar"], [role="combobox"][aria-expanded="true"]');
+  const listOrMenuOpen = !!document.querySelector('[role="listbox"], [role="menu"]');
+  return typing || inListOrMenu || listOrMenuOpen || dialogIsOpen();
 }
 
 // Correct / incorrect count fields for each count-based goal type.

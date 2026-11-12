@@ -381,6 +381,33 @@ export default function DataEntryContent() {
     });
   }, []);
 
+  // The focused goal is kept as a position in the card's visible goals (what the card, the hotkeys and Pick Goal
+  // all index). When that list changes on its own (Show Archived Goals, a goal added or archived mid-session, the
+  // card rebuilt after Save or Reset), the position is moved to stay on the same goal; before, the hotkeys then
+  // scored whichever goal had moved into that position. A focus change made together with the list change (the
+  // move arrows) is the new focus, and is kept.
+  const visibleGoalIdsByStudent = useMemo(() => Object.fromEntries(Object.entries(studentSessionStates).map(([studentId, state]) =>
+    [studentId, state.originalGoalHeaders.filter(g => !g.isArchived || showArchivedByStudentId[studentId]).map(g => g.id)])) as Record<string, string[]>,
+  [studentSessionStates, showArchivedByStudentId]);
+  const focusAnchorRef = useRef<{ goalId: Record<string, string | undefined>; index: Record<string, number | undefined>; ids: Record<string, string[]> }>({ goalId: {}, index: {}, ids: {} });
+  useEffect(() => {
+    const anchor = focusAnchorRef.current;
+    const moves: Record<string, number> = {};
+    for (const [studentId, ids] of Object.entries(visibleGoalIdsByStudent)) {
+      const index = focusedGoalIndexByStudentId[studentId] ?? 0;
+      const listChanged = (anchor.ids[studentId] ?? []).join('\u0000') !== ids.join('\u0000');
+      const focusChanged = anchor.index[studentId] !== index;
+      if (!focusChanged && listChanged && anchor.goalId[studentId]) {
+        const at = ids.indexOf(anchor.goalId[studentId]!);
+        if (at >= 0 && at !== index) moves[studentId] = at;
+      }
+      anchor.ids[studentId] = ids;
+      anchor.index[studentId] = moves[studentId] ?? index;
+      anchor.goalId[studentId] = ids[moves[studentId] ?? index] ?? anchor.goalId[studentId];
+    }
+    if (Object.keys(moves).length) setFocusedGoalIndexByStudentId(prev => ({ ...prev, ...moves }));
+  }, [visibleGoalIdsByStudent, focusedGoalIndexByStudentId]);
+
   const handleMoveGoal = useCallback((studentId: string, goalId: string, direction: 'up' | 'down') => {
     setStudentSessionStates(prevStates => {
         const studentState = prevStates[studentId];

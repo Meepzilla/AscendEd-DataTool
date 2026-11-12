@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -16,6 +16,15 @@ export function TrialInputs({ ctx }: { ctx: GoalInputContext }) {
   const { data, captureType, isArchived, isLocked, isFocused, handleChange, calculateAccuracy, handleTrialClick, handleFillNextTrial, handleClearTrials, handleUndoLastTrial } = ctx;
   const trials = Array.isArray(data.trials) ? data.trials : Array(data.numberOfTrials || 5).fill('untouched');
   const focusedTrialIndex = data.focusedTrialIndex ?? trials.findIndex(t => t === 'untouched');
+  // The number being typed: the grid changes when it is entered (Enter, or leaving the field), not on each
+  // keystroke. Typing "10" over 5 scored trials used to pass through "1" and drop trials 2-5 for good.
+  const [typedTrials, setTypedTrials] = useState<string | null>(null);
+  const applyTypedTrials = () => {
+    if (typedTrials === null) return;
+    const value = typedTrials.trim();
+    setTypedTrials(null);
+    if (value !== '' && value !== String(data.numberOfTrials ?? '')) handleChange('numberOfTrials', parseInt(value, 10));
+  };
   return (
     <>
       <FormItem>
@@ -25,8 +34,10 @@ export function TrialInputs({ ctx }: { ctx: GoalInputContext }) {
             type="number"
             min="1"
             max={MAX_TRIALS}
-            value={data.numberOfTrials ?? ''}
-            onChange={(e) => handleChange('numberOfTrials', e.target.value === '' ? undefined : parseInt(e.target.value, 10))}
+            value={typedTrials ?? data.numberOfTrials ?? ''}
+            onChange={(e) => setTypedTrials(e.target.value)}
+            onBlur={applyTypedTrials}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applyTypedTrials(); } }}
             className="h-8 text-sm text-center w-20"
             aria-label="Number of Trials"
             disabled={isArchived || isLocked}
