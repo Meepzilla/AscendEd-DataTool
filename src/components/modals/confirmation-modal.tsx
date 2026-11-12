@@ -14,6 +14,7 @@ import {
 import { buttonVariants } from '@/components/ui/button';
 import { useStudentData } from '@/hooks/use-student-data';
 import { getStorageFailure, subscribeStorageFailures } from '@/lib/storage-failure';
+import { toSafeErrorMessage } from '@/lib/error-message';
 import type { Student, GoalTemplate, SessionData } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -84,7 +85,7 @@ export default function ConfirmationModal({
           await updateAction(itemToUpdate.id, { isArchived: !itemToUpdate.isArchived });
       }
     } catch (error) {
-      console.error(`Error performing confirm action:`, error);
+      console.error(`Error performing confirm action:`, toSafeErrorMessage(error));
       // The action failed: stay open and say so, instead of closing as if it had worked.
       setActionError('That could not be done. Nothing was changed — you can try again, or cancel.');
       setIsProcessing(false);

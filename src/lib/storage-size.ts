@@ -62,9 +62,12 @@ export function toStorageEstimate(bytes: number, quota: number | null, source: S
  */
 export async function estimateStorage(fallbackBytes?: () => number): Promise<StorageEstimate> {
   try {
-    const estimate = (globalThis as { navigator?: { storage?: { estimate?: () => Promise<{ usage?: number; quota?: number }> } } }).navigator?.storage?.estimate;
-    if (estimate) {
-      const result = await estimate();
+    const storage = (globalThis as { navigator?: { storage?: { estimate?: () => Promise<{ usage?: number; quota?: number }> } } }).navigator?.storage;
+    if (storage?.estimate) {
+      // Call estimate as a method of the StorageManager: extracting it into a
+      // bare variable loses the receiver and throws "Illegal invocation" in
+      // Chromium, which silently forced the fallback sum on every call.
+      const result = await storage.estimate();
       if (typeof result.usage === 'number') {
         return toStorageEstimate(result.usage, typeof result.quota === 'number' ? result.quota : null, 'estimate');
       }

@@ -23,6 +23,7 @@ import GoalChangeSummary from './GoalChangeSummary';
 import GasLevelDescriptionsField from './GasLevelDescriptionsField';
 import { assignedGoalChanges } from '@/lib/goal-changes';
 import { goalStatement, goalTypeLabel } from '@/lib/helpers';
+import { toSafeErrorMessage } from '@/lib/error-message';
 import { automaticBlankValues, findBlanks } from '@/lib/goal-blanks';
 
 type EditAssignedGoalFormData = z.infer<typeof AssignedGoalEditSchema>;
@@ -100,7 +101,7 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
       toast({ title: 'Success', description: 'Goal updated successfully.' });
       onClose();
     } catch (error) {
-      console.error('Error updating assigned goal:', error);
+      console.error('Error updating assigned goal:', toSafeErrorMessage(error));
       toast({ title: 'Error', description: 'Failed to update goal.', variant: 'destructive' });
     } finally {
       setIsSubmitting(false);
