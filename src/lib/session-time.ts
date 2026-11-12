@@ -15,3 +15,13 @@ export function defaultSessionTimes(now = new Date()): { start: string; end: str
   const fmt = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
   return { start: fmt(startMinutes), end: fmt(endMinutes) };
 }
+
+// The 30-minute chunk that just ended: ending now, starting DEFAULT_SESSION_MINUTES earlier.
+// For marking a session that just happened. The start is a time of day, not a date: before 00:30 it
+// would read as the previous evening, so it is clamped to 00:00 rather than rolling back to 23:45.
+export function previousSessionTimes(now = new Date()): { start: string; end: string } {
+  const endMinutes = now.getHours() * 60 + now.getMinutes();
+  const startMinutes = Math.max(0, endMinutes - DEFAULT_SESSION_MINUTES);
+  const fmt = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+  return { start: fmt(startMinutes), end: fmt(endMinutes) };
+}
