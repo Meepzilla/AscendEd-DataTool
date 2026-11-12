@@ -198,6 +198,13 @@ describe('backup file size limit', () => {
     await expect(backupFileText(huge)).rejects.toThrow(/too large to restore/);
   }, 30000);
 
+  it('refuses a password-protected backup whose encrypted form exceeds the limit, even when the plaintext fits', async () => {
+    // Plaintext is under the limit, but base64 encryption expands it by about a
+    // third, so the file actually written would pass the restore limit.
+    const big = createBackup({ students: [student('ava')], goalTemplates: [], sessions: [session({ sessionId: 'x', notes: 'n'.repeat(Math.floor(MAX_BACKUP_FILE_BYTES * 0.78)) })] });
+    await expect(backupFileText(big, 'secret-pass')).rejects.toThrow(/too large to restore/);
+  }, 30000);
+
   it('rejects files over the size limit before parsing', () => {
     const text = legacyText();
     const over = text + ' '.repeat(MAX_BACKUP_FILE_BYTES - text.length + 1);
