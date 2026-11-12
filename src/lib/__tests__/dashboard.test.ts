@@ -215,3 +215,42 @@ describe('serviceStatus byType', () => {
     ]);
   });
 });
+
+// The IEP editor saves the first line's minutes as serviceMinutes and every line in services.
+describe('serviceStatus with several requirement lines', () => {
+  const iep = {
+    serviceMinutes: 60, servicePer: 'week' as const,
+    services: [
+      { type: 'related' as const, minutes: 60, per: 'week' as const },
+      { type: 'aac' as const, minutes: 30, per: 'week' as const },
+    ],
+  };
+  const split = (related: number, aac: number, day = 27) =>
+    session({ studentId: 'a', date: new Date(2026, 9, day, 9, 0).toISOString(), time: '09:00', endTime: '10:00', serviceMinutes: { related, aac } });
+
+  it('lists a student whose total minutes cover the first line but one service is short', () => {
+    // 30 Related and 30 AAC this week: 60 minutes in all, but Related needs 60.
+    const { tracked, behind } = serviceStatus([student('a', 'Ava', iep)], [split(30, 30)], NOW);
+    expect(tracked).toBe(1);
+    expect(behind).toHaveLength(1);
+    expect(behind[0]).toMatchObject({ kind: 'needed', required: 90, delivered: 60, minutes: 30, per: 'week' });
+  });
+
+  it('does not let extra minutes of one service cover another', () => {
+    // 90 Related and no AAC: AAC is still 30 short.
+    const { behind } = serviceStatus([student('a', 'Ava', iep)], [split(90, 0)], NOW);
+    expect(behind[0]).toMatchObject({ required: 90, delivered: 60, minutes: 30 });
+  });
+
+  it('leaves out a student who met every line', () => {
+    expect(serviceStatus([student('a', 'Ava', iep)], [split(60, 30)], NOW).behind).toEqual([]);
+  });
+
+  it('checks a line with a different period against its own period', () => {
+    // Related 60 a week is met; AAC 120 a month has 30 so far this month.
+    const mixed = { ...iep, services: [iep.services[0], { type: 'aac' as const, minutes: 120, per: 'month' as const }] };
+    const { behind } = serviceStatus([student('a', 'Ava', mixed)], [split(60, 30)], NOW);
+    expect(behind).toHaveLength(1);
+    expect(behind[0]).toMatchObject({ per: 'month', required: 120, delivered: 30, minutes: 90 });
+  });
+});

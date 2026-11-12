@@ -80,23 +80,43 @@ export function serviceStatus(
   const behind: ServiceItem[] = [];
   let tracked = 0;
   for (const student of students) {
-    const required = student.iep?.serviceMinutes;
-    if (student.isArchived || !required || required <= 0) continue;
+    // The requirement lines as the Overview reads them (the IEP's lines, or the single older figure).
+    const lines = serviceLines(student.iep);
+    if (student.isArchived || lines.length === 0) continue;
     tracked++;
-    const per = student.iep?.servicePer ?? 'week';
     const held = sessions.filter(s => s.studentId === student.id && !s.missed);
     const minutesIn = (from: Date, to: Date) => held
       .filter(s => { const t = parseDateOnly(s.date).getTime(); return t >= from.getTime() && t < to.getTime(); })
       .reduce((sum, s) => sum + (sessionMinutes(s) ?? 0), 0);
-    const { current, previous } = servicePeriods(per, now);
-    const delivered = minutesIn(current.start, current.end);
     // Per-type figures, over the same current period (a line with its own period is measured over that
     // period instead, like the Overview does). The breakdown is attached only when more than one type is
     // in play; single-type students keep the item exactly as it was.
-    const lines = serviceLines(student.iep);
     const typeMinutesIn = (type: ServiceType, from: Date, to: Date) => held
       .filter(s => { const t = parseDateOnly(s.date).getTime(); return t >= from.getTime() && t < to.getTime(); })
       .reduce((sum, s) => sum + (sessionServiceMinutes(s)[type] ?? 0), 0);
+    // What a line is short by in its own period: the minutes left this week or month, or the minutes behind
+    // an even pace through the school year.
+    const shortOf = (line: { type: ServiceType; minutes: number; per: ServicePer }, single: boolean) => {
+      const range = servicePeriods(line.per, now).current;
+      // A student with one requirement counts every held minute toward it, as before types existed.
+      const done = single ? minutesIn(range.start, range.end) : typeMinutesIn(line.type, range.start, range.end);
+      if (line.per !== 'year') return Math.max(0, line.minutes - done);
+      const span = range.end.getTime() - range.start.getTime();
+      const elapsed = span > 0 ? Math.min(1, Math.max(0, (now.getTime() - range.start.getTime()) / span)) : 0;
+      return Math.max(0, Math.round(line.minutes * elapsed - done));
+    };
+    const single = lines.length === 1;
+    // The item is about one period: the first line's, unless only lines with another period are short. Every
+    // line is checked against its own type's minutes, so 60 minutes of one service can't cover 30 owed of another.
+    const per = (lines.find(l => l.per === lines[0].per && shortOf(l, single) > 0) ?? lines.find(l => shortOf(l, single) > 0) ?? lines[0]).per;
+    const group = lines.filter(l => l.per === per);
+    const { current, previous } = servicePeriods(per, now);
+    const required = group.reduce((sum, l) => sum + l.minutes, 0);
+    // With several lines, each type counts up to its own requirement, so the total never hides a shortfall.
+    const delivered = single
+      ? minutesIn(current.start, current.end)
+      : group.reduce((sum, l) => sum + Math.min(l.minutes, typeMinutesIn(l.type, current.start, current.end)), 0);
+    const short = group.reduce((sum, l) => sum + shortOf(l, single), 0);
     const lineTypes = new Set(lines.map(l => l.type));
     const deliveredTypes = new Set(SERVICE_TYPES.filter(type => typeMinutesIn(type, current.start, current.end) > 0));
     const byType = lines.length > 1 || [...deliveredTypes].some(type => !lineTypes.has(type))
@@ -114,15 +134,15 @@ export function serviceStatus(
         })
       : undefined;
     const base = { studentId: student.id, studentName: student.name, required, per, delivered, ...(byType ? { byType } : {}) };
+    if (short <= 0) continue;
     if (per === 'year') {
-      const span = current.end.getTime() - current.start.getTime();
-      const elapsed = span > 0 ? Math.min(1, Math.max(0, (now.getTime() - current.start.getTime()) / span)) : 0;
-      const short = Math.round(required * elapsed - delivered);
-      if (short > 0) behind.push({ ...base, kind: 'pace', minutes: short, lastShort: 0, daysLeft: 0 });
-    } else if (delivered < required) {
+      behind.push({ ...base, kind: 'pace', minutes: short, lastShort: 0, daysLeft: 0 });
+    } else {
+      const lastShort = single
+        ? Math.max(0, required - minutesIn(previous.start, previous.end))
+        : group.reduce((sum, l) => sum + Math.max(0, l.minutes - typeMinutesIn(l.type, previous.start, previous.end)), 0);
       behind.push({
-        ...base, kind: 'needed', minutes: required - delivered,
-        lastShort: Math.max(0, required - minutesIn(previous.start, previous.end)),
+        ...base, kind: 'needed', minutes: short, lastShort,
         // Both are local midnights; rounding absorbs the hour gained or lost at a daylight-saving change.
         daysLeft: Math.max(1, Math.round((current.end.getTime() - today) / DAY)),
       });

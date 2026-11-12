@@ -168,14 +168,32 @@ describe('backup shape validation and dropped settings', () => {
 });
 
 describe('backup file size limit', () => {
-  it('rejects files over 10 MB before parsing', () => {
+  it('writes a backup of 3,000 sessions that can be restored', async () => {
+    const goals = ['g1', 'g2', 'g3', 'g4'];
+    const sessions = Array.from({ length: 3000 }, (_, i) => session({
+      sessionId: `s${i}`, studentId: 'ava', notes: 'Worked on sounds in words.',
+      originalGoalHeaders: goals.map(g => ({ id: g, name: g, type: 'ARTICULATION', smartGoal: 'Ava will produce the sound in words with 80% accuracy.' })) as any,
+      goals: goals.map(g => ({ goalId: g, goalName: g, goalType: 'ARTICULATION', data: { correct: 8, incorrect: 2, approximate: 0, recorded: true } })),
+    }));
+    const text = await backupFileText(createBackup({ students: [student('ava', goals)], goalTemplates: [], sessions }));
+    expect(text).not.toContain('\n'); // compact: indenting roughly doubled the file
+    expect(new TextEncoder().encode(text).length).toBeLessThan(MAX_BACKUP_FILE_BYTES / 4);
+    expect(parseBackup(text).data.sessions).toHaveLength(3000);
+  }, 30000);
+
+  it('refuses to write a backup too large to restore, instead of saving one that can never be read', async () => {
+    const huge = createBackup({ students: [student('ava')], goalTemplates: [], sessions: [session({ sessionId: 'x', notes: 'n'.repeat(MAX_BACKUP_FILE_BYTES) })] });
+    await expect(backupFileText(huge)).rejects.toThrow(/too large to restore/);
+  }, 30000);
+
+  it('rejects files over the size limit before parsing', () => {
     const text = legacyText();
     const over = text + ' '.repeat(MAX_BACKUP_FILE_BYTES - text.length + 1);
     expect(new TextEncoder().encode(over).length).toBeGreaterThan(MAX_BACKUP_FILE_BYTES);
     expect(() => parseBackup(over)).toThrow(/too large/);
   });
 
-  it('accepts a file just under 10 MB', () => {
+  it('accepts a file just under the size limit', () => {
     const text = legacyText();
     const under = text + ' '.repeat(MAX_BACKUP_FILE_BYTES - text.length - 1);
     expect(parseBackup(under).data.students[0].id).toBe('ava');

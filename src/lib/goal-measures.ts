@@ -130,8 +130,16 @@ export function goalMeasure(goal: MeasuredGoal, data: Record<string, any> = {}):
     }
     case 'STORY_ELEMENTS': {
       const story = scoreStory(data);
-      // No part assessed: there is no score to chart. A part assessed at 0 is a real score of 0%, not no data.
+      // No part assessed: there is no score to chart.
       if (story.maxPoints === 0) return null;
+      // Every session stores all of a student's goals, and a story starts with every part at 0. So all zeros
+      // is a real 0% only if the goal was worked on (Data Entry marks it as recorded; older sessions: a part
+      // was set to N/A, a linking word was counted or a note was written). Otherwise it is no data, and each
+      // session in which the story wasn't worked on would chart as 0%.
+      if (story.points === 0) {
+        const touched = data.recorded === true || story.notAssessed > 0 || story.linkingWords > 0 || String(data.notes || '').trim() !== '';
+        if (!touched) return null;
+      }
       return story.percent;
     }
     case 'COMMUNICATION_FUNCTIONS': {
