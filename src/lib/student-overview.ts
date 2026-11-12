@@ -2,7 +2,7 @@ import type { ServicePer, ServiceRequirement, ServiceType, SessionData, StudentI
 import { SERVICE_TYPE_LABELS, SERVICE_TYPES } from './types';
 import { attendanceSummary, type AttendanceSummary } from './attendance';
 import { dateValue } from './aim-line';
-import { parseDateOnly } from './helpers';
+import { latestSessionDate, parseDateOnly } from './helpers';
 import { schoolYearRange } from './school-year';
 
 // Figures for the student profile's Overview: IEP dates (days until each is due), service minutes delivered
@@ -144,7 +144,7 @@ export function studentOverview(sessions: SessionData[], iep: StudentIep | undef
   const heldInYear = inYear.filter(s => !s.missed);
   const attendance = attendanceSummary(inYear);
   const total = attendance.held + attendance.missed;
-  const last = held.reduce<string | null>((latest, s) => (!latest || parseDateOnly(s.date) > parseDateOnly(latest) ? s.date : latest), null);
+  const last = latestSessionDate(held.map(s => s.date));
   return {
     service: {
       required: totalRequired,

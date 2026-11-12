@@ -153,3 +153,17 @@ describe.skipIf(!gas)('gasTScoresOverTime carry-forward', () => {
     expect(points[0].tScore!).toBeCloseTo(60, 5);
   });
 });
+
+describe.skipIf(!gas)('gasTScoresOverTime with start times', () => {
+  it("includes a session's own level when its stored time is earlier than an earlier session's", () => {
+    const a = gasGoal({ id: 'gas-a', name: 'Goal A' });
+    // Same day: A started at 9:00 (level -1); B's page was opened at 8:55 but it started at 10:00 (level +1).
+    const at = (iso: string, time: string, level: number) => ({ ...session(new Date(iso).toISOString(), { 'gas-a': level }), time }) as SessionData;
+    const first = at('2026-11-02T09:00:00', '09:00', -1);
+    const second = at('2026-11-02T08:55:00', '10:00', 1);
+    const points = gas!.gasTScoresOverTime([first, second], [a]);
+    const forSecond = points.find(p => p.date === second.date)!;
+    expect(forSecond.levels).toEqual({ 'gas-a': 1 });
+    expect(forSecond.tScore!).toBeCloseTo(60, 5);
+  });
+});

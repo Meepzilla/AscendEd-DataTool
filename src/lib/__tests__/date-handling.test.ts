@@ -98,3 +98,10 @@ describe('latestSessionDate', () => {
     expect(latestSessionDate(['N/A'])).toBeNull();
   });
 });
+
+describe('compareSessionsOldestFirst with an unreadable date', () => {
+  it('sorts the unreadable one last and keeps the rest in order', () => {
+    const sessions = [{ date: '2026-11-10' }, { date: 'N/A' }, { date: '2026-11-08' }, { date: '2026-11-09' }];
+    expect([...sessions].sort(compareSessionsOldestFirst).map(s => s.date)).toEqual(['2026-11-08', '2026-11-09', '2026-11-10', 'N/A']);
+  });
+});

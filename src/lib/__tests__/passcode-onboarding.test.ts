@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { memoryStorage } from './helpers';
 import {
   PASSCODE_DECISION_KEY, getPasscodeDecision, hasExistingStudentData, needsFirstRunPrompt,
-  needsPasscodeOffer, passcodeGateStatus, recordPasscodeDecision,
+  needsPasscodeOffer, passcodeGateStatus, recordPasscodeDecision, clearPasscodeDecision,
 } from '../passcode-onboarding';
 import {
   PASSCODE_BACKUP_DECLINED_KEY, hasBackupOnRecord, hasDeclinedBackupBeforePasscode,
@@ -147,5 +147,16 @@ describe('passcodeGateStatus', () => {
   it('shows the lock screen until a set passcode is entered', () => {
     expect(passcodeGateStatus({ ...base, passcodeOn: true, unlocked: false })).toBe('locked');
     expect(passcodeGateStatus({ ...base, passcodeOn: true, unlocked: true })).toBe('open');
+  });
+});
+
+describe('after Erase and Start Over', () => {
+  it('asks again on the next load, so a restored backup is not stored unprotected without asking', () => {
+    recordPasscodeDecision('passcode');
+    expect(needsFirstRunPrompt()).toBe(false);
+    // The erase removes the passcode and the data; the decision goes with them.
+    clearPasscodeDecision();
+    expect(getPasscodeDecision()).toBeNull();
+    expect(needsFirstRunPrompt()).toBe(true);
   });
 });

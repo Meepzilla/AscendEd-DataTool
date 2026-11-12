@@ -35,10 +35,22 @@ function readRecord(namespace: string): AttemptRecord | null {
   }
 }
 
+/**
+ * The stored record, or the in-memory one when it is further along: when storage can be read but not written
+ * (full), failures are counted in memory only, and reading storage alone would never see them.
+ */
+function currentRecord(namespace: string): AttemptRecord | null {
+  const stored = readRecord(namespace);
+  const memory = memoryFallback.get(namespace) ?? null;
+  if (!memory) return stored;
+  return !stored || memory.lastFailureAt >= stored.lastFailureAt ? memory : stored;
+}
+
 function writeRecord(namespace: string, record: AttemptRecord | null) {
   try {
     if (record) localStorage.setItem(KEY_PREFIX + namespace, JSON.stringify(record));
     else localStorage.removeItem(KEY_PREFIX + namespace);
+    memoryFallback.delete(namespace);
   } catch {
     // localStorage unavailable; the in-memory record below still applies for this session.
     if (record) memoryFallback.set(namespace, record);
@@ -51,7 +63,7 @@ export function recordAttempt(namespace: string, success: boolean): void {
     writeRecord(namespace, null);
     return;
   }
-  const previous = readRecord(namespace);
+  const previous = currentRecord(namespace);
   writeRecord(namespace, {
     failures: (previous?.failures ?? 0) + 1,
     lastFailureAt: Date.now(),
@@ -59,7 +71,7 @@ export function recordAttempt(namespace: string, success: boolean): void {
 }
 
 export function getLockoutRemainingMs(namespace: string, now: number = Date.now()): number {
-  const record = readRecord(namespace);
+  const record = currentRecord(namespace);
   if (!record) return 0;
   const remaining = record.lastFailureAt + lockoutMsForFailures(record.failures) - now;
   return remaining > 0 ? remaining : 0;

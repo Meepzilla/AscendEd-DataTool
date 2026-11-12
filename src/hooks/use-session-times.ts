@@ -1,5 +1,6 @@
 'use client';
 
+import { parseDateOnly } from '@/lib/helpers';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { defaultSessionTimes, previousSessionTimes } from '@/lib/session-time';
 
@@ -41,7 +42,13 @@ export function useSessionTimes({ initial, anyUnsaved, statesBuilt }: Options) {
     }
   }, [sessionTime]);
 
-  const pastDateChosenRef = useRef(false);
+  // A date restored from the draft that isn't today was chosen by the teacher: it stays for the next student's session
+  // too, as it did before the page was left (only the date itself was restored, so it used to become today).
+  const pastDateChosenRef = useRef<boolean | null>(null);
+  if (pastDateChosenRef.current === null) {
+    const restored = initial?.date ? parseDateOnly(initial.date) : null;
+    pastDateChosenRef.current = !!restored && !Number.isNaN(restored.getTime()) && restored.toDateString() !== new Date().toDateString();
+  }
   const timeChosenRef = useRef(false);
   const chooseSessionDate = useCallback((date: Date | undefined) => {
     pastDateChosenRef.current = !!date && date.toDateString() !== new Date().toDateString();

@@ -77,8 +77,22 @@ export default function TouchControls({
     return undefined;
   }, [focusedStudentId, visibleGoals, focusedGoalIndexByStudentId]);
 
+  // The goal picker opens from either layout (and Alt+T); it used to exist only in the expanded one, so with the
+  // sidebar collapsed nothing opened, and it popped up later when the sidebar was expanded.
+  const goalPicker = (
+    <SelectionModal
+      isOpen={selectionModalType === 'goal'}
+      onClose={() => setSelectionModalType(null)}
+      title={'Select Goal'}
+      items={visibleGoals.map(g => ({ id: g.id, name: g.name }))}
+      onSelect={handleGoalSelect}
+      selectedId={selectedGoalId}
+    />
+  );
+
   if (sidebarState === 'collapsed') {
     return (
+      <>
         <div className="flex flex-col short:flex-row gap-2 items-center">
              <Button
                 type="button"
@@ -105,6 +119,8 @@ export default function TouchControls({
                 <Target className="h-5 w-5" />
             </Button>
         </div>
+        {goalPicker}
+      </>
     );
   }
 
@@ -140,14 +156,7 @@ export default function TouchControls({
         </Button>
       </div>
       
-      <SelectionModal
-        isOpen={selectionModalType === 'goal'}
-        onClose={() => setSelectionModalType(null)}
-        title={'Select Goal'}
-        items={visibleGoals.map(g => ({ id: g.id, name: g.name }))}
-        onSelect={handleGoalSelect}
-        selectedId={selectedGoalId}
-      />
+      {goalPicker}
     </>
   );
 }

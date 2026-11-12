@@ -26,6 +26,13 @@ const allChangelogEntries: ChangelogEntry[] = [
   },
   {
     date: '2026-11-12',
+    title: 'More Fixes from the App Review',
+    description: 'Data Entry: the highlighted goal stays on the same goal when you show archived goals or a goal is added, so keyboard shortcuts score the goal you see highlighted; typing a new number of trials no longer wipes trials you already scored; Pick Goal works with the sidebar collapsed; Ctrl+Enter and letter shortcuts no longer act on a card while a window, list or menu is open; a past session date you chose is kept after leaving and coming back; and quick changes made one after another are all saved. Reports: goal statements no longer fill in a rating or count as if it were a percentage, behavior rates and mastery streaks count only the right sessions, and Goal Attainment Scaling scores include every session. Merging sessions now adds up observation minutes and service-minute splits and keeps a recorded rating. Storage: a failed restore now puts back data it could not read, Erase and Start Over asks about a passcode again, Delete All Data also clears other open tabs, and an incomplete backup made while turning on a passcode is clearly flagged.',
+    type: 'fix',
+    icon: ShieldCheck,
+  },
+  {
+    date: '2026-11-12',
     title: 'Fixes for Backups, Service Minutes, Story Goals and Group Links',
     description: 'Four fixes from a review of the whole app. Backup files are now about half the size, and the app can restore much larger ones (up to 50 MB instead of 10 MB); a backup too large to restore is no longer saved as if it had worked. The dashboard\'s Service Minutes card now checks each service on its own, so a student short on one service is listed even when their total minutes look complete. A Story Elements goal that wasn\'t worked on in a session no longer counts as 0% in charts, averages and trends. Opening Data Entry from a group button on the dashboard no longer drops students who had unsaved entries.',
     type: 'fix',

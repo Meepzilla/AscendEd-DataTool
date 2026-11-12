@@ -145,3 +145,38 @@ describe('mergeSessions', () => {
     expect(mergedMinutes([part('08:00', '13:00'), part('13:00', '19:00')])).toEqual({ before: 660, after: 0 });
   });
 });
+
+describe('merging fields the app stores in other forms', () => {
+  it('adds observation minutes stored as typed text, and caps them at the merged span', () => {
+    expect(mergeGoalData([{ count: 3, observationMinutes: '15' }, { count: 3, observationMinutes: '15' }])).toMatchObject({ count: 6, observationMinutes: 30 });
+    expect(mergeGoalData([{ count: 3, observationMinutes: '15' }, { count: 1, observationMinutes: '' }])).toMatchObject({ count: 4, observationMinutes: 15 });
+    const goal = (minutes: string) => [{ goalId: 'g', goalName: 'Calling out', goalType: 'BEHAVIOR_FREQUENCY', data: { count: 2, observationMinutes: minutes } }];
+    const merged = mergeSessions([
+      session({ sessionId: 'a', time: '09:00', endTime: '09:20', goals: goal('20') as any }),
+      session({ sessionId: 'b', time: '09:20', endTime: '09:30', goals: goal('20') as any }),
+    ]);
+    expect(merged.goals[0].data.observationMinutes).toBe(30); // 40 entered, but the merged session is 30 minutes
+  });
+
+  it("keeps a recorded rating when a later part didn't work on the goal", () => {
+    expect(mergeGoalData([{ rating: 5, notes: 'great', recorded: true }, { rating: 3, notes: '' }])).toMatchObject({ rating: 5, notes: 'great' });
+    // A later part that did record a rating replaces it.
+    expect(mergeGoalData([{ rating: 5, recorded: true }, { rating: 2, recorded: true }])).toMatchObject({ rating: 2 });
+  });
+
+  it("adds up each part's split of minutes across service types", () => {
+    const merged = mergeSessions([
+      session({ sessionId: 'a', time: '09:00', endTime: '09:30', serviceMinutes: { related: 30 } }),
+      session({ sessionId: 'b', time: '09:30', endTime: '10:00', serviceMinutes: { aac: 30 } }),
+    ]);
+    expect(merged.serviceMinutes).toEqual({ related: 30, aac: 30 });
+    // A part without a split counts all its minutes as Related, as it did on its own.
+    const mixed = mergeSessions([
+      session({ sessionId: 'a', time: '09:00', endTime: '09:30', serviceMinutes: { related: 20, aac: 10 } }),
+      session({ sessionId: 'b', time: '09:30', endTime: '10:00' }),
+    ]);
+    expect(mixed.serviceMinutes).toEqual({ related: 50, aac: 10 });
+    // Without any split the merged session has none (all its minutes count as Related).
+    expect(mergeSessions([session({ sessionId: 'a', time: '09:00', endTime: '09:30' }), session({ sessionId: 'b', time: '09:30', endTime: '10:00' })]).serviceMinutes).toBeUndefined();
+  });
+});
