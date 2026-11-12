@@ -496,20 +496,22 @@ export default function DataEntryContent() {
   }, [isStudentAccessLocked, activeStudents, selectedStudentIds, studentSessionStates, goalDefaults, setSelectedStudentIds, setFocusedStudentSlotIndex, toast]);
 
   // The dashboard's group buttons open Data Entry as /data-entry?group=<id>: that group is loaded once, when the
-  // students are there to load.
+  // students are there to load and their cards are built. Before the cards are built (with any unsaved entries
+  // restored from the draft), loadGroup can't see who has unsaved entries: it would drop those students, and the
+  // draft would then be saved again without them.
   // The link is then taken out of the address, so reopening or reloading the page doesn't load the group again
   // over the students chosen since.
   const groupFromLink = useSearchParams().get('group');
   const router = useRouter();
   const groupLinkHandled = useRef(false);
   useEffect(() => {
-    if (!groupFromLink || groupLinkHandled.current || activeStudents.length === 0) return;
+    if (!groupFromLink || groupLinkHandled.current || activeStudents.length === 0 || !statesBuilt) return;
     groupLinkHandled.current = true;
     const group = getStudentGroups(uid).find(g => g.id === groupFromLink);
     if (group) loadGroup(group);
     else toast({ title: 'Group not found', description: 'That group has been deleted. Choose one with Load Group.' });
     router.replace('/data-entry', { scroll: false });
-  }, [groupFromLink, activeStudents.length, uid, loadGroup, toast, router]);
+  }, [groupFromLink, activeStudents.length, statesBuilt, uid, loadGroup, toast, router]);
 
   // Editing the student (name, goals) from Data Entry is also covered by the Student Access Lock.
   const openEditStudentModalUnlocked = useCallback((student: Student) => {

@@ -36,8 +36,12 @@ export interface AppBackup {
   settings?: BackupSettings;
 }
 
-/** Backups larger than this are rejected on restore, before parsing. */
-export const MAX_BACKUP_FILE_BYTES = 10 * 1024 * 1024;
+/**
+ * Backups larger than this are rejected on restore, before parsing, and are not written either: a backup the app
+ * could save but never restore would be worse than no backup. Written compactly, 3,000 sessions take about 5 MB.
+ */
+export const MAX_BACKUP_FILE_BYTES = 50 * 1024 * 1024;
+const TOO_LARGE = `over ${MAX_BACKUP_FILE_BYTES / (1024 * 1024)} MB`;
 
 /** A record dropped while parsing, with why, so the user can be told what was left out. */
 export interface DroppedRecord {
@@ -355,7 +359,11 @@ export interface ProtectedBackupFile { app: typeof BACKUP_APP; protected: Passwo
 export async function backupFileText(backup: AppBackup, password?: string): Promise<string> {
   // The checksum covers the plaintext payload, so it is checked after decryption.
   const withChecksum: AppBackup = { ...backup, checksum: await computeBackupChecksum(backup.data, backup.settings) };
-  const json = JSON.stringify(withChecksum, null, 2);
+  // Compact, not indented: indenting roughly doubled the file, and the restore limit is on the file's size.
+  const json = JSON.stringify(withChecksum);
+  if (new TextEncoder().encode(json).length > MAX_BACKUP_FILE_BYTES) {
+    throw new Error(`This backup would be too large to restore (${TOO_LARGE}), so it was not saved. Use Settings → Delete Data to remove students who have left, then back up again.`);
+  }
   if (!password) return json;
   const file: ProtectedBackupFile = { app: BACKUP_APP, protected: await encryptWithPassword(json, password) };
   return JSON.stringify(file);
@@ -397,7 +405,7 @@ const ISO_DATETIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\
 
 /**
  * Parses and validates a backup file's text. Throws an Error with a message suitable for the user.
- * Files over 10 MB are rejected before parsing. A present checksum must match the payload;
+ * Files over MAX_BACKUP_FILE_BYTES are rejected before parsing. A present checksum must match the payload;
  * backups without one (legacy) still restore. Records with an invalid createdAt/date are
  * dropped and reported in droppedRecords, never stored as Invalid Date, and damaged
  * settings blocks are reported in droppedSettings. Unknown fields are stripped, and
@@ -405,7 +413,7 @@ const ISO_DATETIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\
  */
 export function parseBackup(text: string): ParsedBackup {
   if (new TextEncoder().encode(text).length > MAX_BACKUP_FILE_BYTES) {
-    throw new Error('This backup file is too large (over 10 MB). It cannot be restored.');
+    throw new Error(`This backup file is too large (${TOO_LARGE}). It cannot be restored.`);
   }
   let json: unknown;
   try {

@@ -18,7 +18,13 @@ describe('goalResponses', () => {
 describe('goalMeasure', () => {
   it('charts a story session where every assessed part scored 0, instead of treating it as no data', () => {
     const allZero = { character: 0, setting: 0, problem: 0, feeling: 0, action: 0, ending: 0, endFeeling: 0 };
-    expect(goalMeasure({ type: 'STORY_ELEMENTS' }, allZero)).toBe(0);
+    expect(goalMeasure({ type: 'STORY_ELEMENTS' }, { ...allZero, recorded: true })).toBe(0);
+    // The same zeros on a goal that wasn't worked on (as every saved session stores them) are no data, not 0%.
+    expect(goalMeasure({ type: 'STORY_ELEMENTS' }, allZero)).toBeNull();
+    // Older sessions have no recorded mark: a part set to N/A, a linking word or a note shows the goal was worked on.
+    expect(goalMeasure({ type: 'STORY_ELEMENTS' }, { ...allZero, setting: -1 })).toBe(0);
+    expect(goalMeasure({ type: 'STORY_ELEMENTS' }, { ...allZero, notes: 'could not retell' })).toBe(0);
+    expect(goalMeasure({ type: 'STORY_ELEMENTS' }, { ...allZero, character: 1 })).toBeCloseTo(100 / 14, 5);
     // Nothing assessed at all is still no data.
     const none = { character: -1, setting: -1, problem: -1, feeling: -1, action: -1, ending: -1, endFeeling: -1 };
     expect(goalMeasure({ type: 'STORY_ELEMENTS' }, none)).toBeNull();

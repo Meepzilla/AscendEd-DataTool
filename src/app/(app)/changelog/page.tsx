@@ -18,6 +18,13 @@ interface ChangelogEntry {
 
 const allChangelogEntries: ChangelogEntry[] = [
   {
+    date: '2026-11-12',
+    title: 'Fixes for Backups, Service Minutes, Story Goals and Group Links',
+    description: 'Four fixes from a review of the whole app. Backup files are now about half the size, and the app can restore much larger ones (up to 50 MB instead of 10 MB); a backup too large to restore is no longer saved as if it had worked. The dashboard\'s Service Minutes card now checks each service on its own, so a student short on one service is listed even when their total minutes look complete. A Story Elements goal that wasn\'t worked on in a session no longer counts as 0% in charts, averages and trends. Opening Data Entry from a group button on the dashboard no longer drops students who had unsaved entries.',
+    type: 'fix',
+    icon: ShieldCheck,
+  },
+  {
     date: '2026-11-10',
     title: 'Short Sessions Count for Less in Accuracy Trends',
     description: 'A session with 1 response out of 1 is 100%, the same as 5 out of 5, but says much less. On the Progress Over Time chart, each dot is now sized by its number of opportunities, dots with fewer than 5 are hollow, and tapping a point shows its count (for example 100% (1 of 1)). A dashed trend line pools the responses of the last 3 sessions, so one short session moves it little. The trend in the written summary and the Progress Report now counts each session by its number of opportunities too.',
