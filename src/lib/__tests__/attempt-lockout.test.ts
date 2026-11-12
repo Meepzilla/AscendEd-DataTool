@@ -96,3 +96,15 @@ describe('attempt lockout', () => {
     expect(fresh.getLockoutRemainingMs('access-pin')).toBe(1 * MIN);
   });
 });
+
+describe('lockout when storage is full', () => {
+  it('still counts failures when storage can be read but not written', () => {
+    const full = memoryStorage();
+    vi.stubGlobal('localStorage', { ...full, getItem: full.getItem, setItem: () => { throw new DOMException('full', 'QuotaExceededError'); }, removeItem: full.removeItem });
+    clearAttempts('full-test');
+    for (let i = 0; i < 10; i++) recordAttempt('full-test', false);
+    expect(isLockedOut('full-test')).toBe(true);
+    recordAttempt('full-test', true);
+    expect(isLockedOut('full-test')).toBe(false);
+  });
+});

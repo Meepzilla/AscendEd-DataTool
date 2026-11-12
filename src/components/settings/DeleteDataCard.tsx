@@ -17,6 +17,7 @@ import { useStudentData } from '@/hooks/use-student-data';
 import { useToast } from '@/hooks/use-toast';
 import { formatDate, latestSessionDate, plural } from '@/lib/helpers';
 import { deleteAllListData, flushWrites } from '@/lib/secure-store';
+import { postDataErased } from '@/lib/data-transaction';
 
 // Settings → Delete Data:
 // - End-of-year clean-up: pick students who have left (archived ones can be selected in one tap) and delete them
@@ -69,7 +70,13 @@ export default function DeleteDataCard() {
       /* the write error was already shown */
     }
     // The lists live in IndexedDB now: clear their rows (and the migration flag) as well.
-    await deleteAllListData();
+    try {
+      await deleteAllListData();
+    } catch {
+      // Nothing was deleted: say so instead of leaving the confirmation open with no message.
+      toast({ title: "Couldn't delete the data", description: 'This device\'s storage could not be cleared. Close other tabs with AscendEd open, reopen the app and try again.', variant: 'destructive' });
+      return;
+    }
     const keys: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
@@ -77,6 +84,8 @@ export default function DeleteDataCard() {
     }
     keys.forEach(key => localStorage.removeItem(key));
     try { sessionStorage.clear(); } catch { /* nothing kept there */ }
+    // Other open tabs start over too, instead of saving the data they hold back to this device.
+    postDataErased();
     // Starts fresh, with nothing of the old data left in memory.
     window.location.href = '/';
   };

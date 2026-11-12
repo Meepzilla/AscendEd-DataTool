@@ -1,7 +1,8 @@
 'use client';
 
+import { parseDateOnly } from '@/lib/helpers';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { defaultSessionTimes } from '@/lib/session-time';
+import { defaultSessionTimes, previousSessionTimes } from '@/lib/session-time';
 
 // Data Entry's session date and start and end times.
 //
@@ -9,8 +10,9 @@ import { defaultSessionTimes } from '@/lib/session-time';
 // starts for a new session (the first entry after everything was saved), the date moves to today and the times
 // to now; when the app comes back to the foreground on a later day with nothing entered, the date moves to
 // today. A past date or a time chosen in the pickers is kept: the date until it is changed back (or Reset Time
-// to Now), the times until that session is saved. Unsaved entries restored from another day keep their date and
-// times until they are saved.
+// to Now), the times until that session is saved. Reset Time to Before marks the 30-minute chunk that just
+// ended (now minus 30 minutes to now) for recording a session that just happened, and counts as a chosen
+// time. Unsaved entries restored from another day keep their date and times until they are saved.
 
 interface Options {
   /** The restored draft's date and times (when it had entries), else undefined to start now. */
@@ -40,7 +42,13 @@ export function useSessionTimes({ initial, anyUnsaved, statesBuilt }: Options) {
     }
   }, [sessionTime]);
 
-  const pastDateChosenRef = useRef(false);
+  // A date restored from the draft that isn't today was chosen by the teacher: it stays for the next student's session
+  // too, as it did before the page was left (only the date itself was restored, so it used to become today).
+  const pastDateChosenRef = useRef<boolean | null>(null);
+  if (pastDateChosenRef.current === null) {
+    const restored = initial?.date ? parseDateOnly(initial.date) : null;
+    pastDateChosenRef.current = !!restored && !Number.isNaN(restored.getTime()) && restored.toDateString() !== new Date().toDateString();
+  }
   const timeChosenRef = useRef(false);
   const chooseSessionDate = useCallback((date: Date | undefined) => {
     pastDateChosenRef.current = !!date && date.toDateString() !== new Date().toDateString();
@@ -53,6 +61,17 @@ export function useSessionTimes({ initial, anyUnsaved, statesBuilt }: Options) {
     timeChosenRef.current = false;
     const now = new Date();
     const { start, end } = defaultSessionTimes(now);
+    setSessionDate(now);
+    setSessionTime(start);
+    setSessionEndTime(end);
+  }, []);
+  const resetSessionToBefore = useCallback(() => {
+    pastDateChosenRef.current = false;
+    // The before window is a chosen time, not a default: without this, the first entry typed would
+    // move the times back to now and the 30 minutes from now, discarding the chunk just marked.
+    timeChosenRef.current = true;
+    const now = new Date();
+    const { start, end } = previousSessionTimes(now);
     setSessionDate(now);
     setSessionTime(start);
     setSessionEndTime(end);
@@ -105,5 +124,5 @@ export function useSessionTimes({ initial, anyUnsaved, statesBuilt }: Options) {
     };
   }, [sessionDate]);
 
-  return { sessionDate, sessionTime, sessionEndTime, chooseSessionDate, chooseSessionTime, chooseSessionEndTime, resetSessionToNow };
+  return { sessionDate, sessionTime, sessionEndTime, chooseSessionDate, chooseSessionTime, chooseSessionEndTime, resetSessionToNow, resetSessionToBefore };
 }

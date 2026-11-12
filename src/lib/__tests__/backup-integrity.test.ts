@@ -167,6 +167,18 @@ describe('backup shape validation and dropped settings', () => {
   });
 });
 
+describe('fields this version does not know', () => {
+  it('restores a backup whose records carry an extra field, instead of calling it damaged', async () => {
+    const extra = { ...data(), students: [{ ...student('ava', ['g1']), goals: [{ id: 'g1', name: 'g1', type: 'ARTICULATION', smartGoal: '', addedLater: 'x' }] } as unknown as Student] };
+    const parsed = parseBackup(await backupFileText(createBackup(extra)));
+    expect(parsed.data.students[0].id).toBe('ava');
+  });
+  it('still rejects a file that was changed after it was written', async () => {
+    const text = await backupFileText(createBackup(data()));
+    expect(() => parseBackup(text.replace('"name":"ava"', '"name":"eve"'))).toThrow(/damaged/);
+  });
+});
+
 describe('backup file size limit', () => {
   it('writes a backup of 3,000 sessions that can be restored', async () => {
     const goals = ['g1', 'g2', 'g3', 'g4'];

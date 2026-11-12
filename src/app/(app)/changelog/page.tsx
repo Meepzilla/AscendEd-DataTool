@@ -4,7 +4,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Target, Clock, RotateCcw, ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, LayoutGrid, Minimize2, UserX, UserPlus, ArrowRightLeft, Download, ListPlus, Workflow, Shuffle, CheckSquare, ListChecks, DatabaseZap, UserSearch, Upload, BrainCircuit, PanelLeft, ArrowLeft, MessagesSquare, BookOpen, Lock, ShieldCheck, PanelBottom, CalendarClock, Sun, Rocket } from 'lucide-react';
+import { Target, Clock, RotateCcw, History, ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, LayoutGrid, Minimize2, UserX, UserPlus, ArrowRightLeft, Download, ListPlus, Workflow, Shuffle, CheckSquare, ListChecks, DatabaseZap, UserSearch, Upload, BrainCircuit, PanelLeft, ArrowLeft, MessagesSquare, BookOpen, Lock, ShieldCheck, PanelBottom, CalendarClock, Sun, Rocket } from 'lucide-react';
 import { APP_NAME } from '@/lib/appConstants';
 
 interface ChangelogEntry {
@@ -21,6 +21,20 @@ const allChangelogEntries: ChangelogEntry[] = [
     date: '2026-11-12',
     title: 'Storage Warnings, Protected Backup Size and Error Logs',
     description: 'Three small fixes from a follow-up code review. The storage size check now reads the browser\'s real storage estimate, so the warnings at 70% and 90% of the device quota can appear (before, the reading failed quietly and the warnings never showed). A password-protected backup is now measured after encryption, which makes the file about a third larger, so an oversized one is refused instead of being saved past the restore limit. Three dialogs now keep student and session IDs out of the error log, matching the rest of the app.',
+    type: 'fix',
+    icon: ShieldCheck,
+  },
+  {
+    date: '2026-11-12',
+    title: 'Reset Time to Before in Data Entry',
+    description: 'Data Entry has a second time button beside the session date. Reset Time to Before sets the end time to now and the start time to 30 minutes before now, so a session that just happened can be marked and recorded in one tap. Reset Time to Now still starts a new session now, with the end 30 minutes later. On wider screens the two buttons now share one line instead of stacking; on phones they still stack.',
+    type: 'feature',
+    icon: History,
+  },
+  {
+    date: '2026-11-12',
+    title: 'More Fixes from the App Review',
+    description: 'Data Entry: the highlighted goal stays on the same goal when you show archived goals or a goal is added, so keyboard shortcuts score the goal you see highlighted; typing a new number of trials no longer wipes trials you already scored; Pick Goal works with the sidebar collapsed; Ctrl+Enter and letter shortcuts no longer act on a card while a window, list or menu is open; a past session date you chose is kept after leaving and coming back; and quick changes made one after another are all saved. Reports: goal statements no longer fill in a rating or count as if it were a percentage, behavior rates and mastery streaks count only the right sessions, and Goal Attainment Scaling scores include every session. Merging sessions now adds up observation minutes and service-minute splits and keeps a recorded rating. Storage: a failed restore now puts back data it could not read, Erase and Start Over asks about a passcode again, Delete All Data also clears other open tabs, and an incomplete backup made while turning on a passcode is clearly flagged.',
     type: 'fix',
     icon: ShieldCheck,
   },

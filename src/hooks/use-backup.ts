@@ -54,7 +54,12 @@ export function useBackup() {
         });
         return true;
       }
-      window.localStorage.setItem(LAST_BACKUP_KEY, backup.exportedAt);
+      // The file is saved; failing to record its date (storage full) must not report the backup as failed.
+      try {
+        window.localStorage.setItem(LAST_BACKUP_KEY, backup.exportedAt);
+      } catch {
+        /* the reminder stays on */
+      }
       window.dispatchEvent(new Event(BACKUP_SAVED_EVENT));
       toast({ title: 'Backup saved', description: `${plural(backup.data.students.length, 'student')} and ${plural(backup.data.sessions.length, 'session')} backed up${password ? ', protected with your password' : ''}.` });
       return true;

@@ -12,7 +12,7 @@ import {
   MIN_PASSCODE_LENGTH, enablePasscode, eraseProtectedData, generateRecoveryKey, getAutoLockMinutes, isPasscodeEnabled,
   isUnlocked, lockNow, resetPasscodeWithRecoveryKey, unlock,
 } from '@/lib/secure-store';
-import { hasExistingStudentData, needsFirstRunPrompt, needsPasscodeOffer, passcodeGateStatus, recordPasscodeDecision, recordBackupDeclinedBeforePasscode, shouldPromptForBackupBeforePasscode } from '@/lib/passcode-onboarding';
+import { clearPasscodeDecision, hasExistingStudentData, needsFirstRunPrompt, needsPasscodeOffer, passcodeGateStatus, recordPasscodeDecision, recordBackupDeclinedBeforePasscode, shouldPromptForBackupBeforePasscode } from '@/lib/passcode-onboarding';
 import { useAuth } from '@/hooks/use-auth';
 import { LAST_BACKUP_KEY, backupFileName, backupFileText, buildBackupFromStorage, isPlaintextBackupAcknowledged, PLAINTEXT_BACKUP_ACKNOWLEDGEMENT } from '@/lib/backup';
 import { saveTextFile } from '@/lib/save-file';
@@ -167,8 +167,13 @@ function SetPasscodeForm({ onEnabled }: { onEnabled: () => void }) {
       const { backup, incomplete } = await buildBackupFromStorage(currentUser?.uid);
       const saved = await saveTextFile(backupFileName(), await backupFileText(backup, noBackupPassword ? undefined : backupPassword));
       if (!saved) { setBusy(false); return; }
+      if (incomplete) {
+        // Not recorded as a good backup, and the warning is shown here before going on (it used to flash past).
+        setBackupIncomplete(true);
+        return;
+      }
       window.localStorage.setItem(LAST_BACKUP_KEY, backup.exportedAt);
-      setBackupIncomplete(incomplete);
+      setBackupIncomplete(false);
       goRecovery();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'The backup file could not be saved.');
@@ -249,7 +254,10 @@ function SetPasscodeForm({ onEnabled }: { onEnabled: () => void }) {
           </div>
         )}
         {backupIncomplete && (
-          <p className="text-sm text-destructive" role="alert">Some of this device&apos;s data couldn&apos;t be read, so it isn&apos;t in this backup. Keep your earlier backup files.</p>
+          <div className="space-y-2" role="alert">
+            <p className="text-sm text-destructive">The backup was saved, but some of this device&apos;s data couldn&apos;t be read, so it isn&apos;t in this backup. Keep your earlier backup files.</p>
+            <Button type="button" variant="outline" className="w-full" onClick={goRecovery} disabled={busy}>Continue with this backup</Button>
+          </div>
         )}
         {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
         <Button type="submit" className="w-full" disabled={busy}>
@@ -585,7 +593,7 @@ function LockScreen({ onUnlocked }: { onUnlocked: () => void }) {
               <div className="flex gap-2">
                 <Button type="button" variant="outline" className="flex-1" onClick={() => { setForgot(false); setEraseText(''); }}>Back</Button>
                 <Button type="button" variant="destructive" className="flex-1" disabled={eraseText.trim().toUpperCase() !== 'ERASE'}
-                  onClick={() => { eraseProtectedData(); window.location.reload(); }}>
+                  onClick={() => { eraseProtectedData(); clearPasscodeDecision(); window.location.reload(); }}>
                   Erase and Start Over
                 </Button>
               </div>

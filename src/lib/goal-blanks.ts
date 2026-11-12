@@ -40,7 +40,8 @@ export function findBlanks(text: string): GoalBlank[] {
 export function percentAsFraction(percent: number): [number, number] | null {
   for (const n of [2, 3, 4, 5, 10, 20]) {
     const k = (percent * n) / 100;
-    if (Number.isInteger(k) && k > 0 && k <= n) return [k, n];
+    // 100% reads "5 out of 5", not "2 out of 2".
+    if (Number.isInteger(k) && k > 0 && k <= n && !(k === n && n < 5)) return [k, n];
   }
   return null;
 }
@@ -51,7 +52,8 @@ type BlankGoal = Partial<Pick<Goal, 'smartGoal' | 'sessionTargetValue' | 'master
 export function automaticBlankValues(text: string, goal: BlankGoal): (string | undefined)[] {
   const blanks = findBlanks(text);
   const values: (string | undefined)[] = blanks.map(() => undefined);
-  const target = goal.sessionTargetValue;
+  // Only a percentage target fills "___%" and "___ out of ___": a rating of 5 or a count of 10 isn't a percent.
+  const target = percentTarget(goal) ? goal.sessionTargetValue : undefined;
   const fractionIsTarget = !statesPercent(text);
   blanks.forEach((blank, i) => {
     const after = text.slice(blank.end, blank.end + 20);

@@ -143,3 +143,23 @@ describe('ABC narrative', () => {
     expect(text).toContain('Consequences most often suggested a function of escape (3).');
   });
 });
+
+describe('behavior rates and streaks', () => {
+  it('works out a frequency rate only from sessions with an observation time', () => {
+    const freq = goal({ id: 'g3', name: 'Calling out', type: 'BEHAVIOR_FREQUENCY', sessionTargetValue: 2 });
+    const s = (date: string, data: Record<string, any>) => session({ date, goals: [{ goalId: 'g3', goalName: 'Calling out', goalType: 'BEHAVIOR_FREQUENCY', data }] });
+    const text = buildNarrative({ student, goals: [freq], sessions: [s('2026-10-01T09:00:00Z', { count: 6, observationMinutes: '30' }), s('2026-10-02T09:00:00Z', { count: 6 })] });
+    expect(text).toContain('Over 30 observed minutes (in the 1 session with an observation time), this is a rate of 12 per hour.');
+  });
+
+  it('breaks the mastery streak at a latency session with no response, wherever it falls', () => {
+    const latency = goal({ id: 'g2', name: 'Respond', type: 'BEHAVIOR_LATENCY', sessionTargetValue: 20 });
+    const s = (date: string, latencies: (number | null)[]) =>
+      session({ date, goals: [{ goalId: 'g2', goalName: 'Respond', goalType: 'BEHAVIOR_LATENCY', data: { latencies } }] });
+    const text = buildNarrative({ student, goals: [latency], sessions: [
+      s('2026-10-01T09:00:00Z', [10]), s('2026-10-02T09:00:00Z', [null, null]), s('2026-10-03T09:00:00Z', [10]), s('2026-10-04T09:00:00Z', [12]),
+    ] });
+    expect(text).not.toMatch(/last 3 sessions in a row/);
+    expect(text).toMatch(/last 2 sessions in a row/);
+  });
+});

@@ -184,9 +184,12 @@ function analyzeGoal(goal: Goal, number: number, sessions: SessionData[]): GoalA
   const values = recorded.map(r => r.value);
   const target = goal.sessionTargetValue;
   const met = values.map(v => target !== undefined && meetsTarget(goal, v, target));
+  // The streak runs back from the latest session over every session with data, in date order: a latency
+  // session with no response (no time to chart) still breaks it, since the target can't have been met in it.
+  const timeline = [...recorded.map((r, i) => ({ session: r.session, met: met[i] })), ...unmeasuredRows.map(r => ({ session: r.session, met: false }))]
+    .sort((x, y) => compareSessionsOldestFirst(x.session, y.session));
   let streak = 0;
-  for (let i = met.length - 1; i >= 0 && met[i]; i--) streak++;
-  if (latestUnanswered) streak = 0;
+  for (let i = timeline.length - 1; i >= 0 && timeline[i].met; i--) streak++;
   const trend = fitTrend(goal, recorded.map(r => ({ date: r.session.date, value: r.value, weight: trendWeight(captureTypeOf(goal), r.data) })));
   const last = recorded[recorded.length - 1];
   const mastery = masterySessions(goal);
@@ -343,9 +346,12 @@ function detailSentences(name: string, goal: Goal, data: Record<string, any>[]):
   }
 
   if (type === 'BEHAVIOR_FREQUENCY') {
-    const minutes = sum(data.map(d => summarizeFrequency(d).minutes));
-    const count = sum(data.map(d => summarizeFrequency(d).count));
-    if (minutes > 0) lines.push(`Over ${round(minutes)} observed minutes, this is a rate of ${round((count / minutes) * 60)} per hour.`);
+    // Only sessions with an observation time count toward the rate, on both sides of the division (as for duration).
+    const observedSessions = data.map(d => summarizeFrequency(d)).filter(s => s.minutes > 0);
+    const minutes = sum(observedSessions.map(s => s.minutes));
+    const count = sum(observedSessions.map(s => s.count));
+    const scope = observedSessions.length < data.length ? ` (in the ${plural(observedSessions.length, 'session')} with an observation time)` : '';
+    if (minutes > 0) lines.push(`Over ${round(minutes)} observed minutes${scope}, this is a rate of ${round((count / minutes) * 60)} per hour.`);
   }
 
   if (type === 'BEHAVIOR_ABC') {

@@ -38,6 +38,7 @@ const StudentFilters: React.FC<StudentFiltersProps> = ({
         <Input
           type="search"
           placeholder="Search by student name..."
+          aria-label="Search students"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="pl-9 w-full"

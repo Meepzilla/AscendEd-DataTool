@@ -110,7 +110,7 @@ export default function DataEntryContent() {
   const anyUnsaved = selectedStudentIds.some(id => hasUnsavedEntry(studentSessionStates[id], goalDefaults));
   const statesBuilt = Object.keys(studentSessionStates).length > 0;
   const {
-    sessionDate, sessionTime, sessionEndTime, chooseSessionDate, chooseSessionTime, chooseSessionEndTime, resetSessionToNow,
+    sessionDate, sessionTime, sessionEndTime, chooseSessionDate, chooseSessionTime, chooseSessionEndTime, resetSessionToNow, resetSessionToBefore,
   } = useSessionTimes({
     initial: draftHadEntries ? { date: draft?.sessionDate, time: draft?.sessionTime, endTime: draft?.sessionEndTime } : undefined,
     anyUnsaved,
@@ -380,6 +380,44 @@ export default function DataEntryContent() {
         return { ...prevStates, [studentId]: { ...studentState, goalData: { ...studentState.goalData, [goalId]: processedData } } };
     });
   }, []);
+
+  // The focused goal is kept as a position in the card's visible goals (what the card, the hotkeys and Pick Goal
+  // all index). When that list changes on its own (Show Archived Goals, a goal added or archived mid-session, the
+  // card rebuilt after Save or Reset), the position is moved to stay on the same goal; before, the hotkeys then
+  // scored whichever goal had moved into that position. A focus change made together with the list change (the
+  // move arrows) is the new focus, and is kept.
+  const visibleGoalIdsByStudent = useMemo(() => Object.fromEntries(Object.entries(studentSessionStates).map(([studentId, state]) =>
+    [studentId, state.originalGoalHeaders.filter(g => !g.isArchived || showArchivedByStudentId[studentId]).map(g => g.id)])) as Record<string, string[]>,
+  [studentSessionStates, showArchivedByStudentId]);
+  const focusAnchorRef = useRef<{ goalId: Record<string, string | undefined>; index: Record<string, number | undefined>; ids: Record<string, string[]> }>({ goalId: {}, index: {}, ids: {} });
+  useEffect(() => {
+    const anchor = focusAnchorRef.current;
+    const moves: Record<string, number> = {};
+    for (const [studentId, ids] of Object.entries(visibleGoalIdsByStudent)) {
+      const index = focusedGoalIndexByStudentId[studentId] ?? 0;
+      const listChanged = (anchor.ids[studentId] ?? []).join('\u0000') !== ids.join('\u0000');
+      const focusChanged = anchor.index[studentId] !== index;
+      if (!focusChanged && listChanged && anchor.goalId[studentId]) {
+        const at = ids.indexOf(anchor.goalId[studentId]!);
+        if (at >= 0 && at !== index) moves[studentId] = at;
+      }
+      anchor.ids[studentId] = ids;
+      anchor.index[studentId] = moves[studentId] ?? index;
+      anchor.goalId[studentId] = ids[moves[studentId] ?? index] ?? anchor.goalId[studentId];
+    }
+    if (Object.keys(moves).length) setFocusedGoalIndexByStudentId(prev => ({ ...prev, ...moves }));
+  }, [visibleGoalIdsByStudent, focusedGoalIndexByStudentId]);
+
+  // The highlighted goal is always among the goals the card shows: cycling with the hotkeys past the first ten
+  // shows more of the list, instead of scoring a goal that isn't on screen.
+  useEffect(() => {
+    const more: Record<string, number> = {};
+    for (const [studentId, index] of Object.entries(focusedGoalIndexByStudentId)) {
+      const shown = visibleGoalCountByStudentId[studentId] ?? 10;
+      if (index >= shown && index < (visibleGoalIdsByStudent[studentId]?.length ?? 0)) more[studentId] = Math.ceil((index + 1) / 10) * 10;
+    }
+    if (Object.keys(more).length) setVisibleGoalCountByStudentId(prev => ({ ...prev, ...more }));
+  }, [focusedGoalIndexByStudentId, visibleGoalCountByStudentId, visibleGoalIdsByStudent]);
 
   const handleMoveGoal = useCallback((studentId: string, goalId: string, direction: 'up' | 'down') => {
     setStudentSessionStates(prevStates => {
@@ -704,6 +742,7 @@ export default function DataEntryContent() {
               dataEntrySessionEndTime={sessionEndTime}
               setDataEntrySessionEndTime={chooseSessionEndTime}
               onResetToNow={resetSessionToNow}
+              onResetToBefore={resetSessionToBefore}
               isStudentAccessLocked={isStudentAccessLocked}
               setIsStudentAccessLocked={requestAccessLock}
             />

@@ -145,6 +145,16 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const studentsRef = useRef<Student[]>([]);
   const templatesRef = useRef<GoalTemplate[]>([]);
   const sessionsRef = useRef<SessionData[]>([]);
+
+  // Changes run one at a time. Each builds its new list from the refs and then awaits the write, so a second change
+  // started while the first was still being written used to build from the list without the first, and its write
+  // then dropped it (while both reported success): a missed session recorded during a save, two quick goal changes.
+  const queueRef = useRef<Promise<unknown>>(Promise.resolve());
+  const oneAtATime = useCallback(<A extends unknown[], R,>(action: (...args: A) => Promise<R>) => (...args: A): Promise<R> => {
+    const run = queueRef.current.then(() => action(...args));
+    queueRef.current = run.catch(() => undefined);
+    return run;
+  }, []);
   const { keys, save: saveToLocal, read: readStored, resetUnreadable, isUnreadable, unmark, mark, hydrate } = useDataStorage(currentUser?.uid);
   const { students: studentsKey, templates: templatesKey, sessions: sessionsKey } = keys;
 
@@ -180,7 +190,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const applyTransaction = useCallback(async (next: { students: Student[]; goalTemplates: GoalTemplate[]; sessions: SessionData[] }) => {
     const keyOf: Record<MainListKey, string | null> = { students: studentsKey, goalTemplates: templatesKey, sessions: sessionsKey };
     const store: AsyncListTransactionStore = {
-      snapshot: key => (keyOf[key] ? secureStore.snapshotItem(keyOf[key]!) : null),
+      snapshot: key => (keyOf[key] ? secureStore.snapshotItemAsync(keyOf[key]!) : null),
       restore: async (key, snapshot) => { if (keyOf[key]) await secureStore.restoreItemAsync(keyOf[key]!, snapshot as secureStore.ItemSnapshot); },
       write: (key, value) => saveToLocal(keyOf[key], value),
       read: async key => {
@@ -218,6 +228,11 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const updateStudent = useCallback(async (studentId: string, data: Partial<Student>) => {
       if (!currentUser) return;
+      if (!studentsRef.current.some(s => s.id === studentId)) {
+        // Deleted meanwhile (another tab): say so instead of reporting an update that changed nothing.
+        toast({ title: "Error", description: "Student not found.", variant: "destructive" });
+        return;
+      }
       const updatedData = { ...data, updatedAt: new Date().toISOString() };
       if (!(await commitStudents(studentsRef.current.map(s => s.id === studentId ? { ...s, ...updatedData } : s).sort(byName)))) return;
       toast({ title: "Success", description: "Student updated." });
@@ -607,7 +622,8 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       });
       toast({ title: 'Data changed in another tab', description: 'Students, goal templates and sessions were reloaded from this device.' });
     };
-    const reloader = coalesce(doReload, 400);
+    // In the same queue as this tab's own changes, so a reload can't land between a change's read and its write.
+    const reloader = coalesce(oneAtATime(doReload), 400);
     const reload = () => reloader.trigger();
     const onStorage = (event: StorageEvent) => {
       if (isMainListStorageKey(event.key, { students: studentsKey, templates: templatesKey, sessions: sessionsKey })) reload();
@@ -619,6 +635,8 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         channel = new BroadcastChannel(DATA_CHANGED_CHANNEL);
         channel.onmessage = (event) => {
           if (isOwnDataChangedMessage(event.data)) return; // this tab's own save, not another tab
+          // Delete All Data in another tab: start over rather than keep this tab's copy and write it back later.
+          if ((event.data as { type?: unknown } | null)?.type === 'data-erased') { window.location.href = '/'; return; }
           reload();
         };
       }
@@ -630,7 +648,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       channel?.close();
       reloader.cancel();
     };
-  }, [currentUser, studentsKey, templatesKey, sessionsKey, toast, applyListsQuiet]);
+  }, [currentUser, studentsKey, templatesKey, sessionsKey, toast, applyListsQuiet, oneAtATime]);
   
 
   const getSessionsForStudent = useCallback((studentId: string) => {
@@ -658,11 +676,28 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       toast({ title: "Success", description: "Student updated." });
   }, [commitStudentGoals, toast]);
 
+  // The data-changing actions, queued (see oneAtATime). Memoized, so components that depend on them keep the
+  // same functions from render to render.
+  const queued = useMemo(() => ({
+    addStudent: oneAtATime(addStudent), updateStudent: oneAtATime(updateStudent), deleteStudent: oneAtATime(deleteStudent),
+    deleteStudents: oneAtATime(deleteStudents), importStudents: oneAtATime(importStudents),
+    assignGoalToStudent: oneAtATime(assignGoalToStudent), removeGoalFromStudent: oneAtATime(removeGoalFromStudent),
+    updateStudentGoal: oneAtATime(updateStudentGoal),
+    addGoalTemplate: oneAtATime(addGoalTemplate), updateGoalTemplate: oneAtATime(updateGoalTemplate),
+    deleteGoalTemplate: oneAtATime(deleteGoalTemplate), archiveGoalTemplates: oneAtATime(archiveGoalTemplates),
+    assignTemplateToStudents: oneAtATime(assignTemplateToStudents), restoreBuiltInTemplates: oneAtATime(restoreBuiltInTemplates),
+    addSession: oneAtATime(addSession), updateSession: oneAtATime(updateSession), deleteSession: oneAtATime(deleteSession),
+    mergeSessionRecords: oneAtATime(mergeSessionRecords), importSessions: oneAtATime(importSessions),
+    restoreBackup: oneAtATime(restoreBackup),
+  }), [oneAtATime, addStudent, updateStudent, deleteStudent, deleteStudents, importStudents, assignGoalToStudent,
+    removeGoalFromStudent, updateStudentGoal, addGoalTemplate, updateGoalTemplate, deleteGoalTemplate, archiveGoalTemplates,
+    assignTemplateToStudents, restoreBuiltInTemplates, addSession, updateSession, deleteSession, mergeSessionRecords,
+    importSessions, restoreBackup]);
+
   const contextValue: StudentDataContextType = {
     students,
     goalTemplates,
     deletedBuiltInTemplates,
-    restoreBuiltInTemplates,
     sessions,
     currentUser,
     selectedStudent,
@@ -673,13 +708,10 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     error,
     addErrorLog,
 
-    // Data Actions
-    addStudent, updateStudent, deleteStudent, deleteStudents, importStudents,
-    assignGoalToStudent, removeGoalFromStudent, updateStudentGoal,
-    addGoalTemplate, updateGoalTemplate, deleteGoalTemplate, archiveGoalTemplates, assignTemplateToStudents,
-    addSession, updateSession, deleteSession, mergeSessionRecords,
-    getSessionsForStudent, importSessions,
-    exportBackup, restoreBackup,
+    // Data Actions (the changes queued one at a time)
+    ...queued,
+    getSessionsForStudent,
+    exportBackup,
 
     // Modal State & Actions
     ...modalState,

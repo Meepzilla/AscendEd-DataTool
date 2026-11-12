@@ -183,7 +183,11 @@ export function sessionTimestamp(session: { date: string; time?: string }): numb
 
 /** Orders sessions oldest first (by sessionTimestamp, then the stored date). */
 export function compareSessionsOldestFirst(a: { date: string; time?: string }, b: { date: string; time?: string }): number {
-  return sessionTimestamp(a) - sessionTimestamp(b) || parseDateOnly(a.date).getTime() - parseDateOnly(b.date).getTime();
+  // A session whose date can't be read sorts last (NaN in a comparator leaves the whole order undefined).
+  const at = (s: { date: string; time?: string }) => { const t = sessionTimestamp(s); return Number.isNaN(t) ? Infinity : t; };
+  const stored = (s: { date: string }) => { const t = parseDateOnly(s.date).getTime(); return Number.isNaN(t) ? Infinity : t; };
+  const byTime = at(a) === at(b) ? 0 : at(a) - at(b);
+  return byTime || (stored(a) === stored(b) ? 0 : stored(a) - stored(b));
 }
 
 /** The most recent of some session dates, as stored; dates that can't be read are passed over (null if none can). */

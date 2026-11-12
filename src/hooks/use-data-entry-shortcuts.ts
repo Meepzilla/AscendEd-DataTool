@@ -4,7 +4,7 @@ import { useEffect, useRef, type Dispatch, type SetStateAction } from 'react';
 import type { Student, StudentSessionState } from '@/lib/types';
 import { captureTypeOf } from '@/lib/goal-constants';
 import { taskSteps } from '@/lib/task-analysis';
-import { applyGoalHotkey, hotkeyChar, hotkeysBlocked, singleKeyShortcutsEnabled } from '@/lib/data-entry-hotkeys';
+import { applyGoalHotkey, dialogIsOpen, hotkeyChar, hotkeysBlocked, singleKeyShortcutsEnabled } from '@/lib/data-entry-hotkeys';
 
 // Data Entry's keyboard shortcuts (listed in Help → Keyboard shortcuts). The listener is added once and always
 // uses the latest values passed in.
@@ -41,8 +41,9 @@ export function useDataEntryShortcuts(options: DataEntryShortcutOptions) {
       } = latest.current;
       const key = hotkeyChar(event);
       const alt = event.altKey;
-      // Ctrl+Enter saves (Cmd+Enter on Apple keyboards), even while typing in a field.
-      if ((event.ctrlKey || event.metaKey) && key === 'ENTER') {
+      // Ctrl+Enter saves (Cmd+Enter on Apple keyboards), even while typing in a card's field, but not while a dialog
+      // is open: there it belongs to the dialog (a missed-session note, Edit Student), not to the card behind it.
+      if ((event.ctrlKey || event.metaKey) && key === 'ENTER' && !dialogIsOpen()) {
         event.preventDefault();
         if (!event.repeat) save();
         return;

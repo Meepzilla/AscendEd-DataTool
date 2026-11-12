@@ -53,6 +53,18 @@ export function getPasscodeDecision(): PasscodeDecision | null {
   return readDecisionRaw();
 }
 
+/**
+ * Forgets the first-run decision, so the next load asks again (after "Erase and Start Over": the data is gone and
+ * protection is off, and a backup restored next must not be stored unencrypted without asking).
+ */
+export function clearPasscodeDecision() {
+  try {
+    localStorage.removeItem(PASSCODE_DECISION_KEY);
+  } catch {
+    /* nothing stored */
+  }
+}
+
 /** Records the first-run decision (plain localStorage) and returns it. */
 export function recordPasscodeDecision(choice: PasscodeDecisionChoice): PasscodeDecision {
   const decision: PasscodeDecision = { v: 1, choice, at: new Date().toISOString() };
