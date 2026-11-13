@@ -12,6 +12,7 @@ import { useStudentData } from '@/hooks/use-student-data';
 import type { Student, Goal } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { formatGoalTarget, goalTypeLabel, TEMPLATE_PICKER_LIMIT } from '@/lib/helpers';
+import { toSafeErrorMessage } from '@/lib/error-message';
 import { useToast } from '@/hooks/use-toast';
 import GoalTextPopover from '@/components/forms/GoalTextPopover';
 import TemplatePickerFilters from '@/components/goal-templates/TemplatePickerFilters';
@@ -78,7 +79,7 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
       toast({ title: "Success", description: `${goalsToAssign.length} goal(s) assigned from templates.`});
       setSelectedTemplates(new Set());
     } catch (error) {
-        console.error("Error assigning multiple goals from templates:", error);
+        console.error("Error assigning multiple goals from templates:", toSafeErrorMessage(error));
         toast({ title: "Error", description: "Could not assign selected goals from templates.", variant: "destructive"});
     } finally {
         setIsAssigningTemplates(false);

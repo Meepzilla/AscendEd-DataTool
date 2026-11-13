@@ -18,8 +18,6 @@ import type { TaskStepScore } from '@/lib/task-analysis';
 import { AIM_STATUS_LABELS, aimLine, aimStatus, aimValueAt, masterySessions } from '@/lib/aim-line';
 import ExpandableGoalName from './ExpandableGoalName';
 import { gasLevelDescription, gasLevelText } from '@/lib/gas';
-import { phaseLines, visualAnalysis } from '@/lib/visual-analysis';
-import { PHASE_COLORS, PhaseSummaryPanel, PhaseToggle, usePhaseView } from './PhaseComparison';
 import type { StudentIep } from '@/lib/types';
 
 // A report card for each goal: its measure per session against the target, summary numbers, and a
@@ -189,25 +187,8 @@ const GoalBreakdowns: React.FC<{ goal: Goal; recorded: Recorded[] }> = ({ goal, 
     panels.push(
       <HBars key="antecedents" title="Antecedents (before problem behavior)" series={COUNT_SERIES} rows={tallyRows(abc.antecedents.slice(0, 8))} />,
       <HBars key="behaviors" title="Problem behaviors" series={COUNT_SERIES} rows={tallyRows(abc.behaviors.slice(0, 8))} />,
-      <HBars key="consequences" title="Consequences (after problem behavior)" series={COUNT_SERIES} rows={tallyRows(abc.consequences.slice(0, 8))} />,
       <HBars key="functions" title="Possible functions" series={COUNT_SERIES} rows={tallyRows(abc.functions)} />,
     );
-    if (abc.sequences.length > 0) {
-      // Whole incidents, so what came before and after each behavior can be read together.
-      panels.push(
-        <div key="sequences" className="md:col-span-3">
-          <p className="text-sm font-medium mb-1">Most common patterns (antecedent → behavior → consequence)</p>
-          <ol className="divide-y rounded border text-xs">
-            {abc.sequences.slice(0, 6).map(([pattern, n]) => (
-              <li key={pattern} className="flex gap-3 px-2 py-1.5">
-                <span className="w-8 shrink-0 text-right font-semibold tabular-nums">{n}×</span>
-                <span className="min-w-0 break-words">{pattern}</span>
-              </li>
-            ))}
-          </ol>
-        </div>,
-      );
-    }
   }
   if (usesPromptCounters(type)) {
     const totals = promptTotals();
@@ -232,24 +213,10 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
 
   // The aim line (baseline to target by the target date), as the value expected on each session's date.
   const aim = aimLine(goal, recorded[0]?.session.date);
-  // First half / second half: each half's median and trend line, while "Compare halves" is on.
-  const [showPhases, setShowPhases] = usePhaseView();
-  const isGasType = type === 'GOAL_ATTAINMENT_SCALE';
-  // A GAS goal aims for its target level, or 0 (the expected outcome) when none is set.
-  const analysisTarget = isGasType ? (target ?? 0) : target;
-  const analysis = useMemo(() => visualAnalysis(recorded.map(r => r.value), { direction, target: analysisTarget }), [recorded, direction, analysisTarget]);
-  const lines = showPhases && analysis ? phaseLines(analysis, recorded.length) : null;
-  const points = recorded.map((r, i) => ({
+  const points = recorded.map(r => ({
     label: r.label, value: r.value, ...(goalResponses(type, r.data) ?? {}),
     ...(aim ? { aim: round(aimValueAt(aim, r.session.date)) } : {}),
-    ...(lines ? {
-      medianA: lines[i].phase === 'A' ? round(lines[i].median) : null,
-      medianB: lines[i].phase === 'B' ? round(lines[i].median) : null,
-      trendA: lines[i].phase === 'A' ? round(lines[i].trend) : null,
-      trendB: lines[i].phase === 'B' ? round(lines[i].trend) : null,
-    } : {}),
   }));
-  const phaseBStart = lines && analysis ? recorded[analysis.phaseB.first]?.label : undefined;
   const onTrack = aimStatus(goal, aim, recorded.map(r => ({ date: r.session.date, value: r.value })));
   const mastery = masterySessions(goal);
   const hasResponses = goalResponses(type) !== null && points.length > 0;
@@ -298,11 +265,7 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
         ) : (
           <div className={hasResponses ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : ''}>
             <div className="h-[240px] w-full">
-              <ChartContainer config={{
-                value: { label: info.label, color: 'hsl(var(--primary))' }, aim: { label: 'Aim line', color: 'hsl(var(--chart-2))' },
-                medianA: { label: 'First half median', color: PHASE_COLORS.a }, medianB: { label: 'Second half median', color: PHASE_COLORS.b },
-                trendA: { label: 'First half trend', color: PHASE_COLORS.a }, trendB: { label: 'Second half trend', color: PHASE_COLORS.b },
-              }} className="h-full w-full">
+              <ChartContainer config={{ value: { label: info.label, color: 'hsl(var(--primary))' }, aim: { label: 'Aim line', color: 'hsl(var(--chart-2))' } }} className="h-full w-full">
                 <LineChart data={points} margin={{ top: 10, right: 20, left: -10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} />
@@ -334,14 +297,6 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
                       label={{ value: direction === 'decrease' ? 'Target (max)' : 'Target', position: 'insideTopRight', fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
                   )}
                   {aim && <Line type="linear" dataKey="aim" stroke="var(--color-aim)" strokeWidth={1.5} strokeDasharray="2 3" dot={false} />}
-                  {lines && phaseBStart !== undefined && (
-                    <ReferenceLine x={phaseBStart} stroke="hsl(var(--muted-foreground))" strokeWidth={1}
-                      label={{ value: 'B', position: 'insideTopLeft', fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
-                  )}
-                  {lines && (['medianA', 'medianB', 'trendA', 'trendB'] as const).map(key => (
-                    <Line key={key} type="linear" dataKey={key} stroke={`var(--color-${key})`} strokeWidth={key.startsWith('median') ? 1.5 : 2}
-                      strokeDasharray={key.startsWith('median') ? '5 4' : undefined} dot={false} activeDot={false} connectNulls={false} isAnimationActive={false} />
-                  ))}
                   {/* GAS levels are steps (-2 … +2), so they are joined with straight lines: a curve would suggest levels in between. */}
                   <Line type={isGas ? 'linear' : 'monotone'} dataKey="value" stroke="var(--color-value)" strokeWidth={2} dot={true} />
                 </LineChart>
@@ -379,15 +334,6 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
                   </BarChart>
                 </ChartContainer>
               </div>
-            )}
-          </div>
-        )}
-        {points.length > 0 && (
-          <div className="space-y-2">
-            <PhaseToggle on={showPhases} onChange={setShowPhases} />
-            {showPhases && (
-              <PhaseSummaryPanel analysis={analysis} sessionCount={recorded.length} unit={info.unit}
-                targetLabel={isGasType ? `level ${(analysisTarget ?? 0) > 0 ? '+' : ''}${analysisTarget ?? 0}` : target !== undefined ? formatGoalTarget(type, target, goal.targetDirection) : undefined} />
             )}
           </div>
         )}

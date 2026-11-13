@@ -755,7 +755,7 @@ export default function DataEntryContent() {
           >
             <Suspense fallback={<div>Loading student cards...</div>}>
               {/* The session's date, for behavior times changed by hand (they go on the session's day). */}
-              <SessionDateProvider date={validSessionDate} minutes={sessionMinutes({ time: sessionTime, endTime: sessionEndTime })}>
+              <SessionDateProvider date={validSessionDate}>
               <StudentCardsList
                   dataEntrySelectedStudentIds={selectedStudentIds}
                   students={students}

@@ -126,7 +126,8 @@ export default function TouchControls({
 
   return (
     <>
-      <div className="w-full space-y-1 short:flex short:gap-2 short:space-y-0">
+      {/* A grid: both buttons as wide as the wider one, and no wider, so the bar has room beside them. */}
+      <div className="grid gap-1 short:flex short:gap-2">
         <Button
           type="button"
           variant="outline"
@@ -138,7 +139,9 @@ export default function TouchControls({
           title="Choose which student's card to highlight (Alt+U)"
         >
           <Users className="mr-2 h-4 w-4" />
-          <span>Pick Student</span>
+          {/* "Pick" only where there is room: on a phone held upright the short label leaves room for Load Group,
+              Remove All and the scroll arrows on the same line. */}
+          <span><span className="hidden sm:inline">Pick </span>Student</span>
         </Button>
 
         <Button
@@ -152,7 +155,7 @@ export default function TouchControls({
           title="Choose which goal to highlight on the student's card (Alt+T)"
         >
           <Target className="mr-2 h-4 w-4" />
-          <span>Pick Goal</span>
+          <span><span className="hidden sm:inline">Pick </span>Goal</span>
         </Button>
       </div>
       

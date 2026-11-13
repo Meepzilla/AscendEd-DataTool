@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useId, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Play, Square, Undo2, Plus, X, Check, Ban } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,10 +13,10 @@ import TallyButton from './TallyButton';
 import {
   ABC_REPLACEMENT_BEHAVIOR, INTERVAL_METHODS, INTERVAL_LENGTHS_SECONDS, MAX_INTERVALS,
   summarizeFrequency, summarizeDuration, summarizeAbc, summarizeIntervals, summarizeLatency,
-  formatSeconds, formatLatency, alignTimes, joinAbcChoices, incidentChoices, joinWithAnd, topTied, type AbcIncident, type BehaviorFunction, type IntervalSetup,
+  formatSeconds, formatLatency, alignTimes, joinAbcChoices, joinWithAnd, topTied, type AbcIncident, type BehaviorFunction, type IntervalSetup,
 } from '@/lib/goal-constants';
 import { clockInputValue, formatClockTime, withClockTime } from '@/lib/behavior-timing';
-import { useSessionDate, useSessionMinutes } from './session-date-context';
+import { useSessionDate } from './session-date-context';
 import { useAbcLists } from '@/hooks/use-abc-lists';
 
 // Data entry for the behavior goal types. `update` merges fields into the goal's session data;
@@ -54,41 +54,20 @@ const Summary: React.FC<{ label: string; children: React.ReactNode }> = ({ label
   </div>
 );
 
-/**
- * How long the behavior was observed. With the session's start and end time set, one tap fills it with the
- * session's length, so a rate per hour (or % of time) doesn't need typing.
- */
-const ObservationMinutes: React.FC<BehaviorInputProps & { hint: string }> = ({ data, update, interact, disabled, isLocked, hint }) => {
-  const sessionLength = useSessionMinutes();
-  const id = useId();
-  const current = Number(data.observationMinutes);
-  const canUseSession = typeof sessionLength === 'number' && sessionLength > 0 && current !== sessionLength;
-  return (
-    <div className="space-y-0.5">
-      <Label htmlFor={id} className="text-xs font-medium text-muted-foreground">{`Observation Time (minutes, optional) ${hint}`}</Label>
-      <div className="flex flex-wrap items-center gap-2">
-        <Input
-          id={id}
-          type="number"
-          min="0"
-          inputMode="decimal"
-          value={data.observationMinutes ?? ''}
-          onChange={(e) => update({ observationMinutes: e.target.value })}
-          placeholder="e.g., 30"
-          className="h-8 text-sm w-28"
-          disabled={disabled || isLocked}
-        />
-        {canUseSession && (
-          <Button type="button" variant="outline" size="sm" className="h-8 min-h-11 text-xs touch-manipulation"
-            onClick={(e) => interact(e, () => update({ observationMinutes: String(sessionLength) }))}
-            disabled={disabled || isLocked}>
-            Use session length ({sessionLength} min)
-          </Button>
-        )}
-      </div>
-    </div>
-  );
-};
+const ObservationMinutes: React.FC<BehaviorInputProps & { hint: string }> = ({ data, update, disabled, isLocked, hint }) => (
+  <Field label={`Observation Time (minutes, optional) ${hint}`}>
+    <Input
+      type="number"
+      min="0"
+      inputMode="decimal"
+      value={data.observationMinutes ?? ''}
+      onChange={(e) => update({ observationMinutes: e.target.value })}
+      placeholder="e.g., 30"
+      className="h-8 text-sm w-28"
+      disabled={disabled || isLocked}
+    />
+  </Field>
+);
 
 const Notes: React.FC<BehaviorInputProps & { placeholder: string }> = ({ data, update, disabled, isLocked, placeholder }) => (
   <Field label="Notes">
@@ -117,8 +96,6 @@ const TimesEditor: React.FC<{
 }> = ({ times, rowLabel, onChange, disabled, clearable = true }) => {
   const [open, setOpen] = useState(false);
   const sessionDay = useSessionDate();
-  // Unique per editor: two goals on the page can both have "Occurrence 1".
-  const idPrefix = useId();
   if (times.length === 0) return null;
   const change = (index: number, hhmm: string) => {
     if (!clearable && hhmm === '') return;
@@ -133,9 +110,9 @@ const TimesEditor: React.FC<{
         <ol className="space-y-1">
           {times.map((t, i) => (
             <li key={i} className="flex items-center gap-2 text-xs">
-              <label htmlFor={`${idPrefix}-time-${i}`} className="min-w-0 flex-1 truncate">{rowLabel(i)}</label>
+              <label htmlFor={`time-${i}-${rowLabel(i)}`} className="min-w-0 flex-1 truncate">{rowLabel(i)}</label>
               <Input
-                id={`${idPrefix}-time-${i}`}
+                id={`time-${i}-${rowLabel(i)}`}
                 type="time"
                 value={clockInputValue(t)}
                 onChange={(e) => change(i, e.target.value)}
@@ -336,17 +313,6 @@ export const AbcInput: React.FC<BehaviorInputProps> = (props) => {
     update({ incidents: [...incidents, incident], incidentCount: incidents.length + 1 });
     setAntecedents([]); setBehaviors([]); setConsequences([]); setNote('');
   };
-  // The same choices as the last incident, ready to add again (or change first): patterns often repeat.
-  const last = incidents[incidents.length - 1];
-  const sameAsLast = () => {
-    if (!last) return;
-    const choices = incidentChoices(last);
-    // Only choices still on this device's lists (a choice that was removed can't be shown or turned off).
-    const consequenceLabels = lists.consequences.map(c => c.label);
-    setAntecedents(choices.antecedents.filter(a => lists.antecedents.includes(a)));
-    setBehaviors(choices.behaviors.filter(b => b === ABC_REPLACEMENT_BEHAVIOR || lists.behaviors.includes(b)));
-    setConsequences(choices.consequences.filter(c => consequenceLabels.includes(c)));
-  };
   const removeIncident = (index: number) => {
     const next = incidents.filter((_, i) => i !== index);
     update({ incidents: next, incidentCount: next.length });
@@ -364,12 +330,6 @@ export const AbcInput: React.FC<BehaviorInputProps> = (props) => {
           <Plus className="mr-1 h-3.5 w-3.5" /> Add Incident
         </Button>
       </div>
-      {last && behaviors.length === 0 && antecedents.length === 0 && consequences.length === 0 && (
-        <Button type="button" variant="outline" size="sm" className="h-8 min-h-11 text-xs" onClick={sameAsLast} disabled={disabled || isLocked}
-          title="Select the same antecedents, behaviors and consequences as the last incident">
-          <Undo2 className="mr-1 h-3.5 w-3.5 -scale-x-100" /> Same as last
-        </Button>
-      )}
       {incidents.length > 0 && (
         <ol className="space-y-1 text-xs">
           {incidents.map((incident, i) => (

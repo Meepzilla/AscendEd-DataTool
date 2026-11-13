@@ -185,7 +185,7 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
                     />
                 </div>
 
-                <SessionDateProvider date={formData.date ? fromLocalDay(formData.date) : undefined} minutes={sessionMinutes({ time: formData.time ?? '', endTime: formData.endTime })}>
+                <SessionDateProvider date={formData.date ? fromLocalDay(formData.date) : undefined}>
                 <React.Suspense fallback={<div>Loading Goal Inputs...</div>}>
                     {formData.goals && formData.goals.length > 0 && (
                         <div className="rounded-md border p-2">

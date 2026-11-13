@@ -185,13 +185,7 @@ export function summarizeAbc(data: Record<string, any> = {}) {
     replacementPercent: incidents.length > 0 ? (replacementCount / incidents.length) * 100 : null,
     antecedents: tally(problemIncidents.flatMap(i => incidentChoices(i).antecedents)),
     behaviors: tally(problemIncidents.flatMap(i => incidentChoices(i).behaviors)),
-    consequences: tally(problemIncidents.flatMap(i => incidentChoices(i).consequences)),
     functions: tally(problemIncidents.flatMap(incidentFunctions)),
-    /** Whole incidents, antecedent → behavior → consequence, most common first ("?" where a part wasn't chosen). */
-    sequences: tally(problemIncidents.map(i => {
-      const c = incidentChoices(i);
-      return [c.antecedents, c.behaviors, c.consequences].map(part => joinAbcChoices(part) || '?').join(' → ');
-    })),
   };
 }
 
