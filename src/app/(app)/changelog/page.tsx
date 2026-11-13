@@ -33,6 +33,13 @@ const allChangelogEntries: ChangelogEntry[] = [
   },
   {
     date: '2026-11-12',
+    title: 'Storage Warnings, Protected Backup Size and Error Logs',
+    description: 'Three small fixes from a follow-up code review. The storage size check now reads the browser\'s real storage estimate, so the warnings at 70% and 90% of the device quota can appear (before, the reading failed quietly and the warnings never showed). A password-protected backup is now measured after encryption, which makes the file about a third larger, so an oversized one is refused instead of being saved past the restore limit. Three dialogs now keep student and session IDs out of the error log, matching the rest of the app.',
+    type: 'fix',
+    icon: ShieldCheck,
+  },
+  {
+    date: '2026-11-12',
     title: 'Reset Time to Before in Data Entry',
     description: 'Data Entry has a second time button beside the session date. Reset Time to Before sets the end time to now and the start time to 30 minutes before now, so a session that just happened can be marked and recorded in one tap. Reset Time to Now still starts a new session now, with the end 30 minutes later. On wider screens the two buttons now share one line instead of stacking; on phones they still stack.',
     type: 'feature',
