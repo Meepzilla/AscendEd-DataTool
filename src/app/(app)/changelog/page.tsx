@@ -18,6 +18,13 @@ interface ChangelogEntry {
 
 const allChangelogEntries: ChangelogEntry[] = [
   {
+    date: '2026-11-13',
+    title: 'Data Entry Fits Better on Phones',
+    description: 'On the Data Entry page, the Reset Time to Now and Reset Time to Before buttons now sit side by side on phone screens instead of stacking one above the other, so both fit in the space beside the session date. The bar at the bottom of Data Entry is more compact on phones held upright, so Load Group, Remove All and the scroll arrows sit on the same line as Pick Student instead of a line of their own (the buttons read Student, Goal, Group and All there to fit).',
+    type: 'fix',
+    icon: Smartphone,
+  },
+  {
     date: '2026-11-12',
     title: 'Storage Warnings, Protected Backup Size and Error Logs',
     description: 'Three small fixes from a follow-up code review. The storage size check now reads the browser\'s real storage estimate, so the warnings at 70% and 90% of the device quota can appear (before, the reading failed quietly and the warnings never showed). A password-protected backup is now measured after encryption, which makes the file about a third larger, so an oversized one is refused instead of being saved past the restore limit. Three dialogs now keep student and session IDs out of the error log, matching the rest of the app.',

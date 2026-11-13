@@ -39,25 +39,27 @@ export default function DataEntrySaveBar({
   const busy = isSaving || isSavingAll;
   return (
     <div ref={barRef} className="data-entry-save-bar sticky bottom-0 left-0 right-0 z-10 bg-background mt-auto">
-      <div className="flex flex-wrap short:flex-nowrap justify-between items-center gap-2 p-2 short:py-1 border-t">
+      <div className="flex flex-wrap short:flex-nowrap justify-between items-center gap-1.5 sm:gap-2 p-2 short:py-1 border-t">
         <div className="self-start short:self-center">
           <TouchControls {...touchControls} />
         </div>
 
         {/* Takes the space between the two groups: Load Group, then the scroll arrows, centred on the
             Student button's line. */}
-        <div className="flex flex-1 justify-center gap-2 self-start short:self-center">
-          <LoadGroupMenu onLoad={onLoadGroup} disabled={isStudentAccessLocked} size="lg" />
-          <Button type="button" variant="outline" size="sm" className="min-h-11" onClick={onRemoveAll} disabled={isStudentAccessLocked || busy}
+        {/* On a phone held upright the buttons are narrower (less padding, smaller gaps, shorter labels), so this
+            group still fits on the Student button's line instead of wrapping below it. */}
+        <div className="flex flex-1 justify-center gap-1.5 sm:gap-2 self-start short:self-center">
+          <LoadGroupMenu onLoad={onLoadGroup} disabled={isStudentAccessLocked} size="lg" className="px-3 sm:px-8" />
+          <Button type="button" variant="outline" size="sm" className="min-h-11 px-2.5 sm:px-3" onClick={onRemoveAll} disabled={isStudentAccessLocked || busy}
             aria-label="Remove all students" title="Remove every student from Data Entry">
-            <XCircle className="mr-2 h-4 w-4 text-red-500" />
+            <XCircle className="mr-1.5 sm:mr-2 h-4 w-4 text-red-500" />
             <span className="hidden sm:inline short:hidden">Remove&nbsp;</span>All
           </Button>
           <div className="flex gap-1" role="group" aria-label="Scroll students">
-            <Button type="button" variant="outline" size="sm" className="w-14 min-h-11" onClick={() => onScrollCards(-1)} disabled={!cardScroll.left} aria-label="Scroll students left" title="Scroll students left">
+            <Button type="button" variant="outline" size="sm" className="w-11 min-h-11 sm:w-14" onClick={() => onScrollCards(-1)} disabled={!cardScroll.left} aria-label="Scroll students left" title="Scroll students left">
               <ChevronLeft className="h-5 w-5" />
             </Button>
-            <Button type="button" variant="outline" size="sm" className="w-14 min-h-11" onClick={() => onScrollCards(1)} disabled={!cardScroll.right} aria-label="Scroll students right" title="Scroll students right">
+            <Button type="button" variant="outline" size="sm" className="w-11 min-h-11 sm:w-14" onClick={() => onScrollCards(1)} disabled={!cardScroll.right} aria-label="Scroll students right" title="Scroll students right">
               <ChevronRight className="h-5 w-5" />
             </Button>
           </div>
