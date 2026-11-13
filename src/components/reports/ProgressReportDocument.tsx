@@ -8,8 +8,6 @@ import { AIM_STATUS_LABELS } from '@/lib/aim-line';
 import type { PeriodService } from '@/lib/student-overview';
 import { cn } from '@/lib/utils';
 import ProgressReportChart from './ProgressReportChart';
-import GasScaleChart from '@/components/charts/analysis-charts/GasScaleChart';
-import { captureTypeOf } from '@/lib/goal-constants';
 
 // The progress report page itself: a header with the student and period, a summary table of every goal, then
 // a section per goal (statement, figures, status, chart, comments). The same component draws the on-screen
@@ -252,10 +250,6 @@ export default function ProgressReportDocument({ studentName, studentIep, period
                 </div>
               ))}
             </dl>
-          )}
-
-          {captureTypeOf(g.goal) === 'GOAL_ATTAINMENT_SCALE' && (
-            <GasScaleChart className="mt-3" goal={g.goal} points={g.points} print />
           )}
 
           {settings.showCharts && g.points.length > 0 && (

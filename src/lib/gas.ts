@@ -1,10 +1,8 @@
 import type { Goal, SessionData } from './types';
 import { compareSessionsOldestFirst } from './helpers';
 
-// Goal Attainment Scaling: five levels, -2 (much less than expected) to +2 (much better than expected),
-// with 0 the expected outcome. The labels follow Sohlberg, Hamilton & Turkstra (Transforming Cognitive
-// Rehabilitation, ch. 5), where -1 is usually the student's current performance (the baseline), 0 to +2 are
-// steps of improvement and -2 is a decline. The composite T-score is a per-student, per-date figure over all the
+// Goal Attainment Scaling: five levels, -2 (much less than expected) to +2 (much more than expected),
+// with 0 the expected outcome. The composite T-score is a per-student, per-date figure over all the
 // student's GAS goals, so it lives here rather than in goalMeasure (which is one number per goal).
 
 export type GasLevel = -2 | -1 | 0 | 1 | 2;
@@ -14,16 +12,14 @@ export interface GasLevelInfo {
   level: GasLevel;
   label: string;
   description: string;
-  /** The same level in the student's own words (the book's person-centered wording). */
-  studentWording: string;
 }
 
 export const GAS_LEVELS: GasLevelInfo[] = [
-  { level: -2, label: 'Much less', description: 'Much less than expected', studentWording: 'If I decline' },
-  { level: -1, label: 'Less', description: 'Less than expected', studentWording: 'Where I am now' },
-  { level: 0, label: 'Expected', description: 'Expected outcome', studentWording: 'Where I hope to be after working on it' },
-  { level: 1, label: 'Better', description: 'Better than expected', studentWording: 'If I make really good progress' },
-  { level: 2, label: 'Much better', description: 'Much better than expected', studentWording: 'If I knock it out of the park' },
+  { level: -2, label: 'Much less', description: 'Much less than expected' },
+  { level: -1, label: 'Somewhat less', description: 'Somewhat less than expected' },
+  { level: 0, label: 'Expected', description: 'Expected outcome' },
+  { level: 1, label: 'Somewhat more', description: 'Somewhat more than expected' },
+  { level: 2, label: 'Much more', description: 'Much more than expected' },
 ];
 
 const GAS_LEVEL_BY_VALUE: Record<number, GasLevelInfo> = Object.fromEntries(GAS_LEVELS.map(info => [info.level, info]));
@@ -33,7 +29,7 @@ export function formatGasLevel(level: number): string {
   return level > 0 ? `+${level}` : `${level}`;
 }
 
-/** A level with its generic label: "+1 (better than expected)", "0 (expected outcome)". */
+/** A level with its generic label: "+1 (somewhat more than expected)", "0 (expected outcome)". */
 export function gasLevelLabel(level: number): string {
   const info = GAS_LEVEL_BY_VALUE[level];
   return info ? `${formatGasLevel(level)} (${info.description.toLowerCase()})` : formatGasLevel(level);
@@ -116,53 +112,4 @@ export function gasTScoresOverTime(sessions: SessionData[], gasGoals: Pick<Goal,
     const levels = byDate.get(date)!;
     return { date, tScore: gasTScore(Object.values(levels)), levels };
   });
-}
-
-/** The level a GAS goal aims for: its session target, or 0 (the expected outcome) when none is set. */
-export function gasTargetLevel(goal: { sessionTargetValue?: number }): number {
-  const target = Number(goal.sessionTargetValue);
-  return goal.sessionTargetValue !== undefined && Number.isInteger(target) && target >= -2 && target <= 2 ? target : 0;
-}
-
-/** The goal's baseline level (where the student started), or null when it isn't a level from -2 to +2. */
-export function gasBaselineLevel(goal: { baseline?: number }): number | null {
-  const baseline = Number(goal.baseline);
-  return goal.baseline !== undefined && goal.baseline !== null && Number.isInteger(baseline) && baseline >= -2 && baseline <= 2 ? baseline : null;
-}
-
-/**
- * The scale's timeframe, as the book writes it ("Level 0 to be demonstrated across 3 consecutive days by 1 week
- * from today"): the goal's own wording where set, otherwise built from its target level, mastery sessions and
- * target date. Null when there is nothing to say.
- */
-export function gasTimeframeText(goal: { gasTimeframe?: string; sessionTargetValue?: number; masterySessions?: number; targetDate?: string },
-  formatDay: (day: string) => string): string | null {
-  const own = typeof goal.gasTimeframe === 'string' ? goal.gasTimeframe.trim() : '';
-  if (own) return own;
-  if (!goal.targetDate) return null;
-  const sessions = goal.masterySessions && goal.masterySessions > 0 ? goal.masterySessions : 3;
-  return `Level ${formatGasLevel(gasTargetLevel(goal))} or better in ${sessions} sessions in a row by ${formatDay(goal.targetDate)}`;
-}
-
-export interface GasScaleSummary {
-  /** Sessions recorded at each level, by level. */
-  counts: Record<number, number>;
-  total: number;
-  latest: { level: number; date: string } | null;
-  /** Sessions at or above the target level. */
-  atTarget: number;
-}
-
-/** What the recorded sessions (oldest first) add up to on the scale. Values that aren't levels are left out. */
-export function gasScaleSummary(points: { date: string; value: number }[], targetLevel = 0): GasScaleSummary {
-  const levels = points.filter(p => Number.isInteger(p.value) && p.value >= -2 && p.value <= 2);
-  const counts: Record<number, number> = { [-2]: 0, [-1]: 0, 0: 0, 1: 0, 2: 0 };
-  levels.forEach(p => { counts[p.value]++; });
-  const last = levels[levels.length - 1];
-  return {
-    counts,
-    total: levels.length,
-    latest: last ? { level: last.value, date: last.date } : null,
-    atTarget: levels.filter(p => p.value >= targetLevel).length,
-  };
 }

@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { medianOf, phaseLines, theilSen, visualAnalysis } from '../visual-analysis';
-import { GAS_LEVELS, gasBaselineLevel, gasScaleSummary, gasTargetLevel, gasTimeframeText } from '../gas';
-import { assignedGoalChanges } from '../goal-changes';
-import { backupFileText, createBackup, parseBackup } from '../backup';
 import { summarizeAbc } from '../goal-constants';
-import { AssignedGoalEditSchema, type Student } from '../types';
-import { goal as goalBuilder } from './helpers';
 
 // The worked example in Sohlberg, Hamilton & Turkstra, ch. 5 (Figures 5.2-5.4, Tables 5.1 and 5.2): ten sessions of
 // percent accurate, independent strategy use, and a 1-10 quality rating of the same sessions.
@@ -87,61 +82,6 @@ describe('visual analysis (first half vs second half)', () => {
     expect(theilSen([5])).toEqual({ slope: 0, intercept: 5 });
     // One wild point barely moves the line.
     expect(theilSen([1, 2, 3, 100, 5]).slope).toBe(1);
-  });
-});
-
-describe('the GAS scale (book layout)', () => {
-  it('names the levels as the book does, with the student\'s own wording', () => {
-    expect(GAS_LEVELS.map(l => l.description)).toEqual([
-      'Much less than expected', 'Less than expected', 'Expected outcome', 'Better than expected', 'Much better than expected',
-    ]);
-    expect(GAS_LEVELS.find(l => l.level === -1)!.studentWording).toBe('Where I am now');
-  });
-
-  it('finds the target and baseline levels', () => {
-    expect(gasTargetLevel({})).toBe(0);
-    expect(gasTargetLevel({ sessionTargetValue: 1 })).toBe(1);
-    expect(gasTargetLevel({ sessionTargetValue: 80 })).toBe(0);
-    expect(gasBaselineLevel({ baseline: -1 })).toBe(-1);
-    expect(gasBaselineLevel({})).toBeNull();
-    expect(gasBaselineLevel({ baseline: 40 })).toBeNull();
-  });
-
-  it('writes the timeframe from the goal, or from its target date and mastery', () => {
-    const day = (d: string) => `<${d}>`;
-    expect(gasTimeframeText({ gasTimeframe: '  Level 0 by winter break ' }, day)).toBe('Level 0 by winter break');
-    expect(gasTimeframeText({ targetDate: '2027-03-01', masterySessions: 2 }, day)).toBe('Level 0 or better in 2 sessions in a row by <2027-03-01>');
-    expect(gasTimeframeText({}, day)).toBeNull();
-  });
-
-  it('counts sessions at each level and the latest', () => {
-    const summary = gasScaleSummary([
-      { date: '2026-10-01', value: -1 }, { date: '2026-10-08', value: 0 }, { date: '2026-10-15', value: 1 }, { date: '2026-10-22', value: 0.5 },
-    ]);
-    expect(summary.counts).toEqual({ [-2]: 0, [-1]: 1, 0: 1, 1: 1, 2: 0 });
-    expect(summary.total).toBe(3);
-    expect(summary.latest).toEqual({ level: 1, date: '2026-10-15' });
-    expect(summary.atTarget).toBe(2);
-  });
-
-  it('keeps the scale details through the editor schema, change list and backups', async () => {
-    const parsed = AssignedGoalEditSchema.parse({
-      name: 'Calls for help', smartGoal: 'Student will ask for help when stuck.',
-      gasContext: 'Math block', gasTimeframe: 'By March', gasMeasurementPlan: 'SLP rates each session',
-    });
-    expect(parsed).toMatchObject({ gasContext: 'Math block', gasTimeframe: 'By March', gasMeasurementPlan: 'SLP rates each session' });
-
-    const original = goalBuilder({ type: 'GOAL_ATTAINMENT_SCALE', gasContext: 'Math block' });
-    const changes = assignedGoalChanges(original, { gasContext: 'Reading block', gasTimeframe: '', gasMeasurementPlan: 'Teacher log' });
-    expect(changes.map(c => c.label)).toEqual(['GAS context', 'GAS measurement plan']);
-
-    const student = {
-      id: 'st1', name: 'Test Student', createdAt: '2026-01-01',
-      goals: [{ ...original, gasTimeframe: 'By March', gasMeasurementPlan: 'Teacher log' }],
-    } as unknown as Student;
-    const restored = parseBackup(await backupFileText(createBackup({ students: [student], goalTemplates: [], sessions: [] })));
-    expect(restored.data.students[0].goals[0]).toMatchObject({ gasContext: 'Math block', gasTimeframe: 'By March', gasMeasurementPlan: 'Teacher log' });
-    expect(restored.strippedUnknownFields).toBe(false);
   });
 });
 

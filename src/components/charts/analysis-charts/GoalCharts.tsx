@@ -12,13 +12,12 @@ import {
 import { goalMeasure, goalMeasureInfo, goalResponses, goalNotes, meetsTarget, promptTotals, usesPromptCounters, withoutRunningTimers } from '@/lib/goal-measures';
 import { formatDate, formatGoalTarget, goalTypeLabel, parseDateOnly } from '@/lib/helpers';
 import BehaviorTimeCharts from './BehaviorTimeCharts';
-import GasScaleChart from './GasScaleChart';
 import StatTile from './StatTile';
 import { goalStatExplanations } from '@/lib/report-formulas';
 import type { TaskStepScore } from '@/lib/task-analysis';
 import { AIM_STATUS_LABELS, aimLine, aimStatus, aimValueAt, masterySessions } from '@/lib/aim-line';
 import ExpandableGoalName from './ExpandableGoalName';
-import { gasLevelText, gasTargetLevel, formatGasLevel } from '@/lib/gas';
+import { gasLevelDescription, gasLevelText } from '@/lib/gas';
 import { phaseLines, visualAnalysis } from '@/lib/visual-analysis';
 import { PHASE_COLORS, PhaseSummaryPanel, PhaseToggle, usePhaseView } from './PhaseComparison';
 import type { StudentIep } from '@/lib/types';
@@ -236,7 +235,8 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
   // First half / second half: each half's median and trend line, while "Compare halves" is on.
   const [showPhases, setShowPhases] = usePhaseView();
   const isGasType = type === 'GOAL_ATTAINMENT_SCALE';
-  const analysisTarget = isGasType ? gasTargetLevel(goal) : target;
+  // A GAS goal aims for its target level, or 0 (the expected outcome) when none is set.
+  const analysisTarget = isGasType ? (target ?? 0) : target;
   const analysis = useMemo(() => visualAnalysis(recorded.map(r => r.value), { direction, target: analysisTarget }), [recorded, direction, analysisTarget]);
   const lines = showPhases && analysis ? phaseLines(analysis, recorded.length) : null;
   const points = recorded.map((r, i) => ({
@@ -347,7 +347,16 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
                 </LineChart>
               </ChartContainer>
             </div>
-            {isGas && <GasScaleChart className="mt-3" goal={goal} points={recorded.map(r => ({ date: r.session.date, value: r.value }))} />}
+            {isGas && (
+              <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs" aria-label="What each level means">
+                {[...GAS_LEVELS].reverse().map(level => (
+                  <React.Fragment key={level}>
+                    <dt className="font-semibold tabular-nums text-right">{gasTick(level)}</dt>
+                    <dd className="text-muted-foreground">{gasLevelDescription(goal, level)}</dd>
+                  </React.Fragment>
+                ))}
+              </dl>
+            )}
             {hasResponses && (
               <div className="h-[240px] w-full">
                 <ChartContainer
@@ -378,7 +387,7 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
             <PhaseToggle on={showPhases} onChange={setShowPhases} />
             {showPhases && (
               <PhaseSummaryPanel analysis={analysis} sessionCount={recorded.length} unit={info.unit}
-                targetLabel={isGasType ? `level ${formatGasLevel(analysisTarget ?? 0)}` : target !== undefined ? formatGoalTarget(type, target, goal.targetDirection) : undefined} />
+                targetLabel={isGasType ? `level ${(analysisTarget ?? 0) > 0 ? '+' : ''}${analysisTarget ?? 0}` : target !== undefined ? formatGoalTarget(type, target, goal.targetDirection) : undefined} />
             )}
           </div>
         )}
