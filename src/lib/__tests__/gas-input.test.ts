@@ -8,10 +8,10 @@ import { applyFieldChange, goalAccuracyText } from '../goal-input-logic';
 describe('goalAccuracyText for GOAL_ATTAINMENT_SCALE', () => {
   it('shows each recorded level with its label, with + on positive levels', () => {
     expect(goalAccuracyText('GOAL_ATTAINMENT_SCALE', { gasLevel: -2 })).toBe('-2 (much less than expected)');
-    expect(goalAccuracyText('GOAL_ATTAINMENT_SCALE', { gasLevel: -1 })).toBe('-1 (somewhat less than expected)');
+    expect(goalAccuracyText('GOAL_ATTAINMENT_SCALE', { gasLevel: -1 })).toBe('-1 (less than expected)');
     expect(goalAccuracyText('GOAL_ATTAINMENT_SCALE', { gasLevel: 0 })).toBe('0 (expected outcome)');
-    expect(goalAccuracyText('GOAL_ATTAINMENT_SCALE', { gasLevel: 1 })).toBe('+1 (somewhat more than expected)');
-    expect(goalAccuracyText('GOAL_ATTAINMENT_SCALE', { gasLevel: 2 })).toBe('+2 (much more than expected)');
+    expect(goalAccuracyText('GOAL_ATTAINMENT_SCALE', { gasLevel: 1 })).toBe('+1 (better than expected)');
+    expect(goalAccuracyText('GOAL_ATTAINMENT_SCALE', { gasLevel: 2 })).toBe('+2 (much better than expected)');
   });
 
   it('shows no data, not a 0, when no level has been recorded yet', () => {

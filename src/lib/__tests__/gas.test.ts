@@ -31,14 +31,14 @@ describe('GAS levels', () => {
       expect(info.label.length).toBeGreaterThan(0);
       expect(info.description.length).toBeGreaterThan(0);
     }
-    expect(GAS_LEVELS[2]).toEqual({ level: 0, label: 'Expected', description: 'Expected outcome' });
+    expect(GAS_LEVELS[2]).toEqual({ level: 0, label: 'Expected', description: 'Expected outcome', studentWording: 'Where I hope to be after working on it' });
   });
   it('labels a level with its number and generic description', () => {
     expect(gasLevelLabel(-2)).toBe('-2 (much less than expected)');
-    expect(gasLevelLabel(-1)).toBe('-1 (somewhat less than expected)');
+    expect(gasLevelLabel(-1)).toBe('-1 (less than expected)');
     expect(gasLevelLabel(0)).toBe('0 (expected outcome)');
-    expect(gasLevelLabel(1)).toBe('+1 (somewhat more than expected)');
-    expect(gasLevelLabel(2)).toBe('+2 (much more than expected)');
+    expect(gasLevelLabel(1)).toBe('+1 (better than expected)');
+    expect(gasLevelLabel(2)).toBe('+2 (much better than expected)');
   });
   it('shows positive levels with a + sign', () => {
     expect(formatGasLevel(2)).toBe('+2');
@@ -54,8 +54,8 @@ describe('goal-specific level descriptions', () => {
     expect(gasLevelText(goal, 0)).toBe('0 (Uses targeted words on their own in conversation, at least twice in an activity.)');
   });
   it('falls back to the generic description for levels left blank', () => {
-    expect(gasLevelDescription(goal, 1)).toBe('Somewhat more than expected');
-    expect(gasLevelText(goal, 1)).toBe('+1 (somewhat more than expected)');
+    expect(gasLevelDescription(goal, 1)).toBe('Better than expected');
+    expect(gasLevelText(goal, 1)).toBe('+1 (better than expected)');
     expect(gasLevelText(gasGoal({}), -2)).toBe('-2 (much less than expected)');
   });
 });

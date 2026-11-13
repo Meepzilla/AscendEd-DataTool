@@ -47,10 +47,10 @@ const gasMeasureWired = probe[0]?.points.length === 1;
 describe('gasLevelLabel (report formatting)', () => {
   it('labels each level', () => {
     expect(gasLevelLabel(-2)).toBe('-2 (much less than expected)');
-    expect(gasLevelLabel(-1)).toBe('-1 (somewhat less than expected)');
+    expect(gasLevelLabel(-1)).toBe('-1 (less than expected)');
     expect(gasLevelLabel(0)).toBe('0 (expected outcome)');
-    expect(gasLevelLabel(1)).toBe('+1 (somewhat more than expected)');
-    expect(gasLevelLabel(2)).toBe('+2 (much more than expected)');
+    expect(gasLevelLabel(1)).toBe('+1 (better than expected)');
+    expect(gasLevelLabel(2)).toBe('+2 (much better than expected)');
   });
 
   it('shows non-integer values (averages, trend ends) as a plain signed number', () => {
@@ -72,9 +72,9 @@ describe.skipIf(!gasMeasureWired)('GAS goal through analyzeGoal (buildProgressRe
   it('flows latest, average, range, target count and streak through the level measure', () => {
     const [p] = buildProgressReport({ student, goals: [goal], sessions });
     expect(p.points.map(pt => pt.value)).toEqual([-2, -1, 0, 1]);
-    expect(p.latest).toBe('+1 (somewhat more than expected)');
+    expect(p.latest).toBe('+1 (better than expected)');
     expect(p.average).toBe('-0.5');
-    expect(p.range).toBe('-2 (much less than expected) – +1 (somewhat more than expected)');
+    expect(p.range).toBe('-2 (much less than expected) – +1 (better than expected)');
     expect(p.metCount).toBe(2); // levels 0 and +1 meet the target of 0
     expect(p.streak).toBe(2);
     expect(p.sessionCount).toBe(4);
@@ -85,9 +85,9 @@ describe.skipIf(!gasMeasureWired)('GAS goal through analyzeGoal (buildProgressRe
   it('names the current level and sessions at or above expected in the narrative', () => {
     const text = buildNarrative({ student, goals: [goal], sessions });
     expect(text).toContain('the attainment level averaged -0.5');
-    expect(text).toContain('the attainment level was +1 (somewhat more than expected).');
+    expect(text).toContain('the attainment level was +1 (better than expected).');
     // The latest level is stated once, with no doubled brackets.
-    expect(text.match(/somewhat more than expected/g)).toHaveLength(1);
+    expect(text.match(/better than expected/g)).toHaveLength(1);
     expect(text).not.toMatch(/\) \(/);
     expect(text).toContain('The target was met in 2 of 4 sessions');
     expect(text).toContain('range -2 to +1');

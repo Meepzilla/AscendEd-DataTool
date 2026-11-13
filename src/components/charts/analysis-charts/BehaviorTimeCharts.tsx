@@ -5,7 +5,7 @@ import type { SessionData } from '@/lib/types';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, CartesianGrid, XAxis, YAxis, LineChart, Line } from 'recharts';
 import { Button } from '@/components/ui/button';
-import { summarizeDuration, summarizeFrequency, summarizeLatency } from '@/lib/goal-constants';
+import { summarizeAbc, summarizeDuration, summarizeFrequency, summarizeLatency } from '@/lib/goal-constants';
 import { formatClockTime, timePatterns, TIMING_MEASURE_LABELS, type TimingBucket } from '@/lib/behavior-timing';
 import { formatDate } from '@/lib/helpers';
 
@@ -60,6 +60,13 @@ function sessionTrend(type: string, recorded: Recorded[]): { title: string; hint
       .map(r => { const d = summarizeDuration(r.data); return { label: r.label, value: d.episodeCount ? round(d.totalMinutes / d.episodeCount) : null }; })
       .filter((p): p is { label: string; value: number } => p.value !== null);
     return { title: 'Average episode length', hint: 'Minutes per episode in each session.', unit: ' min', points };
+  }
+  if (type === 'BEHAVIOR_ABC') {
+    const points = recorded
+      .map(r => ({ label: r.label, value: summarizeAbc(r.data).replacementPercent }))
+      .filter((p): p is { label: string; value: number } => p.value !== null)
+      .map(p => ({ label: p.label, value: round(p.value) }));
+    return { title: 'Replacement skill', hint: 'Percent of incidents in each session where the student used the replacement skill.', unit: '%', points };
   }
   if (type === 'BEHAVIOR_LATENCY') {
     const points = recorded

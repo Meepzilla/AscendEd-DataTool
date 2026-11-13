@@ -4,7 +4,7 @@ import React from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { FormItem, FormLabel, type GoalInputContext } from './shared';
-import { GAS_LEVELS, formatGasLevel, gasLevelDescription, type GasLevel } from '@/lib/gas';
+import { GAS_LEVELS, formatGasLevel, gasBaselineLevel, gasLevelDescription, gasTargetLevel, type GasLevel } from '@/lib/gas';
 
 // Data Entry inputs for Goal Attainment Scaling (see goal-data-input.tsx, which picks the inputs for a goal's type).
 // Level labels and descriptions live in src/lib/gas.ts; this file only renders them.
@@ -27,6 +27,9 @@ export function GasInputs({ ctx }: { ctx: GoalInputContext }) {
       ? (data.gasLevel as GasLevel)
       : undefined;
   const descriptions = gasLevelDescriptions(goal);
+  const baseline = gasBaselineLevel(goal);
+  const target = gasTargetLevel(goal);
+  const context = typeof goal.gasContext === 'string' ? goal.gasContext.trim() : '';
 
   return (
     <>
@@ -62,10 +65,13 @@ export function GasInputs({ ctx }: { ctx: GoalInputContext }) {
       </FormItem>
       <FormItem>
         <FormLabel>Level descriptions</FormLabel>
+        {context && <p className="text-[11px] text-muted-foreground">Context: {context}</p>}
         <ul className="space-y-0.5">
           {GAS_LEVELS.map((info) => (
             <li key={info.level} className={`text-xs ${selected === info.level ? 'font-semibold text-primary' : 'text-muted-foreground'}`}>
               {formatGasLevel(info.level)} — {descriptions[info.level + 2]}
+              {info.level === baseline && <span className="ml-1 rounded-full border px-1 text-[10px] font-normal">Baseline</span>}
+              {info.level === target && <span className="ml-1 rounded-full border border-primary px-1 text-[10px] font-normal">Target</span>}
             </li>
           ))}
         </ul>

@@ -65,6 +65,9 @@ export interface AssignedGoalFormValues {
   baseline?: number | string;
   baselineDate?: string;
   gasLevelDescriptions?: string[];
+  gasContext?: string;
+  gasTimeframe?: string;
+  gasMeasurementPlan?: string;
   masterySessions?: number | string;
   blankFills?: string[];
   targetDirection?: TargetDirection;
@@ -115,6 +118,10 @@ export function assignedGoalChanges(original: Goal, values: AssignedGoalFormValu
       }
     });
   }
+
+  if (values.gasContext !== undefined) push(changes, textChange('GAS context', original.gasContext ?? '', values.gasContext));
+  if (values.gasTimeframe !== undefined) push(changes, textChange('GAS timeframe', original.gasTimeframe ?? '', values.gasTimeframe));
+  if (values.gasMeasurementPlan !== undefined) push(changes, textChange('GAS measurement plan', original.gasMeasurementPlan ?? '', values.gasMeasurementPlan));
 
   if (values.sessionTargetValue !== undefined && formatTarget(values.sessionTargetValue) !== formatTarget(original.sessionTargetValue)) {
     changes.push({ label: 'Session target', from: formatTarget(original.sessionTargetValue), to: formatTarget(values.sessionTargetValue) });

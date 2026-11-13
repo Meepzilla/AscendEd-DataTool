@@ -67,6 +67,9 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
         baseline: goalToEdit.baseline ?? ('' as unknown as number),
         baselineDate: goalToEdit.baselineDate ?? '',
         gasLevelDescriptions: Array.from({ length: 5 }, (_, i) => goalToEdit.gasLevelDescriptions?.[i] ?? ''),
+        gasContext: goalToEdit.gasContext ?? '',
+        gasTimeframe: goalToEdit.gasTimeframe ?? '',
+        gasMeasurementPlan: goalToEdit.gasMeasurementPlan ?? '',
         masterySessions: goalToEdit.masterySessions ?? ('' as unknown as number),
         blankFills: goalToEdit.blankFills ?? [],
         targetDirection: goalToEdit.targetDirection,
@@ -78,12 +81,12 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
 
   // What changed, old to new, so the editor says plainly what saving will change. Compared against
   // the goal as it was, not against the form's dirty flags, so only real differences are listed.
-  const watched = form.watch(['name', 'smartGoal', 'sessionTargetValue', 'targetDate', 'taskSteps', 'baseline', 'baselineDate', 'gasLevelDescriptions', 'masterySessions', 'blankFills', 'targetDirection', 'isArchived', 'dataCaptureType']);
+  const watched = form.watch(['name', 'smartGoal', 'sessionTargetValue', 'targetDate', 'taskSteps', 'baseline', 'baselineDate', 'gasLevelDescriptions', 'masterySessions', 'blankFills', 'targetDirection', 'isArchived', 'dataCaptureType', 'gasContext', 'gasTimeframe', 'gasMeasurementPlan']);
   const changes = React.useMemo(() => assignedGoalChanges(goalToEdit, {
     name: watched[0], smartGoal: watched[1], sessionTargetValue: watched[2], targetDate: watched[3],
     taskSteps: watched[4], baseline: watched[5], baselineDate: watched[6], gasLevelDescriptions: watched[7],
     masterySessions: watched[8], blankFills: watched[9], targetDirection: watched[10], isArchived: watched[11],
-    dataCaptureType: watched[12],
+    dataCaptureType: watched[12], gasContext: watched[13], gasTimeframe: watched[14], gasMeasurementPlan: watched[15],
   }), [goalToEdit, watched]);
 
   const onSubmit = async (data: EditAssignedGoalFormData) => {
@@ -96,7 +99,12 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
       // Five level descriptions, one per level from -2 to +2; all blank means no custom descriptions.
       const descriptions = Array.from({ length: 5 }, (_, i) => (data.gasLevelDescriptions?.[i] ?? '').trim());
       const gasLevelDescriptions = descriptions.some(Boolean) ? descriptions : undefined;
-      await updateStudentGoal(studentId, goalToEdit.id, { ...data, blankFills: blankFills.some(Boolean) ? blankFills : undefined, gasLevelDescriptions });
+      // The scale's header fields: blank means not set.
+      const gasText = (value: string | undefined) => (value ?? '').trim() || undefined;
+      await updateStudentGoal(studentId, goalToEdit.id, {
+        ...data, blankFills: blankFills.some(Boolean) ? blankFills : undefined, gasLevelDescriptions,
+        gasContext: gasText(data.gasContext), gasTimeframe: gasText(data.gasTimeframe), gasMeasurementPlan: gasText(data.gasMeasurementPlan),
+      });
       toast({ title: 'Success', description: 'Goal updated successfully.' });
       onClose();
     } catch (error) {
@@ -220,10 +228,38 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
           )}
 
           {(form.watch('dataCaptureType') || goalToEdit?.type) === 'GOAL_ATTAINMENT_SCALE' && (
-            <GasLevelDescriptionsField
-              values={form.watch('gasLevelDescriptions') ?? []}
-              onChange={next => form.setValue('gasLevelDescriptions', next, { shouldDirty: true })}
-            />
+            <>
+              <fieldset className="space-y-3 rounded-md border p-3">
+                <legend className="px-1 text-sm font-medium">Scale Details (Optional)</legend>
+                <p className="text-xs text-muted-foreground">
+                  Shown above the Goal Attainment Scale on Reports and the progress report. The goal name is the aim.
+                </p>
+                {([
+                  ['gasContext', 'Context', 'Where and when the goal applies, e.g. during small-group reading in the classroom'],
+                  ['gasTimeframe', 'Timeframe', 'e.g. Level 0 in 3 sessions in a row by the end of the trimester (blank: built from the target date)'],
+                  ['gasMeasurementPlan', 'Measurement Plan', 'Who records what, and where, e.g. the SLP rates the level at the end of each session'],
+                ] as const).map(([name, label, placeholder]) => (
+                  <FormField
+                    key={name}
+                    control={form.control}
+                    name={name}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{label}</FormLabel>
+                        <FormControl>
+                          <Textarea rows={2} placeholder={placeholder} {...field} value={field.value ?? ''} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ))}
+              </fieldset>
+              <GasLevelDescriptionsField
+                values={form.watch('gasLevelDescriptions') ?? []}
+                onChange={next => form.setValue('gasLevelDescriptions', next, { shouldDirty: true })}
+              />
+            </>
           )}
 
           <TargetDirectionField control={form.control} goalType={form.watch('dataCaptureType') || goalToEdit?.type} />

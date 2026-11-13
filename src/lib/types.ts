@@ -66,6 +66,12 @@ export interface Goal {
   /** Goal Attainment Scaling: the five level descriptions, one per level from -2 to +2
       (index 0 is level -2, index 4 is level +2); a blank entry falls back to the generic label. */
   gasLevelDescriptions?: string[];
+  /** Goal Attainment Scaling, the scale's header (Sohlberg et al.): where and when the goal applies, */
+  gasContext?: string;
+  /** by when and how often the target level is to be shown (blank: built from the target date and mastery), */
+  gasTimeframe?: string;
+  /** and who records what, where. */
+  gasMeasurementPlan?: string;
   /** Task analysis goals: the steps of the skill, in order (task-analysis.ts). */
   taskSteps?: string[];
   /** What fills each blank ("___") in the goal text, by position; empty uses the automatic value (goal-blanks.ts). */
@@ -291,6 +297,9 @@ export const AssignedGoalEditSchema = z.object({
   ),
   /** Goal Attainment Scaling: the five level descriptions, one per level from -2 to +2 (index 0 is level -2). */
   gasLevelDescriptions: z.array(z.string()).max(5, 'At most 5 level descriptions.').optional(),
+  gasContext: z.string().max(500, 'At most 500 characters.').optional(),
+  gasTimeframe: z.string().max(500, 'At most 500 characters.').optional(),
+  gasMeasurementPlan: z.string().max(500, 'At most 500 characters.').optional(),
   baselineDate: z.preprocess(
     (val) => (val === '' || val === null ? undefined : val),
     z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter a valid date.').optional()
