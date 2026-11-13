@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-13',
+    title: 'Reset Buttons Share One Line on Phones',
+    description: 'On the Data Entry page, the Reset Time to Now and Reset Time to Before buttons now sit side by side on phone screens instead of stacking one above the other, so both fit in the space beside the session date.',
+    type: 'fix',
+    icon: Smartphone,
+  },
+  {
+    date: '2026-11-13',
     title: 'Goal Attainment Scale Chart, Compare Halves and Better Behavior Tools',
     description: 'Goal Attainment Scaling goals now show their scale the way Sohlberg, Hamilton and Turkstra lay it out in Transforming Cognitive Rehabilitation: the aim, context, timeframe and measurement plan on top, then one column per level from -2 to +2 with what each level looks like for the student, the baseline, target and latest level marked, and how many sessions were recorded at each level. It is on the goal\'s card in Reports and in the progress report. Set the context, timeframe and measurement plan in Edit Goal → Scale Details; Level Descriptions has a checklist for writing a good scale. The level names now follow the book (less than expected, better than expected, much better than expected), and Student\'s words shows them in the student\'s own words ("Where I am now", "If I knock it out of the park"). Every goal card in Reports has Compare halves: the sessions are split at the halfway point, and each half\'s median, trend line and range are drawn and compared, with about how many more sessions the target will take at the current pace. Behavior goals: Use session length fills the observation time from the session\'s start and end time in one tap, Same as last selects the last ABC incident\'s choices again, and ABC goals now chart consequences, the most common antecedent → behavior → consequence patterns and replacement-skill use per session.',
     type: 'feature',
