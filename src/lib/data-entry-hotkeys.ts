@@ -53,7 +53,7 @@ const COUNT_FIELDS: Partial<Record<GoalType, { correct: string; incorrect: strin
 const FLUENCY_KEYS: Record<string, string> = { B: 'blocks', R: 'repetitions', H: 'prolongations', J: 'interjections' };
 
 // Goal types entered on the trial grid.
-const TRIAL_GRID_TYPES: GoalType[] = ['DISCRETE_TRIALS', 'SEQUENCED_TRIALS'];
+const TRIAL_GRID_TYPES: GoalType[] = ['DISCRETE_TRIALS', 'SEQUENCED_TRIALS', 'COMMUNICATION_OPPORTUNITIES'];
 
 const add = (data: Record<string, any>, field: string, amount = 1) => ({ ...data, [field]: (Number(data[field]) || 0) + amount });
 
@@ -68,7 +68,7 @@ function fillNextTrial(data: Record<string, any>, status: TrialStatus): Record<s
 /** Records a "correct" response for the goal type (C, and I for independent). */
 function addCorrect(type: GoalType, data: Record<string, any>): Record<string, any> | null {
   if (TRIAL_GRID_TYPES.includes(type)) return fillNextTrial(data, 'correct');
-  if (type === 'BEHAVIOR_FREQUENCY') {
+  if (type === 'BEHAVIOR_FREQUENCY' || type === 'COMMUNICATION_COUNT') {
     const count = Number(data.count) || 0;
     return { ...data, count: count + 1, occurrenceTimes: [...alignTimes(data.occurrenceTimes, count), new Date().toISOString()] };
   }

@@ -10,7 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useStudentData } from '@/hooks/use-student-data';
 import { useToast } from '@/hooks/use-toast';
-import { GOAL_TYPE_FIELDS, goalDirection } from '@/lib/goal-constants';
+import { GOAL_TYPE_FIELDS, goalDirection, hasTargetDirection } from '@/lib/goal-constants';
 import { goalMeasureInfo } from '@/lib/goal-measures';
 import { generateUUID, goalTypeLabel } from '@/lib/helpers';
 import { classifyGoal, goalDirectionFor, goalName, goalTarget, goalTargetDate, splitGoals } from '@/lib/student-import';
@@ -23,7 +23,7 @@ import { GoalTextPreview, PlaceholderChips } from './PlaceholderChips';
 // The target date, baseline and mastery are set here too, and the goal can also be saved as a template.
 
 const GOAL_TYPES = (Object.keys(GOAL_TYPE_FIELDS) as GoalType[]).sort((a, b) => goalTypeLabel(a).localeCompare(goalTypeLabel(b)));
-const BEHAVIOR = (type: string) => type.startsWith('BEHAVIOR_');
+const BEHAVIOR = hasTargetDirection;
 
 type Overrides = Partial<{ name: string; type: GoalType; target: string; direction: TargetDirection; targetDate: string }>;
 

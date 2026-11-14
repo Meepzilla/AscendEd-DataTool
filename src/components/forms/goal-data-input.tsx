@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useConfetti } from '@/hooks/use-confetti';
 import { FrequencyInput, DurationInput, AbcInput, IntervalInput, LatencyInput } from './behavior-inputs';
-import { GOAL_TYPES_WITHOUT_PROMPT_COUNTERS } from '@/lib/goal-constants';
+import { GOAL_TYPES_WITHOUT_PROMPT_COUNTERS, toolTypeOf } from '@/lib/goal-constants';
 import { applyFieldChange, clearTrials, cycleTrial, goalAccuracyText, scoreNextTrial, undoLastTrial } from '@/lib/goal-input-logic';
 import GoalTextPopover from './GoalTextPopover';
 import type { GoalInputContext } from './goal-inputs/shared';
@@ -124,6 +124,7 @@ export default function GoalDataInputComponent({
         return <CorrectIncorrectInputs ctx={ctx} />;
       case 'SEQUENCED_TRIALS':
       case 'DISCRETE_TRIALS':
+      case 'COMMUNICATION_OPPORTUNITIES':
         return <TrialInputs ctx={ctx} />;
       case 'FEEDING_SWALLOWING':
         return <FeedingInputs ctx={ctx} />;
@@ -158,11 +159,15 @@ export default function GoalDataInputComponent({
             goalId={goal.id}
           />
         );
+      case 'COMMUNICATION_COUNT':
+      case 'COMMUNICATION_DURATION':
+      case 'RESPONSE_TIME':
       case 'BEHAVIOR_FREQUENCY':
       case 'BEHAVIOR_DURATION':
       case 'BEHAVIOR_ABC':
       case 'BEHAVIOR_INTERVAL':
       case 'BEHAVIOR_LATENCY': {
+        const tool = toolTypeOf(captureType);
         const behaviorProps = {
           data,
           // Several fields at once: handleChange treats an object as the goal's whole data.
@@ -171,11 +176,13 @@ export default function GoalDataInputComponent({
           disabled: isArchived,
           isLocked,
           goalId: goal.id,
+          // Communication goals use the same tools, with their own words.
+          communication: tool !== captureType,
         };
-        if (captureType === 'BEHAVIOR_FREQUENCY') return <FrequencyInput {...behaviorProps} />;
-        if (captureType === 'BEHAVIOR_DURATION') return <DurationInput {...behaviorProps} />;
+        if (tool === 'BEHAVIOR_FREQUENCY') return <FrequencyInput {...behaviorProps} />;
+        if (tool === 'BEHAVIOR_DURATION') return <DurationInput {...behaviorProps} />;
         if (captureType === 'BEHAVIOR_INTERVAL') return <IntervalInput {...behaviorProps} />;
-        if (captureType === 'BEHAVIOR_LATENCY') return <LatencyInput {...behaviorProps} />;
+        if (tool === 'BEHAVIOR_LATENCY') return <LatencyInput {...behaviorProps} />;
         return <AbcInput {...behaviorProps} />;
       }
       default:

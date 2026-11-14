@@ -1,7 +1,7 @@
 import { taskAnalysisSummary } from './task-analysis';
 import type { Goal, GoalType, TrialStatus } from './types';
 import {
-  behaviorMeasure, captureTypeOf, goalDirection, scoreStory, summarizeCommunicationFunctions, BEHAVIOR_GOAL_TYPES,
+  behaviorMeasure, captureTypeOf, toolTypeOf, goalDirection, scoreStory, summarizeCommunicationFunctions, BEHAVIOR_GOAL_TYPES,
   COMMUNICATION_FUNCTIONS, GOAL_TYPES_WITHOUT_PROMPT_COUNTERS,
 } from './goal-constants';
 import { PROMPT_TYPES } from './promptConstants';
@@ -23,7 +23,8 @@ export function goalResponses(type: string, data: Record<string, any> = {}): { c
   const n = (v: unknown) => { const num = Number(v); return Number.isFinite(num) ? Math.max(0, num) : 0; };
   // The first count field that was actually entered: a real 0 must not fall through to another field's count.
   const first = (...values: unknown[]) => { for (const v of values) if (v !== null && v !== undefined && v !== '') return v; return undefined; };
-  switch (type) {
+  // Communication opportunities are scored on the trial grid, like discrete trials.
+  switch (toolTypeOf(type)) {
     case 'ARTICULATION':
     case 'AAC':
     case 'LANGUAGE_COMPREHENSION':
@@ -75,6 +76,10 @@ export function goalMeasureInfo(goal: MeasuredGoal): GoalMeasureInfo {
     case 'GOAL_ATTAINMENT_SCALE': return { label: 'Attainment level', unit: '', max: 2, min: -2 };
     case 'PROMPTING': return { label: '% independent', unit: '%', max: 100 };
     case 'TASK_ANALYSIS': return { label: '% of steps independent', unit: '%', max: 100 };
+    case 'COMMUNICATION_COUNT': return { label: 'Times', unit: '' };
+    case 'COMMUNICATION_DURATION': return { label: 'Total minutes', unit: ' min' };
+    case 'RESPONSE_TIME': return { label: 'Average response time (seconds)', unit: ' s' };
+    case 'COMMUNICATION_OPPORTUNITIES': return { label: '% of opportunities', unit: '%', max: 100 };
     case 'BEHAVIOR_FREQUENCY': return { label: 'Occurrences', unit: '' };
     case 'BEHAVIOR_DURATION': return { label: 'Total minutes', unit: ' min' };
     case 'BEHAVIOR_INTERVAL': return { label: '% of intervals', unit: '%', max: 100 };
@@ -102,7 +107,8 @@ export function withoutRunningTimers(data: Record<string, any>): Record<string, 
  * all of a student's goals, so untouched goals are left out of charts rather than shown as 0%).
  */
 export function goalMeasure(goal: MeasuredGoal, data: Record<string, any> = {}): number | null {
-  const type = captureTypeOf(goal);
+  // Measured by the tool the goal is recorded with (a communication count is measured like a behavior count).
+  const type = toolTypeOf(captureTypeOf(goal));
   if (BEHAVIOR_GOAL_TYPES.includes(type)) {
     // A behavior goal left untouched in a session reads as 0; it counts only if Data Entry marked it as
     // worked on (so an observed 0 is kept) or something was recorded.

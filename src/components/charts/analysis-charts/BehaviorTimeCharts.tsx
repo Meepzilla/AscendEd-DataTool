@@ -5,7 +5,7 @@ import type { SessionData } from '@/lib/types';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, CartesianGrid, XAxis, YAxis, LineChart, Line } from 'recharts';
 import { Button } from '@/components/ui/button';
-import { summarizeDuration, summarizeFrequency, summarizeLatency } from '@/lib/goal-constants';
+import { summarizeDuration, summarizeFrequency, summarizeLatency, toolTypeOf } from '@/lib/goal-constants';
 import { formatClockTime, timePatterns, TIMING_MEASURE_LABELS, type TimingBucket } from '@/lib/behavior-timing';
 import { formatDate } from '@/lib/helpers';
 
@@ -47,19 +47,21 @@ const TimeBars: React.FC<{ title: string; hint: string; rows: TimingBucket[]; va
   );
 
 /** A per-session line for the extra trend that fits the behavior measure. */
-function sessionTrend(type: string, recorded: Recorded[]): { title: string; hint: string; unit: string; points: { label: string; value: number }[] } | null {
+function sessionTrend(rawType: string, recorded: Recorded[]): { title: string; hint: string; unit: string; points: { label: string; value: number }[] } | null {
+  const type = toolTypeOf(rawType);
+  const communication = type !== rawType;
   if (type === 'BEHAVIOR_FREQUENCY') {
     const points = recorded
       .map(r => ({ label: r.label, rate: summarizeFrequency(r.data).ratePerHour }))
       .filter((p): p is { label: string; rate: number } => p.rate !== null)
       .map(p => ({ label: p.label, value: round(p.rate) }));
-    return { title: 'Rate per hour', hint: 'Occurrences per hour of observation (sessions with an observation time).', unit: '/hr', points };
+    return { title: 'Rate per hour', hint: `${communication ? 'Times' : 'Occurrences'} per hour of observation (sessions with an observation time).`, unit: '/hr', points };
   }
   if (type === 'BEHAVIOR_DURATION') {
     const points = recorded
       .map(r => { const d = summarizeDuration(r.data); return { label: r.label, value: d.episodeCount ? round(d.totalMinutes / d.episodeCount) : null }; })
       .filter((p): p is { label: string; value: number } => p.value !== null);
-    return { title: 'Average episode length', hint: 'Minutes per episode in each session.', unit: ' min', points };
+    return { title: communication ? 'Average length' : 'Average episode length', hint: communication ? 'Minutes per timed period in each session.' : 'Minutes per episode in each session.', unit: ' min', points };
   }
   if (type === 'BEHAVIOR_LATENCY') {
     const points = recorded
@@ -76,7 +78,15 @@ const BehaviorTimeCharts: React.FC<{ type: string; recorded: Recorded[] }> = ({ 
   const [logCount, setLogCount] = useState(0);
   if (patterns.eventCount === 0 && !trend?.points.length) return null;
 
-  const labels = TIMING_MEASURE_LABELS[patterns.measure];
+  // A communication goal recorded with a behavior tool: the same charts, without the behavior words.
+  const communication = toolTypeOf(type) !== type;
+  const measureLabels = TIMING_MEASURE_LABELS[patterns.measure];
+  const labels = communication
+    ? { ...measureLabels, total: patterns.measure === 'count' ? 'Times' : patterns.measure === 'minutes' ? 'Minutes' : measureLabels.total }
+    : measureLabels;
+  const logText = (text: string) => (communication
+    ? text.replace(/^Occurrence$/, 'Recorded').replace(/ occurrences\b/, ' times').replace(/ min episode\b/, ' min')
+    : text);
   const latency = patterns.measure === 'seconds';
   const exactPercent = Math.round(patterns.exactShare * 100);
   const peakText = [
@@ -121,16 +131,16 @@ const BehaviorTimeCharts: React.FC<{ type: string; recorded: Recorded[] }> = ({ 
       {patterns.log.length > 0 && (
         <div>
           {logCount === 0 ? (
-            <Button variant="outline" size="sm" onClick={() => setLogCount(LOG_PAGE)}>Show occurrence log ({patterns.log.length})</Button>
+            <Button variant="outline" size="sm" onClick={() => setLogCount(LOG_PAGE)}>{communication ? 'Show log' : 'Show occurrence log'} ({patterns.log.length})</Button>
           ) : (
             <>
-              <p className="text-sm font-medium mb-1">Occurrence log (newest first)</p>
+              <p className="text-sm font-medium mb-1">{communication ? 'Log' : 'Occurrence log'} (newest first)</p>
               <ul className="divide-y rounded border text-xs">
                 {patterns.log.slice(0, logCount).map((entry, i) => (
                   <li key={i} className="flex gap-3 px-2 py-1.5">
                     <span className="w-28 shrink-0 text-muted-foreground">{formatDate(entry.at.toISOString())}</span>
                     <span className="w-20 shrink-0">{entry.exact ? formatClockTime(entry.at) : `~${formatClockTime(entry.at)}`}</span>
-                    <span className="min-w-0 break-words">{entry.text}</span>
+                    <span className="min-w-0 break-words">{logText(entry.text)}</span>
                   </li>
                 ))}
               </ul>

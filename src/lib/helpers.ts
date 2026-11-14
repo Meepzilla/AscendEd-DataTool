@@ -72,6 +72,15 @@ export function formatTime(date: Date | string): string {
  * behavior goals a count, minutes, % or seconds with "≤" (decrease goals, the default) or "≥" (increase goals).
  */
 export function formatGoalTarget(type: string, target: number, direction?: 'increase' | 'decrease'): string {
+  // Communication goals measured by a count, minutes or seconds: "at least" unless set to decrease (a response
+  // time aims down by default).
+  if (type === 'COMMUNICATION_COUNT' || type === 'COMMUNICATION_DURATION' || type === 'RESPONSE_TIME') {
+    const sign = (direction ?? (type === 'RESPONSE_TIME' ? 'decrease' : 'increase')) === 'decrease' ? '≤' : '≥';
+    if (type === 'COMMUNICATION_COUNT') return `${sign} ${target} per session`;
+    if (type === 'COMMUNICATION_DURATION') return `${sign} ${target} min`;
+    return `${sign} ${target} s average`;
+  }
+  if (type === 'COMMUNICATION_OPPORTUNITIES') return `${target}% of opportunities`;
   if (type.startsWith('BEHAVIOR_')) {
     const sign = (direction ?? 'decrease') === 'decrease' ? '≤' : '≥';
     if (type === 'BEHAVIOR_FREQUENCY') return `${sign} ${target} per session`;

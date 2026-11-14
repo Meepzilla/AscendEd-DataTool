@@ -67,7 +67,7 @@ export function goalAccuracyText(captureType: string, data: Record<string, any>)
   if (!responses) return 'N/A';
   const total = responses.correct + responses.incorrect + responses.approximate;
   // The trial grid shows 0% before any trial is scored; counts show N/A.
-  if (total === 0) return captureType === 'DISCRETE_TRIALS' ? '0.0% (0/0)' : 'N/A (0%)';
+  if (total === 0) return captureType === 'DISCRETE_TRIALS' || captureType === 'COMMUNICATION_OPPORTUNITIES' ? '0.0% (0/0)' : 'N/A (0%)';
   return `${((responses.correct / total) * 100).toFixed(1)}% (${responses.correct}/${total})`;
 }
 

@@ -98,5 +98,101 @@
  {
   "name": "Sustain engagement for [X] minutes with regulation supports in place",
   "fromType": "DISCRETE_TRIALS"
+ },
+ {
+  "name": "Request an alternative task location instead of engaging in elopement",
+  "fromType": "BEHAVIOR_ABC"
+ },
+ {
+  "name": "Request a timed pause or delay ('two more minutes') using functional communication",
+  "fromType": "BEHAVIOR_ABC"
+ },
+ {
+  "name": "Indicate the specific body part and sensation using a visual chart or AAC system",
+  "fromType": "BEHAVIOR_ABC"
+ },
+ {
+  "name": "Communicate feelings ('frustrated', 'confused') using a designated visual tool or AAC…",
+  "fromType": "BEHAVIOR_ABC"
+ },
+ {
+  "name": "Use a functional attention-getting behavior (such as tapping a shoulder, raising a hand…",
+  "fromType": "BEHAVIOR_ABC"
+ },
+ {
+  "name": "Accept losing or waiting a turn by using coping phrases or self-regulation visuals",
+  "fromType": "BEHAVIOR_ABC"
+ },
+ {
+  "name": "Select a functional alternative from a visual menu rather than displaying protest…",
+  "fromType": "BEHAVIOR_ABC"
+ },
+ {
+  "name": "Request noise-canceling headphones or lighting adjustments",
+  "fromType": "BEHAVIOR_ABC"
+ },
+ {
+  "name": "Communicate the need to access a calming corner or sensory tool before behavioral…",
+  "fromType": "BEHAVIOR_ABC"
+ },
+ {
+  "name": "Request mediation or assistance from a trusted adult",
+  "fromType": "BEHAVIOR_ABC"
+ },
+ {
+  "name": "Negotiate terms (such as asking for fewer items or choosing the order of completion)…",
+  "fromType": "BEHAVIOR_ABC"
+ },
+ {
+  "name": "Identify the specific environmental trigger and request an adjustment",
+  "fromType": "BEHAVIOR_ABC"
+ },
+ {
+  "name": "State the specific support required (such as physical rest, water, or postural shift)…",
+  "fromType": "BEHAVIOR_ABC"
+ },
+ {
+  "name": "Communicate a boundary using verbal speech, a gesture, or an AAC button",
+  "fromType": "BEHAVIOR_ABC"
+ },
+ {
+  "name": "Express an emotional state using an emotion rating scale or visual board before reaching…",
+  "fromType": "BEHAVIOR_ABC"
+ },
+ {
+  "name": "Spontaneously request ___ preferred items or actions per session using their primary mode…",
+  "fromType": "BEHAVIOR_FREQUENCY"
+ },
+ {
+  "name": "Engage in parallel or cooperative play with a peer using shared objects for ___ minutes",
+  "fromType": "BEHAVIOR_DURATION"
+ },
+ {
+  "name": "Make 10 appropriate communicative utterances/selections during a 15-minute group activity…",
+  "fromType": "BEHAVIOR_FREQUENCY"
+ },
+ {
+  "name": "Complete a _____ (sustained, selective, alternating, divided) attention…",
+  "fromType": "BEHAVIOR_FREQUENCY"
+ },
+ {
+  "name": "Demonstrate adequate attention to classroom/therapy tasks with no more than ___ number of…",
+  "fromType": "BEHAVIOR_FREQUENCY"
+ },
+ {
+  "name": "Attend to structured learning/vocational tasks for x number of minutes when given no more…",
+  "fromType": "BEHAVIOR_DURATION"
+ },
+ {
+  "name": "Demonstrate parallel play with peers for X minutes",
+  "fromType": "BEHAVIOR_DURATION"
+ },
+ {
+  "name": "Demonstrate joint attention for X minutes",
+  "fromType": "BEHAVIOR_DURATION"
+ },
+ {
+  "name": "Sustain engagement for ___ minutes with regulation supports in place",
+  "fromType": "BEHAVIOR_DURATION"
  }
 ]

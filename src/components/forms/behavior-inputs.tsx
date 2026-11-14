@@ -28,6 +28,8 @@ interface BehaviorInputProps {
   disabled?: boolean;
   isLocked?: boolean;
   goalId?: string;
+  /** A communication goal recorded with this tool: the words say "times" and "response", not "behavior". */
+  communication?: boolean;
 }
 
 /** Re-renders every `ms` while `active`, for timers that compute elapsed time from a start timestamp. */
@@ -130,40 +132,40 @@ const TimesEditor: React.FC<{
 };
 
 export const FrequencyInput: React.FC<BehaviorInputProps> = (props) => {
-  const { data, update, interact, disabled } = props;
+  const { data, update, interact, disabled, communication } = props;
   const { count, ratePerHour } = summarizeFrequency(data);
   const times = alignTimes(data.occurrenceTimes, count);
   const knownTimes = times.filter((t): t is string => !!t);
   return (
     <>
-      <Field label="Occurrences">
+      <Field label={communication ? 'Times' : 'Occurrences'}>
         <TallyButton
           label="Count"
           count={count}
-          title="Behavior occurrences"
+          title={communication ? 'Times the skill was used' : 'Behavior occurrences'}
           className="h-12 min-w-[8rem] text-base"
           disabled={disabled}
           onIncrement={(e) => interact(e, () => update({ count: count + 1, occurrenceTimes: [...times, new Date().toISOString()] }))}
           onDecrement={(e) => interact(e, () => update({ count: Math.max(0, count - 1), occurrenceTimes: times.slice(0, -1) }))}
         />
-        <p className="text-[11px] text-muted-foreground">Tap each time the behavior occurs; the time is recorded for time-of-day reports. Press and hold (or right-click) to remove the last one.</p>
+        <p className="text-[11px] text-muted-foreground">Tap each time {communication ? 'the student does it' : 'the behavior occurs'}; the time is recorded for time-of-day reports. Press and hold (or right-click) to remove the last one.</p>
         {knownTimes.length > 0 && (
           <p className="text-[11px] text-muted-foreground">At {knownTimes.slice(-8).map(t => formatClockTime(new Date(t))).join(', ')}{knownTimes.length > 8 ? ' (latest 8)' : ''}</p>
         )}
-        <TimesEditor times={times} rowLabel={i => `Occurrence ${i + 1}`} onChange={next => update({ occurrenceTimes: next })} disabled={disabled || props.isLocked} />
+        <TimesEditor times={times} rowLabel={i => `${communication ? 'Time' : 'Occurrence'} ${i + 1}`} onChange={next => update({ occurrenceTimes: next })} disabled={disabled || props.isLocked} />
       </Field>
       <ObservationMinutes {...props} hint="for a rate per hour" />
-      <Summary label="Frequency">
-        {count} {count === 1 ? 'occurrence' : 'occurrences'}
+      <Summary label={communication ? 'Count' : 'Frequency'}>
+        {count} {communication ? (count === 1 ? 'time' : 'times') : (count === 1 ? 'occurrence' : 'occurrences')}
         {ratePerHour !== null && ` · ${ratePerHour.toFixed(1)} per hour`}
       </Summary>
-      <Notes {...props} placeholder="e.g., setting, intensity, what helped" />
+      <Notes {...props} placeholder={communication ? 'e.g., activity, partner, supports given' : 'e.g., setting, intensity, what helped'} />
     </>
   );
 };
 
 export const DurationInput: React.FC<BehaviorInputProps> = (props) => {
-  const { data, update, interact, disabled, isLocked } = props;
+  const { data, update, interact, disabled, isLocked, communication } = props;
   const [manualMinutes, setManualMinutes] = useState('');
   const summary = summarizeDuration(data);
 
@@ -190,7 +192,7 @@ export const DurationInput: React.FC<BehaviorInputProps> = (props) => {
 
   return (
     <>
-      <Field label="Episode Timer">
+      <Field label={communication ? 'Timer' : 'Episode Timer'}>
         <div className="flex items-center gap-2">
           <Button
             type="button"
@@ -205,15 +207,15 @@ export const DurationInput: React.FC<BehaviorInputProps> = (props) => {
             variant="outline"
             size="icon"
             className="h-9 w-9 min-h-11 min-w-11"
-            title="Remove the last episode"
-            aria-label="Remove the last episode"
+            title={communication ? 'Remove the last time' : 'Remove the last episode'}
+            aria-label={communication ? 'Remove the last time' : 'Remove the last episode'}
             onClick={(e) => interact(e, () => update({ episodeSeconds: episodes.slice(0, -1), episodeStarts: starts.slice(0, -1) }))}
             disabled={disabled || episodes.length === 0}
           >
             <Undo2 className="h-4 w-4" />
           </Button>
         </div>
-        <p className="text-[11px] text-muted-foreground">Start when the behavior begins and stop when it ends. Saving the session stops a running timer.</p>
+        <p className="text-[11px] text-muted-foreground">Start when {communication ? 'the student begins' : 'the behavior begins'} and stop when it ends. Saving the session stops a running timer.</p>
       </Field>
       {episodes.length > 0 && (
         <div className="flex flex-wrap gap-1">
@@ -224,8 +226,8 @@ export const DurationInput: React.FC<BehaviorInputProps> = (props) => {
           ))}
         </div>
       )}
-      <TimesEditor times={starts} rowLabel={i => `Episode ${i + 1} (${formatSeconds(episodes[i])}) started`} onChange={next => update({ episodeStarts: next })} disabled={disabled || isLocked} />
-      <Field label="Add an Episode by Hand (minutes)">
+      <TimesEditor times={starts} rowLabel={i => `${communication ? 'Time' : 'Episode'} ${i + 1} (${formatSeconds(episodes[i])}) started`} onChange={next => update({ episodeStarts: next })} disabled={disabled || isLocked} />
+      <Field label={communication ? 'Add a Time by Hand (minutes)' : 'Add an Episode by Hand (minutes)'}>
         <div className="flex items-center gap-1">
           <Input
             type="number"
@@ -244,11 +246,11 @@ export const DurationInput: React.FC<BehaviorInputProps> = (props) => {
       </Field>
       <ObservationMinutes {...props} hint="for % of time" />
       <Summary label="Duration">
-        {formatSeconds(summary.totalSeconds)} total ({summary.totalMinutes.toFixed(1)} min) · {summary.episodeCount} {summary.episodeCount === 1 ? 'episode' : 'episodes'}
+        {formatSeconds(summary.totalSeconds)} total ({summary.totalMinutes.toFixed(1)} min) · {summary.episodeCount} {communication ? (summary.episodeCount === 1 ? 'time' : 'times') : (summary.episodeCount === 1 ? 'episode' : 'episodes')}
         {summary.episodeCount > 0 && ` · longest ${formatSeconds(summary.longestSeconds)}`}
         {summary.percentOfObservation !== null && ` · ${summary.percentOfObservation.toFixed(0)}% of observation`}
       </Summary>
-      <Notes {...props} placeholder="e.g., what ended the episode" />
+      <Notes {...props} placeholder={communication ? 'e.g., activity, partner, what ended it' : 'e.g., what ended the episode'} />
     </>
   );
 };
@@ -569,7 +571,7 @@ export const IntervalInput: React.FC<BehaviorInputProps> = (props) => {
 };
 
 export const LatencyInput: React.FC<BehaviorInputProps> = (props) => {
-  const { data, update, interact, disabled, isLocked } = props;
+  const { data, update, interact, disabled, isLocked, communication } = props;
   const [manualSeconds, setManualSeconds] = useState('');
   const summary = summarizeLatency(data);
   useTicker(summary.timing, 100);
@@ -592,7 +594,7 @@ export const LatencyInput: React.FC<BehaviorInputProps> = (props) => {
 
   return (
     <>
-      <Field label="Latency Timer">
+      <Field label={communication ? 'Response Timer' : 'Latency Timer'}>
         {summary.timing ? (
           <div className="flex flex-wrap items-center gap-2">
             <Button
@@ -635,7 +637,7 @@ export const LatencyInput: React.FC<BehaviorInputProps> = (props) => {
             </Button>
           </div>
         )}
-        <p className="text-[11px] text-muted-foreground">Tap Cue Given when you give the direction, then Responded when the student starts to respond.</p>
+        <p className="text-[11px] text-muted-foreground">Tap Cue Given when you {communication ? 'ask the question or give the prompt' : 'give the direction'}, then Responded when the student starts to respond.</p>
       </Field>
       {summary.trialCount > 0 && (
         <div className="flex flex-wrap gap-1">
@@ -664,7 +666,7 @@ export const LatencyInput: React.FC<BehaviorInputProps> = (props) => {
           </Button>
         </div>
       </Field>
-      <Summary label="Latency">
+      <Summary label={communication ? 'Response Time' : 'Latency'}>
         {summary.averageSeconds === null
           ? `${summary.trialCount} ${summary.trialCount === 1 ? 'trial' : 'trials'}${summary.noResponseCount ? `, ${summary.noResponseCount} with no response` : ''}`
           : <>
@@ -673,7 +675,7 @@ export const LatencyInput: React.FC<BehaviorInputProps> = (props) => {
               {summary.noResponseCount > 0 && `, ${summary.noResponseCount} with no response`}
             </>}
       </Summary>
-      <Notes {...props} placeholder="e.g., type of direction, supports given" />
+      <Notes {...props} placeholder={communication ? 'e.g., type of question, wait time, supports given' : 'e.g., type of direction, supports given'} />
     </>
   );
 };

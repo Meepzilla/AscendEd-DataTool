@@ -1,6 +1,6 @@
 import type { Goal, SessionData, Student } from './types';
 import {
-  BEHAVIOR_GOAL_TYPES, INTERVAL_METHODS, captureTypeOf, goalDirection, summarizeAbc, summarizeCommunicationFunctions,
+  BEHAVIOR_GOAL_TYPES, INTERVAL_METHODS, captureTypeOf, toolTypeOf, goalDirection, summarizeAbc, summarizeCommunicationFunctions,
   median, summarizeDuration, summarizeFrequency, summarizeIntervals, summarizeLatency,
   COMMUNICATION_FUNCTIONS, STORY_PARTS, averageStoryPart, STORY_LINKING_WORDS, linkingWordField, topTied, joinWithAnd, type AbcIncident,
 } from './goal-constants';
@@ -45,6 +45,10 @@ function measureName(goal: Goal): string {
     case 'COGNITIVE': return 'the rating';
     case 'PROMPTING': return 'the percentage of independent responses';
     case 'TASK_ANALYSIS': return 'the percentage of steps done independently';
+    case 'COMMUNICATION_COUNT': return 'the number of times';
+    case 'COMMUNICATION_DURATION': return 'the total time';
+    case 'RESPONSE_TIME': return 'the average time to respond';
+    case 'COMMUNICATION_OPPORTUNITIES': return 'the percentage of opportunities';
     case 'BEHAVIOR_FREQUENCY': return 'the number of occurrences';
     case 'BEHAVIOR_DURATION': return 'the total duration';
     case 'BEHAVIOR_INTERVAL': return 'the percentage of intervals with the behavior';
@@ -68,9 +72,12 @@ function formatValue(goal: Goal, value: number): string {
     // Averages and trend ends are rounded to 0.1 first, so they read as a plain signed number.
     case 'GOAL_ATTAINMENT_SCALE': return gasLevelLabel(v);
     case 'BEHAVIOR_FREQUENCY':
+    case 'COMMUNICATION_COUNT':
     case 'COMMUNICATION_FUNCTIONS': return String(v);
-    case 'BEHAVIOR_DURATION': return `${v} min`;
-    case 'BEHAVIOR_LATENCY': return `${v} seconds`;
+    case 'BEHAVIOR_DURATION':
+    case 'COMMUNICATION_DURATION': return `${v} min`;
+    case 'BEHAVIOR_LATENCY':
+    case 'RESPONSE_TIME': return `${v} seconds`;
     case 'QUALITATIVE_OBSERVATION':
     case 'COGNITIVE': return `${v} out of 5`;
     // To 0.1 like the goal cards (and the target check), so 79.6% isn't shown as a met 80%.
@@ -175,7 +182,7 @@ function analyzeGoal(goal: Goal, number: number, sessions: SessionData[]): GoalA
     .sort((x, y) => compareSessionsOldestFirst(x.session, y.session));
   // Latency sessions where the student never responded have no time to average, but they are data (and a
   // target can't have been met in them).
-  const unmeasuredRows = captureTypeOf(goal) === 'BEHAVIOR_LATENCY'
+  const unmeasuredRows = toolTypeOf(captureTypeOf(goal)) === 'BEHAVIOR_LATENCY'
     ? withData.filter(r => r.value === null && summarizeLatency(r.data).trialCount > 0)
     : [];
   const unmeasured = unmeasuredRows.map(r => r.data);
@@ -283,6 +290,10 @@ function taskAnalysisSentence(name: string, data: Record<string, any>[]): string
 /** Extra sentences that fit the goal's type, over the sessions with data. */
 function detailSentences(name: string, goal: Goal, data: Record<string, any>[]): string[] {
   const type = captureTypeOf(goal);
+  // Communication goals recorded with a behavior tool get the tool's figures, in their own words.
+  const tool = toolTypeOf(type);
+  const communication = tool !== type;
+  const episodeWord = communication ? 'period' : 'episode';
   const lines: string[] = [];
   const total = (field: string) => sum(data.map(d => Number(d[field]) || 0));
 
@@ -345,7 +356,7 @@ function detailSentences(name: string, goal: Goal, data: Record<string, any>[]):
     }
   }
 
-  if (type === 'BEHAVIOR_FREQUENCY') {
+  if (tool === 'BEHAVIOR_FREQUENCY') {
     // Only sessions with an observation time count toward the rate, on both sides of the division (as for duration).
     const observedSessions = data.map(d => summarizeFrequency(d)).filter(s => s.minutes > 0);
     const minutes = sum(observedSessions.map(s => s.minutes));
@@ -367,15 +378,15 @@ function detailSentences(name: string, goal: Goal, data: Record<string, any>[]):
     if (abc.functions.length) lines.push(most(abc.functions, 'Consequences most often suggested a function of', 'Consequences most often suggested functions of', v => v.toLowerCase()));
   }
 
-  if (type === 'BEHAVIOR_DURATION') {
+  if (tool === 'BEHAVIOR_DURATION') {
     const durations = data.map(d => summarizeDuration(d));
     const episodes = sum(durations.map(d => d.episodeCount));
     const totalMinutes = sum(durations.map(d => d.totalMinutes));
     const longest = Math.max(0, ...durations.map(d => d.longestSeconds));
     if (episodes === 1) {
-      lines.push(`1 episode was timed, lasting ${round(totalMinutes)} min.`);
+      lines.push(`1 ${episodeWord} was timed, lasting ${round(totalMinutes)} min.`);
     } else if (episodes > 1) {
-      lines.push(`${plural(episodes, 'episode')} were timed, averaging ${round(totalMinutes / episodes)} min each (longest ${round(longest / 60)} min).`);
+      lines.push(`${plural(episodes, episodeWord)} were timed, averaging ${round(totalMinutes / episodes)} min each (longest ${round(longest / 60)} min).`);
     }
     // Only sessions with an observation time count toward the percentage, on both sides of the division.
     const observedSessions = data.map((d, i) => ({ minutes: Number(d.observationMinutes) || 0, behavior: durations[i].totalMinutes })).filter(s => s.minutes > 0);
@@ -383,7 +394,7 @@ function detailSentences(name: string, goal: Goal, data: Record<string, any>[]):
     if (observed > 0) {
       const behavior = sum(observedSessions.map(s => s.behavior));
       const scope = observedSessions.length < data.length ? ` (in the ${plural(observedSessions.length, 'session')} with an observation time)` : '';
-      lines.push(`The behavior took up ${pct(Math.min(100, (behavior / observed) * 100))} of ${round(observed)} observed minutes${scope}.`);
+      lines.push(`${communication ? 'This' : 'The behavior'} took up ${pct(Math.min(100, (behavior / observed) * 100))} of ${round(observed)} observed minutes${scope}.`);
     }
   }
 
@@ -395,7 +406,7 @@ function detailSentences(name: string, goal: Goal, data: Record<string, any>[]):
     if (scored > 0) lines.push(`Using ${methods.join(' and ') || 'interval recording'}, the behavior was scored in ${occurred} of ${plural(scored, 'interval')} (${pct((occurred / scored) * 100)}).`);
   }
 
-  if (type === 'BEHAVIOR_LATENCY') {
+  if (tool === 'BEHAVIOR_LATENCY') {
     const latencies = data.map(d => summarizeLatency(d));
     const trials = sum(latencies.map(l => l.trialCount));
     const noResponse = sum(latencies.map(l => l.noResponseCount));
@@ -434,7 +445,7 @@ function timingSentence(type: string, recorded: { session: SessionData; data: Re
   const basis = patterns.exactShare < 0.5 ? ' (mostly based on session start times)' : '';
   return latency
     ? `Responses were slowest around ${patterns.peakHour.name} (${patterns.peakHour.value}${unit} on average)${day}${basis}.`
-    : `The behavior was recorded most around ${patterns.peakHour.name} (${patterns.peakHour.value}${unit})${day}${basis}.`;
+    : `${toolTypeOf(type) === type ? 'The behavior' : 'This'} was recorded most around ${patterns.peakHour.name} (${patterns.peakHour.value}${unit})${day}${basis}.`;
 }
 
 function goalHeading(a: GoalAnalysis): string {
@@ -483,7 +494,7 @@ function goalParagraph(name: string, a: GoalAnalysis, options: Required<Narrativ
     sentences.push(`In ${n === 1 ? '1 more session' : `${n} more sessions`} (${a.unmeasuredDates.map(d => formatDateOnly(d)).join(', ')}), ${name} did not respond in any trial; ${n === 1 ? 'it is' : 'they are'} not included in the average time.`);
   }
   sentences.push(...detailSentences(name, goal, [...a.recorded.map(r => r.data), ...a.unmeasured]));
-  if (BEHAVIOR_GOAL_TYPES.includes(type)) {
+  if (BEHAVIOR_GOAL_TYPES.includes(toolTypeOf(type))) {
     const timing = timingSentence(type, a.recorded);
     if (timing) sentences.push(timing);
   }
@@ -560,7 +571,7 @@ export function buildNarrative({ student, goals, sessions, rangeLabel, options =
     const data = session.goals?.find(g => g.goalId === goal.id)?.data;
     if (!data) return false;
     const saved = withoutRunningTimers(data);
-    return goalMeasure(goal, saved) !== null || (captureTypeOf(goal) === 'BEHAVIOR_LATENCY' && summarizeLatency(saved).trialCount > 0);
+    return goalMeasure(goal, saved) !== null || (toolTypeOf(captureTypeOf(goal)) === 'BEHAVIOR_LATENCY' && summarizeLatency(saved).trialCount > 0);
   })).length;
   const intro = `This summary covers ${plural(sessionsWithData, 'session')} with ${name} from ${period}, for ${plural(goals.length, 'goal')}.`;
   const body = settings.style === 'brief'

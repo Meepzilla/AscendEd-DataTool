@@ -10,6 +10,31 @@ import type { GoalTemplate, GoalType, TargetDirection } from '../types';
 //   measured as the % of scored intervals with the behavior.
 // - BEHAVIOR_LATENCY: seconds from a cue (instruction, direction) to the start of the response.
 
+/**
+ * Communication goals measured with the same tools as behavior goals, without the behavior wording: a count of
+ * times a skill was used, timed minutes, seconds to respond, and opportunities scored on the trial grid. Each
+ * records exactly what its tool records (the same session fields), so charts, reports and merging treat a
+ * goal by its tool (toolTypeOf), and only the words and the default direction differ.
+ */
+export const COMMUNICATION_MEASURE_TOOLS: Partial<Record<GoalType, GoalType>> = {
+  COMMUNICATION_COUNT: 'BEHAVIOR_FREQUENCY',
+  COMMUNICATION_DURATION: 'BEHAVIOR_DURATION',
+  RESPONSE_TIME: 'BEHAVIOR_LATENCY',
+  COMMUNICATION_OPPORTUNITIES: 'DISCRETE_TRIALS',
+};
+export const COMMUNICATION_MEASURE_TYPES = Object.keys(COMMUNICATION_MEASURE_TOOLS) as GoalType[];
+
+/** The goal type whose tool records and measures this type: itself, except for the communication measure types. */
+export function toolTypeOf(type: string): GoalType {
+  return (COMMUNICATION_MEASURE_TOOLS[type as GoalType] ?? type) as GoalType;
+}
+
+/** Whether the type is a communication goal measured with a behavior tool (count, minutes or seconds). */
+export const isCommunicationTimedType = (type: string) => type in COMMUNICATION_MEASURE_TOOLS && toolTypeOf(type) !== 'DISCRETE_TRIALS';
+
+/** Whether a goal of this type can aim to increase or decrease (so its editor offers the choice). */
+export const hasTargetDirection = (type: string) => type.startsWith('BEHAVIOR_') || isCommunicationTimedType(type);
+
 export const BEHAVIOR_GOAL_TYPES: GoalType[] = ['BEHAVIOR_FREQUENCY', 'BEHAVIOR_DURATION', 'BEHAVIOR_ABC', 'BEHAVIOR_INTERVAL', 'BEHAVIOR_LATENCY'];
 
 export const ABC_ANTECEDENTS = [
@@ -122,6 +147,12 @@ export const BEHAVIOR_FIELDS: Record<string, Record<string, any>> = {
   // latencies: seconds per trial, null when there was no response; trialTimes: when each cue was given;
   // cueGivenAt: epoch ms while timing a trial.
   BEHAVIOR_LATENCY: { latencies: [], trialTimes: [], cueGivenAt: null, averageSeconds: null, trialCount: 0, notes: '' },
+  // The communication measure types store the same fields as their tools.
+  COMMUNICATION_COUNT: { count: 0, occurrenceTimes: [], observationMinutes: '', notes: '' },
+  COMMUNICATION_DURATION: { episodeSeconds: [], episodeStarts: [], runningSince: null, observationMinutes: '', totalSeconds: 0, episodeCount: 0, notes: '' },
+  // Opportunities are scored on the trial grid, like discrete trials, with the prompt level counters.
+  COMMUNICATION_OPPORTUNITIES: { numberOfTrials: 5, trials: Array(5).fill('untouched'), Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, Imitation: 0 },
+  RESPONSE_TIME: { latencies: [], trialTimes: [], cueGivenAt: null, averageSeconds: null, trialCount: 0, notes: '' },
 };
 
 /** A list of recorded times padded (with null, "time unknown") or cut to match its values. */
@@ -141,7 +172,11 @@ export function captureTypeOf(goal: { type: string; dataCaptureType?: string }):
 
 /** Behavior goals usually aim to reduce something; other goal types aim to increase. */
 export function goalDirection(goal: { type: string; dataCaptureType?: string; targetDirection?: TargetDirection }): TargetDirection {
-  return goal.targetDirection ?? (BEHAVIOR_GOAL_TYPES.includes(captureTypeOf(goal)) ? 'decrease' : 'increase');
+  if (goal.targetDirection) return goal.targetDirection;
+  const type = captureTypeOf(goal);
+  // A quicker response is the aim; other communication measures (times used, minutes) aim up.
+  if (type === 'RESPONSE_TIME') return 'decrease';
+  return BEHAVIOR_GOAL_TYPES.includes(type) ? 'decrease' : 'increase';
 }
 
 export function summarizeFrequency(data: Record<string, any> = {}) {
@@ -279,7 +314,8 @@ export function summarizeLatency(data: Record<string, any> = {}, now = Date.now(
  * with the behavior (interval), average seconds to respond (latency), and for ABC either problem-behavior
  * incidents (decrease goals) or % of incidents with the replacement skill (increase).
  */
-export function behaviorMeasure(type: string, data: Record<string, any>, direction: TargetDirection): number | null {
+export function behaviorMeasure(rawType: string, data: Record<string, any>, direction: TargetDirection): number | null {
+  const type = toolTypeOf(rawType);
   if (type === 'BEHAVIOR_FREQUENCY') return summarizeFrequency(data).count;
   if (type === 'BEHAVIOR_DURATION') return summarizeDuration(data).totalMinutes;
   if (type === 'BEHAVIOR_ABC') {
@@ -301,7 +337,8 @@ export function progressTowardTarget(value: number, target: number, direction: T
 }
 
 /** Called when a session is saved: stops running timers and stores summary totals. */
-export function finalizeBehaviorData(type: string, data: Record<string, any>, now = Date.now()): Record<string, any> {
+export function finalizeBehaviorData(rawType: string, data: Record<string, any>, now = Date.now()): Record<string, any> {
+  const type = toolTypeOf(rawType);
   if (type === 'BEHAVIOR_DURATION') {
     const episodes: number[] = Array.isArray(data.episodeSeconds) ? [...data.episodeSeconds] : [];
     const starts = alignTimes(data.episodeStarts, episodes.length);
