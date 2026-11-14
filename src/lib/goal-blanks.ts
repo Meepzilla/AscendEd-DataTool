@@ -116,7 +116,7 @@ export function fillNameBlanks(goal: BlankGoal & { name: string }): string {
 
 // Goal types whose target isn't a percentage (a count, a rating, minutes, seconds, or a GAS level from -2 to +2:
 // a GAS target of 0 would otherwise turn "with 80% accuracy" in the goal text into "with 0% accuracy").
-const NOT_PERCENT = new Set(['COMMUNICATION_FUNCTIONS', 'QUALITATIVE_OBSERVATION', 'COGNITIVE', 'BEHAVIOR_FREQUENCY', 'BEHAVIOR_DURATION', 'BEHAVIOR_LATENCY', 'GOAL_ATTAINMENT_SCALE']);
+const NOT_PERCENT = new Set(['COMMUNICATION_FUNCTIONS', 'QUALITATIVE_OBSERVATION', 'COGNITIVE', 'BEHAVIOR_FREQUENCY', 'BEHAVIOR_DURATION', 'BEHAVIOR_LATENCY', 'GOAL_ATTAINMENT_SCALE', 'COMMUNICATION_COUNT', 'COMMUNICATION_DURATION', 'RESPONSE_TIME']);
 function percentTarget(goal: BlankGoal): boolean {
   const type = goal.dataCaptureType || goal.type || '';
   if (type === 'BEHAVIOR_ABC') return goal.targetDirection === 'increase';

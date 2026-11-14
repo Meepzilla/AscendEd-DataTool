@@ -48,6 +48,8 @@ TYPE_LABELS = {
     'FEEDING_SWALLOWING': 'Feeding Swallowing', 'QUALITATIVE_OBSERVATION': 'Qualitative Observation',
     'COGNITIVE': 'Cognitive', 'COMMUNICATION_FUNCTIONS': 'Communication Functions', 'STORY_ELEMENTS': 'Story Elements',
     'BEHAVIOR_FREQUENCY': 'Behavior Frequency', 'BEHAVIOR_DURATION': 'Behavior Duration', 'BEHAVIOR_ABC': 'Behavior ABC',
+    'COMMUNICATION_COUNT': 'Communication Count', 'COMMUNICATION_DURATION': 'Communication Duration',
+    'COMMUNICATION_OPPORTUNITIES': 'Communication Opportunities',
 }
 
 RECEPTIVE_AREAS = {'Receptive Language', 'Auditory Discrimination', 'Reading Comprehension & Symbols', 'Nonverbal, Figurative & Inference', 'Figurative Language'}
@@ -115,16 +117,22 @@ def has(text, *patterns):
 
 
 def classify_behavior(area, text):
-    """Behavior data goals: returns (goal type, direction, reason) or None."""
+    """Goals measured by a count, minutes or opportunities: returns (goal type, direction, reason) or None.
+
+    Communication skills use the communication measure types (the same tools as the behavior types, without the
+    behavior wording); only a count of a problem behavior to reduce stays a behavior goal.
+    """
     t = text.lower()
     if area == 'Behavior Replacement & Regulation':
-        return 'BEHAVIOR_ABC', 'increase', 'Replacement skill vs problem behavior per triggering incident (ABC data); target is % of incidents with the replacement skill'
+        return 'COMMUNICATION_OPPORTUNITIES', None, 'Replacement communication skill used or not in each opportunity; target is % of opportunities'
     if has(t, r'(parallel play|joint attention|sustain engagement|cooperative play|attend to structured)[^.]*?for (\[x\]|x|___|\d+)( number of)? minutes'):
-        return 'BEHAVIOR_DURATION', 'increase', 'Measured as time engaged (duration); target is minutes'
-    if has(t, r'decreasing the use of [^.]*? to (\[x\]|x|___|\d+) occurrences', r'no more than (___|\[x\]|x|\d+) (number of )?redirections'):
+        return 'COMMUNICATION_DURATION', 'increase', 'Measured as time engaged (duration); target is minutes'
+    if has(t, r'decreasing the use of [^.]*? to (\[x\]|x|___|\d+) occurrences'):
         return 'BEHAVIOR_FREQUENCY', 'decrease', 'Counts occurrences to reduce (frequency); target is the most allowed per session'
+    if has(t, r'no more than (___|\[x\]|x|\d+) (number of )?redirections'):
+        return 'COMMUNICATION_COUNT', 'decrease', 'Counts redirections to reduce; target is the most allowed per session'
     if has(t, r'request (\[x\]|x|___|\d+) preferred items or actions per session', r'make (\d+) appropriate communicative utterances'):
-        return 'BEHAVIOR_FREQUENCY', 'increase', 'Counts occurrences per session (frequency); target is the number per session'
+        return 'COMMUNICATION_COUNT', 'increase', 'Counts times per session; target is the number per session'
     return None
 
 
@@ -188,10 +196,10 @@ def classify(area, text):
 
 def target_for(goal_type, text):
     t = text.lower()
-    if goal_type == 'BEHAVIOR_DURATION':
+    if goal_type in ('BEHAVIOR_DURATION', 'COMMUNICATION_DURATION'):
         m = re.search(r'for (\d+) (?:consecutive )?minutes', t)
         return int(m.group(1)) if m else 5
-    if goal_type == 'BEHAVIOR_FREQUENCY':
+    if goal_type in ('BEHAVIOR_FREQUENCY', 'COMMUNICATION_COUNT'):
         m = re.search(r'(?:make|request|to|no more than) (\d+) ', t)
         if m:
             return int(m.group(1))
@@ -212,10 +220,12 @@ def target_for(goal_type, text):
 
 def target_label(goal_type, target, direction):
     sign = '≤' if direction == 'decrease' else '≥'
-    if goal_type == 'BEHAVIOR_FREQUENCY':
+    if goal_type in ('BEHAVIOR_FREQUENCY', 'COMMUNICATION_COUNT'):
         return f'{sign} {target} per session'
-    if goal_type == 'BEHAVIOR_DURATION':
+    if goal_type in ('BEHAVIOR_DURATION', 'COMMUNICATION_DURATION'):
         return f'{sign} {target} min'
+    if goal_type == 'COMMUNICATION_OPPORTUNITIES':
+        return f'{target}% of opportunities'
     if goal_type == 'BEHAVIOR_ABC':
         return f'≥ {target}% replacement skill' if direction == 'increase' else f'≤ {target} incidents'
     if goal_type == 'COMMUNICATION_FUNCTIONS':

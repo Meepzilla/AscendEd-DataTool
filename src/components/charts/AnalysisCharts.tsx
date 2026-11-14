@@ -3,7 +3,7 @@
 
 import React, { useMemo, lazy, Suspense } from 'react';
 import type { Student, SessionData, Goal, PromptType } from '@/lib/types';
-import { BEHAVIOR_GOAL_TYPES, captureTypeOf } from '@/lib/goal-constants';
+import { BEHAVIOR_GOAL_TYPES, captureTypeOf, toolTypeOf } from '@/lib/goal-constants';
 import { goalMeasure, goalResponses, withoutRunningTimers } from '@/lib/goal-measures';
 import { parseDateOnly } from '@/lib/helpers';
 import { pooledAccuracy } from '@/lib/trial-weights';
@@ -199,7 +199,7 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, studen
     () => activeStudentGoals.filter(g => !selectedGoalId || g.id === selectedGoalId),
     [activeStudentGoals, selectedGoalId],
   );
-  const behaviorOnly = goalsInView.length > 0 && goalsInView.every(g => BEHAVIOR_GOAL_TYPES.includes(captureTypeOf(g)));
+  const behaviorOnly = goalsInView.length > 0 && goalsInView.every(g => BEHAVIOR_GOAL_TYPES.includes(toolTypeOf(captureTypeOf(g))));
   // Accuracy and response counts only apply to trial-based goals (correct / incorrect / approximate).
   const hasTrialGoals = goalsInView.some(g => goalResponses(captureTypeOf(g)) !== null);
 

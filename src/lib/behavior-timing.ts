@@ -1,5 +1,5 @@
 import type { SessionData } from './types';
-import { isReplacementIncident, summarizeIntervals, type AbcIncident } from './goal-constants';
+import { isReplacementIncident, summarizeIntervals, toolTypeOf, type AbcIncident } from './goal-constants';
 import { parseDateOnly } from './helpers';
 
 // When behavior happened, for time-of-day, day-of-week and within-session patterns.
@@ -20,7 +20,8 @@ export interface BehaviorEvent {
 
 export type TimingMeasure = 'count' | 'minutes' | 'seconds';
 
-export function timingMeasure(type: string): TimingMeasure {
+export function timingMeasure(rawType: string): TimingMeasure {
+  const type = toolTypeOf(rawType);
   if (type === 'BEHAVIOR_DURATION') return 'minutes';
   if (type === 'BEHAVIOR_LATENCY') return 'seconds';
   return 'count';
@@ -51,7 +52,8 @@ const parseDate = (value: unknown): Date | null => {
 const timeOf = (date: Date) => date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
 /** The recorded occurrences of a behavior goal in one session, with when each happened. */
-export function behaviorEvents(type: string, data: Record<string, any> = {}, start: Date | null): BehaviorEvent[] {
+export function behaviorEvents(rawType: string, data: Record<string, any> = {}, start: Date | null): BehaviorEvent[] {
+  const type = toolTypeOf(rawType);
   const events: BehaviorEvent[] = [];
   // A time on another day than the session's was recorded while editing the session later, so it isn't
   // when the behavior happened.

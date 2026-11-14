@@ -18,6 +18,13 @@ interface ChangelogEntry {
 
 const allChangelogEntries: ChangelogEntry[] = [
   {
+    date: '2026-11-14',
+    title: 'Four Goal Types for Communication Goals Measured by Counts, Minutes and Opportunities',
+    description: 'Communication goals that are counted or timed no longer have to be recorded as behavior goals. Four new goal types use the same tools with communication wording: Communication Count (tap each time the student uses a skill), Communication Duration (time joint attention, play or engagement), Response Time (seconds from a question or prompt to the response) and Communication Opportunities (mark each opportunity as used or not, with prompt levels). Count and Duration aim to increase unless you choose otherwise, and their screens and reports say "times" and "response" instead of "behavior". In the goal bank, 24 goals moved to the new types: the 15 Behavior Replacement and Regulation goals (such as asking for a break or saying how they feel) are now Communication Opportunities instead of Behavior ABC, 5 goals timed in minutes are Communication Duration, and 4 counted goals are Communication Count. Goals already assigned to students stay as they are, with their sessions; to switch one, change its Data Capture Method in Edit Goal.',
+    type: 'feature',
+    icon: MessagesSquare,
+  },
+  {
     date: '2026-11-13',
     title: 'Data Entry Fits Better on Phones',
     description: 'On the Data Entry page, the Reset Time to Now and Reset Time to Before buttons now sit side by side on phone screens instead of stacking one above the other, so both fit in the space beside the session date. The bar at the bottom of Data Entry is more compact on phones held upright, so Load Group, Remove All and the scroll arrows sit on the same line as Pick Student instead of a line of their own (the buttons read Student, Goal, Group and All there to fit).',

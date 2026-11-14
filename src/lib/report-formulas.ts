@@ -25,6 +25,9 @@ export function measureFormula(goal: Pick<Goal, 'type' | 'dataCaptureType' | 'ta
     case 'GOAL_ATTAINMENT_SCALE': return 'The attainment level recorded in the session, -2 to +2; 0 is the expected outcome.';
     case 'PROMPTING': return 'Independent ÷ all prompt-level tallies × 100.';
     case 'TASK_ANALYSIS': return 'Steps done independently ÷ steps scored × 100.';
+    case 'COMMUNICATION_COUNT': return 'The number of times counted in the session.';
+    case 'COMMUNICATION_DURATION': return 'All the timed periods in the session added up, in minutes.';
+    case 'RESPONSE_TIME': return 'The average seconds from the cue to the response, over the trials with a response.';
     case 'BEHAVIOR_FREQUENCY': return 'The number of times the behavior was counted in the session.';
     case 'BEHAVIOR_DURATION': return 'All the episodes\' times in the session added up, in minutes.';
     case 'BEHAVIOR_INTERVAL': return 'Intervals marked + (behavior seen) ÷ intervals scored × 100.';

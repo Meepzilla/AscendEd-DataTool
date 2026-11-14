@@ -315,4 +315,4 @@ export function applyAssignedGoalRenames<T extends Student>(students: T[]): { st
 
 // Goal types that record prompting in their own fields, so the general prompt level counters are hidden.
 // Task analysis scores a prompt level per step instead of tallying prompts.
-export const GOAL_TYPES_WITHOUT_PROMPT_COUNTERS: GoalType[] = ['COMMUNICATION_FUNCTIONS', 'STORY_ELEMENTS', 'TASK_ANALYSIS', 'GOAL_ATTAINMENT_SCALE', ...BEHAVIOR_GOAL_TYPES];
+export const GOAL_TYPES_WITHOUT_PROMPT_COUNTERS: GoalType[] = ['COMMUNICATION_FUNCTIONS', 'STORY_ELEMENTS', 'TASK_ANALYSIS', 'GOAL_ATTAINMENT_SCALE', ...BEHAVIOR_GOAL_TYPES, 'COMMUNICATION_COUNT', 'COMMUNICATION_DURATION', 'RESPONSE_TIME'];

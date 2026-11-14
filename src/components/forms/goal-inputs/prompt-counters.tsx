@@ -40,7 +40,7 @@ export default function PromptLevelCounters({ captureType, data, onChange, isArc
                 if (pt !== 'Independent') return onChange(pt, { ...data, [pt]: count + 1 });
                 const next = applyGoalHotkey(captureType, 'I', data);
                 if (next) return onChange(pt, next);
-                if (captureType === 'DISCRETE_TRIALS' || captureType === 'SEQUENCED_TRIALS') {
+                if (captureType === 'DISCRETE_TRIALS' || captureType === 'SEQUENCED_TRIALS' || captureType === 'COMMUNICATION_OPPORTUNITIES') {
                   toast({ title: 'All Trials Filled', description: 'Every trial is scored, so there is no trial to mark correct.' });
                   return;
                 }

@@ -18,6 +18,7 @@ function criterion(type: GoalType, target: number | undefined): string {
   switch (type) {
     case 'AAC':
     case 'FEEDING_SWALLOWING':
+    case 'COMMUNICATION_OPPORTUNITIES':
       return `in ${t}% of opportunities`;
     case 'STORY_ELEMENTS':
       return `, with a story score of ${t}%,`;
@@ -29,6 +30,9 @@ function criterion(type: GoalType, target: number | undefined): string {
       // must never reach a GAS goal.
       return `, with an attainment level of at least ${target ?? 0} (the expected outcome),`;
     case 'COMMUNICATION_FUNCTIONS':
+    case 'COMMUNICATION_COUNT':
+    case 'COMMUNICATION_DURATION':
+    case 'RESPONSE_TIME':
     case 'BEHAVIOR_FREQUENCY':
     case 'BEHAVIOR_DURATION':
     case 'BEHAVIOR_INTERVAL':

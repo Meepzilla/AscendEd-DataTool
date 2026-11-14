@@ -3,6 +3,7 @@
 import React from 'react';
 import type { Control, FieldValues, Path } from 'react-hook-form';
 import { FormControl, FormDescription, FormField, FormItem, FormLabel } from '@/components/ui/form';
+import { goalDirection, hasTargetDirection } from '@/lib/goal-constants';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 /**
@@ -12,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 // Generic over the form's values, so each goal editor passes its own typed form control (react-hook-form 7.55+
 // no longer lets a typed Control be passed where Control<any> is expected).
 export default function TargetDirectionField<T extends FieldValues, R extends FieldValues>({ control, goalType }: { control: Control<T, unknown, R>; goalType?: string }) {
-  if (!goalType?.startsWith('BEHAVIOR_')) return null;
+  if (!goalType || !hasTargetDirection(goalType)) return null;
   return (
     <FormField
       control={control}
@@ -20,7 +21,7 @@ export default function TargetDirectionField<T extends FieldValues, R extends Fi
       render={({ field }) => (
         <FormItem>
           <FormLabel>Goal Direction</FormLabel>
-          <Select value={field.value ?? 'decrease'} onValueChange={field.onChange}>
+          <Select value={field.value ?? goalDirection({ type: goalType })} onValueChange={field.onChange}>
             <FormControl>
               <SelectTrigger><SelectValue /></SelectTrigger>
             </FormControl>
@@ -30,8 +31,9 @@ export default function TargetDirectionField<T extends FieldValues, R extends Fi
             </SelectContent>
           </Select>
           <FormDescription>
-            Behavior targets: occurrences per session (frequency), total minutes (duration), or for ABC data the
-            number of incidents (decrease) or % of incidents where the replacement skill was used (increase).
+            {goalType.startsWith('BEHAVIOR_')
+              ? 'Behavior targets: occurrences per session (frequency), total minutes (duration), or for ABC data the number of incidents (decrease) or % of incidents where the replacement skill was used (increase).'
+              : 'The target is the times per session (count), total minutes (duration) or average seconds to respond (response time).'}
           </FormDescription>
         </FormItem>
       )}

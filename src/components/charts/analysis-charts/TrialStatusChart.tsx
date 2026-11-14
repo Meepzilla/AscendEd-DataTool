@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { CheckSquare, Check, X, CircleHelp } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-import { captureTypeOf } from '@/lib/goal-constants';
+import { captureTypeOf, toolTypeOf } from '@/lib/goal-constants';
 import { parseDateOnly } from '@/lib/helpers';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -31,7 +31,7 @@ const TrialStatusSequenceChart: React.FC<TrialSequenceChartProps> = ({ studentSe
         // Goals are charted by the type their data was entered as; archived and removed goals are left out.
         const goal = selectedStudent.goals.find(g => g.id === goalData.goalId);
         if (!goal || goal.isArchived) return;
-        const type = captureTypeOf(goal);
+        const type = toolTypeOf(captureTypeOf(goal));
         if (type !== 'DISCRETE_TRIALS' && type !== 'SEQUENCED_TRIALS') return;
         if (Array.isArray(goalData.data.trials)) trialsForSession.push(...goalData.data.trials);
         if (type === 'SEQUENCED_TRIALS') {

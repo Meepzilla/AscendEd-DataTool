@@ -282,7 +282,7 @@ export function classifyGoal(text: string, area = ''): { type: GoalType } {
 
 /** Whether a behavior goal aims to raise or lower its count or time; other types use their usual direction. */
 export function goalDirectionFor(type: GoalType, text: string): TargetDirection | undefined {
-  if (type !== 'BEHAVIOR_FREQUENCY' && type !== 'BEHAVIOR_DURATION') return undefined;
+  if (type !== 'BEHAVIOR_FREQUENCY' && type !== 'BEHAVIOR_DURATION' && type !== 'COMMUNICATION_COUNT' && type !== 'COMMUNICATION_DURATION') return undefined;
   return /\b(reduce|decrease|no more than|fewer than)\b/i.test(text) ? 'decrease' : 'increase';
 }
 
@@ -305,6 +305,7 @@ export function goalTarget(type: GoalType, text: string): number {
       const listed = listedFunctions(t);
       return Math.min(COMMUNICATION_FUNCTIONS.length, functionCount(t) ?? (listed >= 2 ? listed : 2));
     }
+    case 'COMMUNICATION_COUNT':
     case 'BEHAVIOR_FREQUENCY': {
       if (/\b(no more than|fewer than|reduce|decrease)\b/.test(t)) {
         const m = /(?:no more than|fewer than|to)\s+(\d+)/.exec(t);
@@ -312,8 +313,14 @@ export function goalTarget(type: GoalType, text: string): number {
       }
       return timesCount(t) ?? 3;
     }
+    case 'COMMUNICATION_DURATION':
     case 'BEHAVIOR_DURATION': {
       const m = /for (\d+) (?:consecutive )?minutes/.exec(t);
+      return m ? Number(m[1]) : 5;
+    }
+    case 'RESPONSE_TIME': {
+      // "within 5 seconds"; 5 when the text gives no time.
+      const m = /within (?:an average of )?(\d+) seconds/.exec(t);
       return m ? Number(m[1]) : 5;
     }
     case 'QUALITATIVE_OBSERVATION':

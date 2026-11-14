@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, ReferenceLine, BarChart, Bar } from 'recharts';
 import {
-  BEHAVIOR_GOAL_TYPES, captureTypeOf, summarizeLatency, goalDirection, summarizeAbc, scoreStory, averageStoryPart, STORY_PARTS, STORY_LINKING_WORDS, linkingWordField, COMMUNICATION_FUNCTIONS,
+  BEHAVIOR_GOAL_TYPES, captureTypeOf, toolTypeOf, summarizeLatency, goalDirection, summarizeAbc, scoreStory, averageStoryPart, STORY_PARTS, STORY_LINKING_WORDS, linkingWordField, COMMUNICATION_FUNCTIONS,
   type AbcIncident,
 } from '@/lib/goal-constants';
 import { goalMeasure, goalMeasureInfo, goalResponses, goalNotes, meetsTarget, promptTotals, usesPromptCounters, withoutRunningTimers } from '@/lib/goal-measures';
@@ -56,7 +56,7 @@ export function recordedSessions(goal: Goal, sessions: SessionData[], unanswered
     if (!stored) continue;
     const data = withoutRunningTimers(stored);
     let value = goalMeasure(goal, data);
-    if (value === null && unanswered && captureTypeOf(goal) === 'BEHAVIOR_LATENCY' && summarizeLatency(data).trialCount > 0) value = NaN;
+    if (value === null && unanswered && toolTypeOf(captureTypeOf(goal)) === 'BEHAVIOR_LATENCY' && summarizeLatency(data).trialCount > 0) value = NaN;
     if (value === null) continue;
     const day = parseDateOnly(session.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     seen[day] = (seen[day] || 0) + 1;
@@ -272,7 +272,7 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
                   <YAxis domain={[info.min ?? 0, yMax]} unit={info.unit === '%' ? '%' : undefined} tickLine={false} axisLine={false} tickMargin={8}
                     ticks={isGas ? [...GAS_LEVELS] : (info.max !== undefined && info.max <= 10 ? Array.from({ length: info.max + 1 }, (_, i) => i) : undefined)}
                     tickFormatter={isGas ? gasTick : undefined}
-                    allowDecimals={type === 'BEHAVIOR_DURATION' || type === 'BEHAVIOR_LATENCY'} />
+                    allowDecimals={toolTypeOf(type) === 'BEHAVIOR_DURATION' || toolTypeOf(type) === 'BEHAVIOR_LATENCY'} />
                   {isGas ? (
                     <ChartTooltip
                       content={({ active, payload, label }: any) => {
@@ -338,7 +338,7 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
           </div>
         )}
         {recorded.length > 0 && <GoalBreakdowns goal={goal} recorded={recorded} />}
-        {behaviorRecorded.length > 0 && BEHAVIOR_GOAL_TYPES.includes(type) && <BehaviorTimeCharts type={type} recorded={behaviorRecorded} />}
+        {behaviorRecorded.length > 0 && BEHAVIOR_GOAL_TYPES.includes(toolTypeOf(type)) && <BehaviorTimeCharts type={type} recorded={behaviorRecorded} />}
         {notes.length > 0 && (
           <div>
             <p className="text-sm font-medium mb-1">Recent notes</p>
