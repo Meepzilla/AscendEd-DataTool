@@ -270,7 +270,7 @@ export default function GoalTemplatesPage() {
                        {template.sessionTargetValue !== undefined && (
                           <div>
                               <p className="font-medium text-muted-foreground">Session Target:</p>
-                              <p className="text-foreground">{formatGoalTarget(template.type, template.sessionTargetValue, template.targetDirection)}</p>
+                              <p className="text-foreground">{formatGoalTarget(template.type, template.sessionTargetValue, template.targetDirection, template.sessionTargetUses)}</p>
                           </div>
                       )}
                     </CardContent>

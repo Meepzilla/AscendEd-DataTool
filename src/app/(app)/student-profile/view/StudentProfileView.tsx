@@ -311,7 +311,7 @@ export default function StudentProfileView() {
                         {goal.sessionTargetValue !== undefined && (
                           <Badge variant="outline">
                             <TrendingUp className="mr-1.5 h-3.5 w-3.5 text-green-700 dark:text-green-600" />
-                            Target: {formatGoalTarget(captureTypeOf(goal), goal.sessionTargetValue, goal.targetDirection)}
+                            Target: {formatGoalTarget(captureTypeOf(goal), goal.sessionTargetValue, goal.targetDirection, goal.sessionTargetUses)}
                           </Badge>
                         )}
                         {goal.isArchived && <Badge variant="outline" className="border-orange-500 text-orange-700 dark:text-orange-600">Archived</Badge>}
