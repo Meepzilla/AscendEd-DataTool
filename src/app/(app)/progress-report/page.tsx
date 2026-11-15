@@ -1,6 +1,7 @@
 'use client';
 
 import React, { Suspense, useEffect, useMemo, useState } from 'react';
+import { defaultReportStudent, rememberReportStudent } from '@/lib/report-student';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -56,7 +57,15 @@ function ProgressReportPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const activeStudents = useMemo(() => students.filter(s => !s.isArchived), [students]);
-  const studentId = searchParams.get('studentId') ?? activeStudents[0]?.id;
+  // Without a student in the address: the one chosen last time on this device (shared with Reports), else the
+  // first. Read after the page has loaded, so the first paint matches the static page.
+  const queryStudentId = searchParams.get('studentId');
+  const [rememberedId, setRememberedId] = useState<string | undefined>();
+  useEffect(() => { setRememberedId(defaultReportStudent(activeStudents.map(s => s.id))); }, [activeStudents]);
+  const studentId = queryStudentId ?? rememberedId ?? activeStudents[0]?.id;
+  useEffect(() => {
+    if (queryStudentId && activeStudents.some(s => s.id === queryStudentId)) rememberReportStudent(queryStudentId);
+  }, [queryStudentId, activeStudents]);
   const student = students.find(s => s.id === studentId);
   const activeGoals = useMemo(() => student?.goals.filter(g => !g.isArchived) ?? [], [student]);
 

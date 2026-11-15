@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, lazy, Suspense } from 'react';
+import { defaultReportStudent, rememberReportStudent } from '@/lib/report-student';
 import { useStudentData } from '@/hooks/use-student-data';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -55,6 +56,8 @@ export default function AnalysisReportPage() {
       // If the state is not in sync with the URL, update it.
       if (selectedStudentId !== studentIdFromQuery) {
         setSelectedStudentId(studentIdFromQuery);
+        // Remembered for the next visit, however the student was chosen (the picker, a link from a profile).
+        if (activeStudents.some(s => s.id === studentIdFromQuery)) rememberReportStudent(studentIdFromQuery);
         // The goal filter was for the previous student's goals.
         setSelectedGoalId(undefined);
       }
@@ -62,7 +65,8 @@ export default function AnalysisReportPage() {
     // Case 2: URL has no student ID, we're not loading, students exist, and no student is selected yet.
     // This is the default case on first load.
     else if (!studentsLoading && activeStudents.length > 0 && !selectedStudentId) {
-      const firstStudentId = activeStudents[0].id;
+      // The student chosen last time on this device, else the first student.
+      const firstStudentId = defaultReportStudent(activeStudents.map(s => s.id))!;
       setSelectedStudentId(firstStudentId);
       // Update the URL to reflect this default selection.
       router.replace(`/analysis-report?studentId=${firstStudentId}`, { scroll: false });
@@ -88,6 +92,7 @@ export default function AnalysisReportPage() {
 
   const handleStudentChange = (value: string) => {
     setSelectedStudentId(value);
+    rememberReportStudent(value);
     setSelectedGoalId(undefined); // Reset goal selection when student changes
     router.push(`/analysis-report?studentId=${value}`, { scroll: false });
   };

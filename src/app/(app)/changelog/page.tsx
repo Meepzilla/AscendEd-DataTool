@@ -18,6 +18,13 @@ interface ChangelogEntry {
 
 const allChangelogEntries: ChangelogEntry[] = [
   {
+    date: '2026-11-15',
+    title: 'Reports Remembers the Student You Chose',
+    description: 'Reports and the Progress Report now open on the student you looked at last, instead of going back to the first student on the list. The choice is kept on this device, so it is still there after switching to Data Entry or another page, closing the app, or reloading. If that student has since been archived or deleted, the page opens on the first student as before.',
+    type: 'improvement',
+    icon: UserSearch,
+  },
+  {
     date: '2026-11-14',
     title: 'Four Goal Types for Communication Goals Measured by Counts, Minutes and Opportunities',
     description: 'Communication goals that are counted or timed no longer have to be recorded as behavior goals. Four new goal types use the same tools with communication wording: Communication Count (tap each time the student uses a skill), Communication Duration (time joint attention, play or engagement), Response Time (seconds from a question or prompt to the response) and Communication Opportunities (mark each opportunity as used or not, with prompt levels). Count and Duration aim to increase unless you choose otherwise, and their screens and reports say "times" and "response" instead of "behavior". In the goal bank, 24 goals moved to the new types: the 15 Behavior Replacement and Regulation goals (such as asking for a break or saying how they feel) are now Communication Opportunities instead of Behavior ABC, 5 goals timed in minutes are Communication Duration, and 4 counted goals are Communication Count. Goals already assigned to students stay as they are, with their sessions; to switch one, change its Data Capture Method in Edit Goal.',
