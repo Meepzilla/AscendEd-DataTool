@@ -60,6 +60,7 @@ export interface AssignedGoalFormValues {
   name?: string;
   smartGoal?: string;
   sessionTargetValue?: number | string;
+  sessionTargetUses?: number | string;
   targetDate?: string;
   taskSteps?: string | string[];
   baseline?: number | string;
@@ -119,6 +120,9 @@ export function assignedGoalChanges(original: Goal, values: AssignedGoalFormValu
   if (values.sessionTargetValue !== undefined && formatTarget(values.sessionTargetValue) !== formatTarget(original.sessionTargetValue)) {
     changes.push({ label: 'Session target', from: formatTarget(original.sessionTargetValue), to: formatTarget(values.sessionTargetValue) });
   }
+  if (values.sessionTargetUses !== undefined && formatTarget(values.sessionTargetUses) !== formatTarget(original.sessionTargetUses)) {
+    changes.push({ label: 'Minimum uses per session', from: formatTarget(original.sessionTargetUses), to: formatTarget(values.sessionTargetUses) });
+  }
   if (values.targetDate !== undefined && formatDate(values.targetDate) !== formatDate(original.targetDate)) {
     changes.push({ label: 'Target date', from: formatDate(original.targetDate), to: formatDate(values.targetDate) });
   }
@@ -169,6 +173,7 @@ export interface GoalTemplateFormValues {
   generatedSmartGoal?: string;
   gasLevelDescriptions?: string[];
   sessionTargetValue?: number | string;
+  sessionTargetUses?: number | string;
   targetDirection?: TargetDirection;
 }
 
@@ -191,6 +196,9 @@ export function goalTemplateChanges(original: GoalTemplate, values: GoalTemplate
   }
   if (values.sessionTargetValue !== undefined && formatTarget(values.sessionTargetValue) !== formatTarget(original.sessionTargetValue)) {
     changes.push({ label: 'Session target', from: formatTarget(original.sessionTargetValue), to: formatTarget(values.sessionTargetValue) });
+  }
+  if (values.sessionTargetUses !== undefined && formatTarget(values.sessionTargetUses) !== formatTarget(original.sessionTargetUses)) {
+    changes.push({ label: 'Minimum uses per session', from: formatTarget(original.sessionTargetUses), to: formatTarget(values.sessionTargetUses) });
   }
   if (values.gasLevelDescriptions !== undefined) {
     const originalGas = Array.from({ length: 5 }, (_, i) => original.gasLevelDescriptions?.[i] ?? '');

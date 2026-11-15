@@ -131,7 +131,7 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
                               <Badge variant="secondary" className="mt-0.5 text-xs">{goalTypeLabel(template.type)}</Badge>
                               {template.category && <Badge variant="outline" className="mt-0.5 ml-1 text-xs">{template.category}</Badge>}
                               {template.sessionTargetValue !== undefined && (
-                                <p className="text-xs text-muted-foreground mt-0.5">Target: {formatGoalTarget(template.type, template.sessionTargetValue, template.targetDirection)}</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">Target: {formatGoalTarget(template.type, template.sessionTargetValue, template.targetDirection, template.sessionTargetUses)}</p>
                               )}
                           </div>
                           {selectedTemplates.has(template.id) && <Check className="h-4 w-4 ml-2 text-primary-foreground" />}

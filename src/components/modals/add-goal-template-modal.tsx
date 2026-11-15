@@ -40,6 +40,7 @@ export default function AddGoalTemplateModal() {
       smartGoalPrompt: '',
       generatedSmartGoal: '',
       sessionTargetValue: undefined,
+      sessionTargetUses: undefined,
     },
   });
   
@@ -57,6 +58,7 @@ export default function AddGoalTemplateModal() {
         smartGoalPrompt: addGoalTemplateInitialPrompt || '',
         generatedSmartGoal: '',
         sessionTargetValue: undefined,
+        sessionTargetUses: undefined,
       });
     }
   }, [isAddGoalTemplateModalOpen, addGoalTemplateInitialPrompt, form, sortedGoalTypes]);
@@ -231,6 +233,35 @@ export default function AddGoalTemplateModal() {
               </FormItem>
             )}
           />
+
+          {/* Communication Functions templates can pair the functions target with a minimum total of uses,
+              for goals worded "at least 5 times for at least 2 different functions". */}
+          {(form.watch('dataCaptureType') || form.watch('type')) === 'COMMUNICATION_FUNCTIONS' && (
+            <FormField
+              control={form.control}
+              name="sessionTargetUses"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Minimum Total Uses per Session (Optional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      placeholder="e.g., 5"
+                      {...field}
+                      value={field.value ?? ''}
+                      onChange={e => field.onChange(e.target.value === '' ? '' : Number(e.target.value))}
+                      min="0"
+                      max="1000"
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    A session counts toward the target only when the student also reaches this many spontaneous uses in total, across all functions. Leave blank for no minimum.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
 
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={closeAddGoalTemplateModal} disabled={isSubmitting || dataLoading}>

@@ -4,7 +4,7 @@ import {
   median, summarizeDuration, summarizeFrequency, summarizeIntervals, summarizeLatency,
   COMMUNICATION_FUNCTIONS, STORY_PARTS, averageStoryPart, STORY_LINKING_WORDS, linkingWordField, topTied, joinWithAnd, type AbcIncident,
 } from './goal-constants';
-import { goalMeasure, goalMeasureInfo, goalNotes, goalResponses, meetsTarget, promptTotals, usesPromptCounters, withoutRunningTimers } from './goal-measures';
+import { goalMeasure, goalMeasureInfo, goalNotes, goalResponses, sessionMeetsTarget, promptTotals, usesPromptCounters, withoutRunningTimers } from './goal-measures';
 import { compareSessionsOldestFirst, formatDate, formatDateOnly, formatGoalTarget, goalTypeLabel, parseDateOnly, plural } from './helpers';
 import { timePatterns, TIMING_MEASURE_LABELS, WEEKDAY_NAMES } from './behavior-timing';
 import { formatGasLevel, gasLevelLabel } from './gas';
@@ -190,7 +190,7 @@ function analyzeGoal(goal: Goal, number: number, sessions: SessionData[]): GoalA
   const latestUnanswered = !!lastRow && lastRow.value === null;
   const values = recorded.map(r => r.value);
   const target = goal.sessionTargetValue;
-  const met = values.map(v => target !== undefined && meetsTarget(goal, v, target));
+  const met = recorded.map(r => target !== undefined && sessionMeetsTarget(goal, r.data, target));
   // The streak runs back from the latest session over every session with data, in date order: a latency
   // session with no response (no time to chart) still breaks it, since the target can't have been met in it.
   const timeline = [...recorded.map((r, i) => ({ session: r.session, met: met[i] })), ...unmeasuredRows.map(r => ({ session: r.session, met: false }))]
@@ -450,7 +450,7 @@ function timingSentence(type: string, recorded: { session: SessionData; data: Re
 
 function goalHeading(a: GoalAnalysis): string {
   const type = captureTypeOf(a.goal);
-  return `Goal ${a.number}: ${a.goal.name} (${goalTypeLabel(type)}${a.target !== undefined ? `; target ${type === 'GOAL_ATTAINMENT_SCALE' ? `level ${formatGasLevel(a.target)}` : formatGoalTarget(type, a.target, a.goal.targetDirection)}` : ''})`;
+  return `Goal ${a.number}: ${a.goal.name} (${goalTypeLabel(type)}${a.target !== undefined ? `; target ${type === 'GOAL_ATTAINMENT_SCALE' ? `level ${formatGasLevel(a.target)}` : formatGoalTarget(type, a.target, a.goal.targetDirection, a.goal.sessionTargetUses)}` : ''})`;
 }
 
 function targetSentence(a: GoalAnalysis): string | null {
@@ -652,7 +652,7 @@ export function buildProgressReport({ student, goals, sessions }: Omit<Narrative
       goal,
       number: a.number,
       typeLabel: goalTypeLabel(type),
-      targetLabel: a.target !== undefined ? formatGoalTarget(type, a.target, goal.targetDirection) : null,
+      targetLabel: a.target !== undefined ? formatGoalTarget(type, a.target, goal.targetDirection, goal.sessionTargetUses) : null,
       points: a.recorded.map(r => ({ date: r.session.date, value: r.value })),
       average: has && a.values.length > 1 ? formatValue(goal, a.average) : has ? formatValue(goal, a.latest!.value) : null,
       range: has && a.values.length > 1 && round(a.low) !== round(a.high) ? `${formatValue(goal, a.low)} – ${formatValue(goal, a.high)}` : null,

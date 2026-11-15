@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-15',
+    title: 'Communication Functions Goals Can Require a Number of Uses',
+    description: 'A Communication Functions goal can now carry both halves of a target like "at least 5 times for at least 2 different functions". In Edit Goal (and in the goal template editors), Minimum Total Uses per Session sits under the session target for these goals. A session then counts toward the target, and toward mastery, only when the student reaches the number of different functions and the total of spontaneous uses in the same session. The target shown on Reports, in Data Entry, and on the progress report names both halves. Goals without a minimum keep working exactly as before, and a worked session where the student used no functions now records a real 0 instead of reading as no data.',
+    type: 'feature',
+    icon: MessagesSquare,
+  },
+  {
+    date: '2026-11-15',
     title: 'Attendance Shows Minutes by Month and Day',
     description: 'The Attendance card on Reports now captures minutes as well as sessions held and missed. Under the By month chart, each month lists the minutes held that month, and the calendar month you are viewing shows its minutes under its name. Tap a marked day and each held session shows its own minutes, with the day\'s total underneath. Minutes come from each session\'s start and end times; a held session with no usable times counts as held and adds no minutes.',
     type: 'feature',

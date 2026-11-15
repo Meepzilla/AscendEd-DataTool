@@ -90,7 +90,7 @@ export function formatTime(date: Date | string): string {
  * qualitative observations, a number of different functions for communication functions, and for
  * behavior goals a count, minutes, % or seconds with "≤" (decrease goals, the default) or "≥" (increase goals).
  */
-export function formatGoalTarget(type: string, target: number, direction?: 'increase' | 'decrease'): string {
+export function formatGoalTarget(type: string, target: number, direction?: 'increase' | 'decrease', usesTarget?: number): string {
   // Communication goals measured by a count, minutes or seconds: "at least" unless set to decrease (a response
   // time aims down by default).
   if (type === 'COMMUNICATION_COUNT' || type === 'COMMUNICATION_DURATION' || type === 'RESPONSE_TIME') {
@@ -108,7 +108,12 @@ export function formatGoalTarget(type: string, target: number, direction?: 'incr
     if (type === 'BEHAVIOR_LATENCY') return `${sign} ${target} s average`;
     return direction === 'increase' ? `≥ ${target}% replacement skill` : `≤ ${plural(target, 'incident')}`;
   }
-  if (type === 'COMMUNICATION_FUNCTIONS') return plural(target, 'function');
+  if (type === 'COMMUNICATION_FUNCTIONS') {
+    // A goal worded "at least 5 times for at least 2 different functions" carries both halves.
+    return usesTarget && usesTarget > 0
+      ? `${plural(target, 'function')} and at least ${plural(usesTarget, 'use')}`
+      : plural(target, 'function');
+  }
   // Goal Attainment Scaling: the target is a level, not a percentage — 0 is the expected outcome.
   if (type === 'GOAL_ATTAINMENT_SCALE') return target === 0 ? 'level 0 (expected outcome)' : `level ${target}`;
   // Observation and cognitive goals are rated 1-5.

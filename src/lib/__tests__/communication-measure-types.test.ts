@@ -145,3 +145,12 @@ describe('goal bank goals moved to the communication measure types', () => {
     expect(applyDefaultTemplateUpdates([stored('BEHAVIOR_ABC', { isDefault: false })]).changed).toBe(false);
   });
 });
+
+describe('communication functions target text', () => {
+  it('names both halves of the target when a uses minimum is set', () => {
+    expect(formatGoalTarget('COMMUNICATION_FUNCTIONS', 2)).toBe('2 functions');
+    expect(formatGoalTarget('COMMUNICATION_FUNCTIONS', 2, undefined, 5)).toBe('2 functions and at least 5 uses');
+    expect(formatGoalTarget('COMMUNICATION_FUNCTIONS', 1, undefined, 1)).toBe('1 function and at least 1 use');
+    expect(formatGoalTarget('COMMUNICATION_FUNCTIONS', 2, undefined, 0)).toBe('2 functions');
+  });
+});
