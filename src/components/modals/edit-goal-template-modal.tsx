@@ -49,6 +49,7 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
       generatedSmartGoal: '',
       gasLevelDescriptions: [],
       sessionTargetValue: undefined,
+      sessionTargetUses: undefined,
     },
   });
   
@@ -66,6 +67,7 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
         generatedSmartGoal: currentTemplate.generatedSmartGoal,
         gasLevelDescriptions: Array.from({ length: 5 }, (_, i) => currentTemplate.gasLevelDescriptions?.[i] ?? ''),
         sessionTargetValue: currentTemplate.sessionTargetValue,
+        sessionTargetUses: currentTemplate.sessionTargetUses,
         targetDirection: currentTemplate.targetDirection,
       });
     }
@@ -73,10 +75,10 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
 
   // What changed, old to new, so the editor says plainly what saving will change. Compared against
   // the template as it was, not against the form's dirty flags, so only real differences are listed.
-  const watched = form.watch(['name', 'type', 'dataCaptureType', 'smartGoalPrompt', 'generatedSmartGoal', 'sessionTargetValue', 'targetDirection']);
+  const watched = form.watch(['name', 'type', 'dataCaptureType', 'smartGoalPrompt', 'generatedSmartGoal', 'sessionTargetValue', 'targetDirection', 'sessionTargetUses']);
   const changes = React.useMemo(() => currentTemplate ? goalTemplateChanges(currentTemplate, {
     name: watched[0], type: watched[1], dataCaptureType: watched[2], smartGoalPrompt: watched[3],
-    generatedSmartGoal: watched[4], sessionTargetValue: watched[5], targetDirection: watched[6],
+    generatedSmartGoal: watched[4], sessionTargetValue: watched[5], targetDirection: watched[6], sessionTargetUses: watched[7],
   }) : [], [currentTemplate, watched]);
 
   const onSubmit = async (data: EditGoalTemplateFormData) => {
@@ -259,6 +261,35 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
               </FormItem>
             )}
           />
+
+          {/* Communication Functions templates can pair the functions target with a minimum total of uses,
+              for goals worded "at least 5 times for at least 2 different functions". */}
+          {(form.watch('dataCaptureType') || form.watch('type')) === 'COMMUNICATION_FUNCTIONS' && (
+            <FormField
+              control={form.control}
+              name="sessionTargetUses"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Minimum Total Uses per Session (Optional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      placeholder="e.g., 5"
+                      {...field}
+                      value={field.value ?? ''}
+                      onChange={e => field.onChange(e.target.value === '' ? '' : Number(e.target.value))}
+                      min="0"
+                      max="1000"
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    A session counts toward the target only when the student also reaches this many spontaneous uses in total, across all functions. Leave blank for no minimum.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
 
           <GoalChangeSummary changes={changes} />
 

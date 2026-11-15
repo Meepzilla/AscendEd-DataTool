@@ -9,7 +9,7 @@ import {
   BEHAVIOR_GOAL_TYPES, captureTypeOf, toolTypeOf, summarizeLatency, goalDirection, summarizeAbc, scoreStory, averageStoryPart, STORY_PARTS, STORY_LINKING_WORDS, linkingWordField, COMMUNICATION_FUNCTIONS,
   type AbcIncident,
 } from '@/lib/goal-constants';
-import { goalMeasure, goalMeasureInfo, goalResponses, goalNotes, meetsTarget, promptTotals, usesPromptCounters, withoutRunningTimers } from '@/lib/goal-measures';
+import { goalMeasure, goalMeasureInfo, goalResponses, goalNotes, sessionMeetsTarget, promptTotals, usesPromptCounters, withoutRunningTimers } from '@/lib/goal-measures';
 import { formatDate, formatGoalTarget, goalTypeLabel, parseDateOnly } from '@/lib/helpers';
 import BehaviorTimeCharts from './BehaviorTimeCharts';
 import { goalCardId } from './goal-card-id';
@@ -223,7 +223,7 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
   const hasResponses = goalResponses(type) !== null && points.length > 0;
   const values = recorded.map(r => r.value);
   const average = values.length ? round(values.reduce((a, b) => a + b, 0) / values.length) : null;
-  const metCount = target === undefined ? null : values.filter(v => meetsTarget(goal, v, target)).length;
+  const metCount = target === undefined ? null : recorded.filter(r => sessionMeetsTarget(goal, r.data, target)).length;
   // GAS levels run -2 to +2, so the card's Y scale must span the negative domain; every other
   // type keeps its [0, yMax] scale. The bottom comes from GoalMeasureInfo.min (Track A).
   const isGas = type === 'GOAL_ATTAINMENT_SCALE';
@@ -241,7 +241,7 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
     ...(onTrack ? [{ label: 'Aim line', value: AIM_STATUS_LABELS[onTrack], explanation: explain.aimLine }] : []),
   ];
   // Mastered: the target met in the last `mastery` sessions in a row.
-  const mastered = target !== undefined && values.length >= mastery && values.slice(-mastery).every(v => meetsTarget(goal, v, target));
+  const mastered = target !== undefined && recorded.length >= mastery && recorded.slice(-mastery).every(r => sessionMeetsTarget(goal, r.data, target));
 
   return (
     <Card id={goalCardId(goal.id)} className="lg:col-span-2 scroll-mt-20">
@@ -249,7 +249,7 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
         <CardTitle><ExpandableGoalName goal={goal} studentName={studentName} studentIep={studentIep} /></CardTitle>
         <CardDescription>
           {goalTypeLabel(type)} · {info.label} per session
-          {target !== undefined && ` · Target ${formatGoalTarget(type, target, goal.targetDirection)}`}
+          {target !== undefined && ` · Target ${formatGoalTarget(type, target, goal.targetDirection, goal.sessionTargetUses)}`}
           {storyWords !== null && ` · ${storyWords} linking words`}
           {target !== undefined && ` · Mastery: ${mastery} in a row`}
           {mastered && <span className="ml-2 inline-block rounded-full border border-green-500/50 bg-green-500/15 px-2 py-0.5 text-xs font-semibold text-green-700 dark:text-green-400">Mastered</span>}

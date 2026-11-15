@@ -51,6 +51,10 @@ export interface Goal {
   dataCaptureType?: GoalType; // NEW: Specifies which data entry UI to use
   smartGoal: string;
   sessionTargetValue?: number; // Target percentage (0-100) or specific count for some qualitative goals
+  /** COMMUNICATION_FUNCTIONS only: the minimum total spontaneous uses per session that must accompany the
+   *  functions target (a goal worded "at least 5 times for at least 2 different functions"). Unset or 0
+   *  means the functions target alone decides, as before. */
+  sessionTargetUses?: number;
   targetDirection?: TargetDirection; // Defaults by goal type; see goalDirection()
   isArchived?: boolean; // New field for archiving
   /** The template the goal was assigned from, so it is still recognized after the student's copy is renamed. */
@@ -115,7 +119,9 @@ export interface GoalTemplate {
   smartGoalPrompt: string;
   generatedSmartGoal: string;
   sessionTargetValue?: number; // Target percentage (0-100) or specific count
-  createdAt: Date; 
+  /** COMMUNICATION_FUNCTIONS only: the minimum total spontaneous uses per session, alongside the functions target. */
+  sessionTargetUses?: number;
+  createdAt: Date;
   isDefault: boolean;
   userId?: string;
   isArchived?: boolean;
@@ -273,6 +279,10 @@ export const GoalTemplateSchema = z.object({
     (val) => (val === "" || val === undefined || val === null ? undefined : Number(val)),
     z.number().min(0, "Target must be 0 or greater.").max(100, "Target percentage cannot exceed 100.").optional()
   ).describe("Target percentage (0-100), or a specific rating for qualitative goals."),
+  sessionTargetUses: z.preprocess(
+    (val) => (val === "" || val === undefined || val === null ? undefined : Number(val)),
+    z.number().min(0, "Minimum uses must be 0 or greater.").max(1000, "Minimum uses cannot exceed 1000.").optional()
+  ).describe("Communication Functions only: the minimum total spontaneous uses per session, alongside the functions target."),
   isArchived: z.boolean().optional(),
 });
 
@@ -285,6 +295,10 @@ export const AssignedGoalEditSchema = z.object({
     (val) => (val === "" || val === undefined || val === null ? undefined : Number(val)),
     z.number().min(0, "Target must be 0 or greater.").max(100, "Target percentage cannot exceed 100 for most goals.").optional()
   ).describe("Target percentage (0-100), or a specific rating for qualitative goals."),
+  sessionTargetUses: z.preprocess(
+    (val) => (val === "" || val === undefined || val === null ? undefined : Number(val)),
+    z.number().min(0, "Minimum uses must be 0 or greater.").max(1000, "Minimum uses cannot exceed 1000.").optional()
+  ).describe("Communication Functions only: the minimum total spontaneous uses per session, alongside the functions target."),
   targetDate: z.preprocess(
     (val) => (val === '' || val === null ? undefined : val),
     z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter a valid date.').optional()

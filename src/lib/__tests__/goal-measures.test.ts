@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { goalMeasure, goalResponses } from '../goal-measures';
+import { goalMeasure, goalResponses, sessionMeetsTarget } from '../goal-measures';
 
 describe('goalResponses', () => {
   it('keeps a real 0 instead of falling through to another field', () => {
@@ -47,5 +47,30 @@ describe('goalMeasure', () => {
     expect(goalMeasure({ type: 'BEHAVIOR_FREQUENCY' }, { count: -3, recorded: true })).toBe(0);
     expect(goalMeasure({ type: 'BEHAVIOR_FREQUENCY' }, { count: 0, recorded: true })).toBe(0);
     expect(goalMeasure({ type: 'BEHAVIOR_FREQUENCY' }, { count: 0 })).toBeNull();
+  });
+});
+
+describe('communication functions measure and target', () => {
+  it('reads a worked session with no functions used as a real 0, not no data', () => {
+    expect(goalMeasure({ type: 'COMMUNICATION_FUNCTIONS' }, { recorded: true })).toBe(0);
+    expect(goalMeasure({ type: 'COMMUNICATION_FUNCTIONS' }, {})).toBeNull();
+    expect(goalMeasure({ type: 'COMMUNICATION_FUNCTIONS' }, { requestingItemsSpontaneous: 2, commentingSpontaneous: 1 })).toBe(2);
+  });
+
+  it('requires the functions target and the uses minimum together when a minimum is set', () => {
+    // Two functions and five spontaneous uses in total: met.
+    expect(sessionMeetsTarget({ type: 'COMMUNICATION_FUNCTIONS', sessionTargetUses: 5 }, { requestingItemsSpontaneous: 3, commentingSpontaneous: 2 }, 2)).toBe(true);
+    // Two functions but only three uses: the uses half is short.
+    expect(sessionMeetsTarget({ type: 'COMMUNICATION_FUNCTIONS', sessionTargetUses: 5 }, { requestingItemsSpontaneous: 2, commentingSpontaneous: 1 }, 2)).toBe(false);
+    // Five uses of a single function: the functions half is short.
+    expect(sessionMeetsTarget({ type: 'COMMUNICATION_FUNCTIONS', sessionTargetUses: 5 }, { requestingItemsSpontaneous: 5 }, 2)).toBe(false);
+    // Prompted uses do not count toward the minimum.
+    expect(sessionMeetsTarget({ type: 'COMMUNICATION_FUNCTIONS', sessionTargetUses: 5 }, { requestingItemsSpontaneous: 1, commentingSpontaneous: 1, requestingItemsPrompted: 4 }, 2)).toBe(false);
+  });
+
+  it('keeps the functions-only check when no uses minimum is set', () => {
+    expect(sessionMeetsTarget({ type: 'COMMUNICATION_FUNCTIONS' }, { requestingItemsSpontaneous: 2, commentingSpontaneous: 1 }, 2)).toBe(true);
+    expect(sessionMeetsTarget({ type: 'COMMUNICATION_FUNCTIONS' }, { requestingItemsSpontaneous: 2 }, 2)).toBe(false);
+    expect(sessionMeetsTarget({ type: 'COMMUNICATION_FUNCTIONS' }, {}, 2)).toBe(false);
   });
 });

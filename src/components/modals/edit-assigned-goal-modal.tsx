@@ -52,6 +52,7 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
       name: '',
       smartGoal: '',
       sessionTargetValue: undefined,
+      sessionTargetUses: undefined,
       isArchived: false,
       dataCaptureType: undefined,
     },
@@ -63,6 +64,7 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
         name: goalToEdit.name,
         smartGoal: goalToEdit.smartGoal,
         sessionTargetValue: goalToEdit.sessionTargetValue,
+        sessionTargetUses: goalToEdit.sessionTargetUses,
         targetDate: goalToEdit.targetDate ?? '',
         taskSteps: (goalToEdit.taskSteps ?? []).join('\n') as unknown as string[],
         baseline: goalToEdit.baseline ?? ('' as unknown as number),
@@ -79,12 +81,12 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
 
   // What changed, old to new, so the editor says plainly what saving will change. Compared against
   // the goal as it was, not against the form's dirty flags, so only real differences are listed.
-  const watched = form.watch(['name', 'smartGoal', 'sessionTargetValue', 'targetDate', 'taskSteps', 'baseline', 'baselineDate', 'gasLevelDescriptions', 'masterySessions', 'blankFills', 'targetDirection', 'isArchived', 'dataCaptureType']);
+  const watched = form.watch(['name', 'smartGoal', 'sessionTargetValue', 'targetDate', 'taskSteps', 'baseline', 'baselineDate', 'gasLevelDescriptions', 'masterySessions', 'blankFills', 'targetDirection', 'isArchived', 'dataCaptureType', 'sessionTargetUses']);
   const changes = React.useMemo(() => assignedGoalChanges(goalToEdit, {
     name: watched[0], smartGoal: watched[1], sessionTargetValue: watched[2], targetDate: watched[3],
     taskSteps: watched[4], baseline: watched[5], baselineDate: watched[6], gasLevelDescriptions: watched[7],
     masterySessions: watched[8], blankFills: watched[9], targetDirection: watched[10], isArchived: watched[11],
-    dataCaptureType: watched[12],
+    dataCaptureType: watched[12], sessionTargetUses: watched[13],
   }), [goalToEdit, watched]);
 
   const onSubmit = async (data: EditAssignedGoalFormData) => {
@@ -253,6 +255,35 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
               </FormItem>
             )}
           />
+
+          {/* Communication Functions goals can pair the functions target with a minimum total of uses,
+              for goals worded "at least 5 times for at least 2 different functions". */}
+          {(form.watch('dataCaptureType') ?? goalToEdit?.dataCaptureType ?? goalToEdit?.type) === 'COMMUNICATION_FUNCTIONS' && (
+            <FormField
+              control={form.control}
+              name="sessionTargetUses"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Minimum Total Uses per Session (Optional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      placeholder="e.g., 5"
+                      {...field}
+                      value={field.value ?? ''}
+                      onChange={e => field.onChange(e.target.value === '' ? '' : Number(e.target.value))}
+                      min="0"
+                      max="1000"
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    A session counts toward the target only when the student also reaches this many spontaneous uses in total, across all functions. Leave blank for no minimum.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
 
           <FormField
             control={form.control}

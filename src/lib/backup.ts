@@ -73,6 +73,7 @@ const BackupGoalSchema = z.object({
   dataCaptureType: z.string().optional(),
   smartGoal: z.string().optional(),
   sessionTargetValue: z.number().optional(),
+  sessionTargetUses: z.number().optional(),
   targetDirection: z.enum(['increase', 'decrease']).optional(),
   isArchived: z.boolean().optional(),
   templateId: z.string().optional(),
@@ -116,6 +117,7 @@ const BackupTemplateSchema = z.object({
   smartGoalPrompt: z.string().optional(),
   generatedSmartGoal: z.string().optional(),
   sessionTargetValue: z.number().optional(),
+  sessionTargetUses: z.number().optional(),
   // Checked after parsing: a present-but-invalid createdAt drops the template, with a warning.
   createdAt: z.unknown().optional(),
   isDefault: z.boolean().optional(),
@@ -197,8 +199,8 @@ function extractSettings(raw: unknown): { settings?: BackupSettings; droppedSett
 // Fields restore knows about, for reporting fields that were present and stripped.
 const KNOWN_KEYS: Record<string, Set<string>> = {
   student: new Set(['id', 'name', 'goals', 'createdAt', 'updatedAt', 'userId', 'isArchived', 'iep']),
-  goal: new Set(['id', 'name', 'type', 'dataCaptureType', 'smartGoal', 'sessionTargetValue', 'targetDirection', 'isArchived', 'templateId', 'targetDate', 'baseline', 'baselineDate', 'masterySessions', 'taskSteps', 'blankFills', 'gasLevelDescriptions']),
-  template: new Set(['id', 'name', 'type', 'dataCaptureType', 'smartGoalPrompt', 'generatedSmartGoal', 'sessionTargetValue', 'createdAt', 'isDefault', 'userId', 'isArchived', 'category', 'source', 'bankId', 'targetDirection', 'retired', 'baseline', 'taskSteps', 'defaultKey', 'deleted', 'gasLevelDescriptions']),
+  goal: new Set(['id', 'name', 'type', 'dataCaptureType', 'smartGoal', 'sessionTargetValue', 'sessionTargetUses', 'targetDirection', 'isArchived', 'templateId', 'targetDate', 'baseline', 'baselineDate', 'masterySessions', 'taskSteps', 'blankFills', 'gasLevelDescriptions']),
+  template: new Set(['id', 'name', 'type', 'dataCaptureType', 'smartGoalPrompt', 'generatedSmartGoal', 'sessionTargetValue', 'sessionTargetUses', 'createdAt', 'isDefault', 'userId', 'isArchived', 'category', 'source', 'bankId', 'targetDirection', 'retired', 'baseline', 'taskSteps', 'defaultKey', 'deleted', 'gasLevelDescriptions']),
   session: new Set(['sessionId', 'studentId', 'studentName', 'date', 'time', 'endTime', 'activity', 'notes', 'goals', 'originalGoalHeaders', 'missed', 'serviceMinutes', 'userId']),
   sessionGoal: new Set(['goalId', 'goalName', 'goalType', 'data']),
   iep: new Set(['iepDate', 'annualReviewDate', 'reevaluationDate', 'serviceMinutes', 'servicePer', 'services']),

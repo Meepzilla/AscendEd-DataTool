@@ -63,7 +63,7 @@ export function promptTotals(data: Record<string, any> = {}): Record<string, num
 const RATING_TYPES: string[] = ['QUALITATIVE_OBSERVATION', 'COGNITIVE'];
 
 /** The goal fields measuring needs; goals are measured by the type their data was entered as. */
-type MeasuredGoal = Pick<Goal, 'type' | 'targetDirection' | 'dataCaptureType'>;
+type MeasuredGoal = Pick<Goal, 'type' | 'targetDirection' | 'dataCaptureType' | 'sessionTargetUses'>;
 const DEFAULT_RATING = 3;
 
 export function goalMeasureInfo(goal: MeasuredGoal): GoalMeasureInfo {
@@ -150,7 +150,10 @@ export function goalMeasure(goal: MeasuredGoal, data: Record<string, any> = {}):
     }
     case 'COMMUNICATION_FUNCTIONS': {
       const summary = summarizeCommunicationFunctions(data);
-      return summary.spontaneous + summary.prompted > 0 ? Math.max(0, summary.functionsUsedSpontaneously) : null;
+      if (summary.spontaneous + summary.prompted > 0) return Math.max(0, summary.functionsUsedSpontaneously);
+      // A worked session in which the student used no functions is a real 0, not no data: Data Entry marks
+      // the goal as recorded when it was worked on, as the story and rating branches above also check.
+      return data.recorded === true ? 0 : null;
     }
     case 'PROMPTING':
       return promptCount > 0 ? (prompts.Independent / promptCount) * 100 : null;
@@ -182,6 +185,25 @@ export function goalMeasure(goal: MeasuredGoal, data: Record<string, any> = {}):
 export function meetsTarget(goal: MeasuredGoal, value: number, target: number): boolean {
   const shown = Math.round(value * 10) / 10;
   return goalDirection(goal) === 'decrease' ? shown <= target : shown >= target;
+}
+
+/**
+ * Whether one session's data met the goal's target. For most goal types this is meetsTarget on the
+ * session's measure. A Communication Functions goal can also carry a minimum total of spontaneous uses
+ * (sessionTargetUses), for goals worded "at least 5 times for at least 2 different functions": the session
+ * then counts only when it reaches the functions target and the uses minimum together. A session with no
+ * measure never met the target.
+ */
+export function sessionMeetsTarget(goal: MeasuredGoal, data: Record<string, any>, target: number): boolean {
+  const value = goalMeasure(goal, data);
+  if (value === null || !meetsTarget(goal, value, target)) return false;
+  if (toolTypeOf(captureTypeOf(goal)) === 'COMMUNICATION_FUNCTIONS') {
+    const uses = goal.sessionTargetUses;
+    if (typeof uses === 'number' && uses > 0) {
+      return summarizeCommunicationFunctions(data).spontaneous >= uses;
+    }
+  }
+  return true;
 }
 
 export function usesPromptCounters(type: string): boolean {

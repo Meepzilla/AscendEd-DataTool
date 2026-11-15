@@ -1,6 +1,6 @@
 import type { Goal, TargetDirection } from './types';
 import { captureTypeOf, goalDirection } from './goal-constants';
-import { goalMeasureInfo, goalResponses, meetsTarget } from './goal-measures';
+import { goalMeasureInfo, goalResponses, sessionMeetsTarget } from './goal-measures';
 import { AIM_RULE_SESSIONS, aimValueAt, type AimLine } from './aim-line';
 import { formatDate, formatDateOnly, formatGoalTarget } from './helpers';
 
@@ -86,8 +86,8 @@ export function goalStatExplanations(
   const lastResponses = last ? goalResponses(type, last.data) : null;
   const working = lastResponses ? responsesWorking(lastResponses, type === 'FEEDING_SWALLOWING') : null;
   const average = averageWorking(values, info.unit);
-  const met = target === undefined ? 0 : values.filter(v => meetsTarget(goal, v, target)).length;
-  const targetText = target === undefined ? '' : formatGoalTarget(type, target, goal.targetDirection);
+  const met = target === undefined ? 0 : recorded.filter(r => sessionMeetsTarget(goal, r.data, target)).length;
+  const targetText = target === undefined ? '' : formatGoalTarget(type, target, goal.targetDirection, goal.sessionTargetUses);
 
   let aimText = '';
   if (aim) {
