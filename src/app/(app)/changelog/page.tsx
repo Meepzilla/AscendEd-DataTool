@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-15',
+    title: 'Reports Page Reorganized',
+    description: 'Reports now reads from what matters most. An At a glance table at the top lists every goal with its progress status, latest value, average, target, how often the target was met, trend and aim line; tap a goal\'s name to jump to its chart. Goal by Goal comes next, then Goal Attainment Scaling. The charts that pool all goals together (totals, accuracy over time, responses, prompts and session flow) are in an All Goals Combined section that stays closed until you open it, and remembers whether you left it open. Response Counts and Total Opportunities, which showed the same numbers, are now one Responses per Session chart: stacked bars of correct, approximate and incorrect, where the height is the opportunities. Quick date buttons (Last 30 days, Last 9 weeks, School year, All) sit under the date picker. The date range and the goal chosen for each student are remembered on this device, like the student.',
+    type: 'improvement',
+    icon: LayoutGrid,
+  },
+  {
+    date: '2026-11-15',
     title: 'Attendance Chart and Calendar on Reports',
     description: 'Reports has a new Attendance card at the bottom of the page for the student and date range you chose. It shows how many sessions were held and missed, the share of sessions held, and the student\'s own attendance (which leaves out sessions missed because the provider was absent or there was no school). A bar chart shows held and missed sessions for each month, by reason, and a calendar marks each day a session was held or missed; tap a day to see its sessions and any note. Missed sessions are the ones recorded with the Missed button on a student\'s card in Data Entry.',
     type: 'feature',

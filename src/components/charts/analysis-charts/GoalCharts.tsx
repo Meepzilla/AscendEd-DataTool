@@ -12,6 +12,7 @@ import {
 import { goalMeasure, goalMeasureInfo, goalResponses, goalNotes, meetsTarget, promptTotals, usesPromptCounters, withoutRunningTimers } from '@/lib/goal-measures';
 import { formatDate, formatGoalTarget, goalTypeLabel, parseDateOnly } from '@/lib/helpers';
 import BehaviorTimeCharts from './BehaviorTimeCharts';
+import { goalCardId } from './goal-card-id';
 import StatTile from './StatTile';
 import { goalStatExplanations } from '@/lib/report-formulas';
 import type { TaskStepScore } from '@/lib/task-analysis';
@@ -243,7 +244,7 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
   const mastered = target !== undefined && values.length >= mastery && values.slice(-mastery).every(v => meetsTarget(goal, v, target));
 
   return (
-    <Card className="lg:col-span-2">
+    <Card id={goalCardId(goal.id)} className="lg:col-span-2 scroll-mt-20">
       <CardHeader>
         <CardTitle><ExpandableGoalName goal={goal} studentName={studentName} studentIep={studentIep} /></CardTitle>
         <CardDescription>

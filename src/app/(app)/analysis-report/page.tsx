@@ -3,6 +3,10 @@
 
 import React, { useState, useMemo, useEffect, lazy, Suspense } from 'react';
 import { defaultReportStudent, rememberReportStudent } from '@/lib/report-student';
+import {
+  QUICK_RANGES, QUICK_RANGE_LABELS, customRangeChoice, rangeChoiceDates, readGoalChoice, readRangeChoice, rememberGoalChoice,
+  rememberRangeChoice, type QuickRange, type RangeChoice,
+} from '@/lib/report-filters';
 import { useStudentData } from '@/hooks/use-student-data';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -39,12 +43,34 @@ export default function AnalysisReportPage() {
   const [selectedStudentId, setSelectedStudentId] = useState<string | undefined>(undefined);
   const [isCsvWarningOpen, setIsCsvWarningOpen] = useState(false);
   const [selectedGoalId, setSelectedGoalId] = useState<string | undefined>(undefined);
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  // The date filter: a quick range (worked out from today) or custom dates, remembered on this device.
+  const [rangeChoice, setRangeChoice] = useState<RangeChoice | null>(null);
+  useEffect(() => { setRangeChoice(readRangeChoice()); }, []);
+  const dateRange = useMemo<DateRange | undefined>(() => {
+    const span = rangeChoiceDates(rangeChoice);
+    return span?.from ? { from: span.from, to: span.to } : undefined;
+  }, [rangeChoice]);
+  const chooseRange = (choice: RangeChoice | null) => { setRangeChoice(choice); rememberRangeChoice(choice); };
+  const activeQuickRange: QuickRange | null = !rangeChoice ? 'all' : 'quick' in rangeChoice ? rangeChoice.quick : null;
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   const activeStudents = useMemo(() => students.filter(s => !s.isArchived), [students]);
   const selectedStudent = useMemo(() => students.find(s => s.id === selectedStudentId), [students, selectedStudentId]);
   const activeStudentGoals = useMemo(() => selectedStudent?.goals.filter(g => !g.isArchived) || [], [selectedStudent]);
+  // The goal filter belongs to the student: a newly chosen student gets the goal chosen for them last time
+  // (if it is still an active goal), else all goals.
+  const loadedStudentId = selectedStudent?.id;
+  useEffect(() => {
+    if (!loadedStudentId) return;
+    const student = students.find(s => s.id === loadedStudentId);
+    setSelectedGoalId(readGoalChoice(loadedStudentId, (student?.goals ?? []).filter(g => !g.isArchived).map(g => g.id)));
+    // Only when the student changes: goal edits don't reset the filter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadedStudentId]);
+  const chooseGoal = (goalId: string | undefined) => {
+    setSelectedGoalId(goalId);
+    if (loadedStudentId) rememberGoalChoice(loadedStudentId, goalId);
+  };
   // A student's report has been seen: ticks off "See their progress" on the dashboard's Getting Started.
   const hasSelectedStudent = !!selectedStudent;
   useEffect(() => { if (uid && hasSelectedStudent) markReportViewed(uid); }, [uid, hasSelectedStudent]);
@@ -59,8 +85,6 @@ export default function AnalysisReportPage() {
         setSelectedStudentId(studentIdFromQuery);
         // Remembered for the next visit, however the student was chosen (the picker, a link from a profile).
         if (activeStudents.some(s => s.id === studentIdFromQuery)) rememberReportStudent(studentIdFromQuery);
-        // The goal filter was for the previous student's goals.
-        setSelectedGoalId(undefined);
       }
     } 
     // Case 2: URL has no student ID, we're not loading, students exist, and no student is selected yet.
@@ -94,7 +118,6 @@ export default function AnalysisReportPage() {
   const handleStudentChange = (value: string) => {
     setSelectedStudentId(value);
     rememberReportStudent(value);
-    setSelectedGoalId(undefined); // Reset goal selection when student changes
     router.push(`/analysis-report?studentId=${value}`, { scroll: false });
   };
 
@@ -174,7 +197,7 @@ export default function AnalysisReportPage() {
               </SelectContent>
             </Select>
             {selectedStudent && (
-                <Select value={selectedGoalId} onValueChange={(value) => setSelectedGoalId(value === 'ALL_ACTIVE' ? undefined : value)}>
+                <Select value={selectedGoalId ?? 'ALL_ACTIVE'} onValueChange={(value) => chooseGoal(value === 'ALL_ACTIVE' ? undefined : value)}>
                     <SelectTrigger className="w-full md:w-[250px]" aria-label="Goal">
                         <SelectValue placeholder="Select Active Goal (Optional)" />
                     </SelectTrigger>
@@ -186,7 +209,15 @@ export default function AnalysisReportPage() {
                     </SelectContent>
                 </Select>
             )}
-            <DatePickerWithRange date={dateRange} setDate={setDateRange} className="w-full md:w-auto"/>
+            <DatePickerWithRange date={dateRange} setDate={range => chooseRange(customRangeChoice(range))} className="w-full md:w-auto"/>
+          </div>
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Quick date ranges">
+            {QUICK_RANGES.map(range => (
+              <Button key={range} type="button" size="sm" variant={activeQuickRange === range ? 'default' : 'outline'} className="min-h-11"
+                aria-pressed={activeQuickRange === range} onClick={() => chooseRange(range === 'all' ? null : { quick: range })}>
+                {QUICK_RANGE_LABELS[range]}
+              </Button>
+            ))}
           </div>
           {selectedStudent && attendance.missed > 0 && (
             <p className="text-sm text-muted-foreground">

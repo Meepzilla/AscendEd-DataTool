@@ -1444,6 +1444,10 @@ export async function disablePasscode(current: string): Promise<{ quarantined: Q
   };
   // Until no background write is pending, so none lands encrypted after the rows were made plaintext.
   for (let pass = 0; pass < 5; pass++) {
+    // A save started just before this (or during the last pass) is waited for, not raced: without the wait the
+    // passes could all finish while that one save was still encrypting, and turning protection off failed with
+    // "Data is still being saved" although nothing was wrong. A failed save was already reported where it failed.
+    await Promise.allSettled([...writing.values()]);
     await rewriteIdbRows(toPlain);
     if (writing.size === 0) break;
   }

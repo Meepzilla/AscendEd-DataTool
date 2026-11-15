@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useMemo, lazy, Suspense } from 'react';
+import React, { useEffect, useMemo, useState, lazy, Suspense } from 'react';
 import type { Student, SessionData, Goal, PromptType } from '@/lib/types';
 import { BEHAVIOR_GOAL_TYPES, captureTypeOf, toolTypeOf } from '@/lib/goal-constants';
 import { goalMeasure, goalResponses, withoutRunningTimers } from '@/lib/goal-measures';
@@ -11,12 +11,12 @@ import { GAS_LEVELS } from '@/lib/gas';
 import { PROMPT_TYPES } from '@/lib/promptConstants';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 // Lazy load the individual chart components
 const ProgressOverTimeChart = lazy(() => import('./analysis-charts/ProgressOverTimeChart'));
 const ResponseCountsChart = lazy(() => import('./analysis-charts/ResponseCountsChart'));
-const OpportunitiesChart = lazy(() => import('./analysis-charts/OpportunitiesChart'));
 const PerformanceScatterPlot = lazy(() => import('./analysis-charts/PerformanceScatterPlot'));
 const PromptUsageChart = lazy(() => import('./analysis-charts/PromptUsageChart'));
 const GoalPerformanceSankey = lazy(() => import('./analysis-charts/GoalPerformanceSankey'));
@@ -24,6 +24,7 @@ const SyllableFluencyChart = lazy(() => import('./analysis-charts/SyllableFluenc
 const DysfluencyTypesChart = lazy(() => import('./analysis-charts/DysfluencyTypesChart'));
 const DataSummary = lazy(() => import('./analysis-charts/DataSummary'));
 const GoalCharts = lazy(() => import('./analysis-charts/GoalCharts'));
+const GoalSummaryTable = lazy(() => import('./analysis-charts/GoalSummaryTable'));
 const GasTScoreLineChart = lazy(() => import('./analysis-charts/GasTScoreLineChart'));
 const GasSummaryTable = lazy(() => import('./analysis-charts/GasSummaryTable'));
 
@@ -181,6 +182,8 @@ export interface AnalysisChartsProps {
   sessionsLoading: boolean;
 }
 
+const COMBINED_OPEN_KEY = 'ascended_report_combined_open';
+
 const ChartSuspenseFallback = () => (
     <Card>
         <CardHeader><Skeleton className="h-7 w-1/3 mb-1" /><Skeleton className="h-4 w-1/2" /></CardHeader>
@@ -215,6 +218,16 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, studen
     return activeStudentGoals.some(g => captureTypeOf(g) === 'FLUENCY_SYLLABLE_STUTTER');
   }, [activeStudentGoals, selectedGoalId]);
 
+  // "All goals combined" starts closed; whether it was left open is remembered on this device.
+  const [showCombined, setShowCombinedState] = useState(false);
+  useEffect(() => {
+    try { setShowCombinedState(window.localStorage.getItem(COMBINED_OPEN_KEY) === 'true'); } catch { /* starts closed */ }
+  }, []);
+  const setShowCombined = (open: boolean) => {
+    setShowCombinedState(open);
+    try { window.localStorage.setItem(COMBINED_OPEN_KEY, String(open)); } catch { /* not remembered */ }
+  };
+
   const hasGasGoals = goalsInView.some(g => captureTypeOf(g) === 'GOAL_ATTAINMENT_SCALE');
   const gasGoals = useMemo(() => goalsInView.filter(g => captureTypeOf(g) === 'GOAL_ATTAINMENT_SCALE'), [goalsInView]);
   // The composite T-score is the student's, over all their GAS goals, whichever goal is selected.
@@ -239,61 +252,20 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, studen
     </Suspense>
   );
 
-  if (behaviorOnly) {
-    return (
-      <div className="space-y-6">
-        {goalCharts}
-      </div>
-    );
-  }
+  // Every goal's status, latest value and target in one table, before the charts (one goal has all of this on its card).
+  const summaryTable = !selectedGoalId && selectedStudent && goalsInView.length > 1 && (
+    <Suspense fallback={<ChartSuspenseFallback />}>
+      <GoalSummaryTable student={selectedStudent} goals={goalsInView} sessions={studentSessions} />
+    </Suspense>
+  );
 
+  // The page reads top down from what matters most for a progress report: every goal at a glance, then each
+  // goal's own chart, then the Goal Attainment Scaling figures, and last the charts that pool all goals together
+  // (closed until opened, and remembered on this device).
   return (
     <div className="space-y-6">
-       {selectedGoalId && goalCharts}
-       <Suspense fallback={<ChartSuspenseFallback />}>
-            <DataSummary studentSessions={studentSessions} selectedStudent={selectedStudent} selectedGoalId={selectedGoalId} chartData={chartData} />
-       </Suspense>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {hasTrialGoals && (
-          <>
-            <Suspense fallback={<ChartSuspenseFallback />}>
-              <ProgressOverTimeChart chartData={chartData} selectedGoalId={selectedGoalId} activeStudentGoals={activeStudentGoals} />
-            </Suspense>
-            <Suspense fallback={<ChartSuspenseFallback />}>
-              <ResponseCountsChart chartData={chartData} selectedGoalId={selectedGoalId} activeStudentGoals={activeStudentGoals} />
-            </Suspense>
-          </>
-        )}
-        {hasFluencyData && (
-          <>
-            <Suspense fallback={<ChartSuspenseFallback />}>
-                <SyllableFluencyChart chartData={chartData} />
-            </Suspense>
-            <Suspense fallback={<ChartSuspenseFallback />}>
-                <DysfluencyTypesChart chartData={chartData} />
-            </Suspense>
-          </>
-        )}
-        {hasTrialGoals && (
-          <Suspense fallback={<ChartSuspenseFallback />}>
-            <OpportunitiesChart chartData={chartData} selectedGoalId={selectedGoalId} activeStudentGoals={activeStudentGoals} />
-          </Suspense>
-        )}
-        <Suspense fallback={<ChartSuspenseFallback />}>
-          <PerformanceScatterPlot chartData={chartData} />
-        </Suspense>
-        {hasPromptUsageData && (
-          <Suspense fallback={<ChartSuspenseFallback />}>
-            <div className="lg:col-span-2">
-              <PromptUsageChart chartData={chartData} />
-            </div>
-          </Suspense>
-        )}
-        <Suspense fallback={<ChartSuspenseFallback />}>
-            <GoalPerformanceSankey studentSessions={studentSessions} activeStudentGoals={activeStudentGoals} selectedGoalId={selectedGoalId} />
-        </Suspense>
-       
-      </div>
+      {summaryTable}
+      {goalCharts}
       {hasGasGoals && (
         <div className="space-y-6">
           <h2 className="text-xl font-semibold">Goal Attainment Scaling</h2>
@@ -306,7 +278,68 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, studen
           <GasLevelDistribution studentSessions={studentSessions} goals={gasGoals} />
         </div>
       )}
-      {!selectedGoalId && goalCharts}
+      {!behaviorOnly && (
+        <section className="space-y-6" aria-labelledby="combined-charts-heading">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 id="combined-charts-heading" className="text-xl font-semibold">{selectedGoalId ? 'More Charts for This Goal' : 'All Goals Combined'}</h2>
+              <p className="text-sm text-muted-foreground">
+                {selectedGoalId
+                  ? 'Totals, accuracy over time, responses, prompts and how sessions went for this goal.'
+                  : 'Totals and charts that pool every active goal together: accuracy over time, responses, prompts and how sessions went.'}
+              </p>
+            </div>
+            <Button type="button" variant="outline" className="min-h-11" aria-expanded={showCombined} aria-controls="combined-charts"
+              onClick={() => setShowCombined(!showCombined)}>
+              {showCombined ? <ChevronUp className="mr-2 h-4 w-4" /> : <ChevronDown className="mr-2 h-4 w-4" />}
+              {showCombined ? 'Hide charts' : 'Show charts'}
+            </Button>
+          </div>
+          {/* Only drawn while open: a chart drawn inside a closed section would be sized to nothing. */}
+          {showCombined && (
+            <div id="combined-charts" className="space-y-6">
+              <Suspense fallback={<ChartSuspenseFallback />}>
+                <DataSummary studentSessions={studentSessions} selectedStudent={selectedStudent} selectedGoalId={selectedGoalId} chartData={chartData} />
+              </Suspense>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {hasTrialGoals && (
+                  <>
+                    <Suspense fallback={<ChartSuspenseFallback />}>
+                      <ProgressOverTimeChart chartData={chartData} selectedGoalId={selectedGoalId} activeStudentGoals={activeStudentGoals} />
+                    </Suspense>
+                    <Suspense fallback={<ChartSuspenseFallback />}>
+                      <ResponseCountsChart chartData={chartData} selectedGoalId={selectedGoalId} activeStudentGoals={activeStudentGoals} />
+                    </Suspense>
+                  </>
+                )}
+                {hasFluencyData && (
+                  <>
+                    <Suspense fallback={<ChartSuspenseFallback />}>
+                      <SyllableFluencyChart chartData={chartData} />
+                    </Suspense>
+                    <Suspense fallback={<ChartSuspenseFallback />}>
+                      <DysfluencyTypesChart chartData={chartData} />
+                    </Suspense>
+                  </>
+                )}
+                <Suspense fallback={<ChartSuspenseFallback />}>
+                  <PerformanceScatterPlot chartData={chartData} />
+                </Suspense>
+                <Suspense fallback={<ChartSuspenseFallback />}>
+                  <GoalPerformanceSankey studentSessions={studentSessions} activeStudentGoals={activeStudentGoals} selectedGoalId={selectedGoalId} />
+                </Suspense>
+                {hasPromptUsageData && (
+                  <Suspense fallback={<ChartSuspenseFallback />}>
+                    <div className="lg:col-span-2">
+                      <PromptUsageChart chartData={chartData} />
+                    </div>
+                  </Suspense>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
+      )}
     </div>
   );
 };
