@@ -29,11 +29,31 @@ describe('attendance by month and day', () => {
     expect(attendanceByMonth([])).toEqual([]);
   });
 
+  it('captures the minutes of held sessions for each month and each day', () => {
+    // The factory's sessions run 09:00-09:30, so each held session is 30 minutes; missed sessions add none.
+    const months = attendanceByMonth(sessions);
+    expect(months[0].minutes).toBe(60);
+    expect(months[1].minutes).toBe(60);
+    const days = attendanceByDay(sessions);
+    expect(days.get('2026-10-08')?.minutes).toBe(30);
+    expect(days.get('2026-09-17')?.minutes).toBe(0);
+  });
+
+  it('sums a day\'s sessions and leaves an untimed held session out of the minutes', () => {
+    const day = [
+      session({ date: '2026-10-05', time: '09:00', endTime: '09:45' }),
+      session({ date: '2026-10-05', time: '10:00', endTime: '10:30' }),
+      session({ date: '2026-10-05', time: undefined, endTime: undefined }),
+    ];
+    expect(attendanceByDay(day).get('2026-10-05')).toEqual({ held: 3, minutes: 75, missed: [] });
+    expect(attendanceByMonth(day)[0].minutes).toBe(75);
+  });
+
   it('says what happened on each day, including a day with held and missed sessions', () => {
     const days = attendanceByDay(sessions);
-    expect(days.get('2026-09-03')).toEqual({ held: 1, missed: [] });
-    expect(days.get('2026-09-17')).toEqual({ held: 0, missed: ['student-absent'] });
-    expect(days.get('2026-10-08')).toEqual({ held: 1, missed: ['provider-absent', 'no-school'] });
+    expect(days.get('2026-09-03')).toEqual({ held: 1, minutes: 30, missed: [] });
+    expect(days.get('2026-09-17')).toEqual({ held: 0, minutes: 0, missed: ['student-absent'] });
+    expect(days.get('2026-10-08')).toEqual({ held: 1, minutes: 30, missed: ['provider-absent', 'no-school'] });
     expect(days.has('2026-10-02')).toBe(false);
   });
 
@@ -41,7 +61,7 @@ describe('attendance by month and day', () => {
     const odd = [session({ date: '2026-09-03', missed: { reason: 'snow-day' as never } }), session({ date: 'garbage' })];
     expect(attendanceByMonth(odd)).toHaveLength(1);
     expect(attendanceByMonth(odd)[0].byReason.other).toBe(1);
-    expect(attendanceByDay(odd).get('2026-09-03')).toEqual({ held: 0, missed: ['other'] });
+    expect(attendanceByDay(odd).get('2026-09-03')).toEqual({ held: 0, minutes: 0, missed: ['other'] });
   });
 
   it('gives the share held overall and the student\'s own attendance', () => {

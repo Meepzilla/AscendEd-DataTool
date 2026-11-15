@@ -1,4 +1,5 @@
 import type { SessionData } from './types';
+import { sessionMinutes } from './helpers';
 
 // Missed sessions (Data Entry → a student card's Missed button): a session that didn't happen is saved with a
 // reason and no goal data, so attendance can be reported (sessions held and missed, and why) while the progress
@@ -71,7 +72,7 @@ export function attendanceText(summary: AttendanceSummary): string {
 
 // ---- Attendance over time: by month (chart) and by day (calendar) ----
 
-type DatedSession = Pick<SessionData, 'missed' | 'date'>;
+type DatedSession = Pick<SessionData, 'missed' | 'date' | 'time' | 'endTime'>;
 
 /** A session's local day as YYYY-MM-DD ('' when its date can't be read). A date-only value is that day. */
 export function sessionDayKey(date: string): string {
@@ -86,6 +87,9 @@ export interface AttendanceMonth {
   month: string;
   held: number;
   missed: number;
+  /** Minutes of the month's held sessions, from their start and end times. A held session with no usable
+   *  times adds none, so this is the timed minutes, not a guess at the untimed ones. */
+  minutes: number;
   byReason: Record<MissedReason, number>;
   /** Held ÷ (held + missed) × 100, to a whole number. */
   percentHeld: number;
@@ -101,13 +105,14 @@ export function attendanceByMonth(sessions: DatedSession[]): AttendanceMonth[] {
     const day = sessionDayKey(s.date);
     if (!day) continue;
     const key = day.slice(0, 7);
-    const row = months.get(key) ?? { month: key, held: 0, missed: 0, byReason: emptyReasons(), percentHeld: 0 };
+    const row = months.get(key) ?? { month: key, held: 0, missed: 0, minutes: 0, byReason: emptyReasons(), percentHeld: 0 };
     if (s.missed) {
       row.missed++;
       // A reason this version doesn't know (from a newer backup) counts as "other".
       row.byReason[MISSED_REASONS.includes(s.missed.reason) ? s.missed.reason : 'other']++;
     } else {
       row.held++;
+      row.minutes += sessionMinutes(s) ?? 0;
     }
     months.set(key, row);
   }
@@ -118,6 +123,8 @@ export function attendanceByMonth(sessions: DatedSession[]): AttendanceMonth[] {
 
 export interface AttendanceDay {
   held: number;
+  /** Minutes of the day's held sessions, from their start and end times (untimed held sessions add none). */
+  minutes: number;
   /** The reason of each missed session that day. */
   missed: MissedReason[];
 }
@@ -128,9 +135,12 @@ export function attendanceByDay(sessions: DatedSession[]): Map<string, Attendanc
   for (const s of sessions) {
     const key = sessionDayKey(s.date);
     if (!key) continue;
-    const day = days.get(key) ?? { held: 0, missed: [] };
+    const day = days.get(key) ?? { held: 0, minutes: 0, missed: [] };
     if (s.missed) day.missed.push(MISSED_REASONS.includes(s.missed.reason) ? s.missed.reason : 'other');
-    else day.held++;
+    else {
+      day.held++;
+      day.minutes += sessionMinutes(s) ?? 0;
+    }
     days.set(key, day);
   }
   return days;

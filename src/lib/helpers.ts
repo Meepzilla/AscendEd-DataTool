@@ -1,12 +1,31 @@
 
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-import type { Goal, StudentIep } from './types';
+import type { Goal, SessionData, StudentIep } from './types';
 import { fillBlanks, matchTextToTarget, percentAsFraction } from './goal-blanks';
 import { replacePlaceholders, type PlaceholderKey } from './goal-placeholders';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
+}
+
+/**
+ * Minutes between a session's start and end time ("HH:MM"); null when either is missing or invalid, or the
+ * span isn't sensible (over 600 minutes, negative, or end before start). Null is untimed, not 0 minutes:
+ * callers must not add it to a total.
+ */
+export function sessionMinutes(session: Pick<SessionData, 'time' | 'endTime'>): number | null {
+  const toMinutes = (t?: string) => {
+    const m = /^(\d{1,2}):(\d{2})$/.exec(t ?? '');
+    if (!m) return null;
+    const hours = Number(m[1]), minutes = Number(m[2]);
+    return hours <= 23 && minutes <= 59 ? hours * 60 + minutes : null;
+  };
+  const start = toMinutes(session.time);
+  const end = toMinutes(session.endTime);
+  if (start === null || end === null) return null;
+  const span = end - start;
+  return span > 0 && span <= 600 ? span : null;
 }
 
 export function formatDate(date: Date | string): string {
