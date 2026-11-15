@@ -68,3 +68,94 @@ export function attendanceText(summary: AttendanceSummary): string {
     : ' · none missed';
   return `${summary.held} held${missed}`;
 }
+
+// ---- Attendance over time: by month (chart) and by day (calendar) ----
+
+type DatedSession = Pick<SessionData, 'missed' | 'date'>;
+
+/** A session's local day as YYYY-MM-DD ('' when its date can't be read). A date-only value is that day. */
+export function sessionDayKey(date: string): string {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(date)) return date;
+  const d = new Date(date);
+  if (Number.isNaN(d.getTime())) return '';
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+export interface AttendanceMonth {
+  /** YYYY-MM. */
+  month: string;
+  held: number;
+  missed: number;
+  byReason: Record<MissedReason, number>;
+  /** Held ÷ (held + missed) × 100, to a whole number. */
+  percentHeld: number;
+}
+
+const emptyReasons = (): Record<MissedReason, number> =>
+  Object.fromEntries(MISSED_REASONS.map(r => [r, 0])) as Record<MissedReason, number>;
+
+/** Sessions held and missed (by reason) in each month that has any, oldest month first. */
+export function attendanceByMonth(sessions: DatedSession[]): AttendanceMonth[] {
+  const months = new Map<string, AttendanceMonth>();
+  for (const s of sessions) {
+    const day = sessionDayKey(s.date);
+    if (!day) continue;
+    const key = day.slice(0, 7);
+    const row = months.get(key) ?? { month: key, held: 0, missed: 0, byReason: emptyReasons(), percentHeld: 0 };
+    if (s.missed) {
+      row.missed++;
+      // A reason this version doesn't know (from a newer backup) counts as "other".
+      row.byReason[MISSED_REASONS.includes(s.missed.reason) ? s.missed.reason : 'other']++;
+    } else {
+      row.held++;
+    }
+    months.set(key, row);
+  }
+  return [...months.values()]
+    .sort((a, b) => a.month.localeCompare(b.month))
+    .map(row => ({ ...row, percentHeld: Math.round((row.held / (row.held + row.missed)) * 100) }));
+}
+
+export interface AttendanceDay {
+  held: number;
+  /** The reason of each missed session that day. */
+  missed: MissedReason[];
+}
+
+/** What happened on each day with a session, by YYYY-MM-DD. */
+export function attendanceByDay(sessions: DatedSession[]): Map<string, AttendanceDay> {
+  const days = new Map<string, AttendanceDay>();
+  for (const s of sessions) {
+    const key = sessionDayKey(s.date);
+    if (!key) continue;
+    const day = days.get(key) ?? { held: 0, missed: [] };
+    if (s.missed) day.missed.push(MISSED_REASONS.includes(s.missed.reason) ? s.missed.reason : 'other');
+    else day.held++;
+    days.set(key, day);
+  }
+  return days;
+}
+
+/**
+ * The share of sessions held, two ways: of all scheduled sessions, and leaving out the ones missed for a
+ * reason that wasn't the student's (provider absent, no school), which is the student's own attendance.
+ * Null where there is nothing to divide by.
+ */
+export function attendanceRates(summary: AttendanceSummary): { overall: number | null; student: number | null } {
+  const count = (reason: MissedReason) => summary.byReason.find(r => r.reason === reason)?.count ?? 0;
+  const total = summary.held + summary.missed;
+  const studentTotal = total - count('provider-absent') - count('no-school');
+  const percent = (n: number, of: number) => (of > 0 ? Math.round((n / of) * 100) : null);
+  return { overall: percent(summary.held, total), student: percent(summary.held, studentTotal) };
+}
+
+/** The weeks of a month for a calendar: rows of 7 days, Sunday first, null outside the month. `month` is YYYY-MM. */
+export function calendarWeeks(month: string): (string | null)[][] {
+  const [year, m] = month.split('-').map(Number);
+  const first = new Date(year, m - 1, 1);
+  const days = new Date(year, m, 0).getDate();
+  const cells: (string | null)[] = Array(first.getDay()).fill(null);
+  for (let d = 1; d <= days; d++) cells.push(`${month}-${String(d).padStart(2, '0')}`);
+  while (cells.length % 7) cells.push(null);
+  return Array.from({ length: cells.length / 7 }, (_, i) => cells.slice(i * 7, i * 7 + 7));
+}

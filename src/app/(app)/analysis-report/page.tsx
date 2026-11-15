@@ -26,6 +26,7 @@ import { useAuth } from '@/hooks/use-auth';
 const AnalysisCharts = lazy(() => import('@/components/charts/AnalysisCharts'));
 const ImportDataModal = lazy(() => import('@/components/modals/import-data-modal'));
 const TrialStatusChart = lazy(() => import('@/components/charts/analysis-charts/TrialStatusChart'));
+const AttendanceCard = lazy(() => import('@/components/charts/analysis-charts/AttendanceCard'));
 
 export default function AnalysisReportPage() {
   const { students, sessions, loading: studentsLoading, sessionsLoading, importSessions } = useStudentData();
@@ -189,7 +190,7 @@ export default function AnalysisReportPage() {
           </div>
           {selectedStudent && attendance.missed > 0 && (
             <p className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">Attendance:</span> {attendanceText(attendance)}. Missed sessions aren&apos;t included in the charts.
+              <span className="font-medium text-foreground">Attendance:</span> {attendanceText(attendance)}. Missed sessions aren&apos;t included in the progress charts; the Attendance card at the bottom of the page shows them by month and on a calendar.
             </p>
           )}
         </CardContent>
@@ -217,6 +218,10 @@ export default function AnalysisReportPage() {
                   selectedStudent={selectedStudent}
                   selectedGoalId={selectedGoalId}
               />
+            </Suspense>
+            {/* Held and missed sessions in the range, by month and on a calendar (shown even when every session was missed). */}
+            <Suspense fallback={<div className="mt-6"><Skeleton className="h-[300px] w-full" /></div>}>
+              <div className="mt-6"><AttendanceCard sessions={periodSessions} /></div>
             </Suspense>
         </Suspense>
       )}

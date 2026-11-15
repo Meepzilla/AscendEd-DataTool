@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-15',
+    title: 'Attendance Chart and Calendar on Reports',
+    description: 'Reports has a new Attendance card at the bottom of the page for the student and date range you chose. It shows how many sessions were held and missed, the share of sessions held, and the student\'s own attendance (which leaves out sessions missed because the provider was absent or there was no school). A bar chart shows held and missed sessions for each month, by reason, and a calendar marks each day a session was held or missed; tap a day to see its sessions and any note. Missed sessions are the ones recorded with the Missed button on a student\'s card in Data Entry.',
+    type: 'feature',
+    icon: CalendarClock,
+  },
+  {
+    date: '2026-11-15',
     title: 'Reports Remembers the Student You Chose',
     description: 'Reports and the Progress Report now open on the student you looked at last, instead of going back to the first student on the list. The choice is kept on this device, so it is still there after switching to Data Entry or another page, closing the app, or reloading. If that student has since been archived or deleted, the page opens on the first student as before.',
     type: 'improvement',
