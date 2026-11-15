@@ -9,6 +9,7 @@ import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartToo
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { cn } from '@/lib/utils';
 import { formatDateOnly, plural } from '@/lib/helpers';
+import { formatMinutes, sessionMinutes } from '@/lib/student-overview';
 import {
   MISSED_REASONS, MISSED_REASON_SHORT, attendanceByDay, attendanceByMonth, attendanceRates, attendanceSummary, calendarWeeks,
   sessionDayKey, type MissedReason,
@@ -74,10 +75,12 @@ export default function AttendanceCard({ sessions }: Props) {
     const day = days.get(key);
     if (!day) return 'no session';
     return [
-      day.held ? `${plural(day.held, 'session')} held` : null,
+      day.held ? `${plural(day.held, 'session')} held${day.minutes > 0 ? `, ${formatMinutes(day.minutes)}` : ''}` : null,
       ...day.missed.map(reason => `missed: ${MISSED_REASON_SHORT[reason].toLowerCase()}`),
     ].filter(Boolean).join(', ');
   };
+  const shownMonth = months.find(m => m.month === shown);
+  const selectedMinutes = selectedDay ? days.get(selectedDay)?.minutes ?? 0 : 0;
 
   return (
     <Card>
@@ -117,11 +120,24 @@ export default function AttendanceCard({ sessions }: Props) {
                 {usedReasons.map(reason => <Bar key={reason} dataKey={reason} stackId="a" fill={`var(--color-${reason})`} />)}
               </BarChart>
             </ChartContainer>
+            <ul className="mt-2 space-y-1 text-sm text-muted-foreground" aria-label="Minutes held each month">
+              {months.map(m => (
+                <li key={m.month} className="flex justify-between gap-2">
+                  <span>{monthLabel(m.month)}</span>
+                  <span>{m.minutes > 0 ? `${formatMinutes(m.minutes)} held` : 'no timed minutes'}</span>
+                </li>
+              ))}
+            </ul>
           </div>
 
           <div>
             <div className="flex items-center justify-between gap-2">
-              <p className="text-sm font-medium" aria-live="polite">{monthLabel(shown)}</p>
+              <div>
+                <p className="text-sm font-medium" aria-live="polite">{monthLabel(shown)}</p>
+                {shownMonth && shownMonth.minutes > 0 && (
+                  <p className="text-xs text-muted-foreground">{formatMinutes(shownMonth.minutes)} held this month</p>
+                )}
+              </div>
               <div className="flex gap-1" role="group" aria-label="Change month">
                 <Button type="button" variant="outline" size="icon" className="h-11 w-11" aria-label="Previous month"
                   disabled={shown <= firstMonth} onClick={() => { setMonth(shiftMonth(shown, -1)); setSelectedDay(null); }}>
@@ -183,12 +199,18 @@ export default function AttendanceCard({ sessions }: Props) {
                 <>
                   <p className="font-medium">{formatDateOnly(selectedDay)}</p>
                   <ul className="text-muted-foreground">
-                    {selected.map(s => (
-                      <li key={s.sessionId}>
-                        {s.missed ? `Missed: ${MISSED_REASON_SHORT[s.missed.reason] ?? 'Other'}${s.missed.note ? ` (${s.missed.note})` : ''}` : 'Held'}
-                      </li>
-                    ))}
+                    {selected.map(s => {
+                      const minutes = s.missed ? null : sessionMinutes(s);
+                      return (
+                        <li key={s.sessionId}>
+                          {s.missed ? `Missed: ${MISSED_REASON_SHORT[s.missed.reason] ?? 'Other'}${s.missed.note ? ` (${s.missed.note})` : ''}` : `Held${minutes ? ` · ${formatMinutes(minutes)}` : ''}`}
+                        </li>
+                      );
+                    })}
                   </ul>
+                  {selectedMinutes > 0 && (
+                    <p className="mt-1 text-muted-foreground">Total held this day: {formatMinutes(selectedMinutes)}</p>
+                  )}
                 </>
               ) : (
                 <p className="text-xs text-muted-foreground">Tap a marked day to see its sessions.</p>

@@ -2,32 +2,15 @@ import type { ServicePer, ServiceRequirement, ServiceType, SessionData, StudentI
 import { SERVICE_TYPE_LABELS, SERVICE_TYPES } from './types';
 import { attendanceSummary, type AttendanceSummary } from './attendance';
 import { dateValue } from './aim-line';
-import { latestSessionDate, parseDateOnly } from './helpers';
+import { latestSessionDate, parseDateOnly, sessionMinutes } from './helpers';
+
+export { sessionMinutes } from './helpers';
 import { schoolYearRange } from './school-year';
 
 // Figures for the student profile's Overview: IEP dates (days until each is due), service minutes delivered
 // against what the IEP requires (from the sessions' start and end times), and attendance for the school year.
 
 export { schoolYearStart } from './school-year';
-
-/**
- * Minutes between a session's start and end time ("HH:MM"); null when either is missing or invalid, or the
- * span isn't sensible (over 600 minutes, negative, or end before start). Null is untimed, not 0 minutes:
- * callers must not add it to a total.
- */
-export function sessionMinutes(session: Pick<SessionData, 'time' | 'endTime'>): number | null {
-  const toMinutes = (t?: string) => {
-    const m = /^(\d{1,2}):(\d{2})$/.exec(t ?? '');
-    if (!m) return null;
-    const hours = Number(m[1]), minutes = Number(m[2]);
-    return hours <= 23 && minutes <= 59 ? hours * 60 + minutes : null;
-  };
-  const start = toMinutes(session.time);
-  const end = toMinutes(session.endTime);
-  if (start === null || end === null) return null;
-  const span = end - start;
-  return span > 0 && span <= 600 ? span : null;
-}
 
 /**
  * The IEP's required-minutes lines, one per service type. An explicit services list wins; otherwise the

@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-15',
+    title: 'Attendance Shows Minutes by Month and Day',
+    description: 'The Attendance card on Reports now captures minutes as well as sessions held and missed. Under the By month chart, each month lists the minutes held that month, and the calendar month you are viewing shows its minutes under its name. Tap a marked day and each held session shows its own minutes, with the day\'s total underneath. Minutes come from each session\'s start and end times; a held session with no usable times counts as held and adds no minutes.',
+    type: 'feature',
+    icon: CalendarClock,
+  },
+  {
+    date: '2026-11-15',
     title: 'Reports Page Reorganized',
     description: 'Reports now reads from what matters most. An At a glance table at the top lists every goal with its progress status, latest value, average, target, how often the target was met, trend and aim line; tap a goal\'s name to jump to its chart. Goal by Goal comes next, then Goal Attainment Scaling. The charts that pool all goals together (totals, accuracy over time, responses, prompts and session flow) are in an All Goals Combined section that stays closed until you open it, and remembers whether you left it open. Response Counts and Total Opportunities, which showed the same numbers, are now one Responses per Session chart: stacked bars of correct, approximate and incorrect, where the height is the opportunities. Quick date buttons (Last 30 days, Last 9 weeks, School year, All) sit under the date picker. The date range and the goal chosen for each student are remembered on this device, like the student.',
     type: 'improvement',
