@@ -58,7 +58,7 @@ const STATUS_STYLES: Record<ProgressStatus, string> = {
   'not-addressed': 'bg-slate-100 text-slate-700 border-slate-300',
 };
 
-function StatusPill({ status }: { status: ProgressStatus }) {
+export function StatusPill({ status }: { status: ProgressStatus }) {
   return (
     <span className={cn('inline-block whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs font-semibold', STATUS_STYLES[status])}>
       {PROGRESS_STATUS_LABELS[status]}
