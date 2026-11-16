@@ -1,4 +1,5 @@
-// Adds a Content Security Policy to every exported page so the browser runs only the app's own scripts:
+// Adds a Content Security Policy to every exported page so the browser loads only the app's own files and runs
+// only the app's own scripts:
 // script files from this site, plus the exact scripts written into each page (Next.js's page data and the
 // display-size script), allowed by their SHA-256 hash. Any other script (injected into the page, or loaded from
 // another site) is blocked. Runs after `next build` for the static export, before the service worker is
@@ -38,11 +39,26 @@ for (const file of await listHtml(OUT_DIR)) {
   for (const [, attrs, body] of html.matchAll(INLINE_SCRIPT)) {
     if (runs(attrs)) hashes.add(`'sha256-${createHash('sha256').update(body, 'utf8').digest('base64')}'`);
   }
-  const policy = ["script-src 'self'", ...hashes].join(' ');
+  const policy = [
+    // Anything not named below may only come from this site.
+    "default-src 'self'",
+    ["script-src 'self'", ...hashes].join(' '),
+    // React and the dialog library set style attributes and add <style> tags while the app runs; styles can't
+    // run code, so inline styles stay allowed.
+    "style-src 'self' 'unsafe-inline'",
+    // Charts and the PDF reader draw with data: and blob: images and fonts made on the device.
+    "img-src 'self' data: blob:",
+    "font-src 'self' data:",
+    "connect-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    // A form can only be sent to this site (the app's forms are all handled on the page and send nothing).
+    "form-action 'self'",
+  ].join('; ');
   // First in <head>, so it applies to every script after it.
   const updated = html.replace(/<head(\s[^>]*)?>/i, (head) => `${head}<meta http-equiv="Content-Security-Policy" content="${policy}"/>`);
   if (updated === html) throw new Error(`No <head> in ${file}`);
   await writeFile(file, updated);
   pages++;
 }
-console.log(`Added a script Content Security Policy to ${pages} pages`);
+console.log(`Added a Content Security Policy to ${pages} pages`);

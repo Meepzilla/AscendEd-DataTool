@@ -1,11 +1,13 @@
 // Fails the build if the static export has lost any of its security controls, so a change that weakens them
 // can't be merged unnoticed (it runs last in build:static, which CI runs on every pull request). It checks:
-// - every page has a script Content Security Policy that allows only the app's own scripts ('self' plus the hash
+// - every page has a Content Security Policy that loads only the app's own files (default-src 'self', no plugins,
+//   forms sent only to this site) and allows only the app's own scripts ('self' plus the hash
 //   of each inline script on that page), with no 'unsafe-inline' or 'unsafe-eval', and that every inline script
 //   on the page is covered by one of its hashes;
 // - the hosting headers (public/_headers for Cloudflare, netlify.toml for Netlify) still send the same set of
 //   security headers for every path;
-// - the Cloudflare Worker that redirects plain HTTP to HTTPS still runs first (wrangler.jsonc).
+// - the Cloudflare Worker that redirects plain HTTP to HTTPS still runs first (wrangler.jsonc);
+// - the Android app still keeps student data out of Android's backup and phone-to-phone transfer.
 
 import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
@@ -22,7 +24,17 @@ function* files(dir) {
   }
 }
 
-// 1. Script CSP on every page.
+// 1. The Content Security Policy on every page: these directives exactly, and a script-src checked below.
+const PAGE_POLICY = {
+  'default-src': "'self'",
+  'style-src': "'self' 'unsafe-inline'",
+  'img-src': "'self' data: blob:",
+  'font-src': "'self' data:",
+  'connect-src': "'self'",
+  'object-src': "'none'",
+  'base-uri': "'self'",
+  'form-action': "'self'",
+};
 let pages = 0;
 for (const path of files(OUT)) {
   if (!path.endsWith('.html')) continue;
@@ -31,6 +43,12 @@ for (const path of files(OUT)) {
   const meta = html.match(/<meta http-equiv="Content-Security-Policy" content="([^"]*)"/);
   if (!meta) { problems.push(`${path}: no Content-Security-Policy meta tag`); continue; }
   const policy = meta[1];
+  const directives = new Map(policy.split(';').map(d => d.trim().split(/\s+/)).filter(d => d[0]).map(([name, ...values]) => [name, values]));
+  for (const [name, expected] of Object.entries(PAGE_POLICY)) {
+    const values = directives.get(name);
+    if (!values) problems.push(`${path}: the policy has no ${name}`);
+    else if (values.join(' ') !== expected) problems.push(`${path}: ${name} is "${values.join(' ')}", expected "${expected}"`);
+  }
   const scriptSrc = policy.split(';').map(d => d.trim()).find(d => d.startsWith('script-src'));
   if (!scriptSrc) { problems.push(`${path}: the policy has no script-src`); continue; }
   const sources = scriptSrc.split(/\s+/).slice(1);
@@ -90,6 +108,20 @@ function checkHeaders(label, headers) {
   if (wrangler.main !== 'worker/index.js') problems.push('wrangler.jsonc: the HTTPS redirect Worker (worker/index.js) is not the main script');
   if (wrangler.assets?.run_worker_first !== true) problems.push('wrangler.jsonc: assets.run_worker_first must be true, or files are served over HTTP without the redirect');
   if (!/url\.protocol === 'http:'/.test(readFileSync('worker/index.js', 'utf8'))) problems.push('worker/index.js: no longer redirects http: requests');
+}
+
+// 4. The Android app keeps student data out of Android's cloud backup and phone-to-phone transfer.
+{
+  const manifest = readFileSync('android/app/src/main/AndroidManifest.xml', 'utf8');
+  if (!/android:allowBackup="false"/.test(manifest)) problems.push('AndroidManifest.xml: allowBackup must be "false"');
+  if (!/android:dataExtractionRules="@xml\/data_extraction_rules"/.test(manifest)) problems.push('AndroidManifest.xml: dataExtractionRules must point to @xml/data_extraction_rules');
+  const rules = readFileSync('android/app/src/main/res/xml/data_extraction_rules.xml', 'utf8');
+  for (const section of ['cloud-backup', 'device-transfer']) {
+    const body = new RegExp(`<${section}>([\\s\\S]*?)</${section}>`).exec(rules)?.[1] ?? '';
+    for (const domain of ['root', 'file', 'database', 'sharedpref', 'external']) {
+      if (!new RegExp(`<exclude domain="${domain}" path="\\." />`).test(body)) problems.push(`data_extraction_rules.xml: ${section} doesn't exclude the ${domain} domain`);
+    }
+  }
 }
 
 if (problems.length) {

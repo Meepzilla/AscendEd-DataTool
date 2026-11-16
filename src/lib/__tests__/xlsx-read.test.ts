@@ -60,6 +60,30 @@ describe('readXlsx', () => {
     expect(() => readXlsx(xlsx)).toThrow(/expands to more than 100 MB/);
   }, 30000);
 
+  it('rejects a workbook by the sizes its zip declares, before unpacking anything', () => {
+    // A tiny workbook whose zip directory claims the shared strings unpack to about 4 GB. Unpacking would allocate a
+    // buffer that size, so the cap has to be applied to the declared sizes first.
+    const xlsx = zipSync({
+      'xl/workbook.xml': strToU8('<workbook xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="S1" sheetId="1" r:id="rId1"/></sheets></workbook>'),
+      'xl/sharedStrings.xml': strToU8('<sst><si><t>Test Student Ada</t></si></sst>'),
+      'xl/worksheets/sheet1.xml': strToU8('<worksheet><sheetData><row r="1"><c r="A1" t="s"><v>0</v></c></row></sheetData></worksheet>'),
+    }, { level: 6 });
+    const view = new DataView(xlsx.buffer, xlsx.byteOffset, xlsx.byteLength);
+    const name = strToU8('xl/sharedStrings.xml');
+    let patched = 0;
+    for (let i = 0; i + 46 <= xlsx.length; i++) {
+      // A central directory entry: its signature, then the uncompressed size at offset 24 and the name at 46.
+      if (view.getUint32(i, true) !== 0x02014b50) continue;
+      const nameLength = view.getUint16(i + 28, true);
+      if (nameLength === name.length && name.every((b, k) => xlsx[i + 46 + k] === b)) {
+        view.setUint32(i + 24, 0xfffffff0, true);
+        patched++;
+      }
+    }
+    expect(patched).toBe(1);
+    expect(() => readXlsx(xlsx)).toThrow(/expands to more than 100 MB/);
+  });
+
   it('ignores rows and cells numbered past the caps instead of allocating for them', () => {
     const xlsx = zipSync({
       'xl/workbook.xml': strToU8('<workbook xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="S1" sheetId="1" r:id="rId1"/></sheets></workbook>'),
