@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { APP_NAME } from '@/lib/appConstants';
 import TopEdgeBar from '@/components/layout/TopEdgeBar';
+import { useKeyboardFrame } from '@/hooks/use-keyboard-frame';
+import { cn } from '@/lib/utils';
 import {
   MIN_PASSCODE_LENGTH, enablePasscode, eraseProtectedData, generateRecoveryKey, getAutoLockMinutes, isPasscodeEnabled,
   isUnlocked, lockNow, resetPasscodeWithRecoveryKey, unlock,
@@ -334,12 +336,32 @@ function SetPasscodeForm({ onEnabled }: { onEnabled: () => void }) {
   );
 }
 
+/**
+ * The scrolling area that holds a passcode screen's card. The card is centered with m-auto rather than by the
+ * flex container, so a card taller than the space scrolls from its top instead of being cut off above it. While
+ * the on-screen keyboard is open the area is pinned to the part of the screen left visible (useKeyboardFrame).
+ */
+function KeyboardSafeArea({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const keyboardStyle = useKeyboardFrame(ref);
+  return (
+    <div
+      ref={ref}
+      // Pinned, it starts at the screen's top edge, so it keeps clear of the status bar itself.
+      style={keyboardStyle && { ...keyboardStyle, paddingTop: 'calc(env(safe-area-inset-top) / var(--body-zoom) + 0.75rem)' }}
+      className={cn('flex flex-1 overflow-y-auto bg-background', keyboardStyle ? 'p-3' : 'p-6')}
+    >
+      {children}
+    </div>
+  );
+}
+
 function SetupShell({ title, intro, children }: { title: string; intro: string; children: React.ReactNode }) {
   return (
     <div className="flex h-full flex-col bg-background text-foreground">
       <TopEdgeBar />
-      <div className="flex flex-1 items-center justify-center overflow-y-auto p-6">
-        <div className="w-full max-w-sm space-y-5 rounded-lg border bg-card p-6 shadow-lg">
+      <KeyboardSafeArea>
+        <div className="m-auto w-full max-w-sm space-y-5 rounded-lg border bg-card p-6 shadow-lg">
           <div className="flex flex-col items-center gap-2 text-center">
             <ShieldCheck className="h-10 w-10 text-primary" />
             <h1 className="text-xl font-semibold">{title}</h1>
@@ -347,7 +369,7 @@ function SetupShell({ title, intro, children }: { title: string; intro: string; 
           </div>
           {children}
         </div>
-      </div>
+      </KeyboardSafeArea>
     </div>
   );
 }
@@ -515,8 +537,8 @@ function LockScreen({ onUnlocked }: { onUnlocked: () => void }) {
   return (
     <div className="flex h-full flex-col bg-background text-foreground">
     <TopEdgeBar />
-    <div className="flex flex-1 items-center justify-center overflow-y-auto p-6">
-      <div className="w-full max-w-sm space-y-5 rounded-lg border bg-card p-6 shadow-lg">
+    <KeyboardSafeArea>
+      <div className="m-auto w-full max-w-sm space-y-5 rounded-lg border bg-card p-6 shadow-lg">
         <div className="flex flex-col items-center gap-2 text-center">
           <Lock className="h-10 w-10 text-primary" />
           <h1 className="text-xl font-semibold">{APP_NAME} is locked</h1>
@@ -601,7 +623,7 @@ function LockScreen({ onUnlocked }: { onUnlocked: () => void }) {
           </div>
         )}
       </div>
-    </div>
+    </KeyboardSafeArea>
     </div>
   );
 }

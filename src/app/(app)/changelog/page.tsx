@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-16',
+    title: 'Lock Screen Stays on Screen While You Type',
+    description: 'On an iPad, typing the passcode could slide the lock screen up behind the clock at the top, hiding the passcode box. While the on-screen keyboard is open, the lock screen and the passcode setup screen now stay in the part of the screen the keyboard leaves visible, and scroll if they don\'t fit.',
+    type: 'fix',
+    icon: Lock,
+  },
+  {
+    date: '2026-11-16',
     title: 'Tighter Security Settings',
     description: 'Four security settings are tighter. Each page now loads only the app\'s own files: it can\'t show pictures, fonts or anything else from another website, and a form can only be sent back to the app. On Android 12 and later, student data is no longer copied when you move to a new phone with Android\'s transfer tool; use the app\'s own backup file instead. An Excel import is checked for size before it is opened, so a file built to fill up memory is turned away straight away. The automatic build checks can read the code but can\'t change anything in it. Nothing about how you use the app changes.',
     type: 'improvement',
