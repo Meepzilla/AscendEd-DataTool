@@ -24,5 +24,8 @@ The app runs entirely on the device. There is no account and no server, and stud
 
 - Dependencies are updated monthly through Dependabot, with security fixes applied as soon as they arrive.
 - CodeQL code scanning runs on the repository.
-- The static build adds a strict Content Security Policy and security headers.
+- The static build adds a strict Content Security Policy (only the app's own files and scripts, forms sent only to the app) and security headers.
+- The Android app keeps student data out of Android's cloud backup and phone-to-phone transfer.
+- Imported files are size-checked before they are opened, including the unpacked size of an Excel workbook.
+- The GitHub Actions workflows run with a read-only token.
 - The Android release APK is signed with a private release key kept in the repository's secrets. No signing key is kept in the repository.

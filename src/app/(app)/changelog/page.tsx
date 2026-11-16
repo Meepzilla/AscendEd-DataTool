@@ -18,6 +18,13 @@ interface ChangelogEntry {
 
 const allChangelogEntries: ChangelogEntry[] = [
   {
+    date: '2026-11-16',
+    title: 'Tighter Security Settings',
+    description: 'Four security settings are tighter. Each page now loads only the app\'s own files: it can\'t show pictures, fonts or anything else from another website, and a form can only be sent back to the app. On Android 12 and later, student data is no longer copied when you move to a new phone with Android\'s transfer tool; use the app\'s own backup file instead. An Excel import is checked for size before it is opened, so a file built to fill up memory is turned away straight away. The automatic build checks can read the code but can\'t change anything in it. Nothing about how you use the app changes.',
+    type: 'improvement',
+    icon: ShieldCheck,
+  },
+  {
     date: '2026-11-15',
     title: 'Function Targets Show Both Halves on the Profile and Templates',
     description: 'The target text for a Communication Functions goal now names both halves everywhere it appears. The progress summary in the student sidebar, the target badge on the goal card in a student profile, and the Session Target line in the goal template library all read "2 functions and at least 5 uses" when the goal carries a minimum number of uses, matching Reports, Data Entry, and the progress report. Goals without a minimum read as before.',

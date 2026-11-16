@@ -76,20 +76,31 @@ const columnIndex = (ref: string) => [...ref.replace(/\d+$/, '')].reduce((n, c) 
 /** The rows of the workbook's first worksheet. Throws if the file isn't a workbook. */
 export function readXlsx(data: Uint8Array): CellValue[][] {
   checkImportFileSize(data.length);
+  // The 10 MB limit bounds the zip as sent; what matters for memory is how large the XML is once opened. Each
+  // entry is unpacked into a buffer of the size its zip header declares (and never past it), so adding up the
+  // declared sizes before anything is unpacked bounds the memory an import can take, however the file lies.
+  const tooLarge = new Error('This workbook expands to more than 100 MB of XML when it is opened, so it can\'t be imported. Split it into smaller files and try again.');
+  let declaredBytes = 0;
   let files: Record<string, Uint8Array>;
   try {
-    files = unzipSync(data, { filter: f => f.name.startsWith('xl/') && f.name.endsWith('.xml') || f.name.endsWith('.rels') });
-  } catch {
+    files = unzipSync(data, {
+      filter: f => {
+        if (!(f.name.startsWith('xl/') && f.name.endsWith('.xml') || f.name.endsWith('.rels'))) return false;
+        // A stored (uncompressed) entry is copied as it is; a compressed one is unpacked to its declared size.
+        declaredBytes += f.compression === 0 ? f.size : f.originalSize;
+        if (declaredBytes > MAX_XLSX_UNCOMPRESSED_BYTES) throw tooLarge;
+        return true;
+      },
+    });
+  } catch (error) {
+    if (error === tooLarge) throw error;
     throw new Error('This file isn\'t an Excel workbook (.xlsx).');
   }
-  // The 10 MB limit bounds the zip as sent; what matters for memory is how large the XML is once
-  // opened, so the decompressed total gets its own cap, checked before any of it is parsed.
+  // A second check on what was actually unpacked, in case a future version of the zip library grows a buffer.
   let uncompressedBytes = 0;
   for (const entry of Object.values(files)) {
     uncompressedBytes += entry.length;
-    if (uncompressedBytes > MAX_XLSX_UNCOMPRESSED_BYTES) {
-      throw new Error('This workbook expands to more than 100 MB of XML when it is opened, so it can\'t be imported. Split it into smaller files and try again.');
-    }
+    if (uncompressedBytes > MAX_XLSX_UNCOMPRESSED_BYTES) throw tooLarge;
   }
   const read = (name: string) => (files[name] ? strFromU8(files[name]) : undefined);
   const workbook = read('xl/workbook.xml');

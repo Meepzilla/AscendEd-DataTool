@@ -8,6 +8,11 @@ on:
   pull_request:
   workflow_dispatch:
 
+# The jobs only read the code: the token GitHub hands them can't push, comment or change the repository, even if a
+# step or a dependency it runs were compromised.
+permissions:
+  contents: read
+
 jobs:
   checks:
     runs-on: ubuntu-latest

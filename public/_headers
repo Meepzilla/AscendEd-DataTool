@@ -11,8 +11,8 @@
 # trick taps); don't send the app's address to links it opens; the page may only send data to this site.
 # Force HTTPS for a year on this host and its subdomains, and switch off browser features the app never
 # uses (camera, microphone, location, payments, USB and motion sensors).
-# Which scripts may run (only the app's own) is set per page by scripts/add-csp.mjs in a <meta> tag, since it
-# lists each page's own inline scripts by hash.
+# The rest of the policy (only the app's own files and scripts, forms sent only to this site) is set per page by
+# scripts/add-csp.mjs in a <meta> tag, since it lists each page's own inline scripts by hash.
 /*
   X-Robots-Tag: noindex
   Content-Security-Policy: frame-ancestors 'none'; connect-src 'self'; object-src 'none'; base-uri 'self'

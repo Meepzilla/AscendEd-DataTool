@@ -12,6 +12,11 @@ on:
 #   repository's secrets, and the APK teachers install.
 # Actions are pinned to full commit SHAs (the version tag is in the comment) so a moved tag can't change what runs.
 
+# The jobs only read the code: the token GitHub hands them can't push, comment or change the repository, even if a
+# step or a dependency it runs were compromised. (Uploading the APK uses its own upload token, not this one.)
+permissions:
+  contents: read
+
 jobs:
   build-check:
     if: github.event_name == 'pull_request'
