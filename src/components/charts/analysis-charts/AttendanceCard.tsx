@@ -20,11 +20,12 @@ import StatTile from './StatTile';
 // bar per month, and a calendar that marks each day a session was held or missed. Missed sessions are the ones
 // recorded with a student card's Missed button in Data Entry.
 
-/** One fixed color per outcome, readable in the light and dark themes; each also has a label in the legend. */
-const HELD_COLOR = '#16a34a';
+/** One fixed color per outcome, readable in the light and dark themes; each also has a label in the legend. White
+ *  text on each meets WCAG AA (4.5:1 or more): green-700, red-600, amber-700, blue-600, slate-500, purple-600. */
+const HELD_COLOR = '#15803d';
 const REASON_COLORS: Record<MissedReason, string> = {
   'student-absent': '#dc2626',
-  'student-unavailable': '#d97706',
+  'student-unavailable': '#b45309',
   'provider-absent': '#2563eb',
   'no-school': '#64748b',
   other: '#9333ea',
