@@ -17,3 +17,19 @@ const TYPE_FIELDS = new Set(['type', 'dataCaptureType', 'goalType', 'fromType'])
 export function reviveGoalTypes(key: string, value: unknown): unknown {
   return TYPE_FIELDS.has(key) ? currentGoalType(value) : value;
 }
+
+// A goal type field in JSON text, with its string value (escapes kept as written).
+const TYPE_FIELD_TEXT = /"(?:type|dataCaptureType|goalType|fromType)"\s*:\s*"((?:[^"\\]|\\.)*)"/g;
+
+/**
+ * JSON.parse with earlier goal type keys read as the current ones: the same result as
+ * JSON.parse(text, reviveGoalTypes). A reviver makes parsing several times slower, and saved lists hold earlier
+ * keys only after an upgrade, so the text is checked first and the reviver used only when it holds one.
+ */
+export function parseWithCurrentGoalTypes(text: string): unknown {
+  for (const match of text.matchAll(TYPE_FIELD_TEXT)) {
+    const value = match[1];
+    if (value.includes('\\') || currentGoalType(value) !== value) return JSON.parse(text, reviveGoalTypes);
+  }
+  return JSON.parse(text);
+}

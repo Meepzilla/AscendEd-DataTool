@@ -2,7 +2,7 @@ import type { SessionData } from './types';
 import { compareSessionsOldestFirst } from './helpers';
 import * as secureStore from './secure-store';
 import * as idb from './indexed-db-store';
-import { reviveGoalTypes } from './legacy-goal-types';
+import { parseWithCurrentGoalTypes } from './legacy-goal-types';
 import { toSafeErrorMessage } from './error-message';
 
 // Where the student data lives on the device: one list each of students, goal templates and sessions,
@@ -46,7 +46,7 @@ export function readList<T>(key: string | null): T[] | undefined {
   }
   try {
     const item = secureStore.getItem(key);
-    const value = item ? JSON.parse(item, reviveGoalTypes) : [];
+    const value = item ? parseWithCurrentGoalTypes(item) : [];
     return Array.isArray(value) ? value : undefined;
   } catch (error) {
     // Message only, sanitised: a read failure is a storage error, but the error object is never logged.
