@@ -18,6 +18,13 @@ interface ChangelogEntry {
 
 const allChangelogEntries: ChangelogEntry[] = [
   {
+    date: '2026-11-17',
+    title: 'Faster with a Large Caseload',
+    description: 'With many students and a year or more of sessions, the app is quicker. Saving a session now stores only what changed instead of rewriting every session on the device, so a save takes a fraction of the time it did, with or without a passcode. Manage Sessions shows the newest 100 sessions with a Show more button instead of drawing every session at once, which could freeze the page for several seconds. Every page also opens a little faster.',
+    type: 'improvement',
+    icon: Zap,
+  },
+  {
     date: '2026-11-16',
     title: 'Lock Screen Stays on Screen While You Type',
     description: 'On an iPad, typing the passcode could slide the lock screen up behind the clock at the top, hiding the passcode box. While the on-screen keyboard is open, the lock screen and the passcode setup screen now stay in the part of the screen the keyboard leaves visible, and scroll if they don\'t fit.',

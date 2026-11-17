@@ -85,8 +85,8 @@ export default function ManageSessionsPage() {
   // The selection is the ticked sessions that are on screen: one rule covers a session that was deleted, merged
   // away, or edited out of the filters, so the count, the merge check and the merge itself never include a record
   // the user can't see.
-  const shownSessions = filteredSessions.slice(0, shownCount);
-  const selectedSessions = useMemo(() => filteredSessions.filter(s => selectedIds.has(s.sessionId)), [filteredSessions, selectedIds]);
+  const shownSessions = useMemo(() => filteredSessions.slice(0, shownCount), [filteredSessions, shownCount]);
+  const selectedSessions = useMemo(() => shownSessions.filter(s => selectedIds.has(s.sessionId)), [shownSessions, selectedIds]);
   const mergeBlocked = mergeProblem(selectedSessions);
   // If the selection stops being mergeable while the dialog is open (a part deleted, say from another tab), close it
   // for good rather than hiding it, so it can't reappear later without a click on Merge Selected.
