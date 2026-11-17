@@ -124,6 +124,63 @@ async function withStore<T>(name: string, mode: IDBTransactionMode, fn: (store: 
   }
 }
 
+/**
+ * Positions (the o field) for a list in its new order, given each record's current position (undefined for a new
+ * record). Positions only need to increase along the list, so as many records as possible keep theirs (the longest
+ * run of current positions already in order), and the rest get positions between their neighbours. Saving a new
+ * session at the top of a long list then rewrites one row, not every row. Falls back to 0, 1, 2… when the numbers
+ * between two neighbours run out.
+ */
+export function listPositions(current: (number | undefined)[]): number[] {
+  const n = current.length;
+  // Longest strictly increasing run of current positions (patience sorting), as indices into the list.
+  const tails: number[] = [];
+  const previous = new Array<number>(n).fill(-1);
+  for (let i = 0; i < n; i++) {
+    const o = current[i];
+    if (o === undefined || !Number.isFinite(o)) continue;
+    let lo = 0;
+    let hi = tails.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if ((current[tails[mid]] as number) < o) lo = mid + 1;
+      else hi = mid;
+    }
+    if (lo > 0) previous[i] = tails[lo - 1];
+    tails[lo] = i;
+  }
+  const keep = new Set<number>();
+  for (let i = tails.length ? tails[tails.length - 1] : -1; i >= 0; i = previous[i]) keep.add(i);
+  const result = new Array<number>(n);
+  let i = 0;
+  let before = -Infinity;
+  while (i < n) {
+    if (keep.has(i)) {
+      before = result[i] = current[i] as number;
+      i++;
+      continue;
+    }
+    let j = i;
+    while (j < n && !keep.has(j)) j++;
+    const after = j < n ? (current[j] as number) : Infinity;
+    const count = j - i;
+    for (let k = 0; k < count; k++) {
+      let o: number;
+      if (before === -Infinity && after === Infinity) o = k;
+      else if (before === -Infinity) o = after - (count - k);
+      else if (after === Infinity) o = before + k + 1;
+      else o = before + ((after - before) * (k + 1)) / (count + 1);
+      result[i + k] = o;
+    }
+    i = j;
+  }
+  for (let k = 1; k < n; k++) {
+    if (!(result[k] > result[k - 1]) || !Number.isFinite(result[k])) return current.map((_, index) => index);
+  }
+  if (n && !Number.isFinite(result[0])) return current.map((_, index) => index);
+  return result;
+}
+
 /** Writes rows (replacing any row with the same key). Resolves only after the transaction commits. */
 export async function putRecords(storeName: ListStoreName, records: IdRecord[]): Promise<void> {
   if (failWrites) throw new DOMException('Storage is full', 'QuotaExceededError');
@@ -132,8 +189,10 @@ export async function putRecords(storeName: ListStoreName, records: IdRecord[]):
     for (const record of records) store.set(record.k, record);
     return;
   }
+  // Every request is issued at once, in one transaction: waiting for each to finish before sending the next made a
+  // save of a few thousand rows take seconds. The transaction is all or nothing either way.
   await withStore(storeName, 'readwrite', async store => {
-    for (const record of records) await runRequest(store.put(record));
+    await Promise.all(records.map(record => runRequest(store.put(record))));
   });
 }
 
@@ -145,7 +204,7 @@ export async function deleteRecords(storeName: ListStoreName, keys: string[]): P
     return;
   }
   await withStore(storeName, 'readwrite', async store => {
-    for (const key of keys) await runRequest(store.delete(key));
+    await Promise.all(keys.map(key => runRequest(store.delete(key))));
   });
 }
 

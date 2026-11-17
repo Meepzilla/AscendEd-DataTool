@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useMemo, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useMemo, useEffect, useDeferredValue, lazy, Suspense } from 'react';
 import { useStudentData } from '@/hooks/use-student-data';
 import type { SessionData } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,9 @@ import type { DateRange } from "react-day-picker";
 const EditSessionModal = lazy(() => import('@/components/modals/edit-session-modal'));
 const ConfirmationModal = lazy(() => import('@/components/modals/confirmation-modal'));
 const ViewSessionDetailsModal = lazy(() => import('@/components/modals/view-session-details-modal'));
+
+/** How many sessions the table shows at first, and how many more each "Show more" adds. */
+const SESSIONS_PAGE_SIZE = 100;
 
 export default function ManageSessionsPage() {
   const { 
@@ -53,17 +56,23 @@ export default function ManageSessionsPage() {
   const [searchTerm, setSearchTerm] = useState(''); // Search by activity or notes
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [viewingSessionDetails, setViewingSessionDetails] = useState<SessionData | null>(null);
-  // Changing the filters clears the ticks, so a merge never includes sessions that aren't shown.
-  useEffect(() => { setSelectedIds(new Set()); }, [selectedStudentId, searchTerm, dateRange]);
+  // The list filters on the search a moment behind the typing, so a long list never holds up the keyboard.
+  const search = useDeferredValue(searchTerm);
+  // Sessions are shown a page at a time: drawing every row of a long caseload at once froze the page for seconds.
+  const [shownCount, setShownCount] = useState(SESSIONS_PAGE_SIZE);
+  // Changing the filters clears the ticks, so a merge never includes sessions that aren't shown, and goes back to
+  // the first page.
+  useEffect(() => { setSelectedIds(new Set()); setShownCount(SESSIONS_PAGE_SIZE); }, [selectedStudentId, search, dateRange]);
 
 
   const filteredSessions = useMemo(() => {
+    const query = search.toLowerCase();
     return sessions
       .filter(session => {
         const studentMatch = selectedStudentId === 'ALL' || session.studentId === selectedStudentId;
-        const searchMatch = searchTerm === '' || 
-                            (session.activity || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            (session.notes || '').toLowerCase().includes(searchTerm.toLowerCase());
+        const searchMatch = query === '' ||
+                            (session.activity || '').toLowerCase().includes(query) ||
+                            (session.notes || '').toLowerCase().includes(query);
         
         // The range includes the whole of its last day.
         const dateMatch = sessionInDateRange(session.date, dateRange?.from, dateRange?.to);
@@ -71,11 +80,12 @@ export default function ManageSessionsPage() {
         return studentMatch && searchMatch && dateMatch;
       })
       .sort((a, b) => compareSessionsOldestFirst(b, a)); // Newest first
-  }, [sessions, selectedStudentId, searchTerm, dateRange]);
+  }, [sessions, selectedStudentId, search, dateRange]);
 
   // The selection is the ticked sessions that are on screen: one rule covers a session that was deleted, merged
   // away, or edited out of the filters, so the count, the merge check and the merge itself never include a record
   // the user can't see.
+  const shownSessions = filteredSessions.slice(0, shownCount);
   const selectedSessions = useMemo(() => filteredSessions.filter(s => selectedIds.has(s.sessionId)), [filteredSessions, selectedIds]);
   const mergeBlocked = mergeProblem(selectedSessions);
   // If the selection stops being mergeable while the dialog is open (a part deleted, say from another tab), close it
@@ -202,7 +212,7 @@ export default function ManageSessionsPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredSessions.map((session) => (
+                  shownSessions.map((session) => (
                     <TableRow key={session.sessionId} data-state={selectedIds.has(session.sessionId) ? 'selected' : undefined}>
                       <TableCell>
                         <Checkbox
@@ -240,6 +250,18 @@ export default function ManageSessionsPage() {
               </TableBody>
             </Table>
           </ScrollArea>
+          {!sessionsLoading && filteredSessions.length > 0 && (
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
+              <p role="status">
+                Showing {shownSessions.length.toLocaleString()} of {filteredSessions.length.toLocaleString()} {filteredSessions.length === 1 ? 'session' : 'sessions'}, newest first
+              </p>
+              {shownSessions.length < filteredSessions.length && (
+                <Button type="button" variant="outline" size="sm" onClick={() => setShownCount(n => n + SESSIONS_PAGE_SIZE)}>
+                  Show {Math.min(SESSIONS_PAGE_SIZE, filteredSessions.length - shownSessions.length)} more
+                </Button>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
       </div>

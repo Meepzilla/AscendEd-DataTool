@@ -324,6 +324,22 @@ const legacyKeys = new Set<string>();
 /** IndexedDB stores holding rows still stored under the old passcode key. */
 const legacyStores = new Set<idb.ListStoreName>();
 const cache = new Map<string, string | null>();
+/**
+ * For each IndexedDB list store, the rows this session last wrote or read and verified: each row's stored value
+ * and the record JSON it holds, under the key it was stored with (null when stored as plain text). A save
+ * re-encrypts and rewrites only the records that changed: a row is kept as it is only when the store still holds
+ * exactly that stored value, under the current key, for exactly that record, so anything that changed the store
+ * meanwhile (another tab, an erase, a passcode change) gets a full rewrite.
+ */
+const knownRows = new Map<idb.ListStoreName, { key: CryptoKey | null; rows: Map<string, { json: string; v: string }> }>();
+
+/** The key a list's rows are written with now: the data key with protection on, or null for plain text. */
+const rowKeyFor = (storageKey: string): CryptoKey | null => (isSensitiveKey(storageKey) && isPasscodeEnabled() ? key : null);
+
+/** Remembers rows read or written under the current key (see knownRows). */
+function rememberRows(store: idb.ListStoreName, rowKey: CryptoKey | null, rows: Map<string, { json: string; v: string }>) {
+  knownRows.set(store, { key: rowKey, rows });
+}
 const writing = new Map<string, Promise<void>>();
 const dirty = new Set<string>();
 /** Stored student-data values that couldn't be decrypted at unlock (damaged); they are left as stored. */
@@ -415,15 +431,20 @@ export async function encryptStoredValue(storageKey: string, text: string): Prom
 
 /** Decrypts one stored string; throws when it is encrypted and neither the data key nor the old passcode key opens it. */
 export async function decryptStoredValue(storageKey: string, stored: string): Promise<string> {
-  if (!stored.startsWith(PREFIX)) return stored;
+  return (await decryptStoredValueWithKey(storageKey, stored)).plain;
+}
+
+/** decryptStoredValue, also saying whether the current data key opened it (false: plain text or the old passcode key). */
+async function decryptStoredValueWithKey(storageKey: string, stored: string): Promise<{ plain: string; current: boolean }> {
+  if (!stored.startsWith(PREFIX)) return { plain: stored, current: false };
   if (!isSensitiveKey(storageKey) || !key) throw new Error('Locked');
   try {
-    return await decryptWith(key, stored);
+    return { plain: await decryptWith(key, stored), current: true };
   } catch (error) {
     // Still stored under the old passcode key (an interrupted migration): readable this session.
     if (legacyKey) {
       try {
-        return await decryptWith(legacyKey, stored);
+        return { plain: await decryptWith(legacyKey, stored), current: false };
       } catch {
         /* fall through to the original error */
       }
@@ -472,6 +493,7 @@ async function persistListRecords(storageKey: string): Promise<void> {
   if (undecryptable.has(storageKey)) return;
   const value = cache.get(storageKey);
   if (value === null || value === undefined) {
+    knownRows.delete(info.store);
     await idb.clearStore(info.store);
     persistedBytes.delete(storageKey);
     recordListCount(storageKey, 0);
@@ -484,36 +506,102 @@ async function persistListRecords(storageKey: string): Promise<void> {
     throw new Error('Cannot save: the stored data is not valid JSON.');
   }
   if (!Array.isArray(records)) throw new Error('Cannot save: the stored data is not a list.');
-  const previousIds = new Set<string>();
-  const rows: idb.IdRecord[] = [];
-  let bytes = 0;
+  if (isSensitiveKey(storageKey) && isPasscodeEnabled() && !key) throw new Error('Locked');
+  const rowKey = rowKeyFor(storageKey);
+  // Rows still under the old passcode key are always rewritten, so the old key can be retired.
+  const known = !legacyStores.has(info.store) && knownRows.get(info.store)?.key === rowKey ? knownRows.get(info.store)!.rows : undefined;
+  const existing = new Map<string, idb.IdRecord>();
+  for (const row of await idb.getAllRecords(info.store)) existing.set(row.k, row);
+  const ids = new Set<string>();
+  const jsonById = new Map<string, string>();
+  const order: string[] = [];
   for (let i = 0; i < records.length; i++) {
     const record = records[i] as Record<string, unknown>;
     const id = typeof record === 'object' && record !== null ? record[info.idField] : undefined;
     if (typeof id !== 'string' || id.length === 0) {
       throw new Error('Cannot save: a record without an id cannot be stored.');
     }
-    previousIds.add(id);
-    const stored = await encryptStoredValue(storageKey, JSON.stringify(record));
-    bytes += stored.length + id.length;
-    rows.push({ k: id, v: stored, o: i });
+    ids.add(id);
+    order.push(id);
+    jsonById.set(id, JSON.stringify(record));
   }
-  const lastIds = new Set<string>();
-  for (const row of await idb.getAllRecords(info.store)) lastIds.add(row.k);
-  await idb.putRecords(info.store, rows);
-  const stale = [...lastIds].filter(id => !previousIds.has(id));
+  // Positions in the list: records keep theirs where the order allows, so adding one record rewrites one row.
+  const positions = idb.listPositions(order.map(id => existing.get(id)?.o));
+  const rows: idb.IdRecord[] = []; // every record's row, in list order
+  const changed: idb.IdRecord[] = []; // the rows to write
+  const written = new Set<string>(); // ids whose value was encrypted afresh, verified by decrypting below
+  let bytes = 0;
+  for (let i = 0; i < order.length; i++) {
+    const id = order[i];
+    const json = jsonById.get(id)!;
+    const was = known?.get(id);
+    const stored = existing.get(id);
+    let row: idb.IdRecord;
+    if (was && was.json === json && stored && stored.v === was.v) {
+      // Unchanged and still stored as last verified: kept, and rewritten only if its place in the list moved.
+      row = { k: id, v: was.v, o: positions[i] };
+      if (stored.o !== positions[i]) changed.push(row);
+    } else {
+      row = { k: id, v: await encryptStoredValue(storageKey, json), o: positions[i] };
+      changed.push(row);
+      written.add(id);
+    }
+    bytes += row.v.length + id.length;
+    rows.push(row);
+  }
+  if (changed.length) await idb.putRecords(info.store, changed);
+  const stale = [...existing.keys()].filter(id => !ids.has(id));
   if (stale.length) await idb.deleteRecords(info.store, stale);
-  // Verify: read the rows back and compare each record with what was written.
+  // Verify: read the rows back and check each against what was written. A row written now is decrypted and
+  // compared with its record; a row kept as it was must still hold exactly the stored value verified before.
   const back = await idb.getAllRecords(info.store);
   if (back.length !== records.length) throw new Error('Save verification failed: the stored records do not match.');
   for (let i = 0; i < back.length; i++) {
-    const readBack = await decryptStoredValue(storageKey, back[i].v);
-    if (readBack !== JSON.stringify(records[i])) throw new Error('Save verification failed: a stored record does not match.');
+    const expected = rows[i];
+    if (back[i].k !== expected.k) throw new Error('Save verification failed: a stored record does not match.');
+    if (written.has(expected.k)) {
+      const readBack = await decryptStoredValue(storageKey, back[i].v);
+      if (readBack !== jsonById.get(expected.k)) throw new Error('Save verification failed: a stored record does not match.');
+    } else if (back[i].v !== expected.v) {
+      throw new Error('Save verification failed: a stored record does not match.');
+    }
   }
+  rememberRows(info.store, rowKey, new Map(rows.map(row => [row.k, { json: jsonById.get(row.k)!, v: row.v }])));
   persistedBytes.set(storageKey, bytes);
   recordListCount(storageKey, records.length);
   // The rows are now under the data key (or plaintext when protection is off), not the old passcode key.
   if (isPasscodeEnabled()) legacyStores.delete(info.store);
+}
+
+/**
+ * verifyStoredList for an IndexedDB list, without decrypting rows this session already verified: a row that still
+ * holds exactly the stored value remembered for it (knownRows), for exactly the expected record's JSON, matches;
+ * every other row is decrypted and compared. Undefined when this check doesn't apply (the caller then reads and
+ * compares the whole list).
+ */
+async function verifyKnownRows(storageKey: string, expected: unknown): Promise<boolean | undefined> {
+  if (!Array.isArray(expected) || !isListKey(storageKey) || getListBackend(storageKey) !== 'idb') return undefined;
+  const info = listKeyInfo(storageKey)!;
+  const known = knownRows.get(info.store);
+  if (!known || known.key !== rowKeyFor(storageKey) || legacyStores.has(info.store)) return undefined;
+  let rows: idb.IdRecord[];
+  try {
+    rows = await idb.getAllRecords(info.store);
+  } catch {
+    return undefined;
+  }
+  if (rows.length !== expected.length) return false;
+  for (let i = 0; i < rows.length; i++) {
+    const was = known.rows.get(rows[i].k);
+    if (was && was.v === rows[i].v && was.json === JSON.stringify(expected[i])) continue;
+    try {
+      const plain = await decryptStoredValue(storageKey, rows[i].v);
+      if (stableStringify(JSON.parse(plain)) !== stableStringify(expected[i])) return false;
+    } catch {
+      return false;
+    }
+  }
+  return true;
 }
 
 /** Waits until no write is pending for the key (including one re-queued while waiting). Throws if it failed. */
@@ -774,7 +862,17 @@ export async function readDurableListResult(storageKey: string): Promise<{ ok: t
     if (rows === null) return { ok: false, reason: 'read-failed' };
     try {
       const values: unknown[] = [];
-      for (const row of rows) values.push(JSON.parse(await decryptStoredValue(storageKey, row.v)));
+      // Rows stored the way a save would store them now are remembered (knownRows), so the next save rewrites only
+      // what changed: with protection on, rows the data key opened; with it off, plain-text rows. A row the old
+      // passcode key opened, or plain text while protection is on, is left out and rewritten by the next save.
+      const protectedOn = isSensitiveKey(storageKey) && isPasscodeEnabled();
+      const seen = new Map<string, { json: string; v: string }>();
+      for (const row of rows) {
+        const { plain, current } = await decryptStoredValueWithKey(storageKey, row.v);
+        values.push(JSON.parse(plain));
+        if (protectedOn ? current : !row.v.startsWith(PREFIX)) seen.set(row.k, { json: plain, v: row.v });
+      }
+      if (!protectedOn || key) rememberRows(info.store, protectedOn ? key : null, seen);
       return { ok: true, values };
     } catch {
       return { ok: false, reason: 'unreadable' };
@@ -805,6 +903,8 @@ async function readLocalStorageList(storageKey: string): Promise<unknown[] | und
 
 /** Whether a list's durable storage holds exactly the expected records (order-insensitive by key order). */
 export async function verifyStoredList(storageKey: string, expected: unknown): Promise<boolean> {
+  const quick = await verifyKnownRows(storageKey, expected);
+  if (quick !== undefined) return quick;
   const durable = await readDurableList(storageKey);
   if (durable === undefined) return false;
   return stableStringify(durable) === stableStringify(expected);
@@ -993,6 +1093,7 @@ async function migrateV1ToWrappedKey(kek: CryptoKey, config: PasscodeConfigV1): 
 async function loadAndMigrateValues(kek: CryptoKey | null, dek: CryptoKey, fillCache: boolean, configJson: string): Promise<void> {
   if (fillCache) {
     cache.clear();
+    knownRows.clear();
     undecryptable.clear();
   }
   legacyKeys.clear();
@@ -1363,6 +1464,7 @@ export async function enablePasscode(passcode: string, autoLockMinutes = 15, rec
   // in-memory values and re-encrypt their rows with the new key instead of dropping them.
   const listCache = [...cache].filter(([storageKey]) => isListKey(storageKey) && getListBackend(storageKey) === 'idb');
   cache.clear();
+  knownRows.clear();
   plain.forEach(([storageKey, value]) => cache.set(storageKey, value));
   listCache.forEach(([storageKey, value]) => cache.set(storageKey, value));
   // Every IndexedDB row, loaded or not: plaintext rows are encrypted with the new data key. A row that is already
@@ -1465,6 +1567,7 @@ export async function disablePasscode(current: string): Promise<{ quarantined: Q
   legacyStores.clear();
   clearDekIdbFlag();
   cache.clear();
+  knownRows.clear();
   listCache.forEach(([storageKey, value]) => cache.set(storageKey, value));
   return { quarantined: [] };
 }
@@ -1487,6 +1590,7 @@ export function eraseProtectedData() {
   legacyStores.clear();
   clearDekIdbFlag();
   cache.clear();
+  knownRows.clear();
 }
 
 /** Whether a recovery key is set up for this device. */
