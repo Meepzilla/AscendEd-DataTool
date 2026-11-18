@@ -87,9 +87,10 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
     // Five level descriptions, one per level from -2 to +2; all blank means no custom descriptions.
     const descriptions = Array.from({ length: 5 }, (_, i) => (data.gasLevelDescriptions?.[i] ?? '').trim());
     const gasLevelDescriptions = descriptions.some(Boolean) ? descriptions : undefined;
-    await updateGoalTemplate(currentTemplate.id, { ...data, gasLevelDescriptions });
+    const saved = await updateGoalTemplate(currentTemplate.id, { ...data, gasLevelDescriptions });
     setIsSubmitting(false);
-    closeEditGoalTemplateModal();
+    // Not saved (the storage error was shown): stays open with the edits, so they can be saved again.
+    if (saved) closeEditGoalTemplateModal();
   };
 
   if (!currentTemplate) return null;

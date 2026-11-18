@@ -28,8 +28,7 @@ interface AssignGoalToStudentModalProps {
 export default function AssignGoalToStudentModal({ student, isOpen, onClose }: AssignGoalToStudentModalProps) {
   const {
     goalTemplates,
-    updateStudent,
-    students,
+    assignGoalToStudent,
     currentUser,
     loading: dataLoading
   } = useStudentData();
@@ -62,19 +61,11 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
       if (template) goalsToAssign.push(goalFromTemplate(template));
     });
 
-    const currentStudentObject = students.find(s => s.id === student.id);
-
-    if (!currentStudentObject) {
-      toast({ title: "Error", description: "Student data not found. Cannot assign goals.", variant: "destructive" });
-      setIsAssigningTemplates(false);
-      return;
-    }
-
-    const updatedStudentGoals = [...currentStudentObject.goals, ...goalsToAssign];
-
     try {
-      await updateStudent(student.id, { goals: updatedStudentGoals });
-
+      // Added to the student's goals as stored when the save runs (not a list built from what was on screen,
+      // which could undo a change saved meanwhile). Not saved (the storage error was shown): the selection is
+      // kept so it can be assigned again.
+      if (!(await assignGoalToStudent(student.id, goalsToAssign))) return;
       recordRecentTemplates(currentUser?.uid, [...selectedTemplates]);
       toast({ title: "Success", description: `${goalsToAssign.length} goal(s) assigned from templates.`});
       setSelectedTemplates(new Set());
