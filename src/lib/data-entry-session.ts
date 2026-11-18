@@ -123,3 +123,41 @@ export function moveGoal(goals: Goal[], goalId: string, direction: 'up' | 'down'
   next.splice(target, 0, moved);
   return next;
 }
+
+/**
+ * A card's state after a save that failed. The card was cleared (`cleared`) when the save started, so anything
+ * entered meanwhile counts toward the next session instead of being wiped when the save ends; `snapshot` is what
+ * was being saved. Every field and goal still untouched since the clear gets the snapshot's value back; one
+ * entered again meanwhile keeps the new entry, and `lost` names the goals (and 'activity', 'notes',
+ * 'serviceMinutes') whose snapshot value couldn't be put back because of it. State updates replace what they
+ * change, so "untouched" is "still the same object (or value) the clear set".
+ */
+export function restoreAfterFailedSave(
+  current: StudentSessionState | undefined,
+  cleared: StudentSessionState,
+  snapshot: StudentSessionState,
+): { state: StudentSessionState; lost: string[] } {
+  if (!current || current === cleared) return { state: snapshot, lost: [] };
+  const lost: string[] = [];
+  const pick = <T,>(field: string, now: T, clearedValue: T, saved: T): T => {
+    if (now === clearedValue) return saved;
+    if (JSON.stringify(saved ?? null) !== JSON.stringify(clearedValue ?? null)) lost.push(field);
+    return now;
+  };
+  const goalData = { ...current.goalData };
+  for (const [goalId, saved] of Object.entries(snapshot.goalData)) {
+    // A goal removed from the card meanwhile (edited elsewhere) has nowhere to go back to.
+    if (!(goalId in current.goalData)) continue;
+    goalData[goalId] = pick(goalId, current.goalData[goalId], cleared.goalData[goalId], saved);
+  }
+  return {
+    state: {
+      ...current,
+      activity: pick('activity', current.activity, cleared.activity, snapshot.activity),
+      notes: pick('notes', current.notes, cleared.notes, snapshot.notes),
+      serviceMinutes: pick('serviceMinutes', current.serviceMinutes, cleared.serviceMinutes, snapshot.serviceMinutes),
+      goalData,
+    },
+    lost,
+  };
+}
