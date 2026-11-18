@@ -239,13 +239,29 @@ export function sessionTimestamp(session: { date: string; time?: string }): numb
   return new Date(date.getFullYear(), date.getMonth(), date.getDate(), Number(match[1]), Number(match[2])).getTime();
 }
 
+type SortKeys = { date: string; time?: string; at: number; stored: number };
+// Each session's two sort keys, worked out once per session object. Sorting thousands of sessions called the
+// comparator over a hundred thousand times, each building several Dates: the whole list was sorted on every save,
+// which took a large part of the save on a long caseload. A key is reused only while the date and time it came from
+// are unchanged (sessions are replaced, not edited in place, but this doesn't rely on it).
+const sortKeyCache = new WeakMap<object, SortKeys>();
+function sessionSortKeys(s: { date: string; time?: string }): SortKeys {
+  const cached = sortKeyCache.get(s);
+  if (cached && cached.date === s.date && cached.time === s.time) return cached;
+  const at = sessionTimestamp(s);
+  const stored = parseDateOnly(s.date).getTime();
+  // A session whose date can't be read sorts last (NaN in a comparator leaves the whole order undefined).
+  const keys = { date: s.date, time: s.time, at: Number.isNaN(at) ? Infinity : at, stored: Number.isNaN(stored) ? Infinity : stored };
+  sortKeyCache.set(s, keys);
+  return keys;
+}
+
 /** Orders sessions oldest first (by sessionTimestamp, then the stored date). */
 export function compareSessionsOldestFirst(a: { date: string; time?: string }, b: { date: string; time?: string }): number {
-  // A session whose date can't be read sorts last (NaN in a comparator leaves the whole order undefined).
-  const at = (s: { date: string; time?: string }) => { const t = sessionTimestamp(s); return Number.isNaN(t) ? Infinity : t; };
-  const stored = (s: { date: string }) => { const t = parseDateOnly(s.date).getTime(); return Number.isNaN(t) ? Infinity : t; };
-  const byTime = at(a) === at(b) ? 0 : at(a) - at(b);
-  return byTime || (stored(a) === stored(b) ? 0 : stored(a) - stored(b));
+  const ka = sessionSortKeys(a);
+  const kb = sessionSortKeys(b);
+  const byTime = ka.at === kb.at ? 0 : ka.at - kb.at;
+  return byTime || (ka.stored === kb.stored ? 0 : ka.stored - kb.stored);
 }
 
 /** The most recent of some session dates, as stored; dates that can't be read are passed over (null if none can). */
