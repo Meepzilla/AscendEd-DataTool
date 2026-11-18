@@ -114,7 +114,8 @@ export default function ImportStudentsCard() {
   }));
 
   // Set at once (state updates later), so a second tap while the import runs is ignored: the data actions queue calls
-  // rather than dropping a repeat, and a second run of the same preview creates its students and goals again.
+  // rather than dropping a repeat, so a second tap would run the whole import again (it finds the students it just
+  // added by name, so it adds nothing, but it repeats the work and its message).
   const importingRef = useRef(false);
   const [importing, setImporting] = useState(false);
   const runImport = async () => {
