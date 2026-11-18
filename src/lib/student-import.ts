@@ -1,6 +1,6 @@
 import type { Goal, GoalType, ServicePer, Student, StudentIep, TargetDirection } from './types';
 import type { CellValue } from './xlsx-read';
-import { generateUUID } from './helpers';
+import { generateUUID, isRealDate } from './helpers';
 import { COMMUNICATION_FUNCTIONS } from './goal-constants';
 
 // Importing students from a spreadsheet (an "IEP at a glance" with one row per student): the student's name,
@@ -77,13 +77,6 @@ function findColumns(header: CellValue[]): Map<Column, number[]> {
 // --- Values ---
 
 const pad = (n: number) => String(n).padStart(2, '0');
-
-/** Whether a year, month and day are a real calendar date (so 02/30/2026 is rejected, not rolled to Mar 3). */
-const isRealDate = (year: number, month: number, day: number) => {
-  if (month < 1 || month > 12 || day < 1) return false;
-  // The last day of the month: the day before the 1st of the next month (leap years included).
-  return day <= new Date(year, month, 0).getDate();
-};
 
 /** A two-digit year: 69-99 is 19xx, 00-68 is 20xx (so 99 is 1999, not 2099). */
 const twoDigitYear = (yy: number) => (yy >= 69 ? 1900 + yy : 2000 + yy);
@@ -332,7 +325,7 @@ export function goalTarget(type: GoalType, text: string): number {
       const ratio = lastMatch(/(\d+)\s+(?:out\s+)?of\s+(\d+)/g, t);
       if (ratio && Number(ratio[2]) > 0 && Number(ratio[1]) <= Number(ratio[2])) return Math.round((Number(ratio[1]) / Number(ratio[2])) * 100);
       const trials = lastMatch(/(\d+)\s*\/\s*(\d+)\s+(?:trials|opportunit|attempts)/g, t);
-      if (trials && Number(trials[2]) > 0) return Math.round((Number(trials[1]) / Number(trials[2])) * 100);
+      if (trials && Number(trials[2]) > 0 && Number(trials[1]) <= Number(trials[2])) return Math.round((Number(trials[1]) / Number(trials[2])) * 100);
       return 80;
     }
   }

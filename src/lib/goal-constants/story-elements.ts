@@ -24,7 +24,8 @@ export const STORY_PART_NOT_ASSESSED = -1;
 /** A story part's score (0-2), or null when it wasn't assessed. */
 export function storyPartScore(value: unknown): number | null {
   const n = Number(value) || 0;
-  return n === STORY_PART_NOT_ASSESSED ? null : Math.min(2, Math.max(0, n));
+  // Any negative value means not assessed (only -1 is written; another, from damaged data, isn't a score of 0).
+  return n < 0 ? null : Math.min(2, n);
 }
 
 /** The average score (0-2) of one story part over sessions, counting only those where it was assessed; null if none. */

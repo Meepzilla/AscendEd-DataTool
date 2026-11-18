@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { knownGoalType } from './legacy-goal-types';
 import { reviveGoalTypes } from './legacy-goal-types';
 import type { GoalTemplate, SessionData, Student } from './types';
 import { AbcListsSchema, type AbcLists, loadCustomAbcLists } from './abc-lists';
@@ -45,7 +46,7 @@ const TOO_LARGE = `over ${MAX_BACKUP_FILE_BYTES / (1024 * 1024)} MB`;
 
 /** A record dropped while parsing, with why, so the user can be told what was left out. */
 export interface DroppedRecord {
-  kind: 'student' | 'goalTemplate' | 'session';
+  kind: 'student' | 'goalTemplate' | 'session' | 'goal' | 'sessionGoal';
   id: string;
   reason: string;
 }
@@ -397,9 +398,10 @@ export async function decryptBackupText(text: string, password: string): Promise
   }
 }
 
-/** Whether a value is a real date (a parseable date string, or a finite timestamp). */
+/** Whether a value is a real date (a parseable date string, or a timestamp inside the range a Date can hold). */
 function validDateValue(value: unknown): value is string | number {
-  if (typeof value === 'number') return Number.isFinite(value);
+  // A finite number can still be out of range (1e20): toISOString() on it throws and would abort the whole restore.
+  if (typeof value === 'number') return Number.isFinite(value) && !Number.isNaN(new Date(value).getTime());
   return typeof value === 'string' && value.length > 0 && !Number.isNaN(Date.parse(value));
 }
 
@@ -457,6 +459,17 @@ export function parseBackup(text: string): ParsedBackup {
     }
   }
   const droppedRecords: DroppedRecord[] = [];
+  // A goal whose type (or data capture type) this app doesn't know is left out and reported: it can't be measured,
+  // charted or entered, and a type from an earlier version is read as its current key.
+  const knownGoals = <G extends { id: string; type: string; dataCaptureType?: string }>(goals: G[], owner: string): G[] => goals.flatMap(goal => {
+    const type = knownGoalType(goal.type);
+    const capture = goal.dataCaptureType === undefined ? undefined : knownGoalType(goal.dataCaptureType);
+    if (type === undefined || (goal.dataCaptureType !== undefined && capture === undefined)) {
+      droppedRecords.push({ kind: 'goal', id: `${goal.id}, on ${owner}`, reason: `goal type "${goal.dataCaptureType !== undefined && capture === undefined ? goal.dataCaptureType : goal.type}" is not known` });
+      return [];
+    }
+    return [{ ...goal, type, ...(capture !== undefined ? { dataCaptureType: capture } : {}) }];
+  });
   const students = result.data.data.students.filter(s => {
     if (s.createdAt === undefined || s.createdAt === null) return true;
     if (asIsoDate(s.createdAt) === null) {
@@ -466,12 +479,18 @@ export function parseBackup(text: string): ParsedBackup {
     return true;
   }).map(s => ({
     ...s,
+    goals: knownGoals(s.goals, `student ${s.id}`),
     // null (an invalid Date saved by an older app) is backfilled from the export date, like a template's.
     createdAt: s.createdAt === undefined ? s.createdAt : s.createdAt === null ? new Date(result.data.exportedAt).toISOString() : asIsoDate(s.createdAt),
   }));
   // A template's createdAt is only a sort hint. An invalid Date in an older app was saved to JSON as null: treat
   // it like a missing one (backfilled below) rather than dropping the template, as older versions restored it.
   const goalTemplates = result.data.data.goalTemplates.filter(t => {
+    const type = knownGoalType(t.type);
+    if (type === undefined || (t.dataCaptureType !== undefined && knownGoalType(t.dataCaptureType) === undefined)) {
+      droppedRecords.push({ kind: 'goalTemplate', id: t.id, reason: `goal type "${type === undefined ? t.type : t.dataCaptureType}" is not known` });
+      return false;
+    }
     if (t.createdAt === undefined || t.createdAt === null) return true;
     if (asIsoDate(t.createdAt) === null) {
       droppedRecords.push({ kind: 'goalTemplate', id: t.id, reason: 'createdAt is not a valid date' });
@@ -480,6 +499,8 @@ export function parseBackup(text: string): ParsedBackup {
     return true;
   }).map(t => ({
     ...t,
+    type: knownGoalType(t.type)!,
+    ...(t.dataCaptureType !== undefined ? { dataCaptureType: knownGoalType(t.dataCaptureType)! } : {}),
     // Template dates are stored as strings in JSON; the app works with Date objects.
     // A missing createdAt is backfilled from the export date, so it is never Invalid Date.
     createdAt: t.createdAt === undefined || t.createdAt === null ? new Date(result.data.exportedAt) : new Date(asIsoDate(t.createdAt)!),
@@ -490,6 +511,18 @@ export function parseBackup(text: string): ParsedBackup {
       return false;
     }
     return true;
+  }).map(s => {
+    // A recorded goal of an unknown type is left out of its session, and so is a goal header of one.
+    const goals = (s.goals ?? []).flatMap(g => {
+      const type = knownGoalType(g.goalType);
+      if (type === undefined) {
+        droppedRecords.push({ kind: 'sessionGoal', id: `${g.goalId}, in session ${s.sessionId}`, reason: `goal type "${g.goalType}" is not known` });
+        return [];
+      }
+      return [{ ...g, goalType: type }];
+    });
+    const headers = s.originalGoalHeaders === undefined ? undefined : knownGoals(s.originalGoalHeaders, `session ${s.sessionId}`);
+    return { ...s, ...(s.goals !== undefined ? { goals } : {}), ...(headers !== undefined ? { originalGoalHeaders: headers } : {}) };
   });
   return {
     app: result.data.app,
@@ -514,6 +547,16 @@ export interface RestoreSummary {
   sessions: number;
   /** Goals added to students already on the device. */
   goals: number;
+  /** What parseBackup had to leave out (damaged settings and records), in words, for the message shown after a restore. */
+  leftOut?: string[];
+}
+
+/** What a backup's parsing left out, in words (empty when nothing was). */
+export function describeLeftOut(backup: Partial<Pick<ParsedBackup, 'droppedSettings' | 'droppedRecords'>>): string[] {
+  const settings = (backup.droppedSettings ?? []).map(name => `the ${name === 'abcLists' ? 'ABC lists' : name === 'studentGroups' ? 'student groups' : name} settings`);
+  const records = (backup.droppedRecords ?? []).map(r =>
+    `${r.kind === 'goalTemplate' ? 'a goal template' : r.kind === 'sessionGoal' ? 'a goal in a session' : `a ${r.kind}`} (${r.id}: ${r.reason})`);
+  return [...settings, ...records];
 }
 
 /**

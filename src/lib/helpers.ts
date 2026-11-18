@@ -54,9 +54,23 @@ export function formatDateOnly(value: string): string {
   return formatDate(/^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T00:00`) : value);
 }
 
-/** A stored date as a Date: a YYYY-MM-DD value reads as that day at local midnight, anything else as given. */
+/** Whether a year, month and day are a real calendar date (so 2026-02-30 is not: it would roll to Mar 2). */
+export function isRealDate(year: number, month: number, day: number): boolean {
+  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) return false;
+  if (month < 1 || month > 12 || day < 1) return false;
+  // The last day of the month: the day before the 1st of the next month (leap years included).
+  return day <= new Date(year, month, 0).getDate();
+}
+
+/**
+ * A stored date as a Date: a YYYY-MM-DD value reads as that day at local midnight, anything else as given.
+ * A YYYY-MM-DD value that isn't a real day (2026-02-30) is an Invalid Date, not the day it would roll to, so
+ * every caller's existing "can't be read" handling applies.
+ */
 export function parseDateOnly(value: string): Date {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T00:00`) : new Date(value);
+  const day = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!day) return new Date(value);
+  return isRealDate(+day[1], +day[2], +day[3]) ? new Date(`${value}T00:00`) : new Date(Number.NaN);
 }
 
 /** The largest file an import accepts (10 MB); bigger files are rejected before they are read. */
@@ -237,7 +251,7 @@ export function latestSessionDate(dates: string[]): string | null {
 /**
  * Whether a session's date is within a range picked in the app: on or after the start of `from`'s day and on or
  * before the end of `to`'s day (either end may be left open). A date-only session date, as imported sessions have,
- * counts as that local day, not the evening before. A session whose date can't be read is outside any range.
+ * counts as that local day, not the evening before. A session whose date can't be read is outside any range that is set; with no range it is still listed, so a record with a damaged date stays visible (and can be edited or deleted).
  */
 export function sessionInDateRange(date: string, from?: Date | null, to?: Date | null): boolean {
   const when = parseDateOnly(date).getTime();

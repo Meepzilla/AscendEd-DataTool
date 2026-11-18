@@ -20,6 +20,8 @@ export function mergeProblem(sessions: SessionData[]): string | null {
   if (sessions.length < 2) return 'Select at least two sessions.';
   if (sessions.some(s => s.missed)) return 'Missed sessions can\'t be merged.';
   if (new Set(sessions.map(s => s.studentId)).size > 1) return 'Select sessions of one student.';
+  // A date that can't be read (every one would read as the same "Invalid Date") can't be shown to be the same day.
+  if (sessions.some(s => Number.isNaN(parseDateOnly(s.date).getTime()))) return 'A session has a date that can\'t be read, so it can\'t be merged.';
   if (new Set(sessions.map(s => parseDateOnly(s.date).toDateString())).size > 1) return 'Select sessions on the same day.';
   return null;
 }
@@ -48,7 +50,7 @@ const appendList = (current: unknown[], value: unknown[]): unknown[] => {
 
 // Numbers that are settings, times or summaries rather than counts: they keep the latest value (summaries are
 // worked out again afterwards).
-const NOT_ADDED = new Set(['rating', 'gasLevel', 'numberOfTrials', 'runningSince', 'intervalSeconds', 'percentIntervals', 'averageSeconds', 'timerStartedAt', 'cueGivenAt']);
+const NOT_ADDED = new Set(['rating', 'gasLevel', 'numberOfTrials', 'trialsPerAttempt', 'runningSince', 'intervalSeconds', 'percentIntervals', 'averageSeconds', 'timerStartedAt', 'cueGivenAt']);
 const STORY_PART_KEYS = new Set<string>(STORY_PARTS.map(p => p.key));
 
 const isBlank = (v: unknown) => v === null || (typeof v === 'string' && v.trim() === '');
@@ -167,7 +169,15 @@ export function mergeSessions(sessions: SessionData[]): SessionData {
     const total = SERVICE_TYPES.reduce((sum, type) => sum + (totals[type] ?? 0), 0);
     if (total > 0) {
       const scale = span !== null && span > 0 && total > span ? span / total : 1;
-      serviceMinutes = Object.fromEntries(SERVICE_TYPES.filter(t => totals[t]).map(t => [t, Math.round(totals[t]! * scale)]));
+      // Rounded together, so the parts add up to the rounded total (rounding each on its own could pass it by a minute).
+      const types = SERVICE_TYPES.filter(t => totals[t]);
+      const target = Math.round(total * scale);
+      const floors = types.map(t => Math.floor(totals[t]! * scale));
+      let short = target - floors.reduce((a, b) => a + b, 0);
+      // The remaining minutes go to the types with the largest fractional parts.
+      const order = types.map((t, i) => i).sort((a, b) => (totals[types[b]]! * scale - floors[b]) - (totals[types[a]]! * scale - floors[a]));
+      for (const i of order) { if (short <= 0) break; floors[i]++; short--; }
+      serviceMinutes = Object.fromEntries(types.map((t, i) => [t, floors[i]]).filter(([, minutes]) => (minutes as number) > 0));
     }
   }
 

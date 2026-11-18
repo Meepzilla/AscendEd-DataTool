@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-18',
+    title: 'Safer Handling of Damaged or Unusual Data',
+    description: 'Backups, imported files and saved data that hold values the app never writes are now rejected or contained where they come in, instead of causing crashes or quietly wrong results. A restored backup leaves out goals and templates of a goal type the app doesn\'t know, and tells you which ones in the message shown after the restore (that message used to be replaced before it could be read). An out-of-range date in a backup no longer cancels the whole restore. A session CSV with a date that doesn\'t exist (11/31/2026) or isn\'t a date, or a goal type the app doesn\'t know, is turned away with a clear message, and imported dates are stored as the written day. A date like 2026-02-30 is no longer moved to March 2. A damaged trial count can no longer crash the trial grid or its hotkeys. Merging sessions no longer doubles the trials per attempt, shares service minutes out so they add up, and refuses sessions whose dates can\'t be read. A "5/3 trials" target in an imported IEP is no longer read as 167%, one bad episode no longer breaks a duration summary, and an unexpected negative story score counts as not assessed.',
+    type: 'fix',
+    icon: ShieldCheck,
+  },
+  {
+    date: '2026-11-18',
     title: 'Taps During a Save Are Kept',
     description: 'In Data Entry, a student\'s card now clears as soon as you tap Save (or Save All), instead of when the save finishes. Anything you tap or type on the card while the save is still running is kept for the next session; before, it was wiped when the save finished and was not in the saved session either. If the save fails, what you entered comes back on the card, keeping anything entered meanwhile, and the app tells you if a newer entry had to be kept instead of an older one. Until a save has finished, its entries stay in the draft, so closing the app mid-save loses nothing.',
     type: 'fix',

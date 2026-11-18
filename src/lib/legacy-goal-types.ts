@@ -33,3 +33,13 @@ export function parseWithCurrentGoalTypes(text: string): unknown {
   }
   return JSON.parse(text);
 }
+
+/**
+ * The current goal type for a stored value (earlier keys read as the current ones), or undefined when it isn't a
+ * goal type this app knows. The one membership check where untrusted goal types come in (a restored backup, an
+ * imported file): a type the app can't measure, chart or collect data for must not become a goal.
+ */
+export function knownGoalType(type: unknown): GoalType | undefined {
+  const current = currentGoalType(type);
+  return typeof current === 'string' && (GOAL_TYPE_VALUES as readonly string[]).includes(current) ? (current as GoalType) : undefined;
+}

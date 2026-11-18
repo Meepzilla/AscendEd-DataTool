@@ -1,6 +1,7 @@
 import type { GoalType, TrialStatus } from './types';
 import { PROMPT_HOTKEY_MAP } from './promptConstants';
 import { GOAL_TYPES_WITHOUT_PROMPT_COUNTERS, alignTimes } from './goal-constants';
+import { storedTrialCount } from './goal-input-logic';
 import { scoreNextStep, type StepLevel } from './task-analysis';
 
 // Data Entry hotkeys that record data for the focused goal (see Help → Hotkeys):
@@ -58,7 +59,7 @@ const TRIAL_GRID_TYPES: GoalType[] = ['DISCRETE_TRIALS', 'SEQUENCED_TRIALS', 'CO
 const add = (data: Record<string, any>, field: string, amount = 1) => ({ ...data, [field]: (Number(data[field]) || 0) + amount });
 
 function fillNextTrial(data: Record<string, any>, status: TrialStatus): Record<string, any> | null {
-  const trials: TrialStatus[] = Array.isArray(data.trials) ? [...data.trials] : Array(Number(data.numberOfTrials) || 5).fill('untouched');
+  const trials: TrialStatus[] = Array.isArray(data.trials) ? [...data.trials] : Array(storedTrialCount(data.numberOfTrials)).fill('untouched');
   const next = trials.indexOf('untouched');
   if (next === -1) return null;
   trials[next] = status;
