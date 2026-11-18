@@ -42,6 +42,16 @@ const ITERATIONS = 600_000;
  * runs it as stated, so a crafted count in the hundreds of millions would hang the tab.
  */
 export const MAX_BACKUP_ITERATIONS = 5_000_000;
+/** The most PBKDF2 iterations a stored passcode or recovery setting may name: the same ceiling as a backup's. */
+export const MAX_KDF_ITERATIONS = MAX_BACKUP_ITERATIONS;
+
+/** The passcode settings stored on this device can't be used (damaged, or changed by hand). */
+export class DamagedPasscodeSettingsError extends Error {
+  constructor() {
+    super('The passcode settings on this device are damaged, so the data can\'t be unlocked with the passcode. Use "Forgot passcode?" to unlock with the recovery key, or to start over and restore a backup.');
+    this.name = 'DamagedPasscodeSettingsError';
+  }
+}
 const PREFIX = 'enc1:';
 /** Known plaintext encrypted under the data key, to tell a right passcode or recovery key from a wrong one. Not a secret. */
 export const CHECK_TEXT = 'ascended-passcode-check';
@@ -396,6 +406,9 @@ export function setWriteErrorHandler(handler: ((error: unknown, storageKey?: str
 }
 
 async function deriveKey(passcode: string, salt: Uint8Array, iterations: number): Promise<CryptoKey> {
+  // The count is read from the stored settings. PBKDF2 runs it as given, so a damaged or tampered value in the
+  // billions would hang every unlock: it is checked here, where every passcode and recovery key is derived.
+  if (!Number.isInteger(iterations) || iterations < 1 || iterations > MAX_KDF_ITERATIONS) throw new DamagedPasscodeSettingsError();
   const material = await crypto.subtle.importKey('raw', new TextEncoder().encode(passcode), 'PBKDF2', false, ['deriveKey']);
   return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations, hash: 'SHA-256' }, material, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt', 'wrapKey', 'unwrapKey']);
 }

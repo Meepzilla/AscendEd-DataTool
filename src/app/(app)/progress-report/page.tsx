@@ -16,7 +16,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
 import { useStudentData } from '@/hooks/use-student-data';
-import { compareSessionsOldestFirst, formatDate, parseDateOnly, sessionInDateRange } from '@/lib/helpers';
+import { compareSessionsOldestFirst, formatDate, localDayKey, parseDateOnly, sessionInDateRange } from '@/lib/helpers';
 import { buildProgressReport, type ProgressStatus } from '@/lib/report-narrative';
 import { getOrganizationName } from '@/lib/organization';
 import { attendanceSummary, attendanceText } from '@/lib/attendance';
@@ -107,6 +107,13 @@ function ProgressReportPage() {
   }, [sessions, studentId, period, customRange]);
 
   const goals = useMemo(() => activeGoals.filter(g => !excludedGoals.has(g.id)), [activeGoals, excludedGoals]);
+  // While the printed copy is on the page, printing shows only that copy (globals.css, html.has-print-copy).
+  const hasPrintCopy = portalReady && !!student && goals.length > 0;
+  useEffect(() => {
+    if (!hasPrintCopy) return;
+    document.documentElement.classList.add('has-print-copy');
+    return () => document.documentElement.classList.remove('has-print-copy');
+  }, [hasPrintCopy]);
   const report = useMemo(
     () => (student ? buildProgressReport({ student, goals, sessions: periodSessions }) : []),
     [student, goals, periodSessions],
@@ -139,7 +146,7 @@ function ProgressReportPage() {
     )) return;
     // The title becomes the PDF's file name when saving as PDF.
     const title = document.title;
-    document.title = `Progress Report - ${student?.name ?? ''} - ${new Date().toISOString().slice(0, 10)}`;
+    document.title = `Progress Report - ${student?.name ?? ''} - ${localDayKey(new Date())}`;
     const restore = () => { document.title = title; window.removeEventListener('afterprint', restore); };
     window.addEventListener('afterprint', restore);
     window.print();

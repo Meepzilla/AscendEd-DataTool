@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { localDayKey } from '@/lib/helpers';
 import { Copy, Download, FileText, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -53,7 +54,7 @@ export default function NarrativeDialog(props: NarrativeInput & { disabled?: boo
   const save = async () => {
     if (!confirmExport()) return;
     const safeName = input.student.name.replace(/[^a-z0-9]+/gi, '_');
-    const date = new Date().toISOString().split('T')[0];
+    const date = localDayKey(new Date());
     // A failed save used to be swallowed (an empty catch): the narrative stayed on screen with
     // nothing saying the file never landed. It is logged and toasted now; a cancelled share
     // (saveTextFile returns false) is not a failure and says nothing.

@@ -23,7 +23,7 @@ import SchoolYearSetting from '@/components/settings/SchoolYearSetting';
 import AbcListsCard from '@/components/settings/AbcListsCard';
 import BuiltInGoalsCard from '@/components/settings/BuiltInGoalsCard';
 
-const SIDEBAR_ENABLED_KEY = 'sidebar_enabled';
+import { SIDEBAR_ENABLED_KEY, readSidebarEnabled } from '@/lib/sidebar-setting';
 
 export default function SettingsPage() {
   const [isSidebarEnabled, setIsSidebarEnabled] = useState(true);
@@ -33,7 +33,7 @@ export default function SettingsPage() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const storedSidebarSetting = window.localStorage.getItem(SIDEBAR_ENABLED_KEY);
-      setIsSidebarEnabled(storedSidebarSetting === null ? true : JSON.parse(storedSidebarSetting));
+      setIsSidebarEnabled(readSidebarEnabled(storedSidebarSetting));
       
       setIsLoading(false);
     }
