@@ -14,7 +14,7 @@ import { useStudentData } from '@/hooks/use-student-data';
 import { useBackup } from '@/hooks/use-backup';
 import BackUpNowButton from './BackUpNowButton';
 import { useToast } from '@/hooks/use-toast';
-import { decryptBackupText, isProtectedBackup, parseBackup, type AppBackup, type RestoreMode } from '@/lib/backup';
+import { decryptBackupText, isProtectedBackup, parseBackup, type AppBackup, type RestoreMode, MAX_BACKUP_FILE_BYTES } from '@/lib/backup';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { plural } from '@/lib/helpers';
@@ -52,6 +52,12 @@ export default function BackupRestoreCard() {
     const file = event.target.files?.[0];
     event.target.value = ''; // allow choosing the same file again
     if (!file) return;
+    // The size is checked before the file is read (and, for a protected one, decrypted): a wrong or oversized file
+    // is turned away without loading it all into memory on a school iPad.
+    if (file.size > MAX_BACKUP_FILE_BYTES) {
+      toast({ title: "Can't restore this file", description: `This file is larger than ${MAX_BACKUP_FILE_BYTES / (1024 * 1024)} MB, so it isn't a backup this app can restore.`, variant: 'destructive' });
+      return;
+    }
     try {
       const text = await file.text();
       if (isProtectedBackup(text)) setProtectedText(text);

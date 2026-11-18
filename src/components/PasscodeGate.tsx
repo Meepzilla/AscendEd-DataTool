@@ -12,7 +12,7 @@ import { useKeyboardFrame } from '@/hooks/use-keyboard-frame';
 import { cn } from '@/lib/utils';
 import {
   MIN_PASSCODE_LENGTH, enablePasscode, eraseProtectedData, generateRecoveryKey, getAutoLockMinutes, isPasscodeEnabled,
-  isUnlocked, lockNow, resetPasscodeWithRecoveryKey, unlock,
+  isUnlocked, lockNow, resetPasscodeWithRecoveryKey, unlock, DamagedPasscodeSettingsError,
 } from '@/lib/secure-store';
 import { clearPasscodeDecision, hasExistingStudentData, needsFirstRunPrompt, needsPasscodeOffer, passcodeGateStatus, recordPasscodeDecision, recordBackupDeclinedBeforePasscode, shouldPromptForBackupBeforePasscode } from '@/lib/passcode-onboarding';
 import { useAuth } from '@/hooks/use-auth';
@@ -511,10 +511,12 @@ function LockScreen({ onUnlocked }: { onUnlocked: () => void }) {
     let ok: boolean;
     try {
       ok = await unlock(passcode);
-    } catch {
-      // Encryption isn't available (e.g. the page isn't served over https) or the stored settings are damaged.
+    } catch (error) {
+      // The stored settings are damaged (say so), or encryption isn't available (e.g. the page isn't served over https).
       setBusy(false);
-      setError('This device couldn\'t unlock the data. Make sure the app is opened from its https address, then try again.');
+      setError(error instanceof DamagedPasscodeSettingsError
+        ? error.message
+        : 'This device couldn\'t unlock the data. Make sure the app is opened from its https address, then try again.');
       return;
     }
     if (ok) {

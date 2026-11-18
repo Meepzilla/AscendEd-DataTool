@@ -373,7 +373,9 @@ html.theme-pastel {
     zoom: 1 !important;
     background: #fff !important;
   }
-  body > *:not(.print-only) {
+  /* Only while a page has put a printed copy on the page (the progress report, which marks <html>): the app around it
+     is hidden so only the copy prints. Every other page prints as it is shown, instead of as a blank page. */
+  html.has-print-copy body > *:not(.print-only) {
     display: none !important;
   }
   .print-only {

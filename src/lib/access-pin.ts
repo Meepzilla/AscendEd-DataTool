@@ -23,6 +23,8 @@ const LOCKOUT_NAMESPACE = 'access-pin';
 export const PIN_PATTERN = /^\d{4,8}$/;
 
 const ITERATIONS = 100_000;
+/** The most PBKDF2 iterations a stored PIN may name (a clear multiple of ITERATIONS, with room to raise it). */
+const MAX_PIN_ITERATIONS = 5_000_000;
 const SALT_BYTES = 16;
 const HASH_BYTES = 32;
 
@@ -80,10 +82,14 @@ async function verifyStored(uid: string, pin: string, stored: string): Promise<b
     if (!hasSubtle()) return false;
     const parts = stored.split(':');
     const iterations = Number(parts[2]);
-    if (!Number.isInteger(iterations) || iterations <= 0 || parts.length !== 5) return false;
+    // Both come from storage and PBKDF2 runs them as given: a huge count would hang every PIN check, a huge length
+    // would ask for an enormous derived key. Anything outside what this app writes (with room to raise the count)
+    // is treated as not matching.
+    if (!Number.isInteger(iterations) || iterations <= 0 || iterations > MAX_PIN_ITERATIONS || parts.length !== 5) return false;
     try {
       const salt = unb64(parts[3]);
       const expected = unb64(parts[4]);
+      if (expected.length < 16 || expected.length > 64) return false;
       const material = await crypto.subtle.importKey('raw', new TextEncoder().encode(pinText(uid, pin)), 'PBKDF2', false, ['deriveBits']);
       const derived = new Uint8Array(await crypto.subtle.deriveBits({ name: 'PBKDF2', salt, iterations, hash: 'SHA-256' }, material, expected.length * 8));
       return constantTimeEqual(derived, expected);

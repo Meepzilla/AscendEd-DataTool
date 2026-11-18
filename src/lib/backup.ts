@@ -390,7 +390,16 @@ export function isProtectedBackup(text: string): boolean {
 
 /** The backup JSON inside a password-protected backup file. Throws a message for the user if the password is wrong. */
 export async function decryptBackupText(text: string, password: string): Promise<string> {
-  const file = JSON.parse(text) as ProtectedBackupFile;
+  if (new TextEncoder().encode(text).length > MAX_BACKUP_FILE_BYTES) {
+    throw new Error(`This backup file is too large (${TOO_LARGE}). It cannot be restored.`);
+  }
+  let file: ProtectedBackupFile;
+  try {
+    file = JSON.parse(text) as ProtectedBackupFile;
+  } catch {
+    // The same message as every other damaged file, not a raw SyntaxError.
+    throw new Error('Wrong password, or the file is damaged.');
+  }
   try {
     return await decryptWithPassword(file.protected, password);
   } catch {

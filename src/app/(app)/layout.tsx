@@ -18,7 +18,7 @@ function KeyboardShortcutInitializer() {
   return null;
 }
 
-const SIDEBAR_ENABLED_KEY = 'sidebar_enabled';
+import { SIDEBAR_ENABLED_KEY, readSidebarEnabled } from '@/lib/sidebar-setting';
 
 // Each page's own browser title, so screen readers announce where you are and tabs/history are told apart.
 const PAGE_TITLES: [string, string][] = [
@@ -100,7 +100,7 @@ export default function AppLayout({
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const storedSetting = window.localStorage.getItem(SIDEBAR_ENABLED_KEY);
-      setIsSidebarEnabled(storedSetting === null ? true : JSON.parse(storedSetting));
+      setIsSidebarEnabled(readSidebarEnabled(storedSetting));
     }
   }, []);
 

@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-18',
+    title: 'Sturdier Unlock, Backups and Printing',
+    description: 'Several things that could hang or break the app on damaged data now fail clearly instead. If the passcode settings stored on this device are damaged, unlocking says so straight away (and points to Forgot passcode?) instead of hanging; the Student Access PIN check is protected the same way. A backup file over 50 MB is turned away before it is opened, so a wrong file can\'t freeze the iPad, and a damaged protected backup gets the same clear message as any other damaged file. A damaged Student Sidebar setting no longer stops the app (or the Settings page that could fix it) from opening. Printing any page other than the progress report now prints the page instead of a blank sheet. Saved progress reports and narratives are named with today\'s date where you are, not tomorrow\'s on a US evening. New records get their ids from the browser\'s secure random generator.',
+    type: 'fix',
+    icon: ShieldCheck,
+  },
+  {
+    date: '2026-11-18',
     title: 'Edit Screens No Longer Lose What You Typed',
     description: 'Several screens threw away entries or showed the wrong thing. Typing a new number of intervals in a behavior interval goal now applies when you press Enter or leave the box, instead of deleting the scored intervals on the first keystroke (typing 12 over 10 used to wipe intervals 2 to 10). Emptying the only box in a service-minutes split no longer closes the split in the middle of typing. A name typed in Edit Student is kept when the student changes for another reason, such as assigning a goal from the same window. An Edit Session in progress is kept when another tab saves. Import Students ignores a second tap while it is importing. In Reports, Total Sessions counts the sessions held even when no goal was recorded in them, the goal attainment distribution now says it counts each goal\'s recorded level, and chart tooltips show a value of 0 instead of leaving it blank.',
     type: 'fix',
