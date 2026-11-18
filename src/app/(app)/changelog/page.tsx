@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-18',
+    title: 'Sessions Tab No Longer Shows the Footer Strip',
+    description: 'The strip at the very bottom of the app (the copyright line, the global hotkey list, and the Help, What\'s New and Privacy Notice links) no longer appears on the Sessions tab, where it sat in view under the menu bar and took space from the session list. It still appears at the bottom of the other tabs, and Help and What\'s New stay in the menu bar on Sessions.',
+    type: 'improvement',
+    icon: PanelBottom,
+  },
+  {
+    date: '2026-11-18',
     title: 'Taps During a Save Are Kept',
     description: 'In Data Entry, a student\'s card now clears as soon as you tap Save (or Save All), instead of when the save finishes. Anything you tap or type on the card while the save is still running is kept for the next session; before, it was wiped when the save finished and was not in the saved session either. If the save fails, what you entered comes back on the card, keeping anything entered meanwhile, and the app tells you if a newer entry had to be kept instead of an older one. Until a save has finished, its entries stay in the draft, so closing the app mid-save loses nothing.',
     type: 'fix',
