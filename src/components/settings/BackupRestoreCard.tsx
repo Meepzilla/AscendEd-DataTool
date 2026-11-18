@@ -73,12 +73,13 @@ export default function BackupRestoreCard() {
     }
     setPendingBackup(null);
     setIsConfirmingReplace(false);
-    toast({
-      title: mode === 'merge' ? 'Backup added' : 'Backup restored',
-      description: mode === 'merge'
-        ? `Added ${plural(summary.students, 'student')}, ${plural(summary.sessions, 'session')} and ${plural(summary.goalTemplates, 'template')} that weren't already on this device${summary.goals ? `, and ${plural(summary.goals, 'goal')} to students already here` : ''}.`
-        : `Loaded ${plural(summary.students, 'student')}, ${plural(summary.sessions, 'session')} and ${plural(summary.goalTemplates, 'template')}.`,
-    });
+    const done = mode === 'merge'
+      ? `Added ${plural(summary.students, 'student')}, ${plural(summary.sessions, 'session')} and ${plural(summary.goalTemplates, 'template')} that weren't already on this device${summary.goals ? `, and ${plural(summary.goals, 'goal')} to students already here` : ''}.`
+      : `Loaded ${plural(summary.students, 'student')}, ${plural(summary.sessions, 'session')} and ${plural(summary.goalTemplates, 'template')}.`;
+    // Left out of the backup (damaged, or of a goal type this app doesn't know): one message, so it isn't missed.
+    toast(summary.leftOut?.length
+      ? { title: `${mode === 'merge' ? 'Backup added' : 'Backup restored'}, but some data was left out`, description: `${done} Left out: ${summary.leftOut.join('; ')}.`, variant: 'destructive' }
+      : { title: mode === 'merge' ? 'Backup added' : 'Backup restored', description: done });
   };
 
   const backupCounts = pendingBackup?.data;

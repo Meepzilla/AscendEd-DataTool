@@ -73,8 +73,19 @@ export function goalAccuracyText(captureType: string, data: Record<string, any>)
 
 // The trial grid (discrete and sequenced trials). Each returns the new trials, or null when nothing changes.
 
+/**
+ * A stored trial count as the grid's size: a whole number from 1 to MAX_TRIALS, or the default 5 when it is missing or
+ * isn't a number. Saved data can hold any value (a restored backup, an imported file), and Array(5.5) throws while
+ * Array(4e9) runs the browser out of memory.
+ */
+export function storedTrialCount(value: unknown, fallback = 5): number {
+  const n = Number(value);
+  if (value === null || value === undefined || value === '' || !Number.isFinite(n)) return fallback;
+  return Math.min(MAX_TRIALS, Math.max(1, Math.floor(n)));
+}
+
 const currentTrials = (data: Record<string, any>): TrialStatus[] =>
-  Array.isArray(data.trials) ? [...data.trials] : Array(data.numberOfTrials || 5).fill('untouched');
+  Array.isArray(data.trials) ? [...data.trials] : Array(storedTrialCount(data.numberOfTrials)).fill('untouched');
 
 const NEXT_STATUS: Record<TrialStatus, TrialStatus> = { untouched: 'correct', correct: 'approximate', approximate: 'incorrect', incorrect: 'untouched' };
 

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Check, X, CircleHelp, RotateCcw, Undo2 } from 'lucide-react';
 import type { TrialStatus } from '@/lib/types';
-import { MAX_TRIALS } from '@/lib/goal-input-logic';
+import { MAX_TRIALS, storedTrialCount } from '@/lib/goal-input-logic';
 import { FormItem, FormLabel, type GoalInputContext } from './shared';
 
 // Data Entry inputs for goal types (see goal-data-input.tsx, which picks the inputs for a goal's type).
@@ -14,7 +14,7 @@ import { FormItem, FormLabel, type GoalInputContext } from './shared';
 /** Discrete and sequenced trials: the trial grid. */
 export function TrialInputs({ ctx }: { ctx: GoalInputContext }) {
   const { data, captureType, isArchived, isLocked, isFocused, handleChange, calculateAccuracy, handleTrialClick, handleFillNextTrial, handleClearTrials, handleUndoLastTrial } = ctx;
-  const trials = Array.isArray(data.trials) ? data.trials : Array(data.numberOfTrials || 5).fill('untouched');
+  const trials = Array.isArray(data.trials) ? data.trials : Array(storedTrialCount(data.numberOfTrials)).fill('untouched');
   const focusedTrialIndex = data.focusedTrialIndex ?? trials.findIndex(t => t === 'untouched');
   // The number being typed: the grid changes when it is entered (Enter, or leaving the field), not on each
   // keystroke. Typing "10" over 5 scored trials used to pass through "1" and drop trials 2-5 for good.

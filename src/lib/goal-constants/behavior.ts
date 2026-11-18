@@ -186,7 +186,8 @@ export function summarizeFrequency(data: Record<string, any> = {}) {
 }
 
 export function summarizeDuration(data: Record<string, any> = {}, now = Date.now()) {
-  const episodes: number[] = Array.isArray(data.episodeSeconds) ? data.episodeSeconds.map(Number) : [];
+  // An episode that isn't a number (damaged data) is left out, so it can't turn the whole summary into NaN.
+  const episodes: number[] = Array.isArray(data.episodeSeconds) ? data.episodeSeconds.map(Number).filter(Number.isFinite) : [];
   const runningSeconds = data.runningSince ? Math.max(0, Math.round((now - Number(data.runningSince)) / 1000)) : 0;
   const totalSeconds = episodes.reduce((sum, s) => sum + s, 0) + runningSeconds;
   const minutes = Number(data.observationMinutes) || 0;

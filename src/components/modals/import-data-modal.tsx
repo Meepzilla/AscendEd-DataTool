@@ -8,7 +8,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, UploadCloud, FileCheck2, AlertTriangle } from 'lucide-react';
 import Papa from 'papaparse';
 import type { GoalType, SessionGoalData } from '@/lib/types';
-import { currentGoalType } from '@/lib/legacy-goal-types';
+import { currentGoalType, knownGoalType } from '@/lib/legacy-goal-types';
+import { parseDate } from '@/lib/student-import';
 import type { ImportedSession } from '@/lib/session-import';
 import { checkImportFileSize } from '@/lib/helpers';
 import { sanitizeErrorMessage, toSafeErrorMessage } from '@/lib/error-message';
@@ -104,10 +105,14 @@ export default function ImportDataModal({ onClose, onImport }: ImportDataModalPr
                     // No session ID in the message: it is shown in the toast below.
                     throw new Error('A row is missing required fields (Student ID, Date, Student Name).');
                 }
+                // The date is read as the written day (YYYY-MM-DD, M/D/YYYY, "Aug 1, 2026"...) and stored as YYYY-MM-DD; a
+                // day that doesn't exist (11/31/2026) or text that isn't a date fails the import, not a broken session.
+                const date = parseDate(row['Date']);
+                if (!date) throw new Error(`A row has a date that isn't a real date ("${String(row['Date']).slice(0, 30)}"), so the file can't be imported.`);
                 sessionEntry = {
                   studentId: row['Student ID'],
                   studentName: row['Student Name'],
-                  date: row['Date'],
+                  date,
                   time: row['Start Time'],
                   endTime: row['End Time'] && row['End Time'] !== 'N/A' ? row['End Time'] : undefined,
                   activity: row['Activity'],
@@ -144,10 +149,13 @@ export default function ImportDataModal({ onClose, onImport }: ImportDataModalPr
                   }
                 }
 
+                // A goal type this app doesn't know would make a goal that can't be measured or charted.
+                const goalType = knownGoalType(row['Goal Type']);
+                if (!goalType) throw new Error(`A row has a goal type this app doesn't know ("${String(row['Goal Type']).slice(0, 40)}"), so the file can't be imported.`);
                 const sessionGoal: SessionGoalData = {
                   goalId: row['Goal ID'],
                   goalName: row['Goal Name'],
-                  goalType: currentGoalType(row['Goal Type']) as GoalType,
+                  goalType,
                   data: goalData,
                 };
 

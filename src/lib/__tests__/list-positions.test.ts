@@ -39,11 +39,25 @@ describe('listPositions', () => {
     expect(increasing(current)).toBe(true);
   });
 
-  it('falls back to 0, 1, 2… when there is no room left between two positions', () => {
+  it('keeps order through hundreds of inserts at the same place, without renumbering the list', () => {
     let current: number[] = [0, 1];
-    for (let i = 0; i < 80; i++) {
-      current = listPositions([current[0], undefined, ...current.slice(1)]);
-      expect(increasing(current)).toBe(true);
+    for (let i = 0; i < 500; i++) {
+      const next = listPositions([current[0], undefined, ...current.slice(1)]);
+      expect(increasing(next)).toBe(true);
+      // Only the new record gets a position: the others keep theirs.
+      expect(next[0]).toBe(current[0]);
+      expect(next[2]).toBe(current[1]);
+      current = next;
     }
+  });
+
+  it('falls back to 0, 1, 2… when there is no room left between two positions', () => {
+    // Two neighbours that are next to each other as numbers: nothing fits between them, so the list is numbered afresh.
+    const adjacent = 1 + Number.EPSILON;
+    expect(adjacent).toBeGreaterThan(1);
+    expect(listPositions([1, undefined, adjacent])).toEqual([0, 1, 2]);
+    expect(listPositions([1, undefined, undefined, adjacent])).toEqual([0, 1, 2, 3]);
+    // A position that isn't a usable number is not trusted: that record is placed again like a new one.
+    expect(listPositions([0, Number.NaN, 2])).toEqual([0, 1, 2]);
   });
 });

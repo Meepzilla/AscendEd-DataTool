@@ -18,7 +18,7 @@ import { coalesce } from '@/lib/coalesce';
 import { DATA_CHANGED_CHANNEL, isMainListStorageKey, isOwnDataChangedMessage, postDataChanged, runListTransactionAsync, type AsyncListTransactionStore, type MainListKey } from '@/lib/data-transaction';
 import { prepareLoadedData } from '@/lib/data-migrations';
 import { planSessionImport, type ImportedSession } from '@/lib/session-import';
-import { createBackup, type AppBackup, type ParsedBackup, type RestoreMode, type RestoreSummary } from '@/lib/backup';
+import { createBackup, describeLeftOut, type AppBackup, type ParsedBackup, type RestoreMode, type RestoreSummary } from '@/lib/backup';
 import { planRestore, restoreBackupSettings } from '@/lib/restore';
 import { loadCustomAbcLists } from '@/lib/abc-lists';
 import { applyStudentImport, type ImportStudent } from '@/lib/student-import';
@@ -474,21 +474,10 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     // Custom ABC lists and saved groups. The student data is restored even if the ABC lists don't fit.
     restoreBackupSettings(backup, mode, currentUser?.uid, error =>
       addErrorLog({ message: `Restoring ABC lists or student groups failed: ${error instanceof Error ? error.message : String(error)}`, source: 'storage', type: 'error' }));
-    // Tell the user what parseBackup had to leave out, instead of restoring silently short.
-    const dropped = (backup as Partial<ParsedBackup>).droppedSettings ?? [];
-    const droppedRecords = (backup as Partial<ParsedBackup>).droppedRecords ?? [];
-    if (dropped.length > 0 || droppedRecords.length > 0) {
-      const parts = [
-        ...dropped.map(name => `the ${name === 'abcLists' ? 'ABC lists' : name === 'studentGroups' ? 'student groups' : name} settings`),
-        ...droppedRecords.map(r => `a ${r.kind === 'goalTemplate' ? 'goal template' : r.kind} (${r.id})`),
-      ];
-      toast({
-        title: 'Backup restored, but some data was left out',
-        description: `These were damaged and could not be restored: ${parts.join('; ')}.`,
-        variant: 'destructive',
-      });
-    }
-    return summary;
+    // What parseBackup had to leave out goes back with the summary, for the one message shown after a restore (a
+    // second toast here would replace this one at once, since only one shows at a time).
+    const leftOut = describeLeftOut(backup as Partial<ParsedBackup>);
+    return leftOut.length > 0 ? { ...summary, leftOut } : summary;
   }, [currentUser, studentsKey, templatesKey, sessionsKey, addErrorLog, isUnreadable, unmark, mark, applyTransaction, applyLists, toast]);
 
   // --- End Data Actions ---
