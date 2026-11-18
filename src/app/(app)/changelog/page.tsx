@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-18',
+    title: 'Taps During a Save Are Kept',
+    description: 'In Data Entry, a student\'s card now clears as soon as you tap Save (or Save All), instead of when the save finishes. Anything you tap or type on the card while the save is still running is kept for the next session; before, it was wiped when the save finished and was not in the saved session either. If the save fails, what you entered comes back on the card, keeping anything entered meanwhile, and the app tells you if a newer entry had to be kept instead of an older one. Until a save has finished, its entries stay in the draft, so closing the app mid-save loses nothing.',
+    type: 'fix',
+    icon: Bug,
+  },
+  {
+    date: '2026-11-18',
     title: 'Nothing Is Lost When a Save Fails',
     description: 'When a change can\'t be saved, for example because the device\'s storage is full, the app no longer says it worked or throws away what you entered. Editing a goal, the IEP dates and service lines, a goal template, assigning goals from templates and writing a custom goal now keep the window open with your entries so you can try again, and only show their success message once the change is stored. Confirmation windows (removing a goal, deleting a student or session, archiving, and deleting students in Settings) stay open with a message when the change can\'t be saved, instead of closing as if it had worked, and deleting a student only takes you back to the student list once it is deleted.',
     type: 'fix',

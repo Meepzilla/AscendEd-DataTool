@@ -22,7 +22,7 @@ import { ConfettiProvider } from '@/hooks/use-confetti';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 import { GOAL_TYPE_FIELDS, captureTypeOf } from '@/lib/goal-constants';
 import { applyGoalHotkey } from '@/lib/data-entry-hotkeys';
-import { freshGoalData, freshStudentState, moveGoal, sessionFromState, syncSessionStates } from '@/lib/data-entry-session';
+import { freshGoalData, freshStudentState, moveGoal, restoreAfterFailedSave, sessionFromState, syncSessionStates } from '@/lib/data-entry-session';
 import { sessionMinutes } from '@/lib/student-overview';
 import type { ServiceType } from '@/lib/types';
 import { useSessionTimes } from '@/hooks/use-session-times';
@@ -99,6 +99,11 @@ export default function DataEntryContent() {
   
   // UI State moved from useStudentData
   const [studentSessionStates, setStudentSessionStates] = useState<Record<string, StudentSessionState>>({});
+  const statesRef = useRef(studentSessionStates);
+  statesRef.current = studentSessionStates;
+  // What each save in progress is saving, by student. The card is cleared as its save starts, so anything entered
+  // while the save runs counts toward the next session instead of being wiped when the save ends (see startSave).
+  const [pendingSaves, setPendingSaves] = useState<Record<string, StudentSessionState>>({});
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>(() =>
     (draft?.selectedStudentIds ?? []).filter(id => students.some(s => s.id === id && !s.isArchived)));
   const [focusedStudentSlotIndex, setFocusedStudentSlotIndex] = useState<number>(() =>
@@ -107,7 +112,8 @@ export default function DataEntryContent() {
   const activeStudents = useMemo(() => students.filter(s => !s.isArchived), [students]);
 
   // Whether any student on screen has something entered that isn't saved.
-  const anyUnsaved = selectedStudentIds.some(id => hasUnsavedEntry(studentSessionStates[id], goalDefaults));
+  // A save still in progress counts until it has landed.
+  const anyUnsaved = selectedStudentIds.some(id => !!pendingSaves[id] || hasUnsavedEntry(studentSessionStates[id], goalDefaults));
   const statesBuilt = Object.keys(studentSessionStates).length > 0;
   const {
     sessionDate, sessionTime, sessionEndTime, chooseSessionDate, chooseSessionTime, chooseSessionEndTime, resetSessionToNow, resetSessionToBefore,
@@ -123,8 +129,11 @@ export default function DataEntryContent() {
 
   // The draft as it stands now, for the autosave below and for retrying a failed save by hand.
   const buildDraft = useCallback((): DataEntryDraft => {
+    // A student whose save is still running keeps what is being saved in the draft until it has landed, so closing
+    // the app mid-save loses nothing (as before the card was cleared at the start of a save).
     const studentsWithEntries = Object.fromEntries(
       Object.values(studentSessionStates)
+        .map(state => pendingSaves[state.studentId] ?? state)
         .filter(state => selectedStudentIds.includes(state.studentId) && hasUnsavedEntry(state, goalDefaults))
         .map(state => [state.studentId, { activity: state.activity, notes: state.notes, goalData: state.goalData, ...(state.serviceMinutes ? { serviceMinutes: state.serviceMinutes } : {}) }]),
     );
@@ -141,7 +150,7 @@ export default function DataEntryContent() {
       // Until every student's state is built (first render), keep the draft's entries.
       students: Object.keys(studentSessionStates).length === 0 ? draftRef.current?.students ?? {} : studentsWithEntries,
     };
-  }, [studentSessionStates, sessionDate, sessionTime, sessionEndTime, selectedStudentIds, focusedStudentSlotIndex,
+  }, [studentSessionStates, pendingSaves, sessionDate, sessionTime, sessionEndTime, selectedStudentIds, focusedStudentSlotIndex,
     focusedGoalIndexByStudentId, isStudentAccessLocked, isHeaderCardCollapsed, goalDefaults]);
 
   // Whether a draft-save failure toast has already been shown for the current failure, so typing
@@ -221,6 +230,46 @@ export default function DataEntryContent() {
     setStudentSessionStates(prevStates => ({ ...prevStates, [studentId]: freshStudentState(student) }));
   }, [students]);
 
+  type SaveJob = { studentId: string; cleared: StudentSessionState; snapshot: StudentSessionState };
+  /**
+   * Starts saving a student's card: what is on it is kept as the save's snapshot and the card is cleared at once, so
+   * taps made while the save runs land on the cleared card (the next session) instead of being lost when it ends.
+   */
+  const startSave = (studentId: string, snapshot: StudentSessionState): SaveJob => {
+    const student = students.find(s => s.id === studentId);
+    const cleared = student ? freshStudentState(student) : { ...snapshot, activity: '', notes: '', serviceMinutes: undefined, goalData: {} };
+    setStudentSessionStates(prev => ({ ...prev, [studentId]: cleared }));
+    setPendingSaves(prev => ({ ...prev, [studentId]: snapshot }));
+    return { studentId, cleared, snapshot };
+  };
+  /** Ends a save: when it failed, puts what was being saved back on the card (keeping anything entered meanwhile). */
+  const finishSave = (job: SaveJob, saved: boolean) => {
+    setPendingSaves(prev => {
+      const { [job.studentId]: _done, ...rest } = prev;
+      return rest;
+    });
+    if (saved) return;
+    const { lost } = restoreAfterFailedSave(statesRef.current[job.studentId], job.cleared, job.snapshot);
+    setStudentSessionStates(prev => ({ ...prev, [job.studentId]: restoreAfterFailedSave(prev[job.studentId], job.cleared, job.snapshot).state }));
+    if (lost.length > 0) {
+      toast({
+        title: 'Some entries could not be put back',
+        description: lost.length === 1
+          ? `${job.snapshot.studentName}'s session wasn't saved, and one entry was changed again while it was saving, so the newer entry was kept.`
+          : `${job.snapshot.studentName}'s session wasn't saved, and ${lost.length} entries were changed again while it was saving, so the newer entries were kept.`,
+        variant: 'destructive',
+      });
+    }
+  };
+  /** addSession, reporting a thrown error as a failed save (the error was shown or logged where it happened). */
+  const saveSession = async (session: Parameters<typeof addSession>[0]) => {
+    try {
+      return !!(await addSession(session));
+    } catch {
+      return false;
+    }
+  };
+
 
   // A date that can't be used (e.g. from a damaged draft) counts as no date, so saving asks for one.
   const validSessionDate = sessionDate && !Number.isNaN(sessionDate.getTime()) ? sessionDate : undefined;
@@ -265,11 +314,10 @@ export default function DataEntryContent() {
         toast({ title: "Info", description: `Cannot save for ${state.studentName}, no active goals with data.`, variant: "default" });
         return;
       }
-      const savedSession = await addSession(session);
-      if (savedSession) {
-        toast({ title: "Success", description: `Session for ${state.studentName} saved.` });
-        resetSessionStateForStudent(focusedStudentId);
-      }
+      const job = startSave(focusedStudentId, state);
+      const saved = await saveSession(session);
+      finishSave(job, saved);
+      if (saved) toast({ title: "Success", description: `Session for ${state.studentName} saved.` });
     } finally {
       savingRef.current = false;
       setIsSaving(false);
@@ -290,6 +338,8 @@ export default function DataEntryContent() {
     setIsSavingAll(true);
     try {
       let savedCount = 0, errorCount = 0, simulatedCount = 0;
+      // Every card being saved is cleared at the start, then the sessions are saved one at a time.
+      const jobs: { job: SaveJob; session: ReturnType<typeof sessionFromState> }[] = [];
       for (const studentId of selectedStudentIds) {
           const state = studentSessionStates[studentId];
           // Students with nothing entered get no (empty) session.
@@ -300,13 +350,13 @@ export default function DataEntryContent() {
           }
           const session = sessionFromState(state, { date: validSessionDate, time: sessionTime, endTime: sessionEndTime });
           if (session.goals.length === 0) continue;
-          const savedSession = await addSession(session);
-          if (savedSession) {
-              savedCount++;
-              resetSessionStateForStudent(studentId);
-          } else {
-              errorCount++;
-          }
+          jobs.push({ job: startSave(studentId, state), session });
+      }
+      for (const { job, session } of jobs) {
+          const saved = await saveSession(session);
+          finishSave(job, saved);
+          if (saved) savedCount++;
+          else errorCount++;
       }
       if (savedCount > 0) toast({ title: "Success", description: `Saved ${savedCount} session(s).` });
       if (simulatedCount > 0) toast({ title: "Simulated Save", description: `${simulatedCount} session(s) not saved due to lock.` });
