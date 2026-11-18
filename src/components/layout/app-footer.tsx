@@ -4,11 +4,13 @@
 import React, { useEffect, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { APP_NAME } from '@/lib/appConstants';
 
 const HOTKEYS_COLLAPSED_KEY = 'ascended_footer_hotkeys_collapsed';
 
 export default function AppFooter() {
+  const pathname = usePathname();
   const currentYear = new Date().getFullYear();
 
   // This list should be kept in sync with useKeyboardShortcuts.ts and help page.
@@ -33,6 +35,11 @@ export default function AppFooter() {
     try { localStorage.setItem(HOTKEYS_COLLAPSED_KEY, prev ? '0' : '1'); } catch { /* this visit only */ }
     return !prev;
   });
+
+  // Manage Sessions is a dense work list whose page fits the screen, so this strip would sit in view there,
+  // under the menu bar, and take space from the list. The footer is left off that tab; it still closes every
+  // other tab as before, and Help and What's New stay in the menu bar on Sessions itself.
+  if (pathname === '/manage-sessions') return null;
 
   return (
     <footer className="border-t bg-card text-card-foreground">
