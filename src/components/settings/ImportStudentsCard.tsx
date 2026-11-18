@@ -113,11 +113,24 @@ export default function ImportStudentsCard() {
     ...row, goals: row.goals.map((g, i) => (i === goalIndex ? { ...g, include } : g)),
   }));
 
+  // Set at once (state updates later), so a second tap while the import runs is ignored: the data actions queue calls
+  // rather than dropping a repeat, and a second run of the same preview creates its students and goals again.
+  const importingRef = useRef(false);
+  const [importing, setImporting] = useState(false);
   const runImport = async () => {
-    // Goals not ticked are left out, as goals the student already has are.
-    const result = await importStudents(included.map(({ include: _, ...row }) => ({
-      ...forMode(row, moveDates), goals: row.goals.map(({ include, ...g }) => ({ ...g, duplicate: !include })),
-    })));
+    if (importingRef.current) return;
+    importingRef.current = true;
+    setImporting(true);
+    let result;
+    try {
+      // Goals not ticked are left out, as goals the student already has are.
+      result = await importStudents(included.map(({ include: _, ...row }) => ({
+        ...forMode(row, moveDates), goals: row.goals.map(({ include, ...g }) => ({ ...g, duplicate: !include })),
+      })));
+    } finally {
+      importingRef.current = false;
+      setImporting(false);
+    }
     if (!result) return;
     setRows(null);
     const parts = [result.added && `${plural(result.added, 'student')} added`, result.updated && `${plural(result.updated, 'student')} updated`].filter(Boolean);
@@ -156,8 +169,8 @@ export default function ImportStudentsCard() {
         footerContent={(
           <>
             <Button type="button" variant="outline" onClick={() => setRows(null)}>Cancel</Button>
-            <Button type="button" onClick={runImport} disabled={included.length === 0}>
-              Import {plural(included.length, 'Student')}
+            <Button type="button" onClick={runImport} disabled={included.length === 0 || importing}>
+              {importing ? 'Importing…' : `Import ${plural(included.length, 'Student')}`}
             </Button>
           </>
         )}

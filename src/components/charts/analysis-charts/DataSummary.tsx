@@ -19,21 +19,13 @@ const DataSummary: React.FC<DataSummaryProps> = ({ studentSessions, selectedStud
 
   const selectedGoal = selectedGoalId ? selectedStudent?.goals.find(g => g.id === selectedGoalId) : undefined;
   const summaryStats = useMemo(() => {
-    if (!chartData || chartData.length === 0) {
-      return {
-        sessionCount: 0,
-        avgAccuracy: 0,
-        totalCorrect: 0,
-        totalIncorrect: 0,
-        totalApproximate: 0,
-        totalOpportunities: 0,
-      };
-    }
-
-    const totalCorrect = chartData.reduce((acc, session) => acc + (session.correct || 0), 0);
-    const totalIncorrect = chartData.reduce((acc, session) => acc + (session.incorrect || 0), 0);
-    const totalApproximate = chartData.reduce((acc, session) => acc + (session.approximate || 0), 0);
-    const totalOpportunities = chartData.reduce((acc, session) => acc + (session.opportunities || 0), 0);
+    // With nothing charted (no goal in view was recorded in the sessions) the totals are 0, but the sessions held in the
+    // range still count: the session count below does not come from the chart data.
+    const rows = chartData ?? [];
+    const totalCorrect = rows.reduce((acc, session) => acc + (session.correct || 0), 0);
+    const totalIncorrect = rows.reduce((acc, session) => acc + (session.incorrect || 0), 0);
+    const totalApproximate = rows.reduce((acc, session) => acc + (session.approximate || 0), 0);
+    const totalOpportunities = rows.reduce((acc, session) => acc + (session.opportunities || 0), 0);
     
     const avgAccuracy = totalOpportunities > 0 ? (totalCorrect / totalOpportunities) * 100 : 0;
 

@@ -31,7 +31,7 @@ const GasSummaryTable = lazy(() => import('./analysis-charts/GasSummaryTable'));
 const GAS_LEVEL_VALUES = GAS_LEVELS.map(info => info.level);
 const GAS_LEVEL_LABELS: Record<number, string> = Object.fromEntries(GAS_LEVELS.map(info => [info.level, info.description]));
 
-/** Sessions at each attainment level across the GAS goals in view (plain bars, no chart library). */
+/** Recordings at each attainment level across the GAS goals in view (plain bars, no chart library). One recording is one goal's level in one session, so a session with three GAS goals recorded counts three times. */
 const GasLevelDistribution: React.FC<{ studentSessions: SessionData[]; goals: Goal[] }> = ({ studentSessions, goals }) => {
   const counts = useMemo(() => {
     const tally = new Map<number, number>(GAS_LEVEL_VALUES.map(l => [l, 0]));
@@ -51,7 +51,9 @@ const GasLevelDistribution: React.FC<{ studentSessions: SessionData[]; goals: Go
     <Card>
       <CardHeader>
         <CardTitle>Attainment-level distribution</CardTitle>
-        <CardDescription>Sessions at each level across all GAS goals in view{total ? ` (${total} sessions with a recorded level).` : '.'}</CardDescription>
+        <CardDescription>
+          Recorded levels across all GAS goals in view: each goal&apos;s level in each session counts once{total ? ` (${total} recorded ${total === 1 ? 'level' : 'levels'}).` : '.'}
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-2">
         {total === 0 ? (

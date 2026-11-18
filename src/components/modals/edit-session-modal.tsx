@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import GenericModal from './generic-modal';
 import { SessionDateProvider } from '@/components/forms/session-date-context';
 import { Button } from '@/components/ui/button';
@@ -52,17 +52,23 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
     ? currentSession.originalGoalHeaders
     : students.find(s => s.id === currentSession?.studentId)?.goals ?? [];
 
+  // The form is filled when a session is opened for editing, not each time the stored list is reloaded (a save in another
+  // tab reloads it, giving the same session as a new object), which would throw away what has been edited so far.
+  const sessionId = currentSession?.sessionId;
+  const currentSessionRef = useRef(currentSession);
+  currentSessionRef.current = currentSession;
   useEffect(() => {
-    if (currentSession) {
+    const session = currentSessionRef.current;
+    if (session) {
       // Left empty if the date can't be read.
-      const parsed = currentSession.date ? parseDateOnly(currentSession.date) : null;
+      const parsed = session.date ? parseDateOnly(session.date) : null;
       setFormData({
-        ...currentSession,
-        goals: currentSession.goals ?? [],
+        ...session,
+        goals: session.goals ?? [],
         date: parsed && !isNaN(parsed.getTime()) ? toLocalDay(parsed) : undefined,
       });
     }
-  }, [currentSession]);
+  }, [sessionId]);
 
 
   const handleInputChange = (field: keyof Pick<SessionData, 'activity' | 'notes' | 'time' | 'endTime'>, value: string) => {

@@ -45,7 +45,9 @@ export default function ServiceMinutesField({ duration, value, onChange, idSuffi
   const setType = (type: ServiceType, raw: string) => {
     const next: Partial<Record<ServiceType, number>> = { ...value, [type]: clampMinutes(raw) };
     for (const t of SERVICE_TYPES) if (!next[t]) delete next[t];
-    onChange(Object.keys(next).length > 0 ? next : undefined);
+    // Emptying the last field keeps the split open (with nothing allocated), as "Split by type" does with no times set;
+    // "Use one type" is the way back. Collapsing it here dropped focus and the allocation in the middle of typing.
+    onChange(next);
   };
 
   return (
