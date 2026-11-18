@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-18',
+    title: 'Edit Screens No Longer Lose What You Typed',
+    description: 'Several screens threw away entries or showed the wrong thing. Typing a new number of intervals in a behavior interval goal now applies when you press Enter or leave the box, instead of deleting the scored intervals on the first keystroke (typing 12 over 10 used to wipe intervals 2 to 10). Emptying the only box in a service-minutes split no longer closes the split in the middle of typing. A name typed in Edit Student is kept when the student changes for another reason, such as assigning a goal from the same window. An Edit Session in progress is kept when another tab saves. Import Students ignores a second tap while it is importing. In Reports, Total Sessions counts the sessions held even when no goal was recorded in them, the goal attainment distribution now says it counts each goal\'s recorded level, and chart tooltips show a value of 0 instead of leaving it blank.',
+    type: 'fix',
+    icon: Bug,
+  },
+  {
+    date: '2026-11-18',
     title: 'Sessions Tab No Longer Shows the Footer Strip',
     description: 'The strip at the very bottom of the app (the copyright line, the global hotkey list, and the Help, What\'s New and Privacy Notice links) no longer appears on the Sessions tab, where it sat in view under the menu bar and took space from the session list. It still appears at the bottom of the other tabs, and Help and What\'s New stay in the menu bar on Sessions.',
     type: 'improvement',

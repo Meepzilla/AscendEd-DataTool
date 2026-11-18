@@ -446,12 +446,22 @@ export const IntervalInput: React.FC<BehaviorInputProps> = (props) => {
     if (cueOn && summary.timerStarted && previous !== null && previous !== summary.currentInterval) cue();
   });
 
+  // The count being typed: it is applied when entered (Enter, or leaving the field), not on each keystroke. Typing "12"
+  // over 10 used to pass through "1" and drop the scored intervals 2-10 for good (the trial grid had the same bug).
+  const [typedCount, setTypedCount] = useState<string | null>(null);
   const setupFields = { method, intervalSeconds, intervalCount };
   const changeSetup = (fields: Partial<IntervalSetup>) => {
     const next = { ...setupFields, ...fields };
     if (goalId) writeStored(INTERVAL_SETUPS_KEY, { ...readStored(INTERVAL_SETUPS_KEY, {}), [goalId]: next });
     setRemembered(next);
     update({ ...next, intervals: summary.intervals.slice(0, next.intervalCount) });
+  };
+  const applyTypedCount = () => {
+    if (typedCount === null) return;
+    const count = Math.round(Number(typedCount));
+    setTypedCount(null);
+    // A cleared or out-of-range entry leaves the count as it was.
+    if (typedCount.trim() !== '' && count >= 1 && count <= MAX_INTERVALS && count !== intervalCount) changeSetup({ intervalCount: count });
   };
   // Every change also stores the setup in use, so the saved session records it.
   const markInterval = (index: number, value: boolean | null) => {
@@ -491,11 +501,10 @@ export const IntervalInput: React.FC<BehaviorInputProps> = (props) => {
             min="1"
             max={MAX_INTERVALS}
             inputMode="numeric"
-            value={intervalCount}
-            onChange={(e) => {
-              const count = Math.round(Number(e.target.value));
-              if (count >= 1 && count <= MAX_INTERVALS) changeSetup({ intervalCount: count });
-            }}
+            value={typedCount ?? intervalCount}
+            onChange={(e) => setTypedCount(e.target.value)}
+            onBlur={applyTypedCount}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applyTypedCount(); } }}
             className="h-8 text-sm w-20"
             disabled={setupLocked}
           />

@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -60,17 +60,28 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
 
 
 
+  // The name box follows the saved name for the student being edited. A name typed but not saved is kept when the
+  // student record changes for another reason (a goal assigned or archived from this window, a save in another tab):
+  // it is replaced only for a different student, or while the box still holds the name it was last set to.
+  const studentId = currentStudent?.id;
+  const savedName = currentStudent?.name;
+  const nameBoxRef = useRef<{ id?: string; name?: string }>({});
   useEffect(() => {
-    if (currentStudent) {
-      form.reset({ name: currentStudent.name });
+    if (studentId === undefined || savedName === undefined) return;
+    const last = nameBoxRef.current;
+    if (last.id !== studentId || form.getValues('name') === last.name) {
+      form.reset({ name: savedName });
+      nameBoxRef.current = { id: studentId, name: savedName };
     }
-  }, [currentStudent, form]);
+  }, [studentId, savedName, form]);
 
   const onSubmitName = async (data: EditStudentFormData) => {
     if (!currentStudent) return;
     setIsSubmittingName(true);
-    await updateStudent(currentStudent.id, { name: data.name });
+    const saved = await updateStudent(currentStudent.id, { name: data.name });
     setIsSubmittingName(false);
+    // The saved name is what the box now shows, so a later change to the record can refresh it.
+    if (saved) nameBoxRef.current = { id: currentStudent.id, name: data.name };
     // Toast is handled in updateStudent
   };
 
