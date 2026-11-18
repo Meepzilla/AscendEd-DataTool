@@ -201,9 +201,10 @@ function IepDetailsDialog({ student, onClose }: { student: Student; onClose: () 
       ...(first ? { serviceMinutes: first.minutes, servicePer: first.per } : {}),
       ...(services.length > 0 ? { services } : {}),
     };
-    await updateStudent(student.id, { iep });
+    const saved = await updateStudent(student.id, { iep });
     setSaving(false);
-    onClose();
+    // Not saved (the storage error was shown): stays open with the dates and service lines entered.
+    if (saved) onClose();
   };
 
   return (

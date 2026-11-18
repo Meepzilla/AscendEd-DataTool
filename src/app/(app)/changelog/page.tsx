@@ -18,6 +18,13 @@ interface ChangelogEntry {
 
 const allChangelogEntries: ChangelogEntry[] = [
   {
+    date: '2026-11-18',
+    title: 'Nothing Is Lost When a Save Fails',
+    description: 'When a change can\'t be saved, for example because the device\'s storage is full, the app no longer says it worked or throws away what you entered. Editing a goal, the IEP dates and service lines, a goal template, assigning goals from templates and writing a custom goal now keep the window open with your entries so you can try again, and only show their success message once the change is stored. Confirmation windows (removing a goal, deleting a student or session, archiving, and deleting students in Settings) stay open with a message when the change can\'t be saved, instead of closing as if it had worked, and deleting a student only takes you back to the student list once it is deleted.',
+    type: 'fix',
+    icon: Bug,
+  },
+  {
     date: '2026-11-17',
     title: 'Faster with a Large Caseload',
     description: 'With many students and a year or more of sessions, the app is quicker. Saving a session now stores only what changed instead of rewriting every session on the device, so a save takes a fraction of the time it did, with or without a passcode. Manage Sessions shows the newest 100 sessions with a Show more button instead of drawing every session at once, which could freeze the page for several seconds. Every page also opens a little faster.',

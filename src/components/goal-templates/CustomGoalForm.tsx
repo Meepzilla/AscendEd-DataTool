@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { PlusCircle, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,6 +43,8 @@ export default function CustomGoalForm({ student, disabled }: { student: Student
   const { assignGoalToStudent, addGoalTemplate } = useStudentData();
   const { toast } = useToast();
   const [text, setText] = useState('');
+  // The template saved by the last try, kept until the goal is added (see save).
+  const savedTemplateRef = useRef<GoalTemplate | null>(null);
   const [overrides, setOverrides] = useState<Overrides>({});
   const [baseline, setBaseline] = useState('');
   const [baselineDate, setBaselineDate] = useState('');
@@ -71,6 +73,7 @@ export default function CustomGoalForm({ student, disabled }: { student: Student
   const canSave = !!text.trim() && !!name.trim() && !targetError && masteryNumber >= 1 && masteryNumber <= 20;
 
   const reset = () => {
+    savedTemplateRef.current = null;
     setText(''); setOverrides({}); setBaseline(''); setBaselineDate(''); setMastery('3'); setSaveTemplate(false);
   };
 
@@ -79,13 +82,18 @@ export default function CustomGoalForm({ student, disabled }: { student: Student
     setSaving(true);
     try {
       let template: GoalTemplate | null = null;
-      if (saveTemplate) {
+      // A template saved by an earlier try whose goal then couldn't be added is used again, not saved twice.
+      const earlier = savedTemplateRef.current;
+      if (saveTemplate && earlier && earlier.name === name.trim() && earlier.type === type && earlier.smartGoalPrompt === text.trim()) {
+        template = earlier;
+      } else if (saveTemplate) {
         template = await addGoalTemplate({
           name: name.trim(), type, smartGoalPrompt: text.trim(), generatedSmartGoal: text.trim(), category: 'Custom',
           ...(targetNumber !== undefined ? { sessionTargetValue: targetNumber } : {}),
           ...(BEHAVIOR(type) ? { targetDirection: direction } : {}),
         });
         if (!template) return; // Not saved (the error was shown); the goal isn't added either.
+        savedTemplateRef.current = template;
       }
       const goal: Goal = {
         id: generateUUID(),
@@ -100,7 +108,8 @@ export default function CustomGoalForm({ student, disabled }: { student: Student
         ...(masteryNumber !== 3 ? { masterySessions: masteryNumber } : {}),
         ...(template ? { templateId: template.id } : {}),
       };
-      await assignGoalToStudent(student.id, goal);
+      // Not added (the storage error was shown): the form keeps what was typed, so it can be added again.
+      if (!(await assignGoalToStudent(student.id, goal))) return;
       toast({ title: 'Goal added', description: `"${goal.name}" was added for ${student.name}${template ? ' and saved as a template' : ''}.` });
       reset();
     } catch {

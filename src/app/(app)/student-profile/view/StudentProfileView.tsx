@@ -171,11 +171,8 @@ export default function StudentProfileView() {
         <ConfirmationModal
           isOpen={!!deletingAssignedGoal}
           onClose={closeDeleteAssignedGoalConfirmationModal}
-          onConfirm={() => {
-            if (deletingAssignedGoal) {
-              removeGoalFromStudent(deletingAssignedGoal.studentId, deletingAssignedGoal.goal.id);
-            }
-          }}
+          // Returns whether it was saved, so the window stays open (and says so) when it wasn't.
+          onConfirm={() => removeGoalFromStudent(deletingAssignedGoal.studentId, deletingAssignedGoal.goal.id)}
           title={`Remove Goal: "${deletingAssignedGoal.goal.name}"?`}
           description={`Are you sure you want to remove this goal from ${currentStudent.name}? This action cannot be undone.`}
           confirmText="Yes, Remove Goal"
@@ -193,9 +190,7 @@ export default function StudentProfileView() {
             description={
                 (deletingStudent.item as Student).isArchived ? "Unarchiving this student will make them visible in all active lists again. Are you sure?" : "Archiving a student will hide them from active lists. Their data will be preserved. Are you sure?"
             }
-            onConfirm={() => {
-                updateStudent((deletingStudent.item as Student).id, { isArchived: !(deletingStudent.item as Student).isArchived })
-            }}
+            onConfirm={() => updateStudent((deletingStudent.item as Student).id, { isArchived: !(deletingStudent.item as Student).isArchived })}
             confirmText={
                 (deletingStudent.item as Student).isArchived ? 'Yes, Unarchive' : 'Yes, Archive'
             }
@@ -209,10 +204,11 @@ export default function StudentProfileView() {
               onClose={() => setIsDeleteConfirmationOpen(false)}
               title={`Delete Student: ${currentStudent.name}?`}
               description="Are you sure you want to permanently delete this student and all their associated session data? This action cannot be undone."
-              onConfirm={() => {
-                deleteStudent(currentStudent.id);
-                setIsDeleteConfirmationOpen(false); // Close modal on confirm
-                router.push('/student-profile'); // Redirect after delete
+              // Back to the student list only once the student is deleted; otherwise the window stays open and says so.
+              onConfirm={async () => {
+                if (!(await deleteStudent(currentStudent.id))) return false;
+                setIsDeleteConfirmationOpen(false);
+                router.push('/student-profile');
               }}
               confirmText="Yes, Delete Permanently"
           />

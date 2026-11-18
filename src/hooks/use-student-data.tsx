@@ -49,17 +49,19 @@ interface StudentDataContextType {
 
   /** `quiet`: no "added" message (the caller shows its own). */
   addStudent: (name: string, options?: { quiet?: boolean }) => Promise<Student | null>;
-  updateStudent: (studentId: string, data: Partial<Student>) => Promise<void>;
-  deleteStudent: (studentId: string) => Promise<void>;
+  /** False when it wasn't saved (the error was shown). The same for the goal and template actions below. */
+  updateStudent: (studentId: string, data: Partial<Student>) => Promise<boolean>;
+  deleteStudent: (studentId: string) => Promise<boolean>;
   deleteStudents: (studentIds: string[]) => Promise<boolean>;
   /** Adds and updates students from a spreadsheet in one save. Null when it couldn't be saved (the error was shown). */
   importStudents: (students: ImportStudent[]) => Promise<{ added: number; updated: number; goals: number } | null>;
-  assignGoalToStudent: (studentId: string, goal: Goal) => Promise<void>;
-  removeGoalFromStudent: (studentId: string, goalId: string) => Promise<void>;
-  updateStudentGoal: (studentId: string, goalId: string, updatedGoalData: Partial<Goal>) => Promise<void>;
+  /** Adds one goal, or several in one save. */
+  assignGoalToStudent: (studentId: string, goal: Goal | Goal[]) => Promise<boolean>;
+  removeGoalFromStudent: (studentId: string, goalId: string) => Promise<boolean>;
+  updateStudentGoal: (studentId: string, goalId: string, updatedGoalData: Partial<Goal>) => Promise<boolean>;
 
   addGoalTemplate: (templateData: Omit<GoalTemplate, 'id' | 'createdAt' | 'userId' | 'isDefault'>) => Promise<GoalTemplate | null>;
-  updateGoalTemplate: (templateId: string, data: Partial<GoalTemplate>) => Promise<void>;
+  updateGoalTemplate: (templateId: string, data: Partial<GoalTemplate>) => Promise<boolean>;
   deleteGoalTemplate: (templateId: string) => Promise<void>;
   /** Archives several templates in one save (hidden from pickers; goals already assigned are kept). */
   archiveGoalTemplates: (templateIds: string[]) => Promise<void>;
@@ -226,16 +228,17 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return studentWithId;
   }, [currentUser, toast, commitStudents]);
 
-  const updateStudent = useCallback(async (studentId: string, data: Partial<Student>) => {
-      if (!currentUser) return;
+  const updateStudent = useCallback(async (studentId: string, data: Partial<Student>): Promise<boolean> => {
+      if (!currentUser) return false;
       if (!studentsRef.current.some(s => s.id === studentId)) {
         // Deleted meanwhile (another tab): say so instead of reporting an update that changed nothing.
         toast({ title: "Error", description: "Student not found.", variant: "destructive" });
-        return;
+        return false;
       }
       const updatedData = { ...data, updatedAt: new Date().toISOString() };
-      if (!(await commitStudents(studentsRef.current.map(s => s.id === studentId ? { ...s, ...updatedData } : s).sort(byName)))) return;
+      if (!(await commitStudents(studentsRef.current.map(s => s.id === studentId ? { ...s, ...updatedData } : s).sort(byName)))) return false;
       toast({ title: "Success", description: "Student updated." });
+      return true;
   }, [currentUser, toast, commitStudents]);
 
   /**
@@ -256,8 +259,8 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return commitStudents(next.sort(byName));
   }, [commitStudents]);
 
-  const deleteStudent = useCallback(async (studentId: string) => {
-    if (!currentUser) return;
+  const deleteStudent = useCallback(async (studentId: string): Promise<boolean> => {
+    if (!currentUser) return false;
     const next = {
       students: studentsRef.current.filter(s => s.id !== studentId),
       goalTemplates: templatesRef.current,
@@ -265,9 +268,10 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     };
     // One transaction: a quota failure part way must not leave the sessions deleted
     // while the student remains (or the other way round).
-    if (!(await applyTransaction(next))) return;
+    if (!(await applyTransaction(next))) return false;
     applyLists(next);
     toast({ title: "Success", description: "Student and sessions deleted." });
+    return true;
   }, [currentUser, toast, applyTransaction, applyLists]);
 
   /** Deletes several students and all their sessions at once (end-of-year clean-up). Returns whether it worked. */
@@ -300,12 +304,17 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return templateWithId;
   }, [currentUser, toast, commitTemplates]);
 
-  const updateGoalTemplate = useCallback(async (templateId: string, data: any) => {
-      if (!currentUser) return;
+  const updateGoalTemplate = useCallback(async (templateId: string, data: any): Promise<boolean> => {
+      if (!currentUser) return false;
+      if (!templatesRef.current.some(t => t.id === templateId)) {
+        toast({ title: "Error", description: "Goal template not found.", variant: "destructive" });
+        return false;
+      }
       // A built-in template keeps the name it was added under (defaultKey) when it is renamed.
       const update = (t: GoalTemplate) => ({ ...t, ...(t.isDefault && !t.defaultKey ? { defaultKey: t.name } : {}), ...data });
-      if (!(await commitTemplates(templatesRef.current.map(t => t.id === templateId ? update(t) : t).sort(byName)))) return;
+      if (!(await commitTemplates(templatesRef.current.map(t => t.id === templateId ? update(t) : t).sort(byName)))) return false;
       toast({ title: "Success", description: "Goal template updated." });
+      return true;
   }, [currentUser, toast, commitTemplates]);
 
   const deleteGoalTemplate = useCallback(async (templateId: string) => {
@@ -655,26 +664,34 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return sessions.filter(s => s.studentId === studentId);
   }, [sessions]);
 
-  const assignGoalToStudent = useCallback(async (studentId: string, goal: Goal) => {
-    if (!studentsRef.current.some(s => s.id === studentId)) {
-      toast({ title: "Error", description: "Student not found.", variant: "destructive" });
-      return;
-    }
-    if (!(await commitStudentGoals(studentId, goals => goalsWithAdded(goals, goal), new Date().toISOString()))) return;
+  /** Whether the student is still there; says so when not (deleted meanwhile, e.g. in another tab). */
+  const studentStillThere = useCallback((studentId: string) => {
+    if (studentsRef.current.some(s => s.id === studentId)) return true;
+    toast({ title: "Error", description: "Student not found.", variant: "destructive" });
+    return false;
+  }, [toast]);
+
+  const assignGoalToStudent = useCallback(async (studentId: string, goal: Goal | Goal[]): Promise<boolean> => {
+    if (!studentStillThere(studentId)) return false;
+    const added = Array.isArray(goal) ? goal : [goal];
+    if (!(await commitStudentGoals(studentId, goals => added.reduce(goalsWithAdded, goals), new Date().toISOString()))) return false;
     toast({ title: "Success", description: "Student updated." });
-  }, [commitStudentGoals, toast]);
+    return true;
+  }, [commitStudentGoals, toast, studentStillThere]);
 
-  const removeGoalFromStudent = useCallback(async (studentId: string, goalId: string) => {
-      if (!studentsRef.current.some(s => s.id === studentId)) { return; }
-      if (!(await commitStudentGoals(studentId, goals => goalsWithout(goals, goalId), new Date().toISOString()))) return;
+  const removeGoalFromStudent = useCallback(async (studentId: string, goalId: string): Promise<boolean> => {
+      if (!studentStillThere(studentId)) return false;
+      if (!(await commitStudentGoals(studentId, goals => goalsWithout(goals, goalId), new Date().toISOString()))) return false;
       toast({ title: "Success", description: "Student updated." });
-  }, [commitStudentGoals, toast]);
+      return true;
+  }, [commitStudentGoals, toast, studentStillThere]);
 
-  const updateStudentGoal = useCallback(async (studentId: string, goalId: string, data: Partial<Goal>) => {
-      if (!studentsRef.current.some(s => s.id === studentId)) { return; }
-      if (!(await commitStudentGoals(studentId, goals => goalsWithUpdated(goals, goalId, data), new Date().toISOString()))) return;
+  const updateStudentGoal = useCallback(async (studentId: string, goalId: string, data: Partial<Goal>): Promise<boolean> => {
+      if (!studentStillThere(studentId)) return false;
+      if (!(await commitStudentGoals(studentId, goals => goalsWithUpdated(goals, goalId, data), new Date().toISOString()))) return false;
       toast({ title: "Success", description: "Student updated." });
-  }, [commitStudentGoals, toast]);
+      return true;
+  }, [commitStudentGoals, toast, studentStillThere]);
 
   // The data-changing actions, queued (see oneAtATime). Memoized, so components that depend on them keep the
   // same functions from render to render.

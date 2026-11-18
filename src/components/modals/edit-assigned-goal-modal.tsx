@@ -99,7 +99,8 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
       // Five level descriptions, one per level from -2 to +2; all blank means no custom descriptions.
       const descriptions = Array.from({ length: 5 }, (_, i) => (data.gasLevelDescriptions?.[i] ?? '').trim());
       const gasLevelDescriptions = descriptions.some(Boolean) ? descriptions : undefined;
-      await updateStudentGoal(studentId, goalToEdit.id, { ...data, blankFills: blankFills.some(Boolean) ? blankFills : undefined, gasLevelDescriptions });
+      // Not saved (the storage error was shown): the window stays open with the edits, so they can be saved again.
+      if (!(await updateStudentGoal(studentId, goalToEdit.id, { ...data, blankFills: blankFills.some(Boolean) ? blankFills : undefined, gasLevelDescriptions }))) return;
       toast({ title: 'Success', description: 'Goal updated successfully.' });
       onClose();
     } catch (error) {

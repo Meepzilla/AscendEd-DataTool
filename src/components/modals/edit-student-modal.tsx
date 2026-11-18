@@ -74,10 +74,9 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
     // Toast is handled in updateStudent
   };
 
-  const handleAssignTemplateGoal = (template: GoalTemplate) => {
+  const handleAssignTemplateGoal = async (template: GoalTemplate) => {
     if (!currentStudent) return;
-    assignGoalToStudent(currentStudent.id, goalFromTemplate(template));
-    recordRecentTemplates(currentUser?.uid, [template.id]);
+    if (await assignGoalToStudent(currentStudent.id, goalFromTemplate(template))) recordRecentTemplates(currentUser?.uid, [template.id]);
   };
   
   const handleToggleArchiveGoal = async (goal: Goal) => {

@@ -33,6 +33,8 @@ export default function DeleteDataCard() {
   const { toast } = useToast();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmCleanUp, setConfirmCleanUp] = useState(false);
+  const [cleaningUp, setCleaningUp] = useState(false);
+  const [cleanUpError, setCleanUpError] = useState<string | null>(null);
   const [confirmAll, setConfirmAll] = useState(false);
   const [typed, setTyped] = useState('');
 
@@ -54,10 +56,17 @@ export default function DeleteDataCard() {
 
   const cleanUp = async () => {
     const count = selected.size;
-    if (await deleteStudents([...selected])) {
-      toast({ title: 'Students deleted', description: `${plural(count, 'student')} and ${plural(selectedSessions, 'session')} were deleted from this device.` });
-      setSelected(new Set());
+    setCleaningUp(true);
+    setCleanUpError(null);
+    const deleted = await deleteStudents([...selected]);
+    setCleaningUp(false);
+    if (!deleted) {
+      // Not deleted (the storage error was shown): stays open and says so, with the same students ticked.
+      setCleanUpError('Nothing was deleted, because this device\'s storage could not be written. You can try again, or cancel.');
+      return;
     }
+    toast({ title: 'Students deleted', description: `${plural(count, 'student')} and ${plural(selectedSessions, 'session')} were deleted from this device.` });
+    setSelected(new Set());
     setConfirmCleanUp(false);
   };
 
@@ -147,7 +156,7 @@ export default function DeleteDataCard() {
         </div>
       </CardContent>
 
-      <AlertDialog open={confirmCleanUp} onOpenChange={setConfirmCleanUp}>
+      <AlertDialog open={confirmCleanUp} onOpenChange={open => { if (cleaningUp) return; setConfirmCleanUp(open); setCleanUpError(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {plural(selected.size, 'student')} and {plural(selectedSessions, 'session')}?</AlertDialogTitle>
@@ -155,9 +164,14 @@ export default function DeleteDataCard() {
               {selectedRows.map(r => r.student.name).join(', ')}. This can&apos;t be undone except by restoring a backup.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {cleanUpError && <p className="text-sm text-destructive" role="alert">{cleanUpError}</p>}
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={cleanUp}>Delete</AlertDialogAction>
+            <AlertDialogCancel disabled={cleaningUp}>Cancel</AlertDialogCancel>
+            {/* Closes only once the students are deleted (see cleanUp), not on the click itself. */}
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={cleaningUp}
+              onClick={e => { e.preventDefault(); void cleanUp(); }}>
+              {cleaningUp ? 'Deleting…' : 'Delete'}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

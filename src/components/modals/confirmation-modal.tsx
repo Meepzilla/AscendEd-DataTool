@@ -21,14 +21,16 @@ import { cn } from '@/lib/utils';
 interface ConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm?: () => void; // Made optional as some actions are internal
+  /** Optional (some actions are built in). May return whether it was saved: false keeps the window open with a message. */
+  onConfirm?: () => void | boolean | Promise<void | boolean>;
   title: string;
   description: string;
   confirmText?: string;
   cancelText?: string;
   itemToDelete?: Student | GoalTemplate | SessionData;
   itemToUpdate?: GoalTemplate;
-  updateAction?: (id: string, data: Partial<GoalTemplate>) => Promise<void>;
+  /** False when it wasn't saved: the window then stays open and says so. */
+  updateAction?: (id: string, data: Partial<GoalTemplate>) => Promise<boolean | void>;
   deleteActionType?: 'student' | 'goalTemplate' | 'session';
 }
 
@@ -68,11 +70,20 @@ export default function ConfirmationModal({
     const failureBefore = saveFailureRef.current;
     try {
       if (onConfirm) {
-        await onConfirm();
+        if ((await onConfirm()) === false) {
+          // The action reported that it wasn't saved (the storage error was shown): stay open and say so.
+          setActionError('That could not be saved on this device. Nothing was changed — you can try again, or cancel.');
+          setIsProcessing(false);
+          return;
+        }
       } else if (itemToDelete && deleteActionType) {
         switch (deleteActionType) {
           case 'student':
-            await deleteStudent((itemToDelete as Student).id);
+            if (!(await deleteStudent((itemToDelete as Student).id))) {
+              setActionError('That could not be saved on this device. Nothing was changed — you can try again, or cancel.');
+              setIsProcessing(false);
+              return;
+            }
             break;
           case 'goalTemplate':
             await deleteGoalTemplate((itemToDelete as GoalTemplate).id);
@@ -82,7 +93,11 @@ export default function ConfirmationModal({
             break;
         }
       } else if (itemToUpdate && updateAction) {
-          await updateAction(itemToUpdate.id, { isArchived: !itemToUpdate.isArchived });
+          if ((await updateAction(itemToUpdate.id, { isArchived: !itemToUpdate.isArchived })) === false) {
+            setActionError('That could not be saved on this device. Nothing was changed — you can try again, or cancel.');
+            setIsProcessing(false);
+            return;
+          }
       }
     } catch (error) {
       console.error(`Error performing confirm action:`, toSafeErrorMessage(error));
@@ -125,7 +140,7 @@ export default function ConfirmationModal({
 
 
   return (
-    <AlertDialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <AlertDialog open={isOpen} onOpenChange={(open) => { if (!open && !isProcessing) onClose(); }}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
@@ -138,7 +153,9 @@ export default function ConfirmationModal({
           </AlertDialogCancel>
           <AlertDialogAction
             ref={confirmButtonRef}
-            onClick={handleConfirmAction}
+            // The button would close the window by itself on click: it closes only once the action worked
+            // (handleConfirmAction), so a failure can be shown here and tried again.
+            onClick={e => { e.preventDefault(); void handleConfirmAction(); }}
             disabled={isProcessing || dataLoading}
             className={cn(buttonVariants({ variant: isDestructive ? 'destructive' : 'default' }))}
           >
