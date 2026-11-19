@@ -9,7 +9,7 @@ import { FormItem, FormLabel, type GoalInputContext } from './shared';
 
 // Data Entry inputs for goal types (see goal-data-input.tsx, which picks the inputs for a goal's type).
 
-/** Communication functions: each function used spontaneously or prompted. */
+/** Communication functions: each function tallied as spontaneous, prompted, or missed opportunity. */
 export function CommunicationFunctionsInputs({ ctx }: { ctx: GoalInputContext }) {
   const { data, isArchived, isLocked, handleChange, handleInteraction, calculateAccuracy } = ctx;
   const tally = (field: string, delta: number) => (e: React.SyntheticEvent<HTMLButtonElement>) =>
@@ -17,18 +17,19 @@ export function CommunicationFunctionsInputs({ ctx }: { ctx: GoalInputContext })
   return (
     <>
       <FormItem>
-        <div className="grid grid-cols-[1fr_auto_auto] items-center gap-x-1.5 gap-y-1.5">
+        <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-1 gap-y-1.5">
           <FormLabel>Function</FormLabel>
-          <FormLabel>Spontaneous</FormLabel>
-          <FormLabel>Prompted</FormLabel>
+          <FormLabel className="text-center" title="Spontaneous">Spont.</FormLabel>
+          <FormLabel className="text-center" title="Prompted">Prompt.</FormLabel>
+          <FormLabel className="text-center" title="Missed opportunity (no response)">Missed</FormLabel>
           {COMMUNICATION_FUNCTIONS.map(({ key, label }) => (
             <React.Fragment key={key}>
-              <span className="text-xs">{label}</span>
+              <span className="text-xs leading-tight pr-0.5">{label}</span>
               <TallyButton
                 label="S"
                 count={Number(data[`${key}Spontaneous`]) || 0}
                 title={`${label}, spontaneous`}
-                className="border-green-600 text-green-700 dark:text-green-400"
+                className="min-w-[3rem] px-1.5 border-green-600 text-green-700 dark:text-green-400"
                 disabled={isArchived}
                 onIncrement={tally(`${key}Spontaneous`, 1)}
                 onDecrement={tally(`${key}Spontaneous`, -1)}
@@ -37,15 +38,24 @@ export function CommunicationFunctionsInputs({ ctx }: { ctx: GoalInputContext })
                 label="P"
                 count={Number(data[`${key}Prompted`]) || 0}
                 title={`${label}, prompted`}
-                className="border-yellow-600 text-yellow-700 dark:text-yellow-400"
+                className="min-w-[3rem] px-1.5 border-yellow-600 text-yellow-700 dark:text-yellow-400"
                 disabled={isArchived}
                 onIncrement={tally(`${key}Prompted`, 1)}
                 onDecrement={tally(`${key}Prompted`, -1)}
               />
+              <TallyButton
+                label="M"
+                count={Number(data[`${key}Missed`]) || 0}
+                title={`${label}, missed opportunity`}
+                className="min-w-[3rem] px-1.5 border-red-500 text-red-700 dark:text-red-400"
+                disabled={isArchived}
+                onIncrement={tally(`${key}Missed`, 1)}
+                onDecrement={tally(`${key}Missed`, -1)}
+              />
             </React.Fragment>
           ))}
         </div>
-        <p className="text-[11px] text-muted-foreground">Tap to add a use. Press and hold (or right-click) to remove one.</p>
+        <p className="text-[11px] text-muted-foreground">Tap S (spontaneous), P (prompted), or M (missed opportunity) to add. Press and hold (or right-click) to remove.</p>
       </FormItem>
       <div className="mt-1.5">
         <FormLabel>Functions Used</FormLabel>

@@ -337,11 +337,25 @@ function detailSentences(name: string, goal: Goal, data: Record<string, any>[]):
     const summary = data.map(d => summarizeCommunicationFunctions(d));
     const spontaneous = sum(summary.map(s => s.spontaneous));
     const prompted = sum(summary.map(s => s.prompted));
+    const missed = sum(summary.map(s => s.missed));
+    const opportunities = spontaneous + prompted + missed;
     const byFunction = COMMUNICATION_FUNCTIONS
       .map(f => ({ label: f.label.toLowerCase(), s: total(`${f.key}Spontaneous`) }))
       .filter(f => f.s > 0).sort((x, y) => y.s - x.s);
-    lines.push(`${name} used communicative functions ${spontaneous} times spontaneously and ${prompted} times with a prompt.`);
+    if (missed > 0) {
+      const responded = spontaneous + prompted;
+      const oppLabel = opportunities === 1 ? 'communicative opportunity' : 'communicative opportunities';
+      lines.push(`${name} responded to ${responded} of ${opportunities} ${oppLabel} (${pct((responded / opportunities) * 100)}): ${spontaneous} spontaneously, ${prompted} with a prompt, and ${missed} missed.`);
+    } else {
+      lines.push(`${name} used communicative functions ${spontaneous} times spontaneously and ${prompted} times with a prompt.`);
+    }
     if (byFunction.length) lines.push(`The functions used most often without a prompt were ${byFunction.slice(0, 3).map(f => `${f.label} (${f.s})`).join(', ')}.`);
+    const missedByFunction = COMMUNICATION_FUNCTIONS
+      .map(f => ({ label: f.label.toLowerCase(), m: total(`${f.key}Missed`) }))
+      .filter(f => f.m > 0).sort((x, y) => y.m - x.m);
+    if (missedByFunction.length) {
+      lines.push(`Opportunities were most often missed for ${missedByFunction.slice(0, 3).map(f => `${f.label} (${f.m})`).join(', ')}.`);
+    }
   }
 
   if (type === 'GOAL_ATTAINMENT_SCALE') {

@@ -24,7 +24,7 @@ export const GOAL_TYPE_SCREENSHOTS: Record<GoalType, GoalTypeScreenshot> = {
   COGNITIVE: { src: '/help/goal-types/cognitive.webp', width: 330, height: 307 },
   COMMUNICATION_COUNT: { src: '/help/goal-types/communication-count.webp', width: 330, height: 365 },
   COMMUNICATION_DURATION: { src: '/help/goal-types/communication-duration.webp', width: 330, height: 466 },
-  COMMUNICATION_FUNCTIONS: { src: '/help/goal-types/communication-functions.webp', width: 330, height: 606 },
+  COMMUNICATION_FUNCTIONS: { src: '/help/goal-types/communication-functions.webp', width: 330, height: 633 },
   COMMUNICATION_OPPORTUNITIES: { src: '/help/goal-types/communication-opportunities.webp', width: 330, height: 334 },
   DISCRETE_TRIALS: { src: '/help/goal-types/discrete-trials.webp', width: 330, height: 373 },
   FEEDING_SWALLOWING: { src: '/help/goal-types/feeding-swallowing.webp', width: 330, height: 412 },

@@ -112,6 +112,19 @@ describe('mergeGoalData', () => {
     // A value the later part did record still wins.
     expect(mergeGoalData([{ targetSound: '/s/' }, { targetSound: '/z/' }]).targetSound).toBe('/z/');
   });
+
+  it('sums spontaneous, prompted, and missed communication function counts across split sessions', () => {
+    const merged = mergeGoalData([
+      { requestingItemsSpontaneous: 2, commentingPrompted: 1, protestingMissed: 1 },
+      { requestingItemsSpontaneous: 1, commentingPrompted: 2, protestingMissed: 2, greetingMissed: 1 },
+    ]);
+    expect(merged).toMatchObject({
+      requestingItemsSpontaneous: 3,
+      commentingPrompted: 3,
+      protestingMissed: 3,
+      greetingMissed: 1,
+    });
+  });
 });
 
 describe('mergeSessions', () => {
