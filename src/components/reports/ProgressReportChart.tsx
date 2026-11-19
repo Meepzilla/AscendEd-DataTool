@@ -16,6 +16,8 @@ const MUTED = 'hsl(210 15% 38%)';
 const TARGET = 'hsl(35 80% 30%)';
 const AIM = 'hsl(205 45% 32%)';
 const DATA = 'hsl(35 75% 45%)';
+const SPONTANEOUS = 'hsl(152 62% 34%)';
+const EMERGING = 'hsl(201 85% 42%)';
 
 function niceMax(value: number): number {
   if (value <= 0) return 1;
@@ -30,7 +32,9 @@ export default function ProgressReportChart({ progress }: { progress: GoalProgre
 
   // GAS levels run -2 to +2: the scale spans the negative domain instead of clamping at 0,
   // which would plot every level at the baseline. Other types keep the [0, top] scale.
-  const isGas = captureTypeOf(goal) === 'GOAL_ATTAINMENT_SCALE';
+  const type = captureTypeOf(goal);
+  const isGas = type === 'GOAL_ATTAINMENT_SCALE';
+  const isCommFunctions = type === 'COMMUNICATION_FUNCTIONS' && points.every(p => p.spontaneous !== undefined && p.emerging !== undefined);
   const min = isGas ? -2 : 0;
   const top = isGas ? 2 : (max ?? niceMax(Math.max(...points.map(p => p.value), target ?? 0, aim?.start.value ?? 0) * 1.1));
   const innerW = W - PAD.left - PAD.right;
@@ -45,10 +49,17 @@ export default function ProgressReportChart({ progress }: { progress: GoalProgre
   const y = (v: number) => PAD.top + innerH - ((Math.min(Math.max(v, min), top) - min) / span) * innerH;
   const ticks = isGas ? [-2, 0, 2] : [0, top / 2, top];
   const label = (v: number) => `${Number(v.toFixed(1))}${unit.trim() === '%' ? '%' : ''}`;
-  const line = points.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.value).toFixed(1)}`).join(' ');
+  const pathOf = (get: (p: GoalProgress['points'][number]) => number) =>
+    points.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(get(p)).toFixed(1)}`).join(' ');
+  const line = pathOf(p => p.value);
+  const spontaneousLine = isCommFunctions ? pathOf(p => p.spontaneous ?? 0) : null;
+  const emergingLine = isCommFunctions ? pathOf(p => p.emerging ?? 0) : null;
   const firstDate = aim ? formatDate(new Date(t0)) : formatDate(points[0].date);
   const lastDate = aim ? formatDate(new Date(t1)) : formatDate(points[points.length - 1].date);
-  const summary = `${measureLabel} across ${points.length} session${points.length === 1 ? '' : 's'}, from ${formatDate(points[0].date)} to ${formatDate(points[points.length - 1].date)}: ${points.map(p => label(p.value)).join(', ')}${target !== undefined ? `. Target ${label(target)}` : ''}${aim ? `. Aim line from ${label(aim.start.value)} on ${formatDate(new Date(aim.start.time))} to ${label(aim.end.value)} on ${formatDate(new Date(aim.end.time))}` : ''}.`;
+  const seriesDetail = isCommFunctions
+    ? ` Spontaneous: ${points.map(p => label(p.spontaneous ?? 0)).join(', ')}. Emerging: ${points.map(p => label(p.emerging ?? 0)).join(', ')}.`
+    : '';
+  const summary = `${measureLabel} across ${points.length} session${points.length === 1 ? '' : 's'}, from ${formatDate(points[0].date)} to ${formatDate(points[points.length - 1].date)}: ${points.map(p => label(p.value)).join(', ')}.${seriesDetail}${target !== undefined ? ` Target ${label(target)}.` : ''}${aim ? ` Aim line from ${label(aim.start.value)} on ${formatDate(new Date(aim.start.time))} to ${label(aim.end.value)} on ${formatDate(new Date(aim.end.time))}.` : ''}`;
 
   return (
     <figure className="m-0">
@@ -75,14 +86,49 @@ export default function ProgressReportChart({ progress }: { progress: GoalProgre
           </g>
         )}
         <path d={line} fill="none" stroke={DATA} strokeWidth={2.5} strokeLinejoin="round" />
+        {spontaneousLine && <path d={spontaneousLine} fill="none" stroke={SPONTANEOUS} strokeWidth={1.8} strokeDasharray="6 3" strokeLinejoin="round" />}
+        {emergingLine && <path d={emergingLine} fill="none" stroke={EMERGING} strokeWidth={1.8} strokeDasharray="2.5 2.5" strokeLinejoin="round" />}
         {points.map((p, i) => (
-          <circle key={i} cx={x(i)} cy={y(p.value)} r={3.5} fill={DATA} stroke="#fff" strokeWidth={1.5} />
+          <circle key={`v-${i}`} cx={x(i)} cy={y(p.value)} r={3.5} fill={DATA} stroke="#fff" strokeWidth={1.5} />
         ))}
+        {isCommFunctions && points.map((p, i) => (
+          <circle key={`s-${i}`} cx={x(i)} cy={y(p.spontaneous ?? 0)} r={3} fill="#fff" stroke={SPONTANEOUS} strokeWidth={1.6} />
+        ))}
+        {isCommFunctions && points.map((p, i) => {
+          const cx = x(i);
+          const cy = y(p.emerging ?? 0);
+          return <polygon key={`e-${i}`} points={`${cx},${cy - 3.6} ${cx + 3.6},${cy} ${cx},${cy + 3.6} ${cx - 3.6},${cy}`} fill={EMERGING} stroke="#fff" strokeWidth={1.1} />;
+        })}
         <text x={PAD.left} y={H - 6} fontSize={11} fill={MUTED}>{firstDate}</text>
         {(aim || points.length > 1) && (
           <text x={W - PAD.right} y={H - 6} textAnchor="end" fontSize={11} fill={MUTED}>{lastDate}</text>
         )}
       </svg>
+      {isCommFunctions && (
+        <figcaption className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 pl-11 text-[11px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5">
+            <svg width="20" height="10" viewBox="0 0 20 10" aria-hidden="true">
+              <line x1="0" y1="5" x2="20" y2="5" stroke={DATA} strokeWidth="2.5" />
+              <circle cx="10" cy="5" r="3" fill={DATA} stroke="#fff" strokeWidth="1" />
+            </svg>
+            Without a prompt (total)
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <svg width="20" height="10" viewBox="0 0 20 10" aria-hidden="true">
+              <line x1="0" y1="5" x2="20" y2="5" stroke={SPONTANEOUS} strokeWidth="1.8" strokeDasharray="5 2.5" />
+              <circle cx="10" cy="5" r="2.8" fill="#fff" stroke={SPONTANEOUS} strokeWidth="1.5" />
+            </svg>
+            Spontaneous
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <svg width="20" height="10" viewBox="0 0 20 10" aria-hidden="true">
+              <line x1="0" y1="5" x2="20" y2="5" stroke={EMERGING} strokeWidth="1.8" strokeDasharray="2.5 2" />
+              <polygon points="10,1.5 13.5,5 10,8.5 6.5,5" fill={EMERGING} stroke="#fff" strokeWidth="0.9" />
+            </svg>
+            Emerging
+          </span>
+        </figcaption>
+      )}
     </figure>
   );
 }

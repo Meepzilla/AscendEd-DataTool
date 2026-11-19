@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildNarrative } from '../report-narrative';
+import { buildNarrative, buildProgressReport } from '../report-narrative';
 import { goal, session } from './helpers';
 import type { Student } from '../types';
 
@@ -192,5 +192,29 @@ describe('communication functions narrative', () => {
     expect(text).toContain('The functions used most often without a prompt were requesting items/actions (3), protesting/rejecting (3), commenting (1).');
     expect(text).toContain('Functions used in an emerging form without a prompt included protesting/rejecting (3).');
     expect(text).toContain('Across 2 sessions with data, the number of functions used without a prompt averaged 2 (range 1 to 3).');
+  });
+
+  it('includes per-session spontaneous and emerging function counts on progress report chart points', () => {
+    const [progress] = buildProgressReport({
+      student,
+      goals: [cf],
+      sessions: [
+        cfSession('2026-10-01T09:00:00Z', {
+          requestingItemsSpontaneous: 3,
+          requestingItemsEmerging: 1,
+          commentingSpontaneous: 1,
+          protestingEmerging: 2,
+          greetingPrompted: 1,
+        }),
+        cfSession('2026-10-08T09:00:00Z', {
+          protestingEmerging: 1,
+          askingQuestionsPrompted: 2,
+        }),
+      ],
+    });
+    expect(progress.points).toEqual([
+      { date: '2026-10-01T09:00:00Z', value: 3, spontaneous: 2, emerging: 2 },
+      { date: '2026-10-08T09:00:00Z', value: 1, spontaneous: 0, emerging: 1 },
+    ]);
   });
 });
