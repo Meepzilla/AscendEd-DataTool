@@ -39,7 +39,8 @@ export default function AppFooter() {
   // Manage Sessions is a dense work list whose page fits the screen, so this strip would sit in view there,
   // under the menu bar, and take space from the list. The footer is left off that tab; it still closes every
   // other tab as before, and Help and What's New stay in the menu bar on Sessions itself.
-  if (pathname === '/manage-sessions') return null;
+  // The app's addresses end in a slash (/manage-sessions/), which the comparison used to miss, so the footer showed.
+  if (pathname?.replace(/\/+$/, '') === '/manage-sessions') return null;
 
   return (
     <footer className="border-t bg-card text-card-foreground">
