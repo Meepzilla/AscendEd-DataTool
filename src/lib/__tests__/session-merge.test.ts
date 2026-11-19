@@ -113,16 +113,16 @@ describe('mergeGoalData', () => {
     expect(mergeGoalData([{ targetSound: '/s/' }, { targetSound: '/z/' }]).targetSound).toBe('/z/');
   });
 
-  it('sums spontaneous, prompted, and missed communication function counts across split sessions', () => {
+  it('sums spontaneous, emerging, and prompted communication function counts across split sessions', () => {
     const merged = mergeGoalData([
-      { requestingItemsSpontaneous: 2, commentingPrompted: 1, protestingMissed: 1 },
-      { requestingItemsSpontaneous: 1, commentingPrompted: 2, protestingMissed: 2, greetingMissed: 1 },
+      { requestingItemsSpontaneous: 2, protestingEmerging: 1, commentingPrompted: 1 },
+      { requestingItemsSpontaneous: 1, protestingEmerging: 2, greetingEmerging: 1, commentingPrompted: 2 },
     ]);
     expect(merged).toMatchObject({
       requestingItemsSpontaneous: 3,
+      protestingEmerging: 3,
+      greetingEmerging: 1,
       commentingPrompted: 3,
-      protestingMissed: 3,
-      greetingMissed: 1,
     });
   });
 });

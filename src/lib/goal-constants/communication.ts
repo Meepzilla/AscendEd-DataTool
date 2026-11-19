@@ -1,7 +1,8 @@
 import type { GoalTemplate } from '../types';
 
 // Communicative functions tallied by the COMMUNICATION_FUNCTIONS goal type. Each function has a
-// spontaneous, prompted, and missed-opportunity count, stored as `${key}Spontaneous` / `${key}Prompted` / `${key}Missed`.
+// spontaneous, emerging (unprompted alternative/emerging form), and prompted count, stored as
+// `${key}Spontaneous` / `${key}Emerging` / `${key}Prompted`.
 export const COMMUNICATION_FUNCTIONS = [
   { key: 'requestingItems', label: 'Requesting items/actions' },
   { key: 'requestingHelp', label: 'Requesting help' },
@@ -20,48 +21,47 @@ export const COMMUNICATION_FIELDS: Record<string, Record<string, any>> = {
     notes: '',
     ...Object.fromEntries(COMMUNICATION_FUNCTIONS.flatMap(f => [
       [`${f.key}Spontaneous`, 0],
+      [`${f.key}Emerging`, 0],
       [`${f.key}Prompted`, 0],
-      [`${f.key}Missed`, 0],
     ])),
   },
 };
 
 /**
- * Totals for a COMMUNICATION_FUNCTIONS session. Progress is measured by `functionsUsedSpontaneously`:
- * the number of different functions the student used at least once without a prompt. Missed opportunities
- * distinguish functions that were targeted without a response from functions that had no opportunity.
+ * Totals for a COMMUNICATION_FUNCTIONS session. Progress is measured by `functionsUsedUnprompted`:
+ * the number of different functions the student used without a prompt — either spontaneously in their
+ * target form (`Spontaneous`) or in an emerging/alternative form such as a gesture, vocalization, or
+ * approximation (`Emerging`).
  */
 export function summarizeCommunicationFunctions(data: Record<string, any> = {}) {
   let spontaneous = 0;
+  let emerging = 0;
   let prompted = 0;
-  let missed = 0;
   let functionsUsedSpontaneously = 0;
+  let functionsUsedUnprompted = 0;
   let functionsUsed = 0;
-  let functionsWithOpportunities = 0;
   for (const { key } of COMMUNICATION_FUNCTIONS) {
     const s = Math.max(0, Number(data[`${key}Spontaneous`]) || 0);
+    const e = Math.max(0, Number(data[`${key}Emerging`]) || 0);
     const p = Math.max(0, Number(data[`${key}Prompted`]) || 0);
-    const m = Math.max(0, Number(data[`${key}Missed`]) || 0);
     spontaneous += s;
+    emerging += e;
     prompted += p;
-    missed += m;
     if (s > 0) functionsUsedSpontaneously += 1;
-    if (s + p > 0) functionsUsed += 1;
-    if (s + p + m > 0) functionsWithOpportunities += 1;
+    if (s + e > 0) functionsUsedUnprompted += 1;
+    if (s + e + p > 0) functionsUsed += 1;
   }
-  const opportunities = spontaneous + prompted + missed;
-  const responded = spontaneous + prompted;
-  const responseRate = opportunities > 0 ? (responded / opportunities) * 100 : null;
+  const unprompted = spontaneous + emerging;
+  const total = unprompted + prompted;
   return {
     spontaneous,
+    emerging,
     prompted,
-    missed,
-    opportunities,
-    responded,
-    responseRate,
+    unprompted,
+    total,
     functionsUsedSpontaneously,
+    functionsUsedUnprompted,
     functionsUsed,
-    functionsWithOpportunities,
     functionCount: COMMUNICATION_FUNCTIONS.length,
   };
 }

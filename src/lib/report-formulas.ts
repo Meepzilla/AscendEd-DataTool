@@ -19,7 +19,7 @@ export function measureFormula(goal: Pick<Goal, 'type' | 'dataCaptureType' | 'ta
   switch (type) {
     case 'FLUENCY_SYLLABLE_STUTTER': return '(Total syllables − stuttered syllables, blocks, repetitions, prolongations and interjections) ÷ total syllables × 100.';
     case 'STORY_ELEMENTS': return 'Points for the story parts assessed (0, 1 or 2 each) ÷ 2 × the number of parts assessed × 100. Parts marked N/A (not assessed) are left out.';
-    case 'COMMUNICATION_FUNCTIONS': return 'The number of different functions used without a prompt in the session.';
+    case 'COMMUNICATION_FUNCTIONS': return 'The number of different functions used without a prompt in the session (spontaneous or emerging form).';
     case 'QUALITATIVE_OBSERVATION':
     case 'COGNITIVE': return 'The 1–5 rating given in the session.';
     case 'GOAL_ATTAINMENT_SCALE': return 'The attainment level recorded in the session, -2 to +2; 0 is the expected outcome.';

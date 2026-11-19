@@ -54,10 +54,7 @@ export function goalAccuracyText(captureType: string, data: Record<string, any>)
     }
     case 'COMMUNICATION_FUNCTIONS': {
       const summary = summarizeCommunicationFunctions(data);
-      const responseNote = summary.missed > 0 && summary.responseRate !== null
-        ? ` · ${Math.round(summary.responseRate)}% responded`
-        : '';
-      return `${summary.functionsUsedSpontaneously} of ${summary.functionCount} used spontaneously (${summary.spontaneous} spontaneous, ${summary.prompted} prompted, ${summary.missed} missed${responseNote})`;
+      return `${summary.functionsUsedUnprompted} of ${summary.functionCount} used without a prompt (${summary.spontaneous} spontaneous, ${summary.emerging} emerging, ${summary.prompted} prompted)`;
     }
     case 'STORY_ELEMENTS': {
       const story = scoreStory(data);
