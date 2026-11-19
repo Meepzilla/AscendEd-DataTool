@@ -111,8 +111,8 @@ export function readXlsx(data: Uint8Array): CellValue[][] {
   const relId = attr(firstSheet, 'r:id');
   const rels = read('xl/_rels/workbook.xml.rels') ?? '';
   const target = [...rels.matchAll(/<Relationship\b[^>]*>/g)].map(m => m[0]).find(r => attr(r, 'Id') === relId);
-  const targetPath = target ? attr(target, 'Target')! : 'worksheets/sheet1.xml';
-  const sheetPath = targetPath.startsWith('/') ? targetPath.slice(1) : `xl/${targetPath}`;
+  const targetPath = (target && attr(target, 'Target')) || 'worksheets/sheet1.xml';
+  const sheetPath = targetPath.startsWith('/') ? targetPath.slice(1) : `xl/${targetPath.replace(/^(\.\.\/)+xl\//, '')}`;
   const sheet = read(sheetPath);
   if (!sheet) throw new Error('The workbook has no worksheet to read.');
 

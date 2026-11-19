@@ -28,7 +28,12 @@ function readRecord(namespace: string): AttemptRecord | null {
     const raw = localStorage.getItem(KEY_PREFIX + namespace);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<AttemptRecord>;
-    if (typeof parsed.failures !== 'number' || typeof parsed.lastFailureAt !== 'number') return null;
+    if (
+      typeof parsed.failures !== 'number' || !Number.isFinite(parsed.failures) ||
+      typeof parsed.lastFailureAt !== 'number' || !Number.isFinite(parsed.lastFailureAt)
+    ) {
+      return null;
+    }
     return { failures: parsed.failures, lastFailureAt: parsed.lastFailureAt };
   } catch {
     return memoryFallback.get(namespace) ?? null;
@@ -73,7 +78,10 @@ export function recordAttempt(namespace: string, success: boolean): void {
 export function getLockoutRemainingMs(namespace: string, now: number = Date.now()): number {
   const record = currentRecord(namespace);
   if (!record) return 0;
-  const remaining = record.lastFailureAt + lockoutMsForFailures(record.failures) - now;
+  const lockoutMs = lockoutMsForFailures(record.failures);
+  if (lockoutMs <= 0) return 0;
+  const effectiveLastFailure = Math.min(record.lastFailureAt, now);
+  const remaining = effectiveLastFailure + lockoutMs - now;
   return remaining > 0 ? remaining : 0;
 }
 

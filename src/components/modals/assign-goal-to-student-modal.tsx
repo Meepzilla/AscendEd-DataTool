@@ -38,6 +38,10 @@ export default function AssignGoalToStudentModal({ student, isOpen, onClose }: A
 
   const [isAssigningTemplates, setIsAssigningTemplates] = useState(false);
 
+  React.useEffect(() => {
+    if (!isOpen) setSelectedTemplates(new Set());
+  }, [isOpen, student?.id]);
+
 
   const handleToggleTemplateSelection = (templateId: string) => {
     setSelectedTemplates(prev => {

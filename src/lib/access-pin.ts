@@ -119,6 +119,7 @@ export function hasAccessPin(uid: string | undefined): boolean {
 }
 
 export async function setAccessPin(uid: string | undefined, pin: string): Promise<boolean> {
+  if (!PIN_PATTERN.test(pin)) return false;
   // No Web Crypto means no PBKDF2: fail rather than store a weak hash (the old djb2 fallback is gone).
   if (!hasSubtle()) return false;
   try {

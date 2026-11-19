@@ -29,6 +29,10 @@ describe('schoolYearRange', () => {
     const { start } = schoolYearRange(new Date(2026, 7, 1));
     expect(start).toEqual(new Date(2026, 7, 1));
   });
+  it('clamps Feb 29 to Feb 28 in a non-leap year instead of rolling into March', () => {
+    const { start } = schoolYearRange(new Date(2026, 4, 10), { start: '02-29', end: '02-28' });
+    expect(start).toEqual(new Date(2026, 1, 28));
+  });
 });
 
 describe('setSchoolYearSetting', () => {

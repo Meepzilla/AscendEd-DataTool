@@ -80,6 +80,12 @@ export default function AnalysisReportPage() {
 
     // Case 1: URL has a student ID.
     if (studentIdFromQuery) {
+      if (!studentsLoading && !activeStudents.some(s => s.id === studentIdFromQuery)) {
+        const fallbackId = defaultReportStudent(activeStudents.map(s => s.id));
+        setSelectedStudentId(fallbackId);
+        router.replace(fallbackId ? `/analysis-report?studentId=${fallbackId}` : '/analysis-report', { scroll: false });
+        return;
+      }
       // If the state is not in sync with the URL, update it.
       if (selectedStudentId !== studentIdFromQuery) {
         setSelectedStudentId(studentIdFromQuery);

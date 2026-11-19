@@ -114,7 +114,7 @@ export default function AddGoalTemplateModal() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Clinical Goal Category</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a goal category" />
@@ -138,7 +138,7 @@ export default function AddGoalTemplateModal() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Data Capture Method</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a data capture method" />

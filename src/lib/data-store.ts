@@ -148,18 +148,20 @@ export async function hydrateLists(keys: StorageKeys): Promise<MigrationResult[]
     }
   };
 
-  for (const key of [keys.students, keys.templates, keys.sessions]) {
-    if (!key) continue;
-    if (!secureStore.isListKey(key)) continue;
-    if (secureStore.isEraseMarkerSet()) {
-      await idb.clearAllListStores();
-      secureStore.clearEraseMarker();
+  const listKeys = [keys.students, keys.templates, keys.sessions].filter((k): k is string => !!k && secureStore.isListKey(k));
+  if (listKeys.length > 0 && secureStore.isEraseMarkerSet()) {
+    await idb.clearAllListStores();
+    secureStore.clearEraseMarker();
+    for (const key of listKeys) {
       secureStore.setListBackend(key, 'idb');
       secureStore.setCachedValue(key, '[]');
       secureStore.markListHydrated(key);
       results.push({ key, status: 'empty' });
-      continue;
     }
+    return results;
+  }
+
+  for (const key of listKeys) {
     if (!idb.isIndexedDbSupported()) {
       secureStore.setListBackend(key, 'localstorage');
       secureStore.markListHydrated(key);

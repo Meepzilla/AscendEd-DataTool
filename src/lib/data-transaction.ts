@@ -107,7 +107,15 @@ function stableStringify(value: unknown): string {
  * There is no synchronous version: a synchronous write cannot know whether the data reached disk,
  * which is the failure this helper exists to prevent.
  */
-export async function runListTransactionAsync({ store, next }: ListTransactionInput): Promise<boolean> {
+let transactionQueue: Promise<unknown> = Promise.resolve();
+
+export async function runListTransactionAsync(input: ListTransactionInput): Promise<boolean> {
+  const nextRun = transactionQueue.then(() => executeListTransactionAsync(input), () => executeListTransactionAsync(input));
+  transactionQueue = nextRun.catch(() => {});
+  return nextRun;
+}
+
+async function executeListTransactionAsync({ store, next }: ListTransactionInput): Promise<boolean> {
   const snapshots = new Map<MainListKey, unknown>();
   for (const key of MAIN_LIST_KEYS) {
     try {

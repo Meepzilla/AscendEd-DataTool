@@ -62,6 +62,7 @@ describe('attendance by month and day', () => {
     expect(attendanceByMonth(odd)).toHaveLength(1);
     expect(attendanceByMonth(odd)[0].byReason.other).toBe(1);
     expect(attendanceByDay(odd).get('2026-09-03')).toEqual({ held: 0, minutes: 0, missed: ['other'] });
+    expect(attendanceSummary(odd).byReason).toEqual([{ reason: 'other', count: 1 }]);
   });
 
   it('gives the share held overall and the student\'s own attendance', () => {

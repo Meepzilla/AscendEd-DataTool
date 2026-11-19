@@ -11,7 +11,7 @@ import { clearStorageFailure, getStorageFailures, subscribeStorageFailures } fro
 // listed here, on every page, until the save lands or the user dismisses it. Dismissing only
 // acknowledges it — the next failed save records it again.
 export default function StorageFailureBanner() {
-  const failures = useSyncExternalStore(subscribeStorageFailures, getStorageFailures);
+  const failures = useSyncExternalStore(subscribeStorageFailures, getStorageFailures, getStorageFailures);
   if (failures.length === 0) return null;
   return (
     <div className="space-y-2 px-4 pt-4 sm:px-6 lg:px-8" role="alert" aria-live="assertive">

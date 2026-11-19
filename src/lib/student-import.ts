@@ -143,10 +143,14 @@ export function moveIepToCurrentYear(students: ImportStudent[], now = new Date()
   const today = localToday(now);
   return students.map(s => {
     let { iepDate, annualReviewDate } = s.iep;
-    if (!annualReviewDate || annualReviewDate >= today) return s;
-    while (annualReviewDate < today) {
+    if (!annualReviewDate || !/^\d{4}-\d{2}-\d{2}$/.test(annualReviewDate) || annualReviewDate >= today) return s;
+    const startYear = Number(annualReviewDate.slice(0, 4));
+    if (!Number.isFinite(startYear) || startYear < 1970 || startYear > 2100) return s;
+    let steps = 0;
+    while (annualReviewDate < today && steps < 50) {
       iepDate = dayAfter(annualReviewDate);
       annualReviewDate = yearLessADay(iepDate);
+      steps++;
     }
     return { ...s, iepFromFile: s.iep, iep: { ...s.iep, iepDate, annualReviewDate } };
   });

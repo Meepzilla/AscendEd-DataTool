@@ -158,7 +158,7 @@ export default function DataEntryContent() {
   const draftFailureToastShown = useRef(false);
   // A draft save that failed in the background (passcode protection on: the encrypted write lands
   // after the synchronous save returns) is recorded the same way as a synchronous failure.
-  const draftFailure = useSyncExternalStore(subscribeStorageFailures, () => getStorageFailure('draft'));
+  const draftFailure = useSyncExternalStore(subscribeStorageFailures, () => getStorageFailure('draft'), () => getStorageFailure('draft'));
 
   // Keep the draft up to date. Only students with unsaved entries are stored.
   useEffect(() => {
@@ -589,7 +589,10 @@ export default function DataEntryContent() {
   // draft would then be saved again without them.
   // The link is then taken out of the address, so reopening or reloading the page doesn't load the group again
   // over the students chosen since.
-  const groupFromLink = useSearchParams().get('group');
+  const searchParams = useSearchParams();
+  const groupFromLink = searchParams.get('group');
+  const studentFromLink = searchParams.get('studentId');
+  const goalFromLink = searchParams.get('goalId');
   const router = useRouter();
   const groupLinkHandled = useRef(false);
   useEffect(() => {
@@ -600,6 +603,29 @@ export default function DataEntryContent() {
     else toast({ title: 'Group not found', description: 'That group has been deleted. Choose one with Load Group.' });
     router.replace('/data-entry', { scroll: false });
   }, [groupFromLink, activeStudents.length, statesBuilt, uid, loadGroup, toast, router]);
+
+  const studentLinkHandled = useRef(false);
+  useEffect(() => {
+    if (!studentFromLink || studentLinkHandled.current || activeStudents.length === 0 || !statesBuilt || isStudentAccessLocked) return;
+    studentLinkHandled.current = true;
+    const targetStudent = activeStudents.find(s => s.id === studentFromLink);
+    if (targetStudent) {
+      let slotIndex = selectedStudentIds.indexOf(targetStudent.id);
+      if (slotIndex === -1) {
+        slotIndex = selectedStudentIds.length;
+        setSelectedStudentIds(prev => (prev.includes(targetStudent.id) ? prev : [...prev, targetStudent.id]));
+      }
+      setFocusedStudentSlotIndex(slotIndex);
+      if (goalFromLink) {
+        const activeGoals = (targetStudent.goals || []).filter(g => !g.isArchived);
+        const goalIndex = activeGoals.findIndex(g => g.id === goalFromLink);
+        if (goalIndex !== -1) {
+          setFocusedGoalIndexByStudentId(prev => ({ ...prev, [targetStudent.id]: goalIndex }));
+        }
+      }
+    }
+    router.replace('/data-entry', { scroll: false });
+  }, [studentFromLink, goalFromLink, activeStudents, statesBuilt, isStudentAccessLocked, selectedStudentIds, setSelectedStudentIds, setFocusedStudentSlotIndex, setFocusedGoalIndexByStudentId, router]);
 
   // Editing the student (name, goals) from Data Entry is also covered by the Student Access Lock.
   const openEditStudentModalUnlocked = useCallback((student: Student) => {

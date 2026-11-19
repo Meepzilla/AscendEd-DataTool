@@ -38,8 +38,10 @@ export function planSessionImport(currentStudents: Student[], currentSessions: S
   };
   const nameKey = (name?: string) => (name || '').trim().toLowerCase();
   const students = currentStudents.map(st => ({ ...st, goals: [...(st.goals || [])] }));
-  const findStudent = (s: ImportedSession) =>
-    students.find(st => st.id === s.studentId) ?? students.find(st => nameKey(st.name) === nameKey(s.studentName));
+  const findStudent = (s: ImportedSession) => {
+    const key = nameKey(s.studentName);
+    return students.find(st => st.id === s.studentId) ?? (key ? students.find(st => nameKey(st.name) === key) : undefined);
+  };
   const ids = new Set(currentSessions.map(s => s.sessionId));
   const contents = new Set(currentSessions.map(contentKey));
   const newSessions: SessionData[] = [];
@@ -49,17 +51,19 @@ export function planSessionImport(currentStudents: Student[], currentSessions: S
   // Goals a session needs that its student doesn't have. They are added only with a session that is imported, so
   // a skipped duplicate never brings back a goal (e.g. one deleted after the first import).
   const pendingGoals = new Map<string, Goal>();
-  const pendingKey = (studentId: string, g: SessionGoalData) => `${studentId}\u0000${nameKey(g.goalName)}\u0000${g.goalType}`;
+  const pendingKey = (studentId: string, g: SessionGoalData) => `${studentId}\u0000${nameKey(g.goalName) || g.goalId}\u0000${g.goalType}`;
   for (const { sourceSessionId, ...s } of toImport) {
     const student = findStudent(s as ImportedSession);
     if (!student) { unmatchedCount++; continue; }
     const needed: Goal[] = [];
     const goals = (s.goals || []).map(g => {
+      const gNameKey = nameKey(g.goalName);
       let goal = student.goals.find(sg => sg.id === g.goalId)
-        ?? student.goals.find(sg => nameKey(sg.name) === nameKey(g.goalName) && sg.type === g.goalType);
+        ?? (gNameKey ? student.goals.find(sg => nameKey(sg.name) === gNameKey && sg.type === g.goalType) : undefined);
       if (!goal) {
         const key = pendingKey(student.id, g);
-        goal = pendingGoals.get(key) ?? { id: g.goalId || generateUUID(), name: g.goalName, type: g.goalType, smartGoal: '' };
+        const fallbackName = (g.goalName || '').trim() || g.goalType;
+        goal = pendingGoals.get(key) ?? { id: g.goalId || generateUUID(), name: fallbackName, type: g.goalType, smartGoal: '' };
         pendingGoals.set(key, goal);
         needed.push(goal);
       }

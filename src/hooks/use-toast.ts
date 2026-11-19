@@ -242,7 +242,7 @@ function useToast() {
         listeners.splice(index, 1)
       }
     }
-  }, [state]) // Dependency array: re-run effect if state changes (though this is reactive to memoryState, so setState is typically stable).
+  }, [])
 
   // Return the current toast state and action functions.
   return {

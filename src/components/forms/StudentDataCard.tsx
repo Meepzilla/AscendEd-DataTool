@@ -162,6 +162,7 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
               id={`show-archived-${student.id}`}
               checked={dataEntryShowArchivedByStudentId[student.id] || false}
               onCheckedChange={(checked) => setDataEntryShowArchivedByStudentId(prev => ({ ...prev, [student.id]: checked }))}
+              disabled={isStudentAccessLocked}
             />
             <Label htmlFor={`show-archived-${student.id}`} className="text-xs text-muted-foreground">
               {dataEntryShowArchivedByStudentId[student.id] ? "Showing Archived Goals" : "Show Archived Goals"}
@@ -248,6 +249,7 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
               value={state.serviceMinutes}
               onChange={(next) => handleServiceMinutesChange(student.id, next)}
               idSuffix={student.id}
+              disabled={isStudentAccessLocked}
             />
           </div>
         </CardContent>

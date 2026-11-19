@@ -42,6 +42,12 @@ describe('goal text blanks', () => {
     const goal = { name: 'Initiate communication using _________ (AAC device/app/system) to interact with peers or...', smartGoal: AAC, blankFills: ['a talker'] };
     expect(fillNameBlanks(goal)).toBe('Initiate communication using a talker (AAC device/app/system) to interact with peers or...');
     expect(fillNameBlanks({ ...goal, name: 'Other ___ name' })).toBe('Other ___ name');
+    const withSingleUnderscore = {
+      name: 'Produce ___ in words',
+      smartGoal: 'By [date] (ref_1), STUDENT will produce ___ in words across ___ sessions.',
+      blankFills: ['/r/', '4'],
+    };
+    expect(fillNameBlanks(withSingleUnderscore)).toBe('Produce /r/ in words');
   });
 });
 

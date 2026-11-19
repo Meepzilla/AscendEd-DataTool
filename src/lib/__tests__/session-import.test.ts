@@ -53,4 +53,30 @@ describe('planSessionImport dedup', () => {
     expect(plan.newCount).toBe(0);
     expect(plan.duplicateCount).toBe(1);
   });
+  it('does not match an unnamed student or goal when importing a de-identified session without names', () => {
+    const unnamedStudents = [{
+      id: 'st-empty', name: '   ', userId: 'u', createdAt: '2026-01-01', goals: [
+        { id: 'g-empty', name: '', type: 'ARTICULATION', smartGoal: '' },
+      ],
+    }] as unknown as Student[];
+    // Unknown studentId + empty studentName must not match st-empty by empty name
+    const unmatchedDeidentified: ImportedSession = {
+      studentId: 'st-other', studentName: '', date: '2026-10-05', time: '09:00', endTime: '09:30',
+      activity: 'cards', notes: '', originalGoalHeaders: [],
+      goals: [{ goalId: 'g-new', goalName: '', goalType: 'ARTICULATION', data: { correct: 3 } }],
+    };
+    expect(planSessionImport(unnamedStudents, [], [unmatchedDeidentified], 'u').unmatchedCount).toBe(1);
+
+    // Known studentId + unknown goalId + empty goalName must not match g-empty by empty name, and gets fallback name
+    const matchedStudentDeidentified: ImportedSession = {
+      studentId: 'st-empty', studentName: '', date: '2026-10-05', time: '09:00', endTime: '09:30',
+      activity: 'cards', notes: '', originalGoalHeaders: [],
+      goals: [{ goalId: 'g-new', goalName: '', goalType: 'ARTICULATION', data: { correct: 3 } }],
+    };
+    const plan = planSessionImport(unnamedStudents, [], [matchedStudentDeidentified], 'u');
+    expect(plan.addedGoalCount).toBe(1);
+    expect(plan.students[0].goals).toHaveLength(2);
+    expect(plan.students[0].goals[1]).toMatchObject({ id: 'g-new', name: 'ARTICULATION' });
+  });
 });
+

@@ -88,7 +88,8 @@ function statesPercent(text: string): boolean {
   return /(?<![\d./])\d{1,3}(?:\.\d+)?(?:\s?%|\s+percent\b)|_{3,}(?:\s?%|\s+percent\b)/i.test(text);
 }
 
-const normalize = (s: string) => s.toLowerCase().replace(/_{3,}/g, '_').replace(/\s+/g, ' ').trim();
+const BLANK_SENTINEL = '\u0000';
+const normalize = (s: string) => s.toLowerCase().replace(/_{3,}/g, BLANK_SENTINEL).replace(/\s+/g, ' ').trim();
 
 /**
  * The goal's name with blanks filled. Goal bank names are often the start of the goal text ("Initiate
@@ -101,7 +102,7 @@ export function fillNameBlanks(goal: BlankGoal & { name: string }): string {
   const text = normalize(goal.smartGoal);
   const at = text.indexOf(core);
   if (at === -1) return name;
-  const offset = (text.slice(0, at).match(/_/g) ?? []).length; // text blanks before the name starts
+  const offset = (text.slice(0, at).match(/\u0000/g) ?? []).length; // text blanks before the name starts
   const values = blankValues(goal.smartGoal, goal);
   let i = 0;
   return name.replace(BLANK, blank => values[offset + i++] ?? blank);

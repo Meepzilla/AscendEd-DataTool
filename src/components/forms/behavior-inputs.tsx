@@ -397,6 +397,12 @@ function writeStored(key: string, value: unknown) {
 /** A short beep and a vibration (where supported) at the end of each interval. */
 function useIntervalCue() {
   const audioRef = useRef<AudioContext | null>(null);
+  useEffect(() => {
+    return () => {
+      void audioRef.current?.close();
+      audioRef.current = null;
+    };
+  }, []);
   // The audio context has to be created by a tap (iPad), so this is called when the timer is started.
   const prepare = () => {
     try {

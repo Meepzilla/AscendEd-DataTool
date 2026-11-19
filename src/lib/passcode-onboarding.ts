@@ -28,10 +28,13 @@ export interface PasscodeDecision {
   at: string;
 }
 
+let memoryDecision: PasscodeDecision | null = null;
+let memoryBackupDeclined: PasscodeBackupDeclined | null = null;
+
 function readDecisionRaw(): PasscodeDecision | null {
   try {
     const raw = localStorage.getItem(PASSCODE_DECISION_KEY);
-    if (!raw) return null;
+    if (!raw) return memoryDecision;
     const parsed: unknown = JSON.parse(raw);
     if (
       typeof parsed === 'object' && parsed !== null &&
@@ -43,7 +46,7 @@ function readDecisionRaw(): PasscodeDecision | null {
     }
     return null;
   } catch {
-    return null;
+    return memoryDecision;
   }
 }
 
@@ -58,6 +61,8 @@ export function getPasscodeDecision(): PasscodeDecision | null {
  * protection is off, and a backup restored next must not be stored unencrypted without asking).
  */
 export function clearPasscodeDecision() {
+  memoryDecision = null;
+  memoryBackupDeclined = null;
   try {
     localStorage.removeItem(PASSCODE_DECISION_KEY);
   } catch {
@@ -68,7 +73,12 @@ export function clearPasscodeDecision() {
 /** Records the first-run decision (plain localStorage) and returns it. */
 export function recordPasscodeDecision(choice: PasscodeDecisionChoice): PasscodeDecision {
   const decision: PasscodeDecision = { v: 1, choice, at: new Date().toISOString() };
-  localStorage.setItem(PASSCODE_DECISION_KEY, JSON.stringify(decision));
+  try {
+    localStorage.setItem(PASSCODE_DECISION_KEY, JSON.stringify(decision));
+    memoryDecision = null;
+  } catch {
+    memoryDecision = decision;
+  }
   return decision;
 }
 
@@ -99,9 +109,13 @@ function valueHoldsData(value: string | null): boolean {
  */
 export function hasExistingStudentData(): boolean {
   if (typeof window === 'undefined') return false;
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key && STUDENT_DATA_KEYS.test(key) && valueHoldsData(localStorage.getItem(key))) return true;
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && STUDENT_DATA_KEYS.test(key) && valueHoldsData(localStorage.getItem(key))) return true;
+    }
+  } catch {
+    /* fall through to idb check */
   }
   // Once the lists move to IndexedDB their localStorage copies are removed, so ask the store too (without
   // this, an existing install looked like a fresh one: the first-run setup, with no backup step).
@@ -158,16 +172,21 @@ export function hasBackupOnRecord(): boolean {
 export function hasDeclinedBackupBeforePasscode(): boolean {
   if (typeof window === 'undefined') return false;
   try {
-    return localStorage.getItem(PASSCODE_BACKUP_DECLINED_KEY) !== null;
+    return localStorage.getItem(PASSCODE_BACKUP_DECLINED_KEY) !== null || memoryBackupDeclined !== null;
   } catch {
-    return false;
+    return memoryBackupDeclined !== null;
   }
 }
 
 /** Records that the user declined to back up first, after the warning, so setup can proceed. */
 export function recordBackupDeclinedBeforePasscode(): PasscodeBackupDeclined {
   const record: PasscodeBackupDeclined = { v: 1, at: new Date().toISOString() };
-  localStorage.setItem(PASSCODE_BACKUP_DECLINED_KEY, JSON.stringify(record));
+  try {
+    localStorage.setItem(PASSCODE_BACKUP_DECLINED_KEY, JSON.stringify(record));
+    memoryBackupDeclined = null;
+  } catch {
+    memoryBackupDeclined = record;
+  }
   return record;
 }
 

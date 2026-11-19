@@ -140,6 +140,7 @@ export default function ImportDataModal({ onClose, onImport }: ImportDataModalPr
                     // Export spaced the key out before each capital ("Partial Physical", "total Syllables"), keeping
                     // the first letter's case, so joining the words back gives the original key.
                     const camelCaseKey = dataKeyRaw.replace(/\s+(.)/g, (_match: string, letter: string) => letter.toUpperCase()).trim();
+                    if (!camelCaseKey || camelCaseKey === '__proto__' || camelCaseKey === 'prototype' || camelCaseKey === 'constructor') continue;
                     
                     let value = row[key];
                     // Columns from other goal types are empty for this goal.
