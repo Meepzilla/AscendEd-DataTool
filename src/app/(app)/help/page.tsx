@@ -1,12 +1,15 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { BarChart2, ClipboardList, HelpCircle, Keyboard, LifeBuoy, Rocket, Shield, Target, UserCog } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { BarChart2, ClipboardList, HelpCircle, Keyboard, LifeBuoy, Rocket, Shield, Target, UserCog, ZoomIn } from 'lucide-react';
 import { APP_NAME } from '@/lib/appConstants';
 import { goalMeasureInfo } from '@/lib/goal-measures';
+import { GOAL_TYPE_SCREENSHOTS } from '@/lib/goal-type-screenshots';
 import { goalTypeLabel } from '@/lib/helpers';
 import type { GoalType } from '@/lib/types';
 import { ShowGettingStartedButton } from '@/components/dashboard/GettingStarted';
@@ -133,6 +136,8 @@ const CONTENTS: [string, string][] = [
 ];
 
 export default function HelpPage() {
+  const [enlargedGoal, setEnlargedGoal] = useState<{ type: GoalType; does: string } | null>(null);
+
   return (
     <div className="space-y-6">
       <Card className="shadow-lg">
@@ -219,17 +224,52 @@ export default function HelpPage() {
       </Section>
 
       <Section id="goal-types" icon={Target} title="Goal types" description="Each goal type has its own data entry controls and its own measure in reports.">
-        <p>Most types also tally the prompt level of each response (Independent, Visual, Verbal, Gestural, Partial physical, Imitation). Counter buttons add one with a tap; press and hold (or right-click) to take one away.</p>
+        <p>Most types also tally the prompt level of each response (Independent, Visual, Verbal, Gestural, Partial physical, Imitation). Counter buttons add one with a tap; press and hold (or right-click) to take one away. Tap any screenshot below to enlarge it.</p>
         <dl className="divide-y divide-border">
-          {[...GOAL_TYPE_HELP].sort((a, b) => goalTypeLabel(a.type).localeCompare(goalTypeLabel(b.type))).map(({ type, does }) => (
-            <div key={type} className="grid gap-1 py-2 sm:grid-cols-[14rem_1fr] sm:gap-4">
-              <dt className="font-semibold text-foreground">
-                {goalTypeLabel(type)}
-                <span className="block text-xs font-normal text-muted-foreground">Measure: {goalMeasureInfo({ type }).label}</span>
-              </dt>
-              <dd>{does}</dd>
-            </div>
-          ))}
+          {[...GOAL_TYPE_HELP].sort((a, b) => goalTypeLabel(a.type).localeCompare(goalTypeLabel(b.type))).map(({ type, does }) => {
+            const label = goalTypeLabel(type);
+            const screenshot = GOAL_TYPE_SCREENSHOTS[type];
+            return (
+              <div
+                key={type}
+                id={`goal-type-${type.toLowerCase().replace(/_/g, '-')}`}
+                className="grid gap-x-6 gap-y-2 py-5 scroll-mt-20 md:grid-cols-[minmax(0,1fr)_20rem] md:grid-rows-[auto_1fr] md:items-start"
+              >
+                <dt className="text-base font-semibold text-foreground md:col-start-1 md:row-start-1">
+                  {label}
+                  <span className="mt-0.5 block text-xs font-normal text-muted-foreground">Measure: {goalMeasureInfo({ type }).label}</span>
+                </dt>
+                <dd className="md:col-start-1 md:row-start-2">{does}</dd>
+                <dd className="pt-1 md:col-start-2 md:row-start-1 md:row-span-2 md:pt-0">
+                  <button
+                    type="button"
+                    onClick={() => setEnlargedGoal({ type, does })}
+                    className="group block w-full max-w-[330px] overflow-hidden rounded-lg border border-border bg-card text-left shadow-sm transition-colors hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                    aria-label={`Enlarge ${label} data entry screenshot`}
+                  >
+                    <div className="bg-[#0a111f] p-1">
+                      <Image
+                        src={screenshot.src}
+                        alt={`Example Data Entry card for ${label}`}
+                        width={screenshot.width}
+                        height={screenshot.height}
+                        unoptimized
+                        loading="lazy"
+                        className="h-auto w-full rounded-sm"
+                      />
+                    </div>
+                    <span
+                      aria-hidden
+                      className="flex items-center justify-end gap-1 border-t border-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors group-hover:text-primary"
+                    >
+                      <ZoomIn className="h-3.5 w-3.5" />
+                      Tap to enlarge
+                    </span>
+                  </button>
+                </dd>
+              </div>
+            );
+          })}
         </dl>
       </Section>
 
@@ -311,6 +351,36 @@ export default function HelpPage() {
           </Topic>
         </Accordion>
       </Section>
+
+      <Dialog open={enlargedGoal !== null} onOpenChange={(open) => { if (!open) setEnlargedGoal(null); }}>
+        {enlargedGoal && (() => {
+          const label = goalTypeLabel(enlargedGoal.type);
+          const screenshot = GOAL_TYPE_SCREENSHOTS[enlargedGoal.type];
+          return (
+            <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{label}</DialogTitle>
+                <DialogDescription>
+                  <span className="block font-medium text-foreground">
+                    Measure: {goalMeasureInfo({ type: enlargedGoal.type }).label}
+                  </span>
+                  <span className="mt-1 block">{enlargedGoal.does}</span>
+                </DialogDescription>
+              </DialogHeader>
+              <div className="rounded-lg border border-border bg-[#0a111f] p-1.5">
+                <Image
+                  src={screenshot.src}
+                  alt={`Example Data Entry card for ${label}`}
+                  width={screenshot.width}
+                  height={screenshot.height}
+                  unoptimized
+                  className="mx-auto h-auto w-full max-w-[420px] rounded-sm"
+                />
+              </div>
+            </DialogContent>
+          );
+        })()}
+      </Dialog>
     </div>
   );
 }
