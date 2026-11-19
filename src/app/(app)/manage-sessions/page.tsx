@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useMemo, useEffect, useDeferredValue, lazy, Suspense } from 'react';
+import React, { useState, useMemo, useEffect, useDeferredValue, lazy, Suspense, useRef } from 'react';
 import { useStudentData } from '@/hooks/use-student-data';
 import type { SessionData } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { MISSED_REASON_LABELS, MISSED_REASON_SHORT } from '@/lib/attendance';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useFillScreenHeight } from '@/hooks/use-fill-screen-height';
 import { Edit, Trash2, Search, Info, Eye, FileText, Merge } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { mergeProblem } from '@/lib/session-merge';
@@ -94,13 +95,19 @@ export default function ManageSessionsPage() {
     if (isMergeOpen && mergeBlocked) setIsMergeOpen(false);
   }, [isMergeOpen, mergeBlocked]);
 
+  // The list fills the screen down to the menu bar (or the bottom edge), instead of a fixed 500px that left the card
+  // ending halfway down with the menu bar and the footer under it.
+  const pageRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const listHeight = useFillScreenHeight(listRef, pageRef, 320, !(studentsLoading && students.length === 0));
+
   if (studentsLoading && students.length === 0) { // Only show global skeleton if students are also loading
     return <SessionsPageSkeleton />;
   }
   
   return (
     <Suspense fallback={<SessionsPageSkeleton />}>
-      <div className="space-y-6">
+      <div ref={pageRef} className="space-y-6">
         {editingSession && <EditSessionModal sessionToEdit={editingSession} />}
         {deletingSession && (
           <ConfirmationModal
@@ -176,7 +183,7 @@ export default function ManageSessionsPage() {
             <DatePickerWithRange date={dateRange} setDate={setDateRange} className="w-full md:w-auto" />
           </div>
 
-          <ScrollArea className="h-[500px] border rounded-md"> {/* Adjust height as needed */}
+          <ScrollArea ref={listRef} className="h-[500px] border rounded-md" style={listHeight ? { height: listHeight } : undefined}>
             <Table>
               <TableHeader className="sticky top-0 bg-muted [&_th]:text-foreground">
                 <TableRow>

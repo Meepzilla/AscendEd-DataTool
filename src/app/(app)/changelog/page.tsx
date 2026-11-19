@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-19',
+    title: 'Sessions Fills the Screen',
+    description: 'The session list on the Sessions tab now grows to fill the screen, down to the menu bar, on an iPad in either direction and on a phone, instead of stopping at a fixed height halfway down. With the menu bar at the bottom it now sits at the bottom edge as on the other tabs, and the footer strip (copyright, hotkeys and links) is no longer shown on Sessions, as intended; it was still showing because of how the page address was checked.',
+    type: 'improvement',
+    icon: PanelBottom,
+  },
+  {
+    date: '2026-11-19',
     title: 'Communication Functions Now Track Emerging Forms',
     description: 'Communication Functions goals in Data Entry now have three tally buttons for each function: Spont. (S) for the student\'s target or symbolic form, Emerg. (E) for an emerging or alternative form used without a prompt (such as a gesture, vocalization, or approximation), and Prompt. (P) for a prompted use. Both spontaneous and emerging uses count toward the number of different functions used without a prompt and toward any Minimum Total Uses per Session target, so students get credit when they express a function independently in an emerging form. In Reports and the printable Progress Report, the session graph plots Without a prompt (total), Spontaneous, and Emerging as separate lines, paired in Reports with a side-by-side Uses per Session stacked bar chart and the Uses by Function breakdown. The report narrative breaks down all three counts and highlights which functions appeared in an emerging form. Earlier sessions without emerging counts keep working as before.',
     type: 'feature',
