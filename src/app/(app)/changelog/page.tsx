@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-19',
+    title: 'Minutes Column on Sessions',
+    description: 'The Sessions tab has a new Minutes column, after End Time, showing how long each session was, worked out from its start and end times. A missed session, or one without both times, shows a dash.',
+    type: 'feature',
+    icon: Clock,
+  },
+  {
+    date: '2026-11-19',
     title: 'Sessions Fills the Screen',
     description: 'The session list on the Sessions tab now grows to fill the screen, down to the menu bar, on an iPad in either direction and on a phone, instead of stopping at a fixed height halfway down. With the menu bar at the bottom it now sits at the bottom edge as on the other tabs, and the footer strip (copyright, hotkeys and links) is no longer shown on Sessions, as intended; it was still showing because of how the page address was checked.',
     type: 'improvement',

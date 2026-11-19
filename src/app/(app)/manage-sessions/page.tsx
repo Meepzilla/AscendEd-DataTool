@@ -16,7 +16,7 @@ import { Edit, Trash2, Search, Info, Eye, FileText, Merge } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { mergeProblem } from '@/lib/session-merge';
 import MergeSessionsDialog from '@/components/sessions/MergeSessionsDialog';
-import { compareSessionsOldestFirst, formatDate, sessionInDateRange } from '@/lib/helpers';
+import { compareSessionsOldestFirst, formatDate, sessionInDateRange, sessionMinutes } from '@/lib/helpers';
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
@@ -27,6 +27,13 @@ import type { DateRange } from "react-day-picker";
 const EditSessionModal = lazy(() => import('@/components/modals/edit-session-modal'));
 const ConfirmationModal = lazy(() => import('@/components/modals/confirmation-modal'));
 const ViewSessionDetailsModal = lazy(() => import('@/components/modals/view-session-details-modal'));
+
+/** A session's minutes for the Minutes column: "30 min", or a dash when it was missed or its times aren't both set. */
+function sessionLength(session: SessionData): string {
+  if (session.missed) return '—';
+  const minutes = sessionMinutes(session);
+  return minutes === null ? '—' : `${minutes} min`;
+}
 
 /** How many sessions the table shows at first, and how many more each "Show more" adds. */
 const SESSIONS_PAGE_SIZE = 100;
@@ -192,6 +199,7 @@ export default function ManageSessionsPage() {
                   <TableHead>Date</TableHead>
                   <TableHead>Start Time</TableHead>
                   <TableHead>End Time</TableHead>
+                  <TableHead className="text-right">Minutes</TableHead>
                   <TableHead>Activity</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -205,6 +213,7 @@ export default function ManageSessionsPage() {
                             <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                             <TableCell><Skeleton className="h-5 w-16" /></TableCell>
                             <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                            <TableCell><Skeleton className="ml-auto h-5 w-12" /></TableCell>
                             <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                             <TableCell className="text-right space-x-1">
                                 <Skeleton className="h-8 w-8 inline-block rounded-md" />
@@ -215,7 +224,7 @@ export default function ManageSessionsPage() {
                     ))
                 ) : filteredSessions.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
                       <Info className="mx-auto h-10 w-10 mb-2" />
                       No sessions found matching your criteria.
                     </TableCell>
@@ -235,6 +244,8 @@ export default function ManageSessionsPage() {
                       <TableCell>{formatDate(session.date)}</TableCell>
                       <TableCell>{session.time}</TableCell>
                       <TableCell>{session.endTime || 'N/A'}</TableCell>
+                      {/* The session's length from its start and end times; none for a missed session or one without both. */}
+                      <TableCell className="text-right tabular-nums">{sessionLength(session)}</TableCell>
                       <TableCell className="truncate max-w-xs" title={session.missed ? MISSED_REASON_LABELS[session.missed.reason] : session.activity}>
                         {session.missed ? (
                           <span className="inline-block rounded-full border border-orange-400/50 bg-orange-400/10 px-2 py-0.5 text-xs font-semibold text-orange-700 dark:text-orange-300">
