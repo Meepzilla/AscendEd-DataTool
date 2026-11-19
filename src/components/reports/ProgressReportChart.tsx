@@ -57,7 +57,7 @@ export default function ProgressReportChart({ progress }: { progress: GoalProgre
   const firstDate = aim ? formatDate(new Date(t0)) : formatDate(points[0].date);
   const lastDate = aim ? formatDate(new Date(t1)) : formatDate(points[points.length - 1].date);
   const seriesDetail = isCommFunctions
-    ? ` Spontaneous: ${points.map(p => label(p.spontaneous ?? 0)).join(', ')}. Emerging: ${points.map(p => label(p.emerging ?? 0)).join(', ')}.`
+    ? ` Spontaneous: ${points.map(p => label(p.spontaneous ?? 0)).join(', ')}. Emerging only: ${points.map(p => label(p.emerging ?? 0)).join(', ')}.`
     : '';
   const summary = `${measureLabel} across ${points.length} session${points.length === 1 ? '' : 's'}, from ${formatDate(points[0].date)} to ${formatDate(points[points.length - 1].date)}: ${points.map(p => label(p.value)).join(', ')}.${seriesDetail}${target !== undefined ? ` Target ${label(target)}.` : ''}${aim ? ` Aim line from ${label(aim.start.value)} on ${formatDate(new Date(aim.start.time))} to ${label(aim.end.value)} on ${formatDate(new Date(aim.end.time))}.` : ''}`;
 
@@ -125,7 +125,7 @@ export default function ProgressReportChart({ progress }: { progress: GoalProgre
               <line x1="0" y1="5" x2="20" y2="5" stroke={EMERGING} strokeWidth="1.8" strokeDasharray="2.5 2" />
               <polygon points="10,1.5 13.5,5 10,8.5 6.5,5" fill={EMERGING} stroke="#fff" strokeWidth="0.9" />
             </svg>
-            Emerging
+            Emerging only
           </span>
         </figcaption>
       )}

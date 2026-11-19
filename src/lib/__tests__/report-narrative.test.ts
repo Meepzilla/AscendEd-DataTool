@@ -213,7 +213,7 @@ describe('communication functions narrative', () => {
       ],
     });
     expect(progress.points).toEqual([
-      { date: '2026-10-01T09:00:00Z', value: 3, spontaneous: 2, emerging: 2 },
+      { date: '2026-10-01T09:00:00Z', value: 3, spontaneous: 2, emerging: 1 },
       { date: '2026-10-08T09:00:00Z', value: 1, spontaneous: 0, emerging: 1 },
     ]);
   });

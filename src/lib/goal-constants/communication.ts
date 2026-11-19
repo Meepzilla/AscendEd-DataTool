@@ -31,7 +31,9 @@ export const COMMUNICATION_FIELDS: Record<string, Record<string, any>> = {
  * Totals for a COMMUNICATION_FUNCTIONS session. Progress is measured by `functionsUsedUnprompted`:
  * the number of different functions the student used without a prompt — either spontaneously in their
  * target form (`Spontaneous`) or in an emerging/alternative form such as a gesture, vocalization, or
- * approximation (`Emerging`).
+ * approximation (`Emerging`). `functionsUsedEmergingOnly` counts functions used in an emerging form
+ * without a spontaneous use in that session, so `functionsUsedSpontaneously + functionsUsedEmergingOnly`
+ * always equals `functionsUsedUnprompted`.
  */
 export function summarizeCommunicationFunctions(data: Record<string, any> = {}) {
   let spontaneous = 0;
@@ -39,6 +41,7 @@ export function summarizeCommunicationFunctions(data: Record<string, any> = {}) 
   let prompted = 0;
   let functionsUsedSpontaneously = 0;
   let functionsUsedEmerging = 0;
+  let functionsUsedEmergingOnly = 0;
   let functionsUsedUnprompted = 0;
   let functionsUsed = 0;
   for (const { key } of COMMUNICATION_FUNCTIONS) {
@@ -50,6 +53,7 @@ export function summarizeCommunicationFunctions(data: Record<string, any> = {}) 
     prompted += p;
     if (s > 0) functionsUsedSpontaneously += 1;
     if (e > 0) functionsUsedEmerging += 1;
+    if (s === 0 && e > 0) functionsUsedEmergingOnly += 1;
     if (s + e > 0) functionsUsedUnprompted += 1;
     if (s + e + p > 0) functionsUsed += 1;
   }
@@ -63,6 +67,7 @@ export function summarizeCommunicationFunctions(data: Record<string, any> = {}) 
     total,
     functionsUsedSpontaneously,
     functionsUsedEmerging,
+    functionsUsedEmergingOnly,
     functionsUsedUnprompted,
     functionsUsed,
     functionCount: COMMUNICATION_FUNCTIONS.length,

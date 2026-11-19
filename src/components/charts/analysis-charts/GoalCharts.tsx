@@ -84,6 +84,34 @@ const OneLineTick = ({ x, y, payload }: { x?: number; y?: number; payload?: { va
   );
 };
 
+/** Formats tooltip rows with explicit singular/plural units (e.g., "2 functions" vs "3 uses") while keeping series swatches. */
+function unitTooltipFormatter(config: ChartConfig, singular: string, pluralWord: string) {
+  return function formatTooltipRow(value: unknown, name: unknown, item: { color?: string; dataKey?: string | number }) {
+    const key = String(item?.dataKey ?? name ?? '');
+    const label = config[key]?.label ?? String(name ?? '');
+    const num = Number(value);
+    const unit = num === 1 ? singular : pluralWord;
+    const swatch = item?.color ?? (config[key] && 'color' in config[key] ? config[key].color : undefined);
+    return (
+      <div className="flex w-full items-center justify-between gap-3">
+        <span className="flex items-center gap-1.5 text-muted-foreground">
+          {swatch && <span className="h-2.5 w-2.5 shrink-0 rounded-[2px]" style={{ backgroundColor: swatch }} />}
+          {label}
+        </span>
+        <span className="font-mono font-medium tabular-nums text-foreground">
+          {Number.isFinite(num) ? `${num.toLocaleString()} ${unit}` : String(value)}
+        </span>
+      </div>
+    );
+  };
+}
+
+const COMM_USES_CONFIG: ChartConfig = {
+  spontaneousUses: { label: 'Spontaneous', color: 'hsl(var(--comm-spontaneous))' },
+  emergingUses: { label: 'Emerging', color: 'hsl(var(--comm-emerging))' },
+  promptedUses: { label: 'Prompted', color: 'hsl(var(--comm-prompted))' },
+};
+
 const HBars: React.FC<{
   title: string;
   rows: Record<string, string | number>[];
@@ -91,28 +119,33 @@ const HBars: React.FC<{
   max?: number;
   /** Width of the label column (default 150). */
   labelWidth?: number;
-}> = ({ title, rows, series, max, labelWidth = HBAR_LABEL_WIDTH }) => (
-  <div>
-    <p className="text-sm font-medium mb-1">{title}</p>
-    {rows.length === 0 ? (
-      <p className="text-xs text-muted-foreground">None recorded.</p>
-    ) : (
-      <ChartContainer
-        config={Object.fromEntries(series.map(s => [s.key, { label: s.label, color: s.color }]))}
-        className="w-full"
-        style={{ height: 30 * rows.length + (series.length > 1 ? 60 : 30) }}
-      >
-        <BarChart data={rows} layout="vertical" margin={{ top: 0, right: 16, left: 0, bottom: 0 }}>
-          <XAxis type="number" allowDecimals={max !== undefined} domain={max !== undefined ? [0, max] : undefined} tickLine={false} axisLine={false} />
-          <YAxis type="category" dataKey="name" width={labelWidth} tickLine={false} axisLine={false} interval={0} tick={<OneLineTick />} />
-          <ChartTooltip content={<ChartTooltipContent />} />
-          {series.length > 1 && <ChartLegend content={<ChartLegendContent />} />}
-          {series.map(s => <Bar key={s.key} dataKey={s.key} stackId="a" fill={`var(--color-${s.key})`} />)}
-        </BarChart>
-      </ChartContainer>
-    )}
-  </div>
-);
+  /** Optional [singular, plural] unit shown after tooltip values. */
+  unit?: [string, string];
+}> = ({ title, rows, series, max, labelWidth = HBAR_LABEL_WIDTH, unit }) => {
+  const config: ChartConfig = Object.fromEntries(series.map(s => [s.key, { label: s.label, color: s.color }]));
+  return (
+    <div>
+      <p className="text-sm font-medium mb-1">{title}</p>
+      {rows.length === 0 ? (
+        <p className="text-xs text-muted-foreground">None recorded.</p>
+      ) : (
+        <ChartContainer
+          config={config}
+          className="w-full"
+          style={{ height: 30 * rows.length + (series.length > 1 ? 60 : 30) }}
+        >
+          <BarChart data={rows} layout="vertical" margin={{ top: 0, right: 16, left: 0, bottom: 0 }}>
+            <XAxis type="number" allowDecimals={max !== undefined} domain={max !== undefined ? [0, max] : undefined} tickLine={false} axisLine={false} />
+            <YAxis type="category" dataKey="name" width={labelWidth} tickLine={false} axisLine={false} interval={0} tick={<OneLineTick />} />
+            <ChartTooltip content={<ChartTooltipContent formatter={unit ? unitTooltipFormatter(config, unit[0], unit[1]) : undefined} />} />
+            {series.length > 1 && <ChartLegend content={<ChartLegendContent />} />}
+            {series.map(s => <Bar key={s.key} dataKey={s.key} stackId="a" fill={`var(--color-${s.key})`} />)}
+          </BarChart>
+        </ChartContainer>
+      )}
+    </div>
+  );
+};
 
 const tallyRows = (entries: [string, number][]) => entries.filter(([, n]) => n > 0).map(([name, count]) => ({ name, count }));
 const COUNT_SERIES = [{ key: 'count', label: 'Count', color: 'hsl(var(--chart-1))' }];
@@ -151,7 +184,7 @@ const GoalBreakdowns: React.FC<{ goal: Goal; recorded: Recorded[] }> = ({ goal, 
       { key: 'prompted', label: 'Prompted', color: 'hsl(var(--comm-prompted))' },
     ];
     panels.push(
-      <HBars key="functions" title="Uses by function" series={series} rows={rows} />,
+      <HBars key="functions" title="Uses by function" series={series} rows={rows} unit={['use', 'uses']} />,
     );
   }
   if (type === 'TASK_ANALYSIS') {
@@ -229,7 +262,7 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
       label: r.label, value: r.value, ...(goalResponses(type, r.data) ?? {}),
       ...(comm ? {
         spontaneousFunctions: comm.functionsUsedSpontaneously,
-        emergingFunctions: comm.functionsUsedEmerging,
+        emergingFunctions: comm.functionsUsedEmergingOnly,
         spontaneousUses: comm.spontaneous,
         emergingUses: comm.emerging,
         promptedUses: comm.prompted,
@@ -254,7 +287,7 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
     ? {
         value: { label: 'Without a prompt (total)', color: 'hsl(var(--primary))' },
         spontaneousFunctions: { label: 'Spontaneous', color: 'hsl(var(--comm-spontaneous))' },
-        emergingFunctions: { label: 'Emerging', color: 'hsl(var(--comm-emerging))' },
+        emergingFunctions: { label: 'Emerging only', color: 'hsl(var(--comm-emerging))' },
         aim: { label: 'Aim line', color: 'hsl(var(--muted-foreground))' },
       }
     : {
@@ -321,7 +354,14 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
                         }}
                       />
                     ) : (
-                      <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
+                      <ChartTooltip
+                        content={
+                          <ChartTooltipContent
+                            indicator="line"
+                            formatter={isCommFunctions ? unitTooltipFormatter(lineChartConfig, 'function', 'functions') : undefined}
+                          />
+                        }
+                      />
                     )}
                     {isCommFunctions && <ChartLegend content={<ChartLegendContent />} />}
                     {isGas ? (
@@ -377,19 +417,12 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
               <div>
                 <p className="text-sm font-medium mb-1">Uses per session</p>
                 <div className="h-[260px] w-full">
-                  <ChartContainer
-                    config={{
-                      spontaneousUses: { label: 'Spontaneous', color: 'hsl(var(--comm-spontaneous))' },
-                      emergingUses: { label: 'Emerging', color: 'hsl(var(--comm-emerging))' },
-                      promptedUses: { label: 'Prompted', color: 'hsl(var(--comm-prompted))' },
-                    }}
-                    className="h-full w-full"
-                  >
+                  <ChartContainer config={COMM_USES_CONFIG} className="h-full w-full">
                     <BarChart data={points} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} />
                       <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} />
                       <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
-                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <ChartTooltip content={<ChartTooltipContent formatter={unitTooltipFormatter(COMM_USES_CONFIG, 'use', 'uses')} />} />
                       <ChartLegend content={<ChartLegendContent />} />
                       <Bar dataKey="spontaneousUses" stackId="u" fill="var(--color-spontaneousUses)" />
                       <Bar dataKey="emergingUses" stackId="u" fill="var(--color-emergingUses)" />
