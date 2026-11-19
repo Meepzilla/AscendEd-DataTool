@@ -15,8 +15,9 @@ export default function AssignTemplateDialog({ template, onClose }: { template: 
   const { students, assignTemplateToStudents } = useStudentData();
   const { toast } = useToast();
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [isAssigning, setIsAssigning] = useState(false);
 
-  useEffect(() => setSelected(new Set()), [template]);
+  useEffect(() => { setSelected(new Set()); setIsAssigning(false); }, [template]);
 
   const activeStudents = students.filter(s => !s.isArchived).sort((a, b) => a.name.localeCompare(b.name));
   const toggle = (id: string) => setSelected(prev => {
@@ -26,11 +27,18 @@ export default function AssignTemplateDialog({ template, onClose }: { template: 
   });
 
   const handleAssign = async () => {
-    if (!template) return;
-    const { assigned } = await assignTemplateToStudents(template, [...selected]);
-    const names = activeStudents.filter(s => selected.has(s.id)).map(s => s.name).join(', ');
-    toast({ title: 'Goal assigned', description: `"${template.name}" was given to ${assigned} student${assigned === 1 ? '' : 's'}: ${names}.` });
-    onClose();
+    if (!template || isAssigning) return;
+    setIsAssigning(true);
+    try {
+      const { assigned } = await assignTemplateToStudents(template, [...selected]);
+      if (assigned > 0) {
+        const names = activeStudents.filter(s => selected.has(s.id)).map(s => s.name).join(', ');
+        toast({ title: 'Goal assigned', description: `"${template.name}" was given to ${assigned} student${assigned === 1 ? '' : 's'}: ${names}.` });
+        onClose();
+      }
+    } finally {
+      setIsAssigning(false);
+    }
   };
 
   return (

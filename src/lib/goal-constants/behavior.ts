@@ -343,9 +343,10 @@ export function finalizeBehaviorData(rawType: string, data: Record<string, any>,
   if (type === 'BEHAVIOR_DURATION') {
     const episodes: number[] = Array.isArray(data.episodeSeconds) ? [...data.episodeSeconds] : [];
     const starts = alignTimes(data.episodeStarts, episodes.length);
-    if (data.runningSince) {
-      episodes.push(Math.max(0, Math.round((now - Number(data.runningSince)) / 1000)));
-      starts.push(new Date(Number(data.runningSince)).toISOString());
+    const since = Number(data.runningSince);
+    if (data.runningSince && Number.isFinite(since) && since > 0) {
+      episodes.push(Math.max(0, Math.round((now - since) / 1000)));
+      starts.push(new Date(since).toISOString());
     }
     const summary = summarizeDuration({ ...data, episodeSeconds: episodes, runningSince: null });
     return { ...data, episodeSeconds: episodes, episodeStarts: starts, runningSince: null, totalSeconds: summary.totalSeconds, episodeCount: summary.episodeCount };

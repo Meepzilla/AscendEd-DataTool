@@ -28,29 +28,36 @@ const AccessLockDialog: React.FC<AccessLockDialogProps> = ({ uid, mode, onClose,
   const [confirmPin, setConfirmPin] = useState('');
   const [error, setError] = useState('');
   const [forgot, setForgot] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    setPin(''); setConfirmPin(''); setError(''); setForgot(false);
+    setPin(''); setConfirmPin(''); setError(''); setForgot(false); setBusy(false);
   }, [mode]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (mode === 'set') {
-      if (!PIN_PATTERN.test(pin)) { setError('Use 4 to 8 digits.'); return; }
-      if (pin !== confirmPin) { setError("The PINs don't match."); return; }
-      if (!(await setAccessPin(uid, pin))) { setError("The PIN couldn't be saved (storage is full)."); return; }
-      onDone();
-    } else if (await checkAccessPin(uid, pin)) {
-      onDone();
-    } else {
-      const remainingMs = getLockoutRemainingMs('access-pin');
-      if (remainingMs > 0) {
-        const minutes = Math.ceil(remainingMs / 60_000);
-        setError(`Too many wrong PINs. Try again in ${minutes} minute${minutes === 1 ? '' : 's'}.`);
+    if (busy) return;
+    setBusy(true);
+    try {
+      if (mode === 'set') {
+        if (!PIN_PATTERN.test(pin)) { setError('Use 4 to 8 digits.'); return; }
+        if (pin !== confirmPin) { setError("The PINs don't match."); return; }
+        if (!(await setAccessPin(uid, pin))) { setError("The PIN couldn't be saved (storage is full)."); return; }
+        onDone();
+      } else if (await checkAccessPin(uid, pin)) {
+        onDone();
       } else {
-        setError('Wrong PIN.');
+        const remainingMs = getLockoutRemainingMs('access-pin');
+        if (remainingMs > 0) {
+          const minutes = Math.ceil(remainingMs / 60_000);
+          setError(`Too many wrong PINs. Try again in ${minutes} minute${minutes === 1 ? '' : 's'}.`);
+        } else {
+          setError('Wrong PIN.');
+        }
+        setPin('');
       }
-      setPin('');
+    } finally {
+      setBusy(false);
     }
   };
 

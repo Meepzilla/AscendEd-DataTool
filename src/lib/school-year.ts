@@ -51,7 +51,8 @@ export function setSchoolYearSetting(setting: SchoolYearSetting): boolean {
 
 function onDay(year: number, monthDay: string): Date {
   const [m, d] = monthDay.split('-').map(Number);
-  return new Date(year, m - 1, d);
+  const maxDay = new Date(year, m, 0).getDate();
+  return new Date(year, m - 1, Math.min(d, maxDay));
 }
 
 /**

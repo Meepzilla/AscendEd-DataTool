@@ -376,14 +376,35 @@ const b64Chunked = (bytes: Uint8Array) => {
   for (let i = 0; i < bytes.length; i += 0x8000) out += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
   return btoa(out);
 };
-const unb64 = (text: string) => Uint8Array.from(atob(text), c => c.charCodeAt(0));
+const unb64 = (text: string) => {
+  if (typeof text !== 'string' || text.length === 0) throw new DamagedPasscodeSettingsError();
+  try {
+    return Uint8Array.from(atob(text), c => c.charCodeAt(0));
+  } catch {
+    throw new DamagedPasscodeSettingsError();
+  }
+};
 
 function readConfig(): PasscodeConfig | null {
   try {
     const raw = localStorage.getItem(CONFIG_KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return null;
+    return parsed as PasscodeConfig;
   } catch {
     return null;
+  }
+}
+
+function assertValidConfig(config: PasscodeConfig): void {
+  if (
+    (config.v !== 1 && config.v !== 2) ||
+    typeof config.salt !== 'string' ||
+    typeof config.check !== 'string' ||
+    (config.v === 2 && typeof config.wrappedDek !== 'string')
+  ) {
+    throw new DamagedPasscodeSettingsError();
   }
 }
 
@@ -745,6 +766,7 @@ export async function setItemAsync(storageKey: string, value: string): Promise<v
 
 export function removeItem(storageKey: string) {
   if (isSensitiveKey(storageKey) && isPasscodeEnabled()) {
+    if (!key) throw new Error('Locked');
     undecryptable.delete(storageKey);
     cache.set(storageKey, null);
     persist(storageKey);
@@ -1040,6 +1062,7 @@ export function normalizeRecoveryKey(input: string): string | null {
 
 /** The data key for the passcode, or null if it is wrong. For a v1 config the passcode-derived key itself. */
 async function keyFor(passcode: string, config: PasscodeConfig): Promise<CryptoKey | null> {
+  assertValidConfig(config);
   const kek = await deriveKey(passcode, unb64(config.salt), config.iterations);
   if (config.v === 1) {
     try {
@@ -1297,6 +1320,7 @@ export async function unlock(passcode: string): Promise<boolean> {
   // Locked out after repeated wrong passcodes: fail immediately, without recording another failure
   // (a locked-out attempt must not extend the lockout) and without deriving a key.
   if (isLockedOut('passcode')) return false;
+  assertValidConfig(config);
   if (config.v === 1) {
     const kek = await deriveKey(passcode, unb64(config.salt), config.iterations);
     let ok = false;

@@ -106,6 +106,28 @@ describe('runListTransactionAsync', () => {
     expect(restored).toBe(true);
     expect(stored.get('students')).toEqual([{ id: 's1' }]);
   });
+
+  it('serializes concurrent transactions so a rollback cannot overwrite a concurrent commit', async () => {
+    const { stored, store } = memoryStore();
+    let callCount = 0;
+    const flakyStore: AsyncListTransactionStore = {
+      ...store,
+      write: async (key, value) => {
+        await new Promise(resolve => setTimeout(resolve, 5));
+        callCount += 1;
+        // Fail the first transaction on its third write ('sessions'), succeed on the second transaction.
+        if (callCount === 3 && key === 'sessions') return false;
+        stored.set(key, value);
+        return true;
+      },
+    };
+    const tx1 = runListTransactionAsync({ store: flakyStore, next: { students: [{ id: 'bad' }], goalTemplates: [{ id: 't1' }], sessions: [{ sessionId: 'x1' }] } });
+    const tx2 = runListTransactionAsync({ store: flakyStore, next });
+    expect(await Promise.all([tx1, tx2])).toEqual([false, true]);
+    expect(stored.get('students')).toEqual(next.students);
+    expect(stored.get('goalTemplates')).toEqual(next.goalTemplates);
+    expect(stored.get('sessions')).toEqual(next.sessions);
+  });
 });
 
 describe('multi-tab storage events', () => {

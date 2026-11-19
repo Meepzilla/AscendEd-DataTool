@@ -99,8 +99,12 @@ export default function AppLayout({
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const storedSetting = window.localStorage.getItem(SIDEBAR_ENABLED_KEY);
-      setIsSidebarEnabled(readSidebarEnabled(storedSetting));
+      try {
+        const storedSetting = window.localStorage.getItem(SIDEBAR_ENABLED_KEY);
+        setIsSidebarEnabled(readSidebarEnabled(storedSetting));
+      } catch {
+        setIsSidebarEnabled(true);
+      }
     }
   }, []);
 

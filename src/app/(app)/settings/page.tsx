@@ -32,9 +32,12 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const storedSidebarSetting = window.localStorage.getItem(SIDEBAR_ENABLED_KEY);
-      setIsSidebarEnabled(readSidebarEnabled(storedSidebarSetting));
-      
+      try {
+        const storedSidebarSetting = window.localStorage.getItem(SIDEBAR_ENABLED_KEY);
+        setIsSidebarEnabled(readSidebarEnabled(storedSidebarSetting));
+      } catch {
+        setIsSidebarEnabled(true);
+      }
       setIsLoading(false);
     }
   }, []);
@@ -42,11 +45,19 @@ export default function SettingsPage() {
   const handleToggleSidebar = (enabled: boolean) => {
     setIsSidebarEnabled(enabled);
     if (typeof window !== 'undefined') {
-      window.localStorage.setItem(SIDEBAR_ENABLED_KEY, JSON.stringify(enabled));
-      toast({
-        title: "Settings Updated",
-        description: `Student Sidebar has been ${enabled ? 'enabled' : 'disabled'}. Please reload the application to apply the change.`,
-      });
+      try {
+        window.localStorage.setItem(SIDEBAR_ENABLED_KEY, JSON.stringify(enabled));
+        toast({
+          title: "Settings Updated",
+          description: `Student Sidebar has been ${enabled ? 'enabled' : 'disabled'}. Please reload the application to apply the change.`,
+        });
+      } catch {
+        toast({
+          title: "Setting Could Not Be Saved",
+          description: "Device storage is full or unavailable.",
+          variant: "destructive",
+        });
+      }
     }
   };
 

@@ -90,7 +90,9 @@ export default function ManageSessionsPage() {
   const mergeBlocked = mergeProblem(selectedSessions);
   // If the selection stops being mergeable while the dialog is open (a part deleted, say from another tab), close it
   // for good rather than hiding it, so it can't reappear later without a click on Merge Selected.
-  if (isMergeOpen && mergeBlocked) setIsMergeOpen(false);
+  useEffect(() => {
+    if (isMergeOpen && mergeBlocked) setIsMergeOpen(false);
+  }, [isMergeOpen, mergeBlocked]);
 
   if (studentsLoading && students.length === 0) { // Only show global skeleton if students are also loading
     return <SessionsPageSkeleton />;

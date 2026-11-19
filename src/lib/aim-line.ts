@@ -30,13 +30,16 @@ export interface AimLine {
 /** The goal's aim line, or null without a baseline, a target and a target date (or when they don't make a line). */
 export function aimLine(goal: Goal, firstSessionDate?: string): AimLine | null {
   const target = goal.sessionTargetValue;
-  if (goal.baseline === undefined || goal.baseline === null || target === undefined || !goal.targetDate) return null;
+  if (goal.baseline === undefined || goal.baseline === null || String(goal.baseline).trim() === '' || target === undefined || !goal.targetDate) return null;
+  const baselineVal = Number(goal.baseline);
+  const targetVal = Number(target);
+  if (!Number.isFinite(baselineVal) || !Number.isFinite(targetVal)) return null;
   const startDate = goal.baselineDate || firstSessionDate;
   if (!startDate) return null;
   const start = dateValue(startDate);
   const end = dateValue(goal.targetDate);
   if (!(end > start)) return null;
-  return { start: { time: start, value: Number(goal.baseline) }, end: { time: end, value: target } };
+  return { start: { time: start, value: baselineVal }, end: { time: end, value: targetVal } };
 }
 
 /** The aim line's value on a date (held at the target after the target date). */

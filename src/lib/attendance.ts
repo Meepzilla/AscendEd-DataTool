@@ -53,7 +53,8 @@ export function attendanceSummary(sessions: Pick<SessionData, 'missed'>[]): Atte
   for (const s of sessions) {
     if (!s.missed) continue;
     missed++;
-    counts.set(s.missed.reason, (counts.get(s.missed.reason) ?? 0) + 1);
+    const reason = (MISSED_REASONS as readonly string[]).includes(s.missed.reason) ? s.missed.reason : 'other';
+    counts.set(reason, (counts.get(reason) ?? 0) + 1);
   }
   return {
     held: sessions.length - missed,

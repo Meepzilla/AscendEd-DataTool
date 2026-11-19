@@ -29,8 +29,14 @@ export function useStorageSize(refreshKey: unknown) {
   }, []);
 
   useEffect(() => {
-    refresh();
-  }, [refresh, refreshKey]);
+    let cancelled = false;
+    void estimateStorage(fallbackBytes).then(res => {
+      if (!cancelled) setEstimate(res);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshKey]);
 
   return { estimate, refresh };
 }

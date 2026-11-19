@@ -75,10 +75,11 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
 
   // What changed, old to new, so the editor says plainly what saving will change. Compared against
   // the template as it was, not against the form's dirty flags, so only real differences are listed.
-  const watched = form.watch(['name', 'type', 'dataCaptureType', 'smartGoalPrompt', 'generatedSmartGoal', 'sessionTargetValue', 'targetDirection', 'sessionTargetUses']);
+  const watched = form.watch(['name', 'type', 'dataCaptureType', 'smartGoalPrompt', 'generatedSmartGoal', 'sessionTargetValue', 'targetDirection', 'sessionTargetUses', 'gasLevelDescriptions']);
   const changes = React.useMemo(() => currentTemplate ? goalTemplateChanges(currentTemplate, {
     name: watched[0], type: watched[1], dataCaptureType: watched[2], smartGoalPrompt: watched[3],
     generatedSmartGoal: watched[4], sessionTargetValue: watched[5], targetDirection: watched[6], sessionTargetUses: watched[7],
+    gasLevelDescriptions: watched[8],
   }) : [], [currentTemplate, watched]);
 
   const onSubmit = async (data: EditGoalTemplateFormData) => {

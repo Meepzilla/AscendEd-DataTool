@@ -122,3 +122,88 @@ describe('ids and dates', () => {
     expect(localDayKey(new Date(2026, 0, 5))).toBe('2026-01-05');
   });
 });
+
+describe('damaged passcode settings shape and base64, and locked removeItem', () => {
+  let storage: ReturnType<typeof memoryStorage>;
+  let store: typeof import('../secure-store');
+  beforeEach(async () => {
+    storage = memoryStorage();
+    vi.stubGlobal('localStorage', storage);
+    vi.stubGlobal('window', globalThis);
+    vi.resetModules();
+    store = await import('../secure-store');
+  });
+
+  it('throws DamagedPasscodeSettingsError when fields are missing or base64 is corrupt', async () => {
+    for (const badConfig of [
+      { v: 1, iterations: 600_000, check: 'AAAA' }, // missing salt
+      { v: 2, salt: 'AAAA', iterations: 600_000, check: 'AAAA' }, // missing wrappedDek
+      { v: 99, salt: 'AAAA', iterations: 600_000, check: 'AAAA' }, // bad version
+      { v: 1, salt: '!!!not-base64!!!', iterations: 600_000, check: 'AAAA' }, // corrupt base64
+    ]) {
+      storage.setItem(CONFIG_KEY, JSON.stringify(badConfig));
+      vi.resetModules();
+      store = await import('../secure-store');
+      await expect(store.unlock('passcode1')).rejects.toBeInstanceOf(store.DamagedPasscodeSettingsError);
+    }
+  });
+
+  it('blocks removeItem on sensitive keys while locked', async () => {
+    await store.enablePasscode('passcode1');
+    vi.resetModules();
+    const locked = await import('../secure-store');
+    expect(locked.isUnlocked()).toBe(false);
+    expect(() => locked.removeItem('ascended_students_v2_u')).toThrow('Locked');
+  }, 20000);
+});
+
+describe('setAccessPin format validation and schema numeric/GAS target validation', () => {
+  it('rejects PINs that are not 4 to 8 digits in setAccessPin', async () => {
+    const storage = memoryStorage();
+    vi.stubGlobal('localStorage', storage);
+    vi.resetModules();
+    const pin = await import('../access-pin');
+    expect(await pin.setAccessPin('u', '123')).toBe(false);
+    expect(await pin.setAccessPin('u', '123456789')).toBe(false);
+    expect(await pin.setAccessPin('u', '12a4')).toBe(false);
+    expect(pin.hasAccessPin('u')).toBe(false);
+  });
+
+  it('allows negative GAS targets (-2..-1) in GoalTemplateSchema and AssignedGoalEditSchema while blocking negative non-GAS targets', async () => {
+    const { GoalTemplateSchema, AssignedGoalEditSchema } = await import('../types');
+    expect(GoalTemplateSchema.safeParse({
+      name: 'GAS Goal',
+      type: 'GOAL_ATTAINMENT_SCALE',
+      smartGoalPrompt: 'By [date], STUDENT will reach expected level.',
+      sessionTargetValue: -1,
+    }).success).toBe(true);
+    expect(AssignedGoalEditSchema.safeParse({
+      name: 'GAS Goal',
+      dataCaptureType: 'GOAL_ATTAINMENT_SCALE',
+      smartGoal: 'By [date], STUDENT will reach expected level.',
+      sessionTargetValue: -2,
+    }).success).toBe(true);
+    expect(GoalTemplateSchema.safeParse({
+      name: 'GAS Goal',
+      type: 'GOAL_ATTAINMENT_SCALE',
+      smartGoalPrompt: 'By [date], STUDENT will reach expected level.',
+      sessionTargetValue: -3,
+    }).success).toBe(false);
+    expect(GoalTemplateSchema.safeParse({
+      name: 'Artic Goal',
+      type: 'ARTICULATION',
+      smartGoalPrompt: 'By [date], STUDENT will produce /s/ with 80% accuracy.',
+      sessionTargetValue: -5,
+    }).success).toBe(false);
+    const parsed = AssignedGoalEditSchema.parse({
+      name: 'Artic Goal',
+      dataCaptureType: 'ARTICULATION',
+      smartGoal: 'By [date], STUDENT will produce /s/.',
+      sessionTargetValue: '   ',
+      baseline: '   ',
+    });
+    expect(parsed.sessionTargetValue).toBeUndefined();
+    expect(parsed.baseline).toBeUndefined();
+  });
+});
+

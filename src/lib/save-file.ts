@@ -16,12 +16,13 @@ import { toSafeErrorMessage } from './error-message';
  * Returns false if the user cancelled the share sheet.
  */
 export async function saveTextFile(fileName: string, text: string, mimeType = 'application/json'): Promise<boolean> {
+  const safeFileName = (fileName.replace(/[/\\?%*:|"<>]/g, '_').replace(/^\.+/, '_') || 'export.txt');
   const { Capacitor } = await import('@capacitor/core');
   if (Capacitor.isNativePlatform()) {
     const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem');
     const { Share } = await import('@capacitor/share');
     // Shares live in one cache subdirectory, which is all the FileProvider exposes (see file_paths.xml).
-    const cachePath = `${SHARE_CACHE_DIR}/${fileName}`;
+    const cachePath = `${SHARE_CACHE_DIR}/${safeFileName}`;
     try {
       await Filesystem.mkdir({ path: SHARE_CACHE_DIR, directory: Directory.Cache, recursive: true });
     } catch {

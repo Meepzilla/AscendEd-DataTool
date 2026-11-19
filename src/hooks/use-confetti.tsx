@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { createContext, useContext, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useCallback, useEffect, useMemo, useRef, ReactNode } from 'react';
 import confetti from 'canvas-confetti';
 
 type ConfettiContextType = {
@@ -17,6 +17,16 @@ const NO_CONFETTI: ConfettiContextType = { fire: () => {} };
 export const useConfetti = () => useContext(ConfettiContext) ?? NO_CONFETTI;
 
 export const ConfettiProvider = ({ children }: { children: ReactNode }) => {
+  const intervalsRef = useRef<Set<number>>(new Set());
+
+  useEffect(() => {
+    const intervals = intervalsRef.current;
+    return () => {
+      intervals.forEach(id => clearInterval(id));
+      intervals.clear();
+    };
+  }, []);
+
   const fire = useCallback(() => {
     // Reduced motion: with the OS setting on, no celebration (globals.css covers the CSS side).
     if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -38,6 +48,7 @@ export const ConfettiProvider = ({ children }: { children: ReactNode }) => {
       const timeLeft = animationEnd - Date.now();
 
       if (timeLeft <= 0) {
+        intervalsRef.current.delete(interval);
         return clearInterval(interval);
       }
 
@@ -50,10 +61,13 @@ export const ConfettiProvider = ({ children }: { children: ReactNode }) => {
       confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.8, 1), y: randomInRange(0.8, 1) } })); // bottom-right
 
     }, 250);
+    intervalsRef.current.add(interval);
   }, []);
 
+  const value = useMemo(() => ({ fire }), [fire]);
+
   return (
-    <ConfettiContext.Provider value={{ fire }}>
+    <ConfettiContext.Provider value={value}>
       {children}
     </ConfettiContext.Provider>
   );

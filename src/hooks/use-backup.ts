@@ -13,7 +13,9 @@ const BACKUP_SAVED_EVENT = 'ascended-backup-saved';
 const readLastBackup = (): Date | null => {
   try {
     const value = window.localStorage.getItem(LAST_BACKUP_KEY);
-    return value ? new Date(value) : null;
+    if (!value) return null;
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? null : d;
   } catch {
     return null;
   }

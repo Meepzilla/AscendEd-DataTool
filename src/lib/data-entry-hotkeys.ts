@@ -86,6 +86,11 @@ export function removeCorrect(type: GoalType, data: Record<string, any>): Record
     trials[last] = 'untouched';
     return { ...data, trials };
   }
+  if (type === 'BEHAVIOR_FREQUENCY' || type === 'COMMUNICATION_COUNT') {
+    const count = Number(data.count) || 0;
+    if (count <= 0) return data;
+    return { ...data, count: count - 1, occurrenceTimes: alignTimes(data.occurrenceTimes, count - 1) };
+  }
   const field = COUNT_FIELDS[type]?.correct;
   return field && Number(data[field]) > 0 ? { ...data, [field]: Number(data[field]) - 1 } : data;
 }

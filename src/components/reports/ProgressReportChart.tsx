@@ -41,7 +41,8 @@ export default function ProgressReportChart({ progress }: { progress: GoalProgre
   const t1 = aim ? Math.max(aim.end.time, times[times.length - 1]) : 0;
   const xTime = (t: number) => PAD.left + (t1 > t0 ? ((t - t0) / (t1 - t0)) * innerW : innerW / 2);
   const x = (i: number) => aim ? xTime(times[i]) : PAD.left + (points.length === 1 ? innerW / 2 : (i / (points.length - 1)) * innerW);
-  const y = (v: number) => PAD.top + innerH - ((Math.min(Math.max(v, min), top) - min) / (top - min)) * innerH;
+  const span = top - min || 1;
+  const y = (v: number) => PAD.top + innerH - ((Math.min(Math.max(v, min), top) - min) / span) * innerH;
   const ticks = isGas ? [-2, 0, 2] : [0, top / 2, top];
   const label = (v: number) => `${Number(v.toFixed(1))}${unit.trim() === '%' ? '%' : ''}`;
   const line = points.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.value).toFixed(1)}`).join(' ');

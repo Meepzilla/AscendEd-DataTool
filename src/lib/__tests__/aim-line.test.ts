@@ -9,6 +9,8 @@ describe('aimLine', () => {
     expect(aimLine(goal({ sessionTargetValue: 80, targetDate: '2027-06-01' }), '2026-09-01')).toBeNull();
     expect(aimLine(goal({ baseline: 40, targetDate: '2027-06-01' }), '2026-09-01')).toBeNull();
     expect(aimLine(goal({ baseline: 40, sessionTargetValue: 80 }), '2026-09-01')).toBeNull();
+    expect(aimLine(goal({ baseline: Number.NaN, sessionTargetValue: 80, targetDate: '2027-06-01' }), '2026-09-01')).toBeNull();
+    expect(aimLine(goal({ baseline: 40, sessionTargetValue: Number.NaN, targetDate: '2027-06-01' }), '2026-09-01')).toBeNull();
   });
   it('starts at the baseline date, else the first session', () => {
     expect(aimLine(withAim, '2026-10-15')!.start.value).toBe(40);

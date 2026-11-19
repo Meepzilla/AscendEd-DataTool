@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyGoalHotkey } from '../data-entry-hotkeys';
+import { applyGoalHotkey, removeCorrect } from '../data-entry-hotkeys';
 
 describe('Data Entry hotkeys', () => {
   it('C and N count correct and incorrect responses', () => {
@@ -21,4 +21,18 @@ describe('Data Entry hotkeys', () => {
     expect(applyGoalHotkey('STORY_ELEMENTS', 'V', {})).toBeNull();
     expect(applyGoalHotkey('ARTICULATION', 'Z', {})).toBeNull();
   });
+  it('removeCorrect undoes C on behavior frequency and communication count goals', () => {
+    const incBehavior = applyGoalHotkey('BEHAVIOR_FREQUENCY', 'C', { count: 1, occurrenceTimes: ['2026-10-05T09:00:00.000Z'] });
+    expect(incBehavior?.count).toBe(2);
+    expect(incBehavior?.occurrenceTimes).toHaveLength(2);
+    const decBehavior = removeCorrect('BEHAVIOR_FREQUENCY', incBehavior!);
+    expect(decBehavior.count).toBe(1);
+    expect(decBehavior.occurrenceTimes).toHaveLength(1);
+
+    const incComm = applyGoalHotkey('COMMUNICATION_COUNT', 'C', { count: 2 });
+    expect(incComm?.count).toBe(3);
+    const decComm = removeCorrect('COMMUNICATION_COUNT', incComm!);
+    expect(decComm.count).toBe(2);
+  });
 });
+

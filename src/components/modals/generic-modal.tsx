@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 
@@ -33,22 +33,7 @@ export default function GenericModal({
 }: GenericModalProps) {
   const modalContentRef = useRef<HTMLDivElement>(null);
 
-  // Handle Escape key
-  useEffect(() => {
-    const handleEsc = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
-    };
-    if (isOpen) {
-      document.addEventListener('keydown', handleEsc);
-    }
-    return () => {
-      document.removeEventListener('keydown', handleEsc);
-    };
-  }, [isOpen, onClose]);
-  
-  // Focus trapping and return focus on close is handled by ShadCN Dialog
+  // Focus trapping, Escape key handling per layer, and return focus on close is handled by ShadCN / Radix Dialog
 
   const SIZES = {
     sm: 'sm:max-w-sm',

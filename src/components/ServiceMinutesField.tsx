@@ -18,6 +18,7 @@ interface ServiceMinutesFieldProps {
   onChange: (next: Partial<Record<ServiceType, number>> | undefined) => void;
   /** Keeps input ids unique when several cards are on screen at once. */
   idSuffix?: string;
+  disabled?: boolean;
 }
 
 const clampMinutes = (raw: string) => {
@@ -25,7 +26,7 @@ const clampMinutes = (raw: string) => {
   return Number.isFinite(n) ? Math.min(600, Math.max(0, n)) : 0;
 };
 
-export default function ServiceMinutesField({ duration, value, onChange, idSuffix }: ServiceMinutesFieldProps) {
+export default function ServiceMinutesField({ duration, value, onChange, idSuffix, disabled }: ServiceMinutesFieldProps) {
   if (value === undefined) {
     return (
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -34,7 +35,7 @@ export default function ServiceMinutesField({ duration, value, onChange, idSuffi
             ? `All ${duration} min count as Related Service`
             : 'Set start and end times to split minutes by type'}
         </p>
-        <Button type="button" variant="outline" size="sm" onClick={() => onChange(prefill(duration))}>
+        <Button type="button" variant="outline" size="sm" disabled={disabled} onClick={() => onChange(prefill(duration))}>
           Split by type
         </Button>
       </div>
@@ -64,12 +65,13 @@ export default function ServiceMinutesField({ duration, value, onChange, idSuffi
               step={5}
               className="w-24"
               value={value[type] ?? ''}
+              disabled={disabled}
               onChange={e => setType(type, e.target.value)}
             />
             <span className="text-sm text-muted-foreground">min</span>
           </div>
         ))}
-        <Button type="button" variant="ghost" size="sm" onClick={() => onChange(undefined)}>
+        <Button type="button" variant="ghost" size="sm" disabled={disabled} onClick={() => onChange(undefined)}>
           Use one type
         </Button>
       </div>

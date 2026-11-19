@@ -197,14 +197,22 @@ export interface PeriodService {
 
 /** Service minutes over a reporting period (Progress Report), against the IEP's requirement. */
 export function periodService(sessions: SessionData[], iep: StudentIep | undefined, from: Date, to: Date): PeriodService {
-  const held = sessions.filter(s => !s.missed);
+  const day = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const fromDay = day(from);
+  const toDay = day(to);
+  const inRange = sessions.filter(s => {
+    const d = parseDateOnly(s.date);
+    if (Number.isNaN(d.getTime())) return true;
+    const t = day(d);
+    return t >= fromDay && t <= toDay;
+  });
+  const held = inRange.filter(s => !s.missed);
   const delivered = held.reduce((sum, s) => sum + (sessionMinutes(s) ?? 0), 0);
   const lines = serviceLines(iep);
   const per = lines.length > 0 ? lines[0].per : (iep?.servicePer ?? 'week');
   const required = lines.length > 0 && lines.every(l => l.per === per) ? lines.reduce((sum, l) => sum + l.minutes, 0) : null;
   // Whole days, first and last included.
-  const day = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-  const days = Math.max(1, Math.round((day(to) - day(from)) / 86_400_000) + 1);
+  const days = Math.max(1, Math.round((toDay - fromDay) / 86_400_000) + 1);
   const periodsFor = (p: ServicePer) => p === 'week' ? days / 7 : p === 'month' ? days / 30.44 : 1;
   const periods = periodsFor(per);
   // Every type with a requirement line, plus every type that delivered minutes in the range.

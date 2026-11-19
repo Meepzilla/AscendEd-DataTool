@@ -33,8 +33,10 @@ const TrialStatusSequenceChart: React.FC<TrialSequenceChartProps> = ({ studentSe
         if (!goal || goal.isArchived) return;
         const type = toolTypeOf(captureTypeOf(goal));
         if (type !== 'DISCRETE_TRIALS' && type !== 'SEQUENCED_TRIALS') return;
-        if (Array.isArray(goalData.data.trials)) trialsForSession.push(...goalData.data.trials);
-        if (type === 'SEQUENCED_TRIALS') {
+        const hasTouchedGridTrials = Array.isArray(goalData.data.trials) && goalData.data.trials.some((t: TrialStatus) => t !== 'untouched');
+        if (hasTouchedGridTrials) {
+          trialsForSession.push(...goalData.data.trials);
+        } else if (type === 'SEQUENCED_TRIALS') {
           // Sequenced trials entered as counts (before the trial grid): rebuild a sequence from them.
           const successful = Number(goalData.data.successfulAttempts) || 0;
           const failed = Number(goalData.data.failedAttempts) || 0;

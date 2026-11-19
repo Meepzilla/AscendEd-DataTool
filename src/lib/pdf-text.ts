@@ -3,6 +3,9 @@
 // baseline is one line, read left to right, so a form's two columns ("Name: …   Eligibility: …") stay together.
 
 import type { TextItem } from 'pdfjs-dist/types/src/display/api';
+import { checkImportFileSize } from './helpers';
+
+export const MAX_PDF_PAGES = 200;
 
 type PdfJs = typeof import('pdfjs-dist/legacy/build/pdf.mjs');
 
@@ -37,6 +40,7 @@ const loadPdfJs = createCachedLoader(async (): Promise<PdfJs> => {
 
 /** Lines of text on each page. Throws if the file isn't a PDF or has no text (a scan). */
 export async function readPdfLines(data: Uint8Array): Promise<string[][]> {
+  checkImportFileSize(data.length);
   const lib = await loadPdfJs();
   // A copy: pdf.js takes over the buffer it is given.
   const task = lib.getDocument({ data: data.slice(), useSystemFonts: false, disableFontFace: true });
@@ -48,6 +52,9 @@ export async function readPdfLines(data: Uint8Array): Promise<string[][]> {
     throw new Error('This file couldn\'t be read as a PDF.');
   }
   try {
+    if (doc.numPages > MAX_PDF_PAGES) {
+      throw new Error(`This PDF has ${doc.numPages} pages (at most ${MAX_PDF_PAGES} pages can be imported at once).`);
+    }
     const pages: string[][] = [];
     for (let n = 1; n <= doc.numPages; n++) {
       const page = await doc.getPage(n);

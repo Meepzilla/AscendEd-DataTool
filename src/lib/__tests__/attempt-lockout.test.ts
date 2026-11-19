@@ -107,4 +107,14 @@ describe('lockout when storage is full', () => {
     recordAttempt('full-test', true);
     expect(isLockedOut('full-test')).toBe(false);
   });
+
+  it('does not lock out on failures 1-4 or extend lockout past the tier duration if the clock moves backward', () => {
+    failTimes('access-pin', 3);
+    expect(getLockoutRemainingMs('access-pin', T0 - 10 * MIN)).toBe(0);
+    expect(isLockedOut('access-pin', T0 - 10 * MIN)).toBe(false);
+
+    failTimes('access-pin', 2); // 5th failure => 1 min lockout
+    expect(getLockoutRemainingMs('access-pin', T0 - 10 * MIN)).toBe(1 * MIN);
+  });
 });
+

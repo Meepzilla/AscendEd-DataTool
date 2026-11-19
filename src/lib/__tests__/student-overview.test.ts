@@ -204,4 +204,17 @@ describe('periodService byType', () => {
       { type: 'aac', label: 'AAC', delivered: 30, required: null, expected: null },
     ]);
   });
+  it('excludes sessions outside the [from, to] date range', () => {
+    const result = periodService(
+      [
+        session({ date: '2026-09-30', time: '09:00', endTime: '09:30' }),
+        session({ date: '2026-10-06', time: '09:00', endTime: '09:30' }),
+        session({ date: '2026-10-20', time: '09:00', endTime: '09:30' }),
+      ],
+      { serviceMinutes: 60, servicePer: 'week' },
+      new Date(2026, 9, 5), new Date(2026, 9, 11),
+    );
+    expect(result.delivered).toBe(30);
+  });
 });
+
