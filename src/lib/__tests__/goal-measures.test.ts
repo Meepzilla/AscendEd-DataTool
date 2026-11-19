@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { summarizeCommunicationFunctions } from '../goal-constants';
 import { goalMeasure, goalResponses, sessionMeetsTarget } from '../goal-measures';
 
 describe('goalResponses', () => {
@@ -92,5 +93,21 @@ describe('communication functions measure and target', () => {
       { requestingItemsSpontaneous: 2, requestingItemsEmerging: 3 },
       2,
     )).toBe(false);
+  });
+
+  it('counts spontaneous, emerging, and combined unprompted functions accurately per session', () => {
+    const summary = summarizeCommunicationFunctions({
+      requestingItemsSpontaneous: 3,
+      requestingItemsEmerging: 1,
+      commentingSpontaneous: 2,
+      protestingEmerging: 2,
+      greetingPrompted: 2,
+    });
+    expect(summary.functionsUsedSpontaneously).toBe(2);
+    expect(summary.functionsUsedEmerging).toBe(2);
+    expect(summary.functionsUsedUnprompted).toBe(3);
+    expect(summary.spontaneous).toBe(5);
+    expect(summary.emerging).toBe(3);
+    expect(summary.prompted).toBe(2);
   });
 });

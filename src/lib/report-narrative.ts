@@ -610,8 +610,9 @@ export interface GoalProgress {
   number: number;
   typeLabel: string;
   targetLabel: string | null;
-  /** One point per session with a measure, oldest first. */
-  points: { date: string; value: number }[];
+  /** One point per session with a measure, oldest first. For COMMUNICATION_FUNCTIONS, also carries the
+   *  distinct functions used spontaneously and in an emerging form so charts can plot all three lines. */
+  points: { date: string; value: number; spontaneous?: number; emerging?: number }[];
   /** Average, range and latest, already formatted with the goal's unit (null without data). */
   average: string | null;
   range: string | null;
@@ -664,7 +665,18 @@ export function buildProgressReport({ student, goals, sessions }: Omit<Narrative
       number: a.number,
       typeLabel: goalTypeLabel(type),
       targetLabel: a.target !== undefined ? formatGoalTarget(type, a.target, goal.targetDirection, goal.sessionTargetUses) : null,
-      points: a.recorded.map(r => ({ date: r.session.date, value: r.value })),
+      points: a.recorded.map(r => {
+        if (type === 'COMMUNICATION_FUNCTIONS') {
+          const s = summarizeCommunicationFunctions(r.data);
+          return {
+            date: r.session.date,
+            value: r.value,
+            spontaneous: s.functionsUsedSpontaneously,
+            emerging: s.functionsUsedEmerging,
+          };
+        }
+        return { date: r.session.date, value: r.value };
+      }),
       average: has && a.values.length > 1 ? formatValue(goal, a.average) : has ? formatValue(goal, a.latest!.value) : null,
       range: has && a.values.length > 1 && round(a.low) !== round(a.high) ? `${formatValue(goal, a.low)} – ${formatValue(goal, a.high)}` : null,
       latest: has ? formatValue(goal, a.latest!.value) : null,

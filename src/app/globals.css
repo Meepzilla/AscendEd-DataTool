@@ -150,6 +150,9 @@ html.zoomed-rects [data-radix-popper-content-wrapper] > * {
     --prompt-gestural: #047857;
     --prompt-partialphysical: #b45309;
     --prompt-imitation: #b91c1c;
+    --comm-spontaneous: 152 62% 34%;
+    --comm-emerging: 201 85% 42%;
+    --comm-prompted: 38 88% 46%;
   }
   .dark {
     --prompt-independent: #a78bfa;
@@ -158,6 +161,9 @@ html.zoomed-rects [data-radix-popper-content-wrapper] > * {
     --prompt-gestural: #10b981;
     --prompt-partialphysical: #f59e0b;
     --prompt-imitation: #ef4444;
+    --comm-spontaneous: 152 60% 48%;
+    --comm-emerging: 199 89% 58%;
+    --comm-prompted: 45 88% 54%;
   }
 
   .dark { /* Dark mode color variables */
@@ -231,6 +237,9 @@ html.theme-pastel {
   --chart-3: 22 80% 62%;
   --chart-4: 200 65% 55%;
   --chart-5: 340 65% 65%;
+  --comm-spontaneous: 158 50% 42%;
+  --comm-emerging: 201 78% 46%;
+  --comm-prompted: 38 82% 52%;
   --sidebar-background: 200 60% 96%;
   --sidebar-foreground: 255 25% 22%;
   --sidebar-primary: 268 38% 42%;
@@ -268,6 +277,9 @@ html.theme-pastel {
   --chart-3: 50 100% 55%;
   --chart-4: 300 90% 72%;
   --chart-5: 15 100% 60%;
+  --comm-spontaneous: 140 75% 52%;
+  --comm-emerging: 199 100% 62%;
+  --comm-prompted: 38 100% 58%;
   --sidebar-background: 0 0% 4%;
   --sidebar-foreground: 0 0% 100%;
   --sidebar-primary: 50 100% 55%;

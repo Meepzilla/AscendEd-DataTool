@@ -38,6 +38,7 @@ export function summarizeCommunicationFunctions(data: Record<string, any> = {}) 
   let emerging = 0;
   let prompted = 0;
   let functionsUsedSpontaneously = 0;
+  let functionsUsedEmerging = 0;
   let functionsUsedUnprompted = 0;
   let functionsUsed = 0;
   for (const { key } of COMMUNICATION_FUNCTIONS) {
@@ -48,6 +49,7 @@ export function summarizeCommunicationFunctions(data: Record<string, any> = {}) 
     emerging += e;
     prompted += p;
     if (s > 0) functionsUsedSpontaneously += 1;
+    if (e > 0) functionsUsedEmerging += 1;
     if (s + e > 0) functionsUsedUnprompted += 1;
     if (s + e + p > 0) functionsUsed += 1;
   }
@@ -60,6 +62,7 @@ export function summarizeCommunicationFunctions(data: Record<string, any> = {}) 
     unprompted,
     total,
     functionsUsedSpontaneously,
+    functionsUsedEmerging,
     functionsUsedUnprompted,
     functionsUsed,
     functionCount: COMMUNICATION_FUNCTIONS.length,

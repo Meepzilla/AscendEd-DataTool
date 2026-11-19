@@ -3,10 +3,10 @@
 import React, { useMemo } from 'react';
 import type { Goal, SessionData } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, type ChartConfig } from '@/components/ui/chart';
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, ReferenceLine, BarChart, Bar } from 'recharts';
 import {
-  BEHAVIOR_GOAL_TYPES, captureTypeOf, toolTypeOf, summarizeLatency, goalDirection, summarizeAbc, scoreStory, averageStoryPart, STORY_PARTS, STORY_LINKING_WORDS, linkingWordField, COMMUNICATION_FUNCTIONS,
+  BEHAVIOR_GOAL_TYPES, captureTypeOf, toolTypeOf, summarizeLatency, goalDirection, summarizeAbc, summarizeCommunicationFunctions, scoreStory, averageStoryPart, STORY_PARTS, STORY_LINKING_WORDS, linkingWordField, COMMUNICATION_FUNCTIONS,
   type AbcIncident,
 } from '@/lib/goal-constants';
 import { goalMeasure, goalMeasureInfo, goalResponses, goalNotes, sessionMeetsTarget, promptTotals, usesPromptCounters, withoutRunningTimers } from '@/lib/goal-measures';
@@ -146,9 +146,9 @@ const GoalBreakdowns: React.FC<{ goal: Goal; recorded: Recorded[] }> = ({ goal, 
       .filter(r => r.spontaneous + r.emerging + r.prompted > 0);
     const hasEmerging = rows.some(r => r.emerging > 0);
     const series = [
-      { key: 'spontaneous', label: 'Spontaneous', color: 'hsl(var(--chart-2))' },
-      ...(hasEmerging ? [{ key: 'emerging', label: 'Emerging', color: 'hsl(var(--chart-3))' }] : []),
-      { key: 'prompted', label: 'Prompted', color: 'hsl(var(--chart-4))' },
+      { key: 'spontaneous', label: 'Spontaneous', color: 'hsl(var(--comm-spontaneous))' },
+      ...(hasEmerging ? [{ key: 'emerging', label: 'Emerging', color: 'hsl(var(--comm-emerging))' }] : []),
+      { key: 'prompted', label: 'Prompted', color: 'hsl(var(--comm-prompted))' },
     ];
     panels.push(
       <HBars key="functions" title="Uses by function" series={series} rows={rows} />,
@@ -221,14 +221,26 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
   const gasTick = (level: number) => (level > 0 ? `+${level}` : String(level));
 
   // The aim line (baseline to target by the target date), as the value expected on each session's date.
+  const isCommFunctions = type === 'COMMUNICATION_FUNCTIONS';
   const aim = aimLine(goal, recorded[0]?.session.date);
-  const points = recorded.map(r => ({
-    label: r.label, value: r.value, ...(goalResponses(type, r.data) ?? {}),
-    ...(aim ? { aim: round(aimValueAt(aim, r.session.date)) } : {}),
-  }));
+  const points = recorded.map(r => {
+    const comm = isCommFunctions ? summarizeCommunicationFunctions(r.data) : null;
+    return {
+      label: r.label, value: r.value, ...(goalResponses(type, r.data) ?? {}),
+      ...(comm ? {
+        spontaneousFunctions: comm.functionsUsedSpontaneously,
+        emergingFunctions: comm.functionsUsedEmerging,
+        spontaneousUses: comm.spontaneous,
+        emergingUses: comm.emerging,
+        promptedUses: comm.prompted,
+      } : {}),
+      ...(aim ? { aim: round(aimValueAt(aim, r.session.date)) } : {}),
+    };
+  });
   const onTrack = aimStatus(goal, aim, recorded.map(r => ({ date: r.session.date, value: r.value })));
   const mastery = masterySessions(goal);
   const hasResponses = goalResponses(type) !== null && points.length > 0;
+  const hasCommUsesChart = isCommFunctions && points.length > 0;
   const values = recorded.map(r => r.value);
   const average = values.length ? round(values.reduce((a, b) => a + b, 0) / values.length) : null;
   const metCount = target === undefined ? null : recorded.filter(r => sessionMeetsTarget(goal, r.data, target)).length;
@@ -238,6 +250,17 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
   const yMax = info.max ?? Math.ceil(Math.max(...values, target ?? 0, 1) * 1.1);
   const notes = recorded.map(r => ({ date: r.session.date, text: goalNotes(r.data) })).filter(n => n.text).slice(-3).reverse();
   const storyWords = type === 'STORY_ELEMENTS' ? recorded.reduce((total, r) => total + scoreStory(r.data).linkingWords, 0) : null;
+  const lineChartConfig: ChartConfig = isCommFunctions
+    ? {
+        value: { label: 'Without a prompt (total)', color: 'hsl(var(--primary))' },
+        spontaneousFunctions: { label: 'Spontaneous', color: 'hsl(var(--comm-spontaneous))' },
+        emergingFunctions: { label: 'Emerging', color: 'hsl(var(--comm-emerging))' },
+        aim: { label: 'Aim line', color: 'hsl(var(--muted-foreground))' },
+      }
+    : {
+        value: { label: info.label, color: 'hsl(var(--primary))' },
+        aim: { label: 'Aim line', color: 'hsl(var(--chart-2))' },
+      };
 
   // How each figure is worked out, shown when it is tapped or hovered.
   const explain = goalStatExplanations(goal, recorded.map(r => ({ date: r.session.date, value: r.value, data: r.data })), aim, mastery);
@@ -272,44 +295,50 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
         {points.length === 0 ? (
           <p className="text-sm text-muted-foreground">No data recorded for this goal in the selected date range.</p>
         ) : (
-          <div className={hasResponses ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : ''}>
-            <div className="h-[240px] w-full">
-              <ChartContainer config={{ value: { label: info.label, color: 'hsl(var(--primary))' }, aim: { label: 'Aim line', color: 'hsl(var(--chart-2))' } }} className="h-full w-full">
-                <LineChart data={points} margin={{ top: 10, right: 20, left: -10, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} />
-                  <YAxis domain={[info.min ?? 0, yMax]} unit={info.unit === '%' ? '%' : undefined} tickLine={false} axisLine={false} tickMargin={8}
-                    ticks={isGas ? [...GAS_LEVELS] : (info.max !== undefined && info.max <= 10 ? Array.from({ length: info.max + 1 }, (_, i) => i) : undefined)}
-                    tickFormatter={isGas ? gasTick : undefined}
-                    allowDecimals={toolTypeOf(type) === 'BEHAVIOR_DURATION' || toolTypeOf(type) === 'BEHAVIOR_LATENCY'} />
-                  {isGas ? (
-                    <ChartTooltip
-                      content={({ active, payload, label }: any) => {
-                        if (!active || !payload?.length) return null;
-                        const value = payload[0].payload.value as number;
-                        return (
-                          <div className="rounded-lg border bg-background px-3 py-2 text-xs shadow-md">
-                            <p className="font-medium">{label}</p>
-                            <p>{gasLevelText(goal, value)}</p>
-                          </div>
-                        );
-                      }}
-                    />
-                  ) : (
-                    <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
-                  )}
-                  {isGas ? (
-                    <ReferenceLine y={0} stroke="hsl(var(--chart-5))" strokeDasharray="6 4"
-                      label={{ value: 'Expected', position: 'insideTopRight', fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
-                  ) : target !== undefined && (
-                    <ReferenceLine y={target} stroke="hsl(var(--chart-5))" strokeDasharray="6 4"
-                      label={{ value: direction === 'decrease' ? 'Target (max)' : 'Target', position: 'insideTopRight', fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
-                  )}
-                  {aim && <Line type="linear" dataKey="aim" stroke="var(--color-aim)" strokeWidth={1.5} strokeDasharray="2 3" dot={false} />}
-                  {/* GAS levels are steps (-2 … +2), so they are joined with straight lines: a curve would suggest levels in between. */}
-                  <Line type={isGas ? 'linear' : 'monotone'} dataKey="value" stroke="var(--color-value)" strokeWidth={2} dot={true} />
-                </LineChart>
-              </ChartContainer>
+          <div className={hasResponses || hasCommUsesChart ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : ''}>
+            <div>
+              {isCommFunctions && <p className="text-sm font-medium mb-1">Functions per session</p>}
+              <div className={isCommFunctions ? 'h-[260px] w-full' : 'h-[240px] w-full'}>
+                <ChartContainer config={lineChartConfig} className="h-full w-full">
+                  <LineChart data={points} margin={{ top: 10, right: 20, left: -10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} />
+                    <YAxis domain={[info.min ?? 0, yMax]} unit={info.unit === '%' ? '%' : undefined} tickLine={false} axisLine={false} tickMargin={8}
+                      ticks={isGas ? [...GAS_LEVELS] : (info.max !== undefined && info.max <= 10 ? Array.from({ length: info.max + 1 }, (_, i) => i) : undefined)}
+                      tickFormatter={isGas ? gasTick : undefined}
+                      allowDecimals={toolTypeOf(type) === 'BEHAVIOR_DURATION' || toolTypeOf(type) === 'BEHAVIOR_LATENCY'} />
+                    {isGas ? (
+                      <ChartTooltip
+                        content={({ active, payload, label }: any) => {
+                          if (!active || !payload?.length) return null;
+                          const value = payload[0].payload.value as number;
+                          return (
+                            <div className="rounded-lg border bg-background px-3 py-2 text-xs shadow-md">
+                              <p className="font-medium">{label}</p>
+                              <p>{gasLevelText(goal, value)}</p>
+                            </div>
+                          );
+                        }}
+                      />
+                    ) : (
+                      <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
+                    )}
+                    {isCommFunctions && <ChartLegend content={<ChartLegendContent />} />}
+                    {isGas ? (
+                      <ReferenceLine y={0} stroke="hsl(var(--chart-5))" strokeDasharray="6 4"
+                        label={{ value: 'Expected', position: 'insideTopRight', fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
+                    ) : target !== undefined && (
+                      <ReferenceLine y={target} stroke="hsl(var(--chart-5))" strokeDasharray="6 4"
+                        label={{ value: direction === 'decrease' ? 'Target (max)' : 'Target', position: 'insideTopRight', fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
+                    )}
+                    {/* GAS levels are steps (-2 … +2), so they are joined with straight lines: a curve would suggest levels in between. */}
+                    <Line type={isGas ? 'linear' : 'monotone'} dataKey="value" stroke="var(--color-value)" strokeWidth={isCommFunctions ? 2.5 : 2} dot={true} />
+                    {isCommFunctions && <Line type="monotone" dataKey="spontaneousFunctions" stroke="var(--color-spontaneousFunctions)" strokeWidth={2} strokeDasharray="6 3" dot={{ r: 3 }} />}
+                    {isCommFunctions && <Line type="monotone" dataKey="emergingFunctions" stroke="var(--color-emergingFunctions)" strokeWidth={2} strokeDasharray="2 3" dot={{ r: 3 }} />}
+                    {aim && <Line type="linear" dataKey="aim" stroke="var(--color-aim)" strokeWidth={1.5} strokeDasharray="2 3" dot={false} />}
+                  </LineChart>
+                </ChartContainer>
+              </div>
             </div>
             {isGas && (
               <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs" aria-label="What each level means">
@@ -342,6 +371,32 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
                     <Bar dataKey="incorrect" stackId="r" fill="var(--color-incorrect)" />
                   </BarChart>
                 </ChartContainer>
+              </div>
+            )}
+            {hasCommUsesChart && (
+              <div>
+                <p className="text-sm font-medium mb-1">Uses per session</p>
+                <div className="h-[260px] w-full">
+                  <ChartContainer
+                    config={{
+                      spontaneousUses: { label: 'Spontaneous', color: 'hsl(var(--comm-spontaneous))' },
+                      emergingUses: { label: 'Emerging', color: 'hsl(var(--comm-emerging))' },
+                      promptedUses: { label: 'Prompted', color: 'hsl(var(--comm-prompted))' },
+                    }}
+                    className="h-full w-full"
+                  >
+                    <BarChart data={points} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} />
+                      <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <ChartLegend content={<ChartLegendContent />} />
+                      <Bar dataKey="spontaneousUses" stackId="u" fill="var(--color-spontaneousUses)" />
+                      <Bar dataKey="emergingUses" stackId="u" fill="var(--color-emergingUses)" />
+                      <Bar dataKey="promptedUses" stackId="u" fill="var(--color-promptedUses)" />
+                    </BarChart>
+                  </ChartContainer>
+                </div>
               </div>
             )}
           </div>
