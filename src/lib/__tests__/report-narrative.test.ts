@@ -163,3 +163,33 @@ describe('behavior rates and streaks', () => {
     expect(text).toMatch(/last 2 sessions in a row/);
   });
 });
+
+describe('communication functions narrative', () => {
+  const cf = goal({ id: 'g4', name: 'Use communicative functions', type: 'COMMUNICATION_FUNCTIONS', sessionTargetValue: 3 });
+  const cfSession = (date: string, data: Record<string, any>) =>
+    session({ date, goals: [{ goalId: 'g4', goalName: 'Use communicative functions', goalType: 'COMMUNICATION_FUNCTIONS', data }] });
+
+  it('keeps legacy phrasing when no missed opportunities were recorded', () => {
+    const text = buildNarrative({
+      student,
+      goals: [cf],
+      sessions: [cfSession('2026-10-01T09:00:00Z', { requestingItemsSpontaneous: 3, commentingPrompted: 2 })],
+    });
+    expect(text).toContain('Ava used communicative functions 3 times spontaneously and 2 times with a prompt.');
+    expect(text).not.toContain('missed');
+  });
+
+  it('reports response rate and top missed functions when missed opportunities are recorded', () => {
+    const text = buildNarrative({
+      student,
+      goals: [cf],
+      sessions: [
+        cfSession('2026-10-01T09:00:00Z', { requestingItemsSpontaneous: 3, commentingSpontaneous: 1, protestingPrompted: 2, askingQuestionsMissed: 2 }),
+        cfSession('2026-10-08T09:00:00Z', { greetingMissed: 1, askingQuestionsMissed: 1 }),
+      ],
+    });
+    expect(text).toContain('Ava responded to 6 of 10 communicative opportunities (60%): 4 spontaneously, 2 with a prompt, and 4 missed.');
+    expect(text).toContain('Opportunities were most often missed for asking questions (3), greeting/farewell (1).');
+    expect(text).toContain('Across 2 sessions with data, the number of functions used spontaneously averaged 1 (range 0 to 2).');
+  });
+});

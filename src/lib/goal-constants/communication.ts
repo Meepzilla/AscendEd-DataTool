@@ -1,7 +1,7 @@
 import type { GoalTemplate } from '../types';
 
 // Communicative functions tallied by the COMMUNICATION_FUNCTIONS goal type. Each function has a
-// spontaneous and a prompted count, stored as `${key}Spontaneous` / `${key}Prompted`.
+// spontaneous, prompted, and missed-opportunity count, stored as `${key}Spontaneous` / `${key}Prompted` / `${key}Missed`.
 export const COMMUNICATION_FUNCTIONS = [
   { key: 'requestingItems', label: 'Requesting items/actions' },
   { key: 'requestingHelp', label: 'Requesting help' },
@@ -18,28 +18,52 @@ export const COMMUNICATION_FUNCTIONS = [
 export const COMMUNICATION_FIELDS: Record<string, Record<string, any>> = {
   COMMUNICATION_FUNCTIONS: {
     notes: '',
-    ...Object.fromEntries(COMMUNICATION_FUNCTIONS.flatMap(f => [[`${f.key}Spontaneous`, 0], [`${f.key}Prompted`, 0]])),
+    ...Object.fromEntries(COMMUNICATION_FUNCTIONS.flatMap(f => [
+      [`${f.key}Spontaneous`, 0],
+      [`${f.key}Prompted`, 0],
+      [`${f.key}Missed`, 0],
+    ])),
   },
 };
 
 /**
  * Totals for a COMMUNICATION_FUNCTIONS session. Progress is measured by `functionsUsedSpontaneously`:
- * the number of different functions the student used at least once without a prompt.
+ * the number of different functions the student used at least once without a prompt. Missed opportunities
+ * distinguish functions that were targeted without a response from functions that had no opportunity.
  */
 export function summarizeCommunicationFunctions(data: Record<string, any> = {}) {
   let spontaneous = 0;
   let prompted = 0;
+  let missed = 0;
   let functionsUsedSpontaneously = 0;
   let functionsUsed = 0;
+  let functionsWithOpportunities = 0;
   for (const { key } of COMMUNICATION_FUNCTIONS) {
-    const s = Number(data[`${key}Spontaneous`]) || 0;
-    const p = Number(data[`${key}Prompted`]) || 0;
+    const s = Math.max(0, Number(data[`${key}Spontaneous`]) || 0);
+    const p = Math.max(0, Number(data[`${key}Prompted`]) || 0);
+    const m = Math.max(0, Number(data[`${key}Missed`]) || 0);
     spontaneous += s;
     prompted += p;
+    missed += m;
     if (s > 0) functionsUsedSpontaneously += 1;
     if (s + p > 0) functionsUsed += 1;
+    if (s + p + m > 0) functionsWithOpportunities += 1;
   }
-  return { spontaneous, prompted, functionsUsedSpontaneously, functionsUsed, functionCount: COMMUNICATION_FUNCTIONS.length };
+  const opportunities = spontaneous + prompted + missed;
+  const responded = spontaneous + prompted;
+  const responseRate = opportunities > 0 ? (responded / opportunities) * 100 : null;
+  return {
+    spontaneous,
+    prompted,
+    missed,
+    opportunities,
+    responded,
+    responseRate,
+    functionsUsedSpontaneously,
+    functionsUsed,
+    functionsWithOpportunities,
+    functionCount: COMMUNICATION_FUNCTIONS.length,
+  };
 }
 
 // sessionTargetValue for this type is a number of different functions, not a percentage.

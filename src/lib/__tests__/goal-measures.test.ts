@@ -73,4 +73,15 @@ describe('communication functions measure and target', () => {
     expect(sessionMeetsTarget({ type: 'COMMUNICATION_FUNCTIONS' }, { requestingItemsSpontaneous: 2 }, 2)).toBe(false);
     expect(sessionMeetsTarget({ type: 'COMMUNICATION_FUNCTIONS' }, {}, 2)).toBe(false);
   });
+
+  it('treats recorded missed opportunities as an observed 0 and does not count them toward target uses', () => {
+    // Only missed opportunities recorded (even without `recorded: true`): real 0, not no data.
+    expect(goalMeasure({ type: 'COMMUNICATION_FUNCTIONS' }, { commentingMissed: 2, protestingMissed: 1 })).toBe(0);
+    expect(sessionMeetsTarget({ type: 'COMMUNICATION_FUNCTIONS' }, { commentingMissed: 3 }, 2)).toBe(false);
+    expect(sessionMeetsTarget(
+      { type: 'COMMUNICATION_FUNCTIONS', sessionTargetUses: 5 },
+      { requestingItemsSpontaneous: 2, commentingSpontaneous: 1, protestingMissed: 4 },
+      2,
+    )).toBe(false);
+  });
 });

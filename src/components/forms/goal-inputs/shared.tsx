@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 import type { Goal, TrialStatus } from '@/lib/types';
 
 // What every goal type's inputs get from the goal card (goal-data-input.tsx), and the small layout pieces they share.
@@ -27,8 +28,8 @@ export interface GoalInputContext {
 }
 
 export const FormItem: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className }) => (
-  <div className={`space-y-0.5 ${className}`}>{children}</div>
+  <div className={cn('space-y-0.5', className)}>{children}</div>
 );
-export const FormLabel: React.FC<{ children: React.ReactNode; htmlFor?: string }> = ({ children, htmlFor }) => (
-  <Label htmlFor={htmlFor} className="text-xs font-medium text-muted-foreground">{children}</Label>
+export const FormLabel: React.FC<{ children: React.ReactNode; htmlFor?: string; className?: string; title?: string }> = ({ children, htmlFor, className, title }) => (
+  <Label htmlFor={htmlFor} title={title} className={cn('text-xs font-medium text-muted-foreground', className)}>{children}</Label>
 );

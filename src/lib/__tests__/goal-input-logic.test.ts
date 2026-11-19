@@ -43,7 +43,9 @@ describe('goalAccuracyText', () => {
     expect(goalAccuracyText('FLUENCY_SYLLABLE_STUTTER', { totalSyllables: 20, blocks: 1, repetitions: 1 })).toBe('90.0% (18/20)');
     expect(goalAccuracyText('DISCRETE_TRIALS', { trials: ['correct', 'incorrect', 'untouched'] })).toBe('50.0% (1/2)');
     expect(goalAccuracyText('STORY_ELEMENTS', { character: 2, setting: 1 })).toBe('21.4% (3/14 points)');
-    expect(goalAccuracyText('COMMUNICATION_FUNCTIONS', {})).toMatch(/^0 of \d+ used spontaneously/);
+    expect(goalAccuracyText('COMMUNICATION_FUNCTIONS', {})).toMatch(/^0 of \d+ used spontaneously \(0 spontaneous, 0 prompted, 0 missed\)$/);
+    expect(goalAccuracyText('COMMUNICATION_FUNCTIONS', { requestingItemsSpontaneous: 3, commentingPrompted: 1, protestingMissed: 2 }))
+      .toMatch(/^1 of \d+ used spontaneously \(3 spontaneous, 1 prompted, 2 missed · 67% responded\)$/);
     expect(goalAccuracyText('COGNITIVE', {})).toBe('N/A');
   });
 });

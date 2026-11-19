@@ -136,14 +136,27 @@ const GoalBreakdowns: React.FC<{ goal: Goal; recorded: Recorded[] }> = ({ goal, 
     );
   }
   if (type === 'COMMUNICATION_FUNCTIONS') {
+    const rows = COMMUNICATION_FUNCTIONS
+      .map(f => ({
+        name: f.label,
+        spontaneous: sum(d => Math.max(0, Number(d[`${f.key}Spontaneous`]) || 0)),
+        prompted: sum(d => Math.max(0, Number(d[`${f.key}Prompted`]) || 0)),
+        missed: sum(d => Math.max(0, Number(d[`${f.key}Missed`]) || 0)),
+      }))
+      .filter(r => r.spontaneous + r.prompted + r.missed > 0);
+    const totalMissed = rows.reduce((t, r) => t + r.missed, 0);
+    const totalResponded = rows.reduce((t, r) => t + r.spontaneous + r.prompted, 0);
+    const totalOpportunities = totalResponded + totalMissed;
+    const series = [
+      { key: 'spontaneous', label: 'Spontaneous', color: 'hsl(var(--chart-2))' },
+      { key: 'prompted', label: 'Prompted', color: 'hsl(var(--chart-4))' },
+      ...(totalMissed > 0 ? [{ key: 'missed', label: 'Missed', color: 'hsl(var(--chart-1))' }] : []),
+    ];
+    const title = totalMissed > 0 && totalOpportunities > 0
+      ? `Opportunities by function (${Math.round((totalResponded / totalOpportunities) * 100)}% responded)`
+      : 'Uses by function';
     panels.push(
-      <HBars key="functions" title="Uses by function" series={[
-        { key: 'spontaneous', label: 'Spontaneous', color: 'hsl(var(--chart-2))' },
-        { key: 'prompted', label: 'Prompted', color: 'hsl(var(--chart-4))' },
-      ]}
-        rows={COMMUNICATION_FUNCTIONS
-          .map(f => ({ name: f.label, spontaneous: sum(d => Number(d[`${f.key}Spontaneous`]) || 0), prompted: sum(d => Number(d[`${f.key}Prompted`]) || 0) }))
-          .filter(r => r.spontaneous + r.prompted > 0)} />,
+      <HBars key="functions" title={title} series={series} rows={rows} />,
     );
   }
   if (type === 'TASK_ANALYSIS') {

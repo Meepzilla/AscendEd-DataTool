@@ -150,7 +150,7 @@ export function goalMeasure(goal: MeasuredGoal, data: Record<string, any> = {}):
     }
     case 'COMMUNICATION_FUNCTIONS': {
       const summary = summarizeCommunicationFunctions(data);
-      if (summary.spontaneous + summary.prompted > 0) return Math.max(0, summary.functionsUsedSpontaneously);
+      if (summary.opportunities > 0) return Math.max(0, summary.functionsUsedSpontaneously);
       // A worked session in which the student used no functions is a real 0, not no data: Data Entry marks
       // the goal as recorded when it was worked on, as the story and rating branches above also check.
       return data.recorded === true ? 0 : null;
