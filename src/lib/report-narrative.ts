@@ -611,7 +611,8 @@ export interface GoalProgress {
   typeLabel: string;
   targetLabel: string | null;
   /** One point per session with a measure, oldest first. For COMMUNICATION_FUNCTIONS, also carries the
-   *  distinct functions used spontaneously and in an emerging form so charts can plot all three lines. */
+   *  distinct functions used spontaneously and emerging-only (no spontaneous use in that session), so
+   *  spontaneous + emerging always equals value. */
   points: { date: string; value: number; spontaneous?: number; emerging?: number }[];
   /** Average, range and latest, already formatted with the goal's unit (null without data). */
   average: string | null;
@@ -672,7 +673,7 @@ export function buildProgressReport({ student, goals, sessions }: Omit<Narrative
             date: r.session.date,
             value: r.value,
             spontaneous: s.functionsUsedSpontaneously,
-            emerging: s.functionsUsedEmerging,
+            emerging: s.functionsUsedEmergingOnly,
           };
         }
         return { date: r.session.date, value: r.value };

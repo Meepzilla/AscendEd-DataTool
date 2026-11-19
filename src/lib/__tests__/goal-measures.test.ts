@@ -105,7 +105,9 @@ describe('communication functions measure and target', () => {
     });
     expect(summary.functionsUsedSpontaneously).toBe(2);
     expect(summary.functionsUsedEmerging).toBe(2);
+    expect(summary.functionsUsedEmergingOnly).toBe(1);
     expect(summary.functionsUsedUnprompted).toBe(3);
+    expect(summary.functionsUsedSpontaneously + summary.functionsUsedEmergingOnly).toBe(summary.functionsUsedUnprompted);
     expect(summary.spontaneous).toBe(5);
     expect(summary.emerging).toBe(3);
     expect(summary.prompted).toBe(2);
