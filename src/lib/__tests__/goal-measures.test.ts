@@ -74,13 +74,22 @@ describe('communication functions measure and target', () => {
     expect(sessionMeetsTarget({ type: 'COMMUNICATION_FUNCTIONS' }, {}, 2)).toBe(false);
   });
 
-  it('treats recorded missed opportunities as an observed 0 and does not count them toward target uses', () => {
-    // Only missed opportunities recorded (even without `recorded: true`): real 0, not no data.
-    expect(goalMeasure({ type: 'COMMUNICATION_FUNCTIONS' }, { commentingMissed: 2, protestingMissed: 1 })).toBe(0);
-    expect(sessionMeetsTarget({ type: 'COMMUNICATION_FUNCTIONS' }, { commentingMissed: 3 }, 2)).toBe(false);
+  it('counts emerging unprompted forms toward functions used and target uses, while prompted-only is an observed 0', () => {
+    // Only prompted uses recorded (even without `recorded: true`): real 0, not no data.
+    expect(goalMeasure({ type: 'COMMUNICATION_FUNCTIONS' }, { commentingPrompted: 2, protestingPrompted: 1 })).toBe(0);
+    expect(sessionMeetsTarget({ type: 'COMMUNICATION_FUNCTIONS' }, { commentingPrompted: 3 }, 2)).toBe(false);
+    // Emerging unprompted uses count alongside spontaneous uses toward distinct functions and minimum total uses.
+    expect(goalMeasure({ type: 'COMMUNICATION_FUNCTIONS' }, { requestingItemsSpontaneous: 2, commentingEmerging: 1, protestingPrompted: 3 })).toBe(2);
     expect(sessionMeetsTarget(
       { type: 'COMMUNICATION_FUNCTIONS', sessionTargetUses: 5 },
-      { requestingItemsSpontaneous: 2, commentingSpontaneous: 1, protestingMissed: 4 },
+      { requestingItemsSpontaneous: 2, commentingEmerging: 3 },
+      2,
+    )).toBe(true);
+    // Emerging uses of the same function as spontaneous uses don't double-count the distinct function.
+    expect(goalMeasure({ type: 'COMMUNICATION_FUNCTIONS' }, { requestingItemsSpontaneous: 2, requestingItemsEmerging: 3 })).toBe(1);
+    expect(sessionMeetsTarget(
+      { type: 'COMMUNICATION_FUNCTIONS', sessionTargetUses: 5 },
+      { requestingItemsSpontaneous: 2, requestingItemsEmerging: 3 },
       2,
     )).toBe(false);
   });

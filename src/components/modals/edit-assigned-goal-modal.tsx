@@ -278,7 +278,7 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
                     />
                   </FormControl>
                   <FormDescription>
-                    A session counts toward the target only when the student also reaches this many spontaneous uses in total, across all functions. Leave blank for no minimum.
+                    A session counts toward the target only when the student also reaches this many unprompted uses (spontaneous or emerging) in total, across all functions. Leave blank for no minimum.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

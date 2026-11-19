@@ -51,9 +51,9 @@ export interface Goal {
   dataCaptureType?: GoalType; // NEW: Specifies which data entry UI to use
   smartGoal: string;
   sessionTargetValue?: number; // Target percentage (0-100) or specific count for some qualitative goals
-  /** COMMUNICATION_FUNCTIONS only: the minimum total spontaneous uses per session that must accompany the
-   *  functions target (a goal worded "at least 5 times for at least 2 different functions"). Unset or 0
-   *  means the functions target alone decides, as before. */
+  /** COMMUNICATION_FUNCTIONS only: the minimum total unprompted uses (spontaneous or emerging) per session
+   *  that must accompany the functions target (a goal worded "at least 5 times for at least 2 different
+   *  functions"). Unset or 0 means the functions target alone decides, as before. */
   sessionTargetUses?: number;
   targetDirection?: TargetDirection; // Defaults by goal type; see goalDirection()
   isArchived?: boolean; // New field for archiving
@@ -119,7 +119,7 @@ export interface GoalTemplate {
   smartGoalPrompt: string;
   generatedSmartGoal: string;
   sessionTargetValue?: number; // Target percentage (0-100) or specific count
-  /** COMMUNICATION_FUNCTIONS only: the minimum total spontaneous uses per session, alongside the functions target. */
+  /** COMMUNICATION_FUNCTIONS only: the minimum total unprompted uses (spontaneous or emerging) per session, alongside the functions target. */
   sessionTargetUses?: number;
   createdAt: Date;
   isDefault: boolean;

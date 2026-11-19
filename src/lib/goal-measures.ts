@@ -70,7 +70,7 @@ export function goalMeasureInfo(goal: MeasuredGoal): GoalMeasureInfo {
   switch (captureTypeOf(goal)) {
     case 'FLUENCY_SYLLABLE_STUTTER': return { label: '% fluent syllables', unit: '%', max: 100 };
     case 'STORY_ELEMENTS': return { label: 'Story score', unit: '%', max: 100 };
-    case 'COMMUNICATION_FUNCTIONS': return { label: 'Functions used spontaneously', unit: '', max: COMMUNICATION_FUNCTIONS.length };
+    case 'COMMUNICATION_FUNCTIONS': return { label: 'Functions used without a prompt', unit: '', max: COMMUNICATION_FUNCTIONS.length };
     case 'QUALITATIVE_OBSERVATION':
     case 'COGNITIVE': return { label: 'Rating (1-5)', unit: '', max: 5 };
     case 'GOAL_ATTAINMENT_SCALE': return { label: 'Attainment level', unit: '', max: 2, min: -2 };
@@ -150,7 +150,7 @@ export function goalMeasure(goal: MeasuredGoal, data: Record<string, any> = {}):
     }
     case 'COMMUNICATION_FUNCTIONS': {
       const summary = summarizeCommunicationFunctions(data);
-      if (summary.opportunities > 0) return Math.max(0, summary.functionsUsedSpontaneously);
+      if (summary.total > 0) return Math.max(0, summary.functionsUsedUnprompted);
       // A worked session in which the student used no functions is a real 0, not no data: Data Entry marks
       // the goal as recorded when it was worked on, as the story and rating branches above also check.
       return data.recorded === true ? 0 : null;
@@ -189,10 +189,10 @@ export function meetsTarget(goal: MeasuredGoal, value: number, target: number): 
 
 /**
  * Whether one session's data met the goal's target. For most goal types this is meetsTarget on the
- * session's measure. A Communication Functions goal can also carry a minimum total of spontaneous uses
- * (sessionTargetUses), for goals worded "at least 5 times for at least 2 different functions": the session
- * then counts only when it reaches the functions target and the uses minimum together. A session with no
- * measure never met the target.
+ * session's measure. A Communication Functions goal can also carry a minimum total of unprompted uses
+ * (sessionTargetUses, counting spontaneous and emerging forms together), for goals worded "at least 5
+ * times for at least 2 different functions": the session then counts only when it reaches the functions
+ * target and the uses minimum together. A session with no measure never met the target.
  */
 export function sessionMeetsTarget(goal: MeasuredGoal, data: Record<string, any>, target: number): boolean {
   const value = goalMeasure(goal, data);
@@ -200,7 +200,7 @@ export function sessionMeetsTarget(goal: MeasuredGoal, data: Record<string, any>
   if (toolTypeOf(captureTypeOf(goal)) === 'COMMUNICATION_FUNCTIONS') {
     const uses = goal.sessionTargetUses;
     if (typeof uses === 'number' && uses > 0) {
-      return summarizeCommunicationFunctions(data).spontaneous >= uses;
+      return summarizeCommunicationFunctions(data).unprompted >= uses;
     }
   }
   return true;
