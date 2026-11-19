@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-18',
+    title: 'Saving and Session Lists a Little Faster',
+    description: 'With a long caseload, putting sessions in date order was slow, and it happens on every save as well as on Sessions, Reports and the progress report. It is now done much faster, so saving a session and opening those pages take a little less time (about a fifth of a second less per save in a test with 5,400 sessions on a slow device). The order itself is unchanged.',
+    type: 'improvement',
+    icon: Zap,
+  },
+  {
+    date: '2026-11-18',
     title: 'Sturdier Unlock, Backups and Printing',
     description: 'Several things that could hang or break the app on damaged data now fail clearly instead. If the passcode settings stored on this device are damaged, unlocking says so straight away (and points to Forgot passcode?) instead of hanging; the Student Access PIN check is protected the same way. A backup file over 50 MB is turned away before it is opened, so a wrong file can\'t freeze the iPad, and a damaged protected backup gets the same clear message as any other damaged file. A damaged Student Sidebar setting no longer stops the app (or the Settings page that could fix it) from opening. Printing any page other than the progress report now prints the page instead of a blank sheet. Saved progress reports and narratives are named with today\'s date where you are, not tomorrow\'s on a US evening. New records get their ids from the browser\'s secure random generator.',
     type: 'fix',
