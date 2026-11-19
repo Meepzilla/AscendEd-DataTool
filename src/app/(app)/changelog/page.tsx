@@ -18,6 +18,27 @@ interface ChangelogEntry {
 
 const allChangelogEntries: ChangelogEntry[] = [
   {
+    date: '2026-11-19',
+    title: 'Communication Functions Now Track Emerging Forms',
+    description: 'Communication Functions goals in Data Entry now have three tally buttons for each function: Spont. (S) for the student\'s target or symbolic form, Emerg. (E) for an emerging or alternative form used without a prompt (such as a gesture, vocalization, or approximation), and Prompt. (P) for a prompted use. Both spontaneous and emerging uses count toward the number of different functions used without a prompt and toward any Minimum Total Uses per Session target, so students get credit when they express a function independently in an emerging form. Reports stack Spontaneous, Emerging, and Prompted uses separately by function, and the report narrative breaks down all three counts while highlighting which functions appeared in an emerging form. Earlier sessions without emerging counts keep working as before.',
+    type: 'feature',
+    icon: MessagesSquare,
+  },
+  {
+    date: '2026-11-19',
+    title: 'Screenshots for Every Goal Type on the Help Page',
+    description: 'The Goal Types section on the Help page now includes a screenshot of the Data Entry card beside each of the 25 goal types, using sample data so you can see how each tool looks before assigning it. Tap any screenshot to open a larger view.',
+    type: 'improvement',
+    icon: BookOpen,
+  },
+  {
+    date: '2026-11-19',
+    title: 'Fixes for Goal Forms, Shortcuts, Imports and Student Access Lock',
+    description: 'A code-wide review fixed a batch of smaller edge cases across the app. Goal Attainment Scaling goals and templates now allow negative target levels (-2 and -1) instead of rejecting them as below zero. Opening Data Entry from a student\'s profile link now jumps straight to that student and goal. Pressing the undo shortcut works on Behavior Frequency and Communication Count goals just like adding a tally. Under Student Access Lock, the service-minutes box and Show Archived Goals switch stay locked as intended. In Reports, sequenced trials are no longer double-counted in the trial status chart, and opening a link for an archived or deleted student falls back cleanly instead of showing an empty screen. Importing PDFs now checks file size and page count before reading, and de-identified CSV imports no longer mismatch blank student or goal names.',
+    type: 'fix',
+    icon: ShieldCheck,
+  },
+  {
     date: '2026-11-18',
     title: 'Saving and Session Lists a Little Faster',
     description: 'With a long caseload, putting sessions in date order was slow, and it happens on every save as well as on Sessions, Reports and the progress report. It is now done much faster, so saving a session and opening those pages take a little less time (about a fifth of a second less per save in a test with 5,400 sessions on a slow device). The order itself is unchanged.',
