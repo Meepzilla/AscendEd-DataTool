@@ -18,6 +18,13 @@ interface ChangelogEntry {
 
 const allChangelogEntries: ChangelogEntry[] = [
   {
+    date: '2026-11-20',
+    title: 'Sessions List Stopped Flickering',
+    description: 'The Sessions tab no longer flickers at the bottom of the screen. The height that lets the session list fill the screen was being measured off the list itself, so it kept adjusting by a pixel and redrawing. It is now worked out from the display size setting, and a single pixel of difference no longer resizes the list.',
+    type: 'fix',
+    icon: Bug,
+  },
+  {
     date: '2026-11-19',
     title: 'Build Your Own Goal Types',
     description: 'You can now build your own goal types. Open Settings, Custom Goal Types, and choose New Goal Type, or start from any goal type dropdown while adding a goal. Pick how the goal is measured: correct and incorrect tallies, a counter, a timer, a rating scale, a checklist, or yes and no, then name it and set its target while a preview shows the entry form as it will look in Data Entry. A type you build works like a built-in one in Data Entry, charts and reports. Each goal keeps a snapshot of its type, so editing the type later never changes goals already assigned or sessions already recorded. Custom types are included in backups, and the Settings card can export them to a file and import them back on another device.',
