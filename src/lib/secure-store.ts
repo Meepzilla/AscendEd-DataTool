@@ -31,6 +31,7 @@
 
 import { getLockoutRemainingMs, isLockedOut, recordAttempt } from './attempt-lockout';
 import * as idb from './indexed-db-store';
+import { activateWaitingUpdateBeforeReload } from './service-worker-update';
 import { isQuotaError } from './storage-failure';
 
 const CONFIG_KEY = 'ascended_passcode_v1';
@@ -1762,6 +1763,9 @@ export async function lockNow() {
   } catch {
     // A failed write was already reported; reloading loses nothing more than the failed write did.
   }
+  // If a newer Service Worker is waiting and this is the only open tab, promote it before reloading
+  // so the lock screen lands directly on the new version without disrupting another tab.
+  await activateWaitingUpdateBeforeReload();
   window.location.reload();
 }
 

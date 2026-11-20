@@ -116,13 +116,16 @@ export default function AppLayout({
 
   useEffect(() => {
     if (currentUser) {
-      const pagesToPrefetch = [ 
+      const pagesToPrefetch = [
         '/dashboard',
         '/changelog',
         '/data-entry',
+        '/manage-sessions',
         '/analysis-report',
         '/goal-templates',
         '/student-profile',
+        '/settings',
+        '/help',
       ];
       
       if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
