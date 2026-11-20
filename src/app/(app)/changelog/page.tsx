@@ -18,6 +18,20 @@ interface ChangelogEntry {
 
 const allChangelogEntries: ChangelogEntry[] = [
   {
+    date: '2026-11-20',
+    title: 'Sessions List Stopped Flickering',
+    description: 'The Sessions tab no longer flickers at the bottom of the screen. The height that lets the session list fill the screen was being measured off the list itself, so it kept adjusting by a pixel and redrawing. It is now worked out from the display size setting, and a single pixel of difference no longer resizes the list.',
+    type: 'fix',
+    icon: Bug,
+  },
+  {
+    date: '2026-11-19',
+    title: 'Build Your Own Goal Types',
+    description: 'You can now build your own goal types. Open Settings, Custom Goal Types, and choose New Goal Type, or start from any goal type dropdown while adding a goal. Pick how the goal is measured: correct and incorrect tallies, a counter, a timer, a rating scale, a checklist, or yes and no, then name it and set its target while a preview shows the entry form as it will look in Data Entry. A type you build works like a built-in one in Data Entry, charts and reports. Each goal keeps a snapshot of its type, so editing the type later never changes goals already assigned or sessions already recorded. Custom types are included in backups, and the Settings card can export them to a file and import them back on another device.',
+    type: 'feature',
+    icon: PlusCircle,
+  },
+  {
     date: '2026-11-19',
     title: 'More Reliable Data Entry, Merging, Exports and Reports',
     description: 'Rapid taps and two-thumb tallying on iPad (and long-press subtracts) no longer drop or overwrite earlier counts on Data Entry or Edit Session, and opening Manage Groups from Load Group no longer risks freezing Data Entry. Merging split sessions now preserves Story Elements parts marked N/A when another part was untouched, keeps equal-length duration episodes and latencies recorded at different times, recalculates Duration and ABC summaries, joins observation notes, and keeps headers for earlier goals. Goal forms now allow negative Goal Attainment Scaling targets (-2 and -1), targets above 100 for count/duration/latency goals, and GAS level descriptions when creating a new template. Pressing H for fluency prolongations now increments total syllables like the + button, and the student sidebar now checks Minimum Total Uses per Session on Communication Functions goals. CSV exports now include each goal\'s Data Capture Type and use the share sheet on Android/iPad, and de-identified CSV exports can be imported back cleanly. Reports, GAS tables, Latency/Response Time mastery, Task Analysis narratives, Progress Report session counts, and the sticky Sessions table header now stay consistent across edge cases.',

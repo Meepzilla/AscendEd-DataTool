@@ -20,7 +20,7 @@ import LoadGroupMenu from '@/components/student-groups/LoadGroupMenu';
 import { formatDate } from '@/lib/helpers';
 import { ConfettiProvider } from '@/hooks/use-confetti';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
-import { GOAL_TYPE_FIELDS, captureTypeOf } from '@/lib/goal-constants';
+import { captureTypeOf } from '@/lib/goal-constants';
 import { applyGoalHotkey } from '@/lib/data-entry-hotkeys';
 import { freshGoalData, freshStudentState, moveGoal, restoreAfterFailedSave, sessionFromState, syncSessionStates } from '@/lib/data-entry-session';
 import { sessionMinutes } from '@/lib/student-overview';
@@ -70,7 +70,7 @@ export default function DataEntryContent() {
   const goalDefaults = useCallback((goalId: string) => {
     for (const student of students) {
       const goal = student.goals.find(g => g.id === goalId);
-      if (goal) return GOAL_TYPE_FIELDS[captureTypeOf(goal)];
+      if (goal) return freshGoalData(goal);
     }
     return undefined;
   }, [students]);

@@ -1,9 +1,10 @@
 import { z } from 'zod';
 import { knownGoalType } from './legacy-goal-types';
 import { reviveGoalTypes } from './legacy-goal-types';
-import type { GoalTemplate, SessionData, Student } from './types';
+import { CustomGoalTypeSchema, type CustomGoalType, type GoalTemplate, type SessionData, type Student } from './types';
 import { AbcListsSchema, type AbcLists, loadCustomAbcLists } from './abc-lists';
 import { getStudentGroups } from './student-groups';
+import { getCustomGoalTypes } from './custom-goal-types';
 import { hydrateLists, readList, storageKeys } from './data-store';
 import { defaultTemplateKey } from './goal-constants';
 import { decryptWithPassword, encryptWithPassword, type PasswordProtected } from './secure-store';
@@ -25,6 +26,7 @@ export interface BackupData {
 export interface BackupSettings {
   abcLists?: AbcLists; // only when edited on the device
   studentGroups?: { id: string; name: string; studentIds: string[] }[]; // saved Data Entry groups, when there are any
+  customGoalTypes?: CustomGoalType[]; // user-made custom goal types, when there are any
 }
 
 export interface AppBackup {
@@ -85,6 +87,7 @@ const BackupGoalSchema = z.object({
   taskSteps: z.array(z.string()).optional(),
   blankFills: z.array(z.string()).optional(),
   gasLevelDescriptions: z.array(z.string()).optional(),
+  customType: CustomGoalTypeSchema.optional(),
 });
 
 const BackupStudentSchema = z.object({
@@ -134,6 +137,7 @@ const BackupTemplateSchema = z.object({
   gasLevelDescriptions: z.array(z.string()).optional(),
   defaultKey: z.string().optional(),
   deleted: z.boolean().optional(),
+  customType: CustomGoalTypeSchema.optional(),
 });
 
 const BackupSessionSchema = z.object({
@@ -174,6 +178,7 @@ const BackupSchema = z.object({
 });
 
 const StudentGroupSchema = z.array(z.object({ id: z.string(), name: z.string(), studentIds: z.array(z.string()) }));
+const CustomGoalTypesListSchema = z.array(CustomGoalTypeSchema);
 
 /** Pulls the settings blocks out of a parsed backup, naming the ones too damaged to keep. */
 function extractSettings(raw: unknown): { settings?: BackupSettings; droppedSettings: string[] } {
@@ -194,14 +199,19 @@ function extractSettings(raw: unknown): { settings?: BackupSettings; droppedSett
     if (parsed.success) settings.studentGroups = parsed.data;
     else droppedSettings.push('studentGroups');
   }
+  if (record.customGoalTypes !== undefined) {
+    const parsed = CustomGoalTypesListSchema.safeParse(record.customGoalTypes);
+    if (parsed.success) settings.customGoalTypes = parsed.data;
+    else droppedSettings.push('customGoalTypes');
+  }
   return { settings: Object.keys(settings).length ? settings : undefined, droppedSettings };
 }
 
 // Fields restore knows about, for reporting fields that were present and stripped.
 const KNOWN_KEYS: Record<string, Set<string>> = {
   student: new Set(['id', 'name', 'goals', 'createdAt', 'updatedAt', 'userId', 'isArchived', 'iep']),
-  goal: new Set(['id', 'name', 'type', 'dataCaptureType', 'smartGoal', 'sessionTargetValue', 'sessionTargetUses', 'targetDirection', 'isArchived', 'templateId', 'targetDate', 'baseline', 'baselineDate', 'masterySessions', 'taskSteps', 'blankFills', 'gasLevelDescriptions']),
-  template: new Set(['id', 'name', 'type', 'dataCaptureType', 'smartGoalPrompt', 'generatedSmartGoal', 'sessionTargetValue', 'sessionTargetUses', 'createdAt', 'isDefault', 'userId', 'isArchived', 'category', 'source', 'bankId', 'targetDirection', 'retired', 'baseline', 'taskSteps', 'defaultKey', 'deleted', 'gasLevelDescriptions']),
+  goal: new Set(['id', 'name', 'type', 'dataCaptureType', 'smartGoal', 'sessionTargetValue', 'sessionTargetUses', 'targetDirection', 'isArchived', 'templateId', 'targetDate', 'baseline', 'baselineDate', 'masterySessions', 'taskSteps', 'blankFills', 'gasLevelDescriptions', 'customType']),
+  template: new Set(['id', 'name', 'type', 'dataCaptureType', 'smartGoalPrompt', 'generatedSmartGoal', 'sessionTargetValue', 'sessionTargetUses', 'createdAt', 'isDefault', 'userId', 'isArchived', 'category', 'source', 'bankId', 'targetDirection', 'retired', 'baseline', 'taskSteps', 'defaultKey', 'deleted', 'gasLevelDescriptions', 'customType']),
   session: new Set(['sessionId', 'studentId', 'studentName', 'date', 'time', 'endTime', 'activity', 'notes', 'goals', 'originalGoalHeaders', 'missed', 'serviceMinutes', 'userId']),
   sessionGoal: new Set(['goalId', 'goalName', 'goalType', 'data']),
   iep: new Set(['iepDate', 'annualReviewDate', 'reevaluationDate', 'serviceMinutes', 'servicePer', 'services']),
@@ -237,6 +247,7 @@ export function createBackup(data: BackupData, settings: BackupSettings = {}): A
   const kept: BackupSettings = {
     ...(settings.abcLists ? { abcLists: settings.abcLists } : {}),
     ...(settings.studentGroups?.length ? { studentGroups: settings.studentGroups } : {}),
+    ...(settings.customGoalTypes?.length ? { customGoalTypes: settings.customGoalTypes } : {}),
   };
   if (Object.keys(kept).length) backup.settings = kept;
   return backup;
@@ -258,7 +269,7 @@ export async function buildBackupFromStorage(uid: string | undefined): Promise<{
   const sessions = readList<SessionData>(keys.sessions);
   const backup = createBackup(
     { students: students ?? [], goalTemplates: goalTemplates ?? [], sessions: sessions ?? [] },
-    { abcLists: loadCustomAbcLists() ?? undefined, studentGroups: getStudentGroups(uid) },
+    { abcLists: loadCustomAbcLists() ?? undefined, studentGroups: getStudentGroups(uid), customGoalTypes: getCustomGoalTypes(uid) },
   );
   return { backup, incomplete: students === undefined || goalTemplates === undefined || sessions === undefined };
 }
@@ -562,7 +573,7 @@ export interface RestoreSummary {
 
 /** What a backup's parsing left out, in words (empty when nothing was). */
 export function describeLeftOut(backup: Partial<Pick<ParsedBackup, 'droppedSettings' | 'droppedRecords'>>): string[] {
-  const settings = (backup.droppedSettings ?? []).map(name => `the ${name === 'abcLists' ? 'ABC lists' : name === 'studentGroups' ? 'student groups' : name} settings`);
+  const settings = (backup.droppedSettings ?? []).map(name => `the ${name === 'abcLists' ? 'ABC lists' : name === 'studentGroups' ? 'student groups' : name === 'customGoalTypes' ? 'custom goal types' : name} settings`);
   const records = (backup.droppedRecords ?? []).map(r =>
     `${r.kind === 'goalTemplate' ? 'a goal template' : r.kind === 'sessionGoal' ? 'a goal in a session' : `a ${r.kind}`} (${r.id}: ${r.reason})`);
   return [...settings, ...records];

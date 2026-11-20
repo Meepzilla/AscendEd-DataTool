@@ -2,6 +2,7 @@ import type { AppBackup, BackupData, RestoreMode, RestoreSummary } from './backu
 import { mergeBackupData } from './backup';
 import { loadAbcLists, mergeAbcLists, saveAbcLists, saveAbcListsForRestore } from './abc-lists';
 import { getStudentGroups, saveStudentGroups, saveStudentGroupsForRestore } from './student-groups';
+import { getCustomGoalTypes, saveCustomGoalTypes, saveCustomGoalTypesForRestore } from './custom-goal-types';
 import { byDateDesc, byName } from './data-store';
 
 // Restoring a backup (Settings → Backup & Restore): what the device's lists become, and the backup's settings.
@@ -25,10 +26,9 @@ export function planRestore(current: BackupData, backup: AppBackup, mode: Restor
 }
 
 /**
- * Restores the backup's settings: custom ABC lists and saved student groups. Replace uses the backup's (clearing
- * custom ABC lists when it has none); merge adds what this device doesn't have. A failure saving either is
- * passed to onError (the student data is already restored). Replace may overwrite lists that couldn't be
- * read — that is how damaged settings are recovered; merge never does.
+ * Restores the backup's settings: custom ABC lists, saved student groups and custom goal types. Replace uses the
+ * backup's (leaving existing custom goal types intact only when the backup was made before custom types existed);
+ * merge adds what this device doesn't have. A failure saving any setting is passed to onError.
  */
 export function restoreBackupSettings(backup: AppBackup, mode: RestoreMode, userId: string | undefined, onError: (error: unknown) => void) {
   const abcLists = backup.settings?.abcLists;
@@ -44,6 +44,17 @@ export function restoreBackupSettings(backup: AppBackup, mode: RestoreMode, user
     else if (groups?.length) {
       const existing = getStudentGroups(userId);
       saveStudentGroups(userId, [...existing, ...groups.filter(g => !existing.some(e => e.id === g.id))]);
+    }
+  } catch (error) {
+    onError(error);
+  }
+  const customTypes = backup.settings?.customGoalTypes;
+  try {
+    if (mode === 'replace' && customTypes !== undefined) {
+      saveCustomGoalTypesForRestore(userId, customTypes);
+    } else if (customTypes?.length) {
+      const existing = getCustomGoalTypes(userId);
+      saveCustomGoalTypes(userId, [...existing, ...customTypes.filter(t => !existing.some(e => e.id === t.id))]);
     }
   } catch (error) {
     onError(error);

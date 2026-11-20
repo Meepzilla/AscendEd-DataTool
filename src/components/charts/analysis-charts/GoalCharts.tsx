@@ -327,8 +327,8 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
       <CardHeader>
         <CardTitle><ExpandableGoalName goal={goal} studentName={studentName} studentIep={studentIep} /></CardTitle>
         <CardDescription>
-          {goalTypeLabel(type)} · {info.label} per session
-          {target !== undefined && ` · Target ${formatGoalTarget(type, target, goal.targetDirection, goal.sessionTargetUses)}`}
+          {goalTypeLabel(goal)} · {info.label} per session
+          {target !== undefined && ` · Target ${formatGoalTarget(goal, target, goal.targetDirection, goal.sessionTargetUses)}`}
           {storyWords !== null && ` · ${storyWords} linking words`}
           {target !== undefined && ` · Mastery: ${mastery} in a row`}
           {mastered && <span className="ml-2 inline-block rounded-full border border-green-500/50 bg-green-500/15 px-2 py-0.5 text-xs font-semibold text-green-700 dark:text-green-400">Mastered</span>}

@@ -15,7 +15,8 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useConfetti } from '@/hooks/use-confetti';
 import { FrequencyInput, DurationInput, AbcInput, IntervalInput, LatencyInput } from './behavior-inputs';
-import { GOAL_TYPES_WITHOUT_PROMPT_COUNTERS, toolTypeOf } from '@/lib/goal-constants';
+import { toolTypeOf } from '@/lib/goal-constants';
+import { usesPromptCounters } from '@/lib/goal-measures';
 import { applyFieldChange, clearTrials, cycleTrial, goalAccuracyText, scoreNextTrial, undoLastTrial } from '@/lib/goal-input-logic';
 import GoalTextPopover from './GoalTextPopover';
 import type { GoalInputContext } from './goal-inputs/shared';
@@ -26,6 +27,7 @@ import { FluencyInputs } from './goal-inputs/fluency';
 import { ObservationInputs, PromptingInputs } from './goal-inputs/observation';
 import { GasInputs } from './goal-inputs/gas';
 import { CommunicationFunctionsInputs, StoryElementsInputs } from './goal-inputs/communication';
+import { CustomGoalInputs } from './goal-inputs/custom';
 
 // A goal's card in Data Entry: its name, target and move arrows, the inputs for its type (in goal-inputs/, or the
 // behavior and task analysis inputs), and the prompt level counters. The calculations are in lib/goal-input-logic.
@@ -96,7 +98,7 @@ export default function GoalDataInputComponent({
     onChange(field, current => applyFieldChange(captureType, current, field, Math.max(0, (Number(current[field]) || 0) + delta)));
   };
 
-  const calculateAccuracy = () => goalAccuracyText(captureType, data);
+  const calculateAccuracy = () => goalAccuracyText(goal, data);
 
   const handleTrialClick = (index: number, e: React.MouseEvent<HTMLButtonElement>) => {
     handleInteraction(e, () => onChange('trials', current => applyFieldChange(captureType, current, 'trials', cycleTrial(current, index))));
@@ -135,6 +137,9 @@ export default function GoalDataInputComponent({
   };
 
   const renderInputFields = () => {
+    if (captureType === 'CUSTOM') {
+      return <CustomGoalInputs ctx={ctx} />;
+    }
     switch (captureType) {
       case 'AAC':
       case 'ARTICULATION':
@@ -215,7 +220,7 @@ export default function GoalDataInputComponent({
     }
   };
 
-  const showPromptCounters = !GOAL_TYPES_WITHOUT_PROMPT_COUNTERS.includes(captureType as GoalType);
+  const showPromptCounters = usesPromptCounters(goal);
 
 
   return (
@@ -252,9 +257,16 @@ export default function GoalDataInputComponent({
                 <CardTitle className="text-sm font-semibold">
                     <div className="flex justify-between items-start">
                         <GoalTextPopover name={fillNameBlanks(goal)} smartGoal={goalStatement(goal, studentName, studentIep)} className="whitespace-normal break-words mr-1" />
-                        <Badge variant="outline" className="text-xs px-1.5 py-0.5 shrink-0 max-w-[45%] text-center leading-tight">
+                        <Badge
+                          variant="outline"
+                          className="text-xs px-1.5 py-0.5 shrink-0 max-w-[45%] text-center leading-tight inline-flex items-center gap-1"
+                          style={captureType === 'CUSTOM' && goal.customType?.color ? { borderColor: goal.customType.color } : undefined}
+                        >
+                            {captureType === 'CUSTOM' && goal.customType?.color && (
+                              <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: goal.customType.color }} aria-hidden />
+                            )}
                             {/* The type data is recorded as (set in Edit Goal), the same as the inputs below. */}
-                            {goalTypeLabel(captureType)}
+                            {goalTypeLabel(goal)}
                         </Badge>
                     </div>
                 </CardTitle>
@@ -267,7 +279,7 @@ export default function GoalDataInputComponent({
                   {goal.sessionTargetValue !== undefined && (
                     <div className="text-xs text-muted-foreground flex items-center gap-0.5">
                         <TrendingUp className="h-3 w-3 text-green-600" />
-                        Target: {formatGoalTarget(goal.dataCaptureType || goal.type, goal.sessionTargetValue, goal.targetDirection, goal.sessionTargetUses)}
+                        Target: {formatGoalTarget(goal, goal.sessionTargetValue, goal.targetDirection, goal.sessionTargetUses)}
                     </div>
                   )}
                 </div>

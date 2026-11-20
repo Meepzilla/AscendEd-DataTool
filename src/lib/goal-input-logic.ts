@@ -1,5 +1,6 @@
-import type { TrialStatus } from './types';
+import type { CustomGoalType, TrialStatus } from './types';
 import { goalResponses } from './goal-measures';
+import { getGoalTypeDef, isCustomGoal } from './goal-types';
 import { gasLevelLabel } from './gas';
 import { scoreStory, summarizeCommunicationFunctions } from './goal-constants';
 
@@ -37,7 +38,16 @@ export function applyFieldChange(captureType: string, data: Record<string, any>,
  * The result line shown under a goal's inputs: accuracy, % fluent, story score or functions used. Count types use
  * goalResponses (the same counting as Reports), so the card and the reports agree.
  */
-export function goalAccuracyText(captureType: string, data: Record<string, any>): string {
+export function goalAccuracyText(
+  captureTypeOrGoal: string | { type: string; dataCaptureType?: string; customType?: CustomGoalType },
+  data: Record<string, any>,
+): string {
+  if (typeof captureTypeOrGoal === 'object' && isCustomGoal(captureTypeOrGoal)) {
+    return getGoalTypeDef(captureTypeOrGoal).accuracyText?.(data) ?? 'N/A';
+  }
+  const captureType = typeof captureTypeOrGoal === 'object'
+    ? (captureTypeOrGoal.dataCaptureType || captureTypeOrGoal.type)
+    : captureTypeOrGoal;
   switch (captureType) {
     case 'GOAL_ATTAINMENT_SCALE': {
       // No level recorded yet means no data, never a 0: 0 is the expected outcome, a real value.

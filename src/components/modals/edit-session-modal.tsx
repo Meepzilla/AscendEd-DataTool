@@ -14,6 +14,7 @@ import type { SessionData, Goal, GoalDataUpdater } from '@/lib/types';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { GOAL_TYPE_FIELDS, captureTypeOf, finalizeBehaviorData } from '@/lib/goal-constants';
+import { freshGoalData } from '@/lib/data-entry-session';
 import { formatDate, parseDateOnly } from '@/lib/helpers';
 import { sessionMinutes } from '@/lib/student-overview';
 import ServiceMinutesField from '@/components/ServiceMinutesField';
@@ -211,7 +212,7 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
                                         key={sessionGoal.goalId}
                                         id={`edit-session-goal-${sessionGoal.goalId}`}
                                         goal={originalGoal}
-                                        data={sessionGoal.data || GOAL_TYPE_FIELDS[captureTypeOf(originalGoal)]}
+                                        data={sessionGoal.data || freshGoalData(originalGoal)}
                                         onChange={(fieldName,newData) => handleGoalDataChange(sessionGoal.goalId, fieldName,newData)}
                                         isArchived={originalGoal.isArchived}
                                         studentName={currentSession.studentName}

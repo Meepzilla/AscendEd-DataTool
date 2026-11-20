@@ -131,7 +131,7 @@ export default function StudentProgressSidebar({ student, studentSessions }: {st
             const displayValue = notesOnly
               ? (goal.progress === 100 ? 'Noted' : 'No Notes')
               : goal.sessionTargetValue !== undefined
-                ? `${shown}% (Target: ${formatGoalTarget(captureTypeOf(goal), goal.sessionTargetValue, goal.targetDirection, goal.sessionTargetUses)})`
+                ? `${shown}% (Target: ${formatGoalTarget(goal, goal.sessionTargetValue, goal.targetDirection, goal.sessionTargetUses)})`
                 : `${shown}% (Actual)`;
             return (
               <div key={goal.id} className="p-2 rounded-md hover:bg-sidebar-accent transition-colors">

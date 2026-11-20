@@ -1,12 +1,13 @@
 import type { Goal, SessionData, SessionGoalData, Student, StudentSessionState } from './types';
-import { GOAL_TYPE_FIELDS, captureTypeOf, finalizeBehaviorData } from './goal-constants';
+import { captureTypeOf } from './goal-constants';
+import { getGoalTypeDef } from './goal-types';
 
 // Data Entry's per-student state (what is entered on each student's card before it is saved), as plain
 // functions: blank data for a goal, keeping the state in step with the students' goals, and the session saved.
 
 /** A goal's starting data for its data entry type (a fresh copy). */
 export function freshGoalData(goal: Goal): Record<string, any> {
-  return JSON.parse(JSON.stringify(GOAL_TYPE_FIELDS[captureTypeOf(goal)] || {}));
+  return getGoalTypeDef(goal).initialData(goal);
 }
 
 /** A student's card with nothing entered. */
@@ -25,7 +26,7 @@ export function freshStudentState(student: Student): StudentSessionState {
 // type, target or archived state), so the cards and the save use the current goal.
 // The order doesn't count: goals moved up or down on a card keep their place.
 const goalSignature = (goals: Goal[]) =>
-  JSON.stringify(goals.map(g => [g.id, g.name, g.type, g.dataCaptureType, g.isArchived, g.sessionTargetValue, g.targetDirection])
+  JSON.stringify(goals.map(g => [g.id, g.name, g.type, g.dataCaptureType, g.isArchived, g.sessionTargetValue, g.targetDirection, g.customType?.id, g.customType?.version])
     .sort((a, b) => String(a[0]).localeCompare(String(b[0]))));
 
 /**
@@ -75,7 +76,7 @@ export function syncSessionStates(
     for (const goal of goals) {
       const previous = previousGoals.get(goal.id);
       // Data entered with another type's inputs doesn't fit the new ones, so that goal starts over.
-      const typeChanged = previous && captureTypeOf(previous) !== captureTypeOf(goal);
+      const typeChanged = previous && (captureTypeOf(previous) !== captureTypeOf(goal) || previous.customType?.kind !== goal.customType?.kind);
       if (!goalData[goal.id] || typeChanged) goalData[goal.id] = freshGoalData(goal);
     }
     next[student.id] = {
@@ -102,7 +103,7 @@ export function sessionFromState(
       goalId: goal.id,
       goalName: goal.name,
       goalType: goal.type,
-      data: finalizeBehaviorData(captureTypeOf(goal), state.goalData[goal.id] || freshGoalData(goal)),
+      data: getGoalTypeDef(goal).finalizeData(state.goalData[goal.id] || freshGoalData(goal)),
     }));
   return {
     studentId: state.studentId,

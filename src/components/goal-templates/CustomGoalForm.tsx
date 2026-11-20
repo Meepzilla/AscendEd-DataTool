@@ -10,22 +10,22 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useStudentData } from '@/hooks/use-student-data';
 import { useToast } from '@/hooks/use-toast';
-import { GOAL_TYPE_FIELDS, goalDirection, hasTargetDirection } from '@/lib/goal-constants';
+import { goalDirection, hasTargetDirection } from '@/lib/goal-constants';
 import { goalMeasureInfo } from '@/lib/goal-measures';
-import { generateUUID, goalTypeLabel } from '@/lib/helpers';
+import { generateUUID } from '@/lib/helpers';
 import { classifyGoal, goalDirectionFor, goalName, goalTarget, goalTargetDate, splitGoals } from '@/lib/student-import';
-import type { Goal, GoalTemplate, GoalType, Student, TargetDirection } from '@/lib/types';
+import type { CustomGoalType, Goal, GoalTemplate, GoalType, Student, TargetDirection } from '@/lib/types';
 import { GoalTextPreview, PlaceholderChips } from './PlaceholderChips';
+import GoalTypeSelect from './GoalTypeSelect';
 
 // Writing a custom goal for a student (Assign / Create Goal → Write a custom goal). Only the goal text is needed:
 // the name, goal type, target, direction and target date are suggested from its wording (the same reading as the
 // student import, student-import.ts) and can each be changed; a field changed by hand stops following the text.
 // The target date, baseline and mastery are set here too, and the goal can also be saved as a template.
 
-const GOAL_TYPES = (Object.keys(GOAL_TYPE_FIELDS) as GoalType[]).sort((a, b) => goalTypeLabel(a).localeCompare(goalTypeLabel(b)));
 const BEHAVIOR = hasTargetDirection;
 
-type Overrides = Partial<{ name: string; type: GoalType; target: string; direction: TargetDirection; targetDate: string }>;
+type Overrides = Partial<{ name: string; type: GoalType; customType: CustomGoalType; target: string; direction: TargetDirection; targetDate: string }>;
 
 /** What the goal text suggests (the goal, without a label such as "Speech:"), or nothing for an empty text. */
 function suggestFromText(text: string, annualReview?: string) {
@@ -56,14 +56,15 @@ export default function CustomGoalForm({ student, disabled }: { student: Student
   // Each field: what was entered by hand, else what the text suggests.
   const name = overrides.name ?? suggested?.name ?? '';
   const type: GoalType = overrides.type ?? suggested?.type ?? 'DISCRETE_TRIALS';
+  const customType = type === 'CUSTOM' ? overrides.customType : undefined;
   // The target and direction are read for the type in use, so choosing another type re-reads them.
-  const target = overrides.target ?? (suggested ? String(goalTarget(type, suggested.goalText)) : '');
-  const direction: TargetDirection = overrides.direction ?? (suggested ? goalDirectionFor(type, suggested.goalText) : undefined) ?? goalDirection({ type });
+  const target = overrides.target ?? (type === 'CUSTOM' && customType?.defaultTarget !== undefined ? String(customType.defaultTarget) : suggested ? String(goalTarget(type, suggested.goalText)) : '');
+  const direction: TargetDirection = overrides.direction ?? (type === 'CUSTOM' && customType ? customType.direction : suggested ? goalDirectionFor(type, suggested.goalText) : undefined) ?? goalDirection({ type, customType });
   const targetDate = overrides.targetDate ?? suggested?.targetDate ?? student.iep?.annualReviewDate ?? '';
   const set = (field: keyof Overrides) => (value: string) => setOverrides(prev => ({ ...prev, [field]: value }));
   const fromText = (field: keyof Overrides) => !!suggested && overrides[field] === undefined;
 
-  const info = goalMeasureInfo({ type, targetDirection: direction });
+  const info = goalMeasureInfo({ type, targetDirection: direction, customType });
   const minTarget = info.min ?? 0;
   const targetNumber = target === '' ? undefined : Number(target);
   const targetError = targetNumber === undefined ? null
@@ -90,6 +91,7 @@ export default function CustomGoalForm({ student, disabled }: { student: Student
       } else if (saveTemplate) {
         template = await addGoalTemplate({
           name: name.trim(), type, smartGoalPrompt: text.trim(), generatedSmartGoal: text.trim(), category: 'Custom',
+          ...(customType ? { customType } : {}),
           ...(targetNumber !== undefined ? { sessionTargetValue: targetNumber } : {}),
           ...(BEHAVIOR(type) ? { targetDirection: direction } : {}),
         });
@@ -101,6 +103,7 @@ export default function CustomGoalForm({ student, disabled }: { student: Student
         name: name.trim(),
         type,
         smartGoal: text.trim(),
+        ...(customType ? { customType } : {}),
         ...(targetNumber !== undefined ? { sessionTargetValue: targetNumber } : {}),
         ...(BEHAVIOR(type) ? { targetDirection: direction } : {}),
         ...(targetDate ? { targetDate } : {}),
@@ -149,10 +152,23 @@ export default function CustomGoalForm({ student, disabled }: { student: Student
         </div>
         <div className="space-y-1">
           <Label htmlFor="customGoalType">Goal type (how data is recorded){hint('type')}</Label>
-          <Select value={type} onValueChange={v => set('type')(v)} disabled={busy}>
-            <SelectTrigger id="customGoalType"><SelectValue /></SelectTrigger>
-            <SelectContent>{GOAL_TYPES.map(t => <SelectItem key={t} value={t}>{goalTypeLabel(t)}</SelectItem>)}</SelectContent>
-          </Select>
+          <GoalTypeSelect
+            id="customGoalType"
+            type={type}
+            customType={customType}
+            onChange={(nextType, nextCustom) => {
+              setOverrides(prev => ({
+                ...prev,
+                type: nextType,
+                customType: nextCustom,
+                ...(nextCustom ? {
+                  target: nextCustom.defaultTarget !== undefined ? String(nextCustom.defaultTarget) : prev.target,
+                  direction: nextCustom.direction,
+                } : {}),
+              }));
+            }}
+            disabled={busy}
+          />
         </div>
         <div className="space-y-1">
           <Label htmlFor="customGoalSessionTarget">Target: {info.label.toLowerCase()}{info.unit ? ` (${info.unit.trim()})` : ''}{hint('target')}</Label>
@@ -192,7 +208,7 @@ export default function CustomGoalForm({ student, disabled }: { student: Student
       </div>
 
       <GoalTextPreview studentName={student.name} studentIep={student.iep}
-        goal={{ smartGoal: text, type, targetDirection: direction, sessionTargetValue: targetNumber, targetDate: targetDate || undefined,
+        goal={{ smartGoal: text, type, customType, targetDirection: direction, sessionTargetValue: targetNumber, targetDate: targetDate || undefined,
           masterySessions: masteryNumber || undefined, blankFills: undefined, baseline: baseline === '' ? undefined : Number(baseline), baselineDate: baselineDate || undefined }} />
 
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">

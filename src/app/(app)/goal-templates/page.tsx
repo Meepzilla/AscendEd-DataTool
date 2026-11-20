@@ -251,8 +251,11 @@ export default function GoalTemplatesPage() {
                         </div>
                       </div>
                       <div className="mt-1 flex flex-wrap gap-1">
-                        <Badge variant="secondary" className="w-fit">
-                          {goalTypeLabel(captureTypeOf(template))}
+                        <Badge variant="secondary" className="w-fit inline-flex items-center gap-1">
+                          {template.type === 'CUSTOM' && template.customType?.color && (
+                            <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: template.customType.color }} aria-hidden />
+                          )}
+                          {goalTypeLabel(template)}
                         </Badge>
                         {template.category && <Badge variant="outline" className="w-fit">{template.category}</Badge>}
                       </div>
@@ -271,7 +274,7 @@ export default function GoalTemplatesPage() {
                        {template.sessionTargetValue !== undefined && (
                           <div>
                               <p className="font-medium text-muted-foreground">Session Target:</p>
-                              <p className="text-foreground">{formatGoalTarget(captureTypeOf(template), template.sessionTargetValue, template.targetDirection, template.sessionTargetUses)}</p>
+                              <p className="text-foreground">{formatGoalTarget(template, template.sessionTargetValue, template.targetDirection, template.sessionTargetUses)}</p>
                           </div>
                       )}
                     </CardContent>

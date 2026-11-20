@@ -1,6 +1,7 @@
 import type { Goal, TargetDirection } from './types';
 import { captureTypeOf, goalDirection } from './goal-constants';
 import { goalMeasureInfo, goalResponses, sessionMeetsTarget } from './goal-measures';
+import { getGoalTypeDef } from './goal-types';
 import { AIM_RULE_SESSIONS, aimValueAt, type AimLine } from './aim-line';
 import { formatDate, formatDateOnly, formatGoalTarget } from './helpers';
 
@@ -12,32 +13,8 @@ const round = (n: number) => Math.round(n * 10) / 10;
 const LISTED_VALUES = 8;
 
 /** How one session's measure is worked out for a goal's type. */
-export function measureFormula(goal: Pick<Goal, 'type' | 'dataCaptureType' | 'targetDirection'>): string {
-  const type = captureTypeOf(goal);
-  if (type === 'FEEDING_SWALLOWING') return 'Trials accepted ÷ (accepted + refused) × 100.';
-  if (goalResponses(type) !== null) return 'Correct ÷ (correct + approximate + incorrect) × 100. Approximate responses count as not correct.';
-  switch (type) {
-    case 'FLUENCY_SYLLABLE_STUTTER': return '(Total syllables − stuttered syllables, blocks, repetitions, prolongations and interjections) ÷ total syllables × 100.';
-    case 'STORY_ELEMENTS': return 'Points for the story parts assessed (0, 1 or 2 each) ÷ 2 × the number of parts assessed × 100. Parts marked N/A (not assessed) are left out.';
-    case 'COMMUNICATION_FUNCTIONS': return 'The number of different functions used without a prompt in the session (spontaneous or emerging form).';
-    case 'QUALITATIVE_OBSERVATION':
-    case 'COGNITIVE': return 'The 1–5 rating given in the session.';
-    case 'GOAL_ATTAINMENT_SCALE': return 'The attainment level recorded in the session, -2 to +2; 0 is the expected outcome.';
-    case 'PROMPTING': return 'Independent ÷ all prompt-level tallies × 100.';
-    case 'TASK_ANALYSIS': return 'Steps done independently ÷ steps scored × 100.';
-    case 'COMMUNICATION_COUNT': return 'The number of times counted in the session.';
-    case 'COMMUNICATION_DURATION': return 'All the timed periods in the session added up, in minutes.';
-    case 'RESPONSE_TIME': return 'The average seconds from the cue to the response, over the trials with a response.';
-    case 'BEHAVIOR_FREQUENCY': return 'The number of times the behavior was counted in the session.';
-    case 'BEHAVIOR_DURATION': return 'All the episodes\' times in the session added up, in minutes.';
-    case 'BEHAVIOR_INTERVAL': return 'Intervals marked + (behavior seen) ÷ intervals scored × 100.';
-    case 'BEHAVIOR_LATENCY': return 'The average seconds from the cue to the response, over the trials with a response.';
-    case 'BEHAVIOR_ABC':
-      return goalDirection(goal) === 'decrease'
-        ? 'The number of incidents with problem behavior in the session.'
-        : 'Incidents where the replacement skill was used ÷ all incidents × 100.';
-    default: return 'The value recorded in the session.';
-  }
+export function measureFormula(goal: Pick<Goal, 'type' | 'dataCaptureType' | 'targetDirection' | 'customType'>): string {
+  return getGoalTypeDef(goal).formulaText(goal);
 }
 
 /** One session's responses worked through: "8 correct ÷ 10 responses (8 + 1 + 1) × 100 = 80%". */
@@ -84,11 +61,11 @@ export function goalStatExplanations(
   const values = recorded.map(r => r.value);
   const last = recorded[recorded.length - 1];
   const label = info.label.charAt(0).toLowerCase() + info.label.slice(1);
-  const lastResponses = last ? goalResponses(type, last.data) : null;
+  const lastResponses = last ? goalResponses(goal, last.data) : null;
   const working = lastResponses ? responsesWorking(lastResponses, type === 'FEEDING_SWALLOWING') : null;
   const average = averageWorking(values, info.unit);
   const met = target === undefined ? 0 : recorded.filter(r => sessionMeetsTarget(goal, r.data, target)).length;
-  const targetText = target === undefined ? '' : formatGoalTarget(type, target, goal.targetDirection, goal.sessionTargetUses);
+  const targetText = target === undefined ? '' : formatGoalTarget(goal, target, goal.targetDirection, goal.sessionTargetUses);
 
   let aimText = '';
   if (aim) {

@@ -168,12 +168,13 @@ export function mergeGoalData(parts: Record<string, any>[]): Record<string, any>
       }
       if (STARTING_VALUES.has(key) && part?.recorded !== true && result.recorded === true) continue;
       if (key === 'steps' && Array.isArray(current) && Array.isArray(value)) {
-        // Task analysis: each step's latest score (by position), keeping earlier scores for steps scored once.
-        // Data Entry saves every step, with an empty level for one not scored, and the parts are separate
-        // recordings: an empty level in a later part means that part didn't score the step, not that the
-        // earlier score was cleared, so it never overwrites a score.
+        // Task analysis stores { level } objects; custom checklist goals store booleans per step.
         const length = Math.max(current.length, value.length);
-        result.steps = Array.from({ length }, (_, i) => (value[i]?.level ? value[i] : current[i] ?? value[i]));
+        if (current.some(v => typeof v === 'boolean') || value.some(v => typeof v === 'boolean')) {
+          result.steps = Array.from({ length }, (_, i) => Boolean(current[i]) || Boolean(value[i]));
+        } else {
+          result.steps = Array.from({ length }, (_, i) => (value[i]?.level ? value[i] : current[i] ?? value[i]));
+        }
       } else if (key === 'trials' && Array.isArray(current) && Array.isArray(value)) {
         // Trial grids: every scored trial (unscored ones don't count toward anything). The same grid saved
         // in two parts counts once.

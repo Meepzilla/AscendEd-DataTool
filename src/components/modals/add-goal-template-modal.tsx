@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { GoalTextPreview, PlaceholderChips } from '@/components/goal-templates/PlaceholderChips';
+import GoalTypeSelect from '@/components/goal-templates/GoalTypeSelect';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useStudentData } from '@/hooks/use-student-data';
@@ -39,6 +40,7 @@ export default function AddGoalTemplateModal() {
       name: '',
       type: Object.keys(GOAL_TYPES)[0] as GoalType, 
       dataCaptureType: Object.keys(GOAL_TYPE_FIELDS)[0] as GoalType,
+      customType: undefined,
       smartGoalPrompt: '',
       generatedSmartGoal: '',
       gasLevelDescriptions: [],
@@ -58,6 +60,7 @@ export default function AddGoalTemplateModal() {
         name: '',
         type: defaultType,
         dataCaptureType: defaultType,
+        customType: undefined,
         smartGoalPrompt: addGoalTemplateInitialPrompt || '',
         generatedSmartGoal: '',
         gasLevelDescriptions: Array(5).fill(''),
@@ -78,6 +81,8 @@ export default function AddGoalTemplateModal() {
       closeAddGoalTemplateModal();
     }
   };
+
+  const isCustomType = form.watch('type') === 'CUSTOM';
 
   return (
     <GenericModal
@@ -113,55 +118,62 @@ export default function AddGoalTemplateModal() {
             )}
           />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className={isCustomType ? 'grid grid-cols-1 gap-4' : 'grid grid-cols-1 sm:grid-cols-2 gap-4'}>
             <FormField
               control={form.control}
               name="type"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Clinical Goal Category</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a goal category" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {sortedGoalTypes.map(([key, value]) => (
-                        <SelectItem key={key} value={value}>
-                          {goalTypeLabel(value)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <GoalTypeSelect
+                      type={field.value}
+                      customType={form.watch('customType')}
+                      onChange={(nextType, nextCustom) => {
+                        field.onChange(nextType);
+                        form.setValue('customType', nextCustom, { shouldDirty: true, shouldValidate: true });
+                        if (nextType === 'CUSTOM' && nextCustom) {
+                          form.setValue('dataCaptureType', 'CUSTOM', { shouldDirty: true });
+                          if (nextCustom.defaultTarget !== undefined) {
+                            form.setValue('sessionTargetValue', nextCustom.defaultTarget, { shouldDirty: true });
+                          }
+                          form.setValue('targetDirection', nextCustom.direction, { shouldDirty: true });
+                        } else if (form.getValues('dataCaptureType') === 'CUSTOM') {
+                          form.setValue('dataCaptureType', nextType, { shouldDirty: true });
+                        }
+                      }}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="dataCaptureType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Data Capture Method</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a data capture method" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {sortedDataCaptureTypes.map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {goalTypeLabel(type)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {!isCustomType && (
+              <FormField
+                control={form.control}
+                name="dataCaptureType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Data Capture Method</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a data capture method" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {sortedDataCaptureTypes.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {goalTypeLabel(type)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
           </div>
 
           <FormField
@@ -206,6 +218,7 @@ export default function AddGoalTemplateModal() {
                     smartGoal: field.value ?? '',
                     sessionTargetValue: form.watch('sessionTargetValue') === undefined || String(form.watch('sessionTargetValue')) === '' ? undefined : Number(form.watch('sessionTargetValue')),
                     type: form.watch('type'), dataCaptureType: form.watch('dataCaptureType'), targetDirection: form.watch('targetDirection'),
+                    customType: form.watch('customType'),
                     targetDate: undefined, masterySessions: undefined, blankFills: undefined,
                   }} />
                 <FormMessage />

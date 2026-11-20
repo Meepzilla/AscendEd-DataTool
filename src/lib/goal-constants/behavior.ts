@@ -33,7 +33,7 @@ export function toolTypeOf(type: string): GoalType {
 export const isCommunicationTimedType = (type: string) => type in COMMUNICATION_MEASURE_TOOLS && toolTypeOf(type) !== 'DISCRETE_TRIALS';
 
 /** Whether a goal of this type can aim to increase or decrease (so its editor offers the choice). */
-export const hasTargetDirection = (type: string) => type.startsWith('BEHAVIOR_') || isCommunicationTimedType(type);
+export const hasTargetDirection = (type: string) => type === 'CUSTOM' || type.startsWith('BEHAVIOR_') || isCommunicationTimedType(type);
 
 export const BEHAVIOR_GOAL_TYPES: GoalType[] = ['BEHAVIOR_FREQUENCY', 'BEHAVIOR_DURATION', 'BEHAVIOR_ABC', 'BEHAVIOR_INTERVAL', 'BEHAVIOR_LATENCY'];
 
@@ -171,8 +171,9 @@ export function captureTypeOf(goal: { type: string; dataCaptureType?: string }):
 }
 
 /** Behavior goals usually aim to reduce something; other goal types aim to increase. */
-export function goalDirection(goal: { type: string; dataCaptureType?: string; targetDirection?: TargetDirection }): TargetDirection {
+export function goalDirection(goal: { type: string; dataCaptureType?: string; targetDirection?: TargetDirection; customType?: { direction?: TargetDirection } }): TargetDirection {
   if (goal.targetDirection) return goal.targetDirection;
+  if (goal.type === 'CUSTOM' && goal.customType?.direction) return goal.customType.direction;
   const type = captureTypeOf(goal);
   // A quicker response is the aim; other communication measures (times used, minutes) aim up.
   if (type === 'RESPONSE_TIME') return 'decrease';
@@ -340,7 +341,7 @@ export function progressTowardTarget(value: number, target: number, direction: T
 /** Called when a session is saved: stops running timers and stores summary totals. */
 export function finalizeBehaviorData(rawType: string, data: Record<string, any>, now = Date.now()): Record<string, any> {
   const type = toolTypeOf(rawType);
-  if (type === 'BEHAVIOR_DURATION') {
+  if (type === 'BEHAVIOR_DURATION' || (type === 'CUSTOM' && (Array.isArray(data.episodeSeconds) || data.runningSince))) {
     const episodes: number[] = Array.isArray(data.episodeSeconds) ? [...data.episodeSeconds] : [];
     const starts = alignTimes(data.episodeStarts, episodes.length);
     const since = Number(data.runningSince);
