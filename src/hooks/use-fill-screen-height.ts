@@ -27,8 +27,11 @@ export function useFillScreenHeight(
     const update = () => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
-        // Rect units per CSS pixel: the app zooms <body> (the display size setting), so the two differ.
-        const ratio = list.offsetHeight > 0 ? list.getBoundingClientRect().height / list.offsetHeight : 1;
+        // Rect units per CSS pixel: the app zooms <body> (the display size setting), so the two differ. The
+        // factor is read from the --body-zoom variable, never measured off the list itself: a measured ratio
+        // wobbles as the list's height changes (offsetHeight is rounded to whole pixels, the rect is not), the
+        // computed height then alternated between two values, and the bottom of the page flickered.
+        const ratio = parseFloat(getComputedStyle(document.body).getPropertyValue('--body-zoom')) || 1;
         const mainRect = main.getBoundingClientRect();
         const listRect = list.getBoundingClientRect();
         const pageRect = page.getBoundingClientRect();
@@ -41,12 +44,15 @@ export function useFillScreenHeight(
           : 0;
         const available = (mainRect.height - menuBar - top - below) / ratio;
         const next = Math.max(min, Math.floor(available));
-        setHeight(prev => (prev === next ? prev : next));
+        // A pixel of measurement noise must never move the list: applying a new height resizes the page, which
+        // re-runs this measurement through the observer below.
+        setHeight(prev => (prev !== undefined && Math.abs(prev - next) <= 1 ? prev : next));
       });
     };
     update();
     // The screen (rotation, display size), the page above the list (filters wrapping, a storage warning) and the
-    // menu bar moving all change the space. The result doesn't depend on the list's own height, so this can't loop.
+    // menu bar moving all change the space. No input depends on the list's own height, and the setter ignores a
+    // pixel of noise, so applying the result can't retrigger a different one.
     const observer = new ResizeObserver(update);
     observer.observe(main);
     observer.observe(page);
