@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-19',
+    title: 'Build Your Own Goal Types',
+    description: 'You can now build your own goal types. Open Settings, Custom Goal Types, and choose New Goal Type, or start from any goal type dropdown while adding a goal. Pick how the goal is measured: correct and incorrect tallies, a counter, a timer, a rating scale, a checklist, or yes and no, then name it and set its target while a preview shows the entry form as it will look in Data Entry. A type you build works like a built-in one in Data Entry, charts and reports. Each goal keeps a snapshot of its type, so editing the type later never changes goals already assigned or sessions already recorded. Custom types are included in backups, and the Settings card can export them to a file and import them back on another device.',
+    type: 'feature',
+    icon: PlusCircle,
+  },
+  {
+    date: '2026-11-19',
     title: 'Minutes Column on Sessions',
     description: 'The Sessions tab has a new Minutes column, after End Time, showing how long each session was, worked out from its start and end times. A missed session, or one without both times, shows a dash.',
     type: 'feature',
