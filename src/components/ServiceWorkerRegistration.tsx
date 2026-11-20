@@ -3,15 +3,18 @@
 import { useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
+import { flushWrites, isPasscodeEnabled } from '@/lib/secure-store';
+import { activateWaitingUpdate, watchForWaitingUpdate } from '@/lib/service-worker-update';
 
 /**
  * Registers the service worker that stores the app for offline use. Only the static build
  * (`npm run build:static`) generates sw.js, and the Android app loads its files from the
  * device already, so it is skipped there.
  *
- * The service worker serves the stored version of the app, so a new deploy is only used once the
- * new version has been downloaded. To make that quick, the app checks for an update whenever it comes
- * back to the foreground, and offers to reload when a new version has taken over.
+ * The service worker serves the stored version of the app, so a new deploy waits in the
+ * background until the app is reopened, locked, or reloaded from the notice below (rather than
+ * taking over mid-session and causing a build-ID mismatch that forces a hard reload and re-lock
+ * on the next tab switch). The app checks for updates whenever it comes back to the foreground.
  */
 export default function ServiceWorkerRegistration() {
   const { toast } = useToast();
@@ -21,9 +24,40 @@ export default function ServiceWorkerRegistration() {
     if ((window as any).Capacitor?.isNativePlatform?.()) return;
     if (!('serviceWorker' in navigator)) return;
 
+    let cancelled = false;
+    let reloading = false;
     let registration: ServiceWorkerRegistration | undefined;
+    let stopWatching: (() => void) | undefined;
+
+    const applyUpdate = async (reg: ServiceWorkerRegistration) => {
+      if (reloading) return;
+      reloading = true;
+      try {
+        await flushWrites();
+      } catch {
+        // A failed write was already reported; reloading loses nothing more than the failed write did.
+      }
+      if (reg.waiting) {
+        await activateWaitingUpdate(navigator.serviceWorker, reg.waiting);
+      }
+      window.location.reload();
+    };
+
     navigator.serviceWorker.register('/sw.js')
-      .then(reg => { registration = reg; })
+      .then((reg) => {
+        if (cancelled) return;
+        registration = reg;
+        stopWatching = watchForWaitingUpdate(navigator.serviceWorker, reg, () => {
+          toast({
+            title: 'App updated',
+            description: isPasscodeEnabled()
+              ? "A new version of AscendEd is ready. Reload to start using it (you'll need to unlock again); unsaved Data Entry work is kept."
+              : 'A new version of AscendEd is ready. Reload to start using it; unsaved Data Entry work is kept.',
+            duration: 60_000,
+            action: <ToastAction altText="Reload the app" onClick={() => { void applyUpdate(reg); }}>Reload</ToastAction>,
+          });
+        });
+      })
       .catch((error) => {
         console.warn('Service worker registration failed:', error);
       });
@@ -35,22 +69,10 @@ export default function ServiceWorkerRegistration() {
     };
     document.addEventListener('visibilitychange', checkForUpdate);
 
-    // A new version took over (not the first install, when there was no previous one).
-    const hadController = !!navigator.serviceWorker.controller;
-    const onControllerChange = () => {
-      if (!hadController) return;
-      toast({
-        title: 'App updated',
-        description: 'A new version of AscendEd is ready. Reload to start using it; unsaved Data Entry work is kept.',
-        duration: 60_000,
-        action: <ToastAction altText="Reload the app" onClick={() => window.location.reload()}>Reload</ToastAction>,
-      });
-    };
-    navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
-
     return () => {
+      cancelled = true;
+      stopWatching?.();
       document.removeEventListener('visibilitychange', checkForUpdate);
-      navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
     };
   }, [toast]);
 
