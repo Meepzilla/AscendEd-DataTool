@@ -4,7 +4,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Target, Clock, RotateCcw, History, ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, LayoutGrid, Minimize2, UserX, UserPlus, ArrowRightLeft, Download, ListPlus, Workflow, Shuffle, CheckSquare, ListChecks, DatabaseZap, UserSearch, Upload, BrainCircuit, PanelLeft, ArrowLeft, MessagesSquare, BookOpen, Lock, ShieldCheck, PanelBottom, CalendarClock, Sun, Rocket } from 'lucide-react';
+import { Target, Clock, RotateCcw, History, ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, LayoutGrid, Minimize2, UserX, UserPlus, ArrowRightLeft, Download, ListPlus, Workflow, Shuffle, CheckSquare, ListChecks, DatabaseZap, UserSearch, Upload, BrainCircuit, PanelLeft, ArrowLeft, MessagesSquare, BookOpen, Lock, ShieldCheck, PanelBottom, CalendarClock, Sun, Rocket, RefreshCw } from 'lucide-react';
 import { APP_NAME } from '@/lib/appConstants';
 
 interface ChangelogEntry {
@@ -17,6 +17,13 @@ interface ChangelogEntry {
 }
 
 const allChangelogEntries: ChangelogEntry[] = [
+  {
+    date: '2026-11-20',
+    title: 'App Updates Arrive Again',
+    description: 'New versions of the app reach your devices again. Since the last update, a new version only started after you tapped Reload on the "App updated" notice, and that notice disappeared after a minute or as soon as any other message appeared, so devices could stay on an older version. A new version now starts by itself while the lock screen is showing (or, without a passcode, when you come back to the app), and never in the middle of a session. When it can\'t start yet, the notice stays until you tap Reload or close it, and it comes back each time you return to the app. Safari, the Home Screen app and other browsers each keep their own copy of the app, so each one updates on its own.',
+    type: 'fix',
+    icon: RefreshCw,
+  },
   {
     date: '2026-11-20',
     title: 'No More Double Unlock When Switching Tabs After an Update',

@@ -3,18 +3,26 @@
 import { useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
-import { flushWrites, isPasscodeEnabled } from '@/lib/secure-store';
-import { activateWaitingUpdate, watchForWaitingUpdate } from '@/lib/service-worker-update';
+import { flushWrites, isPasscodeEnabled, isUnlocked } from '@/lib/secure-store';
+import { activateWaitingUpdate, shouldApplyUpdateNow, watchForWaitingUpdate } from '@/lib/service-worker-update';
+
+// When the app last reloaded itself to apply an update, so a worker that won't activate can't cause a reload loop.
+const LAST_AUTO_UPDATE_KEY = 'ascended_last_auto_update';
+const AUTO_UPDATE_GAP_MS = 60_000;
 
 /**
  * Registers the service worker that stores the app for offline use. Only the static build
  * (`npm run build:static`) generates sw.js, and the Android app loads its files from the
  * device already, so it is skipped there.
  *
- * The service worker serves the stored version of the app, so a new deploy waits in the
- * background until the app is reopened, locked, or reloaded from the notice below (rather than
- * taking over mid-session and causing a build-ID mismatch that forces a hard reload and re-lock
- * on the next tab switch). The app checks for updates whenever it comes back to the foreground.
+ * This sits outside the passcode lock (see app/layout.tsx) so updates are checked for and applied
+ * while the lock screen is showing too.
+ *
+ * A new deploy downloads in the background and never takes over in the middle of a session (that
+ * would force a reload and re-lock on the next tab switch). It is put in use straight away when
+ * doing so costs nothing: while the lock screen is showing, or, without a passcode, when the app
+ * comes back to the foreground. Otherwise an "App updated" notice offers to reload; it stays until
+ * dismissed and comes back each time the app returns to the foreground.
  */
 export default function ServiceWorkerRegistration() {
   const { toast } = useToast();
@@ -43,20 +51,49 @@ export default function ServiceWorkerRegistration() {
       window.location.reload();
     };
 
+    const recentlyAutoUpdated = () => {
+      try {
+        const last = Number(sessionStorage.getItem(LAST_AUTO_UPDATE_KEY));
+        return Number.isFinite(last) && Date.now() - last < AUTO_UPDATE_GAP_MS;
+      } catch {
+        return false;
+      }
+    };
+
+    const showNotice = (reg: ServiceWorkerRegistration) => {
+      toast({
+        title: 'App updated',
+        description: isPasscodeEnabled()
+          ? "A new version of AscendEd is ready. Reload to start using it (you'll need to unlock again); unsaved Data Entry work is kept."
+          : 'A new version of AscendEd is ready. Reload to start using it; unsaved Data Entry work is kept.',
+        duration: Infinity,
+        action: <ToastAction altText="Reload the app" onClick={() => { void applyUpdate(reg); }}>Reload</ToastAction>,
+      });
+    };
+
+    // Applies a waiting update if that is free right now; otherwise shows the notice.
+    const handleWaiting = (reg: ServiceWorkerRegistration, returningToForeground: boolean) => {
+      if (!reg.waiting || reloading) return;
+      const applyNow = shouldApplyUpdateNow({
+        visible: document.visibilityState === 'visible',
+        passcodeOn: isPasscodeEnabled(),
+        unlocked: isUnlocked(),
+        returningToForeground,
+        recentlyAutoUpdated: recentlyAutoUpdated(),
+      });
+      if (applyNow) {
+        try { sessionStorage.setItem(LAST_AUTO_UPDATE_KEY, String(Date.now())); } catch { /* storage unavailable */ }
+        void applyUpdate(reg);
+      } else {
+        showNotice(reg);
+      }
+    };
+
     navigator.serviceWorker.register('/sw.js')
       .then((reg) => {
         if (cancelled) return;
         registration = reg;
-        stopWatching = watchForWaitingUpdate(navigator.serviceWorker, reg, () => {
-          toast({
-            title: 'App updated',
-            description: isPasscodeEnabled()
-              ? "A new version of AscendEd is ready. Reload to start using it (you'll need to unlock again); unsaved Data Entry work is kept."
-              : 'A new version of AscendEd is ready. Reload to start using it; unsaved Data Entry work is kept.',
-            duration: 60_000,
-            action: <ToastAction altText="Reload the app" onClick={() => { void applyUpdate(reg); }}>Reload</ToastAction>,
-          });
-        });
+        stopWatching = watchForWaitingUpdate(navigator.serviceWorker, reg, () => handleWaiting(reg, false));
       })
       .catch((error) => {
         console.warn('Service worker registration failed:', error);
@@ -64,15 +101,17 @@ export default function ServiceWorkerRegistration() {
     // Ask the browser not to clear stored data (students, sessions) when space runs low.
     navigator.storage?.persist?.().catch(() => {});
 
-    const checkForUpdate = () => {
-      if (document.visibilityState === 'visible') registration?.update().catch(() => {});
+    const onVisibilityChange = () => {
+      if (document.visibilityState !== 'visible' || !registration) return;
+      handleWaiting(registration, true);
+      registration.update().catch(() => {});
     };
-    document.addEventListener('visibilitychange', checkForUpdate);
+    document.addEventListener('visibilitychange', onVisibilityChange);
 
     return () => {
       cancelled = true;
       stopWatching?.();
-      document.removeEventListener('visibilitychange', checkForUpdate);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
     };
   }, [toast]);
 
