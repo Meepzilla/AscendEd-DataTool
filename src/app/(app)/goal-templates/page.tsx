@@ -11,6 +11,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { formatDate, formatGoalTarget, goalTypeLabel } from '@/lib/helpers';
+import { captureTypeOf } from '@/lib/goal-constants';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -251,7 +252,7 @@ export default function GoalTemplatesPage() {
                       </div>
                       <div className="mt-1 flex flex-wrap gap-1">
                         <Badge variant="secondary" className="w-fit">
-                          {goalTypeLabel(template.type)}
+                          {goalTypeLabel(captureTypeOf(template))}
                         </Badge>
                         {template.category && <Badge variant="outline" className="w-fit">{template.category}</Badge>}
                       </div>
@@ -270,7 +271,7 @@ export default function GoalTemplatesPage() {
                        {template.sessionTargetValue !== undefined && (
                           <div>
                               <p className="font-medium text-muted-foreground">Session Target:</p>
-                              <p className="text-foreground">{formatGoalTarget(template.type, template.sessionTargetValue, template.targetDirection, template.sessionTargetUses)}</p>
+                              <p className="text-foreground">{formatGoalTarget(captureTypeOf(template), template.sessionTargetValue, template.targetDirection, template.sessionTargetUses)}</p>
                           </div>
                       )}
                     </CardContent>

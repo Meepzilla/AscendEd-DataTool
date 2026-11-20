@@ -192,4 +192,59 @@ describe('merging fields the app stores in other forms', () => {
     // Without any split the merged session has none (all its minutes count as Related).
     expect(mergeSessions([session({ sessionId: 'a', time: '09:00', endTime: '09:30' }), session({ sessionId: 'b', time: '09:30', endTime: '10:00' })]).serviceMinutes).toBeUndefined();
   });
+
+  it('preserves STORY_ELEMENTS Not Assessed (-1) when merged with an untouched split part in either order', () => {
+    const worked = { character: 2, setting: 2, problem: 2, feeling: -1, action: -1, ending: -1, endFeeling: -1, wordBecause: 1, recorded: true };
+    const untouched = { character: 0, setting: 0, problem: 0, feeling: 0, action: 0, ending: 0, endFeeling: 0, wordBecause: 0, notes: '' };
+    expect(mergeGoalData([worked, untouched])).toMatchObject({ character: 2, setting: 2, problem: 2, feeling: -1, action: -1, ending: -1, endFeeling: -1, wordBecause: 1 });
+    expect(mergeGoalData([untouched, worked])).toMatchObject({ character: 2, setting: 2, problem: 2, feeling: -1, action: -1, ending: -1, endFeeling: -1, wordBecause: 1 });
+    // A real 0 scored in a recorded second part still beats -1 (Not Assessed).
+    const scoredZero = { character: 2, setting: 2, problem: 2, feeling: 0, action: -1, ending: -1, endFeeling: -1, recorded: true };
+    expect(mergeGoalData([worked, scoredZero]).feeling).toBe(0);
+  });
+
+  it('keeps equal duration episodes and latencies at distinct timestamps and recalculates duration/ABC summaries', () => {
+    const dur = mergeGoalData([
+      { episodeSeconds: [60], episodeStarts: ['2026-10-05T09:05:00.000Z'], totalSeconds: 60, episodeCount: 1 },
+      { episodeSeconds: [60], episodeStarts: ['2026-10-05T09:15:00.000Z'], totalSeconds: 60, episodeCount: 1 },
+    ]);
+    expect(dur.episodeSeconds).toEqual([60, 60]);
+    expect(dur.episodeStarts).toEqual(['2026-10-05T09:05:00.000Z', '2026-10-05T09:15:00.000Z']);
+    expect(dur.totalSeconds).toBe(120);
+    expect(dur.episodeCount).toBe(2);
+
+    const lat = mergeGoalData([
+      { latencies: [4], trialTimes: ['2026-10-05T09:05:00.000Z'], averageSeconds: 4, trialCount: 1 },
+      { latencies: [4], trialTimes: ['2026-10-05T09:15:00.000Z'], averageSeconds: 4, trialCount: 1 },
+    ]);
+    expect(lat.latencies).toEqual([4, 4]);
+    expect(lat.trialTimes).toEqual(['2026-10-05T09:05:00.000Z', '2026-10-05T09:15:00.000Z']);
+    expect(lat.trialCount).toBe(2);
+
+    const incident = { time: '09:05', antecedent: 'Transition', behavior: 'Elopement', consequence: 'Break given' };
+    const abc = mergeGoalData([
+      { incidents: [incident], incidentCount: 1 },
+      { incidents: [incident], incidentCount: 1 },
+    ]);
+    expect(abc.incidents).toHaveLength(1);
+    expect(abc.incidentCount).toBe(1);
+  });
+
+  it('joins details and observationNotes and unions originalGoalHeaders across parts', () => {
+    const text = mergeGoalData([
+      { details: 'WH-questions', observationNotes: 'blocks on /s/' },
+      { details: '2-step directions', observationNotes: 'repetitions in sentences' },
+    ]);
+    expect(text.details).toBe('WH-questions; 2-step directions');
+    expect(text.observationNotes).toBe('blocks on /s/; repetitions in sentences');
+
+    const g1 = { id: 'g1', name: 'Earlier only', type: 'ARTICULATION', smartGoal: '' } as any;
+    const g2Old = { id: 'g2', name: 'Old Name', type: 'ARTICULATION', smartGoal: '' } as any;
+    const g2New = { id: 'g2', name: 'New Name', type: 'ARTICULATION', smartGoal: '' } as any;
+    const merged = mergeSessions([
+      session({ sessionId: 'a', time: '09:00', endTime: '09:15', originalGoalHeaders: [g1, g2Old] }),
+      session({ sessionId: 'b', time: '09:15', endTime: '09:30', originalGoalHeaders: [g2New] }),
+    ]);
+    expect(merged.originalGoalHeaders.map(h => [h.id, h.name])).toEqual([['g2', 'New Name'], ['g1', 'Earlier only']]);
+  });
 });

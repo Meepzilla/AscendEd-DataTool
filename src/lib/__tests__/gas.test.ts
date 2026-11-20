@@ -278,4 +278,17 @@ describe('GAS review fixes', () => {
     expect(last.levels).toEqual({ g1: 0, g2: -2 });
     expect(last.tScore).toBe(gasTScore([0, -2]));
   });
+
+  it('does not emit phantom T-score points on sessions where no GAS goal was recorded', () => {
+    const g1 = gasGoal({ id: 'g1' });
+    const articOnly = sessionBuilder({
+      date: '2026-09-05',
+      goals: [{ goalId: 'artic-1', goalName: '/s/', goalType: 'ARTICULATION', data: { correct: 8, incorrect: 2 } }],
+    });
+    const points = gasTScoresOverTime(
+      [gasSession('2026-09-01', { g1: -1 }), articOnly, gasSession('2026-09-08', { g1: 1 })],
+      [g1],
+    );
+    expect(points.map(p => p.date)).toEqual(['2026-09-01', '2026-09-08']);
+  });
 });

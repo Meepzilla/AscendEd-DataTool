@@ -23,7 +23,7 @@ import { useAbcLists } from '@/hooks/use-abc-lists';
 // `interact` runs a change unless the goal is archived or the student access lock is on.
 interface BehaviorInputProps {
   data: Record<string, any>;
-  update: (fields: Record<string, any>) => void;
+  update: (fields: Record<string, any> | ((current: Record<string, any>) => Record<string, any>)) => void;
   interact: (e: React.SyntheticEvent<HTMLButtonElement>, change: () => void) => void;
   disabled?: boolean;
   isLocked?: boolean;
@@ -145,8 +145,17 @@ export const FrequencyInput: React.FC<BehaviorInputProps> = (props) => {
           title={communication ? 'Times the skill was used' : 'Behavior occurrences'}
           className="h-12 min-w-[8rem] text-base"
           disabled={disabled}
-          onIncrement={(e) => interact(e, () => update({ count: count + 1, occurrenceTimes: [...times, new Date().toISOString()] }))}
-          onDecrement={(e) => interact(e, () => update({ count: Math.max(0, count - 1), occurrenceTimes: times.slice(0, -1) }))}
+          onIncrement={(e) => interact(e, () => update(current => {
+            const cur = summarizeFrequency(current).count;
+            const curTimes = alignTimes(current.occurrenceTimes, cur);
+            return { count: cur + 1, occurrenceTimes: [...curTimes, new Date().toISOString()] };
+          }))}
+          onDecrement={(e) => interact(e, () => update(current => {
+            const cur = summarizeFrequency(current).count;
+            if (cur <= 0) return current;
+            const curTimes = alignTimes(current.occurrenceTimes, cur);
+            return { count: cur - 1, occurrenceTimes: curTimes.slice(0, -1) };
+          }))}
         />
         <p className="text-[11px] text-muted-foreground">Tap each time {communication ? 'the student does it' : 'the behavior occurs'}; the time is recorded for time-of-day reports. Press and hold (or right-click) to remove the last one.</p>
         {knownTimes.length > 0 && (
@@ -176,16 +185,26 @@ export const DurationInput: React.FC<BehaviorInputProps> = (props) => {
   const episodes: number[] = summary.episodes;
   const starts = alignTimes(data.episodeStarts, episodes.length);
   const start = () => update({ runningSince: Date.now() });
-  const stop = () => update({
-    episodeSeconds: [...episodes, summary.runningSeconds],
-    episodeStarts: [...starts, new Date(Number(data.runningSince)).toISOString()],
-    runningSince: null,
+  const stop = () => update(current => {
+    const curSummary = summarizeDuration(current);
+    if (!curSummary.running) return current;
+    const curStarts = alignTimes(current.episodeStarts, curSummary.episodes.length);
+    return {
+      episodeSeconds: [...curSummary.episodes, curSummary.runningSeconds],
+      episodeStarts: [...curStarts, new Date(Number(current.runningSince)).toISOString()],
+      runningSince: null,
+    };
   });
   const addManual = () => {
     const minutes = Number(manualMinutes);
     if (minutes > 0) {
+      const seconds = Math.round(minutes * 60);
       // Added by hand afterwards, so when it happened isn't known.
-      update({ episodeSeconds: [...episodes, Math.round(minutes * 60)], episodeStarts: [...starts, null] });
+      update(current => {
+        const curEpisodes = summarizeDuration(current).episodes;
+        const curStarts = alignTimes(current.episodeStarts, curEpisodes.length);
+        return { episodeSeconds: [...curEpisodes, seconds], episodeStarts: [...curStarts, null] };
+      });
       setManualMinutes('');
     }
   };
@@ -209,7 +228,12 @@ export const DurationInput: React.FC<BehaviorInputProps> = (props) => {
             className="h-9 w-9 min-h-11 min-w-11"
             title={communication ? 'Remove the last time' : 'Remove the last episode'}
             aria-label={communication ? 'Remove the last time' : 'Remove the last episode'}
-            onClick={(e) => interact(e, () => update({ episodeSeconds: episodes.slice(0, -1), episodeStarts: starts.slice(0, -1) }))}
+            onClick={(e) => interact(e, () => update(current => {
+              const curEpisodes = summarizeDuration(current).episodes;
+              if (curEpisodes.length === 0) return current;
+              const curStarts = alignTimes(current.episodeStarts, curEpisodes.length);
+              return { episodeSeconds: curEpisodes.slice(0, -1), episodeStarts: curStarts.slice(0, -1) };
+            }))}
             disabled={disabled || episodes.length === 0}
           >
             <Undo2 className="h-4 w-4" />
@@ -312,12 +336,18 @@ export const AbcInput: React.FC<BehaviorInputProps> = (props) => {
       fn: fns[0] ?? null, fns,
       ...(note.trim() ? { note: note.trim() } : {}),
     };
-    update({ incidents: [...incidents, incident], incidentCount: incidents.length + 1 });
+    update(current => {
+      const curIncidents = summarizeAbc(current).incidents;
+      return { incidents: [...curIncidents, incident], incidentCount: curIncidents.length + 1 };
+    });
     setAntecedents([]); setBehaviors([]); setConsequences([]); setNote('');
   };
   const removeIncident = (index: number) => {
-    const next = incidents.filter((_, i) => i !== index);
-    update({ incidents: next, incidentCount: next.length });
+    update(current => {
+      const curIncidents = summarizeAbc(current).incidents;
+      const next = curIncidents.filter((_, i) => i !== index);
+      return { incidents: next, incidentCount: next.length };
+    });
   };
 
   return (
@@ -460,7 +490,10 @@ export const IntervalInput: React.FC<BehaviorInputProps> = (props) => {
     const next = { ...setupFields, ...fields };
     if (goalId) writeStored(INTERVAL_SETUPS_KEY, { ...readStored(INTERVAL_SETUPS_KEY, {}), [goalId]: next });
     setRemembered(next);
-    update({ ...next, intervals: summary.intervals.slice(0, next.intervalCount) });
+    update(current => {
+      const curIntervals = summarizeIntervals(current, Date.now(), next).intervals;
+      return { ...next, intervals: curIntervals.slice(0, next.intervalCount) };
+    });
   };
   const applyTypedCount = () => {
     if (typedCount === null) return;
@@ -470,12 +503,15 @@ export const IntervalInput: React.FC<BehaviorInputProps> = (props) => {
     if (typedCount.trim() !== '' && count >= 1 && count <= MAX_INTERVALS && count !== intervalCount) changeSetup({ intervalCount: count });
   };
   // Every change also stores the setup in use, so the saved session records it.
-  const markInterval = (index: number, value: boolean | null) => {
-    const intervals = Array.from({ length: Math.max(summary.intervals.length, index + 1) }, (_, i) => summary.intervals[i] ?? null);
-    intervals[index] = value;
-    update({ ...setupFields, intervals });
-  };
   const cycle = (value: boolean | null) => (value === null ? true : value === true ? false : null);
+  const cycleInterval = (index: number) => {
+    update(current => {
+      const curIntervals = summarizeIntervals(current, Date.now(), remembered).intervals;
+      const intervals = Array.from({ length: Math.max(curIntervals.length, index + 1) }, (_, i) => curIntervals[i] ?? null);
+      intervals[index] = cycle(intervals[index]);
+      return { ...setupFields, intervals };
+    });
+  };
 
   const setupLocked = disabled || isLocked || summary.running;
   const methodInfo = INTERVAL_METHODS.find(m => m.value === method)!;
@@ -565,7 +601,7 @@ export const IntervalInput: React.FC<BehaviorInputProps> = (props) => {
               )}
               title={`Interval ${i + 1}: tap to mark + (behavior), again for − (not seen), again to clear`}
               aria-label={`Interval ${i + 1}: ${value === true ? 'behavior seen' : value === false ? 'not seen' : 'not scored'}`}
-              onClick={(e) => interact(e, () => markInterval(i, cycle(value)))}
+              onClick={(e) => interact(e, () => cycleInterval(i))}
               disabled={disabled}
             >
               <span className="text-[10px] leading-none opacity-70">{i + 1}</span>
@@ -593,16 +629,30 @@ export const LatencyInput: React.FC<BehaviorInputProps> = (props) => {
 
   const trialTimes = alignTimes(data.trialTimes, summary.latencies.length);
   // A timed trial is dated by its cue; one added by hand has no known time.
-  const record = (seconds: number | null, cueAt: number | null = data.cueGivenAt ? Number(data.cueGivenAt) : null) =>
-    update({
-      latencies: [...summary.latencies, seconds === null ? null : Math.round(seconds * 10) / 10],
-      trialTimes: [...trialTimes, cueAt ? new Date(cueAt).toISOString() : null],
-      cueGivenAt: null,
+  const recordTimed = (responded: boolean) =>
+    update(current => {
+      const curSummary = summarizeLatency(current);
+      if (!curSummary.timing) return current;
+      const curTimes = alignTimes(current.trialTimes, curSummary.latencies.length);
+      const cueAt = current.cueGivenAt ? Number(current.cueGivenAt) : null;
+      return {
+        latencies: [...curSummary.latencies, responded ? Math.round(curSummary.timingSeconds * 10) / 10 : null],
+        trialTimes: [...curTimes, cueAt ? new Date(cueAt).toISOString() : null],
+        cueGivenAt: null,
+      };
     });
   const addManual = () => {
     const seconds = Number(manualSeconds);
     if (seconds >= 0 && manualSeconds !== '') {
-      record(seconds, null);
+      const rounded = Math.round(seconds * 10) / 10;
+      update(current => {
+        const curSummary = summarizeLatency(current);
+        const curTimes = alignTimes(current.trialTimes, curSummary.latencies.length);
+        return {
+          latencies: [...curSummary.latencies, rounded],
+          trialTimes: [...curTimes, null],
+        };
+      });
       setManualSeconds('');
     }
   };
@@ -615,12 +665,12 @@ export const LatencyInput: React.FC<BehaviorInputProps> = (props) => {
             <Button
               type="button"
               className="h-12 min-w-[9rem] text-base touch-manipulation bg-green-600 text-white hover:bg-green-700"
-              onClick={(e) => interact(e, () => record(summary.timingSeconds))}
+              onClick={(e) => interact(e, () => recordTimed(true))}
               disabled={disabled}
             >
               <Check className="mr-2 h-4 w-4" /> Responded {formatLatency(summary.timingSeconds)}
             </Button>
-            <Button type="button" variant="outline" className="h-12 touch-manipulation" onClick={(e) => interact(e, () => record(null))} disabled={disabled}>
+            <Button type="button" variant="outline" className="h-12 touch-manipulation" onClick={(e) => interact(e, () => recordTimed(false))} disabled={disabled}>
               <Ban className="mr-2 h-4 w-4" /> No Response
             </Button>
             <Button type="button" variant="ghost" size="sm" className="h-8 min-h-11" title="Cancel this trial without recording it"
@@ -645,7 +695,12 @@ export const LatencyInput: React.FC<BehaviorInputProps> = (props) => {
               className="h-9 w-9 min-h-11 min-w-11"
               title="Remove the last trial"
               aria-label="Remove the last trial"
-              onClick={(e) => interact(e, () => update({ latencies: summary.latencies.slice(0, -1), trialTimes: trialTimes.slice(0, -1) }))}
+              onClick={(e) => interact(e, () => update(current => {
+                const curSummary = summarizeLatency(current);
+                if (curSummary.latencies.length === 0) return current;
+                const curTimes = alignTimes(current.trialTimes, curSummary.latencies.length);
+                return { latencies: curSummary.latencies.slice(0, -1), trialTimes: curTimes.slice(0, -1) };
+              }))}
               disabled={disabled || summary.trialCount === 0}
             >
               <Undo2 className="h-4 w-4" />

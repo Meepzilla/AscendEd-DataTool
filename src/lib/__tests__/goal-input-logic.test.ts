@@ -84,4 +84,10 @@ describe('goalAccuracyText matches Reports', () => {
   it('counts feeding trials accepted out of accepted and refused', () => {
     expect(goalAccuracyText('FEEDING_SWALLOWING', { trialsAccepted: 1, trialsRefused: 3 })).toBe('25.0% (1/4)');
   });
+  it('treats empty string and boolean gasLevel as unrecorded rather than level 0', () => {
+    expect(goalAccuracyText('GOAL_ATTAINMENT_SCALE', { gasLevel: '' })).toBe('N/A (no level recorded yet)');
+    expect(goalAccuracyText('GOAL_ATTAINMENT_SCALE', { gasLevel: false })).toBe('N/A (no level recorded yet)');
+    expect(goalAccuracyText('GOAL_ATTAINMENT_SCALE', { gasLevel: true })).toBe('N/A (no level recorded yet)');
+    expect(goalAccuracyText('GOAL_ATTAINMENT_SCALE', { gasLevel: 0 })).toBe('0 (expected outcome)');
+  });
 });

@@ -50,20 +50,28 @@ interface Recorded {
  * a value of NaN, for the charts that count trials rather than chart the measure.
  */
 export function recordedSessions(goal: Goal, sessions: SessionData[], unanswered = false): Recorded[] {
-  const seen: Record<string, number> = {};
-  const recorded: Recorded[] = [];
+  const matched: { session: SessionData; data: Record<string, any>; value: number; date: Date }[] = [];
   for (const session of sessions) {
-    const stored = session.goals.find(g => g.goalId === goal.id)?.data;
+    const stored = (session.goals ?? []).find(g => g.goalId === goal.id)?.data;
     if (!stored) continue;
     const data = withoutRunningTimers(stored);
     let value = goalMeasure(goal, data);
     if (value === null && unanswered && toolTypeOf(captureTypeOf(goal)) === 'BEHAVIOR_LATENCY' && summarizeLatency(data).trialCount > 0) value = NaN;
     if (value === null) continue;
-    const day = parseDateOnly(session.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    seen[day] = (seen[day] || 0) + 1;
-    recorded.push({ session, data, value: round(value), label: seen[day] > 1 ? `${day} (${seen[day]})` : day });
+    matched.push({ session, data, value: round(value), date: parseDateOnly(session.date) });
   }
-  return recorded;
+  const years = new Set(matched.map(m => m.date.getFullYear()).filter(Number.isFinite));
+  const showYear = years.size > 1;
+  const seen: Record<string, number> = {};
+  return matched.map(({ session, data, value, date }) => {
+    const valid = !Number.isNaN(date.getTime());
+    const dayKey = valid ? `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}` : String(session.date);
+    const day = valid
+      ? date.toLocaleDateString('en-US', showYear ? { month: 'short', day: 'numeric', year: '2-digit' } : { month: 'short', day: 'numeric' })
+      : String(session.date);
+    seen[dayKey] = (seen[dayKey] || 0) + 1;
+    return { session, data, value, label: seen[dayKey] > 1 ? `${day} (${seen[dayKey]})` : day };
+  });
 }
 
 /** Horizontal bars, one row per item, optionally stacked from several series. */
@@ -274,14 +282,17 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
   const mastery = masterySessions(goal);
   const hasResponses = goalResponses(type) !== null && points.length > 0;
   const hasCommUsesChart = isCommFunctions && points.length > 0;
+  const isLatency = toolTypeOf(type) === 'BEHAVIOR_LATENCY';
+  const allSessions = isLatency ? behaviorRecorded : recorded;
+  const latestUnanswered = isLatency && allSessions.length > 0 && Number.isNaN(allSessions[allSessions.length - 1].value);
   const values = recorded.map(r => r.value);
   const average = values.length ? round(values.reduce((a, b) => a + b, 0) / values.length) : null;
-  const metCount = target === undefined ? null : recorded.filter(r => sessionMeetsTarget(goal, r.data, target)).length;
+  const metCount = target === undefined ? null : allSessions.filter(r => !Number.isNaN(r.value) && sessionMeetsTarget(goal, r.data, target)).length;
   // GAS levels run -2 to +2, so the card's Y scale must span the negative domain; every other
   // type keeps its [0, yMax] scale. The bottom comes from GoalMeasureInfo.min (Track A).
   const isGas = type === 'GOAL_ATTAINMENT_SCALE';
-  const yMax = info.max ?? Math.ceil(Math.max(...values, target ?? 0, 1) * 1.1);
-  const notes = recorded.map(r => ({ date: r.session.date, text: goalNotes(r.data) })).filter(n => n.text).slice(-3).reverse();
+  const yMax = info.max ?? Math.ceil(Math.max(...values, target ?? 0, aim?.start.value ?? 0, aim?.end.value ?? 0, 1) * 1.1);
+  const notes = allSessions.map(r => ({ date: r.session.date, text: goalNotes(r.data) })).filter(n => n.text).slice(-3).reverse();
   const storyWords = type === 'STORY_ELEMENTS' ? recorded.reduce((total, r) => total + scoreStory(r.data).linkingWords, 0) : null;
   const lineChartConfig: ChartConfig = isCommFunctions
     ? {
@@ -296,16 +307,20 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
       };
 
   // How each figure is worked out, shown when it is tapped or hovered.
-  const explain = goalStatExplanations(goal, recorded.map(r => ({ date: r.session.date, value: r.value, data: r.data })), aim, mastery);
+  const explain = goalStatExplanations(goal, recorded.map(r => ({ date: r.session.date, value: r.value, data: r.data })), aim, mastery, allSessions.length);
+  const latestValue = latestUnanswered ? 'No response' : values.length ? `${values[values.length - 1]}${info.unit}` : '—';
   const stats = [
-    { label: 'Sessions with data', value: String(points.length), explanation: explain.sessions },
-    { label: 'Latest', value: values.length ? `${values[values.length - 1]}${info.unit}` : '—', explanation: values.length ? explain.latest : undefined },
+    { label: 'Sessions with data', value: String(allSessions.length), explanation: explain.sessions },
+    { label: 'Latest', value: latestValue, explanation: allSessions.length ? explain.latest : undefined },
     { label: 'Average', value: average === null ? '—' : `${average}${info.unit}`, explanation: average === null ? undefined : explain.average },
-    ...(metCount === null ? [] : [{ label: 'Met target', value: points.length ? `${metCount} of ${points.length}` : '—', explanation: points.length ? explain.metTarget : undefined }]),
+    ...(metCount === null ? [] : [{ label: 'Met target', value: allSessions.length ? `${metCount} of ${allSessions.length}` : '—', explanation: allSessions.length ? explain.metTarget : undefined }]),
     ...(onTrack ? [{ label: 'Aim line', value: AIM_STATUS_LABELS[onTrack], explanation: explain.aimLine }] : []),
   ];
-  // Mastered: the target met in the last `mastery` sessions in a row.
-  const mastered = target !== undefined && recorded.length >= mastery && recorded.slice(-mastery).every(r => sessionMeetsTarget(goal, r.data, target));
+  // Mastered: the target met in the last `mastery` sessions in a row (including unanswered latency sessions, which break the streak).
+  const mastered =
+    target !== undefined &&
+    allSessions.length >= mastery &&
+    allSessions.slice(-mastery).every(r => !Number.isNaN(r.value) && sessionMeetsTarget(goal, r.data, target));
 
   return (
     <Card id={goalCardId(goal.id)} className="lg:col-span-2 scroll-mt-20">
@@ -326,7 +341,11 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
           ))}
         </div>
         {points.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No data recorded for this goal in the selected date range.</p>
+          <p className="text-sm text-muted-foreground">
+            {allSessions.length > 0
+              ? 'Trials were recorded in the selected date range, but there were no responses with a time to chart.'
+              : 'No data recorded for this goal in the selected date range.'}
+          </p>
         ) : (
           <div className={hasResponses || hasCommUsesChart ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : ''}>
             <div>

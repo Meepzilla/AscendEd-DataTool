@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { fillNameBlanks } from '@/lib/goal-blanks';
-import type { Goal, SessionGoalData, GoalType, StudentIep, TrialStatus } from '@/lib/types';
+import type { Goal, GoalDataUpdater, SessionGoalData, GoalType, StudentIep, TrialStatus } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -33,7 +33,7 @@ import { CommunicationFunctionsInputs, StoryElementsInputs } from './goal-inputs
 interface GoalDataInputComponentProps {
   goal: Goal;
   data: SessionGoalData['data'];
-  onChange: (updatedFieldName: string, newData: SessionGoalData['data']) => void;
+  onChange: (updatedFieldName: string, newData: GoalDataUpdater) => void;
   isFocused?: boolean;
   onSetFocus?: () => void;
   id: string;
@@ -81,39 +81,56 @@ export default function GoalDataInputComponent({
   const captureType = goal.dataCaptureType || goal.type;
 
   const handleChange = (field: string, value: any) => {
-    // An object is the goal's whole data (several fields at once); otherwise one field and those that follow it.
-    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+    // A function updates from the latest stored goal data (safe across rapid taps);
+    // an object is the goal's whole data; otherwise one field and those that follow it.
+    if (typeof value === 'function') {
+      onChange(field, value);
+    } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
       onChange(field, value);
     } else {
-      onChange(field, applyFieldChange(captureType, data, field, value));
+      onChange(field, current => applyFieldChange(captureType, current, field, value));
     }
+  };
+
+  const adjustCount = (field: string, delta: number) => {
+    onChange(field, current => applyFieldChange(captureType, current, field, Math.max(0, (Number(current[field]) || 0) + delta)));
   };
 
   const calculateAccuracy = () => goalAccuracyText(captureType, data);
 
   const handleTrialClick = (index: number, e: React.MouseEvent<HTMLButtonElement>) => {
-    handleInteraction(e, () => handleChange('trials', cycleTrial(data, index)));
+    handleInteraction(e, () => onChange('trials', current => applyFieldChange(captureType, current, 'trials', cycleTrial(current, index))));
   };
   const handleFillNextTrial = (status: TrialStatus, e: React.MouseEvent<HTMLButtonElement>) => {
     handleInteraction(e, () => {
-      const trials = scoreNextTrial(data, status);
-      if (trials) handleChange('trials', trials);
-      else toast({ title: "All Trials Filled", description: "All available trials have been recorded.", variant: "default" });
+      if (!scoreNextTrial(data, status)) {
+        toast({ title: "All Trials Filled", description: "All available trials have been recorded.", variant: "default" });
+        return;
+      }
+      onChange('trials', current => {
+        const trials = scoreNextTrial(current, status);
+        return trials ? applyFieldChange(captureType, current, 'trials', trials) : current;
+      });
     });
   };
   const handleClearTrials = (e: React.MouseEvent<HTMLButtonElement>) => {
-    handleInteraction(e, () => handleChange('trials', clearTrials(data)));
+    handleInteraction(e, () => onChange('trials', current => applyFieldChange(captureType, current, 'trials', clearTrials(current))));
   };
   const handleUndoLastTrial = (e: React.MouseEvent<HTMLButtonElement>) => {
     handleInteraction(e, () => {
-      const trials = undoLastTrial(data);
-      if (trials) handleChange('trials', trials);
-      else toast({ title: "Nothing to Undo", description: "No trials have been marked yet.", variant: "default" });
+      if (!undoLastTrial(data)) {
+        toast({ title: "Nothing to Undo", description: "No trials have been marked yet.", variant: "default" });
+        return;
+      }
+      onChange('trials', current => {
+        const trials = undoLastTrial(current);
+        return trials ? applyFieldChange(captureType, current, 'trials', trials) : current;
+      });
     });
   };
 
   const ctx: GoalInputContext = {
-    goal, data, captureType, isArchived, isLocked, isFocused, handleChange, handleInteraction, calculateAccuracy,
+    goal, data, captureType, isArchived, isLocked, isFocused, handleChange, adjustCount, handleInteraction, calculateAccuracy,
     handleTrialClick, handleFillNextTrial, handleClearTrials, handleUndoLastTrial,
   };
 
@@ -152,7 +169,7 @@ export default function GoalDataInputComponent({
           <TaskAnalysisInput
             steps={taskSteps(goal)}
             data={data}
-            update={next => handleChange('steps', next)}
+            update={next => onChange('steps', next)}
             interact={handleInteraction}
             disabled={isArchived}
             isLocked={isLocked}
@@ -170,8 +187,16 @@ export default function GoalDataInputComponent({
         const tool = toolTypeOf(captureType);
         const behaviorProps = {
           data,
-          // Several fields at once: handleChange treats an object as the goal's whole data.
-          update: (fields: Record<string, any>) => handleChange(Object.keys(fields)[0], { ...data, ...fields }),
+          update: (fields: Record<string, any> | ((current: Record<string, any>) => Record<string, any>)) => {
+            if (typeof fields === 'function') {
+              onChange('behavior', current => {
+                const patch = fields(current);
+                return patch === current ? current : { ...current, ...patch };
+              });
+            } else {
+              onChange(Object.keys(fields)[0] ?? 'behavior', current => ({ ...current, ...fields }));
+            }
+          },
           interact: handleInteraction,
           disabled: isArchived,
           isLocked,

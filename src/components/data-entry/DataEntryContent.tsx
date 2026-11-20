@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
 import { Info, PlusCircle, TriangleAlert } from 'lucide-react';
 import { getStorageFailure, subscribeStorageFailures } from '@/lib/storage-failure';
-import type { Student, StudentSessionState } from '@/lib/types';
+import type { GoalDataUpdater, Student, StudentSessionState } from '@/lib/types';
 import { MISSED_REASON_SHORT, type MissedReason } from '@/lib/attendance';
 import { taskSteps } from '@/lib/task-analysis';
 import type { StudentGroup } from '@/lib/student-groups';
@@ -418,15 +418,18 @@ export default function DataEntryContent() {
     }));
   };
   
-  const handleGoalDataChange = useCallback((studentId: string, goalId: string, updatedFieldName: string, newData: any) => {
+  const handleGoalDataChange = useCallback((studentId: string, goalId: string, updatedFieldName: string, newData: GoalDataUpdater) => {
     setStudentSessionStates(prevStates => {
         const studentState = prevStates[studentId];
         if (!studentState) return prevStates;
         const goal = studentState.originalGoalHeaders.find((g: any) => g.id === goalId);
         if (!goal) return prevStates;
+        const currentData = studentState.goalData[goalId] || freshGoalData(goal);
+        const resolvedData = typeof newData === 'function' ? newData(currentData) : newData;
+        if (resolvedData === currentData) return prevStates;
         // Marks the goal as worked on this session, so reports count it even when its values equal the
         // starting ones (e.g. a rating left at 3).
-        const processedData = { ...newData, recorded: true };
+        const processedData = { ...resolvedData, recorded: true };
         return { ...prevStates, [studentId]: { ...studentState, goalData: { ...studentState.goalData, [goalId]: processedData } } };
     });
   }, []);

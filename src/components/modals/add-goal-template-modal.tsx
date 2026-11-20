@@ -16,7 +16,9 @@ import { useStudentData } from '@/hooks/use-student-data';
 import { GoalTemplateSchema, GoalType } from '@/lib/types';
 import { GOAL_TYPES, GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 import TargetDirectionField from './TargetDirectionField';
+import GasLevelDescriptionsField from './GasLevelDescriptionsField';
 import { goalTypeLabel } from '@/lib/helpers';
+import { goalMeasureInfo } from '@/lib/goal-measures';
 
 type AddGoalTemplateFormData = z.infer<typeof GoalTemplateSchema>;
 
@@ -39,6 +41,7 @@ export default function AddGoalTemplateModal() {
       dataCaptureType: Object.keys(GOAL_TYPE_FIELDS)[0] as GoalType,
       smartGoalPrompt: '',
       generatedSmartGoal: '',
+      gasLevelDescriptions: [],
       sessionTargetValue: undefined,
       sessionTargetUses: undefined,
     },
@@ -57,6 +60,7 @@ export default function AddGoalTemplateModal() {
         dataCaptureType: defaultType,
         smartGoalPrompt: addGoalTemplateInitialPrompt || '',
         generatedSmartGoal: '',
+        gasLevelDescriptions: Array(5).fill(''),
         sessionTargetValue: undefined,
         sessionTargetUses: undefined,
       });
@@ -66,7 +70,9 @@ export default function AddGoalTemplateModal() {
 
   const onSubmit = async (data: AddGoalTemplateFormData) => {
     setIsSubmitting(true);
-    const newTemplate = await addGoalTemplate({ ...data, generatedSmartGoal: data.generatedSmartGoal ?? '' });
+    const descriptions = Array.from({ length: 5 }, (_, i) => (data.gasLevelDescriptions?.[i] ?? '').trim());
+    const gasLevelDescriptions = descriptions.some(Boolean) ? descriptions : undefined;
+    const newTemplate = await addGoalTemplate({ ...data, generatedSmartGoal: data.generatedSmartGoal ?? '', gasLevelDescriptions });
     setIsSubmitting(false);
     if (newTemplate) {
       closeAddGoalTemplateModal();
@@ -209,6 +215,19 @@ export default function AddGoalTemplateModal() {
 
           <TargetDirectionField control={form.control} goalType={form.watch('dataCaptureType') || form.watch('type')} />
 
+          {(form.watch('dataCaptureType') || form.watch('type')) === 'GOAL_ATTAINMENT_SCALE' && (
+            <GasLevelDescriptionsField
+              values={form.watch('gasLevelDescriptions') ?? []}
+              onChange={next => form.setValue('gasLevelDescriptions', next, { shouldDirty: true })}
+            />
+          )}
+
+          {(() => {
+            const targetInfo = goalMeasureInfo({
+              type: form.watch('dataCaptureType') || form.watch('type'),
+              targetDirection: form.watch('targetDirection'),
+            });
+            return (
           <FormField
             control={form.control}
             name="sessionTargetValue"
@@ -218,21 +237,23 @@ export default function AddGoalTemplateModal() {
                 <FormControl>
                   <Input 
                     type="number" 
-                    placeholder="e.g., 80 (for 80% accuracy)" 
+                    placeholder={targetInfo.min !== undefined && targetInfo.max !== undefined ? `e.g., 0 (${targetInfo.min} to ${targetInfo.max})` : 'e.g., 80 (for 80% accuracy)'} 
                     {...field} 
                     value={field.value ?? ''}
                     onChange={e => field.onChange(e.target.value === '' ? '' : Number(e.target.value))} // '' (not undefined, which react-hook-form replaces with the starting value) = no target
-                    min="0"
-                    max="100"
+                    min={targetInfo.min ?? 0}
+                    max={targetInfo.max ?? 1000}
                   />
                 </FormControl>
                 <FormDescription>
-                  Target percentage (0-100) for accuracy/fluency goals, a rating for qualitative goals (e.g. 4 out of 5), or the number of different functions for communication functions goals.
+                  Target percentage (0-100) for accuracy/fluency goals, a rating for qualitative goals (e.g. 4 out of 5), level (-2 to +2) for GAS goals, or a count/duration/seconds target.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
+            );
+          })()}
 
           {/* Communication Functions templates can pair the functions target with a minimum total of uses,
               for goals worded "at least 5 times for at least 2 different functions". */}

@@ -27,10 +27,13 @@ export function useFillScreenHeight(
     const update = () => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
-        // Rect units per CSS pixel: the app zooms <body> (the display size setting), so the two differ.
-        const ratio = list.offsetHeight > 0 ? list.getBoundingClientRect().height / list.offsetHeight : 1;
+        if (list.offsetHeight === 0) return;
         const mainRect = main.getBoundingClientRect();
+        if (mainRect.height === 0) return;
         const listRect = list.getBoundingClientRect();
+        // Rect units per CSS pixel: the app zooms <body> (the display size setting), so the two differ.
+        const ratio = listRect.height / list.offsetHeight;
+        if (!Number.isFinite(ratio) || ratio <= 0) return;
         const pageRect = page.getBoundingClientRect();
         const padding = parseFloat(getComputedStyle(page.parentElement ?? page).paddingBottom) || 0;
         // Where the list starts within the scrolling content, and what follows it on the page.
@@ -40,8 +43,9 @@ export function useFillScreenHeight(
           ? document.querySelector<HTMLElement>('.app-menubar')?.getBoundingClientRect().height ?? 0
           : 0;
         const available = (mainRect.height - menuBar - top - below) / ratio;
+        if (!Number.isFinite(available)) return;
         const next = Math.max(min, Math.floor(available));
-        setHeight(prev => (prev === next ? prev : next));
+        setHeight(prev => (prev !== undefined && Math.abs(prev - next) <= 1 ? prev : next));
       });
     };
     update();
@@ -51,11 +55,13 @@ export function useFillScreenHeight(
     observer.observe(main);
     observer.observe(page);
     window.addEventListener('resize', update);
+    window.visualViewport?.addEventListener('resize', update);
     window.addEventListener(MENU_POSITION_EVENT, update);
     return () => {
       cancelAnimationFrame(frame);
       observer.disconnect();
       window.removeEventListener('resize', update);
+      window.visualViewport?.removeEventListener('resize', update);
       window.removeEventListener(MENU_POSITION_EVENT, update);
     };
   }, [listRef, pageRef, min, ready]);

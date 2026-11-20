@@ -39,12 +39,18 @@ export default function ProgressReportChart({ progress }: { progress: GoalProgre
   const top = isGas ? 2 : (max ?? niceMax(Math.max(...points.map(p => p.value), target ?? 0, aim?.start.value ?? 0) * 1.1));
   const innerW = W - PAD.left - PAD.right;
   const innerH = H - PAD.top - PAD.bottom;
-  // Placed by date along the aim line's span when there is one; otherwise evenly, one step per session.
-  const times = points.map(p => dateValue(p.date));
-  const t0 = aim ? Math.min(aim.start.time, times[0]) : 0;
-  const t1 = aim ? Math.max(aim.end.time, times[times.length - 1]) : 0;
+  // Placed by date along the aim line's span when there is one and every date parses; otherwise evenly.
+  const times = points.map(p => {
+    const raw = dateValue(p.date);
+    if (!Number.isFinite(raw)) return NaN;
+    const d = new Date(raw);
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  });
+  const useAimScale = !!aim && Number.isFinite(aim.start.time) && Number.isFinite(aim.end.time) && times.every(Number.isFinite);
+  const t0 = useAimScale ? Math.min(aim.start.time, ...times) : 0;
+  const t1 = useAimScale ? Math.max(aim.end.time, ...times) : 0;
   const xTime = (t: number) => PAD.left + (t1 > t0 ? ((t - t0) / (t1 - t0)) * innerW : innerW / 2);
-  const x = (i: number) => aim ? xTime(times[i]) : PAD.left + (points.length === 1 ? innerW / 2 : (i / (points.length - 1)) * innerW);
+  const x = (i: number) => useAimScale ? xTime(times[i]) : PAD.left + (points.length === 1 ? innerW / 2 : (i / (points.length - 1)) * innerW);
   const span = top - min || 1;
   const y = (v: number) => PAD.top + innerH - ((Math.min(Math.max(v, min), top) - min) / span) * innerH;
   const ticks = isGas ? [-2, 0, 2] : [0, top / 2, top];
@@ -54,8 +60,8 @@ export default function ProgressReportChart({ progress }: { progress: GoalProgre
   const line = pathOf(p => p.value);
   const spontaneousLine = isCommFunctions ? pathOf(p => p.spontaneous ?? 0) : null;
   const emergingLine = isCommFunctions ? pathOf(p => p.emerging ?? 0) : null;
-  const firstDate = aim ? formatDate(new Date(t0)) : formatDate(points[0].date);
-  const lastDate = aim ? formatDate(new Date(t1)) : formatDate(points[points.length - 1].date);
+  const firstDate = useAimScale ? formatDate(new Date(t0)) : formatDate(points[0].date);
+  const lastDate = useAimScale ? formatDate(new Date(t1)) : formatDate(points[points.length - 1].date);
   const seriesDetail = isCommFunctions
     ? ` Spontaneous: ${points.map(p => label(p.spontaneous ?? 0)).join(', ')}. Emerging only: ${points.map(p => label(p.emerging ?? 0)).join(', ')}.`
     : '';
@@ -77,7 +83,7 @@ export default function ProgressReportChart({ progress }: { progress: GoalProgre
             <text x={PAD.left + 4} y={y(target) - 5} fontSize={11} fill={TARGET} stroke="#fff" strokeWidth={3} paintOrder="stroke">Target {label(target)}</text>
           </g>
         )}
-        {aim && (
+        {useAimScale && aim && (
           <g>
             <line x1={xTime(aim.start.time)} y1={y(aim.start.value)} x2={xTime(aim.end.time)} y2={y(aim.end.value)} stroke={AIM} strokeWidth={1.5} strokeDasharray="2 3" />
             <circle cx={xTime(aim.start.time)} cy={y(aim.start.value)} r={4} fill="#fff" stroke={AIM} strokeWidth={1.5} />
@@ -100,7 +106,7 @@ export default function ProgressReportChart({ progress }: { progress: GoalProgre
           return <polygon key={`e-${i}`} points={`${cx},${cy - 3.6} ${cx + 3.6},${cy} ${cx},${cy + 3.6} ${cx - 3.6},${cy}`} fill={EMERGING} stroke="#fff" strokeWidth={1.1} />;
         })}
         <text x={PAD.left} y={H - 6} fontSize={11} fill={MUTED}>{firstDate}</text>
-        {(aim || points.length > 1) && (
+        {(useAimScale || points.length > 1) && (
           <text x={W - PAD.right} y={H - 6} textAnchor="end" fontSize={11} fill={MUTED}>{lastDate}</text>
         )}
       </svg>

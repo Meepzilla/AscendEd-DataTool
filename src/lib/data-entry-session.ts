@@ -45,11 +45,17 @@ export function syncSessionStates(
     let goals = student.goals || [];
     if (existing && goalSignature(existing.originalGoalHeaders) === goalSignature(goals)) {
       // The same goals, but one may have been edited in a way that keeps its data (its text, blanks, target
-      // date, baseline, mastery): the card shows the current goal, in the card's own order.
+      // date, baseline, mastery) or the student may have been renamed: the card shows the current goal, in the card's own order.
       const current = new Map(goals.map(g => [g.id, g]));
       const refreshed = existing.originalGoalHeaders.map(g => current.get(g.id) ?? g);
-      if (refreshed.some((g, i) => g !== existing.originalGoalHeaders[i])) {
-        next[student.id] = { ...existing, originalGoalHeaders: refreshed };
+      const goalsChanged = refreshed.some((g, i) => g !== existing.originalGoalHeaders[i]);
+      const nameChanged = existing.studentName !== student.name;
+      if (goalsChanged || nameChanged) {
+        next[student.id] = {
+          ...existing,
+          studentName: student.name,
+          ...(goalsChanged ? { originalGoalHeaders: refreshed } : {}),
+        };
         changed = true;
       } else {
         next[student.id] = existing;

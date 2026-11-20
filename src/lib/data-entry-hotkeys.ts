@@ -114,10 +114,9 @@ export function applyGoalHotkey(type: GoalType, key: string, data: Record<string
   }
 
   if (type === 'FLUENCY_SYLLABLE_STUTTER' && FLUENCY_KEYS[key]) {
-    // Same as the fluency buttons: blocks, repetitions and interjections also add to the total syllables.
+    // Same as the fluency buttons: blocks, repetitions, prolongations and interjections also add to the total syllables.
     const field = FLUENCY_KEYS[key];
-    const next = add(data, field);
-    return field === 'prolongations' ? next : add(next, 'totalSyllables');
+    return add(add(data, field), 'totalSyllables');
   }
 
   if (key === 'B') {

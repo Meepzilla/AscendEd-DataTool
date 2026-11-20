@@ -42,7 +42,13 @@ export function goalAccuracyText(captureType: string, data: Record<string, any>)
     case 'GOAL_ATTAINMENT_SCALE': {
       // No level recorded yet means no data, never a 0: 0 is the expected outcome, a real value.
       const level = data.gasLevel;
-      if (level === undefined || level === null || ![-2, -1, 0, 1, 2].includes(Number(level))) {
+      if (
+        level === undefined ||
+        level === null ||
+        level === '' ||
+        typeof level === 'boolean' ||
+        ![-2, -1, 0, 1, 2].includes(Number(level))
+      ) {
         return 'N/A (no level recorded yet)';
       }
       return gasLevelLabel(Number(level));

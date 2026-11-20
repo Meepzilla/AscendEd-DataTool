@@ -25,6 +25,7 @@ import { assignedGoalChanges } from '@/lib/goal-changes';
 import { goalStatement, goalTypeLabel } from '@/lib/helpers';
 import { toSafeErrorMessage } from '@/lib/error-message';
 import { automaticBlankValues, findBlanks } from '@/lib/goal-blanks';
+import { goalMeasureInfo } from '@/lib/goal-measures';
 
 type EditAssignedGoalFormData = z.infer<typeof AssignedGoalEditSchema>;
 
@@ -168,7 +169,7 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
 
           <ShownAs form={form} studentName={studentName} studentIep={studentIep} />
 
-          <BlankFills form={form} />
+          <BlankFills form={form} goalType={goalToEdit.type} />
 
           <FormField
             control={form.control}
@@ -232,6 +233,12 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
 
           <TargetDirectionField control={form.control} goalType={form.watch('dataCaptureType') || goalToEdit?.type} />
 
+          {(() => {
+            const targetInfo = goalMeasureInfo({
+              type: form.watch('dataCaptureType') || goalToEdit?.type,
+              targetDirection: form.watch('targetDirection'),
+            });
+            return (
           <FormField
             control={form.control}
             name="sessionTargetValue"
@@ -241,21 +248,23 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
                 <FormControl>
                   <Input
                     type="number"
-                    placeholder="e.g., 80 (for 80%)"
+                    placeholder={targetInfo.min !== undefined && targetInfo.max !== undefined ? `e.g., 0 (${targetInfo.min} to ${targetInfo.max})` : 'e.g., 80 (for 80%)'}
                     {...field}
                     value={field.value ?? ''}
                     onChange={e => field.onChange(e.target.value === '' ? '' : Number(e.target.value))} // '' (not undefined, which react-hook-form replaces with the starting value) = no target
-                    min="0"
-                    max="100"
+                    min={targetInfo.min ?? 0}
+                    max={targetInfo.max ?? 1000}
                   />
                 </FormControl>
                 <FormDescription>
-                  Target percentage (0-100) for accuracy/fluency goals, a rating for qualitative goals (e.g. 4 out of 5), or the number of different functions for communication functions goals.
+                  Target percentage (0-100) for accuracy/fluency goals, a rating for qualitative goals (e.g. 4 out of 5), level (-2 to +2) for GAS goals, or a count/duration/seconds target.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
+            );
+          })()}
 
           {/* Communication Functions goals can pair the functions target with a minimum total of uses,
               for goals worded "at least 5 times for at least 2 different functions". */}
@@ -397,12 +406,20 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
  * goal's target or mastery answers shows that value as its placeholder and is filled with it unless something is
  * typed. The goal is shown with its blanks filled; the text itself keeps them.
  */
-function BlankFills({ form }: { form: ReturnType<typeof useForm<EditAssignedGoalFormData>> }) {
-  const [text, target, mastery, fills] = form.watch(['smartGoal', 'sessionTargetValue', 'masterySessions', 'blankFills']);
+function BlankFills({ form, goalType }: { form: ReturnType<typeof useForm<EditAssignedGoalFormData>>; goalType: Goal['type'] }) {
+  const [text, target, mastery, fills, dataCaptureType, targetDirection] = form.watch([
+    'smartGoal', 'sessionTargetValue', 'masterySessions', 'blankFills', 'dataCaptureType', 'targetDirection',
+  ]);
   const blanks = findBlanks(text ?? '');
   if (blanks.length === 0) return null;
   const toNumber = (v: unknown) => (v === '' || v === undefined || v === null || Number.isNaN(Number(v)) ? undefined : Number(v));
-  const automatic = automaticBlankValues(text ?? '', { sessionTargetValue: toNumber(target), masterySessions: toNumber(mastery) });
+  const automatic = automaticBlankValues(text ?? '', {
+    type: goalType,
+    dataCaptureType,
+    targetDirection,
+    sessionTargetValue: toNumber(target),
+    masterySessions: toNumber(mastery),
+  });
   const setFill = (index: number, value: string) => {
     const next = Array.from({ length: blanks.length }, (_, i) => (fills ?? [])[i] ?? '');
     next[index] = value;

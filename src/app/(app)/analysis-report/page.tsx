@@ -184,7 +184,12 @@ export default function AnalysisReportPage() {
                     studentName={selectedStudent.name}
                     open={isCsvWarningOpen}
                     onCancel={() => setIsCsvWarningOpen(false)}
-                    onConfirm={(deidentified) => { setIsCsvWarningOpen(false); downloadSessionsCsv(periodSessions, selectedStudent.name, { deidentified }); }}
+                    onConfirm={(deidentified) => {
+                      setIsCsvWarningOpen(false);
+                      void downloadSessionsCsv(periodSessions, selectedStudent.name, { deidentified }).catch(() => {
+                        toast({ title: 'Export Failed', description: 'Could not save the CSV file on this device.', variant: 'destructive' });
+                      });
+                    }}
                   />
                 )}
              </div>

@@ -164,6 +164,11 @@ export interface SessionGoalData {
   data: Record<string, any>;
 }
 
+/** Either a replacement goal data object or a functional updater derived from the latest stored goal data. */
+export type GoalDataUpdater =
+  | SessionGoalData['data']
+  | ((current: SessionGoalData['data']) => SessionGoalData['data']);
+
 
 export interface ArticulationData {
   opportunities: number;

@@ -16,6 +16,8 @@ export function useLongPress<T extends HTMLElement>(onLongPress: (event: React.S
   const timerRef = useRef<number | null>(null);
   const firedRef = useRef(false);
   const pointerTypeRef = useRef('mouse');
+  const onLongPressRef = useRef(onLongPress);
+  onLongPressRef.current = onLongPress;
 
   const cancel = useCallback(() => {
     if (timerRef.current !== null) {
@@ -34,15 +36,15 @@ export function useLongPress<T extends HTMLElement>(onLongPress: (event: React.S
     timerRef.current = window.setTimeout(() => {
       timerRef.current = null;
       firedRef.current = true;
-      onLongPress(event);
+      onLongPressRef.current(event);
     }, LONG_PRESS_MS);
-  }, [cancel, onLongPress]);
+  }, [cancel]);
 
   const onContextMenu = useCallback((event: React.MouseEvent<T>) => {
     event.preventDefault();
     // A touch long press is handled by the timer; Android also sends contextmenu for it.
-    if (pointerTypeRef.current === 'mouse') onLongPress(event);
-  }, [onLongPress]);
+    if (pointerTypeRef.current === 'mouse') onLongPressRef.current(event);
+  }, []);
 
   // The tap that ends a long press shouldn't also count as a click.
   const onClickCapture = useCallback((event: React.MouseEvent<T>) => {

@@ -37,11 +37,10 @@ const GasLevelDistribution: React.FC<{ studentSessions: SessionData[]; goals: Go
     const tally = new Map<number, number>(GAS_LEVEL_VALUES.map(l => [l, 0]));
     for (const session of studentSessions) {
       for (const goal of goals) {
-        const data = session.goals.find(g => g.goalId === goal.id)?.data;
+        const data = (session.goals ?? []).find(g => g.goalId === goal.id)?.data;
         if (!data) continue;
-        // The goal measure once Track A wires it; the stored level until then.
-        const value = goalMeasure(goal, withoutRunningTimers(data)) ?? Number(data.gasLevel);
-        if (Number.isFinite(value) && tally.has(value)) tally.set(value, (tally.get(value) ?? 0) + 1);
+        const value = goalMeasure(goal, withoutRunningTimers(data));
+        if (value !== null && Number.isFinite(value) && tally.has(value)) tally.set(value, (tally.get(value) ?? 0) + 1);
       }
     }
     return GAS_LEVEL_VALUES.map(level => ({ level, count: tally.get(level) ?? 0 }));
@@ -79,11 +78,13 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
 
   sessions.forEach(session => {
     const when = parseDateOnly(session.date);
+    if (Number.isNaN(when.getTime())) return;
     const sessionDate = when.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
     if (!dailyData[sessionDate]) {
       dailyData[sessionDate] = {
-        date: when.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        // The label has no year, so days are ordered by this instead.
+        when,
+        year: when.getFullYear(),
+        // The label has no year when all sessions fall in one year, so days are ordered by this instead.
         dayStart: new Date(when.getFullYear(), when.getMonth(), when.getDate()).getTime(),
         sessionCount: 0,
         goalsRecorded: 0,
@@ -105,7 +106,7 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
     const day = dailyData[sessionDate];
     day.sessionCount += 1;
 
-    session.goals.forEach(goalData => {
+    (session.goals ?? []).forEach(goalData => {
       // Only the student's active goals (not archived or removed ones), as the goal cards show.
       const currentGoal = studentGoals.find(g => g.id === goalData.goalId);
       if (!currentGoal || currentGoal.isArchived) return;
@@ -149,12 +150,15 @@ const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goa
   });
 
   // Only days when a goal in view was worked on (other days would chart as zeros).
-  const days = Object.values(dailyData).filter(day => day.goalsRecorded > 0).sort((a, b) => a.dayStart - b.dayStart).map(day => {
+  const recordedDays = Object.values(dailyData).filter(day => day.goalsRecorded > 0).sort((a, b) => a.dayStart - b.dayStart);
+  const showYear = new Set(recordedDays.map(day => day.year)).size > 1;
+  const days = recordedDays.map(day => {
+    const date = (day.when as Date).toLocaleDateString('en-US', showYear ? { month: 'short', day: 'numeric', year: '2-digit' } : { month: 'short', day: 'numeric' });
     // No accuracy (a gap in the line, not 0%) on days with no trial-based responses.
     const accuracy = day.totalOpportunities > 0 ? parseFloat(((day.totalCorrect / day.totalOpportunities) * 100).toFixed(1)) : null;
     const totalPrompts = Object.entries(day.promptCounts).reduce((sum, [key, value]) => key !== 'Independent' ? sum + (value as number) : sum, 0);
     return {
-      date: day.date,
+      date,
       accuracy,
       correct: day.totalCorrect,
       incorrect: day.totalIncorrect,
@@ -275,7 +279,14 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, studen
             <GasTScoreLineChart sessions={studentSessions} history={studentHistory} goals={allGasGoals} />
           </Suspense>
           <Suspense fallback={<ChartSuspenseFallback />}>
-            <GasSummaryTable sessions={studentSessions} goals={gasGoals} studentName={selectedStudent?.name} studentIep={selectedStudent?.iep} />
+            <GasSummaryTable
+              sessions={studentSessions}
+              history={studentHistory}
+              goals={gasGoals}
+              tScoreGoals={allGasGoals}
+              studentName={selectedStudent?.name}
+              studentIep={selectedStudent?.iep}
+            />
           </Suspense>
           <GasLevelDistribution studentSessions={studentSessions} goals={gasGoals} />
         </div>

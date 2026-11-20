@@ -10,7 +10,7 @@ import { TimePicker } from '@/components/ui/time-picker';
 import { Textarea } from '@/components/ui/textarea';
 import { DatePicker } from '@/components/ui/date-picker';
 import { useStudentData } from '@/hooks/use-student-data';
-import type { SessionData, Goal, SessionGoalData } from '@/lib/types';
+import type { SessionData, Goal, GoalDataUpdater } from '@/lib/types';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { GOAL_TYPE_FIELDS, captureTypeOf, finalizeBehaviorData } from '@/lib/goal-constants';
@@ -79,12 +79,18 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
     setFormData(prev => ({ ...prev, date: date ? toLocalDay(date) : undefined }));
   };
 
-  const handleGoalDataChange = (goalId: string, updatedFieldName: string, goalData: SessionGoalData['data']) => {
+  const handleGoalDataChange = (goalId: string, updatedFieldName: string, goalData: GoalDataUpdater) => {
     setFormData(prev => {
-      const updatedGoals = prev.goals?.map(g =>
+      const goalHeader = goalHeaders.find(og => og.id === goalId);
+      const fallback = goalHeader ? (GOAL_TYPE_FIELDS[captureTypeOf(goalHeader)] || {}) : {};
+      const updatedGoals = prev.goals?.map(g => {
+        if (g.goalId !== goalId) return g;
+        const currentData = g.data || fallback;
+        const resolved = typeof goalData === 'function' ? goalData(currentData) : goalData;
+        if (resolved === currentData) return g;
         // Marked as worked on, as Data Entry does, so an edited 0 or a rating left at 3 still counts in reports.
-        g.goalId === goalId ? { ...g, data: { ...goalData, recorded: true } } : g
-      ) || [];
+        return { ...g, data: { ...resolved, recorded: true } };
+      }) || [];
       return { ...prev, goals: updatedGoals };
     });
   };
@@ -205,7 +211,7 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
                                         key={sessionGoal.goalId}
                                         id={`edit-session-goal-${sessionGoal.goalId}`}
                                         goal={originalGoal}
-                                        data={sessionGoal.data || GOAL_TYPE_FIELDS[(originalGoal.dataCaptureType || originalGoal.type) as keyof typeof GOAL_TYPE_FIELDS]}
+                                        data={sessionGoal.data || GOAL_TYPE_FIELDS[captureTypeOf(originalGoal)]}
                                         onChange={(fieldName,newData) => handleGoalDataChange(sessionGoal.goalId, fieldName,newData)}
                                         isArchived={originalGoal.isArchived}
                                         studentName={currentSession.studentName}

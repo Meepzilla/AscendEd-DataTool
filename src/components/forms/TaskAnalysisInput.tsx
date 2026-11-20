@@ -4,6 +4,7 @@ import React from 'react';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import type { GoalDataUpdater } from '@/lib/types';
 import { STEP_LEVELS, STEP_LEVEL_LABELS, STEP_LEVEL_SHORT, setStepLevel, stepScores, taskAnalysisSummary, type StepLevel } from '@/lib/task-analysis';
 
 // Data Entry for a task analysis goal: one row per step, with a button per level (Independent, the prompt levels,
@@ -12,8 +13,8 @@ import { STEP_LEVELS, STEP_LEVEL_LABELS, STEP_LEVEL_SHORT, setStepLevel, stepSco
 interface Props {
   steps: string[];
   data: Record<string, any>;
-  /** The goal's whole data after a change. */
-  update: (data: Record<string, any>) => void;
+  /** The goal's whole data (or functional updater) after a change. */
+  update: (data: GoalDataUpdater) => void;
   interact: (e: React.SyntheticEvent<HTMLButtonElement>, callback: () => void) => void;
   disabled?: boolean;
   isLocked?: boolean;
@@ -21,14 +22,14 @@ interface Props {
 }
 
 export default function TaskAnalysisInput({ steps, data, update, interact, disabled, isLocked, goalId }: Props) {
-  if (steps.length === 0) {
+  const scores = stepScores(data, steps);
+  if (scores.length === 0) {
     return (
       <p className="text-xs text-muted-foreground">
         This goal has no steps yet. Add them in Students → the student → Edit Assigned Goal → Task Steps.
       </p>
     );
   }
-  const scores = stepScores(data, steps);
   const summary = taskAnalysisSummary({ steps: scores });
 
   return (
@@ -48,7 +49,7 @@ export default function TaskAnalysisInput({ steps, data, update, interact, disab
                     aria-label={STEP_LEVEL_LABELS[level]}
                     title={STEP_LEVEL_LABELS[level]}
                     disabled={disabled}
-                    onClick={e => interact(e, () => update(setStepLevel(data, steps, i, level)))}
+                    onClick={e => interact(e, () => update(current => setStepLevel(current, steps, i, level)))}
                     className={cn(
                       'h-9 min-h-11 min-w-11 rounded-md border px-2 text-sm font-semibold touch-manipulation disabled:opacity-50',
                       selected
@@ -69,14 +70,17 @@ export default function TaskAnalysisInput({ steps, data, update, interact, disab
       <p className="text-sm font-semibold text-primary" aria-live="polite">
         {summary.scored
           ? `${summary.independent} of ${summary.scored} scored steps independent (${Math.round(summary.percent ?? 0)}%)`
-          : `0 of ${steps.length} steps scored`}
+          : `0 of ${scores.length} steps scored`}
       </p>
       <div className="space-y-1">
         <Label htmlFor={`ta-notes-${goalId}`} className="text-xs">Notes</Label>
         <Textarea
           id={`ta-notes-${goalId}`}
           value={data.notes || ''}
-          onChange={e => update({ ...data, notes: e.target.value })}
+          onChange={e => {
+            const notes = e.target.value;
+            update(current => ({ ...current, notes }));
+          }}
           rows={1}
           className="text-sm"
           disabled={disabled || isLocked}

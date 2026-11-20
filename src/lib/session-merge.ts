@@ -1,8 +1,8 @@
 import { compareSessionsOldestFirst, parseDateOnly } from './helpers';
 import { sessionMinutes, sessionServiceMinutes } from './student-overview';
-import { SERVICE_TYPES, type ServiceType, type SessionData, type SessionGoalData } from './types';
-import { finalizeBehaviorData } from './goal-constants/behavior';
-import { STORY_PARTS } from './goal-constants/story-elements';
+import { SERVICE_TYPES, type Goal, type ServiceType, type SessionData, type SessionGoalData } from './types';
+import { alignTimes, finalizeBehaviorData } from './goal-constants/behavior';
+import { STORY_LINKING_WORDS, STORY_PARTS, linkingWordField } from './goal-constants/story-elements';
 
 // Sessions → Merge: records of one student's session that were saved in parts (saved, then more data collected
 // and saved again) become one session. Its time runs from the earliest start to the latest end, so service
@@ -11,7 +11,7 @@ import { STORY_PARTS } from './goal-constants/story-elements';
 // - lists are joined (trials, ABC incidents, duration episodes, occurrence times, intervals);
 // - task analysis steps keep each step's latest score; ratings, settings (interval length, interval method)
 //   and other single values keep the latest; story element scores keep the best score given;
-// - summaries worked out from the data (% of intervals, average latency) are worked out again;
+// - summaries worked out from the data (% of intervals, average latency, duration totals, ABC counts) are worked out again;
 // - notes and activities are joined.
 // Only sessions of the same student on the same day that took place (not missed) can be merged.
 
@@ -50,10 +50,33 @@ const appendList = (current: unknown[], value: unknown[]): unknown[] => {
 
 // Numbers that are settings, times or summaries rather than counts: they keep the latest value (summaries are
 // worked out again afterwards).
-const NOT_ADDED = new Set(['rating', 'gasLevel', 'numberOfTrials', 'trialsPerAttempt', 'runningSince', 'intervalSeconds', 'percentIntervals', 'averageSeconds', 'timerStartedAt', 'cueGivenAt']);
+const NOT_ADDED = new Set([
+  'rating', 'gasLevel', 'numberOfTrials', 'trialsPerAttempt', 'runningSince',
+  'intervalSeconds', 'intervalCount', 'scoredCount', 'percentIntervals',
+  'averageSeconds', 'trialCount', 'totalSeconds', 'episodeCount', 'incidentCount',
+  'timerStartedAt', 'cueGivenAt',
+]);
 const STORY_PART_KEYS = new Set<string>(STORY_PARTS.map(p => p.key));
+const STORY_LINKING_KEYS = STORY_LINKING_WORDS.map(linkingWordField);
+const JOINED_TEXT_KEYS = new Set(['notes', 'details', 'observationNotes', 'secondaryBehaviors']);
+const PAIRED_LIST_KEYS = new Set(['episodeSeconds', 'episodeStarts', 'latencies', 'trialTimes']);
 
 const isBlank = (v: unknown) => v === null || (typeof v === 'string' && v.trim() === '');
+
+/** Whether a STORY_ELEMENTS part only holds untouched initial defaults (all 0s, no linking words/notes, not marked recorded). */
+const isUntouchedStoryPart = (part: Record<string, any> | undefined): boolean => {
+  if (!part || part.recorded === true) return false;
+  const hasStoryKey = Object.keys(part).some(k => STORY_PART_KEYS.has(k));
+  if (!hasStoryKey) return false;
+  for (const key of STORY_PART_KEYS) {
+    if (part[key] !== undefined && Number(part[key]) !== 0) return false;
+  }
+  for (const key of STORY_LINKING_KEYS) {
+    if (part[key] !== undefined && Number(part[key]) !== 0) return false;
+  }
+  if (part.notes !== undefined && !isBlank(part.notes)) return false;
+  return true;
+};
 
 // Single values a goal starts with before it is worked on (a rating starts at 3, a GAS level is unset): a later
 // part that didn't work on the goal still saves them, so they replace an earlier part's value only when the
@@ -70,13 +93,73 @@ const minutesValue = (v: unknown): number | null => {
 /** Combines one goal's data from several sessions, oldest first. */
 export function mergeGoalData(parts: Record<string, any>[]): Record<string, any> {
   const result: Record<string, any> = {};
+  const hasTouchedStoryPart = parts.some(p => Object.keys(p ?? {}).some(k => STORY_PART_KEYS.has(k)) && !isUntouchedStoryPart(p));
+  let lastIntervalsStartedAt: unknown = undefined;
+
   for (const part of parts) {
+    const skipStoryPartDefaults = hasTouchedStoryPart && isUntouchedStoryPart(part);
+
+    // Pair duration episodes with their start timestamps so equal durations at different times are both kept
+    // and array lengths stay aligned.
+    if (Array.isArray(part?.episodeSeconds)) {
+      const partSecs = part.episodeSeconds;
+      const hasStarts = Array.isArray(part.episodeStarts);
+      const partStarts = alignTimes(part.episodeStarts, partSecs.length);
+      if (!Array.isArray(result.episodeSeconds)) {
+        result.episodeSeconds = [...partSecs];
+        if (hasStarts) result.episodeStarts = partStarts;
+      } else {
+        const curStarts = alignTimes(result.episodeStarts, result.episodeSeconds.length);
+        const same =
+          JSON.stringify(partSecs) === JSON.stringify(result.episodeSeconds) &&
+          JSON.stringify(partStarts) === JSON.stringify(curStarts);
+        if (!same) {
+          result.episodeSeconds = [...result.episodeSeconds, ...partSecs];
+          if (hasStarts || Array.isArray(result.episodeStarts)) {
+            result.episodeStarts = [...curStarts, ...partStarts];
+          }
+        }
+      }
+    }
+
+    // Pair latency trials with their cue timestamps so equal latencies at different times are both kept
+    // and array lengths stay aligned.
+    if (Array.isArray(part?.latencies)) {
+      const partLat = part.latencies;
+      const hasTimes = Array.isArray(part.trialTimes);
+      const partTimes = alignTimes(part.trialTimes, partLat.length);
+      if (!Array.isArray(result.latencies)) {
+        result.latencies = [...partLat];
+        if (hasTimes) result.trialTimes = partTimes;
+      } else {
+        const curTimes = alignTimes(result.trialTimes, result.latencies.length);
+        const same =
+          JSON.stringify(partLat) === JSON.stringify(result.latencies) &&
+          JSON.stringify(partTimes) === JSON.stringify(curTimes);
+        if (!same) {
+          result.latencies = [...result.latencies, ...partLat];
+          if (hasTimes || Array.isArray(result.trialTimes)) {
+            result.trialTimes = [...curTimes, ...partTimes];
+          }
+        }
+      }
+    }
+
     for (const [key, value] of Object.entries(part ?? {})) {
       // Absent, not cleared: a part that never recorded a field (e.g. an untouched GAS goal whose
       // gasLevel is undefined) must not wipe the level an earlier part recorded.
       if (value === undefined) continue;
+      if (PAIRED_LIST_KEYS.has(key) && (Array.isArray(part?.episodeSeconds) && (key === 'episodeSeconds' || key === 'episodeStarts') || Array.isArray(part?.latencies) && (key === 'latencies' || key === 'trialTimes'))) {
+        continue;
+      }
+      if (skipStoryPartDefaults && STORY_PART_KEYS.has(key)) continue;
+
       const current = result[key];
-      if (current === undefined) { result[key] = Array.isArray(value) ? [...value] : value; continue; }
+      if (current === undefined) {
+        result[key] = Array.isArray(value) ? [...value] : value;
+        if (key === 'intervals') lastIntervalsStartedAt = part?.startedAt;
+        continue;
+      }
       if (key === 'observationMinutes') {
         // Observation time adds up across the parts (the app stores it as the text typed, e.g. "15").
         const a = minutesValue(current), b = minutesValue(value);
@@ -97,6 +180,14 @@ export function mergeGoalData(parts: Record<string, any>[]): Record<string, any>
         const grids = JSON.stringify(value) === JSON.stringify(current) ? current : [...current, ...value];
         const scored = grids.filter(t => t !== 'untouched');
         result.trials = scored.length ? scored : [...value];
+      } else if (key === 'intervals' && Array.isArray(current) && Array.isArray(value)) {
+        const sameObservation =
+          JSON.stringify(value) === JSON.stringify(current) &&
+          (part?.startedAt ?? null) === (lastIntervalsStartedAt ?? null);
+        if (!sameObservation) {
+          result.intervals = [...current, ...value];
+          lastIntervalsStartedAt = part?.startedAt;
+        }
       } else if (Array.isArray(current) && Array.isArray(value)) {
         result[key] = appendList(current, value);
       } else if (key === 'startedAt' && current) {
@@ -107,8 +198,8 @@ export function mergeGoalData(parts: Record<string, any>[]): Record<string, any>
         result[key] = current + value;
       } else if (typeof current === 'boolean' && typeof value === 'boolean') {
         result[key] = current || value;
-      } else if (key === 'notes' && typeof current === 'string' && typeof value === 'string') {
-        result.notes = joinText([current, value], '; ');
+      } else if (JOINED_TEXT_KEYS.has(key) && typeof current === 'string' && typeof value === 'string') {
+        result[key] = joinText([current, value], '; ');
       } else if (isBlank(value) && !isBlank(current)) {
         // Empty in a later part (Data Entry resets a card's text fields after saving, and saves them empty):
         // that part didn't record it, so the earlier value (target sound, word list, food...) stays.
@@ -120,11 +211,13 @@ export function mergeGoalData(parts: Record<string, any>[]): Record<string, any>
   }
   if (Array.isArray(result.trials)) result.numberOfTrials = result.trials.length;
   // Work the summaries out again from the combined data.
+  if (Array.isArray(result.episodeSeconds)) Object.assign(result, finalizeBehaviorData('BEHAVIOR_DURATION', result));
+  if (Array.isArray(result.incidents)) Object.assign(result, finalizeBehaviorData('BEHAVIOR_ABC', result));
   if (Array.isArray(result.intervals)) {
-    result.intervalCount = result.intervals.length;
-    return finalizeBehaviorData('BEHAVIOR_INTERVAL', result);
+    if (result.intervals.length > 0) result.intervalCount = result.intervals.length;
+    Object.assign(result, finalizeBehaviorData('BEHAVIOR_INTERVAL', result));
   }
-  if (Array.isArray(result.latencies)) return finalizeBehaviorData('BEHAVIOR_LATENCY', result);
+  if (Array.isArray(result.latencies)) Object.assign(result, finalizeBehaviorData('BEHAVIOR_LATENCY', result));
   return result;
 }
 
@@ -181,6 +274,17 @@ export function mergeSessions(sessions: SessionData[]): SessionData {
     }
   }
 
+  // Union goal headers across all parts so goals recorded in earlier parts remain editable and reportable.
+  const headerById = new Map<string, Goal>();
+  for (const part of ordered) {
+    for (const header of part.originalGoalHeaders ?? []) headerById.set(header.id, header);
+  }
+  const latestHeaderIds = new Set((latest.originalGoalHeaders ?? []).map(h => h.id));
+  const originalGoalHeaders: Goal[] = [
+    ...(latest.originalGoalHeaders ?? []).map(h => headerById.get(h.id) ?? h),
+    ...[...headerById.values()].filter(h => !latestHeaderIds.has(h.id)),
+  ];
+
   return {
     ...first,
     time,
@@ -188,7 +292,7 @@ export function mergeSessions(sessions: SessionData[]): SessionData {
     activity: joinText(ordered.map(s => s.activity), '; '),
     notes: joinText(ordered.map(s => s.notes), '\n'),
     goals,
-    originalGoalHeaders: latest.originalGoalHeaders,
+    originalGoalHeaders,
     serviceMinutes,
   };
 }

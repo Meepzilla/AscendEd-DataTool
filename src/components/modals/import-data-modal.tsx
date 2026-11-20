@@ -7,36 +7,14 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, UploadCloud, FileCheck2, AlertTriangle } from 'lucide-react';
 import Papa from 'papaparse';
-import type { GoalType, SessionGoalData } from '@/lib/types';
-import { currentGoalType, knownGoalType } from '@/lib/legacy-goal-types';
-import { parseDate } from '@/lib/student-import';
-import type { ImportedSession } from '@/lib/session-import';
+import { parseSessionCsvRows, type ImportedSession } from '@/lib/session-import';
 import { checkImportFileSize } from '@/lib/helpers';
 import { sanitizeErrorMessage, toSafeErrorMessage } from '@/lib/error-message';
-import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
-import { missedReasonFromCsv } from '@/lib/attendance';
-import { unescapeCsvFormula, parseServiceMinutesByType } from '@/lib/session-csv';
+import { unescapeCsvFormula } from '@/lib/session-csv';
+import { useDropzone } from 'react-dropzone';
 
 /** A session read from the file, with the Session ID it had (kept, so a later backup merge matches it). */
 export type { ImportedSession };
-
-/**
- * A CSV cell as the value it was exported from: lists and objects were written as JSON, numbers and true/false as
- * text. Fields that are text in the goal type's starting values (a target sound, notes) stay text, so "5" or
- * "[1,2]" typed into them comes back unchanged.
- */
-function cellValue(raw: string, goalType: string, key: string): unknown {
-  const defaults = GOAL_TYPE_FIELDS[goalType as GoalType] as Record<string, unknown> | undefined;
-  if (defaults && typeof defaults[key] === 'string') return raw;
-  const text = raw.trim();
-  if (text.startsWith('[') || text.startsWith('{')) {
-    try { return JSON.parse(text); } catch { return raw; }
-  }
-  if (text === 'true' || text === 'false') return text === 'true';
-  if (text === 'null') return null;
-  return text !== '' && !Number.isNaN(Number(text)) ? Number(text) : raw;
-}
-import { useDropzone } from 'react-dropzone';
 
 interface ImportDataModalProps {
   onClose: () => void;
@@ -81,93 +59,7 @@ export default function ImportDataModal({ onClose, onImport }: ImportDataModalPr
         transform: (value: string) => unescapeCsvFormula(value),
         complete: (results) => {
           try {
-            const rows = results.data;
-            if (rows.length === 0) {
-              throw new Error("CSV file is empty or contains no data rows.");
-            }
-
-            // Group rows by Session ID
-            const sessionsMap = new Map<string, ImportedSession>();
-
-            for (const row of rows) {
-              const sessionId = row['Session ID'];
-              if (!sessionId) {
-                // No row content here: a row is one student's session data, including their name.
-                console.warn('Skipping row with missing Session ID.');
-                continue;
-              }
-
-              let sessionEntry = sessionsMap.get(sessionId);
-
-              // If it's the first time seeing this session ID, create the base session object.
-              if (!sessionEntry) {
-                 if (!row['Student ID'] || !row['Date'] || !row['Student Name']) {
-                    // No session ID in the message: it is shown in the toast below.
-                    throw new Error('A row is missing required fields (Student ID, Date, Student Name).');
-                }
-                // The date is read as the written day (YYYY-MM-DD, M/D/YYYY, "Aug 1, 2026"...) and stored as YYYY-MM-DD; a
-                // day that doesn't exist (11/31/2026) or text that isn't a date fails the import, not a broken session.
-                const date = parseDate(row['Date']);
-                if (!date) throw new Error(`A row has a date that isn't a real date ("${String(row['Date']).slice(0, 30)}"), so the file can't be imported.`);
-                sessionEntry = {
-                  studentId: row['Student ID'],
-                  studentName: row['Student Name'],
-                  date,
-                  time: row['Start Time'],
-                  endTime: row['End Time'] && row['End Time'] !== 'N/A' ? row['End Time'] : undefined,
-                  activity: row['Activity'],
-                  notes: row['Session Notes'],
-                  goals: [],
-                  originalGoalHeaders: [], // Not in the file; Edit Session uses the student's goals instead.
-                  sourceSessionId: sessionId,
-                };
-                // A missed session comes back missed, with its reason (the export's Attendance column).
-                const missedReason = missedReasonFromCsv(row['Attendance']);
-                if (missedReason) sessionEntry.missed = { reason: missedReason };
-                // The export's by-type minutes come back as the session's split. The column repeats on
-                // every goal row of the session; this first row's value is the one used.
-                const serviceMinutes = parseServiceMinutesByType(row['Service Minutes by Type']);
-                if (serviceMinutes) sessionEntry.serviceMinutes = serviceMinutes;
-                sessionsMap.set(sessionId, sessionEntry);
-              }
-
-              // If the row contains goal information, process it.
-              if (row['Goal ID'] && row['Goal Name']) {
-                const goalData: SessionGoalData['data'] = {};
-                for (const key in row) {
-                  if (key.startsWith('Goal Data: ')) {
-                    const dataKeyRaw = key.replace('Goal Data: ', '');
-                    // Export spaced the key out before each capital ("Partial Physical", "total Syllables"), keeping
-                    // the first letter's case, so joining the words back gives the original key.
-                    const camelCaseKey = dataKeyRaw.replace(/\s+(.)/g, (_match: string, letter: string) => letter.toUpperCase()).trim();
-                    if (!camelCaseKey || camelCaseKey === '__proto__' || camelCaseKey === 'prototype' || camelCaseKey === 'constructor') continue;
-                    
-                    let value = row[key];
-                    // Columns from other goal types are empty for this goal.
-                    if (value === undefined || value === null || value === '') continue;
-                    value = cellValue(String(value), String(currentGoalType(row['Goal Type'])), camelCaseKey);
-                    goalData[camelCaseKey] = value;
-                  }
-                }
-
-                // A goal type this app doesn't know would make a goal that can't be measured or charted.
-                const goalType = knownGoalType(row['Goal Type']);
-                if (!goalType) throw new Error(`A row has a goal type this app doesn't know ("${String(row['Goal Type']).slice(0, 40)}"), so the file can't be imported.`);
-                const sessionGoal: SessionGoalData = {
-                  goalId: row['Goal ID'],
-                  goalName: row['Goal Name'],
-                  goalType,
-                  data: goalData,
-                };
-
-                // Avoid duplicating goals if they appear in multiple rows for the same session (unlikely with new format, but safe)
-                if (!sessionEntry.goals.find(g => g.goalId === sessionGoal.goalId)) {
-                    sessionEntry.goals.push(sessionGoal);
-                }
-              }
-            }
-
-            const finalSessions = Array.from(sessionsMap.values());
+            const finalSessions = parseSessionCsvRows(results.data);
             setParsedSessions(finalSessions);
             toast({
               title: "File Parsed Successfully",
