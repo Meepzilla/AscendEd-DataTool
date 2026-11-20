@@ -48,7 +48,12 @@ export function GasInputs({ ctx }: { ctx: GoalInputContext }) {
                 className="h-auto min-h-11 min-w-11 px-0.5 py-1.5 flex flex-col items-center gap-0.5 text-xs leading-tight touch-manipulation"
                 title={`${formatGasLevel(level)}: ${descriptions[level + 2]}${isSelected ? ' — tap again to clear' : ''}`}
                 onClick={(e) =>
-                  handleInteraction(e, () => handleChange('gasLevel', isSelected ? undefined : level))
+                  handleInteraction(e, () =>
+                    handleChange('gasLevel', (current: Record<string, any>) => ({
+                      ...current,
+                      gasLevel: current.gasLevel === level ? undefined : level,
+                    }))
+                  )
                 }
                 disabled={isArchived}
               >

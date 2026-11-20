@@ -19,7 +19,9 @@ import { useStudentData } from '@/hooks/use-student-data';
 import { compareSessionsOldestFirst, formatDate, localDayKey, parseDateOnly, sessionInDateRange } from '@/lib/helpers';
 import { buildProgressReport, type ProgressStatus } from '@/lib/report-narrative';
 import { getOrganizationName } from '@/lib/organization';
-import { attendanceSummary, attendanceText } from '@/lib/attendance';
+import { attendanceSummary, attendanceText, isMissed } from '@/lib/attendance';
+import { captureTypeOf, summarizeLatency, toolTypeOf } from '@/lib/goal-constants';
+import { goalMeasure, withoutRunningTimers } from '@/lib/goal-measures';
 import { schoolYearStart } from '@/lib/school-year';
 import { periodService } from '@/lib/student-overview';
 import ProgressReportDocument, { type ProgressReportEdits } from '@/components/reports/ProgressReportDocument';
@@ -62,10 +64,17 @@ function ProgressReportPage() {
   const queryStudentId = searchParams.get('studentId');
   const [rememberedId, setRememberedId] = useState<string | undefined>();
   useEffect(() => { setRememberedId(defaultReportStudent(activeStudents.map(s => s.id))); }, [activeStudents]);
-  const studentId = queryStudentId ?? rememberedId ?? activeStudents[0]?.id;
+  const validQueryStudentId = queryStudentId && activeStudents.some(s => s.id === queryStudentId) ? queryStudentId : undefined;
+  const studentId = validQueryStudentId ?? rememberedId ?? activeStudents[0]?.id;
   useEffect(() => {
-    if (queryStudentId && activeStudents.some(s => s.id === queryStudentId)) rememberReportStudent(queryStudentId);
-  }, [queryStudentId, activeStudents]);
+    if (loading) return;
+    if (queryStudentId && !activeStudents.some(s => s.id === queryStudentId)) {
+      const fallbackId = defaultReportStudent(activeStudents.map(s => s.id));
+      router.replace(fallbackId ? `/progress-report?studentId=${fallbackId}` : '/progress-report', { scroll: false });
+      return;
+    }
+    if (validQueryStudentId) rememberReportStudent(validQueryStudentId);
+  }, [loading, queryStudentId, validQueryStudentId, activeStudents, router]);
   const student = students.find(s => s.id === studentId);
   const activeGoals = useMemo(() => student?.goals.filter(g => !g.isArchived) ?? [], [student]);
 
@@ -105,6 +114,7 @@ function ProgressReportPage() {
       .sort(compareSessionsOldestFirst);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessions, studentId, period, customRange]);
+  const heldSessions = useMemo(() => periodSessions.filter(s => !isMissed(s)), [periodSessions]);
 
   const goals = useMemo(() => activeGoals.filter(g => !excludedGoals.has(g.id)), [activeGoals, excludedGoals]);
   // While the printed copy is on the page, printing shows only that copy (globals.css, html.has-print-copy).
@@ -115,11 +125,22 @@ function ProgressReportPage() {
     return () => document.documentElement.classList.remove('has-print-copy');
   }, [hasPrintCopy]);
   const report = useMemo(
-    () => (student ? buildProgressReport({ student, goals, sessions: periodSessions }) : []),
-    [student, goals, periodSessions],
+    () => (student ? buildProgressReport({ student, goals, sessions: heldSessions }) : []),
+    [student, goals, heldSessions],
   );
   const attendance = periodSessions.length ? attendanceText(attendanceSummary(periodSessions)) : '';
-  const sessionCount = periodSessions.filter(s => s.goals?.some(g => goals.some(goal => goal.id === g.goalId))).length;
+  const sessionCount = useMemo(
+    () => heldSessions.filter(s =>
+      (s.goals ?? []).some(g => {
+        const goal = goals.find(item => item.id === g.goalId);
+        if (!goal) return false;
+        const data = withoutRunningTimers(g.data || {});
+        if (goalMeasure(goal, data) !== null) return true;
+        return toolTypeOf(captureTypeOf(goal)) === 'BEHAVIOR_LATENCY' && summarizeLatency(data).trialCount > 0;
+      })
+    ).length,
+    [heldSessions, goals],
+  );
   const periodLabel = range?.from
     ? `${formatDate(range.from)} – ${formatDate(range.to ?? range.from)}`
     : periodSessions.length

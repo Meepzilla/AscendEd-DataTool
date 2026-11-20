@@ -127,6 +127,9 @@ export default function CustomGoalTypeModal({
         setPreviewData(prev => ({ ...prev, [field]: value }));
       }
     },
+    adjustCount: (field, delta) => {
+      setPreviewData(prev => ({ ...prev, [field]: Math.max(0, (Number(prev[field]) || 0) + delta) }));
+    },
     handleInteraction: (_e, cb) => cb(),
     calculateAccuracy: () => goalAccuracyText(previewGoal, previewData),
     handleTrialClick: () => {},

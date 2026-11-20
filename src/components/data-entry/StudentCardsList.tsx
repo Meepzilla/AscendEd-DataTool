@@ -2,7 +2,7 @@
 'use client';
 
 import React, { lazy, Suspense } from 'react';
-import type { ServiceType, Student, StudentSessionState } from '@/lib/types';
+import type { GoalDataUpdater, ServiceType, Student, StudentSessionState } from '@/lib/types';
 import type { MissedReason } from '@/lib/attendance';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
@@ -28,7 +28,7 @@ interface StudentCardsListProps {
   handleInputChange: (studentId: string, field: 'activity' | 'notes', value: string) => void;
   sessionDuration: number | null;
   handleServiceMinutesChange: (studentId: string, next: Partial<Record<ServiceType, number>> | undefined) => void;
-  handleGoalDataChange: (studentId: string, goalId: string, field: string, value: any) => void;
+  handleGoalDataChange: (studentId: string, goalId: string, field: string, value: GoalDataUpdater) => void;
   handleMoveGoal: (studentId: string, goalId: string, direction: 'up' | 'down') => void;
   addStudentSlot: () => void;
   isStudentAccessLocked: boolean;

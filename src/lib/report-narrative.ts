@@ -103,16 +103,29 @@ interface GoalAnalysis {
  * sessions can overshoot the values actually recorded (e.g. 108% or -2 occurrences), and those ends
  * are the fitted values at those dates, not observed ones.
  */
+function localDayTime(raw: string): number {
+  const d = parseDateOnly(raw);
+  return Number.isNaN(d.getTime()) ? NaN : new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+}
+
 function fitTrend(goal: Goal, points: { date: string; value: number; weight?: number }[]): GoalAnalysis['trend'] {
-  const sorted = [...points].sort((a, b) => parseDateOnly(a.date).getTime() - parseDateOnly(b.date).getTime());
+  const sorted = [...points].sort((a, b) => {
+    const ta = parseDateOnly(a.date).getTime();
+    const tb = parseDateOnly(b.date).getTime();
+    if (Number.isNaN(ta) && Number.isNaN(tb)) return 0;
+    if (Number.isNaN(ta)) return 1;
+    if (Number.isNaN(tb)) return -1;
+    return ta - tb;
+  });
   const values = sorted.map(p => p.value);
   const n = values.length;
   if (n < MIN_TREND_SESSIONS) return { kind: 'too few', from: values[0] ?? 0, to: values[n - 1] ?? 0 };
-  const first = parseDateOnly(sorted[0].date).getTime();
+  const rawTimes = sorted.map(p => parseDateOnly(p.date).getTime());
+  const first = rawTimes[0];
   // Elapsed days from the first session; falls back to session order if a date does not parse.
-  const xs = Number.isNaN(first) || sorted.some(p => Number.isNaN(parseDateOnly(p.date).getTime()))
+  const xs = rawTimes.some(Number.isNaN)
     ? sorted.map((_, i) => i)
-    : sorted.map(p => (parseDateOnly(p.date).getTime() - first) / 86400000);
+    : rawTimes.map(t => (t - first) / 86400000);
   // Each session counts by its weight: its opportunities for a trial-based goal (trendWeight), so a session with
   // 1 response out of 1 pulls the line a fifth as much as one with 5 out of 5. Equal weights give the plain fit.
   const raw = sorted.map(p => (p.weight !== undefined && Number.isFinite(p.weight) ? Math.max(p.weight, 0) : 1));
@@ -121,8 +134,10 @@ function fitTrend(goal: Goal, points: { date: string; value: number; weight?: nu
   const wavg = (nums: number[]) => nums.reduce((sum, v, i) => sum + v * weights[i], 0) / totalWeight;
   const meanX = wavg(xs);
   const meanY = wavg(values);
-  // All sessions on the same day: no elapsed span to fit against, so the line is flat at the mean.
-  if (xs[n - 1] - xs[0] <= 0) return { kind: 'stable', from: meanY, to: meanY };
+  // All sessions on the same local calendar day: no multi-day span to fit against, so the line is flat at the mean.
+  const dayTimes = sorted.map(p => localDayTime(p.date));
+  const allSameLocalDay = !dayTimes.some(Number.isNaN) && dayTimes[n - 1] - dayTimes[0] <= 0;
+  if (allSameLocalDay || xs[n - 1] - xs[0] <= 0) return { kind: 'stable', from: meanY, to: meanY };
   let num = 0, den = 0;
   xs.forEach((x, i) => { num += weights[i] * (x - meanX) * (values[i] - meanY); den += weights[i] * (x - meanX) ** 2; });
   const slope = den ? num / den : 0;
@@ -240,7 +255,9 @@ function nextStep(a: GoalAnalysis): string | null {
 
 /** Task analysis: the steps done independently in the latest session, and the step that most often needed help. */
 function taskAnalysisSentence(name: string, data: Record<string, any>[]): string | null {
-  const sessions = data.map(d => (Array.isArray(d.steps) ? d.steps as TaskStepScore[] : []).filter(s => s && s.level)).filter(s => s.length);
+  const sessions = data
+    .map(d => (Array.isArray(d.steps) ? d.steps as TaskStepScore[] : []).filter(s => s && s.level && s.level !== 'NotDone'))
+    .filter(s => s.length);
   if (!sessions.length) return null;
   const latest = sessions[sessions.length - 1];
   const independent = latest.filter(s => s.level === 'Independent').length;

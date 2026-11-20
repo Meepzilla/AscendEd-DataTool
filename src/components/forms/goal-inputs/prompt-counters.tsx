@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useLongPress, longPressStyle } from '@/hooks/use-long-press';
 import { PROMPT_TYPES, PROMPT_COLORS, PROMPT_ABBREVIATIONS, PROMPT_HOTKEY_MAP } from '@/lib/promptConstants';
 import { applyGoalHotkey, removeCorrect } from '@/lib/data-entry-hotkeys';
-import type { GoalType, PromptType } from '@/lib/types';
+import type { GoalDataUpdater, GoalType, PromptType } from '@/lib/types';
 import { FormItem, FormLabel } from './shared';
 
 // The Prompt Levels buttons under a goal's inputs (for goal types that tally prompts).
@@ -14,13 +14,18 @@ import { FormItem, FormLabel } from './shared';
 interface Props {
   captureType: GoalType;
   data: Record<string, any>;
-  onChange: (field: string, data: Record<string, any>) => void;
+  onChange: (field: string, data: GoalDataUpdater) => void;
   isArchived?: boolean;
   interact: (e: React.SyntheticEvent<HTMLButtonElement>, callback: () => void) => void;
 }
 
 export default function PromptLevelCounters({ captureType, data, onChange, isArchived, interact }: Props) {
   const { toast } = useToast();
+  const isTrialType =
+    captureType === 'DISCRETE_TRIALS' ||
+    captureType === 'SEQUENCED_TRIALS' ||
+    captureType === 'COMMUNICATION_OPPORTUNITIES';
+
   return (
     <FormItem>
       <FormLabel>Prompt Levels</FormLabel>
@@ -37,20 +42,29 @@ export default function PromptLevelCounters({ captureType, data, onChange, isArc
               disabled={isArchived}
               // Independent also records a correct response, the same as its hotkey.
               onIncrement={(e) => interact(e, () => {
-                if (pt !== 'Independent') return onChange(pt, { ...data, [pt]: count + 1 });
-                const next = applyGoalHotkey(captureType, 'I', data);
-                if (next) return onChange(pt, next);
-                if (captureType === 'DISCRETE_TRIALS' || captureType === 'SEQUENCED_TRIALS' || captureType === 'COMMUNICATION_OPPORTUNITIES') {
+                if (pt !== 'Independent') {
+                  onChange(pt, current => ({ ...current, [pt]: Number(current[pt] || 0) + 1 }));
+                  return;
+                }
+                if (isTrialType && !applyGoalHotkey(captureType, 'I', data)) {
                   toast({ title: 'All Trials Filled', description: 'Every trial is scored, so there is no trial to mark correct.' });
                   return;
                 }
-                onChange(pt, { ...data, [pt]: count + 1 });
+                onChange(pt, current => {
+                  const next = applyGoalHotkey(captureType, 'I', current);
+                  if (next) return next;
+                  if (isTrialType) return current;
+                  return { ...current, [pt]: Number(current[pt] || 0) + 1 };
+                });
               })}
               // Removing an Independent prompt also takes back the correct response it added.
               onDecrement={(e) => interact(e, () => {
-                if (count === 0) return;
-                const lowered = { ...data, [pt]: count - 1 };
-                onChange(pt, pt === 'Independent' ? removeCorrect(captureType, lowered) : lowered);
+                onChange(pt, current => {
+                  const curCount = Number(current[pt] || 0);
+                  if (curCount === 0) return current;
+                  const lowered = { ...current, [pt]: curCount - 1 };
+                  return pt === 'Independent' ? removeCorrect(captureType, lowered) : lowered;
+                });
               })}
             />
           );

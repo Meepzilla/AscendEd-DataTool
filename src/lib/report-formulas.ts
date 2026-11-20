@@ -52,6 +52,7 @@ export function goalStatExplanations(
   recorded: { date: string; value: number; data: Record<string, any> }[],
   aim: AimLine | null,
   mastery: number,
+  totalSessions = recorded.length,
 ): GoalStatExplanations {
   const info = goalMeasureInfo(goal);
   const type = captureTypeOf(goal);
@@ -87,7 +88,7 @@ export function goalStatExplanations(
     average: average
       ? `The average of each session's ${label}: ${average}. Each session counts the same, however many trials it had.`
       : `The average of each session's ${label}.`,
-    metTarget: target === undefined ? '' : `Sessions where the ${label} was ${comparison(direction)} the target (${targetText}): ${met} of ${values.length}. `
+    metTarget: target === undefined ? '' : `Sessions where the ${label} was ${comparison(direction)} the target (${targetText}): ${met} of ${totalSessions}. `
       + `Mastery is the target met in ${mastery} session${mastery === 1 ? '' : 's'} in a row.`,
     aimLine: aimText,
   };

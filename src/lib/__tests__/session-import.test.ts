@@ -78,5 +78,64 @@ describe('planSessionImport dedup', () => {
     expect(plan.students[0].goals).toHaveLength(2);
     expect(plan.students[0].goals[1]).toMatchObject({ id: 'g-new', name: 'ARTICULATION' });
   });
+
+  it('round-trips Data Capture Type and de-identified CSV exports through parseSessionCsvRows and planSessionImport', async () => {
+    const Papa = (await import('papaparse')).default;
+    const { buildSessionsCsv, unescapeCsvFormula } = await import('../session-csv');
+    const { parseSessionCsvRows } = await import('../session-import');
+
+    const exportedSession = session({
+      sessionId: 'sess-capture-1',
+      studentId: 'st1',
+      studentName: 'Ava',
+      date: '2026-10-08',
+      time: '10:00',
+      endTime: '10:30',
+      originalGoalHeaders: [
+        { id: 'g-custom', name: 'Social via GAS', type: 'LANGUAGE_EXPRESSION', dataCaptureType: 'GOAL_ATTAINMENT_SCALE', smartGoal: '' },
+      ],
+      goals: [
+        { goalId: 'g-custom', goalName: 'Social via GAS', goalType: 'LANGUAGE_EXPRESSION', data: { gasLevel: 1, recorded: true } },
+      ],
+    });
+
+    // Identified export preserves Data Capture Type on synthesized student goal
+    const { csv: identifiedCsv } = buildSessionsCsv([exportedSession], 'Ava');
+    const identifiedRows = Papa.parse<Record<string, string>>(identifiedCsv, {
+      header: true,
+      skipEmptyLines: true,
+      transform: (v: string) => unescapeCsvFormula(v),
+    }).data;
+    const parsedIdentified = parseSessionCsvRows(identifiedRows);
+    expect(parsedIdentified).toHaveLength(1);
+    expect(parsedIdentified[0].goals[0].dataCaptureType).toBe('GOAL_ATTAINMENT_SCALE');
+    const planIdentified = planSessionImport(students, [], parsedIdentified, 'u');
+    expect(planIdentified.newCount).toBe(1);
+    expect(planIdentified.addedGoalCount).toBe(1);
+    expect(planIdentified.students[0].goals.find(g => g.id === 'g-custom')).toMatchObject({
+      type: 'LANGUAGE_EXPRESSION',
+      dataCaptureType: 'GOAL_ATTAINMENT_SCALE',
+    });
+
+    // De-identified export (no Student Name / Goal Name) parses and imports cleanly by IDs
+    const { csv: deidCsv } = buildSessionsCsv([exportedSession], 'Ava', { deidentified: true });
+    const deidRows = Papa.parse<Record<string, string>>(deidCsv, {
+      header: true,
+      skipEmptyLines: true,
+      transform: (v: string) => unescapeCsvFormula(v),
+    }).data;
+    const parsedDeid = parseSessionCsvRows(deidRows);
+    expect(parsedDeid).toHaveLength(1);
+    expect(parsedDeid[0].studentId).toBe('st1');
+    expect(parsedDeid[0].goals[0]).toMatchObject({
+      goalId: 'g-custom',
+      goalType: 'LANGUAGE_EXPRESSION',
+      dataCaptureType: 'GOAL_ATTAINMENT_SCALE',
+      data: { gasLevel: 1, recorded: true },
+    });
+    const planDeid = planSessionImport(students, [], parsedDeid, 'u');
+    expect(planDeid.newCount).toBe(1);
+    expect(planDeid.students[0].goals.find(g => g.id === 'g-custom')?.dataCaptureType).toBe('GOAL_ATTAINMENT_SCALE');
+  });
 });
 

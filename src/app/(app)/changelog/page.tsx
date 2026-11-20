@@ -33,6 +33,13 @@ const allChangelogEntries: ChangelogEntry[] = [
   },
   {
     date: '2026-11-19',
+    title: 'More Reliable Data Entry, Merging, Exports and Reports',
+    description: 'Rapid taps and two-thumb tallying on iPad (and long-press subtracts) no longer drop or overwrite earlier counts on Data Entry or Edit Session, and opening Manage Groups from Load Group no longer risks freezing Data Entry. Merging split sessions now preserves Story Elements parts marked N/A when another part was untouched, keeps equal-length duration episodes and latencies recorded at different times, recalculates Duration and ABC summaries, joins observation notes, and keeps headers for earlier goals. Goal forms now allow negative Goal Attainment Scaling targets (-2 and -1), targets above 100 for count/duration/latency goals, and GAS level descriptions when creating a new template. Pressing H for fluency prolongations now increments total syllables like the + button, and the student sidebar now checks Minimum Total Uses per Session on Communication Functions goals. CSV exports now include each goal\'s Data Capture Type and use the share sheet on Android/iPad, and de-identified CSV exports can be imported back cleanly. Reports, GAS tables, Latency/Response Time mastery, Task Analysis narratives, Progress Report session counts, and the sticky Sessions table header now stay consistent across edge cases.',
+    type: 'fix',
+    icon: ShieldCheck,
+  },
+  {
+    date: '2026-11-19',
     title: 'Minutes Column on Sessions',
     description: 'The Sessions tab has a new Minutes column, after End Time, showing how long each session was, worked out from its start and end times. A missed session, or one without both times, shows a dash.',
     type: 'feature',

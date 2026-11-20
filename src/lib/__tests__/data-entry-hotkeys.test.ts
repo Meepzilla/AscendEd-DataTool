@@ -34,5 +34,11 @@ describe('Data Entry hotkeys', () => {
     const decComm = removeCorrect('COMMUNICATION_COUNT', incComm!);
     expect(decComm.count).toBe(2);
   });
+  it('increments totalSyllables for all fluency dysfluency hotkeys including H (prolongations)', () => {
+    for (const [key, field] of [['B', 'blocks'], ['R', 'repetitions'], ['H', 'prolongations'], ['J', 'interjections']] as const) {
+      const next = applyGoalHotkey('FLUENCY_SYLLABLE_STUTTER', key, { totalSyllables: 10, [field]: 0 });
+      expect(next).toMatchObject({ [field]: 1, totalSyllables: 11 });
+    }
+  });
 });
 

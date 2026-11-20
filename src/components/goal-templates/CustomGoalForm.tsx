@@ -65,9 +65,10 @@ export default function CustomGoalForm({ student, disabled }: { student: Student
   const fromText = (field: keyof Overrides) => !!suggested && overrides[field] === undefined;
 
   const info = goalMeasureInfo({ type, targetDirection: direction, customType });
+  const minTarget = info.min ?? 0;
   const targetNumber = target === '' ? undefined : Number(target);
   const targetError = targetNumber === undefined ? null
-    : Number.isNaN(targetNumber) || targetNumber < 0 ? 'Enter a number of 0 or more.'
+    : Number.isNaN(targetNumber) || targetNumber < minTarget ? `Enter a number of ${minTarget} or more.`
     : info.max !== undefined && targetNumber > info.max ? `The most it can be is ${info.max}.` : null;
   const masteryNumber = Number(mastery);
   const busy = disabled || saving;
@@ -171,7 +172,7 @@ export default function CustomGoalForm({ student, disabled }: { student: Student
         </div>
         <div className="space-y-1">
           <Label htmlFor="customGoalSessionTarget">Target: {info.label.toLowerCase()}{info.unit ? ` (${info.unit.trim()})` : ''}{hint('target')}</Label>
-          <Input id="customGoalSessionTarget" type="number" inputMode="decimal" min={0} max={info.max} value={target}
+          <Input id="customGoalSessionTarget" type="number" inputMode="decimal" min={minTarget} max={info.max} value={target}
             onChange={e => set('target')(e.target.value)} disabled={busy} aria-invalid={!!targetError} />
           {targetError && <p className="text-xs text-destructive">{targetError}</p>}
         </div>

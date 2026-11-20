@@ -1,11 +1,148 @@
-import type { Goal, SessionData, SessionGoalData, Student } from './types';
+import type { Goal, GoalType, SessionData, SessionGoalData, Student } from './types';
 import { generateUUID, parseDateOnly } from './helpers';
 import { byDateDesc, byName } from './data-store';
+import { GOAL_TYPE_FIELDS } from './goal-constants';
+import { knownGoalType } from './legacy-goal-types';
+import { parseDate } from './student-import';
+import { missedReasonFromCsv } from './attendance';
+import { parseServiceMinutesByType } from './session-csv';
 
 // Adding sessions imported from a CSV file (Reports → Import) to the ones on this device.
 
+/** A goal row read from a CSV file, optionally carrying its separate Data Capture Type. */
+export type ImportedSessionGoal = SessionGoalData & { dataCaptureType?: GoalType };
+
 /** A session read from a CSV file: the Session ID it had in the file, without a new one yet. */
-export type ImportedSession = Omit<SessionData, 'sessionId'> & { sourceSessionId?: string };
+export type ImportedSession = Omit<SessionData, 'sessionId' | 'goals'> & {
+  goals: ImportedSessionGoal[];
+  sourceSessionId?: string;
+};
+
+/**
+ * A CSV cell as the value it was exported from: lists and objects were written as JSON, numbers and true/false as
+ * text. Fields that are text in the goal type's starting values (a target sound, notes) stay text, so "5" or
+ * "[1,2]" typed into them comes back unchanged.
+ */
+function cellValue(raw: string, goalType: string, key: string): unknown {
+  const defaults = GOAL_TYPE_FIELDS[goalType as GoalType] as Record<string, unknown> | undefined;
+  if (defaults && typeof defaults[key] === 'string') return raw;
+  const text = raw.trim();
+  if (text.startsWith('[') || text.startsWith('{')) {
+    try { return JSON.parse(text); } catch { return raw; }
+  }
+  if (text === 'true' || text === 'false') return text === 'true';
+  if (text === 'null') return null;
+  return text !== '' && !Number.isNaN(Number(text)) ? Number(text) : raw;
+}
+
+/**
+ * Groups parsed CSV rows (from Papa Parse with `header: true`) into ImportedSession records.
+ * Supports both identified exports and de-identified exports (where Student Name and Goal Name are omitted),
+ * and reads the optional "Data Capture Type" column so goals with a custom capture tool round-trip cleanly.
+ */
+export function parseSessionCsvRows(rows: Record<string, any>[]): ImportedSession[] {
+  if (rows.length === 0) {
+    throw new Error('CSV file is empty or contains no data rows.');
+  }
+
+  const sessionsMap = new Map<string, ImportedSession>();
+
+  for (const row of rows) {
+    const sessionId = row['Session ID'];
+    if (!sessionId) {
+      // No row content here: a row is one student's session data, including their name.
+      console.warn('Skipping row with missing Session ID.');
+      continue;
+    }
+
+    let sessionEntry = sessionsMap.get(sessionId);
+
+    // If it's the first time seeing this session ID, create the base session object.
+    if (!sessionEntry) {
+      if (!row['Date'] || (!row['Student ID'] && !row['Student Name'])) {
+        // No session ID in the message: it is shown in the toast below.
+        throw new Error('A row is missing required fields (Date, and Student ID or Student Name).');
+      }
+      // The date is read as the written day (YYYY-MM-DD, M/D/YYYY, "Aug 1, 2026"...) and stored as YYYY-MM-DD; a
+      // day that doesn't exist (11/31/2026) or text that isn't a date fails the import, not a broken session.
+      const date = parseDate(row['Date']);
+      if (!date) throw new Error(`A row has a date that isn't a real date ("${String(row['Date']).slice(0, 30)}"), so the file can't be imported.`);
+      sessionEntry = {
+        studentId: row['Student ID'] || '',
+        studentName: row['Student Name'] || '',
+        date,
+        time: row['Start Time'] || '',
+        endTime: row['End Time'] && row['End Time'] !== 'N/A' ? row['End Time'] : undefined,
+        activity: row['Activity'] || '',
+        notes: row['Session Notes'] || '',
+        goals: [],
+        originalGoalHeaders: [], // Not in the file; Edit Session uses the student's goals instead.
+        sourceSessionId: sessionId,
+      };
+      // A missed session comes back missed, with its reason (the export's Attendance column).
+      const missedReason = missedReasonFromCsv(row['Attendance']);
+      if (missedReason) sessionEntry.missed = { reason: missedReason };
+      // The export's by-type minutes come back as the session's split. The column repeats on
+      // every goal row of the session; this first row's value is the one used.
+      const serviceMinutes = parseServiceMinutesByType(row['Service Minutes by Type']);
+      if (serviceMinutes) sessionEntry.serviceMinutes = serviceMinutes;
+      sessionsMap.set(sessionId, sessionEntry);
+    }
+
+    // Process goal rows for both identified exports (Goal ID + Goal Name) and de-identified exports (Goal ID only).
+    const hasGoalRow = Boolean(row['Goal ID'] || (row['Goal Name'] && row['Goal Type']));
+    if (hasGoalRow) {
+      // A goal type this app doesn't know would make a goal that can't be measured or charted.
+      const goalType = knownGoalType(row['Goal Type']);
+      if (!goalType) throw new Error(`A row has a goal type this app doesn't know ("${String(row['Goal Type']).slice(0, 40)}"), so the file can't be imported.`);
+
+      const rawCaptureType = row['Data Capture Type'];
+      let dataCaptureType: GoalType | undefined;
+      if (rawCaptureType) {
+        const parsedCaptureType = knownGoalType(rawCaptureType);
+        if (!parsedCaptureType) {
+          throw new Error(`A row has a data capture type this app doesn't know ("${String(rawCaptureType).slice(0, 40)}"), so the file can't be imported.`);
+        }
+        if (parsedCaptureType !== goalType) dataCaptureType = parsedCaptureType;
+      }
+      const effectiveCaptureType = dataCaptureType ?? goalType;
+
+      const goalData: SessionGoalData['data'] = {};
+      for (const key in row) {
+        if (key.startsWith('Goal Data: ')) {
+          const dataKeyRaw = key.replace('Goal Data: ', '');
+          // Export spaced the key out before each capital ("Partial Physical", "total Syllables"), keeping
+          // the first letter's case, so joining the words back gives the original key.
+          const camelCaseKey = dataKeyRaw.replace(/\s+(.)/g, (_match: string, letter: string) => letter.toUpperCase()).trim();
+          if (!camelCaseKey || camelCaseKey === '__proto__' || camelCaseKey === 'prototype' || camelCaseKey === 'constructor') continue;
+
+          const rawValue = row[key];
+          // Columns from other goal types are empty for this goal.
+          if (rawValue === undefined || rawValue === null || rawValue === '') continue;
+          goalData[camelCaseKey] = cellValue(String(rawValue), effectiveCaptureType, camelCaseKey);
+        }
+      }
+
+      const sessionGoal: ImportedSessionGoal = {
+        goalId: row['Goal ID'] || '',
+        goalName: row['Goal Name'] || '',
+        goalType,
+        ...(dataCaptureType ? { dataCaptureType } : {}),
+        data: goalData,
+      };
+
+      // Avoid duplicating goals if they appear in multiple rows for the same session.
+      const duplicateGoal = sessionGoal.goalId
+        ? sessionEntry.goals.some(g => g.goalId === sessionGoal.goalId)
+        : sessionEntry.goals.some(g => g.goalName === sessionGoal.goalName && g.goalType === sessionGoal.goalType);
+      if (!duplicateGoal) {
+        sessionEntry.goals.push(sessionGoal);
+      }
+    }
+  }
+
+  return Array.from(sessionsMap.values());
+}
 
 export interface ImportPlan {
   /** The students with any goals the import added (sorted); save them when addedGoalCount > 0. */
@@ -51,23 +188,31 @@ export function planSessionImport(currentStudents: Student[], currentSessions: S
   // Goals a session needs that its student doesn't have. They are added only with a session that is imported, so
   // a skipped duplicate never brings back a goal (e.g. one deleted after the first import).
   const pendingGoals = new Map<string, Goal>();
-  const pendingKey = (studentId: string, g: SessionGoalData) => `${studentId}\u0000${nameKey(g.goalName) || g.goalId}\u0000${g.goalType}`;
+  const pendingKey = (studentId: string, g: ImportedSessionGoal) =>
+    `${studentId}\u0000${nameKey(g.goalName) || g.goalId}\u0000${g.goalType}\u0000${g.dataCaptureType ?? g.goalType}`;
   for (const { sourceSessionId, ...s } of toImport) {
     const student = findStudent(s as ImportedSession);
     if (!student) { unmatchedCount++; continue; }
     const needed: Goal[] = [];
-    const goals = (s.goals || []).map(g => {
-      const gNameKey = nameKey(g.goalName);
-      let goal = student.goals.find(sg => sg.id === g.goalId)
-        ?? (gNameKey ? student.goals.find(sg => nameKey(sg.name) === gNameKey && sg.type === g.goalType) : undefined);
+    const goals: SessionGoalData[] = (s.goals || []).map(g => {
+      const { dataCaptureType, ...goalFields } = g;
+      const gNameKey = nameKey(goalFields.goalName);
+      let goal = student.goals.find(sg => sg.id === goalFields.goalId)
+        ?? (gNameKey ? student.goals.find(sg => nameKey(sg.name) === gNameKey && sg.type === goalFields.goalType) : undefined);
       if (!goal) {
         const key = pendingKey(student.id, g);
-        const fallbackName = (g.goalName || '').trim() || g.goalType;
-        goal = pendingGoals.get(key) ?? { id: g.goalId || generateUUID(), name: fallbackName, type: g.goalType, smartGoal: '' };
+        const fallbackName = (goalFields.goalName || '').trim() || goalFields.goalType;
+        goal = pendingGoals.get(key) ?? {
+          id: goalFields.goalId || generateUUID(),
+          name: fallbackName,
+          type: goalFields.goalType,
+          ...(dataCaptureType && dataCaptureType !== goalFields.goalType ? { dataCaptureType } : {}),
+          smartGoal: '',
+        };
         pendingGoals.set(key, goal);
         needed.push(goal);
       }
-      return { ...g, goalId: goal.id, goalName: goal.name };
+      return { ...goalFields, goalId: goal.id, goalName: goal.name };
     });
     const session = { ...s, studentId: student.id, studentName: student.name, goals };
     if ((sourceSessionId && ids.has(sourceSessionId)) || contents.has(contentKey(session))) { duplicateCount++; continue; }
