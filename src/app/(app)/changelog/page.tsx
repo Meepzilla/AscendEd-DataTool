@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-20',
+    title: 'No More Double Unlock When Switching Tabs After an Update',
+    description: 'Switching to another tab right after unlocking the app (such as going from Settings to Sessions) no longer asks for your passcode a second time. When a new version of the app was released, the background update was replacing cached pages while the earlier version was still open, which caused the next tab switch to reload the page and re-lock the app. Updates now wait until you tap Reload on the update notice, lock the app, or reopen it, so switching tabs stays unlocked.',
+    type: 'fix',
+    icon: Lock,
+  },
+  {
+    date: '2026-11-20',
     title: 'Sessions List Stopped Flickering',
     description: 'The Sessions tab no longer flickers at the bottom of the screen. The height that lets the session list fill the screen was being measured off the list itself, so it kept adjusting by a pixel and redrawing. It is now worked out from the display size setting, and a single pixel of difference no longer resizes the list.',
     type: 'fix',
