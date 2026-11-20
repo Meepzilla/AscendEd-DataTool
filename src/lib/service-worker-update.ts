@@ -167,3 +167,27 @@ export async function activateWaitingUpdateBeforeReload(timeoutMs = 500): Promis
     return false;
   }
 }
+
+export interface ApplyUpdateState {
+  /** The page is on screen. */
+  visible: boolean;
+  passcodeOn: boolean;
+  /** The passcode has been entered (always true without a passcode). */
+  unlocked: boolean;
+  /** The app has just come back to the foreground. */
+  returningToForeground: boolean;
+  /** The app reloaded itself for an update in the last minute (so a worker that won't activate can't loop). */
+  recentlyAutoUpdated: boolean;
+}
+
+/**
+ * Whether a waiting update can be put in use right away without costing the user anything:
+ * while the lock screen is showing (nothing is open yet), or without a passcode when the app comes
+ * back to the foreground (a reload keeps unsaved Data Entry work and there is nothing to unlock).
+ * In the middle of an unlocked session it waits for the user to choose Reload.
+ */
+export function shouldApplyUpdateNow(state: ApplyUpdateState): boolean {
+  if (!state.visible || state.recentlyAutoUpdated) return false;
+  if (state.passcodeOn) return !state.unlocked;
+  return state.returningToForeground;
+}

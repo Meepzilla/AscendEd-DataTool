@@ -61,10 +61,11 @@ export default function RootLayout({
         <AppProviders>
           {children} {/* Renders the current page component or nested layouts */}
           <Toaster /> {/* Renders toast notifications across the application */}
-          <ServiceWorkerRegistration />
           <ZoomCompensation />
           <ThemeSync />
         </AppProviders>
+        {/* Outside the passcode lock, so updates are fetched and applied while the lock screen is showing. */}
+        <ServiceWorkerRegistration />
       </body>
     </html>
   );
