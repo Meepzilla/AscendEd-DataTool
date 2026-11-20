@@ -46,7 +46,7 @@ export function percentAsFraction(percent: number): [number, number] | null {
   return null;
 }
 
-type BlankGoal = Partial<Pick<Goal, 'smartGoal' | 'sessionTargetValue' | 'masterySessions' | 'blankFills' | 'type' | 'dataCaptureType' | 'targetDirection'>>;
+type BlankGoal = Partial<Pick<Goal, 'smartGoal' | 'sessionTargetValue' | 'masterySessions' | 'blankFills' | 'type' | 'dataCaptureType' | 'targetDirection' | 'customType'>>;
 
 /** What each blank in the text is filled with automatically from the goal's settings (undefined when nothing fits). */
 export function automaticBlankValues(text: string, goal: BlankGoal): (string | undefined)[] {
@@ -120,6 +120,10 @@ export function fillNameBlanks(goal: BlankGoal & { name: string }): string {
 const NOT_PERCENT = new Set(['COMMUNICATION_FUNCTIONS', 'QUALITATIVE_OBSERVATION', 'COGNITIVE', 'BEHAVIOR_FREQUENCY', 'BEHAVIOR_DURATION', 'BEHAVIOR_LATENCY', 'GOAL_ATTAINMENT_SCALE', 'COMMUNICATION_COUNT', 'COMMUNICATION_DURATION', 'RESPONSE_TIME']);
 function percentTarget(goal: BlankGoal): boolean {
   const type = goal.dataCaptureType || goal.type || '';
+  if (type === 'CUSTOM') {
+    const kind = goal.customType?.kind;
+    return kind === 'accuracy' || kind === 'checklist' || kind === 'yesno';
+  }
   if (type === 'BEHAVIOR_ABC') return goal.targetDirection === 'increase';
   return !NOT_PERCENT.has(type);
 }

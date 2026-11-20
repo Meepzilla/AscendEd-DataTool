@@ -22,6 +22,7 @@ import OrganizationNameSetting from '@/components/settings/OrganizationNameSetti
 import SchoolYearSetting from '@/components/settings/SchoolYearSetting';
 import AbcListsCard from '@/components/settings/AbcListsCard';
 import BuiltInGoalsCard from '@/components/settings/BuiltInGoalsCard';
+import CustomGoalTypesCard from '@/components/settings/CustomGoalTypesCard';
 
 import { SIDEBAR_ENABLED_KEY, readSidebarEnabled } from '@/lib/sidebar-setting';
 
@@ -132,6 +133,8 @@ export default function SettingsPage() {
             </div>
         </CardContent>
       </Card>
+
+      <CustomGoalTypesCard />
 
       <AbcListsCard />
 

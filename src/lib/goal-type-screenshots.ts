@@ -1,4 +1,4 @@
-import type { GoalType } from './types';
+import type { BuiltInGoalType } from './types';
 
 export interface GoalTypeScreenshot {
   /** Public path under /public/help/goal-types/ (served statically and precached offline). */
@@ -10,10 +10,10 @@ export interface GoalTypeScreenshot {
 }
 
 /**
- * Data Entry screenshots for every goal type, shown beside each type in Help → Goal types.
- * Typed as Record<GoalType, ...> so adding a new GoalType requires adding its screenshot here.
+ * Data Entry screenshots for every built-in goal type, shown beside each type in Help → Goal types.
+ * Typed as Record<BuiltInGoalType, ...> so adding a new built-in GoalType requires adding its screenshot here.
  */
-export const GOAL_TYPE_SCREENSHOTS: Record<GoalType, GoalTypeScreenshot> = {
+export const GOAL_TYPE_SCREENSHOTS: Record<BuiltInGoalType, GoalTypeScreenshot> = {
   AAC: { src: '/help/goal-types/aac.webp', width: 330, height: 323 },
   ARTICULATION: { src: '/help/goal-types/articulation.webp', width: 330, height: 323 },
   BEHAVIOR_ABC: { src: '/help/goal-types/behavior-abc.webp', width: 330, height: 800 },

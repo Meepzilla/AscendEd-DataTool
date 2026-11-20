@@ -14,7 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
-import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
+import { freshGoalData } from '@/lib/data-entry-session';
 import MissedSessionDialog from '@/components/data-entry/MissedSessionDialog';
 import ServiceMinutesField from '@/components/ServiceMinutesField';
 import type { MissedReason } from '@/lib/attendance';
@@ -187,7 +187,7 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
                       key={goal.id}
                       id={`goal-input-${student.id}-${goal.id}`}
                       goal={goal}
-                      data={state.goalData[goal.id] || GOAL_TYPE_FIELDS[goal.type]}
+                      data={state.goalData[goal.id] || freshGoalData(goal)}
                       onChange={(updatedField, newData) => handleGoalDataChange(student.id, goal.id, updatedField, newData)}
                       isFocused={isGoalFocused}
                       onSetFocus={() => handleSetGoalFocus(goal)}

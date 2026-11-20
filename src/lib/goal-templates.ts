@@ -1,5 +1,6 @@
 import type { Goal, GoalTemplate, Student } from './types';
 import { generateUUID } from './helpers';
+import { cloneCustomGoalType } from './goal-types/custom';
 
 /** A student goal made from a template. */
 export function goalFromTemplate(template: GoalTemplate): Goal {
@@ -16,6 +17,7 @@ export function goalFromTemplate(template: GoalTemplate): Goal {
     ...(template.baseline !== undefined ? { baseline: template.baseline } : {}),
     ...(template.taskSteps?.length ? { taskSteps: [...template.taskSteps] } : {}),
     ...(template.gasLevelDescriptions?.length ? { gasLevelDescriptions: [...template.gasLevelDescriptions] } : {}),
+    ...(template.customType ? { customType: cloneCustomGoalType(template.customType) } : {}),
   };
 }
 

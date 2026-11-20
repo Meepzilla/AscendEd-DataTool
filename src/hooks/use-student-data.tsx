@@ -23,6 +23,7 @@ import { planRestore, restoreBackupSettings } from '@/lib/restore';
 import { loadCustomAbcLists } from '@/lib/abc-lists';
 import { applyStudentImport, type ImportStudent } from '@/lib/student-import';
 import { getStudentGroups } from '@/lib/student-groups';
+import { getCustomGoalTypes } from '@/lib/custom-goal-types';
 import { visibleTemplates, deletedBuiltInTemplates as listDeletedBuiltIns, restoreBuiltInTemplates as restoreBuiltInList } from '@/lib/builtin-goals';
 import { mergeProblem, mergeSessions } from '@/lib/session-merge';
 
@@ -416,7 +417,10 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   // The refs, not React state: a backup taken right after a rapid change exports what
   // is stored, not the state from the last render.
   const exportBackup = useCallback(
-    () => createBackup({ students: studentsRef.current, goalTemplates: templatesRef.current, sessions: sessionsRef.current }, { abcLists: loadCustomAbcLists() ?? undefined, studentGroups: getStudentGroups(currentUser?.uid) }),
+    () => createBackup(
+      { students: studentsRef.current, goalTemplates: templatesRef.current, sessions: sessionsRef.current },
+      { abcLists: loadCustomAbcLists() ?? undefined, studentGroups: getStudentGroups(currentUser?.uid), customGoalTypes: getCustomGoalTypes(currentUser?.uid) },
+    ),
     [currentUser],
   );
 

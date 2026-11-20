@@ -12,7 +12,6 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Edit, Trash2, PlusCircle, Info, Target, Edit3, CheckSquare, TrendingUp, Archive, ArchiveRestore, Upload, Download, ArrowLeft, BarChart2, MoreHorizontal } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { formatDate, formatGoalTarget, goalStatement, goalTypeLabel } from '@/lib/helpers';
-import { captureTypeOf } from '@/lib/goal-constants';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
@@ -303,11 +302,16 @@ export default function StudentProfileView() {
                   <div>
                       <h3 className="text-lg font-semibold text-primary">{fillNameBlanks(goal)}</h3>
                       <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                        <Badge variant="secondary">{goalTypeLabel(captureTypeOf(goal))}</Badge>
+                        <Badge variant="secondary" className="inline-flex items-center gap-1">
+                          {goal.type === 'CUSTOM' && goal.customType?.color && (
+                            <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: goal.customType.color }} aria-hidden />
+                          )}
+                          {goalTypeLabel(goal)}
+                        </Badge>
                         {goal.sessionTargetValue !== undefined && (
                           <Badge variant="outline">
                             <TrendingUp className="mr-1.5 h-3.5 w-3.5 text-green-700 dark:text-green-600" />
-                            Target: {formatGoalTarget(captureTypeOf(goal), goal.sessionTargetValue, goal.targetDirection, goal.sessionTargetUses)}
+                            Target: {formatGoalTarget(goal, goal.sessionTargetValue, goal.targetDirection, goal.sessionTargetUses)}
                           </Badge>
                         )}
                         {goal.isArchived && <Badge variant="outline" className="border-orange-500 text-orange-700 dark:text-orange-600">Archived</Badge>}
