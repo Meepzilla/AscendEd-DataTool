@@ -3,7 +3,9 @@ import type { ServiceType, SessionData } from './types';
 import { SERVICE_TYPE_LABELS, SERVICE_TYPES } from './types';
 import { formatDateOnly } from './helpers';
 import { MISSED_REASON_SHORT } from './attendance';
+import { captureTypeOf } from './goal-constants';
 import { sessionMinutes, sessionServiceMinutes } from './student-overview';
+import { saveTextFile } from './save-file';
 
 // Session export as CSV, one row per goal in each session (one row for a session without goals). Goal data
 // fields become "Goal Data: ..." columns; the import (import-data-modal) reads this same layout back.
@@ -47,6 +49,11 @@ export function parseServiceMinutesByType(value: string | undefined): Partial<Re
   return Object.keys(allocation).length > 0 ? allocation : undefined;
 }
 
+function goalCaptureTypeForRow(session: SessionData, goalId: string, fallbackType: string): string {
+  const header = (session.originalGoalHeaders ?? []).find(h => h.id === goalId);
+  return header ? captureTypeOf(header) : fallbackType;
+}
+
 function sessionRows(sessions: SessionData[]): Record<string, unknown>[] {
   return sessions.flatMap(session => {
     const allocation = sessionServiceMinutes(session);
@@ -73,7 +80,14 @@ function sessionRows(sessions: SessionData[]): Record<string, unknown>[] {
         // Lists and objects (trials, incidents, ...) are stored as JSON.
         goalFields[`Goal Data: ${key.replace(/([A-Z])/g, ' $1').trim()}`] = value !== null && typeof value === 'object' ? JSON.stringify(value) : value;
       });
-      return { ...base, 'Goal ID': goalData.goalId, 'Goal Name': goalData.goalName, 'Goal Type': goalData.goalType, ...goalFields };
+      return {
+        ...base,
+        'Goal ID': goalData.goalId,
+        'Goal Name': goalData.goalName,
+        'Goal Type': goalData.goalType,
+        'Data Capture Type': goalCaptureTypeForRow(session, goalData.goalId, goalData.goalType),
+        ...goalFields,
+      };
     });
   });
 }
@@ -112,7 +126,13 @@ export function deidentifiedSessionRows(sessions: SessionData[]): Record<string,
         const kept = deidentifiedGoalValue(value);
         if (kept !== undefined) goalFields[`Goal Data: ${key.replace(/([A-Z])/g, ' $1').trim()}`] = kept;
       });
-      return { ...base, 'Goal ID': goalData.goalId, 'Goal Type': goalData.goalType, ...goalFields };
+      return {
+        ...base,
+        'Goal ID': goalData.goalId,
+        'Goal Type': goalData.goalType,
+        'Data Capture Type': goalCaptureTypeForRow(session, goalData.goalId, goalData.goalType),
+        ...goalFields,
+      };
     });
   });
 }
@@ -142,15 +162,8 @@ export function buildSessionsCsv(
   return { csv: Papa.unparse(rows, { columns, escapeFormulae: CSV_FORMULA_ESCAPE }), fileName: sessionsCsvFileName(studentName, options, date) };
 }
 
-/** Downloads the sessions as a CSV file named for the student (or de-identified, with no name in it). */
-export function downloadSessionsCsv(sessions: SessionData[], studentName: string, options: SessionCsvOptions = {}) {
+/** Saves the sessions as a CSV file (browser download on desktop, share sheet on touch/Android). */
+export function downloadSessionsCsv(sessions: SessionData[], studentName: string, options: SessionCsvOptions = {}): Promise<boolean> {
   const { csv, fileName } = buildSessionsCsv(sessions, studentName, options);
-  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = fileName;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return saveTextFile(fileName, csv, 'text/csv;charset=utf-8;');
 }

@@ -82,3 +82,12 @@ it('keeps the card\'s goal order when a goal is renamed, and adds new goals at t
   expect(next.ava.originalGoalHeaders.map(g => g.id)).toEqual(['g2', 'g1', 'g3']);
   expect(next.ava.originalGoalHeaders[1].name).toBe('Renamed');
 });
+
+it('updates studentName when a student is renamed while keeping entered goal data', () => {
+  const prev = syncSessionStates({}, [ava()], undefined);
+  prev.ava.goalData.g1 = { correct: 5 };
+  const renamed = { ...ava(), name: 'Ava Martinez' };
+  const next = syncSessionStates(prev, [renamed], undefined);
+  expect(next.ava.studentName).toBe('Ava Martinez');
+  expect(next.ava.goalData.g1).toEqual({ correct: 5 });
+});

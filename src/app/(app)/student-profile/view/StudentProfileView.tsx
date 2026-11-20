@@ -248,7 +248,12 @@ export default function StudentProfileView() {
                     studentName={currentStudent.name}
                     open={isCsvWarningOpen}
                     onCancel={() => setIsCsvWarningOpen(false)}
-                    onConfirm={(deidentified) => { setIsCsvWarningOpen(false); downloadSessionsCsv(studentSessions, currentStudent.name, { deidentified }); }}
+                    onConfirm={(deidentified) => {
+                      setIsCsvWarningOpen(false);
+                      void downloadSessionsCsv(studentSessions, currentStudent.name, { deidentified }).catch(() => {
+                        toast({ title: 'Export Failed', description: 'Could not save the CSV file on this device.', variant: 'destructive' });
+                      });
+                    }}
                   />
                 )}
             <Button variant="outline" size="sm" onClick={() => openEditStudentModal(currentStudent)} className="w-full sm:w-auto">

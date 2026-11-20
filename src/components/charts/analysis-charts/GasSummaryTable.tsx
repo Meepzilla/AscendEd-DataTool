@@ -34,17 +34,18 @@ function LevelCell({ goal, level }: { goal: Goal; level: number | null }) {
   return <>{label ? `${signed} (${label})` : signed}</>;
 }
 
-/** The recorded level for one session's data: the goal measure once Track A wires it, falling back to the stored gasLevel. */
+/** The recorded level for one session's data, or null when no level was recorded. */
 function recordedLevel(goal: Goal, data: Record<string, any>): number | null {
-  const measured = goalMeasure(goal, withoutRunningTimers(data));
-  if (measured !== null) return measured;
-  const raw = Number(data.gasLevel);
-  return Number.isFinite(raw) && raw >= -2 && raw <= 2 ? raw : null;
+  return goalMeasure(goal, withoutRunningTimers(data));
 }
 
 interface GasSummaryTableProps {
   sessions: SessionData[]; // oldest first
+  /** All the student's sessions so T-scores carry forward levels from before the selected range (same as GasTScoreLineChart). */
+  history?: SessionData[];
   goals: Goal[]; // the student's GAS goals in view
+  /** All active GAS goals for the composite T-score header (defaults to `goals`). */
+  tScoreGoals?: Goal[];
   studentName?: string;
   studentIep?: StudentIep;
 }
@@ -53,11 +54,11 @@ interface GasSummaryTableProps {
  * One row per GAS goal — baseline, current level, sessions recorded, average level, sessions
  * at or above expected — with the student's latest and average T-score in the header.
  */
-const GasSummaryTable: React.FC<GasSummaryTableProps> = ({ sessions, goals, studentName, studentIep }) => {
+const GasSummaryTable: React.FC<GasSummaryTableProps> = ({ sessions, history, goals, tScoreGoals, studentName, studentIep }) => {
   const rows = useMemo(() => goals.map(goal => {
     const levels: number[] = [];
     for (const session of sessions) {
-      const data = session.goals.find(g => g.goalId === goal.id)?.data;
+      const data = (session.goals ?? []).find(g => g.goalId === goal.id)?.data;
       if (!data) continue;
       const level = recordedLevel(goal, data);
       if (level !== null) levels.push(level);
@@ -73,10 +74,12 @@ const GasSummaryTable: React.FC<GasSummaryTableProps> = ({ sessions, goals, stud
   }), [sessions, goals]);
 
   const tScores = useMemo(() => {
-    return gasTScoresOverTime(sessions, goals)
+    const inRange = new Set(sessions.map(s => s.date));
+    return gasTScoresOverTime(history ?? sessions, tScoreGoals ?? goals)
+      .filter(r => inRange.has(r.date))
       .map(r => r.tScore)
       .filter((v): v is number => v !== null && Number.isFinite(v));
-  }, [sessions, goals]);
+  }, [sessions, history, goals, tScoreGoals]);
   const latestT = tScores.length ? tScores[tScores.length - 1] : null;
   const averageT = tScores.length ? tScores.reduce((a, b) => a + b, 0) / tScores.length : null;
 

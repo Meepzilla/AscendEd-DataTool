@@ -11,9 +11,9 @@ import { FormItem, FormLabel, type GoalInputContext } from './shared';
 
 /** Communication functions: each function tallied as spontaneous, emerging (unprompted), or prompted. */
 export function CommunicationFunctionsInputs({ ctx }: { ctx: GoalInputContext }) {
-  const { data, isArchived, isLocked, handleChange, handleInteraction, calculateAccuracy } = ctx;
+  const { data, isArchived, isLocked, handleChange, adjustCount, handleInteraction, calculateAccuracy } = ctx;
   const tally = (field: string, delta: number) => (e: React.SyntheticEvent<HTMLButtonElement>) =>
-    handleInteraction(e, () => handleChange(field, Math.max(0, (Number(data[field]) || 0) + delta)));
+    handleInteraction(e, () => adjustCount(field, delta));
   return (
     <>
       <FormItem>
@@ -86,7 +86,7 @@ const STORY_PART_CHOICES = [
 
 /** Story elements: each story part scored 0-2 or marked not assessed, and linking words. */
 export function StoryElementsInputs({ ctx }: { ctx: GoalInputContext }) {
-  const { data, isArchived, isLocked, handleChange, handleInteraction, calculateAccuracy } = ctx;
+  const { data, isArchived, isLocked, handleChange, adjustCount, handleInteraction, calculateAccuracy } = ctx;
   return (
     <>
       <FormItem>
@@ -131,7 +131,7 @@ export function StoryElementsInputs({ ctx }: { ctx: GoalInputContext }) {
           {STORY_LINKING_WORDS.map(word => {
             const field = linkingWordField(word);
             const change = (delta: number) => (e: React.SyntheticEvent<HTMLButtonElement>) =>
-              handleInteraction(e, () => handleChange(field, Math.max(0, (Number(data[field]) || 0) + delta)));
+              handleInteraction(e, () => adjustCount(field, delta));
             return (
               <TallyButton
                 key={word}

@@ -2,7 +2,7 @@
 'use client';
 
 import React, { Suspense, lazy } from 'react';
-import type { ServiceType, Student, StudentSessionState, Goal } from '@/lib/types';
+import type { GoalDataUpdater, ServiceType, Student, StudentSessionState, Goal } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -42,7 +42,7 @@ interface StudentDataCardProps {
   handleServiceMinutesChange: (studentId: string, next: Partial<Record<ServiceType, number>> | undefined) => void;
   setDataEntryShowArchivedByStudentId: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
   setDataEntryVisibleGoalCountByStudentId: React.Dispatch<React.SetStateAction<Record<string, number>>>;
-  handleGoalDataChange: (studentId: string, goalId: string, updatedField: any, newData: any) => void;
+  handleGoalDataChange: (studentId: string, goalId: string, updatedField: string, newData: GoalDataUpdater) => void;
   handleMoveGoal: (studentId: string, goalId: string, direction: 'up' | 'down') => void;
   isStudentAccessLocked: boolean;
   recordMissedSession: (studentId: string, reason: MissedReason, note: string) => Promise<boolean>;

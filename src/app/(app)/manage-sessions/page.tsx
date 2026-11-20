@@ -9,8 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MISSED_REASON_LABELS, MISSED_REASON_SHORT } from '@/lib/attendance';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useFillScreenHeight } from '@/hooks/use-fill-screen-height';
 import { Edit, Trash2, Search, Info, Eye, FileText, Merge } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -113,8 +112,8 @@ export default function ManageSessionsPage() {
   }
   
   return (
-    <Suspense fallback={<SessionsPageSkeleton />}>
-      <div ref={pageRef} className="space-y-6">
+    <div ref={pageRef} className="space-y-6">
+      <Suspense fallback={null}>
         {editingSession && <EditSessionModal sessionToEdit={editingSession} />}
         {deletingSession && (
           <ConfirmationModal
@@ -126,15 +125,6 @@ export default function ManageSessionsPage() {
             deleteActionType="session"
           />
         )}
-        <MergeSessionsDialog
-          sessions={selectedSessions}
-          open={isMergeOpen}
-          onCancel={() => setIsMergeOpen(false)}
-          onConfirm={async () => {
-            if (await mergeSessionRecords(selectedSessions.map(s => s.sessionId))) setSelectedIds(new Set());
-            setIsMergeOpen(false);
-          }}
-        />
         {viewingSessionDetails && (
           <ViewSessionDetailsModal
               session={viewingSessionDetails}
@@ -142,8 +132,16 @@ export default function ManageSessionsPage() {
               onClose={() => setViewingSessionDetails(null)}
           />
         )}
-
-
+      </Suspense>
+      <MergeSessionsDialog
+        sessions={selectedSessions}
+        open={isMergeOpen}
+        onCancel={() => setIsMergeOpen(false)}
+        onConfirm={async () => {
+          if (await mergeSessionRecords(selectedSessions.map(s => s.sessionId))) setSelectedIds(new Set());
+          setIsMergeOpen(false);
+        }}
+      />
 
       <Card className="shadow-lg">
         <CardHeader>
@@ -190,9 +188,9 @@ export default function ManageSessionsPage() {
             <DatePickerWithRange date={dateRange} setDate={setDateRange} className="w-full md:w-auto" />
           </div>
 
-          <ScrollArea ref={listRef} className="h-[500px] border rounded-md" style={listHeight ? { height: listHeight } : undefined}>
-            <Table>
-              <TableHeader className="sticky top-0 bg-muted [&_th]:text-foreground">
+          <div ref={listRef} className="h-[500px] overflow-auto border rounded-md" style={listHeight ? { height: listHeight } : undefined}>
+            <table className="w-full caption-bottom text-sm">
+              <TableHeader className="sticky top-0 z-10 bg-muted [&_th]:text-foreground">
                 <TableRow>
                   <TableHead className="w-10"><span className="sr-only">Select to merge</span></TableHead>
                   <TableHead>Student</TableHead>
@@ -268,8 +266,8 @@ export default function ManageSessionsPage() {
                   ))
                 )}
               </TableBody>
-            </Table>
-          </ScrollArea>
+            </table>
+          </div>
           {!sessionsLoading && filteredSessions.length > 0 && (
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
               <p role="status">
@@ -284,8 +282,7 @@ export default function ManageSessionsPage() {
           )}
         </CardContent>
       </Card>
-      </div>
-    </Suspense>
+    </div>
   );
 }
 

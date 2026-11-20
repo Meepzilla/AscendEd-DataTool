@@ -218,3 +218,48 @@ describe('communication functions narrative', () => {
     ]);
   });
 });
+
+describe('task analysis NotDone and same-day trend handling', () => {
+  it('excludes NotDone steps from task analysis narrative counts and support summary', () => {
+    const ta = goal({ id: 'ta-1', name: 'Wash hands', type: 'TASK_ANALYSIS', sessionTargetValue: 80 });
+    const text = buildNarrative({
+      student,
+      goals: [ta],
+      sessions: [
+        session({
+          date: '2026-10-01',
+          goals: [{
+            goalId: 'ta-1',
+            goalName: 'Wash hands',
+            goalType: 'TASK_ANALYSIS',
+            data: {
+              steps: [
+                { label: 'Turn on water', level: 'Independent' },
+                { label: 'Use soap', level: 'Independent' },
+                { label: 'Dry hands', level: 'NotDone' },
+              ],
+            },
+          }],
+        }),
+      ],
+    });
+    expect(text).toContain('did 2 of 2 steps independently.');
+    expect(text).not.toContain('Dry hands');
+  });
+
+  it('treats multiple ISO-timestamped sessions on the same local day as a stable trend', () => {
+    const artic = goal({ id: 'g-day', name: 'Produce /s/', type: 'ARTICULATION', sessionTargetValue: 80 });
+    const mk = (hour: number, correct: number, incorrect: number) =>
+      session({
+        date: new Date(2026, 9, 5, hour, 0, 0).toISOString(),
+        time: `${String(hour).padStart(2, '0')}:00`,
+        goals: [{ goalId: 'g-day', goalName: 'Produce /s/', goalType: 'ARTICULATION', data: { correct, incorrect } }],
+      });
+    const [progress] = buildProgressReport({
+      student,
+      goals: [artic],
+      sessions: [mk(9, 2, 8), mk(10, 5, 5), mk(11, 9, 1)],
+    });
+    expect(progress.trend).toBe('stable');
+  });
+});

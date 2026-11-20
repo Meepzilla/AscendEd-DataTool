@@ -3,7 +3,7 @@
 
 import React, { useMemo } from 'react';
 import type { Student, Goal, SessionData } from '@/lib/types';
-import { captureTypeOf, goalDirection, progressTowardTarget } from '@/lib/goal-constants';
+import { captureTypeOf, goalDirection, progressTowardTarget, summarizeCommunicationFunctions } from '@/lib/goal-constants';
 import { goalMeasure, goalMeasureInfo } from '@/lib/goal-measures';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -20,7 +20,7 @@ import { gasProgress } from '@/lib/gas';
  */
 const calculateProgressForGoal = (goal: Goal, latestSessionForGoal: SessionData | undefined): number => {
   if (goal.isArchived || !latestSessionForGoal) return 0;
-  const data = latestSessionForGoal.goals.find(g => g.goalId === goal.id)?.data;
+  const data = (latestSessionForGoal.goals ?? []).find(g => g.goalId === goal.id)?.data;
   if (!data) return 0;
 
   // Qualitative observations without a rating target count as met once notes are written.
@@ -36,7 +36,12 @@ const calculateProgressForGoal = (goal: Goal, latestSessionForGoal: SessionData 
   if (captureTypeOf(goal) === 'GOAL_ATTAINMENT_SCALE') return gasProgress(value, target ?? 0);
   if (target !== undefined && (target > 0 || goalDirection(goal) === 'decrease')) {
     // The value as shown (to 0.1), as meetsTarget compares it.
-    return progressTowardTarget(Math.round(value * 10) / 10, target, goalDirection(goal));
+    const primary = progressTowardTarget(Math.round(value * 10) / 10, target, goalDirection(goal));
+    if (captureTypeOf(goal) === 'COMMUNICATION_FUNCTIONS' && goal.sessionTargetUses && goal.sessionTargetUses > 0) {
+      const usesProgress = progressTowardTarget(summarizeCommunicationFunctions(data).unprompted, goal.sessionTargetUses, 'increase');
+      return Math.min(primary, usesProgress);
+    }
+    return primary;
   }
   // No target: how far along the scale, from the bottom (or for a decrease goal, from the top).
   const max = goalMeasureInfo(goal).max;
@@ -66,7 +71,7 @@ export default function StudentProgressSidebar({ student, studentSessions }: {st
     // Every session stores all of the student's goals, so a goal's latest session is the latest one
     // where something was recorded for it (not one where it wasn't worked on).
     for (const session of sortedSessions) {
-      for (const goalData of session.goals) {
+      for (const goalData of session.goals ?? []) {
         if (latestSessionByGoalId.has(goalData.goalId)) continue;
         const goal = activeGoals.find(g => g.id === goalData.goalId);
         const recorded = goal && goalMeasure(goal, goalData.data || {}) !== null;

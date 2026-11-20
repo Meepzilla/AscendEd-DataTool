@@ -102,11 +102,15 @@ export function gasTScoresOverTime(sessions: SessionData[], gasGoals: Pick<Goal,
   const running: Record<string, number> = {};
   const byDate = new Map<string, Record<string, number>>();
   for (const session of ordered) {
+    let recordedAny = false;
     for (const goal of gasGoals) {
       const level = session.goals?.find(g => g.goalId === goal.id)?.data?.gasLevel;
-      if (typeof level === 'number' && level >= -2 && level <= 2) running[goal.id] = level;
+      if (typeof level === 'number' && level >= -2 && level <= 2) {
+        running[goal.id] = level;
+        recordedAny = true;
+      }
     }
-    byDate.set(session.date, { ...running });
+    if (recordedAny) byDate.set(session.date, { ...running });
   }
   return [...byDate.keys()].map(date => {
     const levels = byDate.get(date)!;

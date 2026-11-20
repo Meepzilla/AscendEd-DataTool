@@ -15,8 +15,10 @@ export interface GoalInputContext {
   isArchived?: boolean;
   isLocked: boolean;
   isFocused?: boolean;
-  /** Sets a field (and the fields that follow it); an object sets the goal's whole data. */
+  /** Sets a field (and the fields that follow it); a function or object updates the goal's whole data. */
   handleChange: (field: string, value: any) => void;
+  /** Increments or decrements a numeric counter field from the latest stored value (clamped at 0). */
+  adjustCount: (field: string, delta: number) => void;
   /** Runs a button's change unless the goal is archived (nothing) or locked (confetti for the student). */
   handleInteraction: (e: React.SyntheticEvent<HTMLButtonElement>, callback: () => void) => void;
   /** The result line: accuracy, % fluent, story score or functions used. */

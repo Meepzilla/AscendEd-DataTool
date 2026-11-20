@@ -195,4 +195,18 @@ describe('parseServiceMinutesByType', () => {
     expect(rows[0]['Service Minutes by Type']).toBe('Related Service: 20; AAC: 10');
     expect(parseServiceMinutesByType(rows[0]['Service Minutes by Type'])).toEqual({ related: 20, aac: 10 });
   });
+
+  it('exports Data Capture Type on both identified and de-identified goal rows', () => {
+    const s = session({
+      originalGoalHeaders: [{ id: 'g1', name: 'Fluency via GAS', type: 'FLUENCY_SYLLABLE_STUTTER', dataCaptureType: 'GOAL_ATTAINMENT_SCALE', smartGoal: '' }],
+      goals: [{ goalId: 'g1', goalName: 'Fluency via GAS', goalType: 'FLUENCY_SYLLABLE_STUTTER', data: { gasLevel: 1, recorded: true } }],
+    });
+    const identifiedRows = Papa.parse<Record<string, string>>(buildSessionsCsv([s], 'Ava').csv, { header: true, skipEmptyLines: true }).data;
+    expect(identifiedRows[0]['Goal Type']).toBe('FLUENCY_SYLLABLE_STUTTER');
+    expect(identifiedRows[0]['Data Capture Type']).toBe('GOAL_ATTAINMENT_SCALE');
+
+    const deidRows = Papa.parse<Record<string, string>>(buildSessionsCsv([s], 'Ava', { deidentified: true }).csv, { header: true, skipEmptyLines: true }).data;
+    expect(deidRows[0]['Goal Type']).toBe('FLUENCY_SYLLABLE_STUTTER');
+    expect(deidRows[0]['Data Capture Type']).toBe('GOAL_ATTAINMENT_SCALE');
+  });
 });

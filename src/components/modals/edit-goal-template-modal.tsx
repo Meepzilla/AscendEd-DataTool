@@ -21,6 +21,7 @@ import GasLevelDescriptionsField from './GasLevelDescriptionsField';
 import GoalChangeSummary from './GoalChangeSummary';
 import { goalTemplateChanges } from '@/lib/goal-changes';
 import { goalTypeLabel } from '@/lib/helpers';
+import { goalMeasureInfo } from '@/lib/goal-measures';
 
 type EditGoalTemplateFormData = z.infer<typeof GoalTemplateSchema>;
 
@@ -251,6 +252,12 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
             />
           )}
 
+          {(() => {
+            const targetInfo = goalMeasureInfo({
+              type: form.watch('dataCaptureType') || form.watch('type'),
+              targetDirection: form.watch('targetDirection'),
+            });
+            return (
           <FormField
             control={form.control}
             name="sessionTargetValue"
@@ -260,21 +267,23 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
                 <FormControl>
                    <Input
                     type="number"
-                    placeholder="e.g., 80 (for 80%)"
+                    placeholder={targetInfo.min !== undefined && targetInfo.max !== undefined ? `e.g., 0 (${targetInfo.min} to ${targetInfo.max})` : 'e.g., 80 (for 80%)'}
                     {...field}
                     value={field.value ?? ''} 
                     onChange={e => field.onChange(e.target.value === '' ? '' : Number(e.target.value))} // '' (not undefined, which react-hook-form replaces with the starting value) = no target
-                    min="0"
-                    max="100"
+                    min={targetInfo.min ?? 0}
+                    max={targetInfo.max ?? 1000}
                   />
                 </FormControl>
                 <FormDescription>
-                  Target percentage (0-100) for accuracy/fluency goals, a rating for qualitative goals (e.g. 4 out of 5), or the number of different functions for communication functions goals.
+                  Target percentage (0-100) for accuracy/fluency goals, a rating for qualitative goals (e.g. 4 out of 5), level (-2 to +2) for GAS goals, or a count/duration/seconds target.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
+            );
+          })()}
 
           {/* Communication Functions templates can pair the functions target with a minimum total of uses,
               for goals worded "at least 5 times for at least 2 different functions". */}
