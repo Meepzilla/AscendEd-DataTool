@@ -187,7 +187,7 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
                         ) : (
                         <div className={cn("flex-grow min-w-0 break-words", goal.isArchived && "opacity-60")}>
                             <GoalTextPopover name={fillNameBlanks(goal)} smartGoal={goalStatement(goal, currentStudent.name, currentStudent.iep)} />
-                            <Badge variant="outline" className="ml-1">{goalTypeLabel(goal.dataCaptureType || goal.type)}</Badge>
+                            <Badge variant="outline" className="ml-1">{goalTypeLabel(goal)}</Badge>
                             {goal.isArchived && <Badge variant="destructive" className="ml-1">Archived</Badge>}
                         </div>
                         )}
@@ -221,7 +221,7 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
                       <div className="flex-grow min-w-0 break-words">
                         <GoalTextPopover name={template.name} smartGoal={template.generatedSmartGoal} description={template.smartGoalPrompt} />
                         {picker.isRecent(template) && <Badge variant="default" className="ml-2">Recent</Badge>}
-                        <Badge variant="secondary" className="ml-2">{goalTypeLabel(template.type)}</Badge>
+                        <Badge variant="secondary" className="ml-2">{goalTypeLabel(template)}</Badge>
                         {template.category && <Badge variant="outline" className="ml-1">{template.category}</Badge>}
                       </div>
                     </li>

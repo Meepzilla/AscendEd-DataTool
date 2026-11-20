@@ -74,11 +74,43 @@ export interface Goal {
   taskSteps?: string[];
   /** What fills each blank ("___") in the goal text, by position; empty uses the automatic value (goal-blanks.ts). */
   blankFills?: string[];
+  /** CUSTOM goals: a copy of the user's custom goal type as it was when the goal was made (goal-types/custom.ts). */
+  customType?: CustomGoalType;
   // Additional fields based on goal type might be present
   [key: string]: any;
 }
 
-export const GOAL_TYPE_VALUES = [
+/** How a custom goal type is measured; each method has its own inputs and measure (goal-types/custom.ts). */
+export const CUSTOM_MEASURE_KINDS = ['accuracy', 'counter', 'timer', 'rating', 'checklist', 'yesno'] as const;
+export type CustomMeasureKind = typeof CUSTOM_MEASURE_KINDS[number];
+
+/**
+ * A goal type made by the user (Settings → Custom goal types). Goals and templates of type CUSTOM keep a copy of
+ * it, so editing the type later never changes how goals already made (and their past sessions) are read.
+ */
+export interface CustomGoalType {
+  id: string;
+  /** Bumped on every edit; a goal whose copy has an older version can be updated to the latest. */
+  version: number;
+  name: string;
+  description?: string;
+  color: string;
+  kind: CustomMeasureKind;
+  accuracy?: { correctLabel: string; incorrectLabel: string; approximate: boolean };
+  counter?: { label: string; perMinute: boolean };
+  timer?: { label: string };
+  rating?: { min: number; max: number; levelLabels: string[] };
+  checklist?: { steps: string[] };
+  yesno?: { question: string };
+  defaultTarget?: number;
+  direction: TargetDirection;
+  extras: { promptLevel: boolean; notes: boolean };
+  isArchived?: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export const BUILT_IN_GOAL_TYPE_VALUES = [
   'ARTICULATION',
   'FLUENCY_SYLLABLE_STUTTER',
   'QUALITATIVE_OBSERVATION',
@@ -106,6 +138,14 @@ export const GOAL_TYPE_VALUES = [
   'COMMUNICATION_OPPORTUNITIES',
 ] as const;
 
+export const GOAL_TYPE_VALUES = [
+  ...BUILT_IN_GOAL_TYPE_VALUES,
+  // A user-made goal type: the goal's customType says how it is entered and measured. Not offered in the
+  // built-in type lists (GOAL_TYPES comes from GOAL_TYPE_FIELDS, which has no CUSTOM entry).
+  'CUSTOM',
+] as const;
+
+export type BuiltInGoalType = typeof BUILT_IN_GOAL_TYPE_VALUES[number];
 export type GoalType = typeof GOAL_TYPE_VALUES[number];
 
 /** Whether a goal aims to raise its measure (most goals) or lower it (most behavior goals). */
@@ -137,6 +177,8 @@ export interface GoalTemplate {
   taskSteps?: string[]; // Task analysis templates: the steps copied to a student's goal
   defaultKey?: string; // Built-in templates: the name they were added under, kept if the user renames them
   deleted?: boolean; // Built-in templates: deleted by the user. Kept so they aren't added back; restorable in Settings (builtin-goals.ts)
+  /** CUSTOM templates: a copy of the user's custom goal type, copied to the assigned goal (goalFromTemplate). */
+  customType?: CustomGoalType;
 }
 
 export interface SessionData {
@@ -273,10 +315,64 @@ const emptyToUndefinedNumber = (val: unknown) => {
   return Number(val);
 };
 
+export const CustomGoalTypeSchema = z.object({
+  id: z.string().min(1),
+  version: z.number().int().min(1),
+  name: z.string().trim().min(2, 'Type name must be at least 2 characters.').max(60, 'Type name is too long.'),
+  description: z.string().max(240).optional(),
+  color: z.string().min(3),
+  kind: z.enum(CUSTOM_MEASURE_KINDS),
+  accuracy: z.object({
+    correctLabel: z.string().trim().min(1, 'Label is required.').max(30),
+    incorrectLabel: z.string().trim().min(1, 'Label is required.').max(30),
+    approximate: z.boolean(),
+  }).optional(),
+  counter: z.object({
+    label: z.string().trim().min(1, 'Label is required.').max(40),
+    perMinute: z.boolean(),
+  }).optional(),
+  timer: z.object({
+    label: z.string().trim().min(1, 'Label is required.').max(40),
+  }).optional(),
+  rating: z.object({
+    min: z.number().int().min(0).max(9),
+    max: z.number().int().min(1).max(10),
+    levelLabels: z.array(z.string().max(30)).max(11),
+  }).optional(),
+  checklist: z.object({
+    steps: z.array(z.string().trim().min(1, 'Step text is required.').max(120)).min(1, 'Add at least 1 step.').max(40, 'At most 40 steps.'),
+  }).optional(),
+  yesno: z.object({
+    question: z.string().trim().min(1, 'Question is required.').max(120),
+  }).optional(),
+  defaultTarget: z.preprocess(emptyToUndefinedNumber, z.number().min(0).max(1000).optional()),
+  direction: z.enum(['increase', 'decrease']),
+  extras: z.object({ promptLevel: z.boolean(), notes: z.boolean() }),
+  isArchived: z.boolean().optional(),
+  createdAt: z.string(),
+  updatedAt: z.string().optional(),
+}).superRefine((ct, ctx) => {
+  if (ct.kind === 'rating') {
+    const r = ct.rating;
+    if (!r || r.max <= r.min || r.max - r.min > 9) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['rating'], message: 'Rating scale must have between 2 and 10 levels.' });
+    } else if (ct.defaultTarget !== undefined && (ct.defaultTarget < r.min || ct.defaultTarget > r.max)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['defaultTarget'], message: `Target must be between ${r.min} and ${r.max}.` });
+    }
+  }
+  if (ct.kind === 'checklist' && (!ct.checklist || ct.checklist.steps.length === 0)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['checklist'], message: 'Add at least 1 step.' });
+  }
+  if ((ct.kind === 'accuracy' || ct.kind === 'checklist' || ct.kind === 'yesno') && ct.defaultTarget !== undefined && ct.defaultTarget > 100) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['defaultTarget'], message: 'Percentage target cannot exceed 100.' });
+  }
+});
+
 export const GoalTemplateSchema = z.object({
   name: z.string().min(3, "Template name is required."),
   type: z.enum(GOAL_TYPE_VALUES), 
   dataCaptureType: z.enum(GOAL_TYPE_VALUES).optional(), // NEW
+  customType: CustomGoalTypeSchema.optional(),
   targetDirection: z.enum(['increase', 'decrease']).optional(),
   smartGoalPrompt: z.string().min(10, "SMART goal prompt is required."),
   generatedSmartGoal: z.string().optional(),
@@ -305,6 +401,7 @@ export const AssignedGoalEditSchema = z.object({
   name: z.string().min(3, { message: "Goal name must be at least 3 characters." }),
   smartGoal: z.string().min(10, { message: "SMART goal text must be at least 10 characters." }),
   dataCaptureType: z.enum(GOAL_TYPE_VALUES).optional(), // NEW
+  customType: CustomGoalTypeSchema.optional(),
   targetDirection: z.enum(['increase', 'decrease']).optional(),
   sessionTargetValue: z.preprocess(
     emptyToUndefinedNumber,
@@ -345,7 +442,7 @@ export const AssignedGoalEditSchema = z.object({
     if (goal.sessionTargetValue !== undefined && goal.sessionTargetValue < 0) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['sessionTargetValue'], message: 'Target must be 0 or greater.' });
     }
-    if (goal.sessionTargetValue !== undefined && goal.sessionTargetValue > 100) {
+    if (!goal.customType && goal.sessionTargetValue !== undefined && goal.sessionTargetValue > 100) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['sessionTargetValue'], message: 'Target percentage cannot exceed 100 for most goals.' });
     }
     return;

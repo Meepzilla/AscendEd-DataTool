@@ -1,9 +1,10 @@
 
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-import type { Goal, SessionData, StudentIep } from './types';
+import type { CustomGoalType, Goal, SessionData, StudentIep } from './types';
 import { fillBlanks, matchTextToTarget, percentAsFraction } from './goal-blanks';
 import { replacePlaceholders, type PlaceholderKey } from './goal-placeholders';
+import { makeCustomDef } from './goal-types/custom';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -109,28 +110,41 @@ export function formatTime(date: Date | string): string {
  * qualitative observations, a number of different functions for communication functions, and for
  * behavior goals a count, minutes, % or seconds with "≤" (decrease goals, the default) or "≥" (increase goals).
  */
-export function formatGoalTarget(type: string, target: number, direction?: 'increase' | 'decrease', usesTarget?: number): string {
+export function formatGoalTarget(
+  typeOrGoal: string | { type: string; dataCaptureType?: string; targetDirection?: 'increase' | 'decrease'; sessionTargetUses?: number; customType?: CustomGoalType },
+  target: number,
+  direction?: 'increase' | 'decrease',
+  usesTarget?: number,
+  customType?: CustomGoalType,
+): string {
+  const ct = typeof typeOrGoal === 'object' ? typeOrGoal.customType : customType;
+  const type = typeof typeOrGoal === 'object' ? (typeOrGoal.dataCaptureType || typeOrGoal.type) : typeOrGoal;
+  const dir = direction ?? (typeof typeOrGoal === 'object' ? typeOrGoal.targetDirection : undefined);
+  const uses = usesTarget ?? (typeof typeOrGoal === 'object' ? typeOrGoal.sessionTargetUses : undefined);
+  if (type === 'CUSTOM' && ct) {
+    return makeCustomDef(ct).formatTarget({ type: 'CUSTOM', customType: ct, targetDirection: dir }, target, dir, uses);
+  }
   // Communication goals measured by a count, minutes or seconds: "at least" unless set to decrease (a response
   // time aims down by default).
   if (type === 'COMMUNICATION_COUNT' || type === 'COMMUNICATION_DURATION' || type === 'RESPONSE_TIME') {
-    const sign = (direction ?? (type === 'RESPONSE_TIME' ? 'decrease' : 'increase')) === 'decrease' ? '≤' : '≥';
+    const sign = (dir ?? (type === 'RESPONSE_TIME' ? 'decrease' : 'increase')) === 'decrease' ? '≤' : '≥';
     if (type === 'COMMUNICATION_COUNT') return `${sign} ${target} per session`;
     if (type === 'COMMUNICATION_DURATION') return `${sign} ${target} min`;
     return `${sign} ${target} s average`;
   }
   if (type === 'COMMUNICATION_OPPORTUNITIES') return `${target}% of opportunities`;
   if (type.startsWith('BEHAVIOR_')) {
-    const sign = (direction ?? 'decrease') === 'decrease' ? '≤' : '≥';
+    const sign = (dir ?? 'decrease') === 'decrease' ? '≤' : '≥';
     if (type === 'BEHAVIOR_FREQUENCY') return `${sign} ${target} per session`;
     if (type === 'BEHAVIOR_DURATION') return `${sign} ${target} min`;
     if (type === 'BEHAVIOR_INTERVAL') return `${sign} ${target}% of intervals`;
     if (type === 'BEHAVIOR_LATENCY') return `${sign} ${target} s average`;
-    return direction === 'increase' ? `≥ ${target}% replacement skill` : `≤ ${plural(target, 'incident')}`;
+    return dir === 'increase' ? `≥ ${target}% replacement skill` : `≤ ${plural(target, 'incident')}`;
   }
   if (type === 'COMMUNICATION_FUNCTIONS') {
     // A goal worded "at least 5 times for at least 2 different functions" carries both halves.
-    return usesTarget && usesTarget > 0
-      ? `${plural(target, 'function')} and at least ${plural(usesTarget, 'use')}`
+    return uses && uses > 0
+      ? `${plural(target, 'function')} and at least ${plural(uses, 'use')}`
       : plural(target, 'function');
   }
   // Goal Attainment Scaling: the target is a level, not a percentage — 0 is the expected outcome.
@@ -176,8 +190,14 @@ export function formatDataValue(value: unknown): string {
   return String(value);
 }
 
-/** A goal type as shown to the user, e.g. "Behavior Frequency", "AAC", "Behavior ABC". */
-export function goalTypeLabel(type: string): string {
+/** A goal type as shown to the user, e.g. "Behavior Frequency", "AAC", "Behavior ABC", or a custom type's name. */
+export function goalTypeLabel(
+  typeOrGoal: string | { type: string; dataCaptureType?: string; customType?: CustomGoalType },
+  customType?: CustomGoalType,
+): string {
+  const ct = typeof typeOrGoal === 'object' ? typeOrGoal.customType : customType;
+  const type = typeof typeOrGoal === 'object' ? (typeOrGoal.dataCaptureType || typeOrGoal.type) : typeOrGoal;
+  if (type === 'CUSTOM' && ct?.name) return ct.name;
   return type.split('_').map(word => (word === 'AAC' || word === 'ABC') ? word : word.charAt(0) + word.slice(1).toLowerCase()).join(' ');
 }
 
@@ -294,7 +314,7 @@ export function sessionInDateRange(date: string, from?: Date | null, to?: Date |
  * the goal's target date, and "STUDENT" / "the student" with the student's first name. The stored text is unchanged.
  */
 type StatementGoal = Pick<Goal, 'smartGoal' | 'targetDate' | 'sessionTargetValue' | 'masterySessions' | 'blankFills'>
-  & Partial<Pick<Goal, 'type' | 'dataCaptureType' | 'targetDirection' | 'baseline' | 'baselineDate'>>;
+  & Partial<Pick<Goal, 'type' | 'dataCaptureType' | 'targetDirection' | 'baseline' | 'baselineDate' | 'customType'>>;
 
 /**
  * The value of each placeholder in goal text (goal-placeholders.ts) for a goal and its student. Without a student
@@ -305,7 +325,7 @@ export function placeholderValue(key: PlaceholderKey, goal: StatementGoal, stude
   const type = goal.dataCaptureType || goal.type || '';
   const target = goal.sessionTargetValue;
   // A target shown as a percentage (accuracy, % of intervals…) keeps its "%"; counts and ratings are plain numbers.
-  const percent = target !== undefined && formatGoalTarget(type, target, goal.targetDirection).includes('%');
+  const percent = target !== undefined && formatGoalTarget(type, target, goal.targetDirection, undefined, goal.customType).includes('%');
   const withUnit = (v: number) => `${v}${percent ? '%' : ''}`;
   const date = (v?: string) => (v ? formatDateOnly(v) : undefined);
   switch (key) {

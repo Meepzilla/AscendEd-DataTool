@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { GOAL_TYPE_VALUES } from '../types';
+import { BUILT_IN_GOAL_TYPE_VALUES } from '../types';
 import { GOAL_TYPE_SCREENSHOTS } from '../goal-type-screenshots';
 
 // The app is hosted on both Netlify (netlify.toml) and Cloudflare (public/_headers), each with its own copy of the
@@ -84,7 +84,7 @@ describe('goal type help screenshots', () => {
     const filesOnDisk = new Set(readdirSync(dir));
     const referenced = new Set<string>();
 
-    for (const type of GOAL_TYPE_VALUES) {
+    for (const type of BUILT_IN_GOAL_TYPE_VALUES) {
       const entry = GOAL_TYPE_SCREENSHOTS[type];
       expect(entry, `Missing screenshot entry for ${type}`).toBeDefined();
       expect(entry.width).toBeGreaterThan(0);

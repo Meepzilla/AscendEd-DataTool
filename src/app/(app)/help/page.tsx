@@ -11,7 +11,10 @@ import { APP_NAME } from '@/lib/appConstants';
 import { goalMeasureInfo } from '@/lib/goal-measures';
 import { GOAL_TYPE_SCREENSHOTS } from '@/lib/goal-type-screenshots';
 import { goalTypeLabel } from '@/lib/helpers';
-import type { GoalType } from '@/lib/types';
+import type { BuiltInGoalType } from '@/lib/types';
+import { useAuth } from '@/hooks/use-auth';
+import { useCustomGoalTypes } from '@/lib/custom-goal-types';
+import { CUSTOM_MEASURE_KIND_INFO, customTypeSummary } from '@/lib/goal-types/custom';
 import { ShowGettingStartedButton } from '@/components/dashboard/GettingStarted';
 
 // Help: getting started, a guide to each page, the goal types, data safety, hotkeys and troubleshooting.
@@ -71,7 +74,7 @@ const HOTKEYS: { group: string; note?: string; keys: Hotkey[] }[] = [
 ];
 
 // Each goal type: what its data entry records, and the measure reports chart (its label comes from goal-measures.ts).
-const GOAL_TYPE_HELP: { type: GoalType; does: string }[] = [
+const GOAL_TYPE_HELP: { type: BuiltInGoalType; does: string }[] = [
   { type: 'ARTICULATION', does: 'Count correct, approximate and incorrect productions of a target sound, from a word list or in conversation.' },
   { type: 'LANGUAGE_COMPREHENSION', does: 'Count questions answered correctly, incorrectly and approximately, with a note of the details asked for.' },
   { type: 'LANGUAGE_EXPRESSION', does: 'Count successful and unsuccessful responses, with a note of the target structure or vocabulary.' },
@@ -136,7 +139,9 @@ const CONTENTS: [string, string][] = [
 ];
 
 export default function HelpPage() {
-  const [enlargedGoal, setEnlargedGoal] = useState<{ type: GoalType; does: string } | null>(null);
+  const [enlargedGoal, setEnlargedGoal] = useState<{ type: BuiltInGoalType; does: string } | null>(null);
+  const { currentUser } = useAuth();
+  const { customTypes } = useCustomGoalTypes(currentUser?.uid);
 
   return (
     <div className="space-y-6">
@@ -225,6 +230,26 @@ export default function HelpPage() {
 
       <Section id="goal-types" icon={Target} title="Goal types" description="Each goal type has its own data entry controls and its own measure in reports.">
         <p>Most types also tally the prompt level of each response (Independent, Visual, Verbal, Gestural, Partial physical, Imitation). Counter buttons add one with a tap; press and hold (or right-click) to take one away. Tap any screenshot below to enlarge it.</p>
+        <p><B>Custom goal types.</B> You can create your own goal types in <Link href="/settings#custom-goal-types" className="underline hover:text-primary">Settings → Custom Goal Types</Link> (or directly from any goal type dropdown) using six measurement methods: correct/incorrect tallies, counters, timers, custom rating scales, checklists, or yes/no questions.</p>
+        {customTypes.length > 0 && (
+          <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-foreground">Your custom goal types on this device</p>
+            <dl className="divide-y divide-border">
+              {customTypes.map((ct) => (
+                <div key={ct.id} className="py-2 first:pt-0 last:pb-0">
+                  <dt className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: ct.color }} aria-hidden />
+                    {ct.name}
+                    <span className="text-xs font-normal text-muted-foreground">
+                      ({CUSTOM_MEASURE_KIND_INFO[ct.kind].label} · {customTypeSummary(ct)} · Measure: {goalMeasureInfo({ type: 'CUSTOM', customType: ct }).label})
+                    </span>
+                  </dt>
+                  {ct.description && <dd className="text-xs text-muted-foreground mt-0.5">{ct.description}</dd>}
+                </div>
+              ))}
+            </dl>
+          </div>
+        )}
         <dl className="divide-y divide-border">
           {[...GOAL_TYPE_HELP].sort((a, b) => goalTypeLabel(a.type).localeCompare(goalTypeLabel(b.type))).map(({ type, does }) => {
             const label = goalTypeLabel(type);

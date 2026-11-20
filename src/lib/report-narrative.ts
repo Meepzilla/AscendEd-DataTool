@@ -5,9 +5,10 @@ import {
   COMMUNICATION_FUNCTIONS, STORY_PARTS, averageStoryPart, STORY_LINKING_WORDS, linkingWordField, topTied, joinWithAnd, type AbcIncident,
 } from './goal-constants';
 import { goalMeasure, goalMeasureInfo, goalNotes, goalResponses, sessionMeetsTarget, promptTotals, usesPromptCounters, withoutRunningTimers } from './goal-measures';
+import { getGoalTypeDef } from './goal-types';
 import { compareSessionsOldestFirst, formatDate, formatDateOnly, formatGoalTarget, goalTypeLabel, parseDateOnly, plural } from './helpers';
 import { timePatterns, TIMING_MEASURE_LABELS, WEEKDAY_NAMES } from './behavior-timing';
-import { formatGasLevel, gasLevelLabel } from './gas';
+import { formatGasLevel } from './gas';
 import type { TaskStepScore } from './task-analysis';
 import { trendWeight } from './trial-weights';
 import { AIM_RULE_SESSIONS, aimLine, aimStatus, aimValueAt, masterySessions, type AimLine, type AimStatus } from './aim-line';
@@ -37,26 +38,7 @@ const avg = (values: number[]) => (values.length ? sum(values) / values.length :
 
 /** What the goal's measure is called in a sentence, e.g. "accuracy", "the number of occurrences". */
 function measureName(goal: Goal): string {
-  switch (captureTypeOf(goal)) {
-    case 'FLUENCY_SYLLABLE_STUTTER': return 'the percentage of fluent syllables';
-    case 'STORY_ELEMENTS': return 'the story score';
-    case 'COMMUNICATION_FUNCTIONS': return 'the number of functions used without a prompt';
-    case 'QUALITATIVE_OBSERVATION':
-    case 'COGNITIVE': return 'the rating';
-    case 'PROMPTING': return 'the percentage of independent responses';
-    case 'TASK_ANALYSIS': return 'the percentage of steps done independently';
-    case 'COMMUNICATION_COUNT': return 'the number of times';
-    case 'COMMUNICATION_DURATION': return 'the total time';
-    case 'RESPONSE_TIME': return 'the average time to respond';
-    case 'COMMUNICATION_OPPORTUNITIES': return 'the percentage of opportunities';
-    case 'BEHAVIOR_FREQUENCY': return 'the number of occurrences';
-    case 'BEHAVIOR_DURATION': return 'the total duration';
-    case 'BEHAVIOR_INTERVAL': return 'the percentage of intervals with the behavior';
-    case 'BEHAVIOR_LATENCY': return 'the average time to respond';
-    case 'BEHAVIOR_ABC': return goalDirection(goal) === 'decrease' ? 'the number of problem behavior incidents' : 'the percentage of incidents with the replacement skill';
-    case 'GOAL_ATTAINMENT_SCALE': return 'the attainment level';
-    default: return 'accuracy';
-  }
+  return getGoalTypeDef(goal).narrativeNoun(goal);
 }
 
 /** Like formatValue, but a GAS level is just its number: used inside brackets and ranges, where the level's
@@ -67,23 +49,7 @@ function formatValueShort(goal: Goal, value: number): string {
 
 /** A value with the goal's unit, e.g. "72%", "3.5 min", "4 out of 5"; counts are plain numbers. */
 function formatValue(goal: Goal, value: number): string {
-  const v = round(value);
-  switch (captureTypeOf(goal)) {
-    // Averages and trend ends are rounded to 0.1 first, so they read as a plain signed number.
-    case 'GOAL_ATTAINMENT_SCALE': return gasLevelLabel(v);
-    case 'BEHAVIOR_FREQUENCY':
-    case 'COMMUNICATION_COUNT':
-    case 'COMMUNICATION_FUNCTIONS': return String(v);
-    case 'BEHAVIOR_DURATION':
-    case 'COMMUNICATION_DURATION': return `${v} min`;
-    case 'BEHAVIOR_LATENCY':
-    case 'RESPONSE_TIME': return `${v} seconds`;
-    case 'QUALITATIVE_OBSERVATION':
-    case 'COGNITIVE': return `${v} out of 5`;
-    // To 0.1 like the goal cards (and the target check), so 79.6% isn't shown as a met 80%.
-    case 'BEHAVIOR_ABC': return goalDirection(goal) === 'decrease' ? String(v) : `${v}%`;
-    default: return `${v}%`;
-  }
+  return getGoalTypeDef(goal).formatValue(goal, value);
 }
 
 /** How much change over the period counts as a real trend: 5 points on a percent scale, otherwise 10%. */
@@ -302,7 +268,7 @@ function detailSentences(name: string, goal: Goal, data: Record<string, any>[]):
     if (line) lines.push(line);
   }
 
-  const responses = data.map(d => goalResponses(type, d)).filter((r): r is NonNullable<typeof r> => !!r);
+  const responses = data.map(d => goalResponses(goal, d)).filter((r): r is NonNullable<typeof r> => !!r);
   if (responses.length) {
     const c = sum(responses.map(r => r.correct));
     const i = sum(responses.map(r => r.incorrect));
@@ -432,7 +398,7 @@ function detailSentences(name: string, goal: Goal, data: Record<string, any>[]):
     }
   }
 
-  if (usesPromptCounters(type)) {
+  if (usesPromptCounters(goal)) {
     const totals = promptTotals();
     data.forEach(d => Object.entries(promptTotals(d)).forEach(([k, v]) => { totals[k] += v; }));
     const all = sum(Object.values(totals));
@@ -461,7 +427,7 @@ function timingSentence(type: string, recorded: { session: SessionData; data: Re
 
 function goalHeading(a: GoalAnalysis): string {
   const type = captureTypeOf(a.goal);
-  return `Goal ${a.number}: ${a.goal.name} (${goalTypeLabel(type)}${a.target !== undefined ? `; target ${type === 'GOAL_ATTAINMENT_SCALE' ? `level ${formatGasLevel(a.target)}` : formatGoalTarget(type, a.target, a.goal.targetDirection, a.goal.sessionTargetUses)}` : ''})`;
+  return `Goal ${a.number}: ${a.goal.name} (${goalTypeLabel(a.goal)}${a.target !== undefined ? `; target ${type === 'GOAL_ATTAINMENT_SCALE' ? `level ${formatGasLevel(a.target)}` : formatGoalTarget(a.goal, a.target, a.goal.targetDirection, a.goal.sessionTargetUses)}` : ''})`;
 }
 
 function targetSentence(a: GoalAnalysis): string | null {
@@ -664,8 +630,8 @@ export function buildProgressReport({ student, goals, sessions }: Omit<Narrative
     return {
       goal,
       number: a.number,
-      typeLabel: goalTypeLabel(type),
-      targetLabel: a.target !== undefined ? formatGoalTarget(type, a.target, goal.targetDirection, goal.sessionTargetUses) : null,
+      typeLabel: goalTypeLabel(goal),
+      targetLabel: a.target !== undefined ? formatGoalTarget(goal, a.target, goal.targetDirection, goal.sessionTargetUses) : null,
       points: a.recorded.map(r => {
         if (type === 'COMMUNICATION_FUNCTIONS') {
           const s = summarizeCommunicationFunctions(r.data);
