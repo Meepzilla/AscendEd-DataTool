@@ -221,6 +221,11 @@ const GoalBreakdowns: React.FC<{ goal: Goal; recorded: Recorded[] }> = ({ goal, 
   if (type === 'ITEM_MASTERY') {
     panels.push(<ItemMasteryCharts key="item-mastery" goal={goal} recorded={recorded} />);
   }
+  if (type === 'CUSTOM' && goal.customType?.kind === 'utterances') {
+    // A custom utterance-length type: the same charts as Language Sample, in the type's unit.
+    const unit = goal.customType.utterances?.unit === 'morphemes' ? 'morphemes' : 'words';
+    panels.push(<LanguageSampleCharts key="custom-utterances" goal={{ ...goal, sampleUnit: unit }} recorded={recorded} />);
+  }
   if (type === 'FLUENCY_SYLLABLE_STUTTER') {
     panels.push(
       <HBars key="dysfluency" title="Dysfluency types" series={COUNT_SERIES}
@@ -247,7 +252,7 @@ const GoalBreakdowns: React.FC<{ goal: Goal; recorded: Recorded[] }> = ({ goal, 
       <HBars key="functions" title="Possible functions" series={COUNT_SERIES} rows={tallyRows(abc.functions)} />,
     );
   }
-  if (usesPromptCounters(type)) {
+  if (usesPromptCounters(goal)) {
     const totals = promptTotals();
     data.forEach(d => Object.entries(promptTotals(d)).forEach(([k, v]) => { totals[k] += v; }));
     const rows = tallyRows(Object.entries(totals).map(([k, v]) => [PROMPT_LABELS[k] ?? k, v]));
@@ -274,7 +279,7 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
   const points = recorded.map(r => {
     const comm = isCommFunctions ? summarizeCommunicationFunctions(r.data) : null;
     return {
-      label: r.label, value: r.value, ...(goalResponses(type, r.data) ?? {}),
+      label: r.label, value: r.value, ...(goalResponses(goal, r.data) ?? {}),
       ...(comm ? {
         spontaneousFunctions: comm.functionsUsedSpontaneously,
         emergingFunctions: comm.functionsUsedEmergingOnly,
@@ -287,7 +292,8 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
   });
   const onTrack = aimStatus(goal, aim, recorded.map(r => ({ date: r.session.date, value: r.value })));
   const mastery = masterySessions(goal);
-  const hasResponses = goalResponses(type) !== null && points.length > 0;
+  // Correct / approximate / incorrect bars, for the trial types and custom types that count responses.
+  const hasResponses = goalResponses(goal) !== null && points.length > 0;
   const hasCommUsesChart = isCommFunctions && points.length > 0;
   const isLatency = toolTypeOf(type) === 'BEHAVIOR_LATENCY';
   const allSessions = isLatency ? behaviorRecorded : recorded;

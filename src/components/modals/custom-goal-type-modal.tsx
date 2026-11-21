@@ -18,7 +18,7 @@ import {
   makeCustomDef,
 } from '@/lib/goal-types/custom';
 import { formatGoalTarget } from '@/lib/helpers';
-import { goalAccuracyText } from '@/lib/goal-input-logic';
+import { applyFieldChange, clearTrials, cycleTrial, goalAccuracyText, scoreNextTrial, undoLastTrial } from '@/lib/goal-input-logic';
 import { CustomGoalInputs } from '@/components/forms/goal-inputs/custom';
 import PromptLevelCounters from '@/components/forms/goal-inputs/prompt-counters';
 import type { GoalInputContext } from '@/components/forms/goal-inputs/shared';
@@ -51,6 +51,14 @@ function sampleValuesFor(ct: CustomGoalType): number[] {
       return [25, 33, 50, 67, 75, 100];
     case 'yesno':
       return [0, 100, 0, 100, 100, 100];
+    case 'prompting':
+      return [20, 30, 40, 55, 65, 80];
+    case 'trials':
+      return [50, 60, 60, 70, 80, 90];
+    case 'latency':
+      return [12, 10, 9, 7, 6, 4];
+    case 'utterances':
+      return [1.8, 2.1, 2.3, 2.6, 2.9, 3.2];
   }
 }
 
@@ -79,7 +87,9 @@ export default function CustomGoalTypeModal({
     const defaultTarget = kind === 'rating'
       ? Math.max(draft.rating?.min ?? 1, (draft.rating?.max ?? 5) - 1)
       : CUSTOM_MEASURE_KIND_INFO[kind].defaultTarget;
-    const next: CustomGoalType = { ...draft, kind, defaultTarget };
+    // A response time aims to come down; switching to or from it sets the matching direction.
+    const direction: TargetDirection = kind === 'latency' ? 'decrease' : draft.kind === 'latency' ? 'increase' : draft.direction;
+    const next: CustomGoalType = { ...draft, kind, defaultTarget, direction };
     setDraft(next);
     setPreviewData(makeCustomDef(next).initialData());
   };
@@ -121,7 +131,9 @@ export default function CustomGoalTypeModal({
     isLocked: false,
     isFocused: false,
     handleChange: (field, value) => {
-      if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      if (typeof value === 'function') {
+        setPreviewData(prev => value(prev));
+      } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
         setPreviewData(value);
       } else {
         setPreviewData(prev => ({ ...prev, [field]: value }));
@@ -132,10 +144,16 @@ export default function CustomGoalTypeModal({
     },
     handleInteraction: (_e, cb) => cb(),
     calculateAccuracy: () => goalAccuracyText(previewGoal, previewData),
-    handleTrialClick: () => {},
-    handleFillNextTrial: () => {},
-    handleClearTrials: () => {},
-    handleUndoLastTrial: () => {},
+    handleTrialClick: (index) => setPreviewData(prev => applyFieldChange('CUSTOM', prev, 'trials', cycleTrial(prev, index))),
+    handleFillNextTrial: (status) => setPreviewData(prev => {
+      const trials = scoreNextTrial(prev, status);
+      return trials ? applyFieldChange('CUSTOM', prev, 'trials', trials) : prev;
+    }),
+    handleClearTrials: () => setPreviewData(prev => applyFieldChange('CUSTOM', prev, 'trials', clearTrials(prev))),
+    handleUndoLastTrial: () => setPreviewData(prev => {
+      const trials = undoLastTrial(prev);
+      return trials ? applyFieldChange('CUSTOM', prev, 'trials', trials) : prev;
+    }),
   };
 
   const sampleChart = useMemo(() => {
@@ -444,6 +462,76 @@ export default function CustomGoalTypeModal({
                 </div>
               )}
 
+              {draft.kind === 'prompting' && (
+                <div className="space-y-1">
+                  <Label htmlFor="custom-prompting-label">What is each tally?</Label>
+                  <Input
+                    id="custom-prompting-label"
+                    value={draft.prompting?.label ?? 'Responses'}
+                    onChange={(e) => setDraft({ ...draft, prompting: { label: e.target.value } })}
+                    placeholder="e.g., Requests, Transitions"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Each tally is recorded with the prompt it needed: Independent, Visual, Verbal, Gestural, Partial physical or Model.
+                  </p>
+                </div>
+              )}
+
+              {draft.kind === 'trials' && (
+                <div className="space-y-1">
+                  <Label htmlFor="custom-trials-count">Trials per session</Label>
+                  <Input
+                    id="custom-trials-count"
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    max={100}
+                    className="w-28"
+                    value={draft.trials?.count ?? 10}
+                    onChange={(e) => {
+                      const n = Math.floor(Number(e.target.value));
+                      const count = Number.isFinite(n) ? Math.min(100, Math.max(1, n)) : 10;
+                      const next = { ...draft, trials: { count } };
+                      setDraft(next);
+                      setPreviewData(makeCustomDef(next).initialData());
+                    }}
+                  />
+                  <p className="text-[11px] text-muted-foreground">The number of trials can still be changed for a session in Data Entry.</p>
+                </div>
+              )}
+
+              {draft.kind === 'latency' && (
+                <div className="space-y-1">
+                  <Label htmlFor="custom-latency-label">What does the student respond with?</Label>
+                  <Input
+                    id="custom-latency-label"
+                    value={draft.latency?.label ?? 'Response'}
+                    onChange={(e) => setDraft({ ...draft, latency: { label: e.target.value } })}
+                    placeholder="e.g., Responds to name, Starts the task"
+                  />
+                </div>
+              )}
+
+              {draft.kind === 'utterances' && (
+                <div className="space-y-1">
+                  <Label htmlFor="custom-utterance-unit">Count utterances in</Label>
+                  <Select
+                    value={draft.utterances?.unit ?? 'words'}
+                    onValueChange={(val) => {
+                      const next = { ...draft, utterances: { unit: val as 'words' | 'morphemes' } };
+                      setDraft(next);
+                      setPreviewData(makeCustomDef(next).initialData());
+                    }}
+                  >
+                    <SelectTrigger id="custom-utterance-unit" className="w-56"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="words">Words (MLU-w)</SelectItem>
+                      <SelectItem value="morphemes">Morphemes (MLU-m)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
               {draft.kind === 'yesno' && (
                 <div className="space-y-1">
                   <Label htmlFor="custom-yesno-question">Session question</Label>
@@ -490,7 +578,7 @@ export default function CustomGoalTypeModal({
             <div className="space-y-2 border-t border-border pt-3">
               <Label className="text-xs font-semibold">Extras on each goal card</Label>
               <div className="flex flex-wrap gap-4">
-                <label className="flex items-center gap-2 text-xs cursor-pointer">
+                {draft.kind !== 'prompting' && <label className="flex items-center gap-2 text-xs cursor-pointer">
                   <Checkbox
                     checked={Boolean(draft.extras?.promptLevel)}
                     onCheckedChange={(checked) => setDraft({
@@ -499,7 +587,7 @@ export default function CustomGoalTypeModal({
                     })}
                   />
                   Record prompt level counters
-                </label>
+                </label>}
                 <label className="flex items-center gap-2 text-xs cursor-pointer">
                   <Checkbox
                     checked={draft.extras?.notes !== false}
@@ -547,7 +635,7 @@ export default function CustomGoalTypeModal({
                   </Badge>
                 </div>
                 <CustomGoalInputs ctx={previewCtx} customTypeOverride={draft} />
-                {draft.extras?.promptLevel && (
+                {(draft.extras?.promptLevel || draft.kind === 'prompting') && (
                   <PromptLevelCounters
                     captureType="CUSTOM"
                     data={previewData}

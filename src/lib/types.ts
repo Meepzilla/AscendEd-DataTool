@@ -85,7 +85,7 @@ export interface Goal {
 }
 
 /** How a custom goal type is measured; each method has its own inputs and measure (goal-types/custom.ts). */
-export const CUSTOM_MEASURE_KINDS = ['accuracy', 'counter', 'timer', 'rating', 'checklist', 'yesno'] as const;
+export const CUSTOM_MEASURE_KINDS = ['accuracy', 'counter', 'timer', 'rating', 'checklist', 'yesno', 'prompting', 'trials', 'latency', 'utterances'] as const;
 export type CustomMeasureKind = typeof CUSTOM_MEASURE_KINDS[number];
 
 /**
@@ -103,6 +103,14 @@ export interface CustomGoalType {
   accuracy?: { correctLabel: string; incorrectLabel: string; approximate: boolean };
   counter?: { label: string; perMinute: boolean };
   timer?: { label: string };
+  /** Prompt levels (like the Prompting type): what each tallied response is. */
+  prompting?: { label: string };
+  /** Trial grid (like Discrete Trials): how many trials each session starts with. */
+  trials?: { count: number };
+  /** Response time (like the Response Time type): what the student responds to. */
+  latency?: { label: string };
+  /** Utterance length (like Language Sample): whether utterances are counted in words or morphemes. */
+  utterances?: { unit: 'words' | 'morphemes' };
   rating?: { min: number; max: number; levelLabels: string[] };
   checklist?: { steps: string[] };
   yesno?: { question: string };
@@ -357,6 +365,18 @@ export const CustomGoalTypeSchema = z.object({
   }).optional(),
   yesno: z.object({
     question: z.string().trim().min(1, 'Question is required.').max(120),
+  }).optional(),
+  prompting: z.object({
+    label: z.string().trim().min(1, 'Label is required.').max(40),
+  }).optional(),
+  trials: z.object({
+    count: z.number().int('Use a whole number.').min(1, 'At least 1 trial.').max(100, 'At most 100 trials.'),
+  }).optional(),
+  latency: z.object({
+    label: z.string().trim().min(1, 'Label is required.').max(40),
+  }).optional(),
+  utterances: z.object({
+    unit: z.enum(['words', 'morphemes']),
   }).optional(),
   defaultTarget: z.preprocess(emptyToUndefinedNumber, z.number().min(0).max(1000).optional()),
   direction: z.enum(['increase', 'decrease']),

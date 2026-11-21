@@ -232,7 +232,7 @@ export default function HelpPage() {
 
       <Section id="goal-types" icon={Target} title="Goal types" description="Each goal type has its own data entry controls and its own measure in reports.">
         <p>Most types also tally the prompt level of each response (Independent, Visual, Verbal, Gestural, Partial physical, Imitation). Counter buttons add one with a tap; press and hold (or right-click) to take one away. Tap any screenshot below to enlarge it.</p>
-        <p><B>Custom goal types.</B> You can create your own goal types in <Link href="/settings#custom-goal-types" className="underline hover:text-primary">Settings → Custom Goal Types</Link> (or directly from any goal type dropdown) using six measurement methods: correct/incorrect tallies, counters, timers, custom rating scales, checklists, or yes/no questions.</p>
+        <p><B>Custom goal types.</B> You can create your own goal types in <Link href="/settings#custom-goal-types" className="underline hover:text-primary">Settings → Custom Goal Types</Link> (or directly from any goal type dropdown) using ten measurement methods: correct/incorrect tallies, counters, timers, custom rating scales, checklists, yes/no questions, and four that work like built-in types: prompt levels (like Prompting, measured as % independent), a trial grid (like Discrete Trials), response time (like Response Time, the average seconds) and utterance length (like Language Sample, the MLU).</p>
         {customTypes.length > 0 && (
           <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-foreground">Your custom goal types on this device</p>

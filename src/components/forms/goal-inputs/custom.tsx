@@ -11,6 +11,9 @@ import { summarizeDuration } from '@/lib/goal-constants/behavior';
 import { defaultCustomGoalType } from '@/lib/goal-types/custom';
 import type { CustomGoalType } from '@/lib/types';
 import { FormItem, FormLabel, type GoalInputContext } from './shared';
+import { TrialInputs } from './trials';
+import { LatencyInput } from '../behavior-inputs';
+import LanguageSampleInput from '../LanguageSampleInput';
 
 function formatClock(totalSeconds: number): string {
   const s = Math.max(0, Math.round(totalSeconds));
@@ -35,8 +38,55 @@ export function CustomGoalInputs({ ctx, customTypeOverride }: { ctx: GoalInputCo
     handleChange(firstKey, { ...data, ...fields });
   };
 
+  // The behavior tools' update: a patch, or a function of the latest data that returns one.
+  const updateFields = (fields: Record<string, any> | ((current: Record<string, any>) => Record<string, any>)) => {
+    if (typeof fields === 'function') {
+      handleChange('behavior', (current: Record<string, any>) => {
+        const patch = fields(current);
+        return patch === current ? current : { ...current, ...patch };
+      });
+    } else {
+      handleChange(Object.keys(fields)[0] ?? 'behavior', (current: Record<string, any>) => ({ ...current, ...fields }));
+    }
+  };
+
   const renderKindInputs = () => {
     switch (ct.kind) {
+      case 'prompting':
+        // The prompt level counters under the card record the tallies (as for the Prompting type).
+        return (
+          <p className="text-xs text-muted-foreground">
+            Tally each {(ct.prompting?.label || 'response').toLowerCase()} below by the prompt it needed.
+            <span className="ml-1 font-semibold text-primary" aria-live="polite">{calculateAccuracy()}</span>
+          </p>
+        );
+      case 'trials':
+        return <TrialInputs ctx={ctx} />;
+      case 'latency':
+        return (
+          <LatencyInput
+            data={data}
+            update={updateFields}
+            interact={handleInteraction}
+            disabled={isArchived}
+            isLocked={isLocked}
+            goalId={goal.id}
+            communication
+          />
+        );
+      case 'utterances':
+        return (
+          <LanguageSampleInput
+            unit={ct.utterances?.unit === 'morphemes' ? 'morphemes' : 'words'}
+            data={data}
+            update={next => handleChange('utterances', next)}
+            interact={handleInteraction}
+            disabled={isArchived}
+            isLocked={isLocked}
+            goalId={goal.id}
+            showNotes={false}
+          />
+        );
       case 'accuracy': {
         const correctLabel = ct.accuracy?.correctLabel || 'Correct';
         const incorrectLabel = ct.accuracy?.incorrectLabel || 'Incorrect';
