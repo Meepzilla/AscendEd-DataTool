@@ -254,6 +254,7 @@ export default function AddGoalTemplateModal() {
                     {...field} 
                     value={field.value ?? ''}
                     onChange={e => field.onChange(e.target.value === '' ? '' : Number(e.target.value))} // '' (not undefined, which react-hook-form replaces with the starting value) = no target
+                    step="any" // decimals allowed (an MLU of 3.5, 2.5 minutes); without this the browser refuses them
                     min={targetInfo.min ?? 0}
                     max={targetInfo.max ?? 1000}
                   />

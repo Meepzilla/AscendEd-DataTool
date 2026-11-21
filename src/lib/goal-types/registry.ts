@@ -6,6 +6,8 @@ import {
 import { gasLevelLabel } from '../gas';
 import { PROMPT_TYPES } from '../promptConstants';
 import { taskAnalysisSummary } from '../task-analysis';
+import { formatSampleLength, languageSampleSummary, sampleUnit } from '../language-sample';
+import { itemMasterySummary } from '../item-mastery';
 import type { GoalMeasureInfo } from '../goal-measures';
 import { isCustomGoal, type GoalTypeDefinition, type MeasuredGoal } from './definition';
 import { defaultCustomGoalType, makeCustomDef } from './custom';
@@ -17,7 +19,7 @@ const RATING_TYPES: string[] = ['QUALITATIVE_OBSERVATION', 'COGNITIVE'];
 const NOT_PERCENT = new Set([
   'COMMUNICATION_FUNCTIONS', 'QUALITATIVE_OBSERVATION', 'COGNITIVE',
   'BEHAVIOR_FREQUENCY', 'BEHAVIOR_DURATION', 'BEHAVIOR_LATENCY',
-  'GOAL_ATTAINMENT_SCALE', 'COMMUNICATION_COUNT', 'COMMUNICATION_DURATION', 'RESPONSE_TIME',
+  'GOAL_ATTAINMENT_SCALE', 'COMMUNICATION_COUNT', 'COMMUNICATION_DURATION', 'RESPONSE_TIME', 'LANGUAGE_SAMPLE',
 ]);
 
 function builtInLabel(type: string): string {
@@ -78,6 +80,8 @@ function builtInMeasureInfo(type: BuiltInGoalType, goal: MeasuredGoal): GoalMeas
     case 'GOAL_ATTAINMENT_SCALE': return { label: 'Attainment level', unit: '', max: 2, min: -2 };
     case 'PROMPTING': return { label: '% independent', unit: '%', max: 100 };
     case 'TASK_ANALYSIS': return { label: '% of steps independent', unit: '%', max: 100 };
+    case 'LANGUAGE_SAMPLE': return { label: `MLU (${sampleUnit(goal)})`, unit: '' };
+    case 'ITEM_MASTERY': return { label: '% of items correct', unit: '%', max: 100 };
     case 'COMMUNICATION_COUNT': return { label: 'Times', unit: '' };
     case 'COMMUNICATION_DURATION': return { label: 'Total minutes', unit: ' min' };
     case 'RESPONSE_TIME': return { label: 'Average response time (seconds)', unit: ' s' };
@@ -143,6 +147,10 @@ function builtInMeasure(rawType: BuiltInGoalType, goal: MeasuredGoal, data: Reco
     }
     case 'TASK_ANALYSIS':
       return taskAnalysisSummary(data).percent;
+    case 'LANGUAGE_SAMPLE':
+      return languageSampleSummary(data).mlu;
+    case 'ITEM_MASTERY':
+      return itemMasterySummary(data).percent;
   }
   if (RATING_TYPES.includes(type)) {
     const rating = Number(data.rating);
@@ -165,6 +173,8 @@ function builtInFormula(type: BuiltInGoalType, goal: MeasuredGoal): string {
     case 'GOAL_ATTAINMENT_SCALE': return 'The attainment level recorded in the session, -2 to +2; 0 is the expected outcome.';
     case 'PROMPTING': return 'Independent ÷ all prompt-level tallies × 100.';
     case 'TASK_ANALYSIS': return 'Steps done independently ÷ steps scored × 100.';
+    case 'LANGUAGE_SAMPLE': return `Mean length of utterance: the ${sampleUnit(goal)} in all the utterances recorded in the session ÷ the number of utterances.`;
+    case 'ITEM_MASTERY': return 'Items marked correct ÷ items tried in the session × 100. Items not tried are left out. An item counts as mastered once it is correct 3 sessions in a row.';
     case 'COMMUNICATION_COUNT': return 'The number of times counted in the session.';
     case 'COMMUNICATION_DURATION': return 'All the timed periods in the session added up, in minutes.';
     case 'RESPONSE_TIME': return 'The average seconds from the cue to the response, over the trials with a response.';
@@ -189,6 +199,8 @@ function builtInNarrativeNoun(type: BuiltInGoalType, goal: MeasuredGoal): string
     case 'COGNITIVE': return 'the rating';
     case 'PROMPTING': return 'the percentage of independent responses';
     case 'TASK_ANALYSIS': return 'the percentage of steps done independently';
+    case 'LANGUAGE_SAMPLE': return 'the mean length of utterance';
+    case 'ITEM_MASTERY': return 'the percentage of items correct';
     case 'COMMUNICATION_COUNT': return 'the number of times';
     case 'COMMUNICATION_DURATION': return 'the total time';
     case 'RESPONSE_TIME': return 'the average time to respond';
@@ -207,6 +219,7 @@ function builtInFormatValue(type: BuiltInGoalType, goal: MeasuredGoal, value: nu
   const v = round(value);
   switch (type) {
     case 'GOAL_ATTAINMENT_SCALE': return gasLevelLabel(v);
+    case 'LANGUAGE_SAMPLE': return formatSampleLength(value, sampleUnit(goal));
     case 'BEHAVIOR_FREQUENCY':
     case 'COMMUNICATION_COUNT':
     case 'COMMUNICATION_FUNCTIONS': return String(v);
@@ -221,7 +234,9 @@ function builtInFormatValue(type: BuiltInGoalType, goal: MeasuredGoal, value: nu
   }
 }
 
-function builtInFormatTarget(type: string, target: number, direction?: TargetDirection, usesTarget?: number): string {
+function builtInFormatTarget(type: string, target: number, direction?: TargetDirection, usesTarget?: number, goal?: MeasuredGoal): string {
+  if (type === 'LANGUAGE_SAMPLE') return `MLU ≥ ${formatSampleLength(target, sampleUnit(goal))}`;
+  if (type === 'ITEM_MASTERY') return `${target}% of items correct`;
   if (type === 'COMMUNICATION_COUNT' || type === 'COMMUNICATION_DURATION' || type === 'RESPONSE_TIME') {
     const sign = (direction ?? (type === 'RESPONSE_TIME' ? 'decrease' : 'increase')) === 'decrease' ? '≤' : '≥';
     if (type === 'COMMUNICATION_COUNT') return `${sign} ${target} per session`;
@@ -267,8 +282,8 @@ function makeBuiltInDef(type: BuiltInGoalType): GoalTypeDefinition {
     formulaText: (goal: MeasuredGoal) => builtInFormula(type, goal),
     narrativeNoun: (goal: MeasuredGoal) => builtInNarrativeNoun(type, goal),
     formatValue: (goal: MeasuredGoal, value: number) => builtInFormatValue(type, goal, value),
-    formatTarget: (_goal: MeasuredGoal, target: number, direction?: TargetDirection, usesTarget?: number) =>
-      builtInFormatTarget(type, target, direction, usesTarget),
+    formatTarget: (goal: MeasuredGoal, target: number, direction?: TargetDirection, usesTarget?: number) =>
+      builtInFormatTarget(type, target, direction, usesTarget, goal),
   };
 }
 

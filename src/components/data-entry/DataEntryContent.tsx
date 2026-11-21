@@ -14,7 +14,7 @@ import { Info, PlusCircle, TriangleAlert } from 'lucide-react';
 import { getStorageFailure, subscribeStorageFailures } from '@/lib/storage-failure';
 import type { GoalDataUpdater, Student, StudentSessionState } from '@/lib/types';
 import { MISSED_REASON_SHORT, type MissedReason } from '@/lib/attendance';
-import { taskSteps } from '@/lib/task-analysis';
+import { hotkeyList } from '@/lib/task-analysis';
 import type { StudentGroup } from '@/lib/student-groups';
 import LoadGroupMenu from '@/components/student-groups/LoadGroupMenu';
 import { formatDate } from '@/lib/helpers';
@@ -700,7 +700,7 @@ export default function DataEntryContent() {
       if (!studentState || !goal || goal.isArchived) return prevStates;
       const type = captureTypeOf(goal);
       const current = studentState.goalData[goalId] || freshGoalData(goal);
-      const next = applyGoalHotkey(type, key, current, taskSteps(goal));
+      const next = applyGoalHotkey(type, key, current, hotkeyList(goal));
       if (!next) return prevStates;
       return { ...prevStates, [studentId]: { ...studentState, goalData: { ...studentState.goalData, [goalId]: { ...next, recorded: true } } } };
     });

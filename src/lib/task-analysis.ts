@@ -57,3 +57,12 @@ export function scoreNextStep(data: Record<string, any>, steps: string[], level:
   scores[next] = { ...scores[next], level };
   return { ...data, steps: scores };
 }
+
+/** The list a goal's hotkeys work through: task analysis steps, or item mastery items. */
+export function hotkeyList(goal: Pick<Goal, 'taskSteps' | 'listItems' | 'type' | 'dataCaptureType'>): string[] {
+  const type = goal.dataCaptureType || goal.type;
+  if (type === 'ITEM_MASTERY') {
+    return Array.isArray(goal.listItems) ? goal.listItems.map(s => String(s).trim()).filter(Boolean) : [];
+  }
+  return taskSteps(goal);
+}

@@ -9,6 +9,10 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { formatGoalTarget, goalStatement, goalTypeLabel } from '@/lib/helpers';
 import TaskAnalysisInput from './TaskAnalysisInput';
+import LanguageSampleInput from './LanguageSampleInput';
+import ItemMasteryInput from './ItemMasteryInput';
+import { listItems } from '@/lib/item-mastery';
+import { sampleUnit } from '@/lib/language-sample';
 import { taskSteps } from '@/lib/task-analysis';
 import { TrendingUp, ArrowUp, ArrowDown, ArchiveIcon, Pin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -175,6 +179,30 @@ export default function GoalDataInputComponent({
             steps={taskSteps(goal)}
             data={data}
             update={next => onChange('steps', next)}
+            interact={handleInteraction}
+            disabled={isArchived}
+            isLocked={isLocked}
+            goalId={goal.id}
+          />
+        );
+      case 'LANGUAGE_SAMPLE':
+        return (
+          <LanguageSampleInput
+            unit={sampleUnit(goal)}
+            data={data}
+            update={next => onChange('utterances', next)}
+            interact={handleInteraction}
+            disabled={isArchived}
+            isLocked={isLocked}
+            goalId={goal.id}
+          />
+        );
+      case 'ITEM_MASTERY':
+        return (
+          <ItemMasteryInput
+            items={listItems(goal)}
+            data={data}
+            update={next => onChange('items', next)}
             interact={handleInteraction}
             disabled={isArchived}
             isLocked={isLocked}

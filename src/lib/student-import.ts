@@ -248,6 +248,8 @@ export function classifyGoal(text: string, area = ''): { type: GoalType } {
   if (has(t, /articulat|speech sounds?\b|(?:^|[\s(])\/[a-z]{1,3}\/(?=[\s,.)]|$)|multisyllabic|syllables within|intelligib/) || a === 'speech' || a === 'articulation') {
     return { type: 'ARTICULATION' };
   }
+  // Mean length of utterance is measured from a language sample.
+  if (has(t, /\bmlu\b|mean length of utterance/)) return { type: 'LANGUAGE_SAMPLE' };
   if (has(t, /\bstory\b|narrative|retell|literary elements|story grammar|story elements/)) return { type: 'STORY_ELEMENTS' };
 
   // Communication counted by function: a number of functions ("at least 3 functions", "3 different purposes"), wording
@@ -323,6 +325,11 @@ export function goalTarget(type: GoalType, text: string): number {
     case 'QUALITATIVE_OBSERVATION':
     case 'COGNITIVE':
       return 4;
+    case 'LANGUAGE_SAMPLE': {
+      // "an MLU of 3.5", "mean length of utterance to 4 morphemes"; 3 when the text gives no length.
+      const m = /(?:\bmlu\b|mean length of utterance)[^0-9.]{0,40}(\d+(?:\.\d+)?)/.exec(t);
+      return m ? Math.min(50, Number(m[1])) : 3;
+    }
     default: {
       const percent = lastMatch(/(\d{1,3})\s*%/g, t);
       if (percent) return Math.min(100, Number(percent[1]));

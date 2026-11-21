@@ -68,6 +68,8 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
         sessionTargetUses: goalToEdit.sessionTargetUses,
         targetDate: goalToEdit.targetDate ?? '',
         taskSteps: (goalToEdit.taskSteps ?? []).join('\n') as unknown as string[],
+        listItems: (goalToEdit.listItems ?? []).join('\n') as unknown as string[],
+        sampleUnit: goalToEdit.sampleUnit ?? 'words',
         baseline: goalToEdit.baseline ?? ('' as unknown as number),
         baselineDate: goalToEdit.baselineDate ?? '',
         gasLevelDescriptions: Array.from({ length: 5 }, (_, i) => goalToEdit.gasLevelDescriptions?.[i] ?? ''),
@@ -82,12 +84,12 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
 
   // What changed, old to new, so the editor says plainly what saving will change. Compared against
   // the goal as it was, not against the form's dirty flags, so only real differences are listed.
-  const watched = form.watch(['name', 'smartGoal', 'sessionTargetValue', 'targetDate', 'taskSteps', 'baseline', 'baselineDate', 'gasLevelDescriptions', 'masterySessions', 'blankFills', 'targetDirection', 'isArchived', 'dataCaptureType', 'sessionTargetUses']);
+  const watched = form.watch(['name', 'smartGoal', 'sessionTargetValue', 'targetDate', 'taskSteps', 'baseline', 'baselineDate', 'gasLevelDescriptions', 'masterySessions', 'blankFills', 'targetDirection', 'isArchived', 'dataCaptureType', 'sessionTargetUses', 'listItems', 'sampleUnit']);
   const changes = React.useMemo(() => assignedGoalChanges(goalToEdit, {
     name: watched[0], smartGoal: watched[1], sessionTargetValue: watched[2], targetDate: watched[3],
     taskSteps: watched[4], baseline: watched[5], baselineDate: watched[6], gasLevelDescriptions: watched[7],
     masterySessions: watched[8], blankFills: watched[9], targetDirection: watched[10], isArchived: watched[11],
-    dataCaptureType: watched[12], sessionTargetUses: watched[13],
+    dataCaptureType: watched[12], sessionTargetUses: watched[13], listItems: watched[14], sampleUnit: watched[15],
   }), [goalToEdit, watched]);
 
   const onSubmit = async (data: EditAssignedGoalFormData) => {
@@ -224,6 +226,58 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
             />
           )}
 
+          {(form.watch('dataCaptureType') || goalToEdit?.type) === 'ITEM_MASTERY' && (
+            <FormField
+              control={form.control}
+              name="listItems"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Items</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      rows={6}
+                      placeholder={'One item per line, e.g.\nwant\nmore\nhelp'}
+                      value={Array.isArray(field.value) ? field.value.join('\n') : (field.value as unknown as string) ?? ''}
+                      onChange={e => field.onChange(e.target.value)}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    One item per line (words, signs, sounds or other targets), up to 100. In Data Entry each item tried is
+                    marked correct or incorrect; the goal&apos;s measure is the percentage of items tried that were correct,
+                    and an item counts as mastered once it is correct 3 sessions in a row.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+
+          {(form.watch('dataCaptureType') || goalToEdit?.type) === 'LANGUAGE_SAMPLE' && (
+            <FormField
+              control={form.control}
+              name="sampleUnit"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Count utterances in</FormLabel>
+                  <Select value={field.value ?? 'words'} onValueChange={field.onChange}>
+                    <FormControl>
+                      <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="words">Words (MLU-w)</SelectItem>
+                      <SelectItem value="morphemes">Morphemes (MLU-m)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    In Data Entry you tap the length of each utterance in this unit; the goal&apos;s measure is the mean
+                    length of utterance (MLU). Sessions already recorded keep the unit they were counted in.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+
           {(form.watch('dataCaptureType') || goalToEdit?.type) === 'GOAL_ATTAINMENT_SCALE' && (
             <GasLevelDescriptionsField
               values={form.watch('gasLevelDescriptions') ?? []}
@@ -252,6 +306,7 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
                     {...field}
                     value={field.value ?? ''}
                     onChange={e => field.onChange(e.target.value === '' ? '' : Number(e.target.value))} // '' (not undefined, which react-hook-form replaces with the starting value) = no target
+                    step="any" // decimals allowed (an MLU of 3.5, 2.5 minutes); without this the browser refuses them
                     min={targetInfo.min ?? 0}
                     max={targetInfo.max ?? 1000}
                   />
@@ -322,7 +377,7 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
                 <FormItem>
                   <FormLabel>Baseline (Optional)</FormLabel>
                   <FormControl>
-                    <Input type="number" min="-2" placeholder="e.g., 40" {...field} value={field.value ?? ''}
+                    <Input type="number" step="any" min="-2" placeholder="e.g., 40" {...field} value={field.value ?? ''}
                       onChange={e => field.onChange(e.target.value === '' ? '' : Number(e.target.value))} />
                   </FormControl>
                   <FormMessage />

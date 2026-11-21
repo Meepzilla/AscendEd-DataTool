@@ -15,13 +15,15 @@ It runs entirely on the device: there is no account, no server and no AI. Studen
 
 **Data collection**
 - Record several students at once, with no limit on slots. Saved groups (a class or small group) load in one step, and Remove All clears the slots (after asking, and naming anyone with unsaved data).
-- 25 built-in goal types, each with its own controls and measure, including:
+- 27 built-in goal types, each with its own controls and measure, including:
   - accuracy counts and trial grids;
   - prompt levels, fluency, communication functions, story elements and task analysis;
   - behavior frequency, duration, ABC, interval and latency (behavior times can be corrected by hand);
   - communication goals measured by counts, minutes, response time or opportunities;
   - Communication Functions: Spontaneous, Emerging and Prompted tallies for each function, with an optional minimum number of unprompted uses per session;
-  - Goal Attainment Scaling (GAS): a level from −2 to +2 per session, with the goal's own written description of each level.
+  - Goal Attainment Scaling (GAS): a level from −2 to +2 per session, with the goal's own written description of each level;
+  - Language Sample: tap each utterance's length (words or morphemes) for the mean length of utterance (MLU);
+  - Item Mastery: a list of targets (core words, sight words, signs, sounds) marked correct or incorrect one by one, with each item mastered once it is correct 3 sessions in a row.
 - Custom goal types (Settings → Custom Goal Types, or from any goal type list): pick how the goal is measured (correct/incorrect, a counter, a timer, a rating scale, a checklist, or yes/no), name it and set its target, with a preview of the Data Entry card. Custom types work like built-in ones in Data Entry, charts and reports, are included in backups, and can be exported to a file and imported on another device. Each goal keeps a copy of its type, so later edits to the type never change assigned goals or recorded sessions.
 - Keyboard shortcuts for fast entry. Unsaved work survives switching pages or closing the app. A card clears as soon as Save is tapped, so taps made while a save is running are kept; if a save fails, the entries come back and the app says so.
 - Missed sessions are recorded with a reason. Sessions saved in parts can be merged so their minutes count once. Saved sessions can be edited, date and times included.

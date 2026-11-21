@@ -9,7 +9,7 @@ import { STORY_LINKING_WORDS, STORY_PARTS, linkingWordField } from './goal-const
 // minutes count the time once instead of once per save, and the goal data is combined:
 // - counts add up (correct/incorrect, prompts, behavior counts, observation minutes, fluency counts...);
 // - lists are joined (trials, ABC incidents, duration episodes, occurrence times, intervals);
-// - task analysis steps keep each step's latest score; ratings, settings (interval length, interval method)
+// - task analysis steps and item mastery items keep each one's latest score; utterances are joined; ratings, settings (interval length, interval method)
 //   and other single values keep the latest; story element scores keep the best score given;
 // - summaries worked out from the data (% of intervals, average latency, duration totals, ABC counts) are worked out again;
 // - notes and activities are joined.
@@ -175,6 +175,18 @@ export function mergeGoalData(parts: Record<string, any>[]): Record<string, any>
         } else {
           result.steps = Array.from({ length }, (_, i) => (value[i]?.level ? value[i] : current[i] ?? value[i]));
         }
+      } else if (key === 'items' && Array.isArray(current) && Array.isArray(value)) {
+        // Item mastery: one entry per item (by name); a later part's mark replaces an earlier one, and an item
+        // left unmarked in a later part keeps the earlier mark.
+        const merged = new Map<string, { label: string; result: string }>();
+        for (const entry of [...current, ...value] as { label?: unknown; result?: unknown }[]) {
+          if (!entry || typeof entry.label !== 'string') continue;
+          const k = entry.label.trim().toLowerCase();
+          const result = typeof entry.result === 'string' ? entry.result : '';
+          const prev = merged.get(k);
+          if (!prev || result) merged.set(k, { label: entry.label, result: result || prev?.result || '' });
+        }
+        result.items = [...merged.values()];
       } else if (key === 'trials' && Array.isArray(current) && Array.isArray(value)) {
         // Trial grids: every scored trial (unscored ones don't count toward anything). The same grid saved
         // in two parts counts once.

@@ -5,6 +5,7 @@ import type { CustomGoalType, Goal, SessionData, StudentIep } from './types';
 import { fillBlanks, matchTextToTarget, percentAsFraction } from './goal-blanks';
 import { replacePlaceholders, type PlaceholderKey } from './goal-placeholders';
 import { makeCustomDef } from './goal-types/custom';
+import { formatSampleLength, sampleUnit } from './language-sample';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -111,7 +112,7 @@ export function formatTime(date: Date | string): string {
  * behavior goals a count, minutes, % or seconds with "≤" (decrease goals, the default) or "≥" (increase goals).
  */
 export function formatGoalTarget(
-  typeOrGoal: string | { type: string; dataCaptureType?: string; targetDirection?: 'increase' | 'decrease'; sessionTargetUses?: number; customType?: CustomGoalType },
+  typeOrGoal: string | { type: string; dataCaptureType?: string; targetDirection?: 'increase' | 'decrease'; sessionTargetUses?: number; customType?: CustomGoalType; sampleUnit?: 'words' | 'morphemes' },
   target: number,
   direction?: 'increase' | 'decrease',
   usesTarget?: number,
@@ -133,6 +134,8 @@ export function formatGoalTarget(
     return `${sign} ${target} s average`;
   }
   if (type === 'COMMUNICATION_OPPORTUNITIES') return `${target}% of opportunities`;
+  if (type === 'LANGUAGE_SAMPLE') return `MLU ≥ ${formatSampleLength(target, sampleUnit(typeof typeOrGoal === 'object' ? typeOrGoal : null))}`;
+  if (type === 'ITEM_MASTERY') return `${target}% of items correct`;
   if (type.startsWith('BEHAVIOR_')) {
     const sign = (dir ?? 'decrease') === 'decrease' ? '≤' : '≥';
     if (type === 'BEHAVIOR_FREQUENCY') return `${sign} ${target} per session`;

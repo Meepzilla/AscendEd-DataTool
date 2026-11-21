@@ -39,6 +39,7 @@ function criterion(type: GoalType, target: number | undefined): string {
     case 'BEHAVIOR_LATENCY':
     case 'BEHAVIOR_ABC':
     case 'TASK_ANALYSIS':
+    case 'LANGUAGE_SAMPLE':
       return ''; // stated in the sentence itself
     default:
       return `with ${t}% accuracy`;

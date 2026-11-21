@@ -72,6 +72,10 @@ export interface Goal {
   gasLevelDescriptions?: string[];
   /** Task analysis goals: the steps of the skill, in order (task-analysis.ts). */
   taskSteps?: string[];
+  /** Item mastery goals: the targets (words, signs, sounds) tracked one by one (item-mastery.ts). */
+  listItems?: string[];
+  /** Language sample goals: whether utterances are counted in words or morphemes (language-sample.ts). */
+  sampleUnit?: 'words' | 'morphemes';
   /** What fills each blank ("___") in the goal text, by position; empty uses the automatic value (goal-blanks.ts). */
   blankFills?: string[];
   /** CUSTOM goals: a copy of the user's custom goal type as it was when the goal was made (goal-types/custom.ts). */
@@ -136,6 +140,8 @@ export const BUILT_IN_GOAL_TYPE_VALUES = [
   'COMMUNICATION_DURATION',
   'RESPONSE_TIME',
   'COMMUNICATION_OPPORTUNITIES',
+  'LANGUAGE_SAMPLE',
+  'ITEM_MASTERY',
 ] as const;
 
 export const GOAL_TYPE_VALUES = [
@@ -175,6 +181,8 @@ export interface GoalTemplate {
   /** GAS templates: the five level descriptions, index 0 = level -2; copied to the assigned goal (goalFromTemplate). */
   gasLevelDescriptions?: string[];
   taskSteps?: string[]; // Task analysis templates: the steps copied to a student's goal
+  listItems?: string[]; // Item mastery templates: the items copied to a student's goal
+  sampleUnit?: 'words' | 'morphemes'; // Language sample templates: the unit copied to a student's goal
   defaultKey?: string; // Built-in templates: the name they were added under, kept if the user renames them
   deleted?: boolean; // Built-in templates: deleted by the user. Kept so they aren't added back; restorable in Settings (builtin-goals.ts)
   /** CUSTOM templates: a copy of the user's custom goal type, copied to the assigned goal (goalFromTemplate). */
@@ -434,6 +442,11 @@ export const AssignedGoalEditSchema = z.object({
     (val) => (typeof val === 'string' ? val.split('\n').map(s => s.trim()).filter(Boolean) : val),
     z.array(z.string()).max(40, 'At most 40 steps.').optional()
   ),
+  listItems: z.preprocess(
+    (val) => (typeof val === 'string' ? val.split('\n').map(s => s.trim()).filter(Boolean) : val),
+    z.array(z.string().max(100, 'Keep each item under 100 characters.')).max(100, 'At most 100 items.').optional()
+  ),
+  sampleUnit: z.enum(['words', 'morphemes']).optional(),
   masterySessions: z.preprocess(
     emptyToUndefinedNumber,
     z.number().int('Use a whole number.').min(1, 'At least 1 session.').max(20, 'At most 20 sessions.').optional()

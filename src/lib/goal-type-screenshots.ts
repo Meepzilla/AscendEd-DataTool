@@ -16,6 +16,8 @@ export interface GoalTypeScreenshot {
 export const GOAL_TYPE_SCREENSHOTS: Record<BuiltInGoalType, GoalTypeScreenshot> = {
   AAC: { src: '/help/goal-types/aac.webp', width: 330, height: 323 },
   ARTICULATION: { src: '/help/goal-types/articulation.webp', width: 330, height: 323 },
+  ITEM_MASTERY: { src: '/help/goal-types/item-mastery.webp', width: 330, height: 494 },
+  LANGUAGE_SAMPLE: { src: '/help/goal-types/language-sample.webp', width: 330, height: 486 },
   BEHAVIOR_ABC: { src: '/help/goal-types/behavior-abc.webp', width: 330, height: 800 },
   BEHAVIOR_DURATION: { src: '/help/goal-types/behavior-duration.webp', width: 330, height: 466 },
   BEHAVIOR_FREQUENCY: { src: '/help/goal-types/behavior-frequency.webp', width: 330, height: 365 },
