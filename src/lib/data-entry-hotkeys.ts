@@ -3,12 +3,14 @@ import { PROMPT_HOTKEY_MAP } from './promptConstants';
 import { GOAL_TYPES_WITHOUT_PROMPT_COUNTERS, alignTimes } from './goal-constants';
 import { storedTrialCount } from './goal-input-logic';
 import { scoreNextStep, type StepLevel } from './task-analysis';
+import { scoreNextItem } from './item-mastery';
 
 // Data Entry hotkeys that record data for the focused goal (see Help → Hotkeys):
 //   C = correct, N = incorrect, B = approximate (Blocks for fluency); R/H/J = fluency repetitions,
 //   prolongations, interjections; D/V/G/P/F/I = prompt levels (I also counts a correct response).
 // Discrete and sequenced trials: C/N/B fill the next unscored trial. Behavior frequency: C adds an occurrence.
 // Task analysis: C (independent), N (not done) and the prompt keys score the next unscored step.
+// Item mastery: C and N mark the next unmarked item correct or incorrect.
 
 /**
  * The key a hotkey event stands for, as an upper-case letter or digit ("A", "1") or "ENTER". Uses the
@@ -105,6 +107,13 @@ export function applyGoalHotkey(type: GoalType, key: string, data: Record<string
     const level: StepLevel | undefined = key === 'C' ? 'Independent' : key === 'N' ? 'NotDone' : PROMPT_HOTKEY_MAP[key as keyof typeof PROMPT_HOTKEY_MAP];
     return level ? scoreNextStep(data, steps, level) : null;
   }
+  // Item mastery: `steps` holds the goal's items.
+  if (type === 'ITEM_MASTERY') {
+    if (key === 'C') return scoreNextItem(data, steps, 'correct');
+    if (key === 'N') return scoreNextItem(data, steps, 'incorrect');
+    return null;
+  }
+  if (type === 'LANGUAGE_SAMPLE') return null;
   if (key === 'C') return addCorrect(type, data);
 
   if (key === 'N') {

@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-21',
+    title: 'Two New Goal Types: Language Sample (MLU) and Item Mastery',
+    description: 'Language Sample goals measure mean length of utterance. In Data Entry, tap the length of each utterance as the student says it (1 to 10, or type a longer one), counted in words or morphemes as set in Edit Goal; the card shows the running MLU, the number of utterances and the longest. Item Mastery goals track a list of targets one by one, such as core words, sight words, signs or sounds: add the items in Edit Goal → Items, then mark each item tried correct or incorrect (C and N mark the next one). The measure is the percentage of items tried that were correct, and an item counts as mastered once it is correct 3 sessions in a row. Reports show each goal\'s MLU or percentage over time with the target and aim line, plus, for language samples, how many utterances there were of each length and each session\'s sample size and longest utterance, and, for item mastery, items mastered over time and a table of every item\'s results by session. Progress narratives and the Progress Report describe both, starter templates are in the goal library, and an IEP goal that mentions MLU is imported as a Language Sample goal. Goal targets and baselines can now be decimals in every goal editor (an MLU of 3.5, 2.5 minutes); before, the browser quietly refused to save them.',
+    type: 'feature',
+    icon: ListChecks,
+  },
+  {
+    date: '2026-11-21',
     title: 'Backup and Storage in One Place',
     description: 'Settings now has one Backup & Restore card instead of a separate Storage card with its own backup buttons. The card shows what is on the device, how much storage it uses (with the bar), and when you last backed up, above a single Back Up Now button. The warnings when storage is over 70% or 90% full now appear in this card too; the extra "over 3 MB" banners are gone, since the backup button is right there.',
     type: 'improvement',

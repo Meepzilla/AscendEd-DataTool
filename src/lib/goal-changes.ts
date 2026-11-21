@@ -63,6 +63,8 @@ export interface AssignedGoalFormValues {
   sessionTargetUses?: number | string;
   targetDate?: string;
   taskSteps?: string | string[];
+  listItems?: string | string[];
+  sampleUnit?: string;
   baseline?: number | string;
   baselineDate?: string;
   gasLevelDescriptions?: string[];
@@ -101,6 +103,26 @@ export function assignedGoalChanges(original: Goal, values: AssignedGoalFormValu
         to: reworded ? `${toCount} steps (reworded)` : `${toCount} steps`,
       });
     }
+  }
+
+  if (values.listItems !== undefined) {
+    const items = Array.isArray(values.listItems) ? values.listItems.join('\n') : values.listItems;
+    const originalItems = (original.listItems ?? []).join('\n');
+    if (normText(items) !== normText(originalItems)) {
+      const count = (text: string) => (text ? text.split('\n').filter(l => l.trim()).length : 0);
+      const fromCount = count(originalItems);
+      const toCount = count(items);
+      const reworded = fromCount === toCount;
+      changes.push({
+        label: 'Items',
+        from: reworded ? `${fromCount} items (reworded)` : `${fromCount} items`,
+        to: reworded ? `${toCount} items (reworded)` : `${toCount} items`,
+      });
+    }
+  }
+
+  if (values.sampleUnit !== undefined && (values.sampleUnit || 'words') !== (original.sampleUnit || 'words')) {
+    changes.push({ label: 'Count utterances in', from: original.sampleUnit || 'words', to: values.sampleUnit || 'words' });
   }
 
   if (values.gasLevelDescriptions !== undefined) {

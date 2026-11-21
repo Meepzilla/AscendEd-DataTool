@@ -9,6 +9,8 @@ import { getGoalTypeDef } from './goal-types';
 import { compareSessionsOldestFirst, formatDate, formatDateOnly, formatGoalTarget, goalTypeLabel, parseDateOnly, plural } from './helpers';
 import { timePatterns, TIMING_MEASURE_LABELS, WEEKDAY_NAMES } from './behavior-timing';
 import { formatGasLevel } from './gas';
+import { formatSampleLength, sampleUnit, summarizeSample, utteranceLengths } from './language-sample';
+import { ITEM_MASTERY_RUN, itemHistory, listItems } from './item-mastery';
 import type { TaskStepScore } from './task-analysis';
 import { trendWeight } from './trial-weights';
 import { AIM_RULE_SESSIONS, aimLine, aimStatus, aimValueAt, masterySessions, type AimLine, type AimStatus } from './aim-line';
@@ -270,6 +272,33 @@ function taskAnalysisSentence(name: string, data: Record<string, any>[]): string
     : latestText;
 }
 
+/** Language sample: utterances sampled, the MLU across the samples and the longest utterance. */
+function languageSampleSentence(name: string, goal: Goal, data: Record<string, any>[]): string | null {
+  const lengths = data.flatMap(d => utteranceLengths(d));
+  if (!lengths.length) return null;
+  const summary = summarizeSample(lengths);
+  const unit = sampleUnit(goal);
+  const first = summarizeSample(utteranceLengths(data.find(d => utteranceLengths(d).length) ?? {}));
+  const last = summarizeSample(utteranceLengths([...data].reverse().find(d => utteranceLengths(d).length) ?? {}));
+  const change = data.filter(d => utteranceLengths(d).length).length > 1 && first.mlu !== null && last.mlu !== null
+    ? ` The MLU went from ${formatSampleLength(first.mlu, unit)} in the first sample to ${formatSampleLength(last.mlu, unit)} in the most recent one.`
+    : '';
+  return `${plural(summary.utterances, 'utterance')} were sampled, with an overall MLU of ${formatSampleLength(summary.mlu ?? 0, unit)}; the longest utterance was ${formatSampleLength(summary.longest, unit)}.${change}`;
+}
+
+/** Item mastery: how many of the items are mastered, which ones, and which still need work. */
+function itemMasterySentence(name: string, goal: Goal, data: Record<string, any>[]): string | null {
+  const history = itemHistory(data, listItems(goal)).filter(h => h.tries > 0);
+  if (!history.length) return null;
+  const total = Math.max(listItems(goal).length, history.length);
+  const mastered = history.filter(h => h.mastered).map(h => h.label);
+  const working = history.filter(h => !h.mastered).sort((a, b) => a.correct / a.tries - b.correct / b.tries).slice(0, 5).map(h => h.label);
+  const quote = (items: string[]) => items.map(i => `"${i}"`).join(', ');
+  const lines = [`${name} has mastered ${mastered.length} of ${plural(total, 'item')} (correct ${ITEM_MASTERY_RUN} sessions in a row)${mastered.length ? `: ${quote(mastered.slice(0, 15))}${mastered.length > 15 ? ' and more' : ''}` : ''}.`];
+  if (working.length) lines.push(`Items that most need practice: ${quote(working)}.`);
+  return lines.join(' ');
+}
+
 /** Extra sentences that fit the goal's type, over the sessions with data. */
 function detailSentences(name: string, goal: Goal, data: Record<string, any>[]): string[] {
   const type = captureTypeOf(goal);
@@ -282,6 +311,14 @@ function detailSentences(name: string, goal: Goal, data: Record<string, any>[]):
 
   if (type === 'TASK_ANALYSIS') {
     const line = taskAnalysisSentence(name, data);
+    if (line) lines.push(line);
+  }
+  if (type === 'LANGUAGE_SAMPLE') {
+    const line = languageSampleSentence(name, goal, data);
+    if (line) lines.push(line);
+  }
+  if (type === 'ITEM_MASTERY') {
+    const line = itemMasterySentence(name, goal, data);
     if (line) lines.push(line);
   }
 

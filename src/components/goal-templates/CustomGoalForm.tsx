@@ -172,7 +172,7 @@ export default function CustomGoalForm({ student, disabled }: { student: Student
         </div>
         <div className="space-y-1">
           <Label htmlFor="customGoalSessionTarget">Target: {info.label.toLowerCase()}{info.unit ? ` (${info.unit.trim()})` : ''}{hint('target')}</Label>
-          <Input id="customGoalSessionTarget" type="number" inputMode="decimal" min={minTarget} max={info.max} value={target}
+          <Input id="customGoalSessionTarget" type="number" step="any" inputMode="decimal" min={minTarget} max={info.max} value={target}
             onChange={e => set('target')(e.target.value)} disabled={busy} aria-invalid={!!targetError} />
           {targetError && <p className="text-xs text-destructive">{targetError}</p>}
         </div>
@@ -198,7 +198,7 @@ export default function CustomGoalForm({ student, disabled }: { student: Student
         </div>
         <div className="space-y-1">
           <Label htmlFor="customGoalBaseline">Baseline (optional)</Label>
-          <Input id="customGoalBaseline" type="number" inputMode="decimal" min={-2} value={baseline} onChange={e => setBaseline(e.target.value)}
+          <Input id="customGoalBaseline" type="number" step="any" inputMode="decimal" min={-2} value={baseline} onChange={e => setBaseline(e.target.value)}
             placeholder={info.unit === '%' ? 'e.g. 40' : ''} disabled={busy} />
         </div>
         <div className="space-y-1">

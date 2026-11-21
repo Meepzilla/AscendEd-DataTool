@@ -12,6 +12,7 @@ import {
 import { goalMeasure, goalMeasureInfo, goalResponses, goalNotes, sessionMeetsTarget, promptTotals, usesPromptCounters, withoutRunningTimers } from '@/lib/goal-measures';
 import { formatDate, formatGoalTarget, goalTypeLabel, parseDateOnly } from '@/lib/helpers';
 import BehaviorTimeCharts from './BehaviorTimeCharts';
+import { ItemMasteryCharts, LanguageSampleCharts } from './LanguageItemCharts';
 import { goalCardId } from './goal-card-id';
 import StatTile from './StatTile';
 import { goalStatExplanations } from '@/lib/report-formulas';
@@ -214,6 +215,12 @@ const GoalBreakdowns: React.FC<{ goal: Goal; recorded: Recorded[] }> = ({ goal, 
       </div>,
     );
   }
+  if (type === 'LANGUAGE_SAMPLE') {
+    panels.push(<LanguageSampleCharts key="language-sample" goal={goal} recorded={recorded} />);
+  }
+  if (type === 'ITEM_MASTERY') {
+    panels.push(<ItemMasteryCharts key="item-mastery" goal={goal} recorded={recorded} />);
+  }
   if (type === 'FLUENCY_SYLLABLE_STUTTER') {
     panels.push(
       <HBars key="dysfluency" title="Dysfluency types" series={COUNT_SERIES}
@@ -358,7 +365,7 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
                     <YAxis domain={[info.min ?? 0, yMax]} unit={info.unit === '%' ? '%' : undefined} tickLine={false} axisLine={false} tickMargin={8}
                       ticks={isGas ? [...GAS_LEVELS] : (info.max !== undefined && info.max <= 10 ? Array.from({ length: info.max + 1 }, (_, i) => i) : undefined)}
                       tickFormatter={isGas ? gasTick : undefined}
-                      allowDecimals={toolTypeOf(type) === 'BEHAVIOR_DURATION' || toolTypeOf(type) === 'BEHAVIOR_LATENCY'} />
+                      allowDecimals={toolTypeOf(type) === 'BEHAVIOR_DURATION' || toolTypeOf(type) === 'BEHAVIOR_LATENCY' || type === 'LANGUAGE_SAMPLE'} />
                     {isGas ? (
                       <ChartTooltip
                         content={({ active, payload, label }: any) => {
