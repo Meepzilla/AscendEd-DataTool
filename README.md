@@ -15,13 +15,17 @@ It runs entirely on the device: there is no account, no server and no AI. Studen
 
 **Data collection**
 - Record several students at once, with no limit on slots. Saved groups (a class or small group) load in one step, and Remove All clears the slots (after asking, and naming anyone with unsaved data).
-- 21 goal types, each with its own controls and measure, including:
+- 25 built-in goal types, each with its own controls and measure, including:
   - accuracy counts and trial grids;
   - prompt levels, fluency, communication functions, story elements and task analysis;
   - behavior frequency, duration, ABC, interval and latency (behavior times can be corrected by hand);
+  - communication goals measured by counts, minutes, response time or opportunities;
+  - Communication Functions: Spontaneous, Emerging and Prompted tallies for each function, with an optional minimum number of unprompted uses per session;
   - Goal Attainment Scaling (GAS): a level from −2 to +2 per session, with the goal's own written description of each level.
-- Keyboard shortcuts for fast entry. Unsaved work survives switching pages or closing the app.
+- Custom goal types (Settings → Custom Goal Types, or from any goal type list): pick how the goal is measured (correct/incorrect, a counter, a timer, a rating scale, a checklist, or yes/no), name it and set its target, with a preview of the Data Entry card. Custom types work like built-in ones in Data Entry, charts and reports, are included in backups, and can be exported to a file and imported on another device. Each goal keeps a copy of its type, so later edits to the type never change assigned goals or recorded sessions.
+- Keyboard shortcuts for fast entry. Unsaved work survives switching pages or closing the app. A card clears as soon as Save is tapped, so taps made while a save is running are kept; if a save fails, the entries come back and the app says so.
 - Missed sessions are recorded with a reason. Sessions saved in parts can be merged so their minutes count once. Saved sessions can be edited, date and times included.
+- The Sessions page lists every session with its length in minutes, newest 100 first with a Show more button, and fills the screen down to the menu bar.
 
 **Students and goals**
 - A goal bank of over 900 templates, searchable by skill area, with purpose and activity ideas, including 20 GAS goals with all five levels written out. Built-in goals can be hidden, or deleted and restored later (Settings → Built-in goals).
@@ -33,8 +37,10 @@ It runs entirely on the device: there is no account, no server and no AI. Studen
 - Each student's profile shows IEP dates, service minutes against the IEP (per week, month or school year) and attendance, with a View Report button for that student's charts and Progress Report.
 
 **Reports**
+- An At a glance table of every goal's status, latest value, average, target, trend and aim line, then Goal by Goal charts. Reports opens on the student chosen last.
 - A chart per goal, with the target line and the aim line; tap a goal's title for its full text, and a figure marked ⓘ for how it is worked out.
 - For GAS goals, a T-score line graph over time (all of a student's GAS goals combined, Kiresuk & Sherman formula), a summary table and the attainment-level distribution.
+- An Attendance card: sessions held and missed by month and reason, a calendar of each day, and minutes by month and day.
 - Written progress narratives in brief or detailed style.
 - A printable IEP progress report, with optional service minutes and your school or district name at the top.
 - CSV export and import of session data.
@@ -51,7 +57,7 @@ Four color themes (Settings → Interface): Dark (the default, navy and gold), L
 
 The menu bar can sit at the top or the bottom of the screen (Settings → Interface); at the bottom it stays in reach while scrolling and sits above the footer.
 
-In the app, a **Getting Started** checklist on the Dashboard walks a new user through the five steps (add a student, give them goals, record a session, see their progress, back up), ticking each off as it's done (Help can bring it back after it is hidden). The **Help** page (Alt + H) explains each feature, and **What's New** (the account menu, or Alt + 6) lists what changed. Keyboard shortcut hints are hidden on touch screens until a hardware keyboard is used.
+In the app, a **Getting Started** checklist on the Dashboard walks a new user through the five steps (add a student, give them goals, record a session, see their progress, back up), ticking each off as it's done (Help can bring it back after it is hidden). The **Help** page (Alt + H) explains each feature, with a screenshot of the Data Entry card for every goal type, and **What's New** (the account menu, or Alt + 6) lists what changed. Keyboard shortcut hints are hidden on touch screens until a hardware keyboard is used.
 
 ## Tech stack
 
@@ -59,7 +65,7 @@ In the app, a **Getting Started** checklist on the Dashboard walks a new user th
 - [Tailwind CSS](https://tailwindcss.com/), [shadcn/ui](https://ui.shadcn.com/) and Radix UI
 - [Recharts](https://recharts.org/) for charts
 - IndexedDB for students, goal templates and sessions (one row per record) and `localStorage` for smaller items, with Web Crypto for passcode encryption; the app requests persistent storage
-- [zod](https://zod.dev/) for validating forms and backups, and [pdf.js](https://mozilla.github.io/pdf.js/) (bundled, run locally) for reading IEP at a Glance PDFs
+- [zod](https://zod.dev/) for validating forms, backups and imported data, and [pdf.js](https://mozilla.github.io/pdf.js/) (bundled, run locally) for reading IEP at a Glance PDFs
 - A service worker for offline use, and [Capacitor](https://capacitorjs.com/) for the Android app
 
 ## Development
@@ -89,7 +95,7 @@ To try the production build locally: `npm run build:static && npx serve out`.
 | `src/app/(app)/` | Pages: dashboard, data-entry, manage-sessions, analysis-report, progress-report, student-profile, goal-templates, settings, help, changelog, privacy |
 | `src/components/` | UI, by area (data-entry, forms, charts, reports, settings…) and shadcn components in `ui/` |
 | `src/hooks/use-student-data.tsx` | All student, goal and session data, and saving to storage |
-| `src/lib/` | Logic without UI: goal types and measures (`goal-constants/`, with the built-in goal statements in `built-in-statements.ts`), goal text (`goal-blanks.ts`), the dashboard's figures (`dashboard.ts`), report narratives, aim lines, service minutes, attendance, session merging, task analysis, encryption (`secure-store.ts`), backups, importing students from a spreadsheet or PDF (`student-import.ts`, with the .xlsx reader in `xlsx-read.ts` and the PDF text reader, using pdf.js, in `pdf-text.ts`) |
+| `src/lib/` | Logic without UI: goal types and measures (`goal-constants/`, with the built-in goal statements in `built-in-statements.ts`; custom goal types in `custom-goal-types.ts` and `goal-types/`), goal text (`goal-blanks.ts`), the dashboard's figures (`dashboard.ts`), report narratives, aim lines, service minutes, attendance, session merging, task analysis, encryption (`secure-store.ts`), backups, importing students from a spreadsheet or PDF (`student-import.ts`, with the .xlsx reader in `xlsx-read.ts` and the PDF text reader, using pdf.js, in `pdf-text.ts`) |
 | `docs/` | Goal bank review CSV and the original blueprint |
 
 Every pull request runs the type check, lint, the unit tests and the static build (`.github/workflows/checks.yml`). Add or update tests in `src/lib/__tests__/` when you change logic in `src/lib/`.
@@ -119,9 +125,9 @@ Netlify builds a preview of each pull request from `netlify.toml`, which has the
 2. Tap **Share → Add to Home Screen → Add**.
 3. Open AscendEd from the Home Screen once while online, and wait a few seconds so it is saved for offline use.
 
-Updates download in the background and apply the next time the app is opened.
+Updates download in the background. A new version starts by itself while the lock screen is showing (or, without a passcode, when you come back to the app), never in the middle of a session. Otherwise an "App updated" notice offers Reload and stays until you tap it or close it. To check which version a device runs, see the bottom of Settings.
 
-- Data in the Home Screen app is separate from data in Safari.
+- Data in the Home Screen app is separate from data in Safari, and each keeps its own copy of the app, so each updates on its own.
 - Deleting the Home Screen icon deletes the app's data, so back up first.
 
 ## Android app
