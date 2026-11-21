@@ -24,9 +24,11 @@ interface Props {
   disabled?: boolean;
   isLocked?: boolean;
   goalId: string;
+  /** Show the Notes box (custom goal types show their own). */
+  showNotes?: boolean;
 }
 
-export default function LanguageSampleInput({ unit: goalUnit, data, update, interact, disabled, isLocked, goalId }: Props) {
+export default function LanguageSampleInput({ unit: goalUnit, data, update, interact, disabled, isLocked, goalId, showNotes = true }: Props) {
   const [typed, setTyped] = useState('');
   const unit = sessionSampleUnit(data, { sampleUnit: goalUnit });
   const lengths = utteranceLengths(data);
@@ -112,7 +114,7 @@ export default function LanguageSampleInput({ unit: goalUnit, data, update, inte
           ? 'No utterances recorded yet'
           : `MLU ${formatSampleLength(summary.mlu, unit)} · ${summary.utterances} utterance${summary.utterances === 1 ? '' : 's'} · longest ${summary.longest}`}
       </p>
-      <div className="space-y-1">
+      {showNotes && <div className="space-y-1">
         <Label htmlFor={`ls-notes-${goalId}`} className="text-xs">Notes</Label>
         <Textarea
           id={`ls-notes-${goalId}`}
@@ -125,7 +127,7 @@ export default function LanguageSampleInput({ unit: goalUnit, data, update, inte
           className="text-sm"
           disabled={disabled || isLocked}
         />
-      </div>
+      </div>}
     </div>
   );
 }

@@ -1,5 +1,7 @@
-import type { CustomGoalType, CustomMeasureKind, TargetDirection } from '../types';
-import { finalizeBehaviorData, summarizeDuration } from '../goal-constants/behavior';
+import type { CustomChartId, CustomGoalType, CustomMeasureKind, TargetDirection } from '../types';
+import { BEHAVIOR_FIELDS, finalizeBehaviorData, summarizeDuration, summarizeLatency } from '../goal-constants/behavior';
+import { formatSampleLength, languageSampleSummary, sessionSampleUnit } from '../language-sample';
+import type { TrialStatus } from '../types';
 import { PROMPT_TYPES } from '../promptConstants';
 import type { GoalTypeDefinition, MeasuredGoal } from './definition';
 
@@ -49,7 +51,40 @@ export const CUSTOM_MEASURE_KIND_INFO: Record<CustomMeasureKind, { label: string
     description: 'Answer a yes/no question each session. Measured as % of sessions met.',
     defaultTarget: 80,
   },
+  prompting: {
+    label: 'Prompt levels',
+    shortLabel: 'Prompt levels',
+    description: 'Tally each response by the prompt it needed, Independent through Partial physical (like Prompting). Measured as % independent.',
+    defaultTarget: 80,
+  },
+  trials: {
+    label: 'Trial grid',
+    shortLabel: 'Trial grid',
+    description: 'Score a set number of trials correct, approximate or incorrect on a grid (like Discrete Trials). Measured as % correct.',
+    defaultTarget: 80,
+  },
+  latency: {
+    label: 'Response time',
+    shortLabel: 'Response time',
+    description: 'Start a timer at the cue and stop it at the response (like Response Time). Measured as the average seconds.',
+    defaultTarget: 5,
+  },
+  utterances: {
+    label: 'Utterance length',
+    shortLabel: 'Utterance length',
+    description: 'Tap the length of each utterance in words or morphemes (like Language Sample). Measured as the mean length of utterance (MLU).',
+    defaultTarget: 3,
+  },
 };
+
+/** The trial grid's size for a custom trial-grid type (5 when not set). */
+export const customTrialCount = (ct: CustomGoalType) => Math.min(100, Math.max(1, Math.floor(ct.trials?.count ?? 5)));
+
+function trialTally(data: Record<string, any>) {
+  const trials: TrialStatus[] = Array.isArray(data.trials) ? data.trials : [];
+  const count = (status: TrialStatus) => trials.filter(t => t === status).length;
+  return { correct: count('correct'), incorrect: count('incorrect'), approximate: count('approximate') };
+}
 
 const round = (n: number, digits = 1) => Number(n.toFixed(digits));
 const nonNeg = (v: unknown) => {
@@ -88,6 +123,10 @@ export function defaultCustomGoalType(id = ''): CustomGoalType {
     rating: { min: 1, max: 5, levelLabels: ['Emerging', 'Developing', 'Approaching', 'Consistent', 'Mastered'] },
     checklist: { steps: ['Step 1', 'Step 2', 'Step 3'] },
     yesno: { question: 'Met the criterion this session?' },
+    prompting: { label: 'Responses' },
+    trials: { count: 10 },
+    latency: { label: 'Response' },
+    utterances: { unit: 'words' },
     defaultTarget: 80,
     direction: 'increase',
     extras: { promptLevel: false, notes: true },
@@ -110,6 +149,14 @@ export function customTypeSummary(ct: CustomGoalType): string {
       return `${ct.checklist?.steps?.length ?? 0} ${(ct.checklist?.steps?.length ?? 0) === 1 ? 'step' : 'steps'}`;
     case 'yesno':
       return 'Yes / no';
+    case 'prompting':
+      return `${ct.prompting?.label || 'Responses'} by prompt level`;
+    case 'trials':
+      return `${customTrialCount(ct)}-trial grid`;
+    case 'latency':
+      return `${ct.latency?.label || 'Response'} time (s)`;
+    case 'utterances':
+      return `MLU (${ct.utterances?.unit === 'morphemes' ? 'morphemes' : 'words'})`;
   }
 }
 
@@ -119,7 +166,9 @@ export function makeCustomDef(ct: CustomGoalType): GoalTypeDefinition {
     ? Object.fromEntries(PROMPT_TYPES.map(p => [p, 0]))
     : {};
 
+  const sampleGoal = { sampleUnit: ct.utterances?.unit === 'morphemes' ? 'morphemes' as const : 'words' as const };
   const responses = (data: Record<string, any> = {}) => {
+    if (ct.kind === 'trials') return trialTally(data);
     if (ct.kind !== 'accuracy') return null;
     return {
       correct: nonNeg(data.correct),
@@ -133,8 +182,8 @@ export function makeCustomDef(ct: CustomGoalType): GoalTypeDefinition {
     label: ct.name || 'Custom Goal',
     description: ct.description,
     defaultDirection: ct.direction || 'increase',
-    usesPromptCounters: !!ct.extras?.promptLevel,
-    isPercent: () => ct.kind === 'accuracy' || ct.kind === 'checklist' || ct.kind === 'yesno',
+    usesPromptCounters: !!ct.extras?.promptLevel || ct.kind === 'prompting',
+    isPercent: () => ['accuracy', 'checklist', 'yesno', 'prompting', 'trials'].includes(ct.kind),
 
     initialData: () => {
       const notes = ct.extras?.notes !== false ? { notes: '' } : {};
@@ -185,12 +234,25 @@ export function makeCustomDef(ct: CustomGoalType): GoalTypeDefinition {
             ...notes,
             ...promptFields,
           };
+        case 'prompting':
+          return { ...Object.fromEntries(PROMPT_TYPES.map(p => [p, 0])), ...notes };
+        case 'trials': {
+          const n = customTrialCount(ct);
+          return { numberOfTrials: n, trials: Array(n).fill('untouched'), ...notes, ...promptFields };
+        }
+        case 'latency':
+          return { ...JSON.parse(JSON.stringify(BEHAVIOR_FIELDS.BEHAVIOR_LATENCY)), ...notes, ...promptFields };
+        case 'utterances':
+          return { utterances: [], unit: sampleGoal.sampleUnit, ...notes, ...promptFields };
       }
     },
 
     finalizeData: (data: Record<string, any>, now = Date.now()) => {
       if (ct.kind === 'timer') {
         return finalizeBehaviorData('BEHAVIOR_DURATION', data, now);
+      }
+      if (ct.kind === 'latency') {
+        return finalizeBehaviorData('BEHAVIOR_LATENCY', data, now);
       }
       return data;
     },
@@ -236,6 +298,27 @@ export function makeCustomDef(ct: CustomGoalType): GoalTypeDefinition {
           if (data.met === true) return 'Yes (100%)';
           if (data.met === false) return 'No (0%)';
           return 'N/A (not answered yet)';
+        case 'prompting': {
+          const total = promptCountOf(data);
+          const independent = nonNeg(data.Independent);
+          return total === 0 ? 'N/A (0% independent)' : `${((independent / total) * 100).toFixed(1)}% independent (${independent}/${total})`;
+        }
+        case 'trials': {
+          const r = trialTally(data);
+          const total = r.correct + r.incorrect + r.approximate;
+          return total === 0 ? 'N/A (0%)' : `${((r.correct / total) * 100).toFixed(1)}% (${r.correct}/${total})`;
+        }
+        case 'latency': {
+          const s = summarizeLatency(data);
+          if (s.trialCount === 0) return 'N/A (no trials yet)';
+          return s.averageSeconds === null
+            ? `No response (${s.trialCount} ${s.trialCount === 1 ? 'trial' : 'trials'})`
+            : `${s.averageSeconds.toFixed(1)} s average (${s.respondedCount} of ${s.trialCount} responded)`;
+        }
+        case 'utterances': {
+          const s = languageSampleSummary(data);
+          return s.mlu === null ? 'N/A (no utterances yet)' : `MLU ${formatSampleLength(s.mlu, sessionSampleUnit(data, sampleGoal))} (${s.utterances} utterances)`;
+        }
       }
     },
 
@@ -260,6 +343,14 @@ export function makeCustomDef(ct: CustomGoalType): GoalTypeDefinition {
           return { label: '% of steps completed', unit: '%', max: 100 };
         case 'yesno':
           return { label: '% of sessions met', unit: '%', max: 100 };
+        case 'prompting':
+          return { label: '% independent', unit: '%', max: 100 };
+        case 'trials':
+          return { label: '% correct', unit: '%', max: 100 };
+        case 'latency':
+          return { label: 'Average response time (seconds)', unit: ' s' };
+        case 'utterances':
+          return { label: `MLU (${sampleGoal.sampleUnit})`, unit: '' };
       }
     },
 
@@ -312,6 +403,19 @@ export function makeCustomDef(ct: CustomGoalType): GoalTypeDefinition {
           if (typeof data.met !== 'boolean') return null;
           return data.met ? 100 : 0;
         }
+        case 'prompting': {
+          const total = promptCountOf(data);
+          return total > 0 ? (nonNeg(data.Independent) / total) * 100 : null;
+        }
+        case 'trials': {
+          const r = trialTally(data);
+          const total = r.correct + r.incorrect + r.approximate;
+          return total > 0 ? (r.correct / total) * 100 : null;
+        }
+        case 'latency':
+          return summarizeLatency(clearRunningTimers(data)).averageSeconds;
+        case 'utterances':
+          return languageSampleSummary(data).mlu;
       }
     },
 
@@ -340,6 +444,14 @@ export function makeCustomDef(ct: CustomGoalType): GoalTypeDefinition {
         }
         case 'yesno':
           return '100% when answered “Yes” in the session, 0% when answered “No” (averages to the percentage of sessions met).';
+        case 'prompting':
+          return 'Independent ÷ all prompt-level tallies × 100.';
+        case 'trials':
+          return 'Correct trials ÷ trials scored (correct, approximate or incorrect) × 100. Approximate trials count as not correct.';
+        case 'latency':
+          return `The average seconds from the cue to the ${(ct.latency?.label || 'response').toLowerCase()}, over the trials with a response.`;
+        case 'utterances':
+          return `Mean length of utterance: the ${sampleGoal.sampleUnit} in all the utterances recorded in the session ÷ the number of utterances.`;
       }
     },
 
@@ -359,6 +471,14 @@ export function makeCustomDef(ct: CustomGoalType): GoalTypeDefinition {
           return 'the percentage of steps completed';
         case 'yesno':
           return 'the percentage of sessions met';
+        case 'prompting':
+          return 'the percentage of independent responses';
+        case 'trials':
+          return 'accuracy';
+        case 'latency':
+          return 'the average time to respond';
+        case 'utterances':
+          return 'the mean length of utterance';
       }
     },
 
@@ -368,7 +488,13 @@ export function makeCustomDef(ct: CustomGoalType): GoalTypeDefinition {
         case 'accuracy':
         case 'checklist':
         case 'yesno':
+        case 'prompting':
+        case 'trials':
           return `${v}%`;
+        case 'latency':
+          return `${v} seconds`;
+        case 'utterances':
+          return formatSampleLength(value, sampleGoal.sampleUnit);
         case 'counter':
           return ct.counter?.perMinute ? `${v}/min` : String(v);
         case 'timer':
@@ -385,7 +511,13 @@ export function makeCustomDef(ct: CustomGoalType): GoalTypeDefinition {
         case 'accuracy':
         case 'checklist':
         case 'yesno':
+        case 'prompting':
+        case 'trials':
           return dir === 'decrease' ? `≤ ${target}%` : `${target}%`;
+        case 'latency':
+          return `${sign} ${target} s average`;
+        case 'utterances':
+          return `MLU ${sign} ${formatSampleLength(target, sampleGoal.sampleUnit)}`;
         case 'counter':
           return ct.counter?.perMinute ? `${sign} ${target}/min` : `${sign} ${target} per session`;
         case 'timer':
@@ -395,4 +527,40 @@ export function makeCustomDef(ct: CustomGoalType): GoalTypeDefinition {
       }
     },
   };
+}
+
+/** An extra Reports chart a custom goal type can show, with what it shows. */
+export interface CustomChartOption { id: CustomChartId; label: string; description: string }
+
+const CHART_OPTIONS: Record<CustomChartId, Omit<CustomChartOption, 'id'>> = {
+  responses: { label: 'Responses per session', description: 'Stacked bars of correct, approximate and incorrect responses in each session.' },
+  prompts: { label: 'Prompt levels', description: 'How many responses needed each prompt level, over the date range.' },
+  'utterance-lengths': { label: 'Utterance lengths', description: 'How many utterances there were of each length, over the date range.' },
+  'utterance-sample': { label: 'Sample size and longest utterance', description: 'Each session\'s number of utterances, with its longest one.' },
+  'step-completion': { label: 'Steps completed', description: 'How many sessions each checklist step was completed in.' },
+  'rating-levels': { label: 'Sessions at each level', description: 'How many sessions were rated at each level of the scale.' },
+  'yesno-sessions': { label: 'Yes and no sessions', description: 'How many sessions were answered yes and how many no.' },
+};
+
+/** The extra charts that fit a custom type's measure (and its prompt-level option). */
+export function customChartOptions(ct: CustomGoalType): CustomChartOption[] {
+  const ids: CustomChartId[] = [];
+  if (ct.kind === 'accuracy' || ct.kind === 'trials') ids.push('responses');
+  if (ct.kind === 'utterances') ids.push('utterance-lengths', 'utterance-sample');
+  if (ct.kind === 'checklist') ids.push('step-completion');
+  if (ct.kind === 'rating') ids.push('rating-levels');
+  if (ct.kind === 'yesno') ids.push('yesno-sessions');
+  if (ct.kind === 'prompting' || ct.extras?.promptLevel) ids.push('prompts');
+  return ids.map(id => ({ id, ...CHART_OPTIONS[id] }));
+}
+
+/** Whether a custom type's Reports show this extra chart: every fitting chart until the type chooses. */
+export function customChartShown(ct: CustomGoalType, id: CustomChartId): boolean {
+  if (!customChartOptions(ct).some(o => o.id === id)) return false;
+  return ct.charts ? ct.charts.show.includes(id) : true;
+}
+
+/** The progress chart's style for a custom type (a line unless the type chose bars). */
+export function customChartStyle(ct: CustomGoalType | undefined): 'line' | 'bar' {
+  return ct?.charts?.style === 'bar' ? 'bar' : 'line';
 }

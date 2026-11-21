@@ -22,12 +22,12 @@ const SAMPLE_CONFIG: ChartConfig = {
 };
 const MASTERED_CONFIG: ChartConfig = { mastered: { label: 'Items mastered', color: 'hsl(var(--chart-2))' } };
 
-export function LanguageSampleCharts({ goal, recorded }: { goal: Goal; recorded: Recorded[] }) {
+export function LanguageSampleCharts({ goal, recorded, showLengths = true, showSample = true }: { goal: Goal; recorded: Recorded[]; showLengths?: boolean; showSample?: boolean }) {
   const sessions = recorded.map(r => ({ label: r.label, lengths: utteranceLengths(r.data), unit: sessionSampleUnit(r.data, goal) }));
   const unit = sampleUnit(goal);
   // Utterances counted in another unit (the goal's unit was changed later) are left out of the pooled chart.
   const pooled = sessions.filter(s => s.unit === unit).flatMap(s => s.lengths);
-  if (!sessions.some(s => s.lengths.length)) return null;
+  if (!sessions.some(s => s.lengths.length) || (!showLengths && !showSample)) return null;
   const summary = summarizeSample(pooled);
   const distribution = lengthDistribution(pooled);
   const perSession = sessions.map(s => {
@@ -38,7 +38,7 @@ export function LanguageSampleCharts({ goal, recorded }: { goal: Goal; recorded:
 
   return (
     <div className="grid grid-cols-1 gap-4 md:col-span-3 md:grid-cols-2">
-      <div>
+      {showLengths && <div>
         <p className="mb-1 text-sm font-medium">Utterance lengths ({unitWord})</p>
         <p className="mb-1 text-xs text-muted-foreground">
           {summary.utterances} utterances in the date range · MLU {summary.mlu === null ? '—' : formatSampleLength(summary.mlu, unit)} · longest {summary.longest}
@@ -54,8 +54,8 @@ export function LanguageSampleCharts({ goal, recorded }: { goal: Goal; recorded:
             </BarChart>
           </ChartContainer>
         </div>
-      </div>
-      <div>
+      </div>}
+      {showSample && <div>
         <p className="mb-1 text-sm font-medium">Sample size and longest utterance per session</p>
         <p className="mb-1 text-xs text-muted-foreground">Bars: utterances recorded. Line: the longest utterance ({unitWord}).</p>
         <div className="h-[220px] w-full">
@@ -71,7 +71,7 @@ export function LanguageSampleCharts({ goal, recorded }: { goal: Goal; recorded:
             </ComposedChart>
           </ChartContainer>
         </div>
-      </div>
+      </div>}
     </div>
   );
 }

@@ -4,7 +4,8 @@ import React, { useMemo } from 'react';
 import type { Goal, SessionData } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, type ChartConfig } from '@/components/ui/chart';
-import { LineChart, Line, CartesianGrid, XAxis, YAxis, ReferenceLine, BarChart, Bar } from 'recharts';
+import { LineChart, Line, CartesianGrid, XAxis, YAxis, ReferenceLine, BarChart, Bar, ComposedChart } from 'recharts';
+import { customChartShown, customChartStyle } from '@/lib/goal-types/custom';
 import {
   BEHAVIOR_GOAL_TYPES, captureTypeOf, toolTypeOf, summarizeLatency, goalDirection, summarizeAbc, summarizeCommunicationFunctions, scoreStory, averageStoryPart, STORY_PARTS, STORY_LINKING_WORDS, linkingWordField, COMMUNICATION_FUNCTIONS,
   type AbcIncident,
@@ -221,6 +222,40 @@ const GoalBreakdowns: React.FC<{ goal: Goal; recorded: Recorded[] }> = ({ goal, 
   if (type === 'ITEM_MASTERY') {
     panels.push(<ItemMasteryCharts key="item-mastery" goal={goal} recorded={recorded} />);
   }
+  const ct = type === 'CUSTOM' ? goal.customType : undefined;
+  if (ct?.kind === 'utterances') {
+    // A custom utterance-length type: the same charts as Language Sample, in the type's unit, as the type chose.
+    const unit = ct.utterances?.unit === 'morphemes' ? 'morphemes' : 'words';
+    panels.push(<LanguageSampleCharts key="custom-utterances" goal={{ ...goal, sampleUnit: unit }} recorded={recorded}
+      showLengths={customChartShown(ct, 'utterance-lengths')} showSample={customChartShown(ct, 'utterance-sample')} />);
+  }
+  if (ct?.kind === 'checklist' && customChartShown(ct, 'step-completion')) {
+    const steps = ct.checklist?.steps?.length ? ct.checklist.steps : ['Step 1'];
+    panels.push(
+      <div key="custom-steps" className="md:col-span-2">
+        <HBars title="Steps completed (sessions)" series={COUNT_SERIES} unit={['session', 'sessions']}
+          rows={steps.map((name, i) => ({ name, count: data.filter(d => Array.isArray(d.steps) && d.steps[i] === true).length }))} />
+      </div>,
+    );
+  }
+  if (ct?.kind === 'rating' && customChartShown(ct, 'rating-levels')) {
+    const min = ct.rating?.min ?? 1;
+    const max = ct.rating?.max ?? 5;
+    const levels = Array.from({ length: max - min + 1 }, (_, i) => max - i);
+    panels.push(
+      <HBars key="custom-levels" title="Sessions at each level" series={COUNT_SERIES} labelWidth={110} unit={['session', 'sessions']}
+        rows={levels.map(level => {
+          const label = ct.rating?.levelLabels?.[level - min];
+          return { name: label ? `${level} ${label}` : String(level), count: recorded.filter(r => r.value === level).length };
+        })} />,
+    );
+  }
+  if (ct?.kind === 'yesno' && customChartShown(ct, 'yesno-sessions')) {
+    panels.push(
+      <HBars key="custom-yesno" title="Sessions answered" series={COUNT_SERIES} labelWidth={60} unit={['session', 'sessions']}
+        rows={[{ name: 'Yes', count: data.filter(d => d.met === true).length }, { name: 'No', count: data.filter(d => d.met === false).length }]} />,
+    );
+  }
   if (type === 'FLUENCY_SYLLABLE_STUTTER') {
     panels.push(
       <HBars key="dysfluency" title="Dysfluency types" series={COUNT_SERIES}
@@ -247,7 +282,7 @@ const GoalBreakdowns: React.FC<{ goal: Goal; recorded: Recorded[] }> = ({ goal, 
       <HBars key="functions" title="Possible functions" series={COUNT_SERIES} rows={tallyRows(abc.functions)} />,
     );
   }
-  if (usesPromptCounters(type)) {
+  if (usesPromptCounters(goal) && (!ct || customChartShown(ct, 'prompts'))) {
     const totals = promptTotals();
     data.forEach(d => Object.entries(promptTotals(d)).forEach(([k, v]) => { totals[k] += v; }));
     const rows = tallyRows(Object.entries(totals).map(([k, v]) => [PROMPT_LABELS[k] ?? k, v]));
@@ -274,7 +309,7 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
   const points = recorded.map(r => {
     const comm = isCommFunctions ? summarizeCommunicationFunctions(r.data) : null;
     return {
-      label: r.label, value: r.value, ...(goalResponses(type, r.data) ?? {}),
+      label: r.label, value: r.value, ...(goalResponses(goal, r.data) ?? {}),
       ...(comm ? {
         spontaneousFunctions: comm.functionsUsedSpontaneously,
         emergingFunctions: comm.functionsUsedEmergingOnly,
@@ -287,7 +322,11 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
   });
   const onTrack = aimStatus(goal, aim, recorded.map(r => ({ date: r.session.date, value: r.value })));
   const mastery = masterySessions(goal);
-  const hasResponses = goalResponses(type) !== null && points.length > 0;
+  // Correct / approximate / incorrect bars, for the trial types and custom types that count responses.
+  const hasResponses = goalResponses(goal) !== null && points.length > 0 && (type !== 'CUSTOM' || !goal.customType || customChartShown(goal.customType, 'responses'));
+  // A custom type can draw its progress as bars instead of a line.
+  const asBars = type === 'CUSTOM' && customChartStyle(goal.customType) === 'bar';
+  const ProgressChart = asBars ? ComposedChart : LineChart;
   const hasCommUsesChart = isCommFunctions && points.length > 0;
   const isLatency = toolTypeOf(type) === 'BEHAVIOR_LATENCY';
   const allSessions = isLatency ? behaviorRecorded : recorded;
@@ -359,7 +398,7 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
               {isCommFunctions && <p className="text-sm font-medium mb-1">Functions per session</p>}
               <div className={isCommFunctions ? 'h-[260px] w-full' : 'h-[240px] w-full'}>
                 <ChartContainer config={lineChartConfig} className="h-full w-full">
-                  <LineChart data={points} margin={{ top: 10, right: 20, left: -10, bottom: 5 }}>
+                  <ProgressChart data={points} margin={{ top: 10, right: 20, left: -10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} />
                     <YAxis domain={[info.min ?? 0, yMax]} unit={info.unit === '%' ? '%' : undefined} tickLine={false} axisLine={false} tickMargin={8}
@@ -398,11 +437,13 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
                         label={{ value: direction === 'decrease' ? 'Target (max)' : 'Target', position: 'insideTopRight', fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
                     )}
                     {/* GAS levels are steps (-2 … +2), so they are joined with straight lines: a curve would suggest levels in between. */}
-                    <Line type={isGas ? 'linear' : 'monotone'} dataKey="value" stroke="var(--color-value)" strokeWidth={isCommFunctions ? 2.5 : 2} dot={true} />
+                    {asBars
+                      ? <Bar dataKey="value" fill="var(--color-value)" radius={[3, 3, 0, 0]} maxBarSize={48} />
+                      : <Line type={isGas ? 'linear' : 'monotone'} dataKey="value" stroke="var(--color-value)" strokeWidth={isCommFunctions ? 2.5 : 2} dot={true} />}
                     {isCommFunctions && <Line type="monotone" dataKey="spontaneousFunctions" stroke="var(--color-spontaneousFunctions)" strokeWidth={2} strokeDasharray="6 3" dot={{ r: 3 }} />}
                     {isCommFunctions && <Line type="monotone" dataKey="emergingFunctions" stroke="var(--color-emergingFunctions)" strokeWidth={2} strokeDasharray="2 3" dot={{ r: 3 }} />}
                     {aim && <Line type="linear" dataKey="aim" stroke="var(--color-aim)" strokeWidth={1.5} strokeDasharray="2 3" dot={false} />}
-                  </LineChart>
+                  </ProgressChart>
                 </ChartContainer>
               </div>
             </div>
