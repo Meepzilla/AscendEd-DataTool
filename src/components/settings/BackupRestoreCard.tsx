@@ -13,6 +13,8 @@ import {
 import { useStudentData } from '@/hooks/use-student-data';
 import { useBackup } from '@/hooks/use-backup';
 import BackUpNowButton from './BackUpNowButton';
+import { StorageFullWarning, StorageUsageLine } from './StorageUsage';
+import { useStorageSize } from '@/hooks/use-storage-size';
 import { useToast } from '@/hooks/use-toast';
 import { decryptBackupText, isProtectedBackup, parseBackup, type AppBackup, type RestoreMode, MAX_BACKUP_FILE_BYTES } from '@/lib/backup';
 import { Input } from '@/components/ui/input';
@@ -22,6 +24,8 @@ import { plural } from '@/lib/helpers';
 export default function BackupRestoreCard() {
   const { students, goalTemplates, sessions, restoreBackup } = useStudentData();
   const { lastBackupAt } = useBackup();
+  // Re-measured when the counts change (a save, restore or deletion).
+  const { estimate: storageEstimate } = useStorageSize(`${students.length}/${goalTemplates.length}/${sessions.length}`);
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pendingBackup, setPendingBackup] = useState<AppBackup | null>(null);
@@ -95,8 +99,9 @@ export default function BackupRestoreCard() {
       <CardHeader>
         <CardTitle>Backup &amp; Restore</CardTitle>
         <CardDescription>
-          Your data is stored only on this device. Back it up regularly so it isn&apos;t lost if the device is reset,
-          replaced, or the app is removed. Backups can also move data to another device.
+          Your students, goal templates and sessions are stored only on this device. Back them up regularly so they
+          aren&apos;t lost if the device is reset, replaced, or the app is removed. Backups can also move data to
+          another device.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -105,6 +110,7 @@ export default function BackupRestoreCard() {
             On this device: {plural(students.length, 'student')}, {plural(sessions.length, 'session')},{' '}
             {plural(goalTemplates.length, 'goal template')}.
           </p>
+          <StorageUsageLine estimate={storageEstimate} />
           <p className="text-muted-foreground">
             Last backup:{' '}
             {lastBackupAt
@@ -112,6 +118,8 @@ export default function BackupRestoreCard() {
               : 'never on this device'}
           </p>
         </div>
+
+        <StorageFullWarning estimate={storageEstimate} />
 
         <div className="flex flex-col sm:flex-row gap-3">
           <BackUpNowButton />
