@@ -1,3 +1,5 @@
+> **Historical document.** This is the original plan from October 2025, kept for reference. It does not describe the current app: AscendEd has no accounts, no server and no AI features (they were removed), and student data never leaves the device. See the [README](../README.md) for what the app does today.
+
 # **App Name**: AscendEd
 
 ## Core Features:

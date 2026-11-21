@@ -4,7 +4,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Target, Clock, RotateCcw, History, ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, LayoutGrid, Minimize2, UserX, UserPlus, ArrowRightLeft, Download, ListPlus, Workflow, Shuffle, CheckSquare, ListChecks, DatabaseZap, UserSearch, Upload, BrainCircuit, PanelLeft, ArrowLeft, MessagesSquare, BookOpen, Lock, ShieldCheck, PanelBottom, CalendarClock, Sun, Rocket, RefreshCw } from 'lucide-react';
+import { Target, Clock, RotateCcw, History, ScrollText, GitMerge, Zap, Bug, PlusCircle, Pencil, ArrowUpDown, BarChartHorizontalBig, KeyboardIcon, Smartphone, LayoutGrid, Minimize2, UserX, UserPlus, ArrowRightLeft, Download, ListPlus, Workflow, Shuffle, CheckSquare, ListChecks, DatabaseZap, UserSearch, Upload, BrainCircuit, PanelLeft, ArrowLeft, MessagesSquare, BookOpen, Lock, ShieldCheck, PanelBottom, CalendarClock, Sun, Rocket, RefreshCw, Database } from 'lucide-react';
 import { APP_NAME } from '@/lib/appConstants';
 
 interface ChangelogEntry {
@@ -17,6 +17,13 @@ interface ChangelogEntry {
 }
 
 const allChangelogEntries: ChangelogEntry[] = [
+  {
+    date: '2026-11-21',
+    title: 'Backup and Storage in One Place',
+    description: 'Settings now has one Backup & Restore card instead of a separate Storage card with its own backup buttons. The card shows what is on the device, how much storage it uses (with the bar), and when you last backed up, above a single Back Up Now button. The warnings when storage is over 70% or 90% full now appear in this card too; the extra "over 3 MB" banners are gone, since the backup button is right there.',
+    type: 'improvement',
+    icon: Database,
+  },
   {
     date: '2026-11-20',
     title: 'App Updates Arrive Again',
