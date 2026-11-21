@@ -17,12 +17,13 @@ import { AssignedGoalEditSchema } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
+import GoalTypeSelect from '@/components/goal-templates/GoalTypeSelect';
+import type { GoalType } from '@/lib/types';
 import TargetDirectionField from './TargetDirectionField';
 import GoalChangeSummary from './GoalChangeSummary';
 import GasLevelDescriptionsField from './GasLevelDescriptionsField';
 import { assignedGoalChanges } from '@/lib/goal-changes';
-import { goalStatement, goalTypeLabel } from '@/lib/helpers';
+import { goalStatement } from '@/lib/helpers';
 import { toSafeErrorMessage } from '@/lib/error-message';
 import { automaticBlankValues, findBlanks } from '@/lib/goal-blanks';
 import { goalMeasureInfo } from '@/lib/goal-measures';
@@ -43,7 +44,6 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const sortedDataCaptureTypes = React.useMemo(() => Object.keys(GOAL_TYPE_FIELDS).sort((a, b) => a.localeCompare(b)), []);
 
 
   const form = useForm<EditAssignedGoalFormData>({
@@ -78,6 +78,7 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
         targetDirection: goalToEdit.targetDirection,
         isArchived: goalToEdit.isArchived || false,
         dataCaptureType: goalToEdit.dataCaptureType || goalToEdit.type,
+        customType: goalToEdit.customType,
       });
     }
   }, [goalToEdit, isOpen, form]);
@@ -178,21 +179,18 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
             name="dataCaptureType"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Data Capture Method</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a data capture method" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {sortedDataCaptureTypes.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {goalTypeLabel(type)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FormLabel htmlFor="edit-goal-capture-type">Data Capture Method</FormLabel>
+                {/* Built-in goal types and your custom goal types (or a new one, made in the builder). */}
+                <GoalTypeSelect
+                  id="edit-goal-capture-type"
+                  type={(field.value || goalToEdit.type) as GoalType}
+                  customType={form.watch('customType')}
+                  placeholder="Select a data capture method"
+                  onChange={(type, customType) => {
+                    field.onChange(type);
+                    form.setValue('customType', type === 'CUSTOM' ? customType : undefined, { shouldDirty: true });
+                  }}
+                />
                 <FormDescription>
                   This determines the type of data entry fields shown for this goal.
                 </FormDescription>

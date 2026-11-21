@@ -22,7 +22,10 @@ import { cn } from '@/lib/utils';
 import GoalTextPopover from '@/components/forms/GoalTextPopover';
 import TemplatePickerFilters from '@/components/goal-templates/TemplatePickerFilters';
 import { useTemplatePicker } from '@/hooks/use-template-picker';
-import { goalFromTemplate, recordRecentTemplates } from '@/lib/goal-templates';
+import { goalFromCustomType, goalFromTemplate, recordRecentTemplates } from '@/lib/goal-templates';
+import { useCustomGoalTypes } from '@/lib/custom-goal-types';
+import { customTypeSummary } from '@/lib/goal-types/custom';
+import type { CustomGoalType } from '@/lib/types';
 
 type EditStudentFormData = z.infer<typeof StudentSchema>;
 
@@ -83,6 +86,15 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
     // The saved name is what the box now shows, so a later change to the record can refresh it.
     if (saved) nameBoxRef.current = { id: currentStudent.id, name: data.name };
     // Toast is handled in updateStudent
+  };
+
+  // Your custom goal types, each of which can start a new goal for this student (opened in the goal editor to finish).
+  const { customTypes } = useCustomGoalTypes(currentUser?.uid);
+  const activeCustomTypes = customTypes.filter(t => !t.isArchived);
+  const handleAddCustomTypeGoal = async (ct: CustomGoalType) => {
+    if (!currentStudent) return;
+    const goal = goalFromCustomType(ct);
+    if (await assignGoalToStudent(currentStudent.id, goal)) setEditingGoal(goal);
   };
 
   const handleAssignTemplateGoal = async (template: GoalTemplate) => {
@@ -197,6 +209,32 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
               </ScrollArea>
             )}
           </div>
+
+          {activeCustomTypes.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="text-md font-medium">New Goal from a Custom Goal Type</h4>
+              <p className="text-xs text-muted-foreground">Adds a goal measured with your type, then opens it so you can write the goal text and set the target.</p>
+              <ul className="space-y-1 rounded-md border p-2">
+                {activeCustomTypes.map(ct => (
+                  <li key={ct.id} className="flex items-center gap-2 rounded-md p-1 text-sm hover:bg-muted/50">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 min-h-11 min-w-11 shrink-0"
+                      onClick={() => handleAddCustomTypeGoal(ct)}
+                      title={`Add a ${ct.name} goal`}
+                      aria-label={`Add a goal measured with ${ct.name}`}
+                    >
+                      <PlusCircleIcon className="h-4 w-4 text-primary" />
+                    </Button>
+                    <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: ct.color }} aria-hidden="true" />
+                    <span className="min-w-0 break-words font-medium">{ct.name}</span>
+                    <Badge variant="secondary" className="ml-auto shrink-0">{customTypeSummary(ct)}</Badge>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           <div className="space-y-2">
             <h4 className="text-md font-medium">Available Goal Templates to Assign</h4>

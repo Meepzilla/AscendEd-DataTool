@@ -7,11 +7,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { GOAL_TYPES } from '@/lib/goal-constants';
 import { goalTypeLabel } from '@/lib/helpers';
 import type { useTemplatePicker } from '@/hooks/use-template-picker';
+import { useAuth } from '@/hooks/use-auth';
+import { useCustomGoalTypes } from '@/lib/custom-goal-types';
 
 const SORTED_GOAL_TYPES = Object.values(GOAL_TYPES).sort((a, b) => goalTypeLabel(a).localeCompare(goalTypeLabel(b)));
 
 /** Search box plus Type and Skill Area filters for a goal template picker. */
 export default function TemplatePickerFilters({ picker }: { picker: ReturnType<typeof useTemplatePicker> }) {
+  const { currentUser } = useAuth();
+  const { customTypes } = useCustomGoalTypes(currentUser?.uid);
+  const activeCustomTypes = customTypes.filter(t => !t.isArchived);
   return (
     <div className="space-y-2">
       <div className="relative">
@@ -32,6 +37,9 @@ export default function TemplatePickerFilters({ picker }: { picker: ReturnType<t
             <SelectItem value="ALL">All Types</SelectItem>
             {SORTED_GOAL_TYPES.map(type => (
               <SelectItem key={type} value={type}>{goalTypeLabel(type)}</SelectItem>
+            ))}
+            {activeCustomTypes.map(ct => (
+              <SelectItem key={ct.id} value={`CUSTOM:${ct.id}`}>{ct.name} (custom)</SelectItem>
             ))}
           </SelectContent>
         </Select>
