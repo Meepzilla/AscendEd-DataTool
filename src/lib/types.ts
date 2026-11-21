@@ -88,6 +88,10 @@ export interface Goal {
 export const CUSTOM_MEASURE_KINDS = ['accuracy', 'counter', 'timer', 'rating', 'checklist', 'yesno', 'prompting', 'trials', 'latency', 'utterances'] as const;
 export type CustomMeasureKind = typeof CUSTOM_MEASURE_KINDS[number];
 
+/** The extra Reports charts a custom goal type can show under its progress chart (goal-types/custom.ts). */
+export const CUSTOM_CHART_IDS = ['responses', 'prompts', 'utterance-lengths', 'utterance-sample', 'step-completion', 'rating-levels', 'yesno-sessions'] as const;
+export type CustomChartId = typeof CUSTOM_CHART_IDS[number];
+
 /**
  * A goal type made by the user (Settings → Custom goal types). Goals and templates of type CUSTOM keep a copy of
  * it, so editing the type later never changes how goals already made (and their past sessions) are read.
@@ -111,6 +115,8 @@ export interface CustomGoalType {
   latency?: { label: string };
   /** Utterance length (like Language Sample): whether utterances are counted in words or morphemes. */
   utterances?: { unit: 'words' | 'morphemes' };
+  /** Reports: the progress chart's style and which extra charts to show. Unset: a line and every extra chart that fits. */
+  charts?: { style: 'line' | 'bar'; show: CustomChartId[] };
   rating?: { min: number; max: number; levelLabels: string[] };
   checklist?: { steps: string[] };
   yesno?: { question: string };
@@ -377,6 +383,10 @@ export const CustomGoalTypeSchema = z.object({
   }).optional(),
   utterances: z.object({
     unit: z.enum(['words', 'morphemes']),
+  }).optional(),
+  charts: z.object({
+    style: z.enum(['line', 'bar']),
+    show: z.array(z.enum(CUSTOM_CHART_IDS)).max(CUSTOM_CHART_IDS.length),
   }).optional(),
   defaultTarget: z.preprocess(emptyToUndefinedNumber, z.number().min(0).max(1000).optional()),
   direction: z.enum(['increase', 'decrease']),

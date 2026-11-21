@@ -10,10 +10,13 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { CustomGoalTypeSchema, CUSTOM_MEASURE_KINDS, type CustomGoalType, type CustomMeasureKind, type Goal, type TargetDirection } from '@/lib/types';
+import { CustomGoalTypeSchema, CUSTOM_MEASURE_KINDS, type CustomChartId, type CustomGoalType, type CustomMeasureKind, type Goal, type TargetDirection } from '@/lib/types';
 import {
   CUSTOM_MEASURE_KIND_INFO,
   CUSTOM_TYPE_COLORS,
+  customChartOptions,
+  customChartShown,
+  customChartStyle,
   defaultCustomGoalType,
   makeCustomDef,
 } from '@/lib/goal-types/custom';
@@ -173,6 +176,14 @@ export default function CustomGoalTypeModal({
     const sentence = `Across ${values.length} sessions with data, ${def.narrativeNoun(previewGoal)} averaged ${avgFormatted} against a target of ${targetFormatted}.`;
     return { info, values, target, w, h, x, y, points, sentence };
   }, [def, draft, previewGoal]);
+
+  // Reports charts: the progress chart's style and the extra charts that fit the measure (all of them until chosen).
+  const chartOptions = customChartOptions(draft);
+  const chartStyle = customChartStyle(draft);
+  const shownCharts = chartOptions.filter(o => customChartShown(draft, o.id)).map(o => o.id);
+  const setCharts = (style: 'line' | 'bar', show: CustomChartId[]) => setDraft({ ...draft, charts: { style, show } });
+  const toggleChart = (id: CustomChartId, on: boolean) =>
+    setCharts(chartStyle, on ? [...new Set([...shownCharts, id])] : shownCharts.filter(c => c !== id));
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -601,6 +612,47 @@ export default function CustomGoalTypeModal({
               </div>
             </div>
 
+            <fieldset className="space-y-2 border-t border-border pt-3">
+              <legend className="text-xs font-semibold">Charts in Reports</legend>
+              <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Progress chart style">
+                <span className="text-xs text-muted-foreground">Progress chart:</span>
+                {(['line', 'bar'] as const).map(style => (
+                  <button
+                    key={style}
+                    type="button"
+                    aria-pressed={chartStyle === style}
+                    onClick={() => setCharts(style, shownCharts)}
+                    className={cn(
+                      'h-9 min-h-11 rounded-md border px-3 text-xs font-medium',
+                      chartStyle === style ? 'border-primary bg-primary/10 text-foreground ring-1 ring-primary' : 'border-input bg-background text-muted-foreground hover:text-foreground',
+                    )}
+                  >
+                    {style === 'line' ? 'Line' : 'Bars'}
+                  </button>
+                ))}
+              </div>
+              {chartOptions.length > 0 ? (
+                <div className="space-y-1.5">
+                  <span className="text-xs text-muted-foreground">Also show:</span>
+                  {chartOptions.map(option => (
+                    <label key={option.id} className="flex items-start gap-2 text-xs cursor-pointer">
+                      <Checkbox
+                        className="mt-0.5"
+                        checked={shownCharts.includes(option.id)}
+                        onCheckedChange={(checked) => toggleChart(option.id, Boolean(checked))}
+                      />
+                      <span>
+                        <span className="font-medium text-foreground">{option.label}</span>
+                        <span className="block text-muted-foreground">{option.description}</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">This measure has no extra charts; Reports show its progress chart and figures.</p>
+              )}
+            </fieldset>
+
             {errorMessage && (
               <p role="alert" className="text-xs font-medium text-destructive">{errorMessage}</p>
             )}
@@ -670,15 +722,22 @@ export default function CustomGoalTypeModal({
                   >
                     target {sampleChart.target}{sampleChart.info.unit}
                   </text>
-                  <polyline
-                    points={sampleChart.points}
-                    fill="none"
-                    stroke={draft.color}
-                    strokeWidth="2.5"
-                  />
-                  {sampleChart.values.map((v, i) => (
-                    <circle key={i} cx={sampleChart.x(i)} cy={sampleChart.y(v)} r="3.5" fill={draft.color} />
-                  ))}
+                  {chartStyle === 'bar' ? sampleChart.values.map((v, i) => (
+                    <rect key={i} x={sampleChart.x(i) - 12} y={sampleChart.y(v)} width={24}
+                      height={Math.max(0, sampleChart.h - 22 - sampleChart.y(v))} rx={2} fill={draft.color} />
+                  )) : (
+                    <>
+                      <polyline
+                        points={sampleChart.points}
+                        fill="none"
+                        stroke={draft.color}
+                        strokeWidth="2.5"
+                      />
+                      {sampleChart.values.map((v, i) => (
+                        <circle key={i} cx={sampleChart.x(i)} cy={sampleChart.y(v)} r="3.5" fill={draft.color} />
+                      ))}
+                    </>
+                  )}
                   {SAMPLE_DATES.map((d, i) => (
                     <text
                       key={d}
@@ -694,6 +753,11 @@ export default function CustomGoalTypeModal({
                   ))}
                 </svg>
               </div>
+              <p className="text-[11px] text-muted-foreground">
+                {shownCharts.length
+                  ? `Also in Reports: ${chartOptions.filter(o => shownCharts.includes(o.id)).map(o => o.label).join(', ')}.`
+                  : 'No extra charts in Reports.'}
+              </p>
             </div>
 
             <div className="space-y-1">

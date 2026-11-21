@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CUSTOM_MEASURE_KINDS, CustomGoalTypeSchema, type CustomGoalType, type CustomMeasureKind, type Goal } from '../types';
-import { CUSTOM_MEASURE_KIND_INFO, customTypeSummary, defaultCustomGoalType, makeCustomDef } from '../goal-types';
+import { CUSTOM_MEASURE_KIND_INFO, customChartOptions, customChartShown, customChartStyle, customTypeSummary, defaultCustomGoalType, makeCustomDef } from '../goal-types';
 import { goalMeasure, goalMeasureInfo, goalResponses, sessionMeetsTarget, usesPromptCounters } from '../goal-measures';
 import { formatGoalTarget } from '../helpers';
 import { goalAccuracyText } from '../goal-input-logic';
@@ -75,5 +75,32 @@ describe('custom measures modeled on built-in goal types', () => {
     expect(formatGoalTarget(goal, 3)).toBe('MLU ≥ 3 morphemes');
     expect(goalAccuracyText(goal, data)).toBe('MLU 3 morphemes (4 utterances)');
     expect(mergeGoalData([{ utterances: [2] }, { utterances: [4, 5] }]).utterances).toEqual([2, 4, 5]);
+  });
+});
+
+describe('chart choices for custom goal types', () => {
+  it('offers the extra charts that fit the measure', () => {
+    const ids = (ct: CustomGoalType) => customChartOptions(ct).map(o => o.id);
+    expect(ids(type('trials'))).toEqual(['responses']);
+    expect(ids(type('utterances'))).toEqual(['utterance-lengths', 'utterance-sample']);
+    expect(ids(type('checklist'))).toEqual(['step-completion']);
+    expect(ids(type('rating'))).toEqual(['rating-levels']);
+    expect(ids(type('yesno'))).toEqual(['yesno-sessions']);
+    expect(ids(type('prompting'))).toEqual(['prompts']);
+    expect(ids(type('counter'))).toEqual([]);
+    expect(ids(type('counter', { extras: { promptLevel: true, notes: true } }))).toEqual(['prompts']);
+  });
+
+  it('shows every fitting chart as a line until the type chooses, then only what it chose', () => {
+    const ct = type('utterances');
+    expect(customChartStyle(ct)).toBe('line');
+    expect(customChartShown(ct, 'utterance-lengths')).toBe(true);
+    const chosen = type('utterances', { charts: { style: 'bar', show: ['utterance-sample', 'responses'] } });
+    expect(customChartStyle(chosen)).toBe('bar');
+    expect(customChartShown(chosen, 'utterance-lengths')).toBe(false);
+    expect(customChartShown(chosen, 'utterance-sample')).toBe(true);
+    expect(customChartShown(chosen, 'responses')).toBe(false); // doesn't fit the measure
+    expect(CustomGoalTypeSchema.safeParse(chosen).success).toBe(true);
+    expect(CustomGoalTypeSchema.safeParse({ ...chosen, charts: { style: 'pie', show: [] } }).success).toBe(false);
   });
 });

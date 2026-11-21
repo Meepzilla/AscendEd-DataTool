@@ -1,4 +1,4 @@
-import type { CustomGoalType, CustomMeasureKind, TargetDirection } from '../types';
+import type { CustomChartId, CustomGoalType, CustomMeasureKind, TargetDirection } from '../types';
 import { BEHAVIOR_FIELDS, finalizeBehaviorData, summarizeDuration, summarizeLatency } from '../goal-constants/behavior';
 import { formatSampleLength, languageSampleSummary, sessionSampleUnit } from '../language-sample';
 import type { TrialStatus } from '../types';
@@ -527,4 +527,40 @@ export function makeCustomDef(ct: CustomGoalType): GoalTypeDefinition {
       }
     },
   };
+}
+
+/** An extra Reports chart a custom goal type can show, with what it shows. */
+export interface CustomChartOption { id: CustomChartId; label: string; description: string }
+
+const CHART_OPTIONS: Record<CustomChartId, Omit<CustomChartOption, 'id'>> = {
+  responses: { label: 'Responses per session', description: 'Stacked bars of correct, approximate and incorrect responses in each session.' },
+  prompts: { label: 'Prompt levels', description: 'How many responses needed each prompt level, over the date range.' },
+  'utterance-lengths': { label: 'Utterance lengths', description: 'How many utterances there were of each length, over the date range.' },
+  'utterance-sample': { label: 'Sample size and longest utterance', description: 'Each session\'s number of utterances, with its longest one.' },
+  'step-completion': { label: 'Steps completed', description: 'How many sessions each checklist step was completed in.' },
+  'rating-levels': { label: 'Sessions at each level', description: 'How many sessions were rated at each level of the scale.' },
+  'yesno-sessions': { label: 'Yes and no sessions', description: 'How many sessions were answered yes and how many no.' },
+};
+
+/** The extra charts that fit a custom type's measure (and its prompt-level option). */
+export function customChartOptions(ct: CustomGoalType): CustomChartOption[] {
+  const ids: CustomChartId[] = [];
+  if (ct.kind === 'accuracy' || ct.kind === 'trials') ids.push('responses');
+  if (ct.kind === 'utterances') ids.push('utterance-lengths', 'utterance-sample');
+  if (ct.kind === 'checklist') ids.push('step-completion');
+  if (ct.kind === 'rating') ids.push('rating-levels');
+  if (ct.kind === 'yesno') ids.push('yesno-sessions');
+  if (ct.kind === 'prompting' || ct.extras?.promptLevel) ids.push('prompts');
+  return ids.map(id => ({ id, ...CHART_OPTIONS[id] }));
+}
+
+/** Whether a custom type's Reports show this extra chart: every fitting chart until the type chooses. */
+export function customChartShown(ct: CustomGoalType, id: CustomChartId): boolean {
+  if (!customChartOptions(ct).some(o => o.id === id)) return false;
+  return ct.charts ? ct.charts.show.includes(id) : true;
+}
+
+/** The progress chart's style for a custom type (a line unless the type chose bars). */
+export function customChartStyle(ct: CustomGoalType | undefined): 'line' | 'bar' {
+  return ct?.charts?.style === 'bar' ? 'bar' : 'line';
 }
