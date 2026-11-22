@@ -1,31 +1,39 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
 import { flushWrites, isPasscodeEnabled, isUnlocked } from '@/lib/secure-store';
-import { activateWaitingUpdate, shouldApplyUpdateNow, watchForWaitingUpdate } from '@/lib/service-worker-update';
+import { applyWaitingUpdate, shouldApplyUpdateNow, watchForWaitingUpdate } from '@/lib/service-worker-update';
 
 // When the app last reloaded itself to apply an update, so a worker that won't activate can't cause a reload loop.
 const LAST_AUTO_UPDATE_KEY = 'ascended_last_auto_update';
 const AUTO_UPDATE_GAP_MS = 60_000;
+const UPDATE_TITLE = 'App updated';
+const OTHER_TABS_TITLE = 'AscendEd is open in another tab';
 
 /**
  * Registers the service worker that stores the app for offline use. Only the static build
  * (`npm run build:static`) generates sw.js, and the Android app loads its files from the
  * device already, so it is skipped there.
  *
- * This sits outside the passcode lock (see app/layout.tsx) so updates are checked for and applied
- * while the lock screen is showing too.
+ * This sits outside the passcode lock (see app/layout.tsx) so updates are checked for and applied while the lock
+ * screen is showing too.
  *
- * A new deploy downloads in the background and never takes over in the middle of a session (that
- * would force a reload and re-lock on the next tab switch). It is put in use straight away when
- * doing so costs nothing: while the lock screen is showing, or, without a passcode, when the app
- * comes back to the foreground. Otherwise an "App updated" notice offers to reload; it stays until
- * dismissed and comes back each time the app returns to the foreground.
+ * A new deploy downloads in the background and never takes over in the middle of a session (that would force a
+ * reload and re-lock on the next tab switch). It is put in use straight away when doing so costs nothing: while the
+ * lock screen is showing, or, without a passcode, when the app comes back to the foreground; and only when no other
+ * AscendEd tab or window is open, since the new version takes over every tab and another could be mid-session.
+ * Otherwise an "App updated" notice offers to reload; it stays until dismissed and comes back each time the app
+ * returns to the foreground (unless another notice is showing). With another tab open, Reload says so and offers to
+ * update all tabs.
  */
 export default function ServiceWorkerRegistration() {
-  const { toast } = useToast();
+  const { toast, toasts } = useToast();
+  // Whether another notice is showing, read when the app comes back to the foreground (the update notice isn't
+  // shown again over it: only one notice shows at a time, so it would replace, say, a save error).
+  const otherToastOpen = useRef(false);
+  otherToastOpen.current = toasts.some(t => t.open !== false && t.title !== UPDATE_TITLE && t.title !== OTHER_TABS_TITLE);
 
   useEffect(() => {
     if (process.env.NEXT_PUBLIC_STATIC_EXPORT !== 'true') return;
@@ -37,18 +45,38 @@ export default function ServiceWorkerRegistration() {
     let registration: ServiceWorkerRegistration | undefined;
     let stopWatching: (() => void) | undefined;
 
-    const applyUpdate = async (reg: ServiceWorkerRegistration) => {
-      if (reloading) return;
+    // Puts the waiting version in use and reloads. `onlyIfAlone`: only when no other AscendEd tab or window is open,
+    // since the new version takes over every open tab and another tab could be in the middle of a session.
+    const applyUpdate = async (reg: ServiceWorkerRegistration, onlyIfAlone: boolean) => {
+      if (reloading) return 'reloaded' as const;
       reloading = true;
-      try {
-        await flushWrites();
-      } catch {
-        // A failed write was already reported; reloading loses nothing more than the failed write did.
+      const result = await applyWaitingUpdate({
+        container: navigator.serviceWorker,
+        registration: reg,
+        flush: flushWrites,
+        reload: () => window.location.reload(),
+        onlyIfAlone,
+      });
+      if (result !== 'reloaded') reloading = false;
+      return result;
+    };
+
+    // Reload on the notice: this tab alone updates straight away; with another tab open, say so first and let the
+    // person choose to update them all (each will reload and, with a passcode, lock).
+    const reloadFromNotice = async (reg: ServiceWorkerRegistration) => {
+      const result = await applyUpdate(reg, true);
+      if (result === 'other-tabs-open') {
+        toast({
+          title: OTHER_TABS_TITLE,
+          description: isPasscodeEnabled()
+            ? 'Updating now switches every open AscendEd tab to the new version: this one reloads, and the others reload and need unlocking again the next time you move to another page. Unsaved Data Entry work is kept. Or close the other tabs first, then tap Reload.'
+            : 'Updating now switches every open AscendEd tab to the new version: this one reloads, and the others reload the next time you move to another page. Unsaved Data Entry work is kept. Or close the other tabs first, then tap Reload.',
+          duration: Infinity,
+          action: <ToastAction altText="Update all open tabs" onClick={() => { void applyUpdate(reg, false); }}>Update all tabs</ToastAction>,
+        });
+      } else if (result === 'failed') {
+        await applyUpdate(reg, false);
       }
-      if (reg.waiting) {
-        await activateWaitingUpdate(navigator.serviceWorker, reg.waiting);
-      }
-      window.location.reload();
     };
 
     const recentlyAutoUpdated = () => {
@@ -60,14 +88,15 @@ export default function ServiceWorkerRegistration() {
       }
     };
 
-    const showNotice = (reg: ServiceWorkerRegistration) => {
+    const showNotice = (reg: ServiceWorkerRegistration, returningToForeground: boolean) => {
+      if (returningToForeground && otherToastOpen.current) return;
       toast({
-        title: 'App updated',
+        title: UPDATE_TITLE,
         description: isPasscodeEnabled()
           ? "A new version of AscendEd is ready. Reload to start using it (you'll need to unlock again); unsaved Data Entry work is kept."
           : 'A new version of AscendEd is ready. Reload to start using it; unsaved Data Entry work is kept.',
         duration: Infinity,
-        action: <ToastAction altText="Reload the app" onClick={() => { void applyUpdate(reg); }}>Reload</ToastAction>,
+        action: <ToastAction altText="Reload the app" onClick={() => { void reloadFromNotice(reg); }}>Reload</ToastAction>,
       });
     };
 
@@ -83,9 +112,15 @@ export default function ServiceWorkerRegistration() {
       });
       if (applyNow) {
         try { sessionStorage.setItem(LAST_AUTO_UPDATE_KEY, String(Date.now())); } catch { /* storage unavailable */ }
-        void applyUpdate(reg);
+        // Only when this is the only open tab; otherwise (or if the new version doesn't take control) the notice.
+        // The loop guard counts only an update that reloaded the page.
+        void applyUpdate(reg, true).then(result => {
+          if (result === 'reloaded') return;
+          try { sessionStorage.removeItem(LAST_AUTO_UPDATE_KEY); } catch { /* storage unavailable */ }
+          showNotice(reg, returningToForeground);
+        });
       } else {
-        showNotice(reg);
+        showNotice(reg, returningToForeground);
       }
     };
 

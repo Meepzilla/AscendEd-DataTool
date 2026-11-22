@@ -99,14 +99,34 @@ export function activateWaitingUpdate(
   waiting: SwLike,
   options?: { onlyIfAlone?: boolean; timeoutMs?: number },
 ): Promise<boolean> {
+  return activateWaitingUpdateResult(container, waiting, options).then(result => result === 'activated');
+}
+
+/** How an attempt to activate a waiting update ended. */
+export type ActivationResult = 'activated' | 'other-tabs-open' | 'failed';
+
+/** Once the worker has agreed to take over (alone check passed), how long to wait for it to take control. */
+const CONFIRMED_ACTIVATION_TIMEOUT_MS = 3000;
+
+/**
+ * activateWaitingUpdate with the reason it didn't activate: 'other-tabs-open' when `onlyIfAlone` was set and the
+ * worker declined because another tab or window is open, 'failed' for a timeout, a redundant worker or an error.
+ * When the worker says it is activating, the wait is extended to CONFIRMED_ACTIVATION_TIMEOUT_MS, so a reload
+ * that follows doesn't land under the old worker while the new one claims the page.
+ */
+export function activateWaitingUpdateResult(
+  container: SwContainerLike,
+  waiting: SwLike,
+  options?: { onlyIfAlone?: boolean; timeoutMs?: number },
+): Promise<ActivationResult> {
   const onlyIfAlone = options?.onlyIfAlone ?? false;
   const timeoutMs = options?.timeoutMs ?? 2000;
 
-  return new Promise<boolean>((resolve) => {
+  return new Promise<ActivationResult>((resolve) => {
     let done = false;
     let channel: MessageChannel | null = null;
 
-    const finish = (activated: boolean) => {
+    const finish = (result: ActivationResult) => {
       if (done) return;
       done = true;
       clearTimeout(timer);
@@ -116,15 +136,15 @@ export function activateWaitingUpdate(
         channel.port1.onmessage = null;
         channel.port1.close();
       }
-      resolve(activated);
+      resolve(result);
     };
 
-    const onControllerChange = () => finish(true);
+    const onControllerChange = () => finish('activated');
     const onStateChange = () => {
-      if (waiting.state === 'redundant') finish(false);
+      if (waiting.state === 'redundant') finish('failed');
     };
 
-    const timer = setTimeout(() => finish(false), timeoutMs);
+    let timer = setTimeout(() => finish('failed'), timeoutMs);
     container.addEventListener('controllerchange', onControllerChange);
     waiting.addEventListener('statechange', onStateChange);
 
@@ -133,7 +153,12 @@ export function activateWaitingUpdate(
         if (typeof MessageChannel !== 'undefined') {
           channel = new MessageChannel();
           channel.port1.onmessage = (event: MessageEvent) => {
-            if (event.data && (event.data as { activated?: unknown }).activated === false) finish(false);
+            const activated = event.data ? (event.data as { activated?: unknown }).activated : undefined;
+            if (activated === false) finish('other-tabs-open');
+            else if (activated === true && !done && timeoutMs < CONFIRMED_ACTIVATION_TIMEOUT_MS) {
+              clearTimeout(timer);
+              timer = setTimeout(() => finish('failed'), CONFIRMED_ACTIVATION_TIMEOUT_MS);
+            }
           };
           waiting.postMessage({ type: SW_SKIP_WAITING_IF_ALONE_MESSAGE }, [channel.port2]);
         } else {
@@ -143,9 +168,44 @@ export function activateWaitingUpdate(
         waiting.postMessage({ type: SW_SKIP_WAITING_MESSAGE });
       }
     } catch {
-      finish(false);
+      finish('failed');
     }
   });
+}
+
+export interface ApplyUpdateDeps {
+  container: SwContainerLike;
+  registration: { waiting: SwLike | null };
+  /** Saves pending writes before the page reloads. */
+  flush: () => Promise<void>;
+  reload: () => void;
+  /** Take over only when no other tab or window of the app is open (automatic updates). */
+  onlyIfAlone: boolean;
+}
+
+/**
+ * Puts a waiting update in use and reloads, or reports why it didn't. With `onlyIfAlone` (an automatic update) the
+ * page reloads only when the new version actually took control, so another open tab is never switched to a new
+ * version under its feet, and a worker that won't activate can't cause a reload loop. Without it (the person asked
+ * to update all tabs) the page reloads whatever happens, as asked.
+ */
+export async function applyWaitingUpdate(deps: ApplyUpdateDeps): Promise<'reloaded' | ActivationResult> {
+  try {
+    await deps.flush();
+  } catch {
+    // A failed write was already reported; reloading loses nothing more than the failed write did.
+  }
+  const waiting = deps.registration.waiting;
+  if (!waiting) {
+    deps.reload();
+    return 'reloaded';
+  }
+  const result = await activateWaitingUpdateResult(deps.container, waiting, { onlyIfAlone: deps.onlyIfAlone });
+  if (result === 'activated' || !deps.onlyIfAlone) {
+    deps.reload();
+    return 'reloaded';
+  }
+  return result;
 }
 
 /**
