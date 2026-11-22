@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import * as secureStore from './secure-store';
 import { clearStorageFailure, reportStorageFailure } from './storage-failure';
-import { DEFAULT_COMM_FUNCTIONS, registerCommFunctionLoader, type CommFunction } from './goal-constants/communication';
+import { DEFAULT_COMM_FUNCTIONS, isSafeCommFunctionKey, registerCommFunctionLoader, type CommFunction } from './goal-constants/communication';
 
 // The communicative functions offered for Communication Functions goals, editable in Settings (like the ABC lists).
 // Only a list the user changed is stored; it goes through secure-store, so with passcode protection on it is
@@ -17,7 +17,7 @@ export const MAX_COMM_FUNCTIONS = 40;
 export const MAX_COMM_FUNCTION_LABEL = 60;
 
 export const CommFunctionsSchema = z.array(z.object({
-  key: z.string().regex(/^[A-Za-z][A-Za-z0-9_]{0,59}$/),
+  key: z.string().refine(isSafeCommFunctionKey, 'A function key must start with a letter and use only letters, digits and "_".'),
   label: z.string().trim().min(1).max(MAX_COMM_FUNCTION_LABEL),
   hidden: z.boolean().optional(),
 })).min(1).max(MAX_COMM_FUNCTIONS)

@@ -46,14 +46,29 @@ export function activeCommFunctions(): CommFunction[] {
   return active.length ? active : DEFAULT_COMM_FUNCTIONS;
 }
 
-const TALLY_FIELD = /^(.+)(Spontaneous|Emerging|Prompted)$/;
+const TALLY_SUFFIXES = ['Spontaneous', 'Emerging', 'Prompted'] as const;
+/** A function key as the list stores it: a letter, then letters, digits or "_" (never "__proto__" and the like). */
+const SAFE_FUNCTION_KEY = /^[A-Za-z][A-Za-z0-9_]{0,59}$/;
 
-/** The function keys a session's data has tallies for (any function ever recorded, listed or not). */
+/** Whether a key is safe to use as a function key (and in field names made from it). */
+export function isSafeCommFunctionKey(key: string): boolean {
+  return SAFE_FUNCTION_KEY.test(key);
+}
+
+/**
+ * The function keys a session's data has tallies for (any function ever recorded, listed or not). Data comes from
+ * storage, backups and imports, so only fields of the form "<key><Spontaneous|Emerging|Prompted>" with a key that
+ * passes isSafeCommFunctionKey count; anything else is ignored.
+ */
 export function commFunctionKeysIn(data: Record<string, any> = {}): string[] {
   const keys = new Set<string>();
   for (const field of Object.keys(data)) {
-    const match = TALLY_FIELD.exec(field);
-    if (match && Number(data[field]) > 0) keys.add(match[1]);
+    if (field.length > 80) continue;
+    const suffix = TALLY_SUFFIXES.find(sfx => field.endsWith(sfx));
+    if (!suffix) continue;
+    const key = field.slice(0, field.length - suffix.length);
+    if (!isSafeCommFunctionKey(key) || !(Number(data[field]) > 0)) continue;
+    keys.add(key);
   }
   return [...keys];
 }
