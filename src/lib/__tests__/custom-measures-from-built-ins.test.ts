@@ -104,3 +104,16 @@ describe('chart choices for custom goal types', () => {
     expect(CustomGoalTypeSchema.safeParse({ ...chosen, charts: { style: 'pie', show: [] } }).success).toBe(false);
   });
 });
+
+describe('new goals from a custom goal type', () => {
+  it('copies the type, target and direction, with goal text to finish', async () => {
+    const { goalFromCustomType } = await import('../goal-templates');
+    const ct = type('latency', { name: 'Responds to name', direction: 'decrease', defaultTarget: 5 });
+    const goal = goalFromCustomType(ct);
+    expect(goal).toMatchObject({ name: 'Responds to name', type: 'CUSTOM', sessionTargetValue: 5, targetDirection: 'decrease' });
+    expect(goal.customType).toEqual(ct);
+    expect(goal.customType).not.toBe(ct);
+    expect(goal.smartGoal).toMatch(/___, as measured by Responds to name/);
+    expect(formatGoalTarget(goal, 5)).toBe('≤ 5 s average');
+  });
+});

@@ -1,6 +1,7 @@
 import type { Goal, GoalTemplate, Student } from './types';
 import { generateUUID } from './helpers';
 import { cloneCustomGoalType } from './goal-types/custom';
+import type { CustomGoalType } from './types';
 
 /** A student goal made from a template. */
 export function goalFromTemplate(template: GoalTemplate): Goal {
@@ -20,6 +21,23 @@ export function goalFromTemplate(template: GoalTemplate): Goal {
     ...(template.sampleUnit ? { sampleUnit: template.sampleUnit } : {}),
     ...(template.gasLevelDescriptions?.length ? { gasLevelDescriptions: [...template.gasLevelDescriptions] } : {}),
     ...(template.customType ? { customType: cloneCustomGoalType(template.customType) } : {}),
+  };
+}
+
+/**
+ * A new student goal measured with a custom goal type (Edit Student → Goals from your custom goal types). It has a
+ * copy of the type, the type's target and direction, and a goal statement to finish in the goal editor (its blank,
+ * "___", says where the skill goes).
+ */
+export function goalFromCustomType(ct: CustomGoalType): Goal {
+  return {
+    id: generateUUID(),
+    name: ct.name,
+    type: 'CUSTOM',
+    customType: cloneCustomGoalType(ct),
+    smartGoal: `By [date], [student] will ___, as measured by ${ct.name.trim() || 'the custom goal type'} across [sessions] consecutive sessions.`,
+    ...(ct.defaultTarget !== undefined ? { sessionTargetValue: ct.defaultTarget } : {}),
+    targetDirection: ct.direction,
   };
 }
 

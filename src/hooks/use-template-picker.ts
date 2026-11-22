@@ -33,7 +33,9 @@ export function useTemplatePicker(goalTemplates: GoalTemplate[], student: Pick<S
     const group = (t: GoalTemplate) => (!browsing ? 0 : !t.isDefault ? 0 : !t.source && !t.bankId ? 1 : 2);
     return goalTemplates
       .filter(t => !t.isArchived
-        && (typeFilter === 'ALL' || t.type === typeFilter)
+        && (typeFilter === 'ALL' || t.type === typeFilter
+          // A custom goal type: "CUSTOM:<id>" matches the templates made with that type.
+          || (typeFilter.startsWith('CUSTOM:') && t.type === 'CUSTOM' && t.customType?.id === typeFilter.slice('CUSTOM:'.length)))
         && (categoryFilter === 'ALL' || t.category === categoryFilter)
         && templateMatchesSearch(t, search)
         && !(student && hasTemplateGoal(student, t)))
