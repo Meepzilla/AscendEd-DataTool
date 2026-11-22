@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Settings, PanelLeft } from 'lucide-react';
 import BackupRestoreCard from '@/components/settings/BackupRestoreCard';
+import CommFunctionsCard from '@/components/settings/CommFunctionsCard';
 import PasscodeCard from '@/components/settings/PasscodeCard';
 import DeleteDataCard from '@/components/settings/DeleteDataCard';
 import ImportStudentsCard from '@/components/settings/ImportStudentsCard';
@@ -134,6 +135,8 @@ export default function SettingsPage() {
       <CustomGoalTypesCard />
 
       <AbcListsCard />
+
+      <CommFunctionsCard />
 
       <BuiltInGoalsCard />
 

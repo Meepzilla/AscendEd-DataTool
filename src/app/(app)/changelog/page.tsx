@@ -19,6 +19,13 @@ interface ChangelogEntry {
 const allChangelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-22',
+    title: 'Edit the Communication Functions List',
+    description: 'Settings has a new Communication Functions card, like the ABC Data Lists, for the functions tallied by Communication Functions goals. Add your own (such as Sharing information), move them up, or remove ones you don\'t use, and reset to the defaults at any time. A removed function only leaves Data Entry: sessions that already used it keep its counts and name in Reports and narratives, and it can be shown again. The list is encrypted with passcode protection and included in backups.',
+    type: 'feature',
+    icon: ListChecks,
+  },
+  {
+    date: '2026-11-22',
     title: 'Updates No Longer Interrupt Another Open Tab',
     description: 'A new version now starts by itself only when AscendEd is open in just one tab or window. Before, a second tab left on the lock screen could start the update and make the tab you were working in reload and lock in the middle of a session. With another tab open, the "App updated" notice stays instead, and tapping Reload says the app is open in another tab and offers Update all tabs (or close the other tabs first). The notice also no longer covers another message that is showing when you come back to the app.',
     type: 'fix',

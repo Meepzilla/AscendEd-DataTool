@@ -3,6 +3,8 @@ import { knownGoalType } from './legacy-goal-types';
 import { reviveGoalTypes } from './legacy-goal-types';
 import { CustomGoalTypeSchema, type CustomGoalType, type GoalTemplate, type SessionData, type Student } from './types';
 import { AbcListsSchema, type AbcLists, loadCustomAbcLists } from './abc-lists';
+import { CommFunctionsSchema, loadCustomCommFunctions } from './comm-functions';
+import type { CommFunction } from './goal-constants/communication';
 import { getStudentGroups } from './student-groups';
 import { getCustomGoalTypes } from './custom-goal-types';
 import { hydrateLists, readList, storageKeys } from './data-store';
@@ -25,6 +27,7 @@ export interface BackupData {
 
 export interface BackupSettings {
   abcLists?: AbcLists; // only when edited on the device
+  commFunctions?: CommFunction[]; // the communication functions list, only when edited on the device
   studentGroups?: { id: string; name: string; studentIds: string[] }[]; // saved Data Entry groups, when there are any
   customGoalTypes?: CustomGoalType[]; // user-made custom goal types, when there are any
 }
@@ -198,6 +201,11 @@ function extractSettings(raw: unknown): { settings?: BackupSettings; droppedSett
     if (parsed.success) settings.abcLists = parsed.data;
     else droppedSettings.push('abcLists');
   }
+  if (record.commFunctions !== undefined) {
+    const parsed = CommFunctionsSchema.safeParse(record.commFunctions);
+    if (parsed.success) settings.commFunctions = parsed.data;
+    else droppedSettings.push('commFunctions');
+  }
   if (record.studentGroups !== undefined) {
     const parsed = StudentGroupSchema.safeParse(record.studentGroups);
     if (parsed.success) settings.studentGroups = parsed.data;
@@ -250,6 +258,7 @@ export function createBackup(data: BackupData, settings: BackupSettings = {}): A
   const backup: AppBackup = { app: BACKUP_APP, version: BACKUP_VERSION, exportedAt: new Date().toISOString(), data };
   const kept: BackupSettings = {
     ...(settings.abcLists ? { abcLists: settings.abcLists } : {}),
+    ...(settings.commFunctions?.length ? { commFunctions: settings.commFunctions } : {}),
     ...(settings.studentGroups?.length ? { studentGroups: settings.studentGroups } : {}),
     ...(settings.customGoalTypes?.length ? { customGoalTypes: settings.customGoalTypes } : {}),
   };
@@ -273,7 +282,7 @@ export async function buildBackupFromStorage(uid: string | undefined): Promise<{
   const sessions = readList<SessionData>(keys.sessions);
   const backup = createBackup(
     { students: students ?? [], goalTemplates: goalTemplates ?? [], sessions: sessions ?? [] },
-    { abcLists: loadCustomAbcLists() ?? undefined, studentGroups: getStudentGroups(uid), customGoalTypes: getCustomGoalTypes(uid) },
+    { abcLists: loadCustomAbcLists() ?? undefined, commFunctions: loadCustomCommFunctions() ?? undefined, studentGroups: getStudentGroups(uid), customGoalTypes: getCustomGoalTypes(uid) },
   );
   return { backup, incomplete: students === undefined || goalTemplates === undefined || sessions === undefined };
 }
@@ -577,7 +586,7 @@ export interface RestoreSummary {
 
 /** What a backup's parsing left out, in words (empty when nothing was). */
 export function describeLeftOut(backup: Partial<Pick<ParsedBackup, 'droppedSettings' | 'droppedRecords'>>): string[] {
-  const settings = (backup.droppedSettings ?? []).map(name => `the ${name === 'abcLists' ? 'ABC lists' : name === 'studentGroups' ? 'student groups' : name === 'customGoalTypes' ? 'custom goal types' : name} settings`);
+  const settings = (backup.droppedSettings ?? []).map(name => `the ${name === 'abcLists' ? 'ABC lists' : name === 'commFunctions' ? 'communication functions' : name === 'studentGroups' ? 'student groups' : name === 'customGoalTypes' ? 'custom goal types' : name} settings`);
   const records = (backup.droppedRecords ?? []).map(r =>
     `${r.kind === 'goalTemplate' ? 'a goal template' : r.kind === 'sessionGoal' ? 'a goal in a session' : `a ${r.kind}`} (${r.id}: ${r.reason})`);
   return [...settings, ...records];

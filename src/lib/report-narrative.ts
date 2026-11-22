@@ -2,7 +2,7 @@ import type { Goal, SessionData, Student } from './types';
 import {
   BEHAVIOR_GOAL_TYPES, INTERVAL_METHODS, captureTypeOf, toolTypeOf, goalDirection, summarizeAbc, summarizeCommunicationFunctions,
   median, summarizeDuration, summarizeFrequency, summarizeIntervals, summarizeLatency,
-  COMMUNICATION_FUNCTIONS, STORY_PARTS, averageStoryPart, STORY_LINKING_WORDS, linkingWordField, topTied, joinWithAnd, type AbcIncident,
+  commFunctionsFor, STORY_PARTS, averageStoryPart, STORY_LINKING_WORDS, linkingWordField, topTied, joinWithAnd, type AbcIncident,
 } from './goal-constants';
 import { goalMeasure, goalMeasureInfo, goalNotes, goalResponses, sessionMeetsTarget, promptTotals, usesPromptCounters, withoutRunningTimers } from './goal-measures';
 import { getGoalTypeDef } from './goal-types';
@@ -358,7 +358,7 @@ function detailSentences(name: string, goal: Goal, data: Record<string, any>[]):
     const spontaneous = sum(summary.map(s => s.spontaneous));
     const emerging = sum(summary.map(s => s.emerging));
     const prompted = sum(summary.map(s => s.prompted));
-    const byUnprompted = COMMUNICATION_FUNCTIONS
+    const byUnprompted = commFunctionsFor(data)
       .map(f => ({ label: f.label.toLowerCase(), u: total(`${f.key}Spontaneous`) + total(`${f.key}Emerging`) }))
       .filter(f => f.u > 0).sort((x, y) => y.u - x.u);
     if (emerging > 0) {
@@ -367,7 +367,7 @@ function detailSentences(name: string, goal: Goal, data: Record<string, any>[]):
       lines.push(`${name} used communicative functions ${spontaneous} times spontaneously and ${prompted} times with a prompt.`);
     }
     if (byUnprompted.length) lines.push(`The functions used most often without a prompt were ${byUnprompted.slice(0, 3).map(f => `${f.label} (${f.u})`).join(', ')}.`);
-    const emergingByFunction = COMMUNICATION_FUNCTIONS
+    const emergingByFunction = commFunctionsFor(data)
       .map(f => ({ label: f.label.toLowerCase(), e: total(`${f.key}Emerging`) }))
       .filter(f => f.e > 0).sort((x, y) => y.e - x.e);
     if (emergingByFunction.length) {

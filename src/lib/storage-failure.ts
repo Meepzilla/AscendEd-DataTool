@@ -12,6 +12,7 @@ export type StorageFailureSource =
   | 'draft'
   | 'student-groups'
   | 'abc-lists'
+  | 'comm-functions'
   | 'school-year'
   | 'theme'
   | 'safe-storage'
@@ -33,6 +34,7 @@ const LABELS: Record<StorageFailureSource, string> = {
   draft: 'Data Entry draft',
   'student-groups': 'Student groups',
   'abc-lists': 'ABC lists',
+  'comm-functions': 'Communication functions',
   'school-year': 'School year setting',
   theme: 'Theme',
   'safe-storage': 'A setting',
@@ -46,6 +48,8 @@ const DETAILS: Record<StorageFailureSource, string> = {
     'The student groups could not be saved on this device, so changes are only kept for this visit.',
   'abc-lists':
     'The ABC lists could not be saved on this device, so changes are only kept for this visit.',
+  'comm-functions':
+    'The communication functions could not be saved on this device, so changes are only kept for this visit.',
   'school-year':
     'The school year could not be saved on this device, so it applies for this visit only.',
   theme: 'The theme could not be saved on this device, so it applies for this visit only.',
@@ -116,5 +120,6 @@ export function sourceForStorageKey(storageKey: string): StorageFailureSource {
   if (storageKey.startsWith('ascended_data_entry_draft_v1_')) return 'draft';
   if (storageKey.startsWith('ascended_student_groups_v1_')) return 'student-groups';
   if (storageKey === 'ascended_abc_lists') return 'abc-lists';
+  if (storageKey === 'ascended_comm_functions') return 'comm-functions';
   return 'save';
 }

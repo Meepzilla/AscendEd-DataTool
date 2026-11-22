@@ -4,8 +4,9 @@ import React from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import TallyButton from '../TallyButton';
-import { COMMUNICATION_FUNCTIONS, STORY_PARTS, STORY_PART_SCORE_LABELS, STORY_PART_NOT_ASSESSED, STORY_LINKING_WORDS, linkingWordField } from '@/lib/goal-constants';
+import { commFunctionKeysIn, commFunctionLabel, STORY_PARTS, STORY_PART_SCORE_LABELS, STORY_PART_NOT_ASSESSED, STORY_LINKING_WORDS, linkingWordField } from '@/lib/goal-constants';
 import { FormItem, FormLabel, type GoalInputContext } from './shared';
+import { useCommFunctions } from '@/hooks/use-comm-functions';
 
 // Data Entry inputs for goal types (see goal-data-input.tsx, which picks the inputs for a goal's type).
 
@@ -14,6 +15,10 @@ export function CommunicationFunctionsInputs({ ctx }: { ctx: GoalInputContext })
   const { data, isArchived, isLocked, handleChange, adjustCount, handleInteraction, calculateAccuracy } = ctx;
   const tally = (field: string, delta: number) => (e: React.SyntheticEvent<HTMLButtonElement>) =>
     handleInteraction(e, () => adjustCount(field, delta));
+  // The functions in Settings, then any other function this session already has tallies for (one removed since).
+  const listed = useCommFunctions().filter(f => !f.hidden);
+  const extra = commFunctionKeysIn(data).filter(key => !listed.some(f => f.key === key)).map(key => ({ key, label: commFunctionLabel(key) }));
+  const functions = [...listed, ...extra];
   return (
     <>
       <FormItem>
@@ -22,7 +27,7 @@ export function CommunicationFunctionsInputs({ ctx }: { ctx: GoalInputContext })
           <FormLabel className="text-center" title="Spontaneous (target/symbolic form without a prompt)">Spont.</FormLabel>
           <FormLabel className="text-center" title="Emerging or alternative form used without a prompt (e.g., gesture, vocalization, approximation)">Emerg.</FormLabel>
           <FormLabel className="text-center" title="Prompted">Prompt.</FormLabel>
-          {COMMUNICATION_FUNCTIONS.map(({ key, label }) => (
+          {functions.map(({ key, label }) => (
             <React.Fragment key={key}>
               <span className="text-xs leading-tight pr-0.5">{label}</span>
               <TallyButton

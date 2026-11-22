@@ -7,7 +7,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLe
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, ReferenceLine, BarChart, Bar, ComposedChart } from 'recharts';
 import { customChartShown, customChartStyle } from '@/lib/goal-types/custom';
 import {
-  BEHAVIOR_GOAL_TYPES, captureTypeOf, toolTypeOf, summarizeLatency, goalDirection, summarizeAbc, summarizeCommunicationFunctions, scoreStory, averageStoryPart, STORY_PARTS, STORY_LINKING_WORDS, linkingWordField, COMMUNICATION_FUNCTIONS,
+  BEHAVIOR_GOAL_TYPES, commFunctionsFor, captureTypeOf, toolTypeOf, summarizeLatency, goalDirection, summarizeAbc, summarizeCommunicationFunctions, scoreStory, averageStoryPart, STORY_PARTS, STORY_LINKING_WORDS, linkingWordField,
   type AbcIncident,
 } from '@/lib/goal-constants';
 import { goalMeasure, goalMeasureInfo, goalResponses, goalNotes, sessionMeetsTarget, promptTotals, usesPromptCounters, withoutRunningTimers } from '@/lib/goal-measures';
@@ -179,7 +179,7 @@ const GoalBreakdowns: React.FC<{ goal: Goal; recorded: Recorded[] }> = ({ goal, 
     );
   }
   if (type === 'COMMUNICATION_FUNCTIONS') {
-    const rows = COMMUNICATION_FUNCTIONS
+    const rows = commFunctionsFor(data)
       .map(f => ({
         name: f.label,
         spontaneous: sum(d => Math.max(0, Number(d[`${f.key}Spontaneous`]) || 0)),
