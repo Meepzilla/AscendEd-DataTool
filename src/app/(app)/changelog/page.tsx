@@ -18,6 +18,13 @@ interface ChangelogEntry {
 
 const allChangelogEntries: ChangelogEntry[] = [
   {
+    date: '2026-11-22',
+    title: 'Updates No Longer Interrupt Another Open Tab',
+    description: 'A new version now starts by itself only when AscendEd is open in just one tab or window. Before, a second tab left on the lock screen could start the update and make the tab you were working in reload and lock in the middle of a session. With another tab open, the "App updated" notice stays instead, and tapping Reload says the app is open in another tab and offers Update all tabs (or close the other tabs first). The notice also no longer covers another message that is showing when you come back to the app.',
+    type: 'fix',
+    icon: RefreshCw,
+  },
+  {
     date: '2026-11-21',
     title: 'Add Goals From Your Custom Goal Types',
     description: 'Custom goal types can now be given to a student straight from Edit Student Info: a new section, New Goal from a Custom Goal Type, lists your types, and the + button adds a goal measured with that type and opens it so you can write the goal text and set the target. Before, a custom type only appeared there once a goal template had been made with it. The Type filter above the goal templates now lists your custom types too, and Edit Goal\'s Data Capture Method can switch a goal to one of your custom types (or make a new one).',
