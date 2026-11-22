@@ -73,3 +73,12 @@ describe('backups', () => {
     expect(comm.loadCommFunctions().at(-1)?.label).toBe('Joking');
   });
 });
+
+describe('function keys from stored data', () => {
+  it('ignores fields whose key is not a plain function key', () => {
+    const data = { __proto__Spontaneous: 3, 'a.bEmerging': 2, '1abcPrompted': 1, c_jokingSpontaneous: 1, notes: 'x' } as Record<string, any>;
+    expect(constants.commFunctionKeysIn(data)).toEqual(['c_joking']);
+    expect(constants.isSafeCommFunctionKey('__proto__')).toBe(false);
+    expect(constants.isSafeCommFunctionKey('constructor')).toBe(true); // letters only; used only as a field-name prefix
+  });
+});
