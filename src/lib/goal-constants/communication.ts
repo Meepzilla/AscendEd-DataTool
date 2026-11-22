@@ -16,6 +16,70 @@ export const COMMUNICATION_FUNCTIONS = [
   { key: 'directingOthers', label: 'Directing others' },
 ] as const;
 
+/**
+ * A communicative function offered in Data Entry. The list can be edited in Settings → Communication Functions
+ * (comm-functions.ts): functions can be added, reordered and hidden. Hidden ones stay in the list so past sessions
+ * keep their names; data is stored by `key`, which never changes.
+ */
+export interface CommFunction { key: string; label: string; hidden?: boolean }
+
+export const DEFAULT_COMM_FUNCTIONS: CommFunction[] = COMMUNICATION_FUNCTIONS.map(f => ({ key: f.key, label: f.label }));
+
+// The saved list is read through a loader that comm-functions.ts registers (it reads the device's storage, which
+// this module can't import without a cycle). Until then, and when it fails, the defaults apply.
+let commFunctionLoader: (() => CommFunction[]) | null = null;
+export function registerCommFunctionLoader(loader: () => CommFunction[]) { commFunctionLoader = loader; }
+
+/** Every function in the saved list (hidden ones included), or the defaults. */
+export function allCommFunctions(): CommFunction[] {
+  try {
+    const list = commFunctionLoader?.();
+    return list && list.length ? list : DEFAULT_COMM_FUNCTIONS;
+  } catch {
+    return DEFAULT_COMM_FUNCTIONS;
+  }
+}
+
+/** The functions offered in Data Entry, in order. */
+export function activeCommFunctions(): CommFunction[] {
+  const active = allCommFunctions().filter(f => !f.hidden);
+  return active.length ? active : DEFAULT_COMM_FUNCTIONS;
+}
+
+const TALLY_FIELD = /^(.+)(Spontaneous|Emerging|Prompted)$/;
+
+/** The function keys a session's data has tallies for (any function ever recorded, listed or not). */
+export function commFunctionKeysIn(data: Record<string, any> = {}): string[] {
+  const keys = new Set<string>();
+  for (const field of Object.keys(data)) {
+    const match = TALLY_FIELD.exec(field);
+    if (match && Number(data[field]) > 0) keys.add(match[1]);
+  }
+  return [...keys];
+}
+
+/** A function's name: from the saved list (hidden ones too), the defaults, or its key spelled out. */
+export function commFunctionLabel(key: string): string {
+  const found = allCommFunctions().find(f => f.key === key) ?? DEFAULT_COMM_FUNCTIONS.find(f => f.key === key);
+  if (found) return found.label;
+  return key.replace(/^c_/, '').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ').replace(/^./, c => c.toUpperCase());
+}
+
+/** The functions to show for some sessions' data: the active list, then any other function those sessions used. */
+export function commFunctionsFor(datas: Record<string, any>[]): CommFunction[] {
+  const active = activeCommFunctions();
+  const shown = new Set(active.map(f => f.key));
+  const extra: CommFunction[] = [];
+  for (const d of datas) {
+    for (const key of commFunctionKeysIn(d)) {
+      if (shown.has(key)) continue;
+      shown.add(key);
+      extra.push({ key, label: commFunctionLabel(key), hidden: true });
+    }
+  }
+  return [...active, ...extra];
+}
+
 export const COMMUNICATION_FIELDS: Record<string, Record<string, any>> = {
   COMMUNICATION_FUNCTIONS: {
     notes: '',
@@ -44,7 +108,9 @@ export function summarizeCommunicationFunctions(data: Record<string, any> = {}) 
   let functionsUsedEmergingOnly = 0;
   let functionsUsedUnprompted = 0;
   let functionsUsed = 0;
-  for (const { key } of COMMUNICATION_FUNCTIONS) {
+  // Every function with tallies in this session (including ones added in Settings, or since hidden), plus the defaults.
+  const keys = new Set<string>([...COMMUNICATION_FUNCTIONS.map(f => f.key), ...commFunctionKeysIn(data)]);
+  for (const key of keys) {
     const s = Math.max(0, Number(data[`${key}Spontaneous`]) || 0);
     const e = Math.max(0, Number(data[`${key}Emerging`]) || 0);
     const p = Math.max(0, Number(data[`${key}Prompted`]) || 0);
@@ -70,7 +136,7 @@ export function summarizeCommunicationFunctions(data: Record<string, any> = {}) 
     functionsUsedEmergingOnly,
     functionsUsedUnprompted,
     functionsUsed,
-    functionCount: COMMUNICATION_FUNCTIONS.length,
+    functionCount: activeCommFunctions().length,
   };
 }
 

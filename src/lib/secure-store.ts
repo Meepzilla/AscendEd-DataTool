@@ -74,7 +74,7 @@ export const MIN_PASSCODE_LENGTH = 6;
  * plaintext list. Student groups (student IDs) and custom ABC lists (behavior wording) are in too.
  * Display settings stay as they are.
  */
-const SENSITIVE = /^ascended_(students_v2|sessions_v2|data_entry_draft_v1|goal_templates_v2|student_groups_v1|abc_lists)(_|$)/;
+const SENSITIVE = /^ascended_(students_v2|sessions_v2|data_entry_draft_v1|goal_templates_v2|student_groups_v1|abc_lists|comm_functions)(_|$)/;
 export const isSensitiveKey = (key: string) => SENSITIVE.test(key);
 
 /** The three main lists, whatever their backend: base key, IndexedDB store, id field. */
@@ -806,6 +806,7 @@ export function labelForStorageKey(storageKey: string): string {
   if (storageKey.startsWith('ascended_data_entry_draft_v1_')) return 'Data Entry draft';
   if (storageKey.startsWith('ascended_student_groups_v1_')) return 'Student groups';
   if (storageKey === 'ascended_abc_lists') return 'ABC lists';
+  if (storageKey === 'ascended_comm_functions') return 'Communication functions';
   return storageKey;
 }
 

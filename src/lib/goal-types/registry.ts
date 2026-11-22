@@ -1,6 +1,6 @@
 import { BUILT_IN_GOAL_TYPE_VALUES, type BuiltInGoalType, type CustomGoalType, type GoalType, type TargetDirection, type TrialStatus } from '../types';
 import {
-  BEHAVIOR_GOAL_TYPES, COMMUNICATION_FUNCTIONS, GOAL_TYPE_FIELDS, GOAL_TYPES_WITHOUT_PROMPT_COUNTERS,
+  BEHAVIOR_GOAL_TYPES, activeCommFunctions, GOAL_TYPE_FIELDS, GOAL_TYPES_WITHOUT_PROMPT_COUNTERS,
   behaviorMeasure, captureTypeOf, finalizeBehaviorData, goalDirection, scoreStory, summarizeCommunicationFunctions, toolTypeOf,
 } from '../goal-constants';
 import { gasLevelLabel } from '../gas';
@@ -74,7 +74,7 @@ function builtInMeasureInfo(type: BuiltInGoalType, goal: MeasuredGoal): GoalMeas
   switch (type) {
     case 'FLUENCY_SYLLABLE_STUTTER': return { label: '% fluent syllables', unit: '%', max: 100 };
     case 'STORY_ELEMENTS': return { label: 'Story score', unit: '%', max: 100 };
-    case 'COMMUNICATION_FUNCTIONS': return { label: 'Functions used without a prompt', unit: '', max: COMMUNICATION_FUNCTIONS.length };
+    case 'COMMUNICATION_FUNCTIONS': return { label: 'Functions used without a prompt', unit: '', max: Math.max(activeCommFunctions().length, 1) };
     case 'QUALITATIVE_OBSERVATION':
     case 'COGNITIVE': return { label: 'Rating (1-5)', unit: '', max: 5 };
     case 'GOAL_ATTAINMENT_SCALE': return { label: 'Attainment level', unit: '', max: 2, min: -2 };

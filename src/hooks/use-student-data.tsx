@@ -21,6 +21,7 @@ import { planSessionImport, type ImportedSession } from '@/lib/session-import';
 import { createBackup, describeLeftOut, type AppBackup, type ParsedBackup, type RestoreMode, type RestoreSummary } from '@/lib/backup';
 import { planRestore, restoreBackupSettings } from '@/lib/restore';
 import { loadCustomAbcLists } from '@/lib/abc-lists';
+import { loadCustomCommFunctions } from '@/lib/comm-functions';
 import { applyStudentImport, type ImportStudent } from '@/lib/student-import';
 import { getStudentGroups } from '@/lib/student-groups';
 import { getCustomGoalTypes } from '@/lib/custom-goal-types';
@@ -419,7 +420,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const exportBackup = useCallback(
     () => createBackup(
       { students: studentsRef.current, goalTemplates: templatesRef.current, sessions: sessionsRef.current },
-      { abcLists: loadCustomAbcLists() ?? undefined, studentGroups: getStudentGroups(currentUser?.uid), customGoalTypes: getCustomGoalTypes(currentUser?.uid) },
+      { abcLists: loadCustomAbcLists() ?? undefined, commFunctions: loadCustomCommFunctions() ?? undefined, studentGroups: getStudentGroups(currentUser?.uid), customGoalTypes: getCustomGoalTypes(currentUser?.uid) },
     ),
     [currentUser],
   );
