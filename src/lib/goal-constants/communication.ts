@@ -95,6 +95,39 @@ export function commFunctionsFor(datas: Record<string, any>[]): CommFunction[] {
   return [...active, ...extra];
 }
 
+/** One function's uses in one session. */
+export interface CommFunctionUses { spontaneous: number; emerging: number; prompted: number }
+
+/** A function used in at least one of the sessions, with its uses in each session (in the order given). */
+export interface CommFunctionBySession extends CommFunction {
+  sessions: CommFunctionUses[];
+  /** Uses across all the sessions. */
+  total: CommFunctionUses;
+}
+
+/**
+ * Which functions were used in each session, for the "Functions by session" table on Reports: one row per function
+ * used in any of the sessions (the active list's order, then others those sessions used), with its spontaneous,
+ * emerging and prompted uses per session. Functions no session used are left out.
+ */
+export function commFunctionsBySession(datas: Record<string, any>[]): CommFunctionBySession[] {
+  const count = (d: Record<string, any>, field: string) => Math.max(0, Number(d[field]) || 0);
+  return commFunctionsFor(datas)
+    .map(f => {
+      const sessions = datas.map(d => ({
+        spontaneous: count(d, `${f.key}Spontaneous`),
+        emerging: count(d, `${f.key}Emerging`),
+        prompted: count(d, `${f.key}Prompted`),
+      }));
+      const total = sessions.reduce(
+        (t, s) => ({ spontaneous: t.spontaneous + s.spontaneous, emerging: t.emerging + s.emerging, prompted: t.prompted + s.prompted }),
+        { spontaneous: 0, emerging: 0, prompted: 0 },
+      );
+      return { ...f, sessions, total };
+    })
+    .filter(f => f.total.spontaneous + f.total.emerging + f.total.prompted > 0);
+}
+
 export const COMMUNICATION_FIELDS: Record<string, Record<string, any>> = {
   COMMUNICATION_FUNCTIONS: {
     notes: '',

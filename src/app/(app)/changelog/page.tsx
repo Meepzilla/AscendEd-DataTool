@@ -18,6 +18,13 @@ interface ChangelogEntry {
 
 const allChangelogEntries: ChangelogEntry[] = [
   {
+    date: '2026-11-23',
+    title: 'See Which Communication Functions Were Used Each Day',
+    description: 'Reports has a new Functions by session table for Communication Functions goals, under Uses by function. Each row is a function and each column a session date, so you can see exactly which functions the student used on a given day: S is spontaneous, E is emerging and P is prompted, with the number of uses (for example S2 P1), and a dot means the function wasn\'t used that session. The last column totals each function. It shows the 12 most recent sessions in the date range, and scrolls sideways on a phone.',
+    type: 'feature',
+    icon: BarChartHorizontalBig,
+  },
+  {
     date: '2026-11-22',
     title: 'Edit the Communication Functions List',
     description: 'Settings has a new Communication Functions card, like the ABC Data Lists, for the functions tallied by Communication Functions goals. Add your own (such as Sharing information), move them up, or remove ones you don\'t use, and reset to the defaults at any time. A removed function only leaves Data Entry: sessions that already used it keep its counts and name in Reports and narratives, and it can be shown again. The list is encrypted with passcode protection and included in backups.',
