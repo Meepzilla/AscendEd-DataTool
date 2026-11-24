@@ -98,3 +98,66 @@ export function rememberGoalChoice(studentId: string, goalId: string | undefined
   if (goalId) next[studentId] = goalId; else delete next[studentId];
   write(GOAL_KEY, Object.keys(next).length ? next : null);
 }
+
+export type ReportTab = 'progress' | 'prompts' | 'trials' | 'attendance';
+export const REPORT_TABS: ReportTab[] = ['progress', 'prompts', 'trials', 'attendance'];
+export const REPORT_TAB_LABELS: Record<ReportTab, string> = {
+  progress: 'Goal Progress',
+  prompts: 'Prompting & Support',
+  trials: 'Trials & Outcomes',
+  attendance: 'Attendance',
+};
+export const REPORT_TAB_DESCRIPTIONS: Record<ReportTab, string> = {
+  progress: 'Is the student meeting each goal, and how is each skill trending toward its target?',
+  prompts: 'How much support did the student need, and are prompts fading toward independence?',
+  trials: 'How did correct, approximate, and incorrect responses and within-session trial sequences break down?',
+  attendance: 'How consistently were sessions held in this period, and why were sessions missed?',
+};
+
+export type TimeGrouping = 'session' | 'week' | 'month';
+export const TIME_GROUPINGS: TimeGrouping[] = ['session', 'week', 'month'];
+export const TIME_GROUPING_LABELS: Record<TimeGrouping, string> = {
+  session: 'Per session',
+  week: 'By week',
+  month: 'By month',
+};
+
+export type GoalChartView = 'line' | 'bar' | 'table';
+export const GOAL_CHART_VIEWS: GoalChartView[] = ['line', 'bar', 'table'];
+export const GOAL_CHART_VIEW_LABELS: Record<GoalChartView, string> = {
+  line: 'Line',
+  bar: 'Bars',
+  table: 'Table',
+};
+
+const TAB_KEY = 'ascended_report_tab';
+const GROUPING_KEY = 'ascended_report_grouping';
+const GOAL_VIEW_KEY = 'ascended_report_goal_view';
+
+export function readReportTab(): ReportTab {
+  const stored = read<unknown>(TAB_KEY);
+  return typeof stored === 'string' && REPORT_TABS.includes(stored as ReportTab) ? (stored as ReportTab) : 'progress';
+}
+
+export function rememberReportTab(tab: ReportTab): void {
+  write(TAB_KEY, tab === 'progress' ? null : tab);
+}
+
+export function readTimeGrouping(): TimeGrouping {
+  const stored = read<unknown>(GROUPING_KEY);
+  return typeof stored === 'string' && TIME_GROUPINGS.includes(stored as TimeGrouping) ? (stored as TimeGrouping) : 'session';
+}
+
+export function rememberTimeGrouping(grouping: TimeGrouping): void {
+  write(GROUPING_KEY, grouping === 'session' ? null : grouping);
+}
+
+export function readGoalChartView(): GoalChartView {
+  const stored = read<unknown>(GOAL_VIEW_KEY);
+  return typeof stored === 'string' && GOAL_CHART_VIEWS.includes(stored as GoalChartView) ? (stored as GoalChartView) : 'line';
+}
+
+export function rememberGoalChartView(view: GoalChartView): void {
+  write(GOAL_VIEW_KEY, view === 'line' ? null : view);
+}
+

@@ -1,17 +1,21 @@
 'use client';
 
-import React, { useMemo } from 'react';
-import type { Goal, SessionData } from '@/lib/types';
+import React, { useMemo, useState } from 'react';
+import { BarChart3, Check, Table2, TrendingUp } from 'lucide-react';
+import type { Goal, SessionData, StudentIep } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, type ChartConfig } from '@/components/ui/chart';
-import { LineChart, Line, CartesianGrid, XAxis, YAxis, ReferenceLine, BarChart, Bar, ComposedChart } from 'recharts';
+import { LineChart, Line, CartesianGrid, XAxis, YAxis, ReferenceLine, BarChart, Bar, ComposedChart, Cell } from 'recharts';
 import { customChartShown, customChartStyle } from '@/lib/goal-types/custom';
 import {
-  BEHAVIOR_GOAL_TYPES, commFunctionsFor, captureTypeOf, toolTypeOf, summarizeLatency, goalDirection, summarizeAbc, summarizeCommunicationFunctions, scoreStory, averageStoryPart, STORY_PARTS, STORY_LINKING_WORDS, linkingWordField,
+  BEHAVIOR_GOAL_TYPES, commFunctionsFor, captureTypeOf, toolTypeOf, goalDirection, summarizeAbc, scoreStory, averageStoryPart, STORY_PARTS, STORY_LINKING_WORDS, linkingWordField,
   type AbcIncident,
 } from '@/lib/goal-constants';
-import { goalMeasure, goalMeasureInfo, goalResponses, goalNotes, sessionMeetsTarget, promptTotals, usesPromptCounters, withoutRunningTimers } from '@/lib/goal-measures';
-import { formatDate, formatGoalTarget, goalTypeLabel, parseDateOnly } from '@/lib/helpers';
+import { goalMeasureInfo, goalResponses, goalNotes, sessionMeetsTarget, promptTotals, usesPromptCounters } from '@/lib/goal-measures';
+import { formatDate, formatGoalTarget, goalTypeLabel } from '@/lib/helpers';
+import { collectRecordedGoalSessions, groupGoalPoints, type RecordedGoalSession } from '@/lib/report-chart-views';
+import type { GoalChartView, TimeGrouping } from '@/lib/report-filters';
 import BehaviorTimeCharts from './BehaviorTimeCharts';
 import { ItemMasteryCharts, LanguageSampleCharts } from './LanguageItemCharts';
 import { CommFunctionsBySession } from './CommFunctionsBySession';
@@ -19,20 +23,22 @@ import { goalCardId } from './goal-card-id';
 import StatTile from './StatTile';
 import { goalStatExplanations } from '@/lib/report-formulas';
 import type { TaskStepScore } from '@/lib/task-analysis';
-import { AIM_STATUS_LABELS, aimLine, aimStatus, aimValueAt, masterySessions } from '@/lib/aim-line';
+import { AIM_STATUS_LABELS, aimLine, aimStatus, masterySessions } from '@/lib/aim-line';
 import ExpandableGoalName from './ExpandableGoalName';
-import { gasLevelDescription, gasLevelText } from '@/lib/gas';
-import type { StudentIep } from '@/lib/types';
+import { gasLevelDescription, gasLevelLabel, gasLevelText } from '@/lib/gas';
+import ViewModeToggle from './ViewModeToggle';
 
-// A report card for each goal: its measure per session against the target, summary numbers, and a
-// breakdown that fits the goal type (responses, prompt levels, story parts, communication functions,
-// dysfluency types, ABC antecedents and functions), when behavior happens (behavior goals), plus recent notes.
+// A report card for each goal: its measure per session (or week/month) against the target, switchable between
+// Line, Bars, and Table views, plus summary numbers and breakdowns that fit the goal type.
 
 interface GoalChartsProps {
   studentSessions: SessionData[]; // oldest first
   goals: Goal[];
   studentName?: string;
   studentIep?: StudentIep;
+  grouping?: TimeGrouping;
+  defaultView?: GoalChartView;
+  onViewChange?: (view: GoalChartView) => void;
 }
 
 const round = (n: number) => Math.round(n * 10) / 10;
@@ -40,50 +46,19 @@ const PROMPT_LABELS: Record<string, string> = { PartialPhysical: 'Partial physic
 
 const GAS_LEVELS = [-2, -1, 0, 1, 2] as const;
 
-interface Recorded {
-  session: SessionData;
-  data: Record<string, any>;
-  value: number;
-  label: string;
-}
+export type Recorded = RecordedGoalSession;
 
 /**
- * The sessions where something was recorded for the goal, with its measure and a chart label. With
- * `unanswered`, latency sessions where the student never responded (no time to measure) are included too, with
- * a value of NaN, for the charts that count trials rather than chart the measure.
+ * The sessions where something was recorded for the goal, with its measure and a chart label.
  */
 export function recordedSessions(goal: Goal, sessions: SessionData[], unanswered = false): Recorded[] {
-  const matched: { session: SessionData; data: Record<string, any>; value: number; date: Date }[] = [];
-  for (const session of sessions) {
-    const stored = (session.goals ?? []).find(g => g.goalId === goal.id)?.data;
-    if (!stored) continue;
-    const data = withoutRunningTimers(stored);
-    let value = goalMeasure(goal, data);
-    if (value === null && unanswered && toolTypeOf(captureTypeOf(goal)) === 'BEHAVIOR_LATENCY' && summarizeLatency(data).trialCount > 0) value = NaN;
-    if (value === null) continue;
-    matched.push({ session, data, value: round(value), date: parseDateOnly(session.date) });
-  }
-  const years = new Set(matched.map(m => m.date.getFullYear()).filter(Number.isFinite));
-  const showYear = years.size > 1;
-  const seen: Record<string, number> = {};
-  return matched.map(({ session, data, value, date }) => {
-    const valid = !Number.isNaN(date.getTime());
-    const dayKey = valid ? `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}` : String(session.date);
-    const day = valid
-      ? date.toLocaleDateString('en-US', showYear ? { month: 'short', day: 'numeric', year: '2-digit' } : { month: 'short', day: 'numeric' })
-      : String(session.date);
-    seen[dayKey] = (seen[dayKey] || 0) + 1;
-    return { session, data, value, label: seen[dayKey] > 1 ? `${day} (${seen[dayKey]})` : day };
-  });
+  return collectRecordedGoalSessions(goal, sessions, unanswered);
 }
 
 /** Horizontal bars, one row per item, optionally stacked from several series. */
 const HBAR_LABEL_WIDTH = 150;
-/** About how many 11px characters fit in the bar chart's label column. */
 const HBAR_LABEL_CHARS = 24;
 
-/** A bar label on one line, shortened with "…" to fit the label column (recharts would wrap a long label onto
- *  lines that overlap the next bar, or drop it). The whole label shows on hover and in the tooltip. */
 const OneLineTick = ({ x, y, payload }: { x?: number; y?: number; payload?: { value: string } }) => {
   const text = String(payload?.value ?? '');
   const short = text.length > HBAR_LABEL_CHARS ? `${text.slice(0, HBAR_LABEL_CHARS - 1).trimEnd()}…` : text;
@@ -95,7 +70,6 @@ const OneLineTick = ({ x, y, payload }: { x?: number; y?: number; payload?: { va
   );
 };
 
-/** Formats tooltip rows with explicit singular/plural units (e.g., "2 functions" vs "3 uses") while keeping series swatches. */
 function unitTooltipFormatter(config: ChartConfig, singular: string, pluralWord: string) {
   return function formatTooltipRow(value: unknown, name: unknown, item: { color?: string; dataKey?: string | number }) {
     const key = String(item?.dataKey ?? name ?? '');
@@ -128,9 +102,7 @@ const HBars: React.FC<{
   rows: Record<string, string | number>[];
   series: { key: string; label: string; color: string }[];
   max?: number;
-  /** Width of the label column (default 150). */
   labelWidth?: number;
-  /** Optional [singular, plural] unit shown after tooltip values. */
   unit?: [string, string];
 }> = ({ title, rows, series, max, labelWidth = HBAR_LABEL_WIDTH, unit }) => {
   const config: ChartConfig = Object.fromEntries(series.map(s => [s.key, { label: s.label, color: s.color }]));
@@ -200,7 +172,6 @@ const GoalBreakdowns: React.FC<{ goal: Goal; recorded: Recorded[] }> = ({ goal, 
     );
   }
   if (type === 'TASK_ANALYSIS') {
-    // Each step across the sessions: done independently, with a prompt, or not done (by the step's name).
     const byStep = new Map<string, { independent: number; prompted: number; notDone: number }>();
     data.forEach(d => (Array.isArray(d.steps) ? d.steps as TaskStepScore[] : []).forEach(s => {
       if (!s?.level) return;
@@ -226,7 +197,6 @@ const GoalBreakdowns: React.FC<{ goal: Goal; recorded: Recorded[] }> = ({ goal, 
   }
   const ct = type === 'CUSTOM' ? goal.customType : undefined;
   if (ct?.kind === 'utterances') {
-    // A custom utterance-length type: the same charts as Language Sample, in the type's unit, as the type chose.
     const unit = ct.utterances?.unit === 'morphemes' ? 'morphemes' : 'words';
     panels.push(<LanguageSampleCharts key="custom-utterances" goal={{ ...goal, sampleUnit: unit }} recorded={recorded}
       showLengths={customChartShown(ct, 'utterance-lengths')} showSample={customChartShown(ct, 'utterance-sample')} />);
@@ -266,8 +236,6 @@ const GoalBreakdowns: React.FC<{ goal: Goal; recorded: Recorded[] }> = ({ goal, 
     );
   }
   if (type === 'GOAL_ATTAINMENT_SCALE') {
-    // All five levels, including zeros, so the distribution is visible at a glance, highest first like the line
-    // chart. The rows are named by level only: the key under the line chart says what each level means for this goal.
     panels.push(
       <HBars key="gas-levels" title="Sessions at each attainment level" series={COUNT_SERIES} labelWidth={36}
         rows={[...GAS_LEVELS].reverse().map(level => ({
@@ -294,40 +262,46 @@ const GoalBreakdowns: React.FC<{ goal: Goal; recorded: Recorded[] }> = ({ goal, 
   return <div className="grid grid-cols-1 md:grid-cols-3 gap-4">{panels}</div>;
 };
 
-const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName?: string; studentIep?: StudentIep }> = ({ goal, sessions, studentName, studentIep }) => {
+const PERIOD_UNIT_LABEL: Record<TimeGrouping, string> = {
+  session: 'per session',
+  week: 'weekly average',
+  month: 'monthly average',
+};
+
+const GoalChartCard: React.FC<{
+  goal: Goal;
+  sessions: SessionData[];
+  studentName?: string;
+  studentIep?: StudentIep;
+  grouping: TimeGrouping;
+  defaultView: GoalChartView;
+  onViewChange?: (view: GoalChartView) => void;
+}> = ({ goal, sessions, studentName, studentIep, grouping, defaultView, onViewChange }) => {
   const info = goalMeasureInfo(goal);
   const type = captureTypeOf(goal);
   const direction = goalDirection(goal);
   const target = goal.sessionTargetValue;
   const recorded = useMemo(() => recordedSessions(goal, sessions), [goal, sessions]);
   const behaviorRecorded = useMemo(() => recordedSessions(goal, sessions, true), [goal, sessions]);
-  // The GAS axis shows just the level (+2 … -2): words don't fit beside the chart on a tablet and wrapped
-  // onto each other. What each level means for this goal is listed in a key under the chart.
   const gasTick = (level: number) => (level > 0 ? `+${level}` : String(level));
 
-  // The aim line (baseline to target by the target date), as the value expected on each session's date.
+  const customPrefersBar = type === 'CUSTOM' && customChartStyle(goal.customType) === 'bar';
+  const [localView, setLocalView] = useState<GoalChartView | null>(null);
+  const activeView: GoalChartView = localView ?? (defaultView === 'line' && customPrefersBar ? 'bar' : defaultView);
+
+  const handleSelectView = (next: GoalChartView) => {
+    setLocalView(next);
+    onViewChange?.(next);
+  };
+
   const isCommFunctions = type === 'COMMUNICATION_FUNCTIONS';
   const aim = aimLine(goal, recorded[0]?.session.date);
-  const points = recorded.map(r => {
-    const comm = isCommFunctions ? summarizeCommunicationFunctions(r.data) : null;
-    return {
-      label: r.label, value: r.value, ...(goalResponses(goal, r.data) ?? {}),
-      ...(comm ? {
-        spontaneousFunctions: comm.functionsUsedSpontaneously,
-        emergingFunctions: comm.functionsUsedEmergingOnly,
-        spontaneousUses: comm.spontaneous,
-        emergingUses: comm.emerging,
-        promptedUses: comm.prompted,
-      } : {}),
-      ...(aim ? { aim: round(aimValueAt(aim, r.session.date)) } : {}),
-    };
-  });
+  const points = useMemo(() => groupGoalPoints(goal, recorded, grouping, aim), [goal, recorded, grouping, aim]);
+
   const onTrack = aimStatus(goal, aim, recorded.map(r => ({ date: r.session.date, value: r.value })));
   const mastery = masterySessions(goal);
-  // Correct / approximate / incorrect bars, for the trial types and custom types that count responses.
   const hasResponses = goalResponses(goal) !== null && points.length > 0 && (type !== 'CUSTOM' || !goal.customType || customChartShown(goal.customType, 'responses'));
-  // A custom type can draw its progress as bars instead of a line.
-  const asBars = type === 'CUSTOM' && customChartStyle(goal.customType) === 'bar';
+  const asBars = activeView === 'bar';
   const ProgressChart = asBars ? ComposedChart : LineChart;
   const hasCommUsesChart = isCommFunctions && points.length > 0;
   const isLatency = toolTypeOf(type) === 'BEHAVIOR_LATENCY';
@@ -336,12 +310,11 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
   const values = recorded.map(r => r.value);
   const average = values.length ? round(values.reduce((a, b) => a + b, 0) / values.length) : null;
   const metCount = target === undefined ? null : allSessions.filter(r => !Number.isNaN(r.value) && sessionMeetsTarget(goal, r.data, target)).length;
-  // GAS levels run -2 to +2, so the card's Y scale must span the negative domain; every other
-  // type keeps its [0, yMax] scale. The bottom comes from GoalMeasureInfo.min (Track A).
   const isGas = type === 'GOAL_ATTAINMENT_SCALE';
-  const yMax = info.max ?? Math.ceil(Math.max(...values, target ?? 0, aim?.start.value ?? 0, aim?.end.value ?? 0, 1) * 1.1);
+  const yMax = info.max ?? Math.ceil(Math.max(...values, ...points.map(p => p.value), target ?? 0, aim?.start.value ?? 0, aim?.end.value ?? 0, 1) * 1.1);
   const notes = allSessions.map(r => ({ date: r.session.date, text: goalNotes(r.data) })).filter(n => n.text).slice(-3).reverse();
   const storyWords = type === 'STORY_ELEMENTS' ? recorded.reduce((total, r) => total + scoreStory(r.data).linkingWords, 0) : null;
+
   const lineChartConfig: ChartConfig = isCommFunctions
     ? {
         value: { label: 'Without a prompt (total)', color: 'hsl(var(--primary))' },
@@ -354,7 +327,6 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
         aim: { label: 'Aim line', color: 'hsl(var(--chart-2))' },
       };
 
-  // How each figure is worked out, shown when it is tapped or hovered.
   const explain = goalStatExplanations(goal, recorded.map(r => ({ date: r.session.date, value: r.value, data: r.data })), aim, mastery, allSessions.length);
   const latestValue = latestUnanswered ? 'No response' : values.length ? `${values[values.length - 1]}${info.unit}` : '—';
   const stats = [
@@ -364,23 +336,46 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
     ...(metCount === null ? [] : [{ label: 'Met target', value: allSessions.length ? `${metCount} of ${allSessions.length}` : '—', explanation: allSessions.length ? explain.metTarget : undefined }]),
     ...(onTrack ? [{ label: 'Aim line', value: AIM_STATUS_LABELS[onTrack], explanation: explain.aimLine }] : []),
   ];
-  // Mastered: the target met in the last `mastery` sessions in a row (including unanswered latency sessions, which break the streak).
   const mastered =
     target !== undefined &&
     allSessions.length >= mastery &&
     allSessions.slice(-mastery).every(r => !Number.isNaN(r.value) && sessionMeetsTarget(goal, r.data, target));
 
+  const formatCellValue = (val: number) => {
+    if (isGas) return Number.isInteger(val) ? gasLevelText(goal, val) : gasLevelLabel(val);
+    return `${val}${info.unit}`;
+  };
+
+  const hasAnyTablePrompts = points.some(p => Boolean(p.promptsSummary));
+  const hasAnyTableNotes = points.some(p => Boolean(p.notes));
+
   return (
     <Card id={goalCardId(goal.id)} className="lg:col-span-2 scroll-mt-20">
       <CardHeader>
-        <CardTitle><ExpandableGoalName goal={goal} studentName={studentName} studentIep={studentIep} /></CardTitle>
-        <CardDescription>
-          {goalTypeLabel(goal)} · {info.label} per session
-          {target !== undefined && ` · Target ${formatGoalTarget(goal, target, goal.targetDirection, goal.sessionTargetUses)}`}
-          {storyWords !== null && ` · ${storyWords} linking words`}
-          {target !== undefined && ` · Mastery: ${mastery} in a row`}
-          {mastered && <span className="ml-2 inline-block rounded-full border border-green-500/50 bg-green-500/15 px-2 py-0.5 text-xs font-semibold text-green-700 dark:text-green-400">Mastered</span>}
-        </CardDescription>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0 flex-1">
+            <CardTitle><ExpandableGoalName goal={goal} studentName={studentName} studentIep={studentIep} /></CardTitle>
+            <CardDescription className="mt-1">
+              {goalTypeLabel(goal)} · {info.label} ({PERIOD_UNIT_LABEL[grouping]})
+              {target !== undefined && ` · Target ${formatGoalTarget(goal, target, goal.targetDirection, goal.sessionTargetUses)}`}
+              {storyWords !== null && ` · ${storyWords} linking words`}
+              {target !== undefined && ` · Mastery: ${mastery} in a row`}
+              {mastered && <span className="ml-2 inline-block rounded-full border border-green-500/50 bg-green-500/15 px-2 py-0.5 text-xs font-semibold text-green-700 dark:text-green-400">Mastered</span>}
+            </CardDescription>
+          </div>
+          {points.length > 0 && (
+            <ViewModeToggle
+              label={`View mode for ${goal.name}`}
+              value={activeView}
+              onChange={handleSelectView}
+              options={[
+                { value: 'line', label: 'Line', icon: <TrendingUp className="h-3.5 w-3.5" aria-hidden /> },
+                { value: 'bar', label: 'Bars', icon: <BarChart3 className="h-3.5 w-3.5" aria-hidden /> },
+                { value: 'table', label: 'Table', icon: <Table2 className="h-3.5 w-3.5" aria-hidden /> },
+              ]}
+            />
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className={`grid grid-cols-2 gap-2 text-center ${stats.length > 4 ? 'sm:grid-cols-5' : 'sm:grid-cols-4'}`}>
@@ -394,28 +389,107 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
               ? 'Trials were recorded in the selected date range, but there were no responses with a time to chart.'
               : 'No data recorded for this goal in the selected date range.'}
           </p>
+        ) : activeView === 'table' ? (
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">
+              {grouping === 'session'
+                ? 'Exact figures recorded in each session, oldest to newest.'
+                : `Figures grouped ${grouping === 'week' ? 'by week' : 'by month'} (average ${info.label.toLowerCase()} and pooled counts).`}
+            </p>
+            <div className="max-h-[360px] overflow-auto rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{grouping === 'session' ? 'Session' : grouping === 'week' ? 'Week' : 'Month'}</TableHead>
+                    <TableHead>{info.label}</TableHead>
+                    {target !== undefined && <TableHead>Target</TableHead>}
+                    {hasResponses && <TableHead>Responses</TableHead>}
+                    {hasAnyTablePrompts && <TableHead>Prompts</TableHead>}
+                    {hasAnyTableNotes && <TableHead>Notes</TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {points.map((pt, idx) => (
+                    <TableRow key={`${pt.label}-${idx}`}>
+                      <TableCell className="font-medium whitespace-nowrap">
+                        {pt.fullLabel}
+                        {grouping !== 'session' && (
+                          <span className="block text-xs font-normal text-muted-foreground">
+                            {pt.sessionCount} {pt.sessionCount === 1 ? 'session' : 'sessions'}
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="font-mono tabular-nums font-medium">{formatCellValue(pt.value)}</TableCell>
+                      {target !== undefined && (
+                        <TableCell>
+                          {grouping !== 'session' ? (
+                            <span className="text-xs text-muted-foreground tabular-nums">
+                              {pt.metCount} of {pt.sessionCount} met
+                            </span>
+                          ) : pt.metTarget ? (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-green-500/40 bg-green-500/10 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400">
+                              <Check className="h-3 w-3" aria-hidden /> Met
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">Not met</span>
+                          )}
+                        </TableCell>
+                      )}
+                      {hasResponses && (
+                        <TableCell className="text-xs tabular-nums">
+                          {pt.opportunities ? (
+                            <>
+                              <span className="font-medium text-foreground">{pt.correct ?? 0}/{pt.opportunities}</span>
+                              <span className="text-muted-foreground">
+                                {pt.approximate ? ` · ${pt.approximate} approx` : ''}
+                                {pt.incorrect ? ` · ${pt.incorrect} err` : ''}
+                              </span>
+                            </>
+                          ) : '—'}
+                        </TableCell>
+                      )}
+                      {hasAnyTablePrompts && (
+                        <TableCell className="text-xs text-muted-foreground">{pt.promptsSummary || '—'}</TableCell>
+                      )}
+                      {hasAnyTableNotes && (
+                        <TableCell className="max-w-xs text-xs text-muted-foreground">{pt.notes || '—'}</TableCell>
+                      )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
         ) : (
           <div className={hasResponses || hasCommUsesChart ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : ''}>
             <div>
-              {isCommFunctions && <p className="text-sm font-medium mb-1">Functions per session</p>}
+              {isCommFunctions && <p className="text-sm font-medium mb-1">Functions ({PERIOD_UNIT_LABEL[grouping]})</p>}
+              {asBars && target !== undefined && !isGas && (
+                <p className="mb-1 text-xs text-muted-foreground">
+                  Green bars met the target ({formatGoalTarget(goal, target, goal.targetDirection, goal.sessionTargetUses)}).
+                </p>
+              )}
               <div className={isCommFunctions ? 'h-[260px] w-full' : 'h-[240px] w-full'}>
                 <ChartContainer config={lineChartConfig} className="h-full w-full">
                   <ProgressChart data={points} margin={{ top: 10, right: 20, left: -10, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
+                    <CartesianGrid strokeDasharray="3 3" vertical={!asBars} />
                     <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} />
                     <YAxis domain={[info.min ?? 0, yMax]} unit={info.unit === '%' ? '%' : undefined} tickLine={false} axisLine={false} tickMargin={8}
                       ticks={isGas ? [...GAS_LEVELS] : (info.max !== undefined && info.max <= 10 ? Array.from({ length: info.max + 1 }, (_, i) => i) : undefined)}
                       tickFormatter={isGas ? gasTick : undefined}
-                      allowDecimals={toolTypeOf(type) === 'BEHAVIOR_DURATION' || toolTypeOf(type) === 'BEHAVIOR_LATENCY' || type === 'LANGUAGE_SAMPLE'} />
+                      allowDecimals={grouping !== 'session' || toolTypeOf(type) === 'BEHAVIOR_DURATION' || toolTypeOf(type) === 'BEHAVIOR_LATENCY' || type === 'LANGUAGE_SAMPLE'} />
                     {isGas ? (
                       <ChartTooltip
-                        content={({ active, payload, label }: any) => {
+                        content={({ active, payload }: any) => {
                           if (!active || !payload?.length) return null;
-                          const value = payload[0].payload.value as number;
+                          const row = payload[0].payload as { fullLabel: string; value: number; sessionCount: number };
                           return (
                             <div className="rounded-lg border bg-background px-3 py-2 text-xs shadow-md">
-                              <p className="font-medium">{label}</p>
-                              <p>{gasLevelText(goal, value)}</p>
+                              <p className="font-medium">
+                                {row.fullLabel}
+                                {grouping !== 'session' ? ` (${row.sessionCount} ${row.sessionCount === 1 ? 'session' : 'sessions'})` : ''}
+                              </p>
+                              <p>{Number.isInteger(row.value) ? gasLevelText(goal, row.value) : `Average level: ${gasLevelLabel(row.value)}`}</p>
                             </div>
                           );
                         }}
@@ -424,7 +498,15 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
                       <ChartTooltip
                         content={
                           <ChartTooltipContent
-                            indicator="line"
+                            indicator={asBars ? 'dot' : 'line'}
+                            labelFormatter={(_, payload) => {
+                              const row = payload?.[0]?.payload as { fullLabel?: string; sessionCount?: number; metCount?: number } | undefined;
+                              if (!row?.fullLabel) return '';
+                              if (grouping !== 'session' && row.sessionCount) {
+                                return `${row.fullLabel} · ${row.sessionCount} ${row.sessionCount === 1 ? 'session' : 'sessions'}`;
+                              }
+                              return row.fullLabel;
+                            }}
                             formatter={isCommFunctions ? unitTooltipFormatter(lineChartConfig, 'function', 'functions') : undefined}
                           />
                         }
@@ -438,12 +520,20 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
                       <ReferenceLine y={target} stroke="hsl(var(--chart-5))" strokeDasharray="6 4"
                         label={{ value: direction === 'decrease' ? 'Target (max)' : 'Target', position: 'insideTopRight', fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
                     )}
-                    {/* GAS levels are steps (-2 … +2), so they are joined with straight lines: a curve would suggest levels in between. */}
-                    {asBars
-                      ? <Bar dataKey="value" fill="var(--color-value)" radius={[3, 3, 0, 0]} maxBarSize={48} />
-                      : <Line type={isGas ? 'linear' : 'monotone'} dataKey="value" stroke="var(--color-value)" strokeWidth={isCommFunctions ? 2.5 : 2} dot={true} />}
-                    {isCommFunctions && <Line type="monotone" dataKey="spontaneousFunctions" stroke="var(--color-spontaneousFunctions)" strokeWidth={2} strokeDasharray="6 3" dot={{ r: 3 }} />}
-                    {isCommFunctions && <Line type="monotone" dataKey="emergingFunctions" stroke="var(--color-emergingFunctions)" strokeWidth={2} strokeDasharray="2 3" dot={{ r: 3 }} />}
+                    {asBars ? (
+                      <Bar dataKey="value" fill="var(--color-value)" radius={[4, 4, 0, 0]} maxBarSize={48}>
+                        {points.map((pt, idx) => (
+                          <Cell
+                            key={`cell-${idx}`}
+                            fill={pt.metTarget === true ? 'hsl(var(--chart-2))' : 'var(--color-value)'}
+                          />
+                        ))}
+                      </Bar>
+                    ) : (
+                      <Line type={isGas ? 'linear' : 'monotone'} dataKey="value" stroke="var(--color-value)" strokeWidth={isCommFunctions ? 2.5 : 2} dot={true} />
+                    )}
+                    {!asBars && isCommFunctions && <Line type="monotone" dataKey="spontaneousFunctions" stroke="var(--color-spontaneousFunctions)" strokeWidth={2} strokeDasharray="6 3" dot={{ r: 3 }} />}
+                    {!asBars && isCommFunctions && <Line type="monotone" dataKey="emergingFunctions" stroke="var(--color-emergingFunctions)" strokeWidth={2} strokeDasharray="2 3" dot={{ r: 3 }} />}
                     {aim && <Line type="linear" dataKey="aim" stroke="var(--color-aim)" strokeWidth={1.5} strokeDasharray="2 3" dot={false} />}
                   </ProgressChart>
                 </ChartContainer>
@@ -460,31 +550,38 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
               </dl>
             )}
             {hasResponses && (
-              <div className="h-[240px] w-full">
-                <ChartContainer
-                  config={{
-                    correct: { label: 'Correct', color: 'hsl(var(--chart-2))' },
-                    approximate: { label: 'Approximate', color: 'hsl(var(--chart-4))' },
-                    incorrect: { label: 'Incorrect', color: 'hsl(var(--chart-5))' },
-                  }}
-                  className="h-full w-full"
-                >
-                  <BarChart data={points} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} />
-                    <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <ChartLegend content={<ChartLegendContent />} />
-                    <Bar dataKey="correct" stackId="r" fill="var(--color-correct)" />
-                    <Bar dataKey="approximate" stackId="r" fill="var(--color-approximate)" />
-                    <Bar dataKey="incorrect" stackId="r" fill="var(--color-incorrect)" />
-                  </BarChart>
-                </ChartContainer>
+              <div>
+                <p className="text-sm font-medium mb-1">
+                  {grouping === 'session' ? 'Responses per session' : grouping === 'week' ? 'Responses per week' : 'Responses per month'}
+                </p>
+                <div className="h-[240px] w-full">
+                  <ChartContainer
+                    config={{
+                      correct: { label: 'Correct', color: 'hsl(var(--chart-2))' },
+                      approximate: { label: 'Approximate', color: 'hsl(var(--chart-4))' },
+                      incorrect: { label: 'Incorrect', color: 'hsl(var(--chart-5))' },
+                    }}
+                    className="h-full w-full"
+                  >
+                    <BarChart data={points} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} />
+                      <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <ChartLegend content={<ChartLegendContent />} />
+                      <Bar dataKey="correct" stackId="r" fill="var(--color-correct)" />
+                      <Bar dataKey="approximate" stackId="r" fill="var(--color-approximate)" />
+                      <Bar dataKey="incorrect" stackId="r" fill="var(--color-incorrect)" />
+                    </BarChart>
+                  </ChartContainer>
+                </div>
               </div>
             )}
             {hasCommUsesChart && (
               <div>
-                <p className="text-sm font-medium mb-1">Uses per session</p>
+                <p className="text-sm font-medium mb-1">
+                  {grouping === 'session' ? 'Uses per session' : grouping === 'week' ? 'Uses per week' : 'Uses per month'}
+                </p>
                 <div className="h-[260px] w-full">
                   <ChartContainer config={COMM_USES_CONFIG} className="h-full w-full">
                     <BarChart data={points} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
@@ -505,7 +602,7 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
         )}
         {recorded.length > 0 && <GoalBreakdowns goal={goal} recorded={recorded} />}
         {behaviorRecorded.length > 0 && BEHAVIOR_GOAL_TYPES.includes(toolTypeOf(type)) && <BehaviorTimeCharts type={type} recorded={behaviorRecorded} />}
-        {notes.length > 0 && (
+        {activeView !== 'table' && notes.length > 0 && (
           <div>
             <p className="text-sm font-medium mb-1">Recent notes</p>
             <ul className="space-y-1 text-sm">
@@ -520,9 +617,28 @@ const GoalChartCard: React.FC<{ goal: Goal; sessions: SessionData[]; studentName
   );
 };
 
-const GoalCharts: React.FC<GoalChartsProps> = ({ studentSessions, goals, studentName, studentIep }) => (
+const GoalCharts: React.FC<GoalChartsProps> = ({
+  studentSessions,
+  goals,
+  studentName,
+  studentIep,
+  grouping = 'session',
+  defaultView = 'line',
+  onViewChange,
+}) => (
   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    {goals.map(goal => <GoalChartCard key={goal.id} goal={goal} sessions={studentSessions} studentName={studentName} studentIep={studentIep} />)}
+    {goals.map(goal => (
+      <GoalChartCard
+        key={goal.id}
+        goal={goal}
+        sessions={studentSessions}
+        studentName={studentName}
+        studentIep={studentIep}
+        grouping={grouping}
+        defaultView={defaultView}
+        onViewChange={onViewChange}
+      />
+    ))}
   </div>
 );
 

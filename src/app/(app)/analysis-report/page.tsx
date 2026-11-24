@@ -4,8 +4,8 @@
 import React, { useState, useMemo, useEffect, lazy, Suspense } from 'react';
 import { defaultReportStudent, rememberReportStudent } from '@/lib/report-student';
 import {
-  QUICK_RANGES, QUICK_RANGE_LABELS, customRangeChoice, rangeChoiceDates, readGoalChoice, readRangeChoice, rememberGoalChoice,
-  rememberRangeChoice, type QuickRange, type RangeChoice,
+  QUICK_RANGES, QUICK_RANGE_LABELS, customRangeChoice, rangeChoiceDates, readGoalChoice, readRangeChoice, readReportTab, rememberGoalChoice,
+  rememberRangeChoice, rememberReportTab, type QuickRange, type RangeChoice, type ReportTab,
 } from '@/lib/report-filters';
 import { useStudentData } from '@/hooks/use-student-data';
 import { Button } from '@/components/ui/button';
@@ -29,8 +29,6 @@ import { useAuth } from '@/hooks/use-auth';
 // Dynamically import the heavy charting component
 const AnalysisCharts = lazy(() => import('@/components/charts/AnalysisCharts'));
 const ImportDataModal = lazy(() => import('@/components/modals/import-data-modal'));
-const TrialStatusChart = lazy(() => import('@/components/charts/analysis-charts/TrialStatusChart'));
-const AttendanceCard = lazy(() => import('@/components/charts/analysis-charts/AttendanceCard'));
 
 export default function AnalysisReportPage() {
   const { students, sessions, loading: studentsLoading, sessionsLoading, importSessions } = useStudentData();
@@ -43,9 +41,14 @@ export default function AnalysisReportPage() {
   const [selectedStudentId, setSelectedStudentId] = useState<string | undefined>(undefined);
   const [isCsvWarningOpen, setIsCsvWarningOpen] = useState(false);
   const [selectedGoalId, setSelectedGoalId] = useState<string | undefined>(undefined);
+  const [activeTab, setActiveTab] = useState<ReportTab>('progress');
   // The date filter: a quick range (worked out from today) or custom dates, remembered on this device.
   const [rangeChoice, setRangeChoice] = useState<RangeChoice | null>(null);
-  useEffect(() => { setRangeChoice(readRangeChoice()); }, []);
+  useEffect(() => {
+    setRangeChoice(readRangeChoice());
+    setActiveTab(readReportTab());
+  }, []);
+  const chooseTab = (tab: ReportTab) => { setActiveTab(tab); rememberReportTab(tab); };
   const dateRange = useMemo<DateRange | undefined>(() => {
     const span = rangeChoiceDates(rangeChoice);
     return span?.from ? { from: span.from, to: span.to } : undefined;
@@ -232,7 +235,15 @@ export default function AnalysisReportPage() {
           </div>
           {selectedStudent && attendance.missed > 0 && (
             <p className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">Attendance:</span> {attendanceText(attendance)}. Missed sessions aren&apos;t included in the progress charts; the Attendance card at the bottom of the page shows them by month and on a calendar.
+              <span className="font-medium text-foreground">Attendance:</span> {attendanceText(attendance)}. Missed sessions aren&apos;t included in the progress charts —{' '}
+              <button
+                type="button"
+                className="font-medium text-primary underline underline-offset-2 hover:opacity-80"
+                onClick={() => chooseTab('attendance')}
+              >
+                open the Attendance tab
+              </button>{' '}
+              to view them by month and on a calendar.
             </p>
           )}
         </CardContent>
@@ -247,24 +258,16 @@ export default function AnalysisReportPage() {
         </Card>
       ) : (
         <Suspense fallback={<AnalysisReportChartsSkeleton />}>
-            <AnalysisCharts 
-                studentSessions={studentSessions}
-                studentHistory={studentHistory}
-                selectedStudent={selectedStudent}
-                selectedGoalId={selectedGoalId}
-                sessionsLoading={sessionsLoading}
-            />
-            <Suspense fallback={<div className="mt-6"><Skeleton className="h-[300px] w-full" /></div>}>
-              <TrialStatusChart 
-                  studentSessions={studentSessions}
-                  selectedStudent={selectedStudent}
-                  selectedGoalId={selectedGoalId}
-              />
-            </Suspense>
-            {/* Held and missed sessions in the range, by month and on a calendar (shown even when every session was missed). */}
-            <Suspense fallback={<div className="mt-6"><Skeleton className="h-[300px] w-full" /></div>}>
-              <div className="mt-6"><AttendanceCard sessions={periodSessions} /></div>
-            </Suspense>
+          <AnalysisCharts 
+            studentSessions={studentSessions}
+            periodSessions={periodSessions}
+            studentHistory={studentHistory}
+            selectedStudent={selectedStudent}
+            selectedGoalId={selectedGoalId}
+            sessionsLoading={sessionsLoading}
+            activeTab={activeTab}
+            onTabChange={chooseTab}
+          />
         </Suspense>
       )}
     </div>

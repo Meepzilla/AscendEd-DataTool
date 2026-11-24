@@ -1,14 +1,12 @@
-
 'use client';
 
 import React, { useMemo } from 'react';
-import type { Student, SessionData, TrialStatus } from '@/lib/types';
+import type { Student, SessionData } from '@/lib/types';
+import { buildGoalTrialSequences, type ScoredTrialStatus } from '@/lib/report-chart-views';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { CheckSquare, Check, X, CircleHelp } from 'lucide-react';
+import { CheckSquare, Check, X } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-import { captureTypeOf, toolTypeOf } from '@/lib/goal-constants';
-import { parseDateOnly } from '@/lib/helpers';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface TrialSequenceChartProps {
@@ -17,105 +15,133 @@ interface TrialSequenceChartProps {
   selectedGoalId?: string;
 }
 
-const TrialStatusSequenceChart: React.FC<TrialSequenceChartProps> = ({ studentSessions, selectedStudent, selectedGoalId }) => {
+const STATUS_CLASSES: Record<ScoredTrialStatus, string> = {
+  correct: 'bg-green-100 dark:bg-green-900/50 border-green-500 text-green-700 dark:text-green-400',
+  approximate: 'bg-yellow-100 dark:bg-yellow-900/50 border-yellow-500 text-yellow-700 dark:text-yellow-400',
+  incorrect: 'bg-red-100 dark:bg-red-900/50 border-red-500 text-red-700 dark:text-red-400',
+};
 
-  const trialSequenceData = useMemo(() => {
+const STATUS_NAMES: Record<ScoredTrialStatus, string> = {
+  correct: 'Correct',
+  approximate: 'Approximate',
+  incorrect: 'Incorrect',
+};
+
+const TrialStatusSequenceChart: React.FC<TrialSequenceChartProps> = ({
+  studentSessions,
+  selectedStudent,
+  selectedGoalId,
+}) => {
+  const groups = useMemo(() => {
     if (!selectedStudent) return [];
-
-    const data = studentSessions.map(session => {
-      const trialsForSession: TrialStatus[] = [];
-
-      session.goals.forEach(goalData => {
-        if (selectedGoalId && goalData.goalId !== selectedGoalId) return;
-
-        // Goals are charted by the type their data was entered as; archived and removed goals are left out.
-        const goal = selectedStudent.goals.find(g => g.id === goalData.goalId);
-        if (!goal || goal.isArchived) return;
-        const type = toolTypeOf(captureTypeOf(goal));
-        if (type !== 'DISCRETE_TRIALS' && type !== 'SEQUENCED_TRIALS') return;
-        const hasTouchedGridTrials = Array.isArray(goalData.data.trials) && goalData.data.trials.some((t: TrialStatus) => t !== 'untouched');
-        if (hasTouchedGridTrials) {
-          trialsForSession.push(...goalData.data.trials);
-        } else if (type === 'SEQUENCED_TRIALS') {
-          // Sequenced trials entered as counts (before the trial grid): rebuild a sequence from them.
-          const successful = Number(goalData.data.successfulAttempts) || 0;
-          const failed = Number(goalData.data.failedAttempts) || 0;
-          const approximate = Number(goalData.data.approximate) || 0;
-
-          for(let i = 0; i < successful; i++) trialsForSession.push('correct');
-          for(let i = 0; i < approximate; i++) trialsForSession.push('approximate');
-          for(let i = 0; i < failed; i++) trialsForSession.push('incorrect');
-        }
-      });
-      
-      const validTrials = trialsForSession.filter(t => t !== 'untouched');
-      if (validTrials.length === 0) return null;
-
-      return {
-        date: parseDateOnly(session.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        trials: validTrials,
-      };
-    }).filter(item => item !== null);
-
-    return data as { date: string; trials: TrialStatus[]; }[];
+    return buildGoalTrialSequences(studentSessions, selectedStudent.goals, selectedGoalId);
   }, [studentSessions, selectedStudent, selectedGoalId]);
-  
 
-  if (trialSequenceData.length === 0) {
-    return null; // Don't render the chart if there's no relevant data
+  if (groups.length === 0) {
+    return null;
   }
 
   return (
-    <div className="mt-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CheckSquare className="h-6 w-6 text-primary" />
-            Trial Sequence
-          </CardTitle>
-          <CardDescription>
-            Visual sequence of trial outcomes (Correct, Approximate, Incorrect) for each session.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ScrollArea className="h-[300px] w-full pr-4">
-            <TooltipProvider>
-              <div className="space-y-4">
-                {trialSequenceData.map((session, sessionIndex) => (
-                  <div key={sessionIndex} className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-                    <p className="font-medium text-sm text-muted-foreground w-24 shrink-0">{session.date}</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {session.trials.map((trial, trialIndex) => {
-                        const statusClasses = {
-                          untouched: 'bg-muted/50 border-dashed text-muted-foreground',
-                          correct: 'bg-green-100 dark:bg-green-900/50 border-green-500 text-green-600 dark:text-green-400',
-                          incorrect: 'bg-red-100 dark:bg-red-900/50 border-red-500 text-red-600 dark:text-red-400',
-                          approximate: 'bg-yellow-100 dark:bg-yellow-900/50 border-yellow-500 text-yellow-600 dark:text-yellow-400',
-                        };
-                        const Icon = trial === 'correct' ? Check : trial === 'incorrect' ? X : trial === 'approximate' ? () => <span className="font-bold text-xs">A</span> : CircleHelp;
+    <Card className="col-span-1 lg:col-span-2">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <CheckSquare className="h-5 w-5 text-primary" aria-hidden />
+          Trial-by-Trial Sequence by Goal
+        </CardTitle>
+        <CardDescription>
+          Order of trial outcomes within each session for Discrete Trials and Sequenced Trials goals. Look for warm-up errors on early trials or fatigue toward the end of a session.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground" aria-label="Trial outcome legend">
+          <span className="inline-flex items-center gap-1.5">
+            <span className={cn('inline-flex h-5 w-5 items-center justify-center rounded-sm border', STATUS_CLASSES.correct)} aria-hidden>
+              <Check className="h-3.5 w-3.5" />
+            </span>
+            Correct
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className={cn('inline-flex h-5 w-5 items-center justify-center rounded-sm border text-[11px] font-bold', STATUS_CLASSES.approximate)} aria-hidden>
+              A
+            </span>
+            Approximate
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className={cn('inline-flex h-5 w-5 items-center justify-center rounded-sm border', STATUS_CLASSES.incorrect)} aria-hidden>
+              <X className="h-3.5 w-3.5" />
+            </span>
+            Incorrect
+          </span>
+        </div>
 
-                        return (
-                          <Tooltip key={trialIndex}>
-                            <TooltipTrigger asChild>
-                              <div className={cn("h-6 w-6 rounded-sm flex items-center justify-center border", statusClasses[trial])}>
-                                <Icon className="h-4 w-4" />
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Trial {trialIndex + 1}: {trial}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        );
-                      })}
-                    </div>
+        <TooltipProvider>
+          <div className="space-y-6 divide-y divide-border">
+            {groups.map(group => (
+              <div key={group.goalId} className="pt-5 first:pt-0 space-y-3">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground">{group.goalName}</h3>
+                    <p className="text-xs text-muted-foreground">
+                      {group.typeLabel} · {group.sessions.length} {group.sessions.length === 1 ? 'session' : 'sessions'} · {group.totalTrials} {group.totalTrials === 1 ? 'trial' : 'trials'} ({group.overallAccuracyPct}% correct)
+                    </p>
                   </div>
-                ))}
+                  {group.firstHalfAccuracyPct !== null && group.secondHalfAccuracyPct !== null && (
+                    <div className="rounded-md bg-muted/60 px-2.5 py-1 text-xs text-muted-foreground tabular-nums">
+                      First half of trials: <strong className="font-medium text-foreground">{group.firstHalfAccuracyPct}%</strong>
+                      {' · '}
+                      Second half: <strong className="font-medium text-foreground">{group.secondHalfAccuracyPct}%</strong>
+                    </div>
+                  )}
+                </div>
+
+                <ScrollArea className={cn('w-full pr-3', group.sessions.length > 6 && 'h-[260px]')}>
+                  <div className="space-y-2.5">
+                    {group.sessions.map(session => (
+                      <div key={session.sessionId} className="flex flex-col sm:flex-row sm:items-center gap-2">
+                        <div className="flex items-center gap-2 sm:w-44 shrink-0">
+                          <span className="text-xs font-medium text-foreground w-20 shrink-0" title={session.fullDate}>
+                            {session.dateLabel}
+                          </span>
+                          <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] tabular-nums text-muted-foreground">
+                            {session.correct}/{session.total} ({session.accuracyPct}%)
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {session.trials.map((trial, trialIndex) => (
+                            <Tooltip key={trialIndex}>
+                              <TooltipTrigger asChild>
+                                <div
+                                  className={cn(
+                                    'h-6 w-6 rounded-sm flex items-center justify-center border text-xs font-bold',
+                                    STATUS_CLASSES[trial],
+                                  )}
+                                  aria-label={`Trial ${trialIndex + 1}: ${STATUS_NAMES[trial]}`}
+                                >
+                                  {trial === 'correct' ? (
+                                    <Check className="h-3.5 w-3.5" aria-hidden />
+                                  ) : trial === 'incorrect' ? (
+                                    <X className="h-3.5 w-3.5" aria-hidden />
+                                  ) : (
+                                    <span aria-hidden>A</span>
+                                  )}
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{session.fullDate} · Trial {trialIndex + 1}: {STATUS_NAMES[trial]}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
               </div>
-            </TooltipProvider>
-          </ScrollArea>
-        </CardContent>
-      </Card>
-    </div>
+            ))}
+          </div>
+        </TooltipProvider>
+      </CardContent>
+    </Card>
   );
 };
 

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import type { Goal } from '@/lib/types';
+import type { TimeGrouping } from '@/lib/report-filters';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 import { LineChart, Line, CartesianGrid, XAxis, YAxis } from 'recharts';
@@ -11,10 +12,9 @@ interface ProgressOverTimeChartProps {
   chartData: any[];
   selectedGoalId?: string;
   activeStudentGoals: Goal[];
+  grouping?: TimeGrouping;
 }
 
-// Each session's dot is sized by its number of opportunities, and hollow under FEW_OPPORTUNITIES, so a session
-// with 1 response out of 1 (100%) doesn't look as solid as one with 5 out of 5.
 const AccuracyDot = (props: { cx?: number; cy?: number; payload?: { opportunities?: number; accuracy?: number | null }; index?: number }) => {
   const { cx, cy, payload, index } = props;
   if (cx === undefined || cy === undefined || payload?.accuracy === null || payload?.accuracy === undefined) return <g key={`dot-${index}`} />;
@@ -33,10 +33,16 @@ const AccuracyDot = (props: { cx?: number; cy?: number; payload?: { opportunitie
   );
 };
 
-const ProgressOverTimeChart: React.FC<ProgressOverTimeChartProps> = ({ chartData, selectedGoalId, activeStudentGoals }) => {
+const ProgressOverTimeChart: React.FC<ProgressOverTimeChartProps> = ({
+  chartData,
+  selectedGoalId,
+  activeStudentGoals,
+  grouping = 'session',
+}) => {
+  const bucketPlural = grouping === 'session' ? 'sessions' : grouping === 'week' ? 'weeks' : 'months';
   const accuracyChartConfig = {
     accuracy: { label: 'Accuracy (%)', color: 'hsl(var(--primary))' },
-    weightedTrend: { label: `Trend (last ${POOLED_TREND_SESSIONS} sessions' trials pooled)`, color: 'hsl(var(--muted-foreground))' },
+    weightedTrend: { label: `Trend (last ${POOLED_TREND_SESSIONS} ${bucketPlural} pooled)`, color: 'hsl(var(--muted-foreground))' },
   } as const;
   const goalName = selectedGoalId ? activeStudentGoals.find(g => g.id === selectedGoalId)?.name : null;
 
@@ -44,12 +50,10 @@ const ProgressOverTimeChart: React.FC<ProgressOverTimeChartProps> = ({ chartData
     <Card>
       <CardHeader>
         <CardTitle>
-          Progress Over Time {goalName ? `(${goalName})` : '(Overall Accuracy - Active Goals)'}
+          Trial Accuracy Trend {goalName ? `(${goalName})` : '(All Trial Goals Pooled)'}
         </CardTitle>
         <CardDescription>
-          Accuracy percentage across sessions for active goals. Larger dots had more opportunities; hollow dots had
-          fewer than {FEW_OPPORTUNITIES}, so read them with care. The dashed trend pools the trials of the last {POOLED_TREND_SESSIONS} sessions,
-          so a session with few responses moves it little.
+          Overall percentage correct across {bucketPlural}. Larger dots had more trials; hollow dots had fewer than {FEW_OPPORTUNITIES} trials, so read them with care. The dashed line pools the last {POOLED_TREND_SESSIONS} {bucketPlural} to smooth low-trial days.
         </CardDescription>
       </CardHeader>
       <CardContent className="h-[300px] w-full">
@@ -62,6 +66,13 @@ const ProgressOverTimeChart: React.FC<ProgressOverTimeChartProps> = ({ chartData
               content={
                 <ChartTooltipContent
                   indicator="line"
+                  labelFormatter={(_, payload) => {
+                    const row = payload?.[0]?.payload as { fullLabel?: string; sessionCount?: number } | undefined;
+                    if (!row?.fullLabel) return '';
+                    return grouping !== 'session' && row.sessionCount && row.sessionCount > 1
+                      ? `${row.fullLabel} · ${row.sessionCount} sessions`
+                      : row.fullLabel;
+                  }}
                   formatter={(value, name, item) => {
                     const row = item?.payload as { correct?: number; opportunities?: number } | undefined;
                     const label = accuracyChartConfig[name as keyof typeof accuracyChartConfig]?.label ?? name;

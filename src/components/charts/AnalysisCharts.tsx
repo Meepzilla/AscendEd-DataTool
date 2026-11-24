@@ -1,37 +1,52 @@
-
 'use client';
 
 import React, { useEffect, useMemo, useState, lazy, Suspense } from 'react';
-import type { Student, SessionData, Goal, PromptType } from '@/lib/types';
-import { BEHAVIOR_GOAL_TYPES, captureTypeOf, toolTypeOf } from '@/lib/goal-constants';
+import { AlertTriangle, CalendarDays, CheckSquare, HandHelping, Target } from 'lucide-react';
+import type { Student, SessionData, Goal } from '@/lib/types';
+import { captureTypeOf } from '@/lib/goal-constants';
 import { goalMeasure, goalResponses, withoutRunningTimers } from '@/lib/goal-measures';
-import { parseDateOnly } from '@/lib/helpers';
-import { pooledAccuracy } from '@/lib/trial-weights';
 import { GAS_LEVELS } from '@/lib/gas';
-import { PROMPT_TYPES } from '@/lib/promptConstants';
+import { buildCombinedChartSeries } from '@/lib/report-chart-views';
+import {
+  readGoalChartView,
+  readReportTab,
+  readTimeGrouping,
+  rememberGoalChartView,
+  rememberReportTab,
+  rememberTimeGrouping,
+  REPORT_TAB_DESCRIPTIONS,
+  REPORT_TAB_LABELS,
+  TIME_GROUPING_LABELS,
+  TIME_GROUPINGS,
+  type GoalChartView,
+  type ReportTab,
+  type TimeGrouping,
+} from '@/lib/report-filters';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import ViewModeToggle from './analysis-charts/ViewModeToggle';
 
-// Lazy load the individual chart components
-const ProgressOverTimeChart = lazy(() => import('./analysis-charts/ProgressOverTimeChart'));
-const ResponseCountsChart = lazy(() => import('./analysis-charts/ResponseCountsChart'));
-const PerformanceScatterPlot = lazy(() => import('./analysis-charts/PerformanceScatterPlot'));
-const PromptUsageChart = lazy(() => import('./analysis-charts/PromptUsageChart'));
-const GoalPerformanceSankey = lazy(() => import('./analysis-charts/GoalPerformanceSankey'));
-const SyllableFluencyChart = lazy(() => import('./analysis-charts/SyllableFluencyChart'));
-const DysfluencyTypesChart = lazy(() => import('./analysis-charts/DysfluencyTypesChart'));
-const DataSummary = lazy(() => import('./analysis-charts/DataSummary'));
-const GoalCharts = lazy(() => import('./analysis-charts/GoalCharts'));
+// Lazy load individual chart sections so only the active tab's charts are loaded and sized
 const GoalSummaryTable = lazy(() => import('./analysis-charts/GoalSummaryTable'));
+const GoalCharts = lazy(() => import('./analysis-charts/GoalCharts'));
 const GasTScoreLineChart = lazy(() => import('./analysis-charts/GasTScoreLineChart'));
 const GasSummaryTable = lazy(() => import('./analysis-charts/GasSummaryTable'));
+const PromptingOverview = lazy(() => import('./analysis-charts/PromptingOverview'));
+const DataSummary = lazy(() => import('./analysis-charts/DataSummary'));
+const GoalOutcomeComparison = lazy(() => import('./analysis-charts/GoalOutcomeComparison'));
+const ProgressOverTimeChart = lazy(() => import('./analysis-charts/ProgressOverTimeChart'));
+const ResponseCountsChart = lazy(() => import('./analysis-charts/ResponseCountsChart'));
+const TrialStatusChart = lazy(() => import('./analysis-charts/TrialStatusChart'));
+const SyllableFluencyChart = lazy(() => import('./analysis-charts/SyllableFluencyChart'));
+const DysfluencyTypesChart = lazy(() => import('./analysis-charts/DysfluencyTypesChart'));
+const AttendanceCard = lazy(() => import('./analysis-charts/AttendanceCard'));
 
 const GAS_LEVEL_VALUES = GAS_LEVELS.map(info => info.level);
 const GAS_LEVEL_LABELS: Record<number, string> = Object.fromEntries(GAS_LEVELS.map(info => [info.level, info.description]));
 
-/** Recordings at each attainment level across the GAS goals in view (plain bars, no chart library). One recording is one goal's level in one session, so a session with three GAS goals recorded counts three times. */
+/** Recordings at each attainment level across the GAS goals in view (plain bars, no chart library). */
 const GasLevelDistribution: React.FC<{ studentSessions: SessionData[]; goals: Goal[] }> = ({ studentSessions, goals }) => {
   const counts = useMemo(() => {
     const tally = new Map<number, number>(GAS_LEVEL_VALUES.map(l => [l, 0]));
@@ -71,301 +86,364 @@ const GasLevelDistribution: React.FC<{ studentSessions: SessionData[]; goals: Go
   );
 };
 
-
-// Helper to transform session data for charts
-const transformSessionDataForChart = (sessions: SessionData[], studentGoals: Goal[], selectedGoalId?: string) => {
-  const dailyData: Record<string, any> = {};
-
-  sessions.forEach(session => {
-    const when = parseDateOnly(session.date);
-    if (Number.isNaN(when.getTime())) return;
-    const sessionDate = when.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
-    if (!dailyData[sessionDate]) {
-      dailyData[sessionDate] = {
-        when,
-        year: when.getFullYear(),
-        // The label has no year when all sessions fall in one year, so days are ordered by this instead.
-        dayStart: new Date(when.getFullYear(), when.getMonth(), when.getDate()).getTime(),
-        sessionCount: 0,
-        goalsRecorded: 0,
-        totalCorrect: 0,
-        totalIncorrect: 0,
-        totalApproximate: 0,
-        totalOpportunities: 0,
-        totalPrompts: 0,
-        promptCounts: { 'Independent': 0, 'Visual': 0, 'Verbal': 0, 'Gestural': 0, 'PartialPhysical': 0, 'Imitation': 0 },
-        totalSyllables: 0,
-        stutteredSyllables: 0,
-        blocks: 0,
-        repetitions: 0,
-        prolongations: 0,
-        interjections: 0,
-      };
-    }
-    
-    const day = dailyData[sessionDate];
-    day.sessionCount += 1;
-
-    (session.goals ?? []).forEach(goalData => {
-      // Only the student's active goals (not archived or removed ones), as the goal cards show.
-      const currentGoal = studentGoals.find(g => g.id === goalData.goalId);
-      if (!currentGoal || currentGoal.isArchived) return;
-      if (selectedGoalId && goalData.goalId !== selectedGoalId) return;
-      
-      const data = { ...(goalData.data || {}) };
-      const type = captureTypeOf(currentGoal);
-      if (goalMeasure(currentGoal, withoutRunningTimers(data)) !== null) day.goalsRecorded += 1;
-
-      if (type === 'FLUENCY_SYLLABLE_STUTTER') {
-          // Syllable counts feed the fluency charts, not the response totals.
-          day.totalSyllables += Number(data.totalSyllables) || 0;
-          day.stutteredSyllables += Number(data.stutteredSyllables) || 0;
-          day.blocks += Number(data.blocks) || 0;
-          day.repetitions += Number(data.repetitions) || 0;
-          day.prolongations += Number(data.prolongations) || 0;
-          day.interjections += Number(data.interjections) || 0;
-      }
-
-      // Response totals and accuracy count only trial-based goals (correct / incorrect / approximate
-      // responses). Other goal types are measured differently (story points, functions, syllables,
-      // ratings, behavior counts) and are reported on their own cards, so counting their points as
-      // "opportunities" or "incorrect" would inflate the totals.
-      const responses = goalResponses(type, data);
-      const currentGoalCorrect = responses?.correct ?? 0;
-      const currentGoalIncorrect = responses?.incorrect ?? 0;
-      const currentGoalApproximate = responses?.approximate ?? 0;
-
-      day.totalCorrect += currentGoalCorrect;
-      day.totalIncorrect += currentGoalIncorrect;
-      day.totalApproximate += currentGoalApproximate;
-      day.totalOpportunities += currentGoalCorrect + currentGoalIncorrect + currentGoalApproximate;
-
-      Object.keys(day.promptCounts).forEach(pt => {
-        const key = pt as PromptType;
-        if (data[key] && typeof data[key] === 'number') {
-          day.promptCounts[key] += Number(data[key]);
-        }
-      });
-    });
-  });
-
-  // Only days when a goal in view was worked on (other days would chart as zeros).
-  const recordedDays = Object.values(dailyData).filter(day => day.goalsRecorded > 0).sort((a, b) => a.dayStart - b.dayStart);
-  const showYear = new Set(recordedDays.map(day => day.year)).size > 1;
-  const days = recordedDays.map(day => {
-    const date = (day.when as Date).toLocaleDateString('en-US', showYear ? { month: 'short', day: 'numeric', year: '2-digit' } : { month: 'short', day: 'numeric' });
-    // No accuracy (a gap in the line, not 0%) on days with no trial-based responses.
-    const accuracy = day.totalOpportunities > 0 ? parseFloat(((day.totalCorrect / day.totalOpportunities) * 100).toFixed(1)) : null;
-    const totalPrompts = Object.entries(day.promptCounts).reduce((sum, [key, value]) => key !== 'Independent' ? sum + (value as number) : sum, 0);
-    return {
-      date,
-      accuracy,
-      correct: day.totalCorrect,
-      incorrect: day.totalIncorrect,
-      approximate: day.totalApproximate,
-      opportunities: day.totalOpportunities,
-      totalPrompts: totalPrompts,
-      ...day.promptCounts,
-      totalSyllables: day.totalSyllables,
-      stutteredSyllables: day.stutteredSyllables,
-      blocks: day.blocks,
-      repetitions: day.repetitions,
-      prolongations: day.prolongations,
-      interjections: day.interjections,
-    };
-  });
-  // A trend line that pools the trials of the last few days, so a day with one response moves it little.
-  const weighted = pooledAccuracy(days.map(d => ({ correct: d.correct, opportunities: d.opportunities })));
-  return days.map((day, i) => ({ ...day, weightedTrend: weighted[i] }));
-};
-
 export interface AnalysisChartsProps {
+  /** Held sessions in the selected date range (oldest first). */
   studentSessions: SessionData[];
-  /** All the student's sessions, outside the date range too (GAS levels carry forward from before it). */
+  /** All sessions in the selected date range, including missed sessions (for Attendance). */
+  periodSessions?: SessionData[];
+  /** All the student's held sessions, outside the date range too (GAS levels carry forward from before it). */
   studentHistory?: SessionData[];
   selectedStudent?: Student;
   selectedGoalId?: string;
   sessionsLoading: boolean;
+  activeTab?: ReportTab;
+  onTabChange?: (tab: ReportTab) => void;
 }
 
-const COMBINED_OPEN_KEY = 'ascended_report_combined_open';
-
 const ChartSuspenseFallback = () => (
-    <Card>
-        <CardHeader><Skeleton className="h-7 w-1/3 mb-1" /><Skeleton className="h-4 w-1/2" /></CardHeader>
-        <CardContent><Skeleton className="h-[300px] w-full" /></CardContent>
-    </Card>
+  <Card>
+    <CardHeader><Skeleton className="h-7 w-1/3 mb-1" /><Skeleton className="h-4 w-1/2" /></CardHeader>
+    <CardContent><Skeleton className="h-[300px] w-full" /></CardContent>
+  </Card>
 );
 
-const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ studentSessions, studentHistory, selectedStudent, selectedGoalId, sessionsLoading }) => {
-  
-  const activeStudentGoals = useMemo(() => selectedStudent?.goals.filter(g => !g.isArchived) || [], [selectedStudent]);
-  const chartData = useMemo(() => transformSessionDataForChart(studentSessions, selectedStudent?.goals || [], selectedGoalId), [studentSessions, selectedStudent?.goals, selectedGoalId]);
-  
-  // Every goal also gets its own card, charted by its own measure against its target. Behavior goals are
-  // measured in counts, minutes, % or seconds, so the accuracy overview is hidden when only they are in view.
+const AnalysisCharts: React.FC<AnalysisChartsProps> = ({
+  studentSessions,
+  periodSessions,
+  studentHistory,
+  selectedStudent,
+  selectedGoalId,
+  sessionsLoading,
+  activeTab: controlledTab,
+  onTabChange,
+}) => {
+  const allRangeSessions = periodSessions ?? studentSessions;
+
+  const [internalTab, setInternalTab] = useState<ReportTab>('progress');
+  const [grouping, setGrouping] = useState<TimeGrouping>('session');
+  const [defaultGoalView, setDefaultGoalView] = useState<GoalChartView>('line');
+
+  useEffect(() => {
+    setInternalTab(readReportTab());
+    setGrouping(readTimeGrouping());
+    setDefaultGoalView(readGoalChartView());
+  }, []);
+
+  const currentTab = controlledTab ?? internalTab;
+  const selectTab = (next: ReportTab) => {
+    setInternalTab(next);
+    rememberReportTab(next);
+    onTabChange?.(next);
+  };
+
+  const selectGrouping = (next: TimeGrouping) => {
+    setGrouping(next);
+    rememberTimeGrouping(next);
+  };
+
+  const selectDefaultGoalView = (next: GoalChartView) => {
+    rememberGoalChartView(next);
+  };
+
+  const activeStudentGoals = useMemo(
+    () => selectedStudent?.goals.filter(g => !g.isArchived) || [],
+    [selectedStudent],
+  );
+
   const goalsInView = useMemo(
     () => activeStudentGoals.filter(g => !selectedGoalId || g.id === selectedGoalId),
     [activeStudentGoals, selectedGoalId],
   );
-  const behaviorOnly = goalsInView.length > 0 && goalsInView.every(g => BEHAVIOR_GOAL_TYPES.includes(toolTypeOf(captureTypeOf(g))));
-  // Accuracy and response counts only apply to trial-based goals (correct / incorrect / approximate).
-  const hasTrialGoals = goalsInView.some(g => goalResponses(captureTypeOf(g)) !== null);
 
-  const hasPromptUsageData = useMemo(() => {
-    // Any prompt level recorded (besides Independent).
-    return chartData.some(day => PROMPT_TYPES.some(p => p !== 'Independent' && Number(day[p]) > 0));
-  }, [chartData]);
-  
-  const hasFluencyData = useMemo(() => {
-    if (selectedGoalId) {
-        return activeStudentGoals.some(g => g.id === selectedGoalId && captureTypeOf(g) === 'FLUENCY_SYLLABLE_STUTTER');
-    }
-    return activeStudentGoals.some(g => captureTypeOf(g) === 'FLUENCY_SYLLABLE_STUTTER');
-  }, [activeStudentGoals, selectedGoalId]);
+  const chartData = useMemo(
+    () => buildCombinedChartSeries(studentSessions, selectedStudent?.goals || [], grouping, selectedGoalId),
+    [studentSessions, selectedStudent?.goals, grouping, selectedGoalId],
+  );
 
-  // "All goals combined" starts closed; whether it was left open is remembered on this device.
-  const [showCombined, setShowCombinedState] = useState(false);
-  useEffect(() => {
-    try { setShowCombinedState(window.localStorage.getItem(COMBINED_OPEN_KEY) === 'true'); } catch { /* starts closed */ }
-  }, []);
-  const setShowCombined = (open: boolean) => {
-    setShowCombinedState(open);
-    try { window.localStorage.setItem(COMBINED_OPEN_KEY, String(open)); } catch { /* not remembered */ }
-  };
+  const hasTrialGoals = useMemo(
+    () => goalsInView.some(g => goalResponses(g) !== null),
+    [goalsInView],
+  );
 
-  const hasGasGoals = goalsInView.some(g => captureTypeOf(g) === 'GOAL_ATTAINMENT_SCALE');
-  const gasGoals = useMemo(() => goalsInView.filter(g => captureTypeOf(g) === 'GOAL_ATTAINMENT_SCALE'), [goalsInView]);
-  // The composite T-score is the student's, over all their GAS goals, whichever goal is selected.
-  const allGasGoals = useMemo(() => activeStudentGoals.filter(g => captureTypeOf(g) === 'GOAL_ATTAINMENT_SCALE'), [activeStudentGoals]);
+  const hasFluencyData = useMemo(
+    () => goalsInView.some(g => captureTypeOf(g) === 'FLUENCY_SYLLABLE_STUTTER') && chartData.some(d => d.totalSyllables > 0),
+    [goalsInView, chartData],
+  );
 
+  const hasGasGoals = useMemo(
+    () => goalsInView.some(g => captureTypeOf(g) === 'GOAL_ATTAINMENT_SCALE'),
+    [goalsInView],
+  );
+  const gasGoals = useMemo(
+    () => goalsInView.filter(g => captureTypeOf(g) === 'GOAL_ATTAINMENT_SCALE'),
+    [goalsInView],
+  );
+  const allGasGoals = useMemo(
+    () => activeStudentGoals.filter(g => captureTypeOf(g) === 'GOAL_ATTAINMENT_SCALE'),
+    [activeStudentGoals],
+  );
 
   if (sessionsLoading) {
     return <AnalysisReportChartsSkeleton />;
   }
-  if (studentSessions.length === 0) {
+
+  if (studentSessions.length === 0 && allRangeSessions.length === 0) {
     return (
-      <Card><CardContent className="p-8 text-center text-muted-foreground">
-        <AlertTriangle className="h-10 w-10 mx-auto mb-3 text-amber-500"/><p className="text-lg">No session data found for {selectedStudent?.name || 'the selected student'} within the selected date range.</p><p>Try adjusting the filters or record new session data.</p>
-      </CardContent></Card>
+      <Card>
+        <CardContent className="p-8 text-center text-muted-foreground">
+          <AlertTriangle className="h-10 w-10 mx-auto mb-3 text-amber-500" />
+          <p className="text-lg">
+            No session data found for {selectedStudent?.name || 'the selected student'} within the selected date range.
+          </p>
+          <p>Try adjusting the filters or record new session data.</p>
+        </CardContent>
+      </Card>
     );
   }
 
-  const goalCharts = goalsInView.length > 0 && (
-    <Suspense fallback={<ChartSuspenseFallback />}>
-      {!selectedGoalId && <h2 className="text-xl font-semibold">Goal by Goal</h2>}
-      <GoalCharts studentSessions={studentSessions} goals={goalsInView} studentName={selectedStudent?.name} studentIep={selectedStudent?.iep} />
-    </Suspense>
+  const onlyMissedInRange = studentSessions.length === 0 && allRangeSessions.length > 0;
+
+  const missedOnlyNotice = (
+    <Card>
+      <CardContent className="p-8 text-center text-muted-foreground space-y-3">
+        <AlertTriangle className="h-9 w-9 mx-auto text-amber-500" />
+        <p className="text-base text-foreground font-medium">
+          No held sessions in this date range ({allRangeSessions.length} missed {allRangeSessions.length === 1 ? 'session' : 'sessions'} recorded).
+        </p>
+        <p className="text-sm">
+          Missed sessions aren&apos;t plotted on progress charts. Open Attendance to review them by month and on the calendar.
+        </p>
+        <Button type="button" variant="outline" size="sm" onClick={() => selectTab('attendance')}>
+          Open Attendance Tab
+        </Button>
+      </CardContent>
+    </Card>
   );
 
-  // Every goal's status, latest value and target in one table, before the charts (one goal has all of this on its card).
-  const summaryTable = !selectedGoalId && selectedStudent && goalsInView.length > 1 && (
-    <Suspense fallback={<ChartSuspenseFallback />}>
-      <GoalSummaryTable student={selectedStudent} goals={goalsInView} sessions={studentSessions} />
-    </Suspense>
-  );
-
-  // The page reads top down from what matters most for a progress report: every goal at a glance, then each
-  // goal's own chart, then the Goal Attainment Scaling figures, and last the charts that pool all goals together
-  // (closed until opened, and remembered on this device).
   return (
-    <div className="space-y-6">
-      {summaryTable}
-      {goalCharts}
-      {hasGasGoals && (
-        <div className="space-y-6">
-          <h2 className="text-xl font-semibold">Goal Attainment Scaling</h2>
+    <Tabs value={currentTab} onValueChange={v => selectTab(v as ReportTab)} className="space-y-4">
+      <div className="rounded-lg border bg-card p-3 shadow-sm space-y-2.5">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 sm:w-auto">
+            <TabsTrigger value="progress" className="min-h-9 gap-1.5">
+              <Target className="h-4 w-4" aria-hidden />
+              {REPORT_TAB_LABELS.progress}
+            </TabsTrigger>
+            <TabsTrigger value="prompts" className="min-h-9 gap-1.5">
+              <HandHelping className="h-4 w-4" aria-hidden />
+              {REPORT_TAB_LABELS.prompts}
+            </TabsTrigger>
+            <TabsTrigger value="trials" className="min-h-9 gap-1.5">
+              <CheckSquare className="h-4 w-4" aria-hidden />
+              {REPORT_TAB_LABELS.trials}
+            </TabsTrigger>
+            <TabsTrigger value="attendance" className="min-h-9 gap-1.5">
+              <CalendarDays className="h-4 w-4" aria-hidden />
+              {REPORT_TAB_LABELS.attendance}
+            </TabsTrigger>
+          </TabsList>
+
+          {currentTab !== 'attendance' && !onlyMissedInRange && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-medium text-muted-foreground">Group dates:</span>
+              <ViewModeToggle
+                label="Group chart dates by"
+                value={grouping}
+                onChange={selectGrouping}
+                options={TIME_GROUPINGS.map(g => ({ value: g, label: TIME_GROUPING_LABELS[g] }))}
+              />
+            </div>
+          )}
+        </div>
+
+        <p className="text-xs text-muted-foreground">
+          {REPORT_TAB_DESCRIPTIONS[currentTab]}
+          {currentTab !== 'attendance' && grouping !== 'session' && (
+            <span> · Charts are grouped <strong>{TIME_GROUPING_LABELS[grouping].toLowerCase()}</strong> to smooth day-to-day variation.</span>
+          )}
+        </p>
+      </div>
+
+      <TabsContent value="progress" className="mt-0 space-y-6">
+        {onlyMissedInRange ? (
+          missedOnlyNotice
+        ) : (
+          <>
+            {!selectedGoalId && selectedStudent && goalsInView.length > 1 && (
+              <Suspense fallback={<ChartSuspenseFallback />}>
+                <GoalSummaryTable student={selectedStudent} goals={goalsInView} sessions={studentSessions} />
+              </Suspense>
+            )}
+
+            {goalsInView.length > 0 && (
+              <Suspense fallback={<ChartSuspenseFallback />}>
+                {!selectedGoalId && (
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <div>
+                      <h2 className="text-xl font-semibold">Goal by Goal</h2>
+                      <p className="text-sm text-muted-foreground">
+                        Switch any goal between Line, Bars, and Table to inspect trends, target-meeting sessions, or exact numbers.
+                      </p>
+                    </div>
+                  </div>
+                )}
+                <GoalCharts
+                  studentSessions={studentSessions}
+                  goals={goalsInView}
+                  studentName={selectedStudent?.name}
+                  studentIep={selectedStudent?.iep}
+                  grouping={grouping}
+                  defaultView={defaultGoalView}
+                  onViewChange={selectDefaultGoalView}
+                />
+              </Suspense>
+            )}
+
+            {hasGasGoals && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-xl font-semibold">Goal Attainment Scaling</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Composite T-score across all GAS goals (50 = expected outcome) and attainment distribution.
+                  </p>
+                </div>
+                <Suspense fallback={<ChartSuspenseFallback />}>
+                  <GasTScoreLineChart sessions={studentSessions} history={studentHistory} goals={allGasGoals} />
+                </Suspense>
+                <Suspense fallback={<ChartSuspenseFallback />}>
+                  <GasSummaryTable
+                    sessions={studentSessions}
+                    history={studentHistory}
+                    goals={gasGoals}
+                    tScoreGoals={allGasGoals}
+                    studentName={selectedStudent?.name}
+                    studentIep={selectedStudent?.iep}
+                  />
+                </Suspense>
+                <GasLevelDistribution studentSessions={studentSessions} goals={gasGoals} />
+              </div>
+            )}
+          </>
+        )}
+      </TabsContent>
+
+      <TabsContent value="prompts" className="mt-0 space-y-6">
+        {onlyMissedInRange ? (
+          missedOnlyNotice
+        ) : (
           <Suspense fallback={<ChartSuspenseFallback />}>
-            <GasTScoreLineChart sessions={studentSessions} history={studentHistory} goals={allGasGoals} />
-          </Suspense>
-          <Suspense fallback={<ChartSuspenseFallback />}>
-            <GasSummaryTable
-              sessions={studentSessions}
-              history={studentHistory}
-              goals={gasGoals}
-              tScoreGoals={allGasGoals}
-              studentName={selectedStudent?.name}
-              studentIep={selectedStudent?.iep}
+            <PromptingOverview
+              studentSessions={studentSessions}
+              activeStudentGoals={activeStudentGoals}
+              selectedGoalId={selectedGoalId}
+              chartData={chartData}
+              grouping={grouping}
             />
           </Suspense>
-          <GasLevelDistribution studentSessions={studentSessions} goals={gasGoals} />
-        </div>
-      )}
-      {!behaviorOnly && (
-        <section className="space-y-6" aria-labelledby="combined-charts-heading">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <h2 id="combined-charts-heading" className="text-xl font-semibold">{selectedGoalId ? 'More Charts for This Goal' : 'All Goals Combined'}</h2>
-              <p className="text-sm text-muted-foreground">
-                {selectedGoalId
-                  ? 'Totals, accuracy over time, responses, prompts and how sessions went for this goal.'
-                  : 'Totals and charts that pool every active goal together: accuracy over time, responses, prompts and how sessions went.'}
-              </p>
-            </div>
-            <Button type="button" variant="outline" className="min-h-11" aria-expanded={showCombined} aria-controls="combined-charts"
-              onClick={() => setShowCombined(!showCombined)}>
-              {showCombined ? <ChevronUp className="mr-2 h-4 w-4" /> : <ChevronDown className="mr-2 h-4 w-4" />}
-              {showCombined ? 'Hide charts' : 'Show charts'}
-            </Button>
-          </div>
-          {/* Only drawn while open: a chart drawn inside a closed section would be sized to nothing. */}
-          {showCombined && (
-            <div id="combined-charts" className="space-y-6">
-              <Suspense fallback={<ChartSuspenseFallback />}>
-                <DataSummary studentSessions={studentSessions} selectedStudent={selectedStudent} selectedGoalId={selectedGoalId} chartData={chartData} />
-              </Suspense>
+        )}
+      </TabsContent>
+
+      <TabsContent value="trials" className="mt-0 space-y-6">
+        {onlyMissedInRange ? (
+          missedOnlyNotice
+        ) : (
+          <>
+            <Suspense fallback={<ChartSuspenseFallback />}>
+              <DataSummary
+                studentSessions={studentSessions}
+                selectedStudent={selectedStudent}
+                selectedGoalId={selectedGoalId}
+                chartData={chartData}
+              />
+            </Suspense>
+
+            {!hasTrialGoals && !hasFluencyData ? (
+              <Card>
+                <CardContent className="p-6 text-sm text-muted-foreground space-y-2">
+                  <p className="font-medium text-foreground">
+                    {selectedGoalId
+                      ? 'This goal is not scored with discrete correct/incorrect trials.'
+                      : 'No trial-based or syllable-fluency goals are active for this student.'}
+                  </p>
+                  <p>
+                    Goals measured by ratings, occurrences, duration, steps, language samples, or GAS levels show their own tailored charts on the <strong>Goal Progress</strong> tab.
+                  </p>
+                  <Button type="button" variant="outline" size="sm" onClick={() => selectTab('progress')}>
+                    View Goal Progress
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {hasTrialGoals && (
                   <>
                     <Suspense fallback={<ChartSuspenseFallback />}>
-                      <ProgressOverTimeChart chartData={chartData} selectedGoalId={selectedGoalId} activeStudentGoals={activeStudentGoals} />
+                      <GoalOutcomeComparison
+                        studentSessions={studentSessions}
+                        activeStudentGoals={activeStudentGoals}
+                        selectedGoalId={selectedGoalId}
+                      />
                     </Suspense>
                     <Suspense fallback={<ChartSuspenseFallback />}>
-                      <ResponseCountsChart chartData={chartData} selectedGoalId={selectedGoalId} activeStudentGoals={activeStudentGoals} />
+                      <ProgressOverTimeChart
+                        chartData={chartData}
+                        selectedGoalId={selectedGoalId}
+                        activeStudentGoals={activeStudentGoals}
+                        grouping={grouping}
+                      />
+                    </Suspense>
+                    <Suspense fallback={<ChartSuspenseFallback />}>
+                      <ResponseCountsChart
+                        chartData={chartData}
+                        selectedGoalId={selectedGoalId}
+                        activeStudentGoals={activeStudentGoals}
+                        grouping={grouping}
+                      />
+                    </Suspense>
+                    <Suspense fallback={<ChartSuspenseFallback />}>
+                      <TrialStatusChart
+                        studentSessions={studentSessions}
+                        selectedStudent={selectedStudent}
+                        selectedGoalId={selectedGoalId}
+                      />
                     </Suspense>
                   </>
                 )}
+
                 {hasFluencyData && (
                   <>
                     <Suspense fallback={<ChartSuspenseFallback />}>
-                      <SyllableFluencyChart chartData={chartData} />
+                      <SyllableFluencyChart chartData={chartData} grouping={grouping} />
                     </Suspense>
                     <Suspense fallback={<ChartSuspenseFallback />}>
-                      <DysfluencyTypesChart chartData={chartData} />
+                      <DysfluencyTypesChart chartData={chartData} grouping={grouping} />
                     </Suspense>
                   </>
                 )}
-                <Suspense fallback={<ChartSuspenseFallback />}>
-                  <PerformanceScatterPlot chartData={chartData} />
-                </Suspense>
-                <Suspense fallback={<ChartSuspenseFallback />}>
-                  <GoalPerformanceSankey studentSessions={studentSessions} activeStudentGoals={activeStudentGoals} selectedGoalId={selectedGoalId} />
-                </Suspense>
-                {hasPromptUsageData && (
-                  <Suspense fallback={<ChartSuspenseFallback />}>
-                    <div className="lg:col-span-2">
-                      <PromptUsageChart chartData={chartData} />
-                    </div>
-                  </Suspense>
-                )}
               </div>
-            </div>
-          )}
-        </section>
-      )}
-    </div>
+            )}
+          </>
+        )}
+      </TabsContent>
+
+      <TabsContent value="attendance" className="mt-0 space-y-6">
+        <Suspense fallback={<ChartSuspenseFallback />}>
+          <AttendanceCard sessions={allRangeSessions} />
+        </Suspense>
+      </TabsContent>
+    </Tabs>
   );
 };
 
 export function AnalysisReportChartsSkeleton() {
-    return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ChartSuspenseFallback />
-            <ChartSuspenseFallback />
-            <ChartSuspenseFallback />
-            <ChartSuspenseFallback />
-        </div>
-    );
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <ChartSuspenseFallback />
+      <ChartSuspenseFallback />
+      <ChartSuspenseFallback />
+      <ChartSuspenseFallback />
+    </div>
+  );
 }
 
 export default AnalysisCharts;
