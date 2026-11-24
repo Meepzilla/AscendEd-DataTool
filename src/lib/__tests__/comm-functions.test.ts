@@ -82,3 +82,27 @@ describe('function keys from stored data', () => {
     expect(constants.isSafeCommFunctionKey('constructor')).toBe(true); // letters only; used only as a field-name prefix
   });
 });
+
+describe('functions by session', () => {
+  it('lists each used function with its uses per session, in list order, leaving unused ones out', () => {
+    const sessions = [
+      { commentingSpontaneous: 2, requestingItemsPrompted: 1 },
+      {},
+      { requestingItemsSpontaneous: 1, requestingItemsEmerging: 1, c_jokingPrompted: 3, greetingSpontaneous: -4 },
+    ];
+    const rows = constants.commFunctionsBySession(sessions);
+    expect(rows.map(r => r.key)).toEqual(['requestingItems', 'commenting', 'c_joking']);
+    const requesting = rows[0];
+    expect(requesting.sessions).toEqual([
+      { spontaneous: 0, emerging: 0, prompted: 1 },
+      { spontaneous: 0, emerging: 0, prompted: 0 },
+      { spontaneous: 1, emerging: 1, prompted: 0 },
+    ]);
+    expect(requesting.total).toEqual({ spontaneous: 1, emerging: 1, prompted: 1 });
+    expect(rows[2]).toMatchObject({ label: 'Joking', hidden: true, total: { spontaneous: 0, emerging: 0, prompted: 3 } });
+  });
+
+  it('is empty when no function was used', () => {
+    expect(constants.commFunctionsBySession([{}, { commentingSpontaneous: 0 }])).toEqual([]);
+  });
+});

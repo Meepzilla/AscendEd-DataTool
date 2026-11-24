@@ -14,6 +14,7 @@ import { goalMeasure, goalMeasureInfo, goalResponses, goalNotes, sessionMeetsTar
 import { formatDate, formatGoalTarget, goalTypeLabel, parseDateOnly } from '@/lib/helpers';
 import BehaviorTimeCharts from './BehaviorTimeCharts';
 import { ItemMasteryCharts, LanguageSampleCharts } from './LanguageItemCharts';
+import { CommFunctionsBySession } from './CommFunctionsBySession';
 import { goalCardId } from './goal-card-id';
 import StatTile from './StatTile';
 import { goalStatExplanations } from '@/lib/report-formulas';
@@ -195,6 +196,7 @@ const GoalBreakdowns: React.FC<{ goal: Goal; recorded: Recorded[] }> = ({ goal, 
     ];
     panels.push(
       <HBars key="functions" title="Uses by function" series={series} rows={rows} unit={['use', 'uses']} />,
+      <CommFunctionsBySession key="by-session" recorded={recorded} />,
     );
   }
   if (type === 'TASK_ANALYSIS') {
