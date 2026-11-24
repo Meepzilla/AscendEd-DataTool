@@ -2,6 +2,7 @@
 
 import React from 'react';
 import type { Goal } from '@/lib/types';
+import type { TimeGrouping } from '@/lib/report-filters';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 import { BarChart, Bar, CartesianGrid, XAxis, YAxis } from 'recharts';
@@ -10,28 +11,32 @@ interface ResponseCountsChartProps {
   chartData: any[];
   selectedGoalId?: string;
   activeStudentGoals: Goal[];
+  grouping?: TimeGrouping;
 }
 
-// Responses per session as stacked bars: correct, approximate and incorrect make up each bar, so its height is
-// the session's opportunities. (This replaces two line charts, Response Counts and Total Opportunities, that
-// showed the same numbers.)
-const ResponseCountsChart: React.FC<ResponseCountsChartProps> = ({ chartData, selectedGoalId, activeStudentGoals }) => {
+const ResponseCountsChart: React.FC<ResponseCountsChartProps> = ({
+  chartData,
+  selectedGoalId,
+  activeStudentGoals,
+  grouping = 'session',
+}) => {
   const config = {
     correct: { label: 'Correct', color: 'hsl(var(--chart-2))' },
     approximate: { label: 'Approximate', color: 'hsl(var(--chart-4))' },
     incorrect: { label: 'Incorrect', color: 'hsl(var(--chart-5))' },
   } as const;
   const goalName = selectedGoalId ? activeStudentGoals.find(g => g.id === selectedGoalId)?.name : null;
+  const periodTitle = grouping === 'session' ? 'per Session' : grouping === 'week' ? 'per Week' : 'per Month';
+  const periodNoun = grouping === 'session' ? 'session' : grouping === 'week' ? 'week' : 'month';
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>
-          Responses per Session {goalName ? `(${goalName})` : '(All Active Goals)'}
+          Response Volume {periodTitle} {goalName ? `(${goalName})` : '(All Trial Goals)'}
         </CardTitle>
         <CardDescription>
-          Correct, approximate and incorrect responses in each session. The height of a bar is the session&apos;s
-          opportunities; tap a bar for the counts.
+          Stacked Correct, Approximate, and Incorrect counts in each {periodNoun}. Total bar height shows practice volume (opportunities).
         </CardDescription>
       </CardHeader>
       <CardContent className="h-[300px] w-full">
@@ -44,8 +49,11 @@ const ResponseCountsChart: React.FC<ResponseCountsChartProps> = ({ chartData, se
               content={
                 <ChartTooltipContent
                   labelFormatter={(label, payload) => {
-                    const row = payload?.[0]?.payload as { opportunities?: number } | undefined;
-                    return row?.opportunities !== undefined ? `${label} · ${row.opportunities} ${row.opportunities === 1 ? 'opportunity' : 'opportunities'}` : label;
+                    const row = payload?.[0]?.payload as { fullLabel?: string; opportunities?: number } | undefined;
+                    const base = row?.fullLabel ?? label;
+                    return row?.opportunities !== undefined
+                      ? `${base} · ${row.opportunities} ${row.opportunities === 1 ? 'opportunity' : 'opportunities'}`
+                      : base;
                   }}
                 />
               }

@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  customRangeChoice, quickRangeDates, rangeChoiceDates, readGoalChoice, readRangeChoice, rememberGoalChoice, rememberRangeChoice,
+  customRangeChoice, quickRangeDates, rangeChoiceDates, readGoalChartView, readGoalChoice, readRangeChoice,
+  readReportTab, readTimeGrouping, rememberGoalChartView, rememberGoalChoice, rememberRangeChoice,
+  rememberReportTab, rememberTimeGrouping,
 } from '../report-filters';
 import { memoryStorage } from './helpers';
 
@@ -70,12 +72,46 @@ describe('Reports filters remembered on the device', () => {
     expect(storage.getItem('ascended_report_goals')).toBeNull();
   });
 
+  it('remembers report tab, date grouping, and goal chart view, falling back cleanly on defaults or bad values', () => {
+    expect(readReportTab()).toBe('progress');
+    expect(readTimeGrouping()).toBe('session');
+    expect(readGoalChartView()).toBe('line');
+
+    rememberReportTab('prompts');
+    rememberTimeGrouping('week');
+    rememberGoalChartView('table');
+    expect(readReportTab()).toBe('prompts');
+    expect(readTimeGrouping()).toBe('week');
+    expect(readGoalChartView()).toBe('table');
+
+    rememberReportTab('progress');
+    rememberTimeGrouping('session');
+    rememberGoalChartView('line');
+    expect(storage.getItem('ascended_report_tab')).toBeNull();
+    expect(storage.getItem('ascended_report_grouping')).toBeNull();
+    expect(storage.getItem('ascended_report_goal_view')).toBeNull();
+
+    storage.setItem('ascended_report_tab', '"unknown"');
+    storage.setItem('ascended_report_grouping', '{corrupt');
+    storage.setItem('ascended_report_goal_view', '123');
+    expect(readReportTab()).toBe('progress');
+    expect(readTimeGrouping()).toBe('session');
+    expect(readGoalChartView()).toBe('line');
+  });
+
   it('still works when storage is unavailable', () => {
     const blocked = { getItem: () => { throw new Error('blocked'); }, setItem: () => { throw new Error('blocked'); }, removeItem: () => { throw new Error('blocked'); } };
     vi.stubGlobal('window', { localStorage: blocked });
     expect(() => rememberRangeChoice({ quick: 'last-30' })).not.toThrow();
     expect(() => rememberGoalChoice('st1', 'g1')).not.toThrow();
+    expect(() => rememberReportTab('trials')).not.toThrow();
+    expect(() => rememberTimeGrouping('month')).not.toThrow();
+    expect(() => rememberGoalChartView('bar')).not.toThrow();
     expect(readRangeChoice()).toBeNull();
     expect(readGoalChoice('st1', ['g1'])).toBeUndefined();
+    expect(readReportTab()).toBe('progress');
+    expect(readTimeGrouping()).toBe('session');
+    expect(readGoalChartView()).toBe('line');
   });
 });
+
