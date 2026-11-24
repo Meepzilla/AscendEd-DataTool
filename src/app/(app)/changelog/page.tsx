@@ -18,6 +18,13 @@ interface ChangelogEntry {
 
 const allChangelogEntries: ChangelogEntry[] = [
   {
+    date: '2026-11-24',
+    title: 'Reports Organized by Clinical Question, With More Ways to View Data',
+    description: 'Reports now organizes its charts into four clear tabs — Goal Progress, Prompting & Support, Trials & Outcomes, and Attendance — each with a short note saying what it helps answer, and remembers the tab you had open. A new Group dates control lets you switch between Per session, By week, and By month to smooth out day-to-day variation. At a glance can switch between the Summary Table and visual Comparison Bars (average, latest score, and target side by side), and every Goal by Goal card can switch between Line, Bars (highlighting target-meeting sessions in green), and a Table of exact figures, responses, prompts, and notes. The old Sankey flow chart is replaced by a clearer Outcome Breakdown by Goal comparison (percentage or trial counts), the two duplicate Prompt Usage Distribution charts are combined into a Prompting & Support view with prompt fading over time, Trial Sequence is now grouped per goal with first-half vs. second-half accuracy, and Syllable Fluency can switch between % Fluent and raw counts.',
+    type: 'improvement',
+    icon: BarChartHorizontalBig,
+  },
+  {
     date: '2026-11-23',
     title: 'See Which Communication Functions Were Used Each Day',
     description: 'Reports has a new Functions by session table for Communication Functions goals, under Uses by function. Each row is a function and each column a session date, so you can see exactly which functions the student used on a given day: S is spontaneous, E is emerging and P is prompted, with the number of uses (for example S2 P1), and a dot means the function wasn\'t used that session. The last column totals each function. It shows the 12 most recent sessions in the date range, and scrolls sideways on a phone.',
