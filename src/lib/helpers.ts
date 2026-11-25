@@ -1,15 +1,8 @@
-
-import { type ClassValue, clsx } from "clsx"
-import { twMerge } from "tailwind-merge"
 import type { CustomGoalType, Goal, SessionData, StudentIep } from './types';
 import { fillBlanks, matchTextToTarget, percentAsFraction } from './goal-blanks';
 import { replacePlaceholders, type PlaceholderKey } from './goal-placeholders';
 import { makeCustomDef } from './goal-types/custom';
 import { formatSampleLength, sampleUnit } from './language-sample';
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
-}
 
 /**
  * Minutes between a session's start and end time ("HH:MM"); null when either is missing or invalid, or the
@@ -88,22 +81,6 @@ export function checkImportFileSize(bytes: number): void {
   if (bytes > MAX_IMPORT_FILE_BYTES) {
     throw new Error(`This file is larger than 10 MB (${(bytes / (1024 * 1024)).toFixed(1)} MB), so it can't be imported. Split it into smaller files and try again.`);
   }
-}
-
-export function formatTime(date: Date | string): string {
-   let d: Date;
-  if (typeof date === 'string') {
-    d = new Date(date);
-  } else {
-    d = date;
-  }
-   if (isNaN(d.getTime())) return '';
-
-  return d.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-  });
 }
 
 /**
@@ -224,31 +201,6 @@ export function generateUUID(): string {
   bytes[8] = (bytes[8] & 0x3f) | 0x80; // variant
   const hex = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
-}
-
-// Add more helper functions as needed, e.g., for data transformation, validation, etc.
-
-/**
- * Delays execution for a specified number of milliseconds.
- * @param ms The number of milliseconds to wait.
- * @returns A promise that resolves after the delay.
- */
-export function sleep(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-export function getAppIdFromGlobals(): string | null {
-   if (typeof window !== 'undefined' && (window as any).__app_id) {
-    return (window as any).__app_id;
-  }
-  return null;
-}
-
-export function getInitialAuthTokenFromGlobals(): string | null {
-  if (typeof window !== 'undefined' && (window as any).__initial_auth_token) {
-    return (window as any).__initial_auth_token;
-  }
-  return null;
 }
 
 /**

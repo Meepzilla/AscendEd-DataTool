@@ -234,76 +234,7 @@ export type GoalDataUpdater =
   | ((current: SessionGoalData['data']) => SessionGoalData['data']);
 
 
-export interface ArticulationData {
-  opportunities: number;
-  targetSound: string;
-  correct: number;
-  incorrect: number;
-}
-
-export interface FluencySyllableStutterData {
-  totalSyllables: number;
-  stutteredSyllables: number;
-  observationNotes: string;
-}
-
-export interface QualitativeObservationData {
-  notes: string; 
-  rating?: 1 | 2 | 3 | 4 | 5;
-}
-
-export interface LanguageComprehensionData {
-  details: string;
-  opportunities: number;
-  questionsCorrect: number;
-  questionsIncorrect: number;
-}
-export interface LanguageExpressionData {
-  details: string;
-  opportunities: number;
-  successfulResponses: number;
-  unsuccessfulResponses: number;
-}
-export interface PhonologicalProcessesData {
-  targetProcess: string;
-  opportunities: number;
-  correctProductions: number;
-  incorrectProductions: number;
-}
-
-export interface FeedingSwallowingData {
-  foodOrLiquidName: string;
-  textureOrConsistency: string;
-  trialsAccepted: number;
-  trialsRefused: number;
-  notes: string;
-}
-
-export interface SequencedTrialsData {
-  trialsPerAttempt: number;
-  successfulAttempts: number;
-  failedAttempts: number;
-}
-
 export type TrialStatus = 'untouched' | 'correct' | 'incorrect' | 'approximate';
-
-export interface DiscreteTrialsData {
-  numberOfTrials: number;
-  trials: TrialStatus[];
-}
-
-export interface AacData {
-  details: string;
-  correct: number;
-  incorrect: number;
-  approximate: number;
-}
-
-export interface GasAttainmentData {
-  gasLevel?: -2 | -1 | 0 | 1 | 2;
-  notes?: string;
-}
-
 
 export type PromptType = "Independent" | "Visual" | "Verbal" | "Gestural" | "PartialPhysical" | "Imitation";
 

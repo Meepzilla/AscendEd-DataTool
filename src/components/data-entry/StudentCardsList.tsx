@@ -1,13 +1,12 @@
 
 'use client';
 
-import React, { lazy, Suspense } from 'react';
+import React from 'react';
 import type { GoalDataUpdater, ServiceType, Student, StudentSessionState } from '@/lib/types';
 import type { MissedReason } from '@/lib/attendance';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
-
-const StudentDataCard = lazy(() => import('@/components/forms/StudentDataCard'));
+import StudentDataCard from '@/components/forms/StudentDataCard';
 
 interface StudentCardsListProps {
   dataEntrySelectedStudentIds: string[];
@@ -72,33 +71,32 @@ const StudentCardsList: React.FC<StudentCardsListProps> = ({
         const isStudentFocused = slotIndex === dataEntryFocusedStudentSlotIndex;
 
         return (
-          <Suspense key={studentId} fallback={<div>Loading student card...</div>}>
-            <StudentDataCard
-              student={student}
-              state={state}
-              slotIndex={slotIndex}
-              isStudentFocused={isStudentFocused}
-              availableStudentsForDropdown={availableStudentsForDropdown}
-              dataEntrySelectedStudentIds={dataEntrySelectedStudentIds}
-              dataEntryShowArchivedByStudentId={dataEntryShowArchivedByStudentId}
-              setDataEntryShowArchivedByStudentId={setDataEntryShowArchivedByStudentId}
-              dataEntryVisibleGoalCountByStudentId={dataEntryVisibleGoalCountByStudentId}
-              setDataEntryVisibleGoalCountByStudentId={setDataEntryVisibleGoalCountByStudentId}
-              dataEntryFocusedGoalIndexByStudentId={dataEntryFocusedGoalIndexByStudentId}
-              setDataEntryFocusedGoalIndexByStudentId={setDataEntryFocusedGoalIndexByStudentId}
-              setDataEntryFocusedStudentSlotIndex={setDataEntryFocusedStudentSlotIndex}
-              openEditStudentModal={openEditStudentModal}
-              handleStudentSelect={handleStudentSelect}
-              removeStudentSlot={removeStudentSlot}
-              handleInputChange={handleInputChange}
-              sessionDuration={sessionDuration}
-              handleServiceMinutesChange={handleServiceMinutesChange}
-              handleGoalDataChange={handleGoalDataChange}
-              handleMoveGoal={handleMoveGoal}
-              isStudentAccessLocked={isStudentAccessLocked}
-              recordMissedSession={recordMissedSession}
-            />
-          </Suspense>
+          <StudentDataCard
+            key={studentId}
+            student={student}
+            state={state}
+            slotIndex={slotIndex}
+            isStudentFocused={isStudentFocused}
+            availableStudentsForDropdown={availableStudentsForDropdown}
+            dataEntrySelectedStudentIds={dataEntrySelectedStudentIds}
+            dataEntryShowArchivedByStudentId={dataEntryShowArchivedByStudentId}
+            setDataEntryShowArchivedByStudentId={setDataEntryShowArchivedByStudentId}
+            dataEntryVisibleGoalCountByStudentId={dataEntryVisibleGoalCountByStudentId}
+            setDataEntryVisibleGoalCountByStudentId={setDataEntryVisibleGoalCountByStudentId}
+            dataEntryFocusedGoalIndexByStudentId={dataEntryFocusedGoalIndexByStudentId}
+            setDataEntryFocusedGoalIndexByStudentId={setDataEntryFocusedGoalIndexByStudentId}
+            setDataEntryFocusedStudentSlotIndex={setDataEntryFocusedStudentSlotIndex}
+            openEditStudentModal={openEditStudentModal}
+            handleStudentSelect={handleStudentSelect}
+            removeStudentSlot={removeStudentSlot}
+            handleInputChange={handleInputChange}
+            sessionDuration={sessionDuration}
+            handleServiceMinutesChange={handleServiceMinutesChange}
+            handleGoalDataChange={handleGoalDataChange}
+            handleMoveGoal={handleMoveGoal}
+            isStudentAccessLocked={isStudentAccessLocked}
+            recordMissedSession={recordMissedSession}
+          />
         );
       })}
 

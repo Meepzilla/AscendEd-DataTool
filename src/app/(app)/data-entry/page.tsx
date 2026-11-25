@@ -1,13 +1,13 @@
 
 'use client';
 
-import React, { lazy, Suspense } from 'react';
+import React, { Suspense } from 'react';
 import { useStudentData } from '@/hooks/use-student-data';
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
+import AppLoadingSkeleton from '@/components/layout/AppLoadingSkeleton';
 
-const AppLoadingSkeleton = lazy(() => import('@/components/layout/AppLoadingSkeleton'));
 const DataEntryContent = dynamic(() => import('@/components/data-entry/DataEntryContent'), {
   loading: () => <DataEntryPageSkeleton />,
   ssr: false
@@ -41,11 +41,7 @@ export default function DataEntryPage() {
   const { loading } = useStudentData();
 
   if (loading) {
-    return (
-      <Suspense fallback={<div>Loading...</div>}>
-        <AppLoadingSkeleton />
-      </Suspense>
-    );
+    return <AppLoadingSkeleton />;
   }
 
   return (

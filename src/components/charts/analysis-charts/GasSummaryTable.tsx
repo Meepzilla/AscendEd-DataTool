@@ -2,11 +2,10 @@
 
 import React, { useMemo } from 'react';
 import type { Goal, SessionData } from '@/lib/types';
-import { gasTScoresOverTime } from '@/lib/gas';
+import { gasLevelShortLabel, gasTScoresOverTime } from '@/lib/gas';
 import { goalMeasure, withoutRunningTimers } from '@/lib/goal-measures';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { gasLevelShortLabel } from './GasTScoreLineChart';
 import ExpandableGoalName from './ExpandableGoalName';
 import type { StudentIep } from '@/lib/types';
 

@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { Suspense, lazy } from 'react';
+import React from 'react';
 import type { GoalDataUpdater, ServiceType, Student, StudentSessionState, Goal } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -10,7 +10,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Users, XCircle, Eye, EyeOff } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
@@ -18,8 +17,7 @@ import { freshGoalData } from '@/lib/data-entry-session';
 import MissedSessionDialog from '@/components/data-entry/MissedSessionDialog';
 import ServiceMinutesField from '@/components/ServiceMinutesField';
 import type { MissedReason } from '@/lib/attendance';
-
-const GoalDataInputComponent = lazy(() => import('@/components/forms/goal-data-input'));
+import GoalDataInputComponent from '@/components/forms/goal-data-input';
 
 interface StudentDataCardProps {
   student: Student;
@@ -176,8 +174,7 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
           ) : displayedGoals.length === 0 && showArchived ? (
             <p className="text-sm text-muted-foreground p-4 text-center border rounded-md">No goals (active or archived) for this student.</p>
           ) : (
-            <Suspense fallback={<Skeleton className="h-40 w-full" />}>
-              <div className="space-y-3">
+            <div className="space-y-3">
                 {displayedGoals.map((goal, index) => {
                   const isGoalFocused = isStudentFocused && (dataEntryFocusedGoalIndexByStudentId[student.id] ?? 0) === index;
                   const actualGoalIndexInOriginal = allStudentGoals.findIndex(g => g.id === goal.id);
@@ -227,8 +224,7 @@ const StudentDataCard: React.FC<StudentDataCardProps> = ({
                     )}
                   </div>
                 )}
-              </div>
-            </Suspense>
+            </div>
           )}
 
           <div>

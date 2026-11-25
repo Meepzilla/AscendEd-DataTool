@@ -29,6 +29,11 @@ export function formatGasLevel(level: number): string {
   return level > 0 ? `+${level}` : `${level}`;
 }
 
+/** Short labels for the five attainment levels, for tables, tooltips and tick text. */
+export function gasLevelShortLabel(level: number): string {
+  return GAS_LEVEL_BY_VALUE[level]?.label ?? '';
+}
+
 /** A level with its generic label: "+1 (somewhat more than expected)", "0 (expected outcome)". */
 export function gasLevelLabel(level: number): string {
   const info = GAS_LEVEL_BY_VALUE[level];
