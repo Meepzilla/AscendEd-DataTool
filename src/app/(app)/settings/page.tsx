@@ -1,75 +1,21 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { Settings, PanelLeft } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Settings } from 'lucide-react';
 import BackupRestoreCard from '@/components/settings/BackupRestoreCard';
 import CommFunctionsCard from '@/components/settings/CommFunctionsCard';
 import PasscodeCard from '@/components/settings/PasscodeCard';
 import DeleteDataCard from '@/components/settings/DeleteDataCard';
 import ImportStudentsCard from '@/components/settings/ImportStudentsCard';
-import DisplaySizeSetting from '@/components/settings/DisplaySizeSetting';
-import MenuPositionSetting from '@/components/settings/MenuPositionSetting';
-import ThemeSetting from '@/components/settings/ThemeSetting';
-import SingleKeyShortcutsSetting from '@/components/settings/SingleKeyShortcutsSetting';
-import OrganizationNameSetting from '@/components/settings/OrganizationNameSetting';
-import SchoolYearSetting from '@/components/settings/SchoolYearSetting';
+import InterfaceSettingsCard from '@/components/settings/InterfaceSettingsCard';
 import AbcListsCard from '@/components/settings/AbcListsCard';
 import BuiltInGoalsCard from '@/components/settings/BuiltInGoalsCard';
 import CustomGoalTypesCard from '@/components/settings/CustomGoalTypesCard';
 
-import { SIDEBAR_ENABLED_KEY, readSidebarEnabled } from '@/lib/sidebar-setting';
-
 export default function SettingsPage() {
-  const [isSidebarEnabled, setIsSidebarEnabled] = useState(true);
-  const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const storedSidebarSetting = window.localStorage.getItem(SIDEBAR_ENABLED_KEY);
-        setIsSidebarEnabled(readSidebarEnabled(storedSidebarSetting));
-      } catch {
-        setIsSidebarEnabled(true);
-      }
-      setIsLoading(false);
-    }
-  }, []);
-
-  const handleToggleSidebar = (enabled: boolean) => {
-    setIsSidebarEnabled(enabled);
-    if (typeof window !== 'undefined') {
-      try {
-        window.localStorage.setItem(SIDEBAR_ENABLED_KEY, JSON.stringify(enabled));
-        toast({
-          title: "Settings Updated",
-          description: `Student Sidebar has been ${enabled ? 'enabled' : 'disabled'}. Please reload the application to apply the change.`,
-        });
-      } catch {
-        toast({
-          title: "Setting Could Not Be Saved",
-          description: "Device storage is full or unavailable.",
-          variant: "destructive",
-        });
-      }
-    }
-  };
-
-  const handleReload = () => {
-    window.location.reload();
-  };
-
-  if (isLoading) {
-    return <div>Loading settings...</div>;
-  }
-
   return (
     <div className="space-y-6">
       <Card className="shadow-lg">
@@ -93,44 +39,7 @@ export default function SettingsPage() {
 
       <PasscodeCard />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Interface</CardTitle>
-          <CardDescription>
-            Control the application&apos;s user interface elements.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <DisplaySizeSetting />
-          <ThemeSetting />
-          <MenuPositionSetting />
-          <SingleKeyShortcutsSetting />
-          <OrganizationNameSetting />
-          <SchoolYearSetting />
-          <div className="flex flex-row items-center justify-between rounded-lg border p-4">
-            <div className="space-y-0.5">
-              <Label htmlFor="sidebar-switch" className="text-base font-medium">
-                Enable Student Sidebar
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                When enabled, the sidebar for student selection and progress is visible. Disable it for more screen space.
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-                <PanelLeft className="h-5 w-5 text-muted-foreground" />
-                <Switch
-                    id="sidebar-switch"
-                    checked={isSidebarEnabled}
-                    onCheckedChange={handleToggleSidebar}
-                />
-            </div>
-          </div>
-           <div className="flex items-center justify-end gap-4 p-4 border-t">
-              <p className="text-sm text-muted-foreground">A page reload is required to apply changes.</p>
-              <Button onClick={handleReload}>Reload Now</Button>
-            </div>
-        </CardContent>
-      </Card>
+      <InterfaceSettingsCard />
 
       <CustomGoalTypesCard />
 

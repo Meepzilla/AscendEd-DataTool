@@ -17,8 +17,8 @@ import { useStudentData } from '@/hooks/use-student-data';
 import type { GoalType } from '@/lib/types';
 import { GoalTemplateSchema } from '@/lib/schemas';
 import { GOAL_TYPES, GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
-import TargetDirectionField from './TargetDirectionField';
-import GasLevelDescriptionsField from './GasLevelDescriptionsField';
+import TargetDirectionField from '@/components/goal-templates/TargetDirectionField';
+import GasLevelDescriptionsField from '@/components/goal-templates/GasLevelDescriptionsField';
 import { goalTypeLabel } from '@/lib/helpers';
 import { goalMeasureInfo } from '@/lib/goal-measures';
 

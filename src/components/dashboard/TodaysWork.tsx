@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useStudentData } from '@/hooks/use-student-data';
 import { loadDataEntryDraft } from '@/lib/data-entry-draft';
 import { plural } from '@/lib/helpers';
-import { useStudentGroups } from '@/lib/student-groups';
+import { useStudentGroups } from '@/hooks/use-student-groups';
 
 // The dashboard's Today's Work: unsaved Data Entry work to pick up again, and a button per saved group that
 // opens Data Entry with that group's students already in the slots.

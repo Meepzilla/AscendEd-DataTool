@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, type RefObject } from 'react';
-import { MENU_POSITION_EVENT } from '@/lib/menu-position';
+import { MENU_POSITION_EVENT } from '@/lib/ui-preferences';
 
 /**
  * The height (in CSS pixels) that lets `listRef`'s element fill the rest of the screen: from where it starts down to

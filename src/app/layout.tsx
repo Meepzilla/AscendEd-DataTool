@@ -3,8 +3,6 @@ import { Inter } from 'next/font/google'; // Standard way to import Google Fonts
 import './globals.css'; // Import global CSS styles
 import { Toaster } from "@/components/ui/toaster"; // Import Toaster component for displaying notifications
 import AppProviders from '@/providers/app-providers'; // Import AppProviders for wrapping the application with context providers
-import ZoomCompensation from '@/components/ZoomCompensation';
-import ThemeSync from '@/components/ThemeSync';
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
 import { DISPLAY_SCALE_SCRIPT } from '@/lib/display-scale';
 
@@ -61,8 +59,6 @@ export default function RootLayout({
         <AppProviders>
           {children} {/* Renders the current page component or nested layouts */}
           <Toaster /> {/* Renders toast notifications across the application */}
-          <ZoomCompensation />
-          <ThemeSync />
         </AppProviders>
         {/* Outside the passcode lock, so updates are fetched and applied while the lock screen is showing. */}
         <ServiceWorkerRegistration />

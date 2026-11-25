@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { defaultReportStudent, rememberReportStudent } from '../report-student';
+import { defaultReportStudent, rememberReportStudent } from '../report-filters';
 import { memoryStorage } from './helpers';
 
 describe('the student remembered on Reports', () => {

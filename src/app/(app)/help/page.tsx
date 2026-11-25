@@ -13,7 +13,7 @@ import { GOAL_TYPE_SCREENSHOTS } from '@/lib/goal-type-screenshots';
 import { goalTypeLabel } from '@/lib/helpers';
 import type { BuiltInGoalType } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
-import { useCustomGoalTypes } from '@/lib/custom-goal-types';
+import { useCustomGoalTypes } from '@/hooks/use-custom-goal-types';
 import { CUSTOM_MEASURE_KIND_INFO, customTypeSummary } from '@/lib/goal-types/custom';
 import { ShowGettingStartedButton } from '@/components/dashboard/GettingStarted';
 

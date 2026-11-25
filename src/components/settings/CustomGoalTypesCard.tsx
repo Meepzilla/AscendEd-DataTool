@@ -13,8 +13,8 @@ import { useToast } from '@/hooks/use-toast';
 import {
   applyCustomGoalTypeUpdate,
   exportCustomGoalTypesJson,
-  useCustomGoalTypes,
 } from '@/lib/custom-goal-types';
+import { useCustomGoalTypes } from '@/hooks/use-custom-goal-types';
 import { CUSTOM_MEASURE_KIND_INFO, customTypeSummary } from '@/lib/goal-types/custom';
 import { saveTextFile } from '@/lib/save-file';
 import { plural } from '@/lib/helpers';

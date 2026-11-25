@@ -10,7 +10,8 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useStudentData } from '@/hooks/use-student-data';
 import { useToast } from '@/hooks/use-toast';
-import { isStudentGroupsDamaged, useStudentGroups, type StudentGroup } from '@/lib/student-groups';
+import { isStudentGroupsDamaged, type StudentGroup } from '@/lib/student-groups';
+import { useStudentGroups } from '@/hooks/use-student-groups';
 
 // Students → Groups (and Data Entry → Load Group → Manage Groups): create, rename, change and delete saved
 // groups of students, e.g. a class or a small group, to load into Data Entry together.

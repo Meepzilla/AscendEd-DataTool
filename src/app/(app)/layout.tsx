@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import AppHeader, { TopStrip } from '@/components/layout/app-header';
 import StorageFailureBanner from '@/components/StorageFailureBanner';
-import { MENU_POSITION_EVENT, getMenuPosition } from '@/lib/menu-position';
+import { MENU_POSITION_EVENT, SIDEBAR_ENABLED_KEY, getMenuPosition, readSidebarEnabled } from '@/lib/ui-preferences';
 import TopEdgeBar from '@/components/layout/TopEdgeBar';
 import AppFooter from '@/components/layout/app-footer';
 import StudentSidebar from '@/components/layout/student-sidebar';
@@ -17,8 +17,6 @@ function KeyboardShortcutInitializer() {
   useKeyboardShortcuts();
   return null;
 }
-
-import { SIDEBAR_ENABLED_KEY, readSidebarEnabled } from '@/lib/sidebar-setting';
 
 // Each page's own browser title, so screen readers announce where you are and tabs/history are told apart.
 const PAGE_TITLES: [string, string][] = [

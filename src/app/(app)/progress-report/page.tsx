@@ -1,7 +1,7 @@
 'use client';
 
 import React, { Suspense, useEffect, useMemo, useState } from 'react';
-import { defaultReportStudent, rememberReportStudent } from '@/lib/report-student';
+import { defaultReportStudent, rememberReportStudent } from '@/lib/report-filters';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -18,7 +18,7 @@ import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
 import { useStudentData } from '@/hooks/use-student-data';
 import { compareSessionsOldestFirst, formatDate, localDayKey, parseDateOnly, sessionInDateRange } from '@/lib/helpers';
 import { buildProgressReport, type ProgressStatus } from '@/lib/report-narrative';
-import { getOrganizationName } from '@/lib/organization';
+import { getOrganizationName } from '@/lib/ui-preferences';
 import { attendanceSummary, attendanceText, isMissed } from '@/lib/attendance';
 import { captureTypeOf, summarizeLatency, toolTypeOf } from '@/lib/goal-constants';
 import { goalMeasure, withoutRunningTimers } from '@/lib/goal-measures';
