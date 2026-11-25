@@ -5,7 +5,8 @@ import { UsersRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useStudentData } from '@/hooks/use-student-data';
-import { useStudentGroups, type StudentGroup } from '@/lib/student-groups';
+import type { StudentGroup } from '@/lib/student-groups';
+import { useStudentGroups } from '@/hooks/use-student-groups';
 
 const ManageGroupsDialog = lazy(() => import('./ManageGroupsDialog'));
 

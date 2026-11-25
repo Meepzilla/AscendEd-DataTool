@@ -12,7 +12,7 @@ import { fillNameBlanks } from '@/lib/goal-blanks';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { StatusPill } from '@/components/reports/ProgressReportDocument';
-import { goalCardId } from './goal-card-id';
+import { goalCardId } from '@/lib/report-filters';
 import ViewModeToggle from './ViewModeToggle';
 
 // Reports → "At a glance": one row per goal in view, with the same progress status, latest value, average and

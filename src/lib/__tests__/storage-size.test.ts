@@ -39,9 +39,10 @@ describe('estimateStorage', () => {
 
   it('uses the browser estimate when one is reported', async () => {
     vi.stubGlobal('navigator', { storage: { estimate: async () => ({ usage: 8 * 1024 * 1024, quota: 10 * 1024 * 1024 }) } });
-    const estimate = await estimateStorage(() => 0);
+    const estimate = await estimateStorage(() => 1.5 * 1024 * 1024);
     expect(estimate.source).toBe('estimate');
     expect(estimate.bytes).toBe(8 * 1024 * 1024);
+    expect(estimate.dataBytes).toBe(1.5 * 1024 * 1024);
     expect(estimate.quota).toBe(10 * 1024 * 1024);
     expect(estimate.percent).toBe(80);
     expect(estimate.level).toBe('warn');

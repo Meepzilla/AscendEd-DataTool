@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAuth } from '@/hooks/use-auth';
-import { useCustomGoalTypes } from '@/lib/custom-goal-types';
+import { useCustomGoalTypes } from '@/hooks/use-custom-goal-types';
 import { GOAL_TYPES } from '@/lib/goal-constants';
 import { CUSTOM_MEASURE_KIND_INFO, cloneCustomGoalType } from '@/lib/goal-types/custom';
 import { goalTypeLabel } from '@/lib/helpers';

@@ -29,16 +29,16 @@ import { ObservationInputs, PromptingInputs } from './goal-inputs/observation';
 import { CommunicationFunctionsInputs, StoryElementsInputs } from './goal-inputs/communication';
 
 // Heavier, specialized goal-type inputs are loaded on demand so students without those goal types don't pay for them.
-const TaskAnalysisInput = lazy(() => import('./TaskAnalysisInput'));
-const LanguageSampleInput = lazy(() => import('./LanguageSampleInput'));
-const ItemMasteryInput = lazy(() => import('./ItemMasteryInput'));
+const TaskAnalysisInput = lazy(() => import('./goal-inputs/TaskAnalysisInput'));
+const LanguageSampleInput = lazy(() => import('./goal-inputs/LanguageSampleInput'));
+const ItemMasteryInput = lazy(() => import('./goal-inputs/ItemMasteryInput'));
 const GasInputs = lazy(() => import('./goal-inputs/gas').then(m => ({ default: m.GasInputs })));
 const CustomGoalInputs = lazy(() => import('./goal-inputs/custom').then(m => ({ default: m.CustomGoalInputs })));
-const FrequencyInput = lazy(() => import('./behavior-inputs').then(m => ({ default: m.FrequencyInput })));
-const DurationInput = lazy(() => import('./behavior-inputs').then(m => ({ default: m.DurationInput })));
-const AbcInput = lazy(() => import('./behavior-inputs').then(m => ({ default: m.AbcInput })));
-const IntervalInput = lazy(() => import('./behavior-inputs').then(m => ({ default: m.IntervalInput })));
-const LatencyInput = lazy(() => import('./behavior-inputs').then(m => ({ default: m.LatencyInput })));
+const FrequencyInput = lazy(() => import('./goal-inputs/behavior-inputs').then(m => ({ default: m.FrequencyInput })));
+const DurationInput = lazy(() => import('./goal-inputs/behavior-inputs').then(m => ({ default: m.DurationInput })));
+const AbcInput = lazy(() => import('./goal-inputs/behavior-inputs').then(m => ({ default: m.AbcInput })));
+const IntervalInput = lazy(() => import('./goal-inputs/behavior-inputs').then(m => ({ default: m.IntervalInput })));
+const LatencyInput = lazy(() => import('./goal-inputs/behavior-inputs').then(m => ({ default: m.LatencyInput })));
 
 // A goal's card in Data Entry: its name, target and move arrows, the inputs for its type (in goal-inputs/, or the
 // behavior and task analysis inputs), and the prompt level counters. The calculations are in lib/goal-input-logic.

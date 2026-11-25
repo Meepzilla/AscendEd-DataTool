@@ -13,7 +13,7 @@ import { formatBytes, type StorageEstimate } from '@/lib/storage-size';
 // button is right below, so these warnings carry no button of their own. (The dashboard's BackupReminder
 // still prompts separately.)
 
-/** The "Stored: … of about … available" line and its bar. */
+/** The storage usage readout and progress bar in Settings → Backup & Restore. */
 export function StorageUsageLine({ estimate }: { estimate: StorageEstimate | null }) {
   const percent: number | null = estimate?.percent ?? null;
 
@@ -22,11 +22,17 @@ export function StorageUsageLine({ estimate }: { estimate: StorageEstimate | nul
       <p aria-live="polite">
         {estimate === null
           ? 'Measuring storage…'
-          : <>Stored: <strong>{formatBytes(estimate.bytes)}</strong>
-            {estimate.quota !== null && percent !== null
-              ? <> of about {formatBytes(estimate.quota)} available ({percent.toFixed(0)}% used)</>
-              : ' (this browser does not report a storage quota)'}
-          </>}
+          : estimate.source === 'estimate'
+            ? <>
+              {estimate.dataBytes !== undefined && estimate.dataBytes > 0 && (
+                <>Your data: <strong>{formatBytes(estimate.dataBytes)}</strong> · </>
+              )}
+              Browser storage (data + offline app): <strong>{formatBytes(estimate.bytes)}</strong>
+              {estimate.quota !== null && percent !== null
+                ? <> of about {formatBytes(estimate.quota)} available ({percent.toFixed(0)}% used)</>
+                : ' (this browser does not report a storage quota)'}
+            </>
+            : <>Your data: <strong>{formatBytes(estimate.bytes)}</strong> (this browser does not report a storage quota)</>}
       </p>
       {estimate !== null && estimate.quota !== null && percent !== null && (
         <div className="h-2 w-full overflow-hidden rounded-full bg-muted" role="progressbar"

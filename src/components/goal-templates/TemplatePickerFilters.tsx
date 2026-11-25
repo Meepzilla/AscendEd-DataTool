@@ -8,7 +8,7 @@ import { GOAL_TYPES } from '@/lib/goal-constants';
 import { goalTypeLabel } from '@/lib/helpers';
 import type { useTemplatePicker } from '@/hooks/use-template-picker';
 import { useAuth } from '@/hooks/use-auth';
-import { useCustomGoalTypes } from '@/lib/custom-goal-types';
+import { useCustomGoalTypes } from '@/hooks/use-custom-goal-types';
 
 const SORTED_GOAL_TYPES = Object.values(GOAL_TYPES).sort((a, b) => goalTypeLabel(a).localeCompare(goalTypeLabel(b)));
 

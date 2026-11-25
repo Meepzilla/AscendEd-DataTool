@@ -23,7 +23,7 @@ import GoalTextPopover from '@/components/forms/GoalTextPopover';
 import TemplatePickerFilters from '@/components/goal-templates/TemplatePickerFilters';
 import { useTemplatePicker } from '@/hooks/use-template-picker';
 import { goalFromCustomType, goalFromTemplate, recordRecentTemplates } from '@/lib/goal-templates';
-import { useCustomGoalTypes } from '@/lib/custom-goal-types';
+import { useCustomGoalTypes } from '@/hooks/use-custom-goal-types';
 import { customTypeSummary } from '@/lib/goal-types/custom';
 import type { CustomGoalType } from '@/lib/types';
 

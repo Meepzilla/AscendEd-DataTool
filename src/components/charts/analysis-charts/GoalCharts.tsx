@@ -15,11 +15,10 @@ import {
 import { goalMeasureInfo, goalResponses, goalNotes, sessionMeetsTarget, promptTotals, usesPromptCounters } from '@/lib/goal-measures';
 import { formatDate, formatGoalTarget, goalTypeLabel } from '@/lib/helpers';
 import { collectRecordedGoalSessions, groupGoalPoints, type RecordedGoalSession } from '@/lib/report-chart-views';
-import type { GoalChartView, TimeGrouping } from '@/lib/report-filters';
+import { goalCardId, type GoalChartView, type TimeGrouping } from '@/lib/report-filters';
 import BehaviorTimeCharts from './BehaviorTimeCharts';
 import { ItemMasteryCharts, LanguageSampleCharts } from './LanguageItemCharts';
 import { CommFunctionsBySession } from './CommFunctionsBySession';
-import { goalCardId } from './goal-card-id';
 import StatTile from './StatTile';
 import { goalStatExplanations } from '@/lib/report-formulas';
 import type { TaskStepScore } from '@/lib/task-analysis';

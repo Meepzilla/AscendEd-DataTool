@@ -9,14 +9,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import TallyButton from './TallyButton';
+import TallyButton from '../TallyButton';
 import {
   ABC_REPLACEMENT_BEHAVIOR, INTERVAL_METHODS, INTERVAL_LENGTHS_SECONDS, MAX_INTERVALS,
   summarizeFrequency, summarizeDuration, summarizeAbc, summarizeIntervals, summarizeLatency,
   formatSeconds, formatLatency, alignTimes, joinAbcChoices, joinWithAnd, topTied, type AbcIncident, type BehaviorFunction, type IntervalSetup,
 } from '@/lib/goal-constants';
 import { clockInputValue, formatClockTime, withClockTime } from '@/lib/behavior-timing';
-import { useSessionDate } from './session-date-context';
+import { useSessionDate } from '../session-date-context';
 import { useAbcLists } from '@/hooks/use-abc-lists';
 
 // Data entry for the behavior goal types. `update` merges fields into the goal's session data;

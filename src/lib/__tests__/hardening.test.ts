@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { memoryStorage } from './helpers';
-import { readSidebarEnabled } from '../sidebar-setting';
+import { readSidebarEnabled } from '../ui-preferences';
 import { generateUUID, localDayKey } from '../helpers';
 import { decryptBackupText, MAX_BACKUP_FILE_BYTES } from '../backup';
 

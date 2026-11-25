@@ -2,10 +2,9 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, lazy, Suspense } from 'react';
-import { defaultReportStudent, rememberReportStudent } from '@/lib/report-student';
 import {
-  QUICK_RANGES, QUICK_RANGE_LABELS, customRangeChoice, rangeChoiceDates, readGoalChoice, readRangeChoice, readReportTab, rememberGoalChoice,
-  rememberRangeChoice, rememberReportTab, type QuickRange, type RangeChoice, type ReportTab,
+  QUICK_RANGES, QUICK_RANGE_LABELS, customRangeChoice, defaultReportStudent, rangeChoiceDates, readGoalChoice, readRangeChoice, readReportTab,
+  rememberGoalChoice, rememberRangeChoice, rememberReportStudent, rememberReportTab, type QuickRange, type RangeChoice, type ReportTab,
 } from '@/lib/report-filters';
 import { useStudentData } from '@/hooks/use-student-data';
 import { Button } from '@/components/ui/button';

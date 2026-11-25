@@ -12,8 +12,8 @@ import { defaultCustomGoalType } from '@/lib/goal-types/custom';
 import type { CustomGoalType } from '@/lib/types';
 import { FormItem, FormLabel, type GoalInputContext } from './shared';
 import { TrialInputs } from './trials';
-import { LatencyInput } from '../behavior-inputs';
-import LanguageSampleInput from '../LanguageSampleInput';
+import { LatencyInput } from './behavior-inputs';
+import LanguageSampleInput from './LanguageSampleInput';
 
 function formatClock(totalSeconds: number): string {
   const s = Math.max(0, Math.round(totalSeconds));

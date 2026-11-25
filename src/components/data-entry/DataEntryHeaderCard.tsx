@@ -4,10 +4,10 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, ChevronUp, Edit2 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { ChevronDown, ChevronUp, Edit2, Lock, LockOpen } from 'lucide-react';
 import SessionDateTimePickers from './SessionDateTimePickers';
-import HotkeysMessage from './HotkeysMessage';
-import StudentAccessToggle from './StudentAccessToggle';
 
 interface DataEntryHeaderCardProps {
   isHeaderCardCollapsed: boolean;
@@ -77,13 +77,24 @@ const DataEntryHeaderCard: React.FC<DataEntryHeaderCardProps> = ({
               onResetToBefore={onResetToBefore}
               locked={isStudentAccessLocked}
             />
-            <StudentAccessToggle
-                isStudentAccessLocked={isStudentAccessLocked}
-                setIsStudentAccessLocked={setIsStudentAccessLocked}
-            />
+            <div className="flex items-center space-x-2 border p-2 rounded-md bg-muted/50">
+              {isStudentAccessLocked ? <Lock className="h-5 w-5 text-destructive" /> : <LockOpen className="h-5 w-5 text-green-500" />}
+              <Label htmlFor="student-access-lock" className="text-sm font-medium">
+                Student Access Lock
+              </Label>
+              <Switch
+                id="student-access-lock"
+                checked={isStudentAccessLocked}
+                onCheckedChange={setIsStudentAccessLocked}
+                aria-label="Toggle Student Access Lock"
+              />
+            </div>
           </div>
-         
-          <HotkeysMessage />
+
+          {/* Hidden on touch screens without a keyboard (iPad, phone), where hotkeys can't be used. */}
+          <p className="text-sm text-muted-foreground touch:hidden">
+            Hotkeys: 1-4 Focus slots | A/Alt+A Cycle Students | S/Alt+S Cycle Goals | C/N/B for counts | D/V/G/P/I for prompts | Ctrl+Enter Save. See Help.
+          </p>
         </CardContent>
       )}
     </Card>
