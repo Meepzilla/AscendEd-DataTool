@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import { useStudentData } from '@/hooks/use-student-data';
-import { LAST_BACKUP_KEY } from '@/lib/backup';
+import { LAST_BACKUP_KEY } from '@/lib/backup-constants';
 import { studentProfilePath } from '@/lib/helpers';
 import { getGettingStarted, isReportViewed, setGettingStarted } from '@/lib/onboarding';
 import { readLocal } from '@/lib/safe-storage';

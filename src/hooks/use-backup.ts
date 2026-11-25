@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useStudentData } from './use-student-data';
 import { useToast } from './use-toast';
 import { useErrorLog } from './use-error-log';
-import { backupFileName, backupFileText, LAST_BACKUP_KEY } from '@/lib/backup';
+import { LAST_BACKUP_KEY } from '@/lib/backup-constants';
 import { saveTextFile } from '@/lib/save-file';
 import { plural } from '@/lib/helpers';
 
@@ -43,7 +43,10 @@ export function useBackup() {
   const backUpNow = useCallback(async (password?: string): Promise<boolean> => {
     setIsBackingUp(true);
     try {
-      const backup = exportBackup();
+      const [{ backupFileName, backupFileText }, backup] = await Promise.all([
+        import('@/lib/backup'),
+        exportBackup(),
+      ]);
       const saved = await saveTextFile(backupFileName(), await backupFileText(backup, password));
       if (!saved) return false;
       if (dataError) {

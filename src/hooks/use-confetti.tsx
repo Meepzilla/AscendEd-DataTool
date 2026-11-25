@@ -2,7 +2,6 @@
 'use client';
 
 import React, { createContext, useContext, useCallback, useEffect, useMemo, useRef, ReactNode } from 'react';
-import confetti from 'canvas-confetti';
 
 type ConfettiContextType = {
   fire: () => void;
@@ -30,38 +29,40 @@ export const ConfettiProvider = ({ children }: { children: ReactNode }) => {
   const fire = useCallback(() => {
     // Reduced motion: with the OS setting on, no celebration (globals.css covers the CSS side).
     if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const duration = 5 * 1000;
-    const animationEnd = Date.now() + duration;
+    void import('canvas-confetti').then(({ default: confetti }) => {
+      const duration = 5 * 1000;
+      const animationEnd = Date.now() + duration;
 
-    const defaults = {
-      startVelocity: 30,
-      spread: 360,
-      ticks: 60,
-      zIndex: 0,
-    };
+      const defaults = {
+        startVelocity: 30,
+        spread: 360,
+        ticks: 60,
+        zIndex: 0,
+      };
 
-    function randomInRange(min: number, max: number) {
-      return Math.random() * (max - min) + min;
-    }
-
-    const interval = window.setInterval(() => {
-      const timeLeft = animationEnd - Date.now();
-
-      if (timeLeft <= 0) {
-        intervalsRef.current.delete(interval);
-        return clearInterval(interval);
+      function randomInRange(min: number, max: number) {
+        return Math.random() * (max - min) + min;
       }
 
-      const particleCount = 50 * (timeLeft / duration);
+      const interval = window.setInterval(() => {
+        const timeLeft = animationEnd - Date.now();
 
-      // Launch from all four corners
-      confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0, 0.2), y: Math.random() - 0.2 } })); // top-left
-      confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.8, 1), y: Math.random() - 0.2 } })); // top-right
-      confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0, 0.2), y: randomInRange(0.8, 1) } })); // bottom-left
-      confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.8, 1), y: randomInRange(0.8, 1) } })); // bottom-right
+        if (timeLeft <= 0) {
+          intervalsRef.current.delete(interval);
+          return clearInterval(interval);
+        }
 
-    }, 250);
-    intervalsRef.current.add(interval);
+        const particleCount = 50 * (timeLeft / duration);
+
+        // Launch from all four corners
+        confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0, 0.2), y: Math.random() - 0.2 } })); // top-left
+        confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.8, 1), y: Math.random() - 0.2 } })); // top-right
+        confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0, 0.2), y: randomInRange(0.8, 1) } })); // bottom-left
+        confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.8, 1), y: randomInRange(0.8, 1) } })); // bottom-right
+
+      }, 250);
+      intervalsRef.current.add(interval);
+    });
   }, []);
 
   const value = useMemo(() => ({ fire }), [fire]);

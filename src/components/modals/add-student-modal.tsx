@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useStudentData } from '@/hooks/use-student-data';
-import { StudentSchema } from '@/lib/types'; // Assuming you have Zod schemas defined in types.ts
+import { StudentSchema } from '@/lib/schemas';
 import { usePathname, useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';

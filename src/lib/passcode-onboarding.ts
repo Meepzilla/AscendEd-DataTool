@@ -9,7 +9,7 @@
 // authority on whether protection is on.
 
 import { idbMayHoldStudentData, isPasscodeEnabled } from './secure-store';
-import { LAST_BACKUP_KEY } from './backup';
+import { LAST_BACKUP_KEY } from './backup-constants';
 
 /** Plain localStorage key for the first-run decision. Device-wide, like the passcode config. */
 export const PASSCODE_DECISION_KEY = 'ascended_passcode_decision_v1';

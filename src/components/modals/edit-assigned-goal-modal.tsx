@@ -13,7 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { useStudentData } from '@/hooks/use-student-data';
 import type { Goal, StudentIep } from '@/lib/types';
 import { PlaceholderChips } from '@/components/goal-templates/PlaceholderChips';
-import { AssignedGoalEditSchema } from '@/lib/types';
+import { AssignedGoalEditSchema } from '@/lib/schemas';
 import { useToast } from '@/hooks/use-toast';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';

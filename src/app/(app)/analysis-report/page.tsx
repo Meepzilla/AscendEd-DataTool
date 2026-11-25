@@ -17,7 +17,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
 import type { DateRange } from "react-day-picker";
 import { useSearchParams, useRouter } from 'next/navigation';
-import { downloadSessionsCsv } from '@/lib/session-csv';
 import CsvExportWarning from '@/components/CsvExportWarning';
 import { useToast } from '@/hooks/use-toast';
 import { compareSessionsOldestFirst, formatDate, sessionInDateRange } from '@/lib/helpers';
@@ -189,9 +188,11 @@ export default function AnalysisReportPage() {
                     onCancel={() => setIsCsvWarningOpen(false)}
                     onConfirm={(deidentified) => {
                       setIsCsvWarningOpen(false);
-                      void downloadSessionsCsv(periodSessions, selectedStudent.name, { deidentified }).catch(() => {
-                        toast({ title: 'Export Failed', description: 'Could not save the CSV file on this device.', variant: 'destructive' });
-                      });
+                      void import('@/lib/session-csv')
+                        .then(({ downloadSessionsCsv }) => downloadSessionsCsv(periodSessions, selectedStudent.name, { deidentified }))
+                        .catch(() => {
+                          toast({ title: 'Export Failed', description: 'Could not save the CSV file on this device.', variant: 'destructive' });
+                        });
                     }}
                   />
                 )}

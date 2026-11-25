@@ -1,16 +1,14 @@
 
 'use client';
 
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { fillNameBlanks } from '@/lib/goal-blanks';
 import type { Goal, GoalDataUpdater, SessionGoalData, GoalType, StudentIep, TrialStatus } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { formatGoalTarget, goalStatement, goalTypeLabel } from '@/lib/helpers';
-import TaskAnalysisInput from './TaskAnalysisInput';
-import LanguageSampleInput from './LanguageSampleInput';
-import ItemMasteryInput from './ItemMasteryInput';
 import { listItems } from '@/lib/item-mastery';
 import { sampleUnit } from '@/lib/language-sample';
 import { taskSteps } from '@/lib/task-analysis';
@@ -18,7 +16,6 @@ import { TrendingUp, ArrowUp, ArrowDown, ArchiveIcon, Pin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useConfetti } from '@/hooks/use-confetti';
-import { FrequencyInput, DurationInput, AbcInput, IntervalInput, LatencyInput } from './behavior-inputs';
 import { toolTypeOf } from '@/lib/goal-constants';
 import { usesPromptCounters } from '@/lib/goal-measures';
 import { applyFieldChange, clearTrials, cycleTrial, goalAccuracyText, scoreNextTrial, undoLastTrial } from '@/lib/goal-input-logic';
@@ -29,9 +26,19 @@ import { ComprehensionInputs, CorrectIncorrectInputs, ExpressionInputs, FeedingI
 import { TrialInputs } from './goal-inputs/trials';
 import { FluencyInputs } from './goal-inputs/fluency';
 import { ObservationInputs, PromptingInputs } from './goal-inputs/observation';
-import { GasInputs } from './goal-inputs/gas';
 import { CommunicationFunctionsInputs, StoryElementsInputs } from './goal-inputs/communication';
-import { CustomGoalInputs } from './goal-inputs/custom';
+
+// Heavier, specialized goal-type inputs are loaded on demand so students without those goal types don't pay for them.
+const TaskAnalysisInput = lazy(() => import('./TaskAnalysisInput'));
+const LanguageSampleInput = lazy(() => import('./LanguageSampleInput'));
+const ItemMasteryInput = lazy(() => import('./ItemMasteryInput'));
+const GasInputs = lazy(() => import('./goal-inputs/gas').then(m => ({ default: m.GasInputs })));
+const CustomGoalInputs = lazy(() => import('./goal-inputs/custom').then(m => ({ default: m.CustomGoalInputs })));
+const FrequencyInput = lazy(() => import('./behavior-inputs').then(m => ({ default: m.FrequencyInput })));
+const DurationInput = lazy(() => import('./behavior-inputs').then(m => ({ default: m.DurationInput })));
+const AbcInput = lazy(() => import('./behavior-inputs').then(m => ({ default: m.AbcInput })));
+const IntervalInput = lazy(() => import('./behavior-inputs').then(m => ({ default: m.IntervalInput })));
+const LatencyInput = lazy(() => import('./behavior-inputs').then(m => ({ default: m.LatencyInput })));
 
 // A goal's card in Data Entry: its name, target and move arrows, the inputs for its type (in goal-inputs/, or the
 // behavior and task analysis inputs), and the prompt level counters. The calculations are in lib/goal-input-logic.
@@ -315,7 +322,9 @@ export default function GoalDataInputComponent({
         </div>
       </CardHeader>
       <CardContent className="p-2 space-y-1.5">
-        {renderInputFields()}
+        <Suspense fallback={<Skeleton className="h-24 w-full" />}>
+          {renderInputFields()}
+        </Suspense>
 
         {showPromptCounters && (
           <PromptLevelCounters captureType={captureType as GoalType} data={data} onChange={onChange} isArchived={isArchived} interact={handleInteraction} />

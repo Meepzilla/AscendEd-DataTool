@@ -14,7 +14,6 @@ import { useFillScreenHeight } from '@/hooks/use-fill-screen-height';
 import { Edit, Trash2, Search, Info, Eye, FileText, Merge } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { mergeProblem } from '@/lib/session-merge';
-import MergeSessionsDialog from '@/components/sessions/MergeSessionsDialog';
 import { compareSessionsOldestFirst, formatDate, sessionInDateRange, sessionMinutes } from '@/lib/helpers';
 
 import { Skeleton } from '@/components/ui/skeleton';
@@ -26,6 +25,7 @@ import type { DateRange } from "react-day-picker";
 const EditSessionModal = lazy(() => import('@/components/modals/edit-session-modal'));
 const ConfirmationModal = lazy(() => import('@/components/modals/confirmation-modal'));
 const ViewSessionDetailsModal = lazy(() => import('@/components/modals/view-session-details-modal'));
+const MergeSessionsDialog = lazy(() => import('@/components/sessions/MergeSessionsDialog'));
 
 /** A session's minutes for the Minutes column: "30 min", or a dash when it was missed or its times aren't both set. */
 function sessionLength(session: SessionData): string {
@@ -132,16 +132,18 @@ export default function ManageSessionsPage() {
               onClose={() => setViewingSessionDetails(null)}
           />
         )}
+        {isMergeOpen && (
+          <MergeSessionsDialog
+            sessions={selectedSessions}
+            open={isMergeOpen}
+            onCancel={() => setIsMergeOpen(false)}
+            onConfirm={async () => {
+              if (await mergeSessionRecords(selectedSessions.map(s => s.sessionId))) setSelectedIds(new Set());
+              setIsMergeOpen(false);
+            }}
+          />
+        )}
       </Suspense>
-      <MergeSessionsDialog
-        sessions={selectedSessions}
-        open={isMergeOpen}
-        onCancel={() => setIsMergeOpen(false)}
-        onConfirm={async () => {
-          if (await mergeSessionRecords(selectedSessions.map(s => s.sessionId))) setSelectedIds(new Set());
-          setIsMergeOpen(false);
-        }}
-      />
 
       <Card className="shadow-lg">
         <CardHeader>

@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useMemo, useRef, useState } from 'react';
-import Papa from 'papaparse';
 import { FileSpreadsheet, Upload } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,9 +14,9 @@ import { formatDateOnly, formatGoalTarget, goalTypeLabel, plural, checkImportFil
 import { GOAL_TYPE_FIELDS } from '@/lib/goal-constants';
 import type { GoalType } from '@/lib/types';
 import type { CellValue } from '@/lib/xlsx-read';
-import {
-  goalDirectionFor, goalTarget, iepGlanceRows, importedIep, matchExistingStudents, moveIepToCurrentYear, readStudentRows, type ImportGoal, type ImportStudent,
-} from '@/lib/student-import';
+import type { ImportGoal, ImportStudent } from '@/lib/student-import';
+
+type StudentImportModule = typeof import('@/lib/student-import');
 
 // Settings → Import Students: reads a spreadsheet with one row per student (name, IEP dates, service minutes,
 // goals), or an "IEP at a Glance" PDF with a page per student, and shows what will be imported, with each goal's
@@ -25,15 +24,16 @@ import {
 
 const GOAL_TYPES = (Object.keys(GOAL_TYPE_FIELDS) as GoalType[]).sort((a, b) => goalTypeLabel(a).localeCompare(goalTypeLabel(b)));
 
-async function readRows(file: File): Promise<CellValue[][]> {
+async function readRows(file: File, studentImport: StudentImportModule): Promise<CellValue[][]> {
   if (/\.csv$/i.test(file.name) || file.type === 'text/csv') {
+    const { default: Papa } = await import('papaparse');
     const parsed = Papa.parse<string[]>(await file.text(), { skipEmptyLines: true });
     return parsed.data;
   }
   // The readers are loaded only when importing, so they aren't part of every page.
   if (/\.pdf$/i.test(file.name) || file.type === 'application/pdf') {
     const { readPdfLines } = await import('@/lib/pdf-text');
-    return iepGlanceRows(await readPdfLines(new Uint8Array(await file.arrayBuffer())));
+    return studentImport.iepGlanceRows(await readPdfLines(new Uint8Array(await file.arrayBuffer())));
   }
   if (!/\.xlsx$/i.test(file.name)) throw new Error('Choose an Excel workbook (.xlsx), a CSV file or an IEP at a Glance PDF. An older .xls file can be saved as .xlsx in Excel first.');
   const { readXlsx } = await import('@/lib/xlsx-read');
@@ -54,6 +54,7 @@ export default function ImportStudentsCard() {
   const { students: existing, importStudents } = useStudentData();
   const { toast } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
+  const studentImportRef = useRef<StudentImportModule | null>(null);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [fileName, setFileName] = useState('');
@@ -66,10 +67,12 @@ export default function ImportStudentsCard() {
     setReading(true);
     try {
       checkImportFileSize(file.size);
-      const preview = readStudentRows(await readRows(file));
+      const studentImport = await import('@/lib/student-import');
+      studentImportRef.current = studentImport;
+      const preview = studentImport.readStudentRows(await readRows(file, studentImport));
       if (preview.students.length === 0) throw new Error('No students were found in the file.');
       setMoveDates(true);
-      setRows(matchExistingStudents(moveIepToCurrentYear(preview.students), existing).map(s => ({
+      setRows(studentImport.matchExistingStudents(studentImport.moveIepToCurrentYear(preview.students), existing).map(s => ({
         ...s, include: true, goals: s.goals.map(g => ({ ...g, include: !g.duplicate })),
       })));
       setWarnings(preview.warnings);
@@ -83,15 +86,22 @@ export default function ImportStudentsCard() {
   };
 
   /** A row's IEP details as they will be saved (dates moved or as in the file, over what the student has). */
-  const iepOf = (row: Row) => importedIep(forMode(row, moveDates), existing.find(e => e.id === row.existingId)?.iep);
+  const iepOf = (row: Row) => {
+    const studentImport = studentImportRef.current;
+    return studentImport
+      ? studentImport.importedIep(forMode(row, moveDates), existing.find(e => e.id === row.existingId)?.iep)
+      : row.iep;
+  };
   /**
    * Turning moving on or off matches each row again with the dates it will then have, since a student can be
    * matched by the IEP start date. A row's goal ticks are reset only if it now matches a different student.
    */
   const changeMoveDates = (move: boolean) => {
+    const studentImport = studentImportRef.current;
     setMoveDates(move);
+    if (!studentImport) return;
     setRows(prev => prev && prev.map(row => {
-      const [match] = matchExistingStudents([forMode(row, move)], existing);
+      const [match] = studentImport.matchExistingStudents([forMode(row, move)], existing);
       const sameStudent = match.existingId === row.existingId;
       return {
         ...row, existingId: match.existingId, existingName: match.existingName, savedIep: match.savedIep,
@@ -104,10 +114,18 @@ export default function ImportStudentsCard() {
   const goalCount = included.reduce((n, s) => n + s.goals.filter(g => g.include).length, 0);
 
   const update = (index: number, change: (row: Row) => Row) => setRows(prev => prev && prev.map((r, i) => (i === index ? change(r) : r)));
-  const setType = (studentIndex: number, goalIndex: number, type: GoalType) => update(studentIndex, row => ({
-    ...row,
-    goals: row.goals.map((g, i) => (i === goalIndex ? { ...g, type, target: goalTarget(type, g.smartGoal), direction: goalDirectionFor(type, g.smartGoal) } : g)),
-  }));
+  const setType = (studentIndex: number, goalIndex: number, type: GoalType) => {
+    const studentImport = studentImportRef.current;
+    update(studentIndex, row => ({
+      ...row,
+      goals: row.goals.map((g, i) => (i === goalIndex ? {
+        ...g,
+        type,
+        target: studentImport ? studentImport.goalTarget(type, g.smartGoal) : g.target,
+        direction: studentImport ? studentImport.goalDirectionFor(type, g.smartGoal) : g.direction,
+      } : g)),
+    }));
+  };
 
   const setGoalIncluded = (studentIndex: number, goalIndex: number, include: boolean) => update(studentIndex, row => ({
     ...row, goals: row.goals.map((g, i) => (i === goalIndex ? { ...g, include } : g)),

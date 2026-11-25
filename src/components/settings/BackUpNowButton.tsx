@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useBackup } from '@/hooks/use-backup';
 import { MIN_PASSCODE_LENGTH } from '@/lib/secure-store';
-import { isPlaintextBackupAcknowledged, PLAINTEXT_BACKUP_ACKNOWLEDGEMENT } from '@/lib/backup';
+import { isPlaintextBackupAcknowledged, PLAINTEXT_BACKUP_ACKNOWLEDGEMENT } from '@/lib/backup-constants';
 
 // "Back Up Now": asks for a password to protect the backup file (it contains student information). A file without
 // a password can still be saved, but only after ticking the box AND typing PLAINTEXT, so an unencrypted backup

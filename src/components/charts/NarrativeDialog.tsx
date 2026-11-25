@@ -11,7 +11,7 @@ import { useErrorLog } from '@/hooks/use-error-log';
 import { toSafeErrorMessage } from '@/lib/error-message';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { buildNarrative, type NarrativeInput, type NarrativeStyle } from '@/lib/report-narrative';
+import type { NarrativeInput, NarrativeStyle } from '@/lib/report-narrative';
 import { saveTextFile } from '@/lib/save-file';
 
 // The "Write Narrative" button on Reports: a written summary of the data in view (student, goals and
@@ -26,7 +26,8 @@ export default function NarrativeDialog(props: NarrativeInput & { disabled?: boo
   const [style, setStyle] = useState<NarrativeStyle>('detailed');
   const [nextSteps, setNextSteps] = useState(false);
 
-  const generate = () => {
+  const generate = async () => {
+    const { buildNarrative } = await import('@/lib/report-narrative');
     const narrative = buildNarrative({ ...input, options: { style, nextSteps } });
     setText(narrative);
     setGenerated(narrative);
@@ -36,7 +37,7 @@ export default function NarrativeDialog(props: NarrativeInput & { disabled?: boo
   const changeStyle = (value: NarrativeStyle) => { if (value !== style && confirmDiscard()) setStyle(value); };
   const changeNextSteps = (value: boolean) => { if (confirmDiscard()) setNextSteps(value); };
   useEffect(() => {
-    if (open) generate();
+    if (open) void generate();
     // Regenerate when the dialog opens or the format changes; edits are kept otherwise.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, style, nextSteps]);

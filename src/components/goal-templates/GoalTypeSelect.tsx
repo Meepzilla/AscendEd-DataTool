@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { Suspense, lazy, useMemo, useState } from 'react';
 import {
   Select,
   SelectContent,
@@ -17,7 +17,8 @@ import { GOAL_TYPES } from '@/lib/goal-constants';
 import { CUSTOM_MEASURE_KIND_INFO, cloneCustomGoalType } from '@/lib/goal-types/custom';
 import { goalTypeLabel } from '@/lib/helpers';
 import type { CustomGoalType, GoalType } from '@/lib/types';
-import CustomGoalTypeModal from '@/components/modals/custom-goal-type-modal';
+
+const CustomGoalTypeModal = lazy(() => import('@/components/modals/custom-goal-type-modal'));
 
 const CREATE_NEW_VALUE = '__CREATE_CUSTOM_GOAL_TYPE__';
 
@@ -124,14 +125,18 @@ export default function GoalTypeSelect({
         </SelectContent>
       </Select>
 
-      <CustomGoalTypeModal
-        isOpen={isBuilderOpen}
-        onClose={() => setIsBuilderOpen(false)}
-        saveCustomType={saveCustomType}
-        onSave={(saved) => {
-          onChange('CUSTOM', cloneCustomGoalType(saved));
-        }}
-      />
+      {isBuilderOpen && (
+        <Suspense fallback={null}>
+          <CustomGoalTypeModal
+            isOpen={isBuilderOpen}
+            onClose={() => setIsBuilderOpen(false)}
+            saveCustomType={saveCustomType}
+            onSave={(saved) => {
+              onChange('CUSTOM', cloneCustomGoalType(saved));
+            }}
+          />
+        </Suspense>
+      )}
     </>
   );
 }

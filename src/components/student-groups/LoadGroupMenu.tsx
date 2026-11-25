@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { Suspense, lazy, useState } from 'react';
 import { UsersRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useStudentData } from '@/hooks/use-student-data';
 import { useStudentGroups, type StudentGroup } from '@/lib/student-groups';
-import ManageGroupsDialog from './ManageGroupsDialog';
+
+const ManageGroupsDialog = lazy(() => import('./ManageGroupsDialog'));
 
 // Data Entry's Load Group button: a menu of saved groups (loading one puts its students in the slots) and
 // Manage Groups.
@@ -39,7 +40,9 @@ export default function LoadGroupMenu({ onLoad, disabled, size = 'lg', className
           <DropdownMenuItem onSelect={() => setManaging(true)}>Manage Groups…</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <ManageGroupsDialog open={managing} onOpenChange={setManaging} />
+      <Suspense fallback={null}>
+        {managing && <ManageGroupsDialog open={managing} onOpenChange={setManaging} />}
+      </Suspense>
     </>
   );
 }

@@ -16,22 +16,15 @@ import { byDateDesc, byName, hydrateLists, readList } from '@/lib/data-store';
 import { requestPersistentStorage } from '@/lib/storage-size';
 import { coalesce } from '@/lib/coalesce';
 import { DATA_CHANGED_CHANNEL, isMainListStorageKey, isOwnDataChangedMessage, postDataChanged, runListTransactionAsync, type AsyncListTransactionStore, type MainListKey } from '@/lib/data-transaction';
-import { prepareLoadedData } from '@/lib/data-migrations';
-import { planSessionImport, type ImportedSession } from '@/lib/session-import';
-import { createBackup, describeLeftOut, type AppBackup, type ParsedBackup, type RestoreMode, type RestoreSummary } from '@/lib/backup';
-import { planRestore, restoreBackupSettings } from '@/lib/restore';
-import { loadCustomAbcLists } from '@/lib/abc-lists';
-import { loadCustomCommFunctions } from '@/lib/comm-functions';
-import { applyStudentImport, type ImportStudent } from '@/lib/student-import';
-import { getStudentGroups } from '@/lib/student-groups';
-import { getCustomGoalTypes } from '@/lib/custom-goal-types';
+import type { ImportedSession } from '@/lib/session-import';
+import type { AppBackup, ParsedBackup, RestoreMode, RestoreSummary } from '@/lib/backup';
+import type { ImportStudent } from '@/lib/student-import';
 import { visibleTemplates, deletedBuiltInTemplates as listDeletedBuiltIns, restoreBuiltInTemplates as restoreBuiltInList } from '@/lib/builtin-goals';
-import { mergeProblem, mergeSessions } from '@/lib/session-merge';
 
 // All student data for the app (students, goal templates, sessions) and the actions that change it. Storage
 // lives in use-data-storage.ts and lib/data-store.ts; what happens on load, import and restore is worked out in
-// lib/data-migrations.ts, lib/session-import.ts and lib/restore.ts (plain functions, unit tested); this file
-// keeps the lists in React state and saves each change.
+// lib/data-migrations.ts, lib/session-import.ts and lib/restore.ts (plain functions, unit tested) and loaded on
+// demand so heavy parsers, Zod schemas and the 653 KB goal bank stay out of the root layout bundle.
 
 interface StudentDataContextType {
   students: Student[];
@@ -78,7 +71,7 @@ interface StudentDataContextType {
   mergeSessionRecords: (sessionIds: string[]) => Promise<boolean>;
   getSessionsForStudent: (studentId: string) => SessionData[];
   importSessions: (sessionsToImport: ImportedSession[]) => Promise<{ newCount: number; duplicateCount: number; unmatchedCount: number; addedGoalCount: number }>;
-  exportBackup: () => AppBackup;
+  exportBackup: () => Promise<AppBackup>;
   restoreBackup: (backup: AppBackup, mode: RestoreMode) => Promise<RestoreSummary>;
 
   // Modal State & Actions
@@ -293,6 +286,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const importStudents = useCallback(async (imported: ImportStudent[]) => {
     if (!currentUser || imported.length === 0) return null;
+    const { applyStudentImport } = await import('@/lib/student-import');
     const result = applyStudentImport(studentsRef.current, imported, currentUser.uid);
     if (!(await commitStudents(result.students.sort(byName)))) return null;
     return { added: result.added, updated: result.updated, goals: result.goals };
@@ -377,6 +371,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const mergeSessionRecords = useCallback(async (sessionIds: string[]) => {
     if (!currentUser) return false;
+    const { mergeProblem, mergeSessions } = await import('@/lib/session-merge');
     const parts = sessionsRef.current.filter(s => sessionIds.includes(s.sessionId));
     const problem = mergeProblem(parts);
     if (problem) {
@@ -402,6 +397,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   /** Adds sessions imported from a CSV file (see planSessionImport for how they are matched). */
   const importSessions = useCallback(async (sessionsToImport: ImportedSession[]) => {
     if (!currentUser) throw new Error("Not authenticated.");
+    const { planSessionImport } = await import('@/lib/session-import');
     const plan = planSessionImport(studentsRef.current, sessionsRef.current, sessionsToImport, currentUser.uid);
     const { newCount, duplicateCount, unmatchedCount, addedGoalCount } = plan;
     if (newCount === 0 && addedGoalCount === 0) return { newCount, duplicateCount, unmatchedCount, addedGoalCount };
@@ -417,13 +413,25 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   // The refs, not React state: a backup taken right after a rapid change exports what
   // is stored, not the state from the last render.
-  const exportBackup = useCallback(
-    () => createBackup(
+  const exportBackup = useCallback(async () => {
+    const [
+      { createBackup },
+      { loadCustomAbcLists },
+      { loadCustomCommFunctions },
+      { getStudentGroups },
+      { getCustomGoalTypes },
+    ] = await Promise.all([
+      import('@/lib/backup'),
+      import('@/lib/abc-lists'),
+      import('@/lib/comm-functions'),
+      import('@/lib/student-groups'),
+      import('@/lib/custom-goal-types'),
+    ]);
+    return createBackup(
       { students: studentsRef.current, goalTemplates: templatesRef.current, sessions: sessionsRef.current },
       { abcLists: loadCustomAbcLists() ?? undefined, commFunctions: loadCustomCommFunctions() ?? undefined, studentGroups: getStudentGroups(currentUser?.uid), customGoalTypes: getCustomGoalTypes(currentUser?.uid) },
-    ),
-    [currentUser],
-  );
+    );
+  }, [currentUser]);
 
   /**
    * Restores a backup. 'replace' swaps all data on this device for the backup's; 'merge' adds the
@@ -434,6 +442,10 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
    */
   const restoreBackup = useCallback(async (backup: AppBackup, mode: RestoreMode): Promise<RestoreSummary> => {
     if (!currentUser) throw new Error("Not authenticated.");
+    const [{ planRestore, restoreBackupSettings }, { describeLeftOut }] = await Promise.all([
+      import('@/lib/restore'),
+      import('@/lib/backup'),
+    ]);
     const current = { students: studentsRef.current, goalTemplates: templatesRef.current, sessions: sessionsRef.current };
 
     const keys = [studentsKey, templatesKey, sessionsKey];
@@ -546,6 +558,8 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       // A list that couldn't be read is never written over (the warning above covers it). Templates are saved first:
       // goals are linked to template ids only once those templates are stored, so no goal points at a template
       // that was never saved. The students are then saved once, with every update.
+      const { prepareLoadedData } = await import('@/lib/data-migrations');
+      if (cancelled) return;
       const prepared = prepareLoadedData(rawStudents, rawTemplates, currentUser.uid);
       const templatesStored = !prepared.templatesChanged
         || (!isUnreadable(templatesKey) && (await saveToLocal(templatesKey, prepared.templates)));

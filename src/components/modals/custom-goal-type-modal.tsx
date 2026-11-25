@@ -10,7 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { CustomGoalTypeSchema, CUSTOM_MEASURE_KINDS, type CustomChartId, type CustomGoalType, type CustomMeasureKind, type Goal, type TargetDirection } from '@/lib/types';
+import { CUSTOM_MEASURE_KINDS, type CustomChartId, type CustomGoalType, type CustomMeasureKind, type Goal, type TargetDirection } from '@/lib/types';
+import { CustomGoalTypeSchema } from '@/lib/schemas';
 import {
   CUSTOM_MEASURE_KIND_INFO,
   CUSTOM_TYPE_COLORS,

@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
-  BEHAVIOR_GOAL_TYPES, COMMUNICATION_MEASURE_TYPES, DEFAULT_GOAL_TEMPLATES, GOAL_TYPE_FIELDS, GOAL_TYPES_WITHOUT_PROMPT_COUNTERS,
-  applyDefaultTemplateUpdates, finalizeBehaviorData, goalDirection, hasTargetDirection, toolTypeOf,
+  BEHAVIOR_GOAL_TYPES, COMMUNICATION_MEASURE_TYPES, GOAL_TYPE_FIELDS, GOAL_TYPES_WITHOUT_PROMPT_COUNTERS,
+  finalizeBehaviorData, goalDirection, hasTargetDirection, toolTypeOf,
 } from '../goal-constants';
+import { DEFAULT_GOAL_TEMPLATES, applyDefaultTemplateUpdates } from '../goal-constants/seed-bank';
 import { goalMeasure, goalMeasureInfo, goalResponses, meetsTarget } from '../goal-measures';
 import { goalAccuracyText } from '../goal-input-logic';
 import { applyGoalHotkey } from '../data-entry-hotkeys';

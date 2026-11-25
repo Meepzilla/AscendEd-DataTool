@@ -1,14 +1,15 @@
 
 'use client';
-import React, { useState, useMemo } from 'react';
+import React, { Suspense, lazy, useState, useMemo } from 'react';
 import { useStudentData } from '@/hooks/use-student-data';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { UserSearch, UsersRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import ManageGroupsDialog from '@/components/student-groups/ManageGroupsDialog';
 import AppLoadingSkeleton from '@/components/layout/AppLoadingSkeleton';
 import StudentFilters, { type StudentSortOrder } from '@/components/student-selection/StudentFilters';
 import StudentSelectionGrid from '@/components/student-selection/StudentSelectionGrid';
+
+const ManageGroupsDialog = lazy(() => import('@/components/student-groups/ManageGroupsDialog'));
 
 export default function StudentProfileLandingPage() {
   const { students, loading, openAddStudentModal } = useStudentData();
@@ -77,7 +78,9 @@ export default function StudentProfileLandingPage() {
           <Button variant="outline" size="sm" onClick={() => setIsGroupsOpen(true)}>
             <UsersRound className="mr-2 h-4 w-4" />Groups
           </Button>
-          <ManageGroupsDialog open={isGroupsOpen} onOpenChange={setIsGroupsOpen} />
+          <Suspense fallback={null}>
+            {isGroupsOpen && <ManageGroupsDialog open={isGroupsOpen} onOpenChange={setIsGroupsOpen} />}
+          </Suspense>
         </CardHeader>
         <CardContent>
             <StudentFilters 

@@ -1,4 +1,3 @@
-import { z } from 'zod';
 import * as secureStore from './secure-store';
 import { clearStorageFailure, reportStorageFailure } from './storage-failure';
 import {
@@ -26,12 +25,42 @@ export const DEFAULT_ABC_LISTS: AbcLists = {
   consequences: ABC_CONSEQUENCES.map(c => ({ ...c })),
 };
 
-const item = z.string().trim().min(1).max(60);
-export const AbcListsSchema = z.object({
-  antecedents: z.array(item),
-  behaviors: z.array(item),
-  consequences: z.array(z.object({ label: item, fn: z.enum(BEHAVIOR_FUNCTIONS).nullable() })),
-});
+const VALID_FUNCTIONS = new Set<string>(BEHAVIOR_FUNCTIONS);
+
+function parseAbcItem(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  const trimmed = raw.trim();
+  return trimmed.length >= 1 && trimmed.length <= 60 ? trimmed : null;
+}
+
+/** Validates and normalizes an ABC lists object without pulling Zod into runtime pages. */
+export function parseAbcLists(raw: unknown): AbcLists | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const obj = raw as Record<string, unknown>;
+  if (!Array.isArray(obj.antecedents) || !Array.isArray(obj.behaviors) || !Array.isArray(obj.consequences)) return null;
+  const antecedents: string[] = [];
+  for (const x of obj.antecedents) {
+    const v = parseAbcItem(x);
+    if (v === null) return null;
+    antecedents.push(v);
+  }
+  const behaviors: string[] = [];
+  for (const x of obj.behaviors) {
+    const v = parseAbcItem(x);
+    if (v === null) return null;
+    behaviors.push(v);
+  }
+  const consequences: AbcLists['consequences'] = [];
+  for (const x of obj.consequences) {
+    if (!x || typeof x !== 'object' || Array.isArray(x)) return null;
+    const item = x as Record<string, unknown>;
+    const label = parseAbcItem(item.label);
+    if (label === null) return null;
+    if (item.fn !== null && (typeof item.fn !== 'string' || !VALID_FUNCTIONS.has(item.fn))) return null;
+    consequences.push({ label, fn: item.fn as BehaviorFunction | null });
+  }
+  return { antecedents, behaviors, consequences };
+}
 
 export const ABC_LISTS_KEY = 'ascended_abc_lists';
 const CHANGE_EVENT = 'ascended-abc-lists-change';
@@ -42,8 +71,7 @@ export function loadCustomAbcLists(): AbcLists | null {
   try {
     const stored = secureStore.getItem(ABC_LISTS_KEY);
     if (!stored || stored === '\u0000damaged') return null;
-    const parsed = AbcListsSchema.safeParse(JSON.parse(stored));
-    return parsed.success ? parsed.data : null;
+    return parseAbcLists(JSON.parse(stored));
   } catch {
     return null;
   }

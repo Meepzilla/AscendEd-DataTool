@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useRef, useState } from 'react';
+import React, { Suspense, lazy, useMemo, useRef, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,14 +13,14 @@ import { useToast } from '@/hooks/use-toast';
 import {
   applyCustomGoalTypeUpdate,
   exportCustomGoalTypesJson,
-  parseCustomGoalTypesImport,
   useCustomGoalTypes,
 } from '@/lib/custom-goal-types';
 import { CUSTOM_MEASURE_KIND_INFO, customTypeSummary } from '@/lib/goal-types/custom';
 import { saveTextFile } from '@/lib/save-file';
 import { plural } from '@/lib/helpers';
 import type { CustomGoalType } from '@/lib/types';
-import CustomGoalTypeModal from '@/components/modals/custom-goal-type-modal';
+
+const CustomGoalTypeModal = lazy(() => import('@/components/modals/custom-goal-type-modal'));
 
 export default function CustomGoalTypesCard() {
   const { currentUser } = useAuth();
@@ -132,7 +132,10 @@ export default function CustomGoalTypesCard() {
     e.target.value = '';
     if (!file) return;
     try {
-      const text = await file.text();
+      const [text, { parseCustomGoalTypesImport }] = await Promise.all([
+        file.text(),
+        import('@/lib/custom-goal-types-import'),
+      ]);
       const parsed = parseCustomGoalTypesImport(text);
       const { added, updated } = importCustomTypes(parsed);
       toast({
@@ -330,18 +333,22 @@ export default function CustomGoalTypesCard() {
         </div>
       </CardContent>
 
-      <CustomGoalTypeModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        initialType={editingType}
-        saveCustomType={saveCustomType}
-        onSave={(saved) => {
-          toast({
-            title: editingType ? 'Goal Type Updated' : 'Goal Type Created',
-            description: `“${saved.name}” is ready to use in goal templates and student goals.`,
-          });
-        }}
-      />
+      <Suspense fallback={null}>
+        {isModalOpen && (
+          <CustomGoalTypeModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            initialType={editingType}
+            saveCustomType={saveCustomType}
+            onSave={(saved) => {
+              toast({
+                title: editingType ? 'Goal Type Updated' : 'Goal Type Created',
+                description: `“${saved.name}” is ready to use in goal templates and student goals.`,
+              });
+            }}
+          />
+        )}
+      </Suspense>
     </Card>
   );
 }

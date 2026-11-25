@@ -1,13 +1,7 @@
 
 import type { GoalTemplate } from '../types';
 
-export const COGNITIVE_FIELDS: Record<string, Record<string, any>> = {
-  COGNITIVE: {
-    notes: '',
-    rating: 3,
-    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, Imitation: 0,
-  },
-};
+export { COGNITIVE_FIELDS } from './fields';
 
 export const COGNITIVE_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'userId'>[] = [
   // --- Executive Functioning ---

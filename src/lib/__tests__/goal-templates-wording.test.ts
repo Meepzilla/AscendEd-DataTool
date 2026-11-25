@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { prepareLoadedData } from '../data-migrations';
-import { DEFAULT_GOAL_TEMPLATES, textHash } from '../goal-constants';
+import { DEFAULT_GOAL_TEMPLATES, textHash } from '../goal-constants/seed-bank';
 import { matchTextToTarget } from '../goal-blanks';
 import { goalFromTemplate } from '../goal-templates';
 import type { GoalTemplate, Student } from '../types';

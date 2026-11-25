@@ -170,7 +170,7 @@ describe('setAccessPin format validation and schema numeric/GAS target validatio
   });
 
   it('allows negative GAS targets (-2..-1) in GoalTemplateSchema and AssignedGoalEditSchema while blocking negative non-GAS targets', async () => {
-    const { GoalTemplateSchema, AssignedGoalEditSchema } = await import('../types');
+    const { GoalTemplateSchema, AssignedGoalEditSchema } = await import('../schemas');
     expect(GoalTemplateSchema.safeParse({
       name: 'GAS Goal',
       type: 'GOAL_ATTAINMENT_SCALE',

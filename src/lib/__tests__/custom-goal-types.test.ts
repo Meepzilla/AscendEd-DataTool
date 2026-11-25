@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { memoryStorage } from './helpers';
-import { BUILT_IN_GOAL_TYPE_VALUES, CustomGoalTypeSchema, type CustomGoalType, type Goal, type GoalTemplate, type SessionData, type Student } from '../types';
+import { BUILT_IN_GOAL_TYPE_VALUES, type CustomGoalType, type Goal, type GoalTemplate, type SessionData, type Student } from '../types';
+import { CustomGoalTypeSchema } from '../schemas';
 import { BUILT_IN_DEFS, defaultCustomGoalType, getGoalTypeDef } from '../goal-types';
 import { goalMeasure, goalMeasureInfo, goalResponses, sessionMeetsTarget, usesPromptCounters } from '../goal-measures';
 import { measureFormula } from '../report-formulas';
@@ -16,9 +17,9 @@ import {
   exportCustomGoalTypesJson,
   findNewerCustomGoalType,
   getCustomGoalTypes,
-  parseCustomGoalTypesImport,
   saveCustomGoalTypes,
 } from '../custom-goal-types';
+import { parseCustomGoalTypesImport } from '../custom-goal-types-import';
 import { createBackup, parseBackup } from '../backup';
 import { restoreBackupSettings } from '../restore';
 

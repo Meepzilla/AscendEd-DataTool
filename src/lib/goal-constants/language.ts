@@ -1,21 +1,6 @@
 import type { GoalTemplate } from '../types';
 
-export const LANGUAGE_FIELDS: Record<string, Record<string, any>> = {
-  LANGUAGE_COMPREHENSION: {
-    questionsCorrect: 0,
-    questionsIncorrect: 0,
-    approximate: 0,
-    details: '',
-    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, Imitation: 0,
-  },
-  LANGUAGE_EXPRESSION: {
-    successfulResponses: 0,
-    unsuccessfulResponses: 0,
-    approximate: 0,
-    details: '',
-    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, Imitation: 0,
-  },
-};
+export { LANGUAGE_FIELDS } from './fields';
 
 export const LANGUAGE_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'userId'>[] = [
   // Language Comprehension Goals
