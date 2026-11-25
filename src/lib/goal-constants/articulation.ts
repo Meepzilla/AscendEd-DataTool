@@ -1,16 +1,7 @@
 
 import type { GoalTemplate, GoalType } from '../types';
 
-export const ARTICULATION_FIELDS: Record<string, Record<string, any>> = {
-  ARTICULATION: {
-    correct: 0,
-    incorrect: 0,
-    approximate: 0,
-    targetSound: '',
-    wordList: '',
-    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, Imitation: 0,
-  },
-};
+export { ARTICULATION_FIELDS } from './fields';
 
 type ArticulationTemplate = Omit<GoalTemplate, 'id' | 'createdAt' | 'userId'>;
 

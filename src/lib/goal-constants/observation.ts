@@ -1,16 +1,6 @@
 import type { GoalTemplate } from '../types';
 
-export const OBSERVATION_FIELDS: Record<string, Record<string, any>> = {
-  QUALITATIVE_OBSERVATION: {
-    notes: '',
-    rating: 3,
-    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, Imitation: 0,
-  },
-  PROMPTING: {
-    notes: '',
-    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, Imitation: 0,
-  },
-};
+export { OBSERVATION_FIELDS } from './fields';
 
 export const OBSERVATION_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'userId'>[] = [
   { name: 'Protest or reject an undesired item or activity', type: 'QUALITATIVE_OBSERVATION', smartGoalPrompt: 'Student will use a functional way to protest or reject.', isDefault: true, sessionTargetValue: 4, generatedSmartGoal: '' },

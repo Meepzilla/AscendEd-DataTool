@@ -1,10 +1,11 @@
 import type { GoalTemplate, Student } from './types';
 import { generateUUID } from './helpers';
 import { linkGoalsToTemplates } from './goal-templates';
+import { defaultTemplateKey } from './goal-constants';
 import {
-  DEFAULT_GOAL_TEMPLATES, defaultTemplateKey, applyAssignedGoalRenames, applyDefaultTemplateRenames,
+  DEFAULT_GOAL_TEMPLATES, applyAssignedGoalRenames, applyDefaultTemplateRenames,
   applyDefaultTemplateRetirements, applyDefaultTemplateUpdates, applyDefaultTemplateTextUpdates, applyAssignedGoalStatements,
-} from './goal-constants';
+} from './goal-constants/seed-bank';
 import { byName } from './data-store';
 
 // Brings stored students and templates up to date when the app loads: renamed and retired built-in templates,

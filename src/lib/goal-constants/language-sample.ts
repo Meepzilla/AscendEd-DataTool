@@ -1,12 +1,6 @@
 import type { GoalTemplate } from '../types';
 
-// Language sample goals measure the mean length of utterance (MLU); item mastery goals track a list of targets one
-// by one. The session data is described in language-sample.ts and item-mastery.ts; the unit and the items are set
-// on each student's goal (Edit Goal).
-export const LANGUAGE_SAMPLE_FIELDS: Record<string, Record<string, any>> = {
-  LANGUAGE_SAMPLE: { utterances: [], notes: '' },
-  ITEM_MASTERY: { items: [], notes: '' },
-};
+export { LANGUAGE_SAMPLE_FIELDS } from './fields';
 
 const BY_SLP = 'as measured by SLP language sample analysis';
 const OBSERVED = 'as measured by SLP or teacher observation and data collection';

@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { visibleTemplates, deletedBuiltInTemplates, restoreBuiltInTemplates } from '../builtin-goals';
 import { prepareLoadedData } from '../data-migrations';
 import { mergeBackupData } from '../backup';
-import { DEFAULT_GOAL_TEMPLATES, defaultTemplateKey } from '../goal-constants';
+import { defaultTemplateKey } from '../goal-constants';
+import { DEFAULT_GOAL_TEMPLATES } from '../goal-constants/seed-bank';
 import type { GoalTemplate } from '../types';
 
 const builtIn = (id: string, name: string, extra: Partial<GoalTemplate> = {}): GoalTemplate => ({

@@ -1,14 +1,6 @@
 import type { GoalTemplate } from '../types';
 
-export const PHONOLOGICAL_FIELDS: Record<string, Record<string, any>> = {
-  PHONOLOGICAL_PROCESSES: {
-    targetProcess: '',
-    correctProductions: 0,
-    incorrectProductions: 0,
-    approximate: 0,
-    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, Imitation: 0,
-  },
-};
+export { PHONOLOGICAL_FIELDS } from './fields';
 
 export const PHONOLOGICAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'userId'>[] = [
   { name: 'Eliminate final consonant deletion in CVC words', type: 'PHONOLOGICAL_PROCESSES', smartGoalPrompt: 'Student will eliminate final consonant deletion in CVC words.', isDefault: true, sessionTargetValue: 80, generatedSmartGoal: '' },

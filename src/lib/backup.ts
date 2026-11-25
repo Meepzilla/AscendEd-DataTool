@@ -1,15 +1,19 @@
 import { z } from 'zod';
 import { knownGoalType } from './legacy-goal-types';
 import { reviveGoalTypes } from './legacy-goal-types';
-import { CustomGoalTypeSchema, type CustomGoalType, type GoalTemplate, type SessionData, type Student } from './types';
-import { AbcListsSchema, type AbcLists, loadCustomAbcLists } from './abc-lists';
-import { CommFunctionsSchema, loadCustomCommFunctions } from './comm-functions';
+import type { CustomGoalType, GoalTemplate, SessionData, Student } from './types';
+import { CustomGoalTypeSchema } from './schemas';
+import { parseAbcLists, type AbcLists, loadCustomAbcLists } from './abc-lists';
+import { parseCommFunctions, loadCustomCommFunctions } from './comm-functions';
 import type { CommFunction } from './goal-constants/communication';
 import { getStudentGroups } from './student-groups';
 import { getCustomGoalTypes } from './custom-goal-types';
 import { hydrateLists, readList, storageKeys } from './data-store';
 import { defaultTemplateKey } from './goal-constants';
 import { decryptWithPassword, encryptWithPassword, type PasswordProtected } from './secure-store';
+import { LAST_BACKUP_KEY, MAX_BACKUP_FILE_BYTES, PLAINTEXT_BACKUP_ACKNOWLEDGEMENT, isPlaintextBackupAcknowledged } from './backup-constants';
+
+export { LAST_BACKUP_KEY, MAX_BACKUP_FILE_BYTES, PLAINTEXT_BACKUP_ACKNOWLEDGEMENT, isPlaintextBackupAcknowledged };
 
 // A backup holds everything stored on the device: students (with their goals),
 // goal templates, sessions, and edited settings that belong with the data (the ABC data lists).
@@ -17,7 +21,6 @@ import { decryptWithPassword, encryptWithPassword, type PasswordProtected } from
 
 export const BACKUP_VERSION = 1;
 const BACKUP_APP = 'AscendEd';
-export const LAST_BACKUP_KEY = 'ascended_last_backup_at';
 
 export interface BackupData {
   students: Student[];
@@ -42,11 +45,6 @@ export interface AppBackup {
   settings?: BackupSettings;
 }
 
-/**
- * Backups larger than this are rejected on restore, before parsing, and are not written either: a backup the app
- * could save but never restore would be worse than no backup. Written compactly, 3,000 sessions take about 5 MB.
- */
-export const MAX_BACKUP_FILE_BYTES = 50 * 1024 * 1024;
 const TOO_LARGE = `over ${MAX_BACKUP_FILE_BYTES / (1024 * 1024)} MB`;
 
 /** A record dropped while parsing, with why, so the user can be told what was left out. */
@@ -197,13 +195,13 @@ function extractSettings(raw: unknown): { settings?: BackupSettings; droppedSett
   const record = raw as Record<string, unknown>;
   const settings: BackupSettings = {};
   if (record.abcLists !== undefined) {
-    const parsed = AbcListsSchema.safeParse(record.abcLists);
-    if (parsed.success) settings.abcLists = parsed.data;
+    const parsed = parseAbcLists(record.abcLists);
+    if (parsed) settings.abcLists = parsed;
     else droppedSettings.push('abcLists');
   }
   if (record.commFunctions !== undefined) {
-    const parsed = CommFunctionsSchema.safeParse(record.commFunctions);
-    if (parsed.success) settings.commFunctions = parsed.data;
+    const parsed = parseCommFunctions(record.commFunctions);
+    if (parsed.ok) settings.commFunctions = parsed.data;
     else droppedSettings.push('commFunctions');
   }
   if (record.studentGroups !== undefined) {
@@ -291,15 +289,6 @@ export function backupFileName(date = new Date()): string {
   const pad = (n: number) => String(n).padStart(2, '0');
   const stamp = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}_${pad(date.getHours())}${pad(date.getMinutes())}`;
   return `AscendEd-backup_${stamp}.json`;
-}
-
-// A plaintext backup is only saved after the user types this word in the backup dialog, so saving
-// student data unencrypted is a deliberate act rather than one checkbox tick. Case-insensitive.
-export const PLAINTEXT_BACKUP_ACKNOWLEDGEMENT = 'PLAINTEXT';
-
-/** Whether the typed acknowledgement matches the plaintext-backup confirmation word. */
-export function isPlaintextBackupAcknowledged(input: string): boolean {
-  return input.trim().toUpperCase() === PLAINTEXT_BACKUP_ACKNOWLEDGEMENT;
 }
 
 // ---- Backup integrity: SHA-256 checksum over the canonical payload ----

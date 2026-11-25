@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -11,9 +11,6 @@ import { useAuth } from '@/hooks/use-auth';
 import { APP_NAME } from '@/lib/appConstants';
 import { useStudentData } from '@/hooks/use-student-data';
 import { useErrorLog } from '@/hooks/use-error-log';
-import AddStudentModal from '@/components/modals/add-student-modal';
-import EditStudentModal from '@/components/modals/edit-student-modal';
-import ErrorLogModal from '@/components/modals/error-log-modal';
 import AppNavigation from './app-navigation'; 
 import { usePathname } from 'next/navigation';
 import { Separator } from '../ui/separator';
@@ -28,6 +25,10 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useSidebar } from '@/components/ui/sidebar';
 
+const AddStudentModal = lazy(() => import('@/components/modals/add-student-modal'));
+const EditStudentModal = lazy(() => import('@/components/modals/edit-student-modal'));
+const ErrorLogModal = lazy(() => import('@/components/modals/error-log-modal'));
+
 /** With the menu bar at the bottom: a thin bar of its color at the top edge, so iPadOS still draws the top sharply. */
 export function TopStrip() {
   return (
@@ -41,8 +42,8 @@ export function TopStrip() {
 /** atBottom: Settings → Menu bar position is Bottom (the layout tracks it); the account menu then opens upward. */
 export default function AppHeader({ atBottom = false }: { atBottom?: boolean }) {
   const { currentUser, signOut } = useAuth();
-  const { openAddStudentModal, editingStudent } = useStudentData();
-  const { toggleErrorLogModal } = useErrorLog();
+  const { isAddStudentModalOpen, openAddStudentModal, editingStudent } = useStudentData();
+  const { isErrorLogModalOpen, toggleErrorLogModal } = useErrorLog();
   const pathname = usePathname();
   const { toggleSidebar } = useSidebar();
 
@@ -198,9 +199,11 @@ export default function AppHeader({ atBottom = false }: { atBottom?: boolean }) 
           </div>
         </div>
       </div>
-      <AddStudentModal />
-      {editingStudent && <EditStudentModal studentToEdit={editingStudent} />}
-      <ErrorLogModal /> 
+      <Suspense fallback={null}>
+        {isAddStudentModalOpen && <AddStudentModal />}
+        {editingStudent && <EditStudentModal studentToEdit={editingStudent} />}
+        {isErrorLogModalOpen && <ErrorLogModal />}
+      </Suspense>
     </header>
     </>
   );

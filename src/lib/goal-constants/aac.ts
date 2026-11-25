@@ -1,15 +1,7 @@
 
 import type { GoalTemplate } from '../types';
 
-export const AAC_FIELDS: Record<string, Record<string, any>> = {
-  AAC: {
-    correct: 0,
-    incorrect: 0,
-    approximate: 0,
-    details: '',
-    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, Imitation: 0,
-  },
-};
+export { AAC_FIELDS } from './fields';
 
 export const AAC_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'userId'>[] = [
   // --- Foundational & Early Communication Functions ---

@@ -3,7 +3,7 @@ import { prepareLoadedData } from '../data-migrations';
 import { planSessionImport, type ImportedSession } from '../session-import';
 import { planRestore } from '../restore';
 import { createBackup } from '../backup';
-import { DEFAULT_GOAL_TEMPLATES } from '../goal-constants';
+import { DEFAULT_GOAL_TEMPLATES } from '../goal-constants/seed-bank';
 import { session } from './helpers';
 import type { GoalTemplate, Student } from '../types';
 

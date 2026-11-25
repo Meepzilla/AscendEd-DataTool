@@ -16,7 +16,8 @@ import BackUpNowButton from './BackUpNowButton';
 import { StorageFullWarning, StorageUsageLine } from './StorageUsage';
 import { useStorageSize } from '@/hooks/use-storage-size';
 import { useToast } from '@/hooks/use-toast';
-import { decryptBackupText, isProtectedBackup, parseBackup, type AppBackup, type RestoreMode, MAX_BACKUP_FILE_BYTES } from '@/lib/backup';
+import type { AppBackup, RestoreMode } from '@/lib/backup';
+import { MAX_BACKUP_FILE_BYTES } from '@/lib/backup-constants';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { plural } from '@/lib/helpers';
@@ -42,6 +43,7 @@ export default function BackupRestoreCard() {
     if (!protectedText || !backupPassword) return;
     setIsDecrypting(true);
     try {
+      const { decryptBackupText, parseBackup } = await import('@/lib/backup');
       const backup = parseBackup(await decryptBackupText(protectedText, backupPassword));
       closePasswordPrompt();
       setPendingBackup(backup);
@@ -63,7 +65,10 @@ export default function BackupRestoreCard() {
       return;
     }
     try {
-      const text = await file.text();
+      const [{ isProtectedBackup, parseBackup }, text] = await Promise.all([
+        import('@/lib/backup'),
+        file.text(),
+      ]);
       if (isProtectedBackup(text)) setProtectedText(text);
       else setPendingBackup(parseBackup(text));
     } catch (error: any) {

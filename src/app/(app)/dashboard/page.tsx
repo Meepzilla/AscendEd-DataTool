@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { lazy, Suspense } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useStudentData } from '@/hooks/use-student-data';
 import Link from 'next/link';
@@ -9,13 +9,13 @@ import { UserPlus, ListPlus, ClipboardList, BarChart2, Users, Target, Activity, 
 import { APP_NAME } from '@/lib/appConstants';
 import { formatDate, parseDateOnly } from '@/lib/helpers';
 import { Skeleton } from '@/components/ui/skeleton';
+import AppLoadingSkeleton from '@/components/layout/AppLoadingSkeleton';
 import BackupReminder from '@/components/settings/BackupReminder';
 import TodaysWork from '@/components/dashboard/TodaysWork';
 import GettingStarted from '@/components/dashboard/GettingStarted';
 import DueSoonCard from '@/components/dashboard/DueSoonCard';
 import ServiceMinutesCard from '@/components/dashboard/ServiceMinutesCard';
 
-const AppLoadingSkeleton = lazy(() => import('@/components/layout/AppLoadingSkeleton'));
 export default function DashboardPage() {
   const { students, goalTemplates, sessions, loading, sessionsLoading, openAddStudentModal } = useStudentData();
 
@@ -92,9 +92,7 @@ export default function DashboardPage() {
 
 
   if (loading) {
-    return (
-      <Suspense fallback={<div>Loading skeleton...</div>}><AppLoadingSkeleton /></Suspense>
-    );
+    return <AppLoadingSkeleton />;
   }
 
   return (

@@ -118,7 +118,6 @@ export default function AppLayout({
     if (currentUser) {
       const pagesToPrefetch = [
         '/dashboard',
-        '/changelog',
         '/data-entry',
         '/manage-sessions',
         '/analysis-report',

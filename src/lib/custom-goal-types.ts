@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { generateUUID } from './helpers';
 import * as secureStore from './secure-store';
-import { CustomGoalTypeSchema, type CustomGoalType, type Goal, type GoalTemplate } from './types';
+import { CUSTOM_MEASURE_KINDS, type CustomGoalType, type Goal, type GoalTemplate } from './types';
 import { cloneCustomGoalType } from './goal-types/custom';
 
 const KEY_BASE = 'ascended_custom_goal_types_v1_';
@@ -11,12 +11,38 @@ export const customGoalTypesKey = (userId: string | undefined) => KEY_BASE + (us
 export const CUSTOM_GOAL_TYPES_EVENT = 'ascended-custom-goal-types';
 const DAMAGED_MESSAGE = 'The saved custom goal types could not be read, so they were not changed. Restore a backup in Settings to replace them.';
 
+const VALID_KINDS = new Set<string>(CUSTOM_MEASURE_KINDS);
+
+function isValidStoredCustomGoalType(raw: unknown): raw is CustomGoalType {
+  if (!raw || typeof raw !== 'object') return false;
+  const ct = raw as Record<string, unknown>;
+  if (typeof ct.id !== 'string' || ct.id.length < 1) return false;
+  if (typeof ct.version !== 'number' || !Number.isInteger(ct.version) || ct.version < 1) return false;
+  if (typeof ct.name !== 'string' || ct.name.trim().length < 2 || ct.name.trim().length > 60) return false;
+  if (ct.description !== undefined && (typeof ct.description !== 'string' || ct.description.length > 240)) return false;
+  if (typeof ct.color !== 'string' || ct.color.length < 3) return false;
+  if (typeof ct.kind !== 'string' || !VALID_KINDS.has(ct.kind)) return false;
+  if (ct.direction !== 'increase' && ct.direction !== 'decrease') return false;
+  if (!ct.extras || typeof ct.extras !== 'object') return false;
+  const extras = ct.extras as Record<string, unknown>;
+  if (typeof extras.promptLevel !== 'boolean' || typeof extras.notes !== 'boolean') return false;
+  if (typeof ct.createdAt !== 'string') return false;
+  if (ct.kind === 'rating') {
+    const r = ct.rating as Record<string, unknown> | undefined;
+    if (!r || typeof r.min !== 'number' || typeof r.max !== 'number' || r.max <= r.min || r.max - r.min > 9) return false;
+  }
+  if (ct.kind === 'checklist') {
+    const c = ct.checklist as Record<string, unknown> | undefined;
+    if (!c || !Array.isArray(c.steps) || c.steps.length === 0) return false;
+  }
+  return true;
+}
+
 function parseStoredList(raw: unknown): CustomGoalType[] {
   if (!Array.isArray(raw)) return [];
   const valid: CustomGoalType[] = [];
   for (const item of raw) {
-    const parsed = CustomGoalTypeSchema.safeParse(item);
-    if (parsed.success) valid.push(parsed.data);
+    if (isValidStoredCustomGoalType(item)) valid.push(item);
   }
   return valid;
 }
@@ -98,29 +124,6 @@ export function exportCustomGoalTypesJson(types: CustomGoalType[]): string {
   );
 }
 
-/** Parses an exported custom goal types JSON file (or a raw JSON array of CustomGoalType objects). */
-export function parseCustomGoalTypesImport(text: string): CustomGoalType[] {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    throw new Error('This file is not valid JSON.');
-  }
-  const list = Array.isArray(parsed)
-    ? parsed
-    : parsed && typeof parsed === 'object' && Array.isArray((parsed as Record<string, unknown>).customGoalTypes)
-      ? (parsed as Record<string, unknown>).customGoalTypes as unknown[]
-      : null;
-  if (!list) {
-    throw new Error('This file does not contain a list of custom goal types.');
-  }
-  const valid = parseStoredList(list);
-  if (list.length > 0 && valid.length === 0) {
-    throw new Error('None of the custom goal types in this file were valid.');
-  }
-  return valid;
-}
-
 /** React hook for reading and updating the user's custom goal types across the app. */
 export function useCustomGoalTypes(userId: string | undefined) {
   const [customTypes, setCustomTypes] = useState<CustomGoalType[]>([]);
@@ -153,12 +156,14 @@ export function useCustomGoalTypes(userId: string | undefined) {
       createdAt: existing?.createdAt ?? draft.createdAt ?? now,
       updatedAt: now,
     };
-    const checked = CustomGoalTypeSchema.parse(candidate);
+    if (!isValidStoredCustomGoalType(candidate)) {
+      throw new Error('Custom goal type is not valid.');
+    }
     const next = existing
-      ? all.map(t => (t.id === existing.id ? checked : t))
-      : [...all, checked];
+      ? all.map(t => (t.id === existing.id ? candidate : t))
+      : [...all, candidate];
     saveCustomGoalTypes(userId, next);
-    return checked;
+    return candidate;
   }, [userId]);
 
   const duplicateCustomType = useCallback((id: string) => {

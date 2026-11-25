@@ -1,4 +1,3 @@
-import { z } from 'zod';
 import * as secureStore from './secure-store';
 import { clearStorageFailure, reportStorageFailure } from './storage-failure';
 import { DEFAULT_COMM_FUNCTIONS, isSafeCommFunctionKey, registerCommFunctionLoader, type CommFunction } from './goal-constants/communication';
@@ -16,21 +15,50 @@ const DAMAGED_MESSAGE = 'The saved communication functions could not be read, so
 export const MAX_COMM_FUNCTIONS = 40;
 export const MAX_COMM_FUNCTION_LABEL = 60;
 
-export const CommFunctionsSchema = z.array(z.object({
-  key: z.string().refine(isSafeCommFunctionKey, 'A function key must start with a letter and use only letters, digits and "_".'),
-  label: z.string().trim().min(1).max(MAX_COMM_FUNCTION_LABEL),
-  hidden: z.boolean().optional(),
-})).min(1).max(MAX_COMM_FUNCTIONS)
-  .refine(list => new Set(list.map(f => f.key)).size === list.length, 'Each function needs its own key.')
-  .refine(list => list.some(f => !f.hidden), 'At least one function must be shown.');
+/** Validates and normalizes a communication functions list without pulling Zod into runtime pages. */
+export function parseCommFunctions(raw: unknown): { ok: true; data: CommFunction[] } | { ok: false; error: string } {
+  if (!Array.isArray(raw) || raw.length < 1 || raw.length > MAX_COMM_FUNCTIONS) {
+    return { ok: false, error: 'The communication functions list is not valid.' };
+  }
+  const list: CommFunction[] = [];
+  const seenKeys = new Set<string>();
+  for (const item of raw) {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) {
+      return { ok: false, error: 'The communication functions list is not valid.' };
+    }
+    const obj = item as Record<string, unknown>;
+    if (typeof obj.key !== 'string' || !isSafeCommFunctionKey(obj.key)) {
+      return { ok: false, error: 'A function key must start with a letter and use only letters, digits and "_".' };
+    }
+    if (typeof obj.label !== 'string') {
+      return { ok: false, error: 'The communication functions list is not valid.' };
+    }
+    const label = obj.label.trim();
+    if (label.length < 1 || label.length > MAX_COMM_FUNCTION_LABEL) {
+      return { ok: false, error: 'The communication functions list is not valid.' };
+    }
+    if (obj.hidden !== undefined && typeof obj.hidden !== 'boolean') {
+      return { ok: false, error: 'The communication functions list is not valid.' };
+    }
+    if (seenKeys.has(obj.key)) {
+      return { ok: false, error: 'Each function needs its own key.' };
+    }
+    seenKeys.add(obj.key);
+    list.push(obj.hidden === undefined ? { key: obj.key, label } : { key: obj.key, label, hidden: obj.hidden });
+  }
+  if (!list.some(f => !f.hidden)) {
+    return { ok: false, error: 'At least one function must be shown.' };
+  }
+  return { ok: true, data: list };
+}
 
 /** The list saved on this device, or null when it has never been changed. */
 export function loadCustomCommFunctions(): CommFunction[] | null {
   try {
     const stored = secureStore.getItem(COMM_FUNCTIONS_KEY);
     if (!stored || stored === '\u0000damaged') return null;
-    const parsed = CommFunctionsSchema.safeParse(JSON.parse(stored));
-    return parsed.success ? parsed.data : null;
+    const parsed = parseCommFunctions(JSON.parse(stored));
+    return parsed.ok ? parsed.data : null;
   } catch {
     return null;
   }
@@ -61,8 +89,8 @@ export function saveCommFunctionsForRestore(list: CommFunction[] | null) {
 
 function saveNow(list: CommFunction[] | null) {
   if (list) {
-    const parsed = CommFunctionsSchema.safeParse(list);
-    if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? 'The communication functions list is not valid.');
+    const parsed = parseCommFunctions(list);
+    if (!parsed.ok) throw new Error(parsed.error);
   }
   try {
     // The defaults themselves are never stored, so the app's own list (and later improvements to it) applies.

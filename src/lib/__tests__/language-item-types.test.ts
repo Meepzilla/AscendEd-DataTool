@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_GOAL_TEMPLATES, GOAL_TYPE_FIELDS, GOAL_TYPES_WITHOUT_PROMPT_COUNTERS } from '../goal-constants';
+import { GOAL_TYPE_FIELDS, GOAL_TYPES_WITHOUT_PROMPT_COUNTERS } from '../goal-constants';
+import { DEFAULT_GOAL_TEMPLATES } from '../goal-constants/seed-bank';
 import { goalMeasure, goalMeasureInfo, sessionMeetsTarget } from '../goal-measures';
 import { applyGoalHotkey } from '../data-entry-hotkeys';
 import { formatGoalTarget, goalTypeLabel } from '../helpers';
@@ -9,7 +10,8 @@ import { mergeGoalData } from '../session-merge';
 import { buildNarrative } from '../report-narrative';
 import { goalFromTemplate } from '../goal-templates';
 import { assignedGoalChanges } from '../goal-changes';
-import { AssignedGoalEditSchema, GOAL_TYPE_VALUES, type GoalTemplate } from '../types';
+import { GOAL_TYPE_VALUES, type GoalTemplate } from '../types';
+import { AssignedGoalEditSchema } from '../schemas';
 import {
   MAX_UTTERANCE_LENGTH, addUtterance, formatSampleLength, languageSampleSummary, lengthDistribution, removeUtterance, sampleUnit,
   sessionSampleUnit, utteranceLengths,

@@ -31,6 +31,9 @@ import { useDataEntryShortcuts } from '@/hooks/use-data-entry-shortcuts';
 import GoalFocusManager from './GoalFocusManager';
 import AccessLockDialog, { type AccessLockDialogMode } from './AccessLockDialog';
 import DataEntrySaveBar from './DataEntrySaveBar';
+import DataEntryHeaderCard from './DataEntryHeaderCard';
+import StudentCardsList from './StudentCardsList';
+import SelectionModal from '@/components/modals/selection-modal';
 import { hasAccessPin } from '@/lib/access-pin';
 import { getStudentGroups } from '@/lib/student-groups';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -41,9 +44,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 // (lib/data-entry-session). This file holds the state and the actions.
 
 const ConfirmationModal = lazy(() => import('@/components/modals/confirmation-modal'));
-const StudentCardsList = lazy(() => import('@/components/data-entry/StudentCardsList'));
-const DataEntryHeaderCard = lazy(() => import('@/components/data-entry/DataEntryHeaderCard'));
-const SelectionModal = lazy(() => import('@/components/modals/selection-modal'));
 
 // Whether Data Entry has been open since the app loaded. Switching pages keeps the module, so the
 // "restored" notice shows only when the app reopens with unsaved data, not every time the page is revisited.
@@ -777,17 +777,17 @@ export default function DataEntryContent() {
               confirmText="Yes, Reset Data"
             />
           )}
-          {selectionModalType === 'student' && (
-            <SelectionModal
-              isOpen={selectionModalType === 'student'}
-              onClose={() => setSelectionModalType(null)}
-              title="Select Focused Student"
-              items={studentSlotsForModal}
-              onSelect={handleSelectStudentFromModal}
-              selectedId={focusedStudentIdForModal}
-            />
-          )}
         </Suspense>
+        {selectionModalType === 'student' && (
+          <SelectionModal
+            isOpen={selectionModalType === 'student'}
+            onClose={() => setSelectionModalType(null)}
+            title="Select Focused Student"
+            items={studentSlotsForModal}
+            onSelect={handleSelectStudentFromModal}
+            selectedId={focusedStudentIdForModal}
+          />
+        )}
         
         {/* Draft recovery: the autosave could not store the unsaved entries on this device, so they
             live only in memory on this screen. The indicator names whose entries are at risk and
@@ -810,31 +810,28 @@ export default function DataEntryContent() {
         )}
 
         <div ref={headerRef} className="flex-shrink-0">
-          <Suspense fallback={<Card><CardContent>Loading header...</CardContent></Card>}>
-            <DataEntryHeaderCard
-              isHeaderCardCollapsed={isHeaderCardCollapsed}
-              setIsHeaderCardCollapsed={setIsHeaderCardCollapsed}
-              dataEntrySessionDate={sessionDate}
-              setDataEntrySessionDate={chooseSessionDate}
-              dataEntrySessionTime={sessionTime}
-              setDataEntrySessionTime={chooseSessionTime}
-              dataEntrySessionEndTime={sessionEndTime}
-              setDataEntrySessionEndTime={chooseSessionEndTime}
-              onResetToNow={resetSessionToNow}
-              onResetToBefore={resetSessionToBefore}
-              isStudentAccessLocked={isStudentAccessLocked}
-              setIsStudentAccessLocked={requestAccessLock}
-            />
-          </Suspense>
+          <DataEntryHeaderCard
+            isHeaderCardCollapsed={isHeaderCardCollapsed}
+            setIsHeaderCardCollapsed={setIsHeaderCardCollapsed}
+            dataEntrySessionDate={sessionDate}
+            setDataEntrySessionDate={chooseSessionDate}
+            dataEntrySessionTime={sessionTime}
+            setDataEntrySessionTime={chooseSessionTime}
+            dataEntrySessionEndTime={sessionEndTime}
+            setDataEntrySessionEndTime={chooseSessionEndTime}
+            onResetToNow={resetSessionToNow}
+            onResetToBefore={resetSessionToBefore}
+            isStudentAccessLocked={isStudentAccessLocked}
+            setIsStudentAccessLocked={requestAccessLock}
+          />
         </div>
 
         <div ref={cardsRegionRef} className="flex-grow min-h-0 relative group">
           <ScrollArea 
             className="h-full w-full" 
           >
-            <Suspense fallback={<div>Loading student cards...</div>}>
-              {/* The session's date, for behavior times changed by hand (they go on the session's day). */}
-              <SessionDateProvider date={validSessionDate}>
+            {/* The session's date, for behavior times changed by hand (they go on the session's day). */}
+            <SessionDateProvider date={validSessionDate}>
               <StudentCardsList
                   dataEntrySelectedStudentIds={selectedStudentIds}
                   students={students}
@@ -860,8 +857,7 @@ export default function DataEntryContent() {
                   addStudentSlot={addStudentSlot}
                   isStudentAccessLocked={isStudentAccessLocked}
               />
-              </SessionDateProvider>
-            </Suspense>
+            </SessionDateProvider>
             {/* Without a horizontal scrollbar the scroll area hides sideways overflow, so swiping, a trackpad or
                 Shift+wheel couldn't move the cards (only the arrows in the save bar could). */}
             <ScrollBar orientation="horizontal" />

@@ -1,19 +1,7 @@
 
 import type { GoalTemplate } from '../types';
 
-export const FLUENCY_FIELDS: Record<string, Record<string, any>> = {
-  FLUENCY_SYLLABLE_STUTTER: {
-    totalSyllables: 0,
-    stutteredSyllables: 0,
-    blocks: 0,
-    repetitions: 0,
-    prolongations: 0,
-    interjections: 0,
-    secondaryBehaviors: '',
-    observationNotes: '',
-    Independent: 0, Visual: 0, Verbal: 0, Gestural: 0, PartialPhysical: 0, Imitation: 0,
-  },
-};
+export { FLUENCY_FIELDS } from './fields';
 
 export const FLUENCY_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'userId'>[] = [
   { name: 'Reduce stuttering frequency in conversational speech', type: 'FLUENCY_SYLLABLE_STUTTER', smartGoalPrompt: 'Student will demonstrate increased fluency by stuttering on less than 5% of syllables during a 3-minute conversational speech sample.', isDefault: true, sessionTargetValue: 95, generatedSmartGoal: '' },

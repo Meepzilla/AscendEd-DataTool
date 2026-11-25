@@ -3,15 +3,10 @@
 import React, { useMemo } from 'react';
 import type { Goal, SessionData } from '@/lib/types';
 import { parseDateOnly } from '@/lib/helpers';
-import { gasTScoresOverTime, GAS_LEVELS, gasLevelText } from '@/lib/gas';
+import { gasTScoresOverTime, gasLevelText } from '@/lib/gas';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, ReferenceLine } from 'recharts';
-
-/** Short labels for the five attainment levels, for tooltips and tick text. */
-export function gasLevelShortLabel(level: number): string {
-  return GAS_LEVELS.find(l => l.level === level)?.label ?? '';
-}
 
 const formatLevel = (goal: Goal | undefined, level: number) => {
   if (!goal) return level > 0 ? `+${level}` : String(level);

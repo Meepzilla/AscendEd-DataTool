@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { currentGoalType, reviveGoalTypes } from '../legacy-goal-types';
-import { applyAssignedGoalRenames, applyDefaultTemplateRenames, DEFAULT_GOAL_TEMPLATES, GOAL_TYPE_FIELDS, GOAL_TYPES_WITHOUT_PROMPT_COUNTERS } from '../goal-constants';
+import { GOAL_TYPE_FIELDS, GOAL_TYPES_WITHOUT_PROMPT_COUNTERS } from '../goal-constants';
+import { applyAssignedGoalRenames, applyDefaultTemplateRenames, DEFAULT_GOAL_TEMPLATES } from '../goal-constants/seed-bank';
 import { goalTypeLabel } from '../helpers';
 import type { GoalTemplate, Student } from '../types';
 import { GOAL_TYPE_VALUES } from '../types';

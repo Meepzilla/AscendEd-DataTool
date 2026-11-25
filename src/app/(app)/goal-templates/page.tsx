@@ -33,6 +33,7 @@ export default function GoalTemplatesPage() {
     goalTemplates, 
     loading, 
     error,
+    isAddGoalTemplateModalOpen,
     openAddGoalTemplateModal,
     openEditGoalTemplateModal,
     openDeleteConfirmationModal,
@@ -134,8 +135,8 @@ export default function GoalTemplatesPage() {
   return (
     <div className="space-y-6">
       <Suspense fallback={null}>
-        <AddGoalTemplateModal />
-        <GoalBankDetailsDialog template={detailsTemplate} onClose={() => setDetailsTemplate(null)} />
+        {isAddGoalTemplateModalOpen && <AddGoalTemplateModal />}
+        {detailsTemplate && <GoalBankDetailsDialog template={detailsTemplate} onClose={() => setDetailsTemplate(null)} />}
         {assigningTemplate && <AssignTemplateDialog template={assigningTemplate} onClose={() => setAssigningTemplate(null)} />}
         {isDuplicateFinderOpen && <DuplicateFinderDialog open onClose={() => setIsDuplicateFinderOpen(false)} />}
         {editingGoalTemplate && <EditGoalTemplateModal templateToEdit={editingGoalTemplate} />}

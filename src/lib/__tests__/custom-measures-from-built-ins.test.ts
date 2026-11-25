@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { CUSTOM_MEASURE_KINDS, CustomGoalTypeSchema, type CustomGoalType, type CustomMeasureKind, type Goal } from '../types';
+import { CUSTOM_MEASURE_KINDS, type CustomGoalType, type CustomMeasureKind, type Goal } from '../types';
+import { CustomGoalTypeSchema } from '../schemas';
 import { CUSTOM_MEASURE_KIND_INFO, customChartOptions, customChartShown, customChartStyle, customTypeSummary, defaultCustomGoalType, makeCustomDef } from '../goal-types';
 import { goalMeasure, goalMeasureInfo, goalResponses, sessionMeetsTarget, usesPromptCounters } from '../goal-measures';
 import { formatGoalTarget } from '../helpers';

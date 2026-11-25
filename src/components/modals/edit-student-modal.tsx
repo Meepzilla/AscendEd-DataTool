@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useStudentData } from '@/hooks/use-student-data';
 import type { Student, Goal, GoalTemplate } from '@/lib/types';
-import { StudentSchema } from '@/lib/types';
+import { StudentSchema } from '@/lib/schemas';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { XIcon, PlusCircleIcon, Archive, ArchiveRestore, Pencil } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';

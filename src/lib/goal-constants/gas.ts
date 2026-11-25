@@ -1,13 +1,6 @@
 import type { GoalTemplate } from '../types';
 
-// Goal Attainment Scaling: a session records the level reached (-2 to +2), with 0 the expected outcome.
-// No level recorded yet means no data, so gasLevel starts undefined and is never defaulted to 0.
-export const GAS_FIELDS: Record<string, Record<string, any>> = {
-  GOAL_ATTAINMENT_SCALE: {
-    gasLevel: undefined,
-    notes: '',
-  },
-};
+export { GAS_FIELDS } from './fields';
 
 export const GAS_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'userId'>[] = [
   // --- Communication ---
