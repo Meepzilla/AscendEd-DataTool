@@ -18,6 +18,13 @@ interface ChangelogEntry {
 
 const allChangelogEntries: ChangelogEntry[] = [
   {
+    date: '2026-11-25',
+    title: 'Faster Page Loads Across the App',
+    description: 'Every page in the app now loads 33% to 46% less code up front (Data Entry and Student Profiles dropped by nearly half). Heavy tools that aren\'t needed on initial load — such as the built-in goal library used when setting up a device, backup and restore tools, spreadsheet and CSV imports and exports, report narrative generation, the passcode screen while unlocked, forms and dialogs, and specialized goal-entry inputs — are now loaded only when you open or use them. Data Entry and Student Profiles also removed extra loading steps so student cards appear in a single pass, and the app no longer downloads the What\'s New page in the background until you visit it.',
+    type: 'improvement',
+    icon: Zap,
+  },
+  {
     date: '2026-11-24',
     title: 'Reports Organized by Clinical Question, With More Ways to View Data',
     description: 'Reports now organizes its charts into four clear tabs — Goal Progress, Prompting & Support, Trials & Outcomes, and Attendance — each with a short note saying what it helps answer, and remembers the tab you had open. A new Group dates control lets you switch between Per session, By week, and By month to smooth out day-to-day variation. At a glance can switch between the Summary Table and visual Comparison Bars (average, latest score, and target side by side), and every Goal by Goal card can switch between Line, Bars (highlighting target-meeting sessions in green), and a Table of exact figures, responses, prompts, and notes. The old Sankey flow chart is replaced by a clearer Outcome Breakdown by Goal comparison (percentage or trial counts), the two duplicate Prompt Usage Distribution charts are combined into a Prompting & Support view with prompt fading over time, Trial Sequence is now grouped per goal with first-half vs. second-half accuracy, and Syllable Fluency can switch between % Fluent and raw counts.',
