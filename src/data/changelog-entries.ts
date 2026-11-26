@@ -12,6 +12,13 @@ export interface ChangelogEntry {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    date: '2026-11-26',
+    title: 'Dialogs No Longer Take the Whole Page Down When They Fail to Load',
+    description: 'Dialogs and goal-entry inputs are loaded only when you open them. If one of them cannot load — for example on a patchy connection — it used to replace the whole page with an error, losing your place. Now the page stays as it is and the dialog shows its own message with a Try again button. The Write Narrative dialog also says when the narrative could not be written instead of opening empty, and this page no longer quotes exact speed-up percentages for the recent loading changes, since those figures were never formally measured.',
+    type: 'fix',
+    icon: Bug,
+  },
+  {
     date: '2026-11-25',
     title: 'Report Figures Made More Trustworthy',
     description: 'Language sample (MLU) charts and narratives no longer mix samples counted in words with samples counted in morphemes after a goal\u2019s unit is changed, which could make progress appear out of the change alone; samples in the other unit are left out and the narrative says so. Weekly and monthly chart values are now pooled across all the responses or utterances behind them instead of averaging session scores, so a very small session can\u2019t outweigh a large one, and the totals in the Functions by session and Item by item tables now match the sessions shown.',
@@ -42,7 +49,7 @@ export const changelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-25',
     title: 'Faster Page Loads Across the App',
-    description: 'Every page in the app now loads 33% to 46% less code up front (Data Entry and Student Profiles dropped by nearly half). Heavy tools that aren\'t needed on initial load — such as the built-in goal library used when setting up a device, backup and restore tools, spreadsheet and CSV imports and exports, report narrative generation, the passcode screen while unlocked, forms and dialogs, and specialized goal-entry inputs — are now loaded only when you open or use them. Data Entry and Student Profiles also removed extra loading steps so student cards appear in a single pass, and the app no longer downloads the What\'s New page in the background until you visit it.',
+    description: 'Every page in the app now loads less code up front, with the biggest drops on Data Entry and Student Profiles. Heavy tools that aren\'t needed on initial load — such as the built-in goal library used when setting up a device, backup and restore tools, spreadsheet and CSV imports and exports, report narrative generation, the passcode screen while unlocked, forms and dialogs, and specialized goal-entry inputs — are now loaded only when you open or use them. Data Entry and Student Profiles also removed extra loading steps so student cards appear in a single pass, and the app no longer downloads the What\'s New page in the background until you visit it.',
     type: 'improvement',
     icon: Zap,
   },

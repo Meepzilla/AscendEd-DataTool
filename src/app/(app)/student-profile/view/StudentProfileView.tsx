@@ -1,7 +1,8 @@
 
 'use client';
 
-import React, { useEffect, useState, lazy, Suspense } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
+import { LazyBoundary, retryableLazy } from '@/components/ui/lazy-boundary';
 import { fillNameBlanks } from '@/lib/goal-blanks';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useStudentData } from '@/hooks/use-student-data';
@@ -20,10 +21,10 @@ import { useToast } from '@/hooks/use-toast';
 
 import StudentOverviewCard from '@/components/student-profile/StudentOverviewCard';
 
-const ImportDataModal = lazy(() => import('@/components/modals/import-data-modal'));
-const AssignGoalToStudentModal = lazy(() => import('@/components/modals/assign-goal-to-student-modal'));
-const EditAssignedGoalModal = lazy(() => import('@/components/modals/edit-assigned-goal-modal'));
-const ConfirmationModal = lazy(() => import('@/components/modals/confirmation-modal'));
+const ImportDataModal = retryableLazy(() => import('@/components/modals/import-data-modal'));
+const AssignGoalToStudentModal = retryableLazy(() => import('@/components/modals/assign-goal-to-student-modal'));
+const EditAssignedGoalModal = retryableLazy(() => import('@/components/modals/edit-assigned-goal-modal'));
+const ConfirmationModal = retryableLazy(() => import('@/components/modals/confirmation-modal'));
 
 
 export default function StudentProfileView() {
@@ -152,6 +153,7 @@ export default function StudentProfileView() {
 
   return (
     <div className="space-y-6">
+      <LazyBoundary label="This dialog">
       <Suspense fallback={null}>
         {isImportModalOpen && <ImportDataModal onClose={() => setIsImportModalOpen(false)} onImport={importSessions} />}
 
@@ -211,6 +213,7 @@ export default function StudentProfileView() {
             />
         )}
       </Suspense>
+      </LazyBoundary>
 
 
       <Card className="shadow-lg">
@@ -351,15 +354,17 @@ export default function StudentProfileView() {
         </CardContent>
       </Card>
 
-      <Suspense fallback={null}>
-        {isAssignGoalModalOpen && currentStudent && (
-          <AssignGoalToStudentModal
-            student={currentStudent}
-            isOpen={isAssignGoalModalOpen}
-            onClose={() => setIsAssignGoalModalOpen(false)}
-          />
-        )}
-      </Suspense>
+      <LazyBoundary label="The assign-goal dialog">
+        <Suspense fallback={null}>
+          {isAssignGoalModalOpen && currentStudent && (
+            <AssignGoalToStudentModal
+              student={currentStudent}
+              isOpen={isAssignGoalModalOpen}
+              onClose={() => setIsAssignGoalModalOpen(false)}
+            />
+          )}
+        </Suspense>
+      </LazyBoundary>
     </div>
   );
 }

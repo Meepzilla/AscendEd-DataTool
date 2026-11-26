@@ -1,6 +1,7 @@
 'use client';
 
-import React, { Suspense, lazy, useMemo, useRef, useState } from 'react';
+import React, { Suspense, useMemo, useRef, useState } from 'react';
+import { LazyBoundary, retryableLazy } from '@/components/ui/lazy-boundary';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +21,7 @@ import { saveTextFile } from '@/lib/save-file';
 import { plural } from '@/lib/helpers';
 import type { CustomGoalType } from '@/lib/types';
 
-const CustomGoalTypeModal = lazy(() => import('@/components/modals/custom-goal-type-modal'));
+const CustomGoalTypeModal = retryableLazy(() => import('@/components/modals/custom-goal-type-modal'));
 
 export default function CustomGoalTypesCard() {
   const { currentUser } = useAuth();
@@ -333,8 +334,9 @@ export default function CustomGoalTypesCard() {
         </div>
       </CardContent>
 
-      <Suspense fallback={null}>
-        {isModalOpen && (
+      <LazyBoundary label="The goal type editor">
+        <Suspense fallback={null}>
+          {isModalOpen && (
           <CustomGoalTypeModal
             isOpen={isModalOpen}
             onClose={() => setIsModalOpen(false)}
@@ -347,8 +349,9 @@ export default function CustomGoalTypesCard() {
               });
             }}
           />
-        )}
-      </Suspense>
+          )}
+        </Suspense>
+      </LazyBoundary>
     </Card>
   );
 }

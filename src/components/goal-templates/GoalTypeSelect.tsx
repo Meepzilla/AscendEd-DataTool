@@ -1,6 +1,7 @@
 'use client';
 
-import React, { Suspense, lazy, useMemo, useState } from 'react';
+import React, { Suspense, useMemo, useState } from 'react';
+import { LazyBoundary, retryableLazy } from '@/components/ui/lazy-boundary';
 import {
   Select,
   SelectContent,
@@ -18,7 +19,7 @@ import { CUSTOM_MEASURE_KIND_INFO, cloneCustomGoalType } from '@/lib/goal-types/
 import { goalTypeLabel } from '@/lib/helpers';
 import type { CustomGoalType, GoalType } from '@/lib/types';
 
-const CustomGoalTypeModal = lazy(() => import('@/components/modals/custom-goal-type-modal'));
+const CustomGoalTypeModal = retryableLazy(() => import('@/components/modals/custom-goal-type-modal'));
 
 const CREATE_NEW_VALUE = '__CREATE_CUSTOM_GOAL_TYPE__';
 
@@ -126,16 +127,18 @@ export default function GoalTypeSelect({
       </Select>
 
       {isBuilderOpen && (
-        <Suspense fallback={null}>
-          <CustomGoalTypeModal
-            isOpen={isBuilderOpen}
-            onClose={() => setIsBuilderOpen(false)}
-            saveCustomType={saveCustomType}
-            onSave={(saved) => {
-              onChange('CUSTOM', cloneCustomGoalType(saved));
-            }}
-          />
-        </Suspense>
+        <LazyBoundary label="The goal type editor">
+          <Suspense fallback={null}>
+            <CustomGoalTypeModal
+              isOpen={isBuilderOpen}
+              onClose={() => setIsBuilderOpen(false)}
+              saveCustomType={saveCustomType}
+              onSave={(saved) => {
+                onChange('CUSTOM', cloneCustomGoalType(saved));
+              }}
+            />
+          </Suspense>
+        </LazyBoundary>
       )}
     </>
   );
