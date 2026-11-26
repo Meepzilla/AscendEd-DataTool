@@ -15,7 +15,11 @@ export type StorageLevel = 'ok' | 'warn' | 'critical';
 export interface StorageEstimate {
   /** Bytes stored for this origin (IndexedDB + localStorage + caches). */
   bytes: number;
-  /** Bytes of app data alone (localStorage + IndexedDB list rows, excluding the offline app cache), when counted. */
+  /**
+   * Approximate bytes of app data alone (localStorage + IndexedDB list rows, excluding the offline
+   * app cache), when counted. It is a count, not a browser measurement: localStorage is summed by
+   * string length, so it can differ from the browser's own total and is shown as "about" (B1).
+   */
   dataBytes?: number;
   /** Quota in bytes, when the browser reports one. */
   quota: number | null;
@@ -69,7 +73,18 @@ export function toStorageEstimate(
  * persisted) and reports no quota.
  */
 export async function estimateStorage(fallbackBytes?: () => number): Promise<StorageEstimate> {
-  const counted = fallbackBytes ? fallbackBytes() : undefined;
+  // The fallback count walks all of localStorage, so it runs only when its result is actually
+  // used: for the data-only figure alongside a successful browser estimate, or as the estimate
+  // itself when the browser has none. Running it up front (review finding B2) charged that scan
+  // to every call — checkSaveFits runs before every list save — and a throwing fallback would
+  // have broken the estimate path instead of being bypassed, so each use is guarded too.
+  const counted = (): number | undefined => {
+    try {
+      return fallbackBytes?.();
+    } catch {
+      return undefined;
+    }
+  };
   try {
     const storage = (globalThis as { navigator?: { storage?: { estimate?: () => Promise<{ usage?: number; quota?: number }> } } }).navigator?.storage;
     if (storage?.estimate) {
@@ -78,13 +93,13 @@ export async function estimateStorage(fallbackBytes?: () => number): Promise<Sto
       // Chromium, which silently forced the fallback sum on every call.
       const result = await storage.estimate();
       if (typeof result.usage === 'number') {
-        return toStorageEstimate(result.usage, typeof result.quota === 'number' ? result.quota : null, 'estimate', counted);
+        return toStorageEstimate(result.usage, typeof result.quota === 'number' ? result.quota : null, 'estimate', counted());
       }
     }
   } catch {
     // Fall through to the fallback sum below.
   }
-  const bytes = counted ?? 0;
+  const bytes = counted() ?? 0;
   return toStorageEstimate(bytes, null, 'fallback', bytes);
 }
 

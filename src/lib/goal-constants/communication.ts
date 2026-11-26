@@ -50,9 +50,17 @@ const TALLY_SUFFIXES = ['Spontaneous', 'Emerging', 'Prompted'] as const;
 /** A function key as the list stores it: a letter, then letters, digits or "_" (never "__proto__" and the like). */
 const SAFE_FUNCTION_KEY = /^[A-Za-z][A-Za-z0-9_]{0,59}$/;
 
+/**
+ * Keys the plain-key pattern alone would admit that must never be used as data keys: writing or
+ * merging under any of these can shadow or mutate Object.prototype behaviour. `__proto__` already
+ * fails the pattern (leading underscore); `constructor` and `prototype` are plain letter keys, so
+ * they are denied here, in the one guard every reader goes through (review finding D1).
+ */
+const UNSAFE_FUNCTION_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
 /** Whether a key is safe to use as a function key (and in field names made from it). */
 export function isSafeCommFunctionKey(key: string): boolean {
-  return SAFE_FUNCTION_KEY.test(key);
+  return SAFE_FUNCTION_KEY.test(key) && !UNSAFE_FUNCTION_KEYS.has(key);
 }
 
 /**

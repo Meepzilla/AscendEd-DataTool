@@ -279,7 +279,10 @@ function SchoolYearSetting() {
 
 /** Settings → Interface card grouping all device-local appearance and UI preferences. */
 export default function InterfaceSettingsCard() {
-  const [isSidebarEnabled, setIsSidebarEnabled] = useState(true);
+  // Null until the stored value is read on mount: initialising to a guessed `true` painted the
+  // switch on for one frame when the sidebar was stored off (review finding B4). The switch is
+  // rendered only once the real value is known; a same-size placeholder holds its place.
+  const [isSidebarEnabled, setIsSidebarEnabled] = useState<boolean | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -334,11 +337,15 @@ export default function InterfaceSettingsCard() {
           </div>
           <div className="flex items-center gap-2">
             <PanelLeft className="h-5 w-5 text-muted-foreground" />
-            <Switch
-              id="sidebar-switch"
-              checked={isSidebarEnabled}
-              onCheckedChange={handleToggleSidebar}
-            />
+            {isSidebarEnabled === null ? (
+              <span className="h-6 w-11" aria-hidden />
+            ) : (
+              <Switch
+                id="sidebar-switch"
+                checked={isSidebarEnabled}
+                onCheckedChange={handleToggleSidebar}
+              />
+            )}
           </div>
         </div>
         <div className="flex items-center justify-end gap-4 p-4 border-t">
