@@ -1,13 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { studentCardHeight } from '@/lib/student-card-height';
 
 // Data Entry's layout: student cards sized to the screen, the save bar's height shared with notifications, and
 // the arrows that scroll the cards sideways. Attach the returned refs to the page's elements.
-
-// Student cards fill the screen height below the header card, down to the save bar.
-const MIN_STUDENT_CARD_HEIGHT = 420;
-const CARD_TO_SAVE_BAR = 32; // the cards list's bottom padding plus room for its horizontal scrollbar
 
 export function useDataEntryLayout(selectedCount: number) {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -78,28 +75,39 @@ export function useDataEntryLayout(selectedCount: number) {
       const region = cardsRegionRef.current;
       const probe = viewportProbeRef.current;
       if (!root || !region || !probe) return;
-      const card = root.querySelector<HTMLElement>('[id^="student-card-slot-"]');
       const saveBar = saveBarRef.current;
-      if (!card || !saveBar || saveBar.offsetHeight === 0) return;
+      if (!saveBar || saveBar.offsetHeight === 0) return;
       // Rect units per CSS pixel, from an element whose size isn't animating (the card animates height changes).
       const saveBarRect = saveBar.getBoundingClientRect();
       const ratio = saveBarRect.height / saveBar.offsetHeight || 1;
       // Where the save bar ends with the page scrolled to the top: the card's top, its height, its padding and
       // the bar itself. (The bar's own position isn't used: it is sticky, which can hide an overflow.)
-      const cardTop = (card.getBoundingClientRect().top - document.body.getBoundingClientRect().top) / ratio;
+      // The card's top comes from the cards region, which wraps the scroll area, plus the list's top
+      // padding — never from a card itself. A card's rect moves as the scroll area's content scrolls,
+      // so measuring it fed the scroll amount back into the height and the cards grew without bound.
+      const bodyTop = document.body.getBoundingClientRect().top;
       const screenBottom = probe.getBoundingClientRect().height / ratio;
       // With the menu bar at the bottom (Settings), the save bar sits above it.
       const menuBar = document.documentElement.classList.contains('menu-bottom')
         ? document.querySelector<HTMLElement>('.app-menubar')?.offsetHeight ?? 0
         : 0;
-      const available = screenBottom - cardTop - CARD_TO_SAVE_BAR - saveBar.offsetHeight - menuBar;
-      root.style.setProperty('--student-card-height', `${Math.max(MIN_STUDENT_CARD_HEIGHT, Math.floor(available))}px`);
+      const height = studentCardHeight({
+        viewportHeight: screenBottom,
+        regionTop: region.getBoundingClientRect().top,
+        bodyTop,
+        ratio,
+        saveBarHeight: saveBar.offsetHeight,
+        menuBarHeight: menuBar,
+      });
+      root.style.setProperty('--student-card-height', `${height}px`);
     };
     update();
     const observer = new ResizeObserver(update);
     // The region changes size when cards appear, and the full-height probe when the screen size changes
-    // (rotation, Safari's toolbars, the display size setting). The result doesn't depend on the card's
-    // height, so this can't loop.
+    // (rotation, Safari's toolbars, the display size setting). The result depends only on the region's
+    // position and the screen size — not on the card's height or on how far the scroll area's content
+    // is scrolled — so re-measuring after a resize or a scroll-driven toolbar change can't feed back
+    // into the height and loop.
     // The menu bar too, when it is at the bottom (its height is taken off the space).
     const menuBar = document.querySelector<HTMLElement>('.app-menubar');
     [headerRef.current, saveBarRef.current, cardsRegionRef.current, viewportProbeRef.current, menuBar].forEach(el => el && observer.observe(el));

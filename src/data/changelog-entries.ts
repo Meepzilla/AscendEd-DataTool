@@ -13,6 +13,13 @@ export interface ChangelogEntry {
 export const changelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-25',
+    title: 'Student Cards Keep Their Size While Scrolling on Android',
+    description: 'On Data Entry, student cards could keep growing taller and taller while you scrolled, until they ran far past the bottom of the screen. The card height is now worked out from the space above the cards, which does not move when you scroll, instead of from a card itself — so the cards stay the size that fits the screen.',
+    type: 'fix',
+    icon: Bug,
+  },
+  {
+    date: '2026-11-25',
     title: 'Lock Screen and App Updates Made More Reliable',
     description: 'The passcode lock and setup screens are now built into the app instead of loaded separately, so a patchy connection or an app update can never leave you stuck outside the lock screen. If tapping Reload on the "App updated" notice can\'t put the new version in use, the app now says so and changes nothing in any tab — before, it went on to update every open tab without saying. The notice also says up front that other open tabs are left alone until you choose to update them.',
     type: 'fix',
