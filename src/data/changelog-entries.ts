@@ -13,6 +13,13 @@ export interface ChangelogEntry {
 export const changelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-26',
+    title: 'Storage Figures and Settings Made More Accurate',
+    description: 'The storage readout in Settings now labels your data size as approximate — it is counted on the device and can differ a little from the browser\u2019s own total — and the storage-full warnings now say they cover your data and the offline app together, which is what the percentage measures. The Enable Student Sidebar switch no longer flashes the wrong position when Settings opens. Saved custom goal types are also checked as strictly as imported ones, so a damaged saved type can no longer slip back in with broken settings.',
+    type: 'fix',
+    icon: Database,
+  },
+  {
+    date: '2026-11-26',
     title: 'Dialogs No Longer Take the Whole Page Down When They Fail to Load',
     description: 'Dialogs and goal-entry inputs are loaded only when you open them. If one of them cannot load — for example on a patchy connection — it used to replace the whole page with an error, losing your place. Now the page stays as it is and the dialog shows its own message with a Try again button. The Write Narrative dialog also says when the narrative could not be written instead of opening empty, and this page no longer quotes exact speed-up percentages for the recent loading changes, since those figures were never formally measured.',
     type: 'fix',

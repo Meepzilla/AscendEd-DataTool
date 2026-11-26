@@ -79,7 +79,15 @@ describe('function keys from stored data', () => {
     const data = { __proto__Spontaneous: 3, 'a.bEmerging': 2, '1abcPrompted': 1, c_jokingSpontaneous: 1, notes: 'x' } as Record<string, any>;
     expect(constants.commFunctionKeysIn(data)).toEqual(['c_joking']);
     expect(constants.isSafeCommFunctionKey('__proto__')).toBe(false);
-    expect(constants.isSafeCommFunctionKey('constructor')).toBe(true); // letters only; used only as a field-name prefix
+    // Plain letter keys, but denied: a key named constructor or prototype must never reach data
+    // writes or merges, even though every current use is only as a field-name prefix (finding D1).
+    expect(constants.isSafeCommFunctionKey('constructor')).toBe(false);
+    expect(constants.isSafeCommFunctionKey('prototype')).toBe(false);
+  });
+
+  it('leaves constructor and prototype tallies out of the keys read from session data', () => {
+    const data = { constructorSpontaneous: 2, prototypePrompted: 1, greetingSpontaneous: 1 } as Record<string, any>;
+    expect(constants.commFunctionKeysIn(data)).toEqual(['greeting']);
   });
 });
 

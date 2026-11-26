@@ -74,6 +74,22 @@ describe('estimateStorage', () => {
     expect(estimate.level).toBe('ok');
     expect(estimate.over3MB).toBe(true);
   });
+
+  it('a throwing fallback count cannot break the estimate (finding B2)', async () => {
+    const throwing = () => {
+      throw new Error('count failed');
+    };
+    vi.stubGlobal('navigator', { storage: { estimate: async () => ({ usage: 2048, quota: 4096 }) } });
+    const withEstimate = await estimateStorage(throwing);
+    expect(withEstimate.source).toBe('estimate');
+    expect(withEstimate.bytes).toBe(2048);
+    expect(withEstimate.dataBytes).toBeUndefined();
+
+    vi.stubGlobal('navigator', {});
+    const withoutEstimate = await estimateStorage(throwing);
+    expect(withoutEstimate.source).toBe('fallback');
+    expect(withoutEstimate.bytes).toBe(0);
+  });
 });
 
 describe('checkSaveFits', () => {

@@ -25,14 +25,14 @@ export function StorageUsageLine({ estimate }: { estimate: StorageEstimate | nul
           : estimate.source === 'estimate'
             ? <>
               {estimate.dataBytes !== undefined && estimate.dataBytes > 0 && (
-                <>Your data: <strong>{formatBytes(estimate.dataBytes)}</strong> · </>
+                <>Your data: about <strong>{formatBytes(estimate.dataBytes)}</strong> · </>
               )}
               Browser storage (data + offline app): <strong>{formatBytes(estimate.bytes)}</strong>
               {estimate.quota !== null && percent !== null
                 ? <> of about {formatBytes(estimate.quota)} available ({percent.toFixed(0)}% used)</>
                 : ' (this browser does not report a storage quota)'}
             </>
-            : <>Your data: <strong>{formatBytes(estimate.bytes)}</strong> (this browser does not report a storage quota)</>}
+            : <>Your data: about <strong>{formatBytes(estimate.bytes)}</strong> (this browser does not report a storage quota)</>}
       </p>
       {estimate !== null && estimate.quota !== null && percent !== null && (
         <div className="h-2 w-full overflow-hidden rounded-full bg-muted" role="progressbar"
@@ -59,8 +59,9 @@ export function StorageFullWarning({ estimate }: { estimate: StorageEstimate | n
         <TriangleAlert className="h-4 w-4 !text-amber-600" />
         <AlertTitle>Storage is over 70% full</AlertTitle>
         <AlertDescription>
-          Your data uses {percent !== null ? `${percent.toFixed(0)}% of` : 'a large share of'} the storage this
-          browser allows. Back up your data, then delete old sessions you no longer need.
+          Your data and the offline app together use {percent !== null ? `${percent.toFixed(0)}% of` : 'a large share of'} the
+          storage this browser allows. Back up your data, then delete old sessions you no longer need
+          to free up the data part.
         </AlertDescription>
       </Alert>
     );
@@ -70,8 +71,9 @@ export function StorageFullWarning({ estimate }: { estimate: StorageEstimate | n
       <TriangleAlert className="h-4 w-4" />
       <AlertTitle>Storage is over 90% full</AlertTitle>
       <AlertDescription>
-        Your data uses {percent !== null ? `${percent.toFixed(0)}% of` : 'almost all of'} the storage this
-        browser allows. Saves may start failing. Back up your data now, then delete old sessions.
+        Your data and the offline app together use {percent !== null ? `${percent.toFixed(0)}% of` : 'almost all of'} the
+        storage this browser allows. Saves may start failing. Back up your data now, then delete old
+        sessions to free up the data part.
       </AlertDescription>
     </Alert>
   );
