@@ -97,7 +97,7 @@ export function watchForWaitingUpdate(
 export function activateWaitingUpdate(
   container: SwContainerLike,
   waiting: SwLike,
-  options?: { onlyIfAlone?: boolean; timeoutMs?: number },
+  options?: { onlyIfAlone?: boolean; timeoutMs?: number; confirmedTimeoutMs?: number },
 ): Promise<boolean> {
   return activateWaitingUpdateResult(container, waiting, options).then(result => result === 'activated');
 }
@@ -117,10 +117,11 @@ const CONFIRMED_ACTIVATION_TIMEOUT_MS = 3000;
 export function activateWaitingUpdateResult(
   container: SwContainerLike,
   waiting: SwLike,
-  options?: { onlyIfAlone?: boolean; timeoutMs?: number },
+  options?: { onlyIfAlone?: boolean; timeoutMs?: number; confirmedTimeoutMs?: number },
 ): Promise<ActivationResult> {
   const onlyIfAlone = options?.onlyIfAlone ?? false;
   const timeoutMs = options?.timeoutMs ?? 2000;
+  const confirmedTimeoutMs = options?.confirmedTimeoutMs ?? CONFIRMED_ACTIVATION_TIMEOUT_MS;
 
   return new Promise<ActivationResult>((resolve) => {
     let done = false;
@@ -158,9 +159,9 @@ export function activateWaitingUpdateResult(
         channel.port1.onmessage = (event: MessageEvent) => {
           const activated = event.data ? (event.data as { activated?: unknown }).activated : undefined;
           if (activated === false && onlyIfAlone) finish('other-tabs-open');
-          else if (activated === true && !done && timeoutMs < CONFIRMED_ACTIVATION_TIMEOUT_MS) {
+          else if (activated === true && !done && timeoutMs < confirmedTimeoutMs) {
             clearTimeout(timer);
-            timer = setTimeout(() => finish('failed'), CONFIRMED_ACTIVATION_TIMEOUT_MS);
+            timer = setTimeout(() => finish('failed'), confirmedTimeoutMs);
           }
         };
         waiting.postMessage(message, [channel.port2]);
@@ -230,9 +231,56 @@ export async function reloadFromUpdateNotice(handlers: NoticeReloadHandlers): Pr
 }
 
 /**
+ * Once the worker has agreed to take over on the lock path, how long to wait for it to take control.
+ * The lock reload is the one reload that must land cleanly: reloading under the old worker while the
+ * new one is mid-activation can serve a mix of builds. This wait is longer than the notice paths',
+ * and activateForLock bounds the whole sequence, so locking can never hang on it.
+ */
+const LOCK_CONFIRMED_ACTIVATION_TIMEOUT_MS = 10_000;
+/** Pause between a failed lock-path attempt and re-checking whether an update is still waiting. */
+const LOCK_RECHECK_DELAY_MS = 250;
+
+export type LockActivationOutcome = 'activated' | 'settled' | 'other-tabs-open' | 'gave-up';
+
+export interface LockActivationDeps {
+  /** One attempt to activate the waiting update. */
+  attempt: () => Promise<ActivationResult>;
+  /** Whether an update is still waiting after an attempt. */
+  stillWaiting: () => Promise<boolean>;
+  delay: (ms: number) => Promise<void>;
+}
+
+/**
+ * Drives activation for the lock reload. A failed first attempt is not the end: the worker may have
+ * confirmed it is activating and simply be slow to take control, so re-check whether an update is
+ * still waiting. If none is, the update has settled (taken over, or gone away) and reloading is safe
+ * ('settled'). If one is still waiting, try once more, then re-check a final time. Bounded by
+ * construction: at most two attempts and two short re-check pauses, after which the outcome is
+ * 'gave-up' and the caller reloads anyway under the old worker, so the app always ends up locked.
+ */
+export async function activateForLock(
+  deps: LockActivationDeps,
+  recheckDelayMs: number = LOCK_RECHECK_DELAY_MS,
+): Promise<LockActivationOutcome> {
+  const first = await deps.attempt();
+  if (first === 'activated') return 'activated';
+  if (first === 'other-tabs-open') return 'other-tabs-open';
+  await deps.delay(recheckDelayMs);
+  if (!(await deps.stillWaiting())) return 'settled';
+  const second = await deps.attempt();
+  if (second === 'activated') return 'activated';
+  if (second === 'other-tabs-open') return 'other-tabs-open';
+  await deps.delay(recheckDelayMs);
+  return (await deps.stillWaiting()) ? 'gave-up' : 'settled';
+}
+
+/**
  * When the app is already about to reload (e.g. locking), activates any waiting Service Worker
  * first if the page is visible and no other tab is open, so the reload lands on the new version
  * cleanly. Skips when hidden (e.g. iOS put-away auto-lock) so locking reloads immediately.
+ * Returns true when the reload is known to be safe from a mixed build (the update took control,
+ * or no update is still pending); false when another tab is open or the bounded wait gave up, in
+ * which case the caller reloads anyway — locking must never hang on an update.
  */
 export async function activateWaitingUpdateBeforeReload(timeoutMs = 500): Promise<boolean> {
   if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return false;
@@ -240,10 +288,16 @@ export async function activateWaitingUpdateBeforeReload(timeoutMs = 500): Promis
   try {
     const registration = await navigator.serviceWorker.getRegistration();
     if (!registration?.waiting) return false;
-    return await activateWaitingUpdate(navigator.serviceWorker, registration.waiting, {
-      onlyIfAlone: true,
-      timeoutMs,
+    const outcome = await activateForLock({
+      attempt: () => activateWaitingUpdateResult(navigator.serviceWorker, registration.waiting!, {
+        onlyIfAlone: true,
+        timeoutMs,
+        confirmedTimeoutMs: LOCK_CONFIRMED_ACTIVATION_TIMEOUT_MS,
+      }),
+      stillWaiting: async () => !!(await navigator.serviceWorker.getRegistration())?.waiting,
+      delay: (ms) => new Promise<void>((resolve) => { setTimeout(resolve, ms); }),
     });
+    return outcome === 'activated' || outcome === 'settled';
   } catch {
     return false;
   }

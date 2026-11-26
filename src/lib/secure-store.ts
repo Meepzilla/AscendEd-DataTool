@@ -1765,7 +1765,9 @@ export async function lockNow() {
     // A failed write was already reported; reloading loses nothing more than the failed write did.
   }
   // If a newer Service Worker is waiting and this is the only open tab, promote it before reloading
-  // so the lock screen lands directly on the new version without disrupting another tab.
+  // so the lock screen lands directly on the new version without disrupting another tab. The wait
+  // is bounded (activateForLock gives up after two attempts and two re-checks), and the reload
+  // happens either way, so the data always ends up locked even if the update never takes control.
   await activateWaitingUpdateBeforeReload();
   window.location.reload();
 }
