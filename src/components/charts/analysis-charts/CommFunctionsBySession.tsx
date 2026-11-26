@@ -80,7 +80,15 @@ export function CommFunctionsBySession({ recorded }: { recorded: { data: Record<
                   </td>
                 ))}
                 <td className="px-2 py-1 text-right">
-                  <Uses uses={row.total} />
+                  {/* The total covers only the sessions shown, so it adds up from the visible cells. */}
+                  <Uses uses={row.sessions.slice(firstColumn).reduce<CommFunctionUses>(
+                    (sum, u) => ({
+                      spontaneous: sum.spontaneous + u.spontaneous,
+                      emerging: sum.emerging + u.emerging,
+                      prompted: sum.prompted + u.prompted,
+                    }),
+                    { spontaneous: 0, emerging: 0, prompted: 0 },
+                  )} />
                 </td>
               </tr>
             ))}

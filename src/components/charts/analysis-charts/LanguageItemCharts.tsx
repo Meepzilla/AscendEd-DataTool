@@ -4,7 +4,7 @@ import React from 'react';
 import { Bar, BarChart, CartesianGrid, ComposedChart, Line, LineChart, ReferenceLine, XAxis, YAxis } from 'recharts';
 import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
 import type { Goal } from '@/lib/types';
-import { formatSampleLength, lengthDistribution, sampleUnit, sessionSampleUnit, summarizeSample, utteranceLengths } from '@/lib/language-sample';
+import { formatSampleLength, goalSampleUnit, lengthDistribution, sessionSampleUnit, summarizeSample, utteranceLengths } from '@/lib/language-sample';
 import { ITEM_MASTERY_RUN, itemHistory, listItems, masteredOverTime } from '@/lib/item-mastery';
 
 // The report charts that fit language sample (MLU) and item mastery goals, under the goal's own measure chart:
@@ -23,14 +23,17 @@ const SAMPLE_CONFIG: ChartConfig = {
 const MASTERED_CONFIG: ChartConfig = { mastered: { label: 'Items mastered', color: 'hsl(var(--chart-2))' } };
 
 export function LanguageSampleCharts({ goal, recorded, showLengths = true, showSample = true }: { goal: Goal; recorded: Recorded[]; showLengths?: boolean; showSample?: boolean }) {
-  const sessions = recorded.map(r => ({ label: r.label, lengths: utteranceLengths(r.data), unit: sessionSampleUnit(r.data, goal) }));
-  const unit = sampleUnit(goal);
-  // Utterances counted in another unit (the goal's unit was changed later) are left out of the pooled chart.
-  const pooled = sessions.filter(s => s.unit === unit).flatMap(s => s.lengths);
-  if (!sessions.some(s => s.lengths.length) || (!showLengths && !showSample)) return null;
+  const unit = goalSampleUnit(goal);
+  const sessions = recorded.map(r => ({ label: r.label, lengths: utteranceLengths(r.data), unit: sessionSampleUnit(r.data, { sampleUnit: unit }) }));
+  // Utterances counted in another unit (the goal's unit was changed later) are left out of both
+  // charts: the per-session chart labels every session with the goal's current unit, so showing a
+  // session counted in the other unit would mislabel its lengths.
+  const inUnit = sessions.filter(s => s.unit === unit);
+  const pooled = inUnit.flatMap(s => s.lengths);
+  if (!inUnit.some(s => s.lengths.length) || (!showLengths && !showSample)) return null;
   const summary = summarizeSample(pooled);
   const distribution = lengthDistribution(pooled);
-  const perSession = sessions.map(s => {
+  const perSession = inUnit.map(s => {
     const one = summarizeSample(s.lengths);
     return { label: s.label, utterances: one.utterances, longest: one.longest };
   });
@@ -134,7 +137,14 @@ export function ItemMasteryCharts({ goal, recorded }: { goal: Goal; recorded: Re
                       <span aria-label={r === true ? 'correct' : r === false ? 'incorrect' : 'not tried'}>{r === true ? '✓' : r === false ? '✕' : '·'}</span>
                     </td>
                   ))}
-                  <td className="px-2 py-1 text-right tabular-nums">{h.tries ? `${h.correct} of ${h.tries}` : '—'}</td>
+                  {/* Scoped to the sessions shown, so it adds up from the visible cells (mastery
+                      status in the next column is cumulative over all sessions). */}
+                  {(() => {
+                    const shown = h.results.slice(firstColumn);
+                    const shownTries = shown.filter(r => r !== null).length;
+                    const shownCorrect = shown.filter(r => r === true).length;
+                    return <td className="px-2 py-1 text-right tabular-nums">{shownTries ? `${shownCorrect} of ${shownTries}` : '—'}</td>;
+                  })()}
                   <td className="px-2 py-1">
                     {h.mastered
                       ? <span className="rounded-full border border-green-500/50 bg-green-500/15 px-2 py-0.5 font-semibold text-green-700 dark:text-green-400">Mastered</span>

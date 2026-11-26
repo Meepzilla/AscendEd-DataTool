@@ -143,6 +143,7 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({
 
   const selectDefaultGoalView = (next: GoalChartView) => {
     rememberGoalChartView(next);
+    setDefaultGoalView(next);
   };
 
   const activeStudentGoals = useMemo(

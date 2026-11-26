@@ -24,6 +24,41 @@ export function sessionSampleUnit(data: Record<string, any> | undefined, goal?: 
   return sampleUnit(goal);
 }
 
+/** The slice of a goal needed to tell whether it is measured in utterances, and in which unit. */
+export interface SampleGoalLike {
+  type?: string;
+  dataCaptureType?: string;
+  sampleUnit?: SampleUnit;
+  customType?: { kind?: string; utterances?: { unit?: string } };
+}
+
+/** Whether the goal is measured in utterances: a built-in language sample goal or a custom utterances type. */
+export function isSampleGoal(goal: SampleGoalLike | null | undefined): boolean {
+  if (!goal) return false;
+  if (goal.customType) return goal.customType.kind === 'utterances';
+  return (goal.dataCaptureType || goal.type) === 'LANGUAGE_SAMPLE';
+}
+
+/** The unit a goal's samples are currently reported in (a custom utterances type carries its own unit). */
+export function goalSampleUnit(goal: SampleGoalLike | null | undefined): SampleUnit {
+  if (goal?.customType?.kind === 'utterances') {
+    return goal.customType.utterances?.unit === 'morphemes' ? 'morphemes' : 'words';
+  }
+  return sampleUnit(goal);
+}
+
+/**
+ * Whether a session was counted in the goal's current unit. MLU series, pooled charts and narrative
+ * only ever mix sessions counted in the same unit: morpheme counts run at or above word counts, so
+ * pooling the two after a unit change would manufacture progress (or mask regression) out of the
+ * change alone. Sessions counted in the other unit are left out, the way the length distribution
+ * chart already left them out.
+ */
+export function sessionMatchesGoalUnit(data: Record<string, any> | undefined, goal: SampleGoalLike | null | undefined): boolean {
+  const unit = goalSampleUnit(goal);
+  return sessionSampleUnit(data, { sampleUnit: unit }) === unit;
+}
+
 /** A session's utterance lengths: whole numbers from 1 to MAX_UTTERANCE_LENGTH (anything else is left out). */
 export function utteranceLengths(data: Record<string, any> | undefined): number[] {
   const raw = Array.isArray(data?.utterances) ? data!.utterances : [];
