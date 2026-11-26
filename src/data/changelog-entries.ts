@@ -20,6 +20,13 @@ export const changelogEntries: ChangelogEntry[] = [
   },
   {
     date: '2026-11-25',
+    title: 'Locking and Update Notices Finished Off',
+    description: 'Locking the app now waits properly for an app update that is still starting up, instead of sometimes reopening on a mix of the old and new versions. The "App updated" notice also no longer pushes another notice (such as a save error) off the screen: if one is already showing, the update notice waits and appears when the other closes.',
+    type: 'fix',
+    icon: ShieldCheck,
+  },
+  {
+    date: '2026-11-25',
     title: 'Lock Screen and App Updates Made More Reliable',
     description: 'The passcode lock and setup screens are now built into the app instead of loaded separately, so a patchy connection or an app update can never leave you stuck outside the lock screen. If tapping Reload on the "App updated" notice can\'t put the new version in use, the app now says so and changes nothing in any tab — before, it went on to update every open tab without saying. The notice also says up front that other open tabs are left alone until you choose to update them.',
     type: 'fix',

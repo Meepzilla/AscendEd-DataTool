@@ -26,15 +26,24 @@ const UPDATE_FAILED_TITLE = 'Update could not start';
  * lock screen is showing, or, without a passcode, when the app comes back to the foreground; and only when no other
  * AscendEd tab or window is open, since the new version takes over every tab and another could be mid-session.
  * Otherwise an "App updated" notice offers to reload; it stays until dismissed and comes back each time the app
- * returns to the foreground (unless another notice is showing). With another tab open, Reload says so and offers to
- * update all tabs.
+ * returns to the foreground. If another notice is showing when it would appear, it waits and is offered once that
+ * notice closes, instead of replacing it. With another tab open, Reload says so and offers to update all tabs.
  */
 export default function ServiceWorkerRegistration() {
   const { toast, toasts } = useToast();
-  // Whether another notice is showing, read when the app comes back to the foreground (the update notice isn't
-  // shown again over it: only one notice shows at a time, so it would replace, say, a save error).
+  // Whether another notice is showing (the update notice is never shown over it: only one notice shows at a
+  // time, so it would replace, say, a save error). Updated in an effect after every render, so it reflects the
+  // toasts as committed, not as they happened to be mid-render.
   const otherToastOpen = useRef(false);
-  otherToastOpen.current = toasts.some(t => t.open !== false && t.title !== UPDATE_TITLE && t.title !== OTHER_TABS_TITLE);
+  // Set by the registration effect: called after every render with the latest toasts, so an update notice that
+  // was deferred because another notice was showing can be offered once that notice closes.
+  const toastsChangedRef = useRef<(() => void) | null>(null);
+  useEffect(() => {
+    otherToastOpen.current = toasts.some(
+      t => t.open !== false && t.title !== UPDATE_TITLE && t.title !== OTHER_TABS_TITLE && t.title !== UPDATE_FAILED_TITLE,
+    );
+    toastsChangedRef.current?.();
+  });
 
   useEffect(() => {
     if (process.env.NEXT_PUBLIC_STATIC_EXPORT !== 'true') return;
@@ -98,8 +107,16 @@ export default function ServiceWorkerRegistration() {
       }
     };
 
-    const showNotice = (reg: ServiceWorkerRegistration, returningToForeground: boolean) => {
-      if (returningToForeground && otherToastOpen.current) return;
+    // An update notice deferred because another notice is showing; offered when that notice closes
+    // (toastsChangedRef below), so the update is never lost and never clobbers the other notice,
+    // whether it was first discovered at startup or on a return to the foreground.
+    let pendingNotice = false;
+    const showNotice = (reg: ServiceWorkerRegistration) => {
+      if (otherToastOpen.current) {
+        pendingNotice = true;
+        return;
+      }
+      pendingNotice = false;
       toast({
         title: UPDATE_TITLE,
         description: isPasscodeEnabled()
@@ -127,11 +144,15 @@ export default function ServiceWorkerRegistration() {
         void applyUpdate(reg, true).then(result => {
           if (result === 'reloaded') return;
           try { sessionStorage.removeItem(LAST_AUTO_UPDATE_KEY); } catch { /* storage unavailable */ }
-          showNotice(reg, returningToForeground);
+          showNotice(reg);
         });
       } else {
-        showNotice(reg, returningToForeground);
+        showNotice(reg);
       }
+    };
+
+    toastsChangedRef.current = () => {
+      if (pendingNotice && registration) showNotice(registration);
     };
 
     navigator.serviceWorker.register('/sw.js')
@@ -155,6 +176,7 @@ export default function ServiceWorkerRegistration() {
 
     return () => {
       cancelled = true;
+      toastsChangedRef.current = null;
       stopWatching?.();
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };

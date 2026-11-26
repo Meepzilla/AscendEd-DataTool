@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { applyWaitingUpdate, reloadFromUpdateNotice, shouldApplyUpdateNow, type ApplyUpdateState } from '../service-worker-update';
+import { activateForLock, applyWaitingUpdate, reloadFromUpdateNotice, shouldApplyUpdateNow, type ActivationResult, type ApplyUpdateState } from '../service-worker-update';
 
 const base: ApplyUpdateState = {
   visible: true,
@@ -168,6 +168,31 @@ describe('activateWaitingUpdateResult', () => {
     }
   });
 
+  it('honours a longer confirmed-activation wait when the caller asks for one (the lock path)', async () => {
+    const { activateWaitingUpdateResult } = await import('../service-worker-update');
+    vi.useFakeTimers();
+    try {
+      const listeners: ((e?: any) => void)[] = [];
+      const container = {
+        controller: {},
+        addEventListener: (_t: string, fn: any) => { listeners.push(fn); },
+        removeEventListener: () => {},
+      };
+      const worker = {
+        state: 'installed', addEventListener: () => {}, removeEventListener: () => {},
+        postMessage: (_m: unknown, transfer?: MessagePort[]) => {
+          transfer?.[0]?.postMessage({ activated: true });
+          setTimeout(() => listeners.forEach(fn => fn()), 5000); // slower than the default 3 s extension
+        },
+      };
+      const pending = activateWaitingUpdateResult(container as any, worker as any, { onlyIfAlone: true, timeoutMs: 500, confirmedTimeoutMs: 10_000 });
+      await vi.advanceTimersByTimeAsync(6000);
+      await expect(pending).resolves.toBe('activated');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('extends the wait the same way on the update-all path once the worker confirms', async () => {
     const { activateWaitingUpdateResult } = await import('../service-worker-update');
     vi.useFakeTimers();
@@ -194,5 +219,55 @@ describe('activateWaitingUpdateResult', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe('activateForLock', () => {
+  // The lock reload's activation drive: a failed attempt is re-checked before the caller reloads
+  // anyway, and the sequence is bounded so locking can never hang on an update.
+  function setup(results: ActivationResult[], waitingAfter: boolean[]) {
+    const attempt = vi.fn(async () => results.shift() ?? 'failed');
+    const stillWaiting = vi.fn(async () => waitingAfter.shift() ?? false);
+    const delay = vi.fn(async (_ms: number) => {});
+    return { attempt, stillWaiting, delay };
+  }
+
+  it('stops at the first attempt when the update takes control', async () => {
+    const s = setup(['activated'], []);
+    await expect(activateForLock(s, 0)).resolves.toBe('activated');
+    expect(s.attempt).toHaveBeenCalledTimes(1);
+    expect(s.stillWaiting).not.toHaveBeenCalled();
+  });
+
+  it('does not retry when another tab is open', async () => {
+    const s = setup(['other-tabs-open'], []);
+    await expect(activateForLock(s, 0)).resolves.toBe('other-tabs-open');
+    expect(s.attempt).toHaveBeenCalledTimes(1);
+  });
+
+  it('treats a failed attempt with nothing still waiting as settled, so the reload is safe', async () => {
+    const s = setup(['failed'], [false]);
+    await expect(activateForLock(s, 0)).resolves.toBe('settled');
+    expect(s.attempt).toHaveBeenCalledTimes(1);
+    expect(s.stillWaiting).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries once while an update is still waiting, and stops when it takes control', async () => {
+    const s = setup(['failed', 'activated'], [true]);
+    await expect(activateForLock(s, 0)).resolves.toBe('activated');
+    expect(s.attempt).toHaveBeenCalledTimes(2);
+  });
+
+  it('gives up after two attempts while an update is still waiting, so locking still happens', async () => {
+    const s = setup(['failed', 'failed'], [true, true]);
+    await expect(activateForLock(s, 0)).resolves.toBe('gave-up');
+    expect(s.attempt).toHaveBeenCalledTimes(2);
+    expect(s.stillWaiting).toHaveBeenCalledTimes(2);
+  });
+
+  it('settles on the final re-check if the update went away during the retry', async () => {
+    const s = setup(['failed', 'failed'], [true, false]);
+    await expect(activateForLock(s, 0)).resolves.toBe('settled');
+    expect(s.attempt).toHaveBeenCalledTimes(2);
   });
 });

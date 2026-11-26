@@ -8,9 +8,11 @@ import path from 'node:path';
 process.env.TZ = 'America/Los_Angeles';
 
 export default defineConfig({
+  // tsconfig keeps jsx: preserve for Next; tests transform the components they import themselves.
+  oxc: { jsx: { runtime: 'automatic' } },
   resolve: { alias: { '@': path.resolve(import.meta.dirname, 'src') } },
   test: {
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
     environment: 'node',
   },
 });
