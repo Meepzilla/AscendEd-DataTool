@@ -4,13 +4,14 @@ import { useEffect, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
 import { flushWrites, isPasscodeEnabled, isUnlocked } from '@/lib/secure-store';
-import { applyWaitingUpdate, shouldApplyUpdateNow, watchForWaitingUpdate } from '@/lib/service-worker-update';
+import { applyWaitingUpdate, reloadFromUpdateNotice, shouldApplyUpdateNow, watchForWaitingUpdate } from '@/lib/service-worker-update';
 
 // When the app last reloaded itself to apply an update, so a worker that won't activate can't cause a reload loop.
 const LAST_AUTO_UPDATE_KEY = 'ascended_last_auto_update';
 const AUTO_UPDATE_GAP_MS = 60_000;
 const UPDATE_TITLE = 'App updated';
 const OTHER_TABS_TITLE = 'AscendEd is open in another tab';
+const UPDATE_FAILED_TITLE = 'Update could not start';
 
 /**
  * Registers the service worker that stores the app for offline use. Only the static build
@@ -62,21 +63,30 @@ export default function ServiceWorkerRegistration() {
     };
 
     // Reload on the notice: this tab alone updates straight away; with another tab open, say so first and let the
-    // person choose to update them all (each will reload and, with a passcode, lock).
+    // person choose to update them all (each will reload and, with a passcode, lock). If the alone attempt fails,
+    // say so and offer that same explicit choice — a failed tap never turns into updating every tab on its own.
     const reloadFromNotice = async (reg: ServiceWorkerRegistration) => {
-      const result = await applyUpdate(reg, true);
-      if (result === 'other-tabs-open') {
-        toast({
-          title: OTHER_TABS_TITLE,
-          description: isPasscodeEnabled()
-            ? 'Updating now switches every open AscendEd tab to the new version: this one reloads, and the others reload and need unlocking again the next time you move to another page. Unsaved Data Entry work is kept. Or close the other tabs first, then tap Reload.'
-            : 'Updating now switches every open AscendEd tab to the new version: this one reloads, and the others reload the next time you move to another page. Unsaved Data Entry work is kept. Or close the other tabs first, then tap Reload.',
-          duration: Infinity,
-          action: <ToastAction altText="Update all open tabs" onClick={() => { void applyUpdate(reg, false); }}>Update all tabs</ToastAction>,
-        });
-      } else if (result === 'failed') {
-        await applyUpdate(reg, false);
-      }
+      await reloadFromUpdateNotice({
+        applyUpdate: (onlyIfAlone) => applyUpdate(reg, onlyIfAlone),
+        onOtherTabsOpen: () => {
+          toast({
+            title: OTHER_TABS_TITLE,
+            description: isPasscodeEnabled()
+              ? 'Updating now switches every open AscendEd tab to the new version: this one reloads, and the others reload and need unlocking again the next time you move to another page. Unsaved Data Entry work is kept. Or close the other tabs first, then tap Reload.'
+              : 'Updating now switches every open AscendEd tab to the new version: this one reloads, and the others reload the next time you move to another page. Unsaved Data Entry work is kept. Or close the other tabs first, then tap Reload.',
+            duration: Infinity,
+            action: <ToastAction altText="Update all open tabs" onClick={() => { void applyUpdate(reg, false); }}>Update all tabs</ToastAction>,
+          });
+        },
+        onFailed: () => {
+          toast({
+            title: UPDATE_FAILED_TITLE,
+            description: 'The new version could not be put in use just now, so nothing was changed in any tab. Try Reload again, or update all open tabs now.',
+            duration: Infinity,
+            action: <ToastAction altText="Update all open tabs" onClick={() => { void applyUpdate(reg, false); }}>Update all tabs</ToastAction>,
+          });
+        },
+      });
     };
 
     const recentlyAutoUpdated = () => {
@@ -93,8 +103,8 @@ export default function ServiceWorkerRegistration() {
       toast({
         title: UPDATE_TITLE,
         description: isPasscodeEnabled()
-          ? "A new version of AscendEd is ready. Reload to start using it (you'll need to unlock again); unsaved Data Entry work is kept."
-          : 'A new version of AscendEd is ready. Reload to start using it; unsaved Data Entry work is kept.',
+          ? "A new version of AscendEd is ready. Reload updates this tab (you'll need to unlock again); unsaved Data Entry work is kept. If AscendEd is open in other tabs too, you'll be told before anything changes there."
+          : "A new version of AscendEd is ready. Reload updates this tab; unsaved Data Entry work is kept. If AscendEd is open in other tabs too, you'll be told before anything changes there.",
         duration: Infinity,
         action: <ToastAction altText="Reload the app" onClick={() => { void reloadFromNotice(reg); }}>Reload</ToastAction>,
       });

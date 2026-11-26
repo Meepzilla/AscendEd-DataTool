@@ -12,8 +12,11 @@ const VERSION = __VERSION__;
 const PRECACHE_URLS = __PRECACHE_URLS__;
 
 // Files under /_next/static/ have content hashes in their names and never change, so they share one
-// cache across versions. A page still running the previous version can keep loading its chunks until
-// the new version activates.
+// cache across versions. Known limitation: on activate, chunks the new version doesn't use are pruned
+// (below, so storage doesn't grow with every deploy), so a page still running the previous version can
+// no longer load a chunk it hasn't fetched yet — e.g. a lazily loaded modal — while offline. Online, the
+// fetch handler below falls back to the network and re-caches it. The passcode screens are not lazy, so
+// unlocking is never blocked by this.
 const STATIC_CACHE = 'ascended-static';
 const PAGES_CACHE = `ascended-pages-${VERSION}`;
 const MATCH_OPTIONS = { ignoreSearch: true, ignoreVary: true };
@@ -41,7 +44,13 @@ self.addEventListener('install', (event) => {
 self.addEventListener('message', (event) => {
   const type = event.data && event.data.type;
   if (type === 'SKIP_WAITING') {
-    event.waitUntil(self.skipWaiting());
+    const port = event.ports && event.ports[0];
+    event.waitUntil((async () => {
+      await self.skipWaiting();
+      // Confirm on the reply port (like SKIP_WAITING_IF_ALONE) so the client extends its wait for
+      // controllerchange instead of timing out and reloading under this worker.
+      if (port) port.postMessage({ activated: true });
+    })());
   } else if (type === 'SKIP_WAITING_IF_ALONE') {
     const port = event.ports && event.ports[0];
     event.waitUntil((async () => {
@@ -62,6 +71,9 @@ self.addEventListener('activate', (event) => {
       if (key.startsWith('ascended-pages-') && key !== PAGES_CACHE) await caches.delete(key);
     }
     // Chunks from earlier versions that this one doesn't use, so storage doesn't grow with every deploy.
+    // This is the pruning the header comment describes: an old, not-yet-reloaded tab loses offline access
+    // to lazy chunks it hasn't loaded yet. Accepted trade-off, not removed: keeping every version's chunks
+    // would grow storage on every deploy.
     const current = new Set(PRECACHE_URLS.filter(isStaticAsset));
     const staticCache = await caches.open(STATIC_CACHE);
     for (const request of await staticCache.keys()) {

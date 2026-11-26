@@ -23,8 +23,8 @@ import { LAST_BACKUP_KEY, isPlaintextBackupAcknowledged, PLAINTEXT_BACKUP_ACKNOW
 import { saveTextFile } from '@/lib/save-file';
 import { getLockoutRemainingMs } from '@/lib/attempt-lockout';
 
-// Passcode setup, first-run offer, and lock screens — loaded lazily by PasscodeGate only when the gate
-// is not open, so unlocked visits do not parse ~540 lines of lock/setup UI or backup helpers.
+// Passcode setup, first-run offer, and lock screens. PasscodeGate imports this statically: a lazy chunk
+// that failed to load would lock the user out of passcode entry entirely (see PasscodeGate.tsx).
 
 export interface PasscodeScreensProps {
   mode: 'setup' | 'offer' | 'locked';

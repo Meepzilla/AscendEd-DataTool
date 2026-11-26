@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { applyWaitingUpdate, shouldApplyUpdateNow, type ApplyUpdateState } from '../service-worker-update';
+import { applyWaitingUpdate, reloadFromUpdateNotice, shouldApplyUpdateNow, type ApplyUpdateState } from '../service-worker-update';
 
 const base: ApplyUpdateState = {
   visible: true,
@@ -105,6 +105,43 @@ describe('applyWaitingUpdate', () => {
   });
 });
 
+describe('reloadFromUpdateNotice', () => {
+  // The branching behind ServiceWorkerRegistration's Reload tap, including the E1 regression: a failed
+  // alone attempt must be reported, never silently escalated to updating every open tab.
+  function setup(result: 'reloaded' | 'other-tabs-open' | 'failed') {
+    const applyUpdate = vi.fn(async (_onlyIfAlone: boolean) => result);
+    const onOtherTabsOpen = vi.fn();
+    const onFailed = vi.fn();
+    return { applyUpdate, onOtherTabsOpen, onFailed };
+  }
+
+  it('does nothing more when this tab updated alone', async () => {
+    const s = setup('reloaded');
+    await reloadFromUpdateNotice(s);
+    expect(s.applyUpdate).toHaveBeenCalledTimes(1);
+    expect(s.applyUpdate).toHaveBeenCalledWith(true);
+    expect(s.onOtherTabsOpen).not.toHaveBeenCalled();
+    expect(s.onFailed).not.toHaveBeenCalled();
+  });
+
+  it('reports other tabs open instead of updating them', async () => {
+    const s = setup('other-tabs-open');
+    await reloadFromUpdateNotice(s);
+    expect(s.applyUpdate).toHaveBeenCalledTimes(1);
+    expect(s.onOtherTabsOpen).toHaveBeenCalledTimes(1);
+    expect(s.onFailed).not.toHaveBeenCalled();
+  });
+
+  it('reports a failed attempt and never escalates to update-all on its own', async () => {
+    const s = setup('failed');
+    await reloadFromUpdateNotice(s);
+    expect(s.applyUpdate).toHaveBeenCalledTimes(1);
+    expect(s.applyUpdate).not.toHaveBeenCalledWith(false);
+    expect(s.onFailed).toHaveBeenCalledTimes(1);
+    expect(s.onOtherTabsOpen).not.toHaveBeenCalled();
+  });
+});
+
 describe('activateWaitingUpdateResult', () => {
   it('waits longer once the worker has agreed to activate, so the lock path does not reload too early', async () => {
     const { activateWaitingUpdateResult } = await import('../service-worker-update');
@@ -126,6 +163,34 @@ describe('activateWaitingUpdateResult', () => {
       const pending = activateWaitingUpdateResult(container as any, worker as any, { onlyIfAlone: true, timeoutMs: 500 });
       await vi.advanceTimersByTimeAsync(1500);
       await expect(pending).resolves.toBe('activated');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('extends the wait the same way on the update-all path once the worker confirms', async () => {
+    const { activateWaitingUpdateResult } = await import('../service-worker-update');
+    vi.useFakeTimers();
+    try {
+      const listeners: ((e?: any) => void)[] = [];
+      const container = {
+        controller: {},
+        addEventListener: (_t: string, fn: any) => { listeners.push(fn); },
+        removeEventListener: () => {},
+      };
+      const posted: string[] = [];
+      const worker = {
+        state: 'installed', addEventListener: () => {}, removeEventListener: () => {},
+        postMessage: (message: { type: string }, transfer?: MessagePort[]) => {
+          posted.push(message.type);
+          transfer?.[0]?.postMessage({ activated: true });
+          setTimeout(() => listeners.forEach(fn => fn()), 1200); // takes control after the 500 ms timeout
+        },
+      };
+      const pending = activateWaitingUpdateResult(container as any, worker as any, { onlyIfAlone: false, timeoutMs: 500 });
+      await vi.advanceTimersByTimeAsync(1500);
+      await expect(pending).resolves.toBe('activated');
+      expect(posted).toEqual(['SKIP_WAITING']);
     } finally {
       vi.useRealTimers();
     }
