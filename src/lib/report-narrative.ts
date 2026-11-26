@@ -9,7 +9,7 @@ import { getGoalTypeDef } from './goal-types';
 import { compareSessionsOldestFirst, formatDate, formatDateOnly, formatGoalTarget, goalTypeLabel, parseDateOnly, plural } from './helpers';
 import { timePatterns, TIMING_MEASURE_LABELS, WEEKDAY_NAMES } from './behavior-timing';
 import { formatGasLevel } from './gas';
-import { formatSampleLength, sampleUnit, summarizeSample, utteranceLengths } from './language-sample';
+import { formatSampleLength, goalSampleUnit, sessionSampleUnit, summarizeSample, utteranceLengths } from './language-sample';
 import { ITEM_MASTERY_RUN, itemHistory, listItems } from './item-mastery';
 import type { TaskStepScore } from './task-analysis';
 import { trendWeight } from './trial-weights';
@@ -274,16 +274,25 @@ function taskAnalysisSentence(name: string, data: Record<string, any>[]): string
 
 /** Language sample: utterances sampled, the MLU across the samples and the longest utterance. */
 function languageSampleSentence(name: string, goal: Goal, data: Record<string, any>[]): string | null {
-  const lengths = data.flatMap(d => utteranceLengths(d));
+  const unit = goalSampleUnit(goal);
+  // Only samples counted in the goal's current unit are pooled: mixing words and morphemes would
+  // manufacture an MLU change out of the unit switch alone. Left-out samples are named as such.
+  const sampled = data.filter(d => utteranceLengths(d).length);
+  const inUnit = sampled.filter(d => sessionSampleUnit(d, { sampleUnit: unit }) === unit);
+  const lengths = inUnit.flatMap(d => utteranceLengths(d));
   if (!lengths.length) return null;
   const summary = summarizeSample(lengths);
-  const unit = sampleUnit(goal);
-  const first = summarizeSample(utteranceLengths(data.find(d => utteranceLengths(d).length) ?? {}));
-  const last = summarizeSample(utteranceLengths([...data].reverse().find(d => utteranceLengths(d).length) ?? {}));
-  const change = data.filter(d => utteranceLengths(d).length).length > 1 && first.mlu !== null && last.mlu !== null
+  const first = summarizeSample(utteranceLengths(inUnit[0]));
+  const last = summarizeSample(utteranceLengths(inUnit[inUnit.length - 1]));
+  const change = inUnit.length > 1 && first.mlu !== null && last.mlu !== null
     ? ` The MLU went from ${formatSampleLength(first.mlu, unit)} in the first sample to ${formatSampleLength(last.mlu, unit)} in the most recent one.`
     : '';
-  return `${plural(summary.utterances, 'utterance')} were sampled, with an overall MLU of ${formatSampleLength(summary.mlu ?? 0, unit)}; the longest utterance was ${formatSampleLength(summary.longest, unit)}.${change}`;
+  const excluded = sampled.length - inUnit.length;
+  const otherUnit = unit === 'morphemes' ? 'words' : 'morphemes';
+  const note = excluded > 0
+    ? ` ${plural(excluded, 'sample')} counted in ${otherUnit} ${excluded === 1 ? 'is' : 'are'} not included, because the goal now counts ${unit}.`
+    : '';
+  return `${plural(summary.utterances, 'utterance')} were sampled, with an overall MLU of ${formatSampleLength(summary.mlu ?? 0, unit)}; the longest utterance was ${formatSampleLength(summary.longest, unit)}.${change}${note}`;
 }
 
 /** Item mastery: how many of the items are mastered, which ones, and which still need work. */

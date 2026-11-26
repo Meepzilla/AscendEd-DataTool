@@ -13,6 +13,13 @@ export interface ChangelogEntry {
 export const changelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-25',
+    title: 'Report Figures Made More Trustworthy',
+    description: 'Language sample (MLU) charts and narratives no longer mix samples counted in words with samples counted in morphemes after a goal\u2019s unit is changed, which could make progress appear out of the change alone; samples in the other unit are left out and the narrative says so. Weekly and monthly chart values are now pooled across all the responses or utterances behind them instead of averaging session scores, so a very small session can\u2019t outweigh a large one, and the totals in the Functions by session and Item by item tables now match the sessions shown.',
+    type: 'fix',
+    icon: BarChartHorizontalBig,
+  },
+  {
+    date: '2026-11-25',
     title: 'Student Cards Keep Their Size While Scrolling on Android',
     description: 'On Data Entry, student cards could keep growing taller and taller while you scrolled, until they ran far past the bottom of the screen. The card height is now worked out from the space above the cards, which does not move when you scroll, instead of from a card itself — so the cards stay the size that fits the screen.',
     type: 'fix',

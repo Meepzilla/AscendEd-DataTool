@@ -11,6 +11,7 @@ import { formatDate, goalTypeLabel, parseDateOnly } from './helpers';
 import { PROMPT_ABBREVIATIONS, PROMPT_COLORS, PROMPT_TYPES } from './promptConstants';
 import { aimValueAt, type AimLine } from './aim-line';
 import { pooledAccuracy } from './trial-weights';
+import { isSampleGoal, sessionMatchesGoalUnit, utteranceLengths } from './language-sample';
 import type { TimeGrouping } from './report-filters';
 
 const round = (n: number) => Math.round(n * 10) / 10;
@@ -46,6 +47,9 @@ export function collectRecordedGoalSessions(
     const stored = (session.goals ?? []).find(g => g.goalId === goal.id)?.data;
     if (!stored) continue;
     const data = withoutRunningTimers(stored);
+    // MLU is only comparable within one counted unit: a session counted in words is left out of a
+    // morphemes series (and the other way round), so a unit change can't read as progress.
+    if (isSampleGoal(goal) && !sessionMatchesGoalUnit(data, goal)) continue;
     let value = goalMeasure(goal, data);
     if (value === null && includeUnansweredLatency && toolTypeOf(captureTypeOf(goal)) === 'BEHAVIOR_LATENCY' && summarizeLatency(data).trialCount > 0) {
       value = Number.NaN;
@@ -134,6 +138,19 @@ export interface GoalChartPoint {
 }
 
 /**
+ * How much data sits behind one session's value: responses for trial-based goals, utterances for
+ * language samples, 0 for goals measured another way (ratings, counts), whose sessions count equally.
+ * Grouped (week/month) values pool by this denominator, so a 1-of-1 session can't outweigh a 9-of-99
+ * one — the same pooling buildCombinedChartSeries already used for its accuracy.
+ */
+function goalValueWeight(goal: Goal, data: Record<string, any>): number {
+  const resp = goalResponses(goal, data);
+  if (resp) return Math.max(0, resp.correct + resp.approximate + resp.incorrect);
+  if (isSampleGoal(goal)) return utteranceLengths(data).length;
+  return 0;
+}
+
+/**
  * Aggregates a goal's recorded sessions by `'session'`, `'week'`, or `'month'` for Line, Bar, and Table views.
  */
 export function groupGoalPoints(
@@ -196,7 +213,17 @@ export function groupGoalPoints(
   return [...buckets.values()]
     .sort((a, b) => a.meta.sortKey - b.meta.sortKey)
     .map(({ meta, items }) => {
-      const avgValue = round(items.reduce((sum, r) => sum + r.value, 0) / items.length);
+      // Pooled by denominator (see goalValueWeight); with no denominators, a plain mean of sessions.
+      let weightedSum = 0;
+      let weightTotal = 0;
+      for (const r of items) {
+        const w = goalValueWeight(goal, r.data);
+        weightedSum += r.value * w;
+        weightTotal += w;
+      }
+      const avgValue = weightTotal > 0
+        ? round(weightedSum / weightTotal)
+        : round(items.reduce((sum, r) => sum + r.value, 0) / items.length);
       const metCount = target !== undefined ? items.filter(r => sessionMeetsTarget(goal, r.data, target)).length : 0;
       const metTarget = target !== undefined ? meetsTarget(goal, avgValue, target) : null;
 
@@ -348,11 +375,15 @@ export function buildCombinedChartSeries(
       const data = withoutRunningTimers(goalData.data || {});
       const type = captureTypeOf(currentGoal);
 
+      // Prompt tallies count only for goals that use prompt counters: data carried on other goals
+      // (imported, restored, custom-type) must not inflate the prompt totals or mark a goal recorded.
       let promptTallyForGoal = 0;
-      for (const pt of PROMPT_TYPES) {
-        const val = Math.max(0, Number(data[pt]) || 0);
-        promptCounts[pt] += val;
-        promptTallyForGoal += val;
+      if (usesPromptCounters(currentGoal)) {
+        for (const pt of PROMPT_TYPES) {
+          const val = Math.max(0, Number(data[pt]) || 0);
+          promptCounts[pt] += val;
+          promptTallyForGoal += val;
+        }
       }
 
       if (goalMeasure(currentGoal, data) !== null || promptTallyForGoal > 0) {
@@ -569,14 +600,17 @@ export function buildPromptSummary(
       if (!goal) continue;
       const data = withoutRunningTimers(goalEntry.data || {});
 
+      // Only goals that use prompt counters contribute tallies (see buildCombinedChartSeries).
       let entryPromptSum = 0;
-      for (const pt of PROMPT_TYPES) {
-        const val = Math.max(0, Number(data[pt]) || 0);
-        counts[pt] += val;
-        if (pt !== 'Independent') {
-          sessionPromptTotal += val;
+      if (usesPromptCounters(goal)) {
+        for (const pt of PROMPT_TYPES) {
+          const val = Math.max(0, Number(data[pt]) || 0);
+          counts[pt] += val;
+          if (pt !== 'Independent') {
+            sessionPromptTotal += val;
+          }
+          entryPromptSum += val;
         }
-        entryPromptSum += val;
       }
 
       if (usesPromptCounters(goal) && (goalMeasure(goal, data) !== null || entryPromptSum > 0)) {
