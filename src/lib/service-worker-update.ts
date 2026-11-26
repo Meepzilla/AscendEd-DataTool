@@ -149,23 +149,23 @@ export function activateWaitingUpdateResult(
     waiting.addEventListener('statechange', onStateChange);
 
     try {
-      if (onlyIfAlone) {
-        if (typeof MessageChannel !== 'undefined') {
-          channel = new MessageChannel();
-          channel.port1.onmessage = (event: MessageEvent) => {
-            const activated = event.data ? (event.data as { activated?: unknown }).activated : undefined;
-            if (activated === false) finish('other-tabs-open');
-            else if (activated === true && !done && timeoutMs < CONFIRMED_ACTIVATION_TIMEOUT_MS) {
-              clearTimeout(timer);
-              timer = setTimeout(() => finish('failed'), CONFIRMED_ACTIVATION_TIMEOUT_MS);
-            }
-          };
-          waiting.postMessage({ type: SW_SKIP_WAITING_IF_ALONE_MESSAGE }, [channel.port2]);
-        } else {
-          waiting.postMessage({ type: SW_SKIP_WAITING_IF_ALONE_MESSAGE });
-        }
+      // Both messages carry a reply port when one can be made, so the worker can confirm it is activating and
+      // the wait is extended the same way on the update-all path as on the alone path; without the extension a
+      // slow activation timed out at the default and the reload landed under the old worker.
+      const message = { type: onlyIfAlone ? SW_SKIP_WAITING_IF_ALONE_MESSAGE : SW_SKIP_WAITING_MESSAGE };
+      if (typeof MessageChannel !== 'undefined') {
+        channel = new MessageChannel();
+        channel.port1.onmessage = (event: MessageEvent) => {
+          const activated = event.data ? (event.data as { activated?: unknown }).activated : undefined;
+          if (activated === false && onlyIfAlone) finish('other-tabs-open');
+          else if (activated === true && !done && timeoutMs < CONFIRMED_ACTIVATION_TIMEOUT_MS) {
+            clearTimeout(timer);
+            timer = setTimeout(() => finish('failed'), CONFIRMED_ACTIVATION_TIMEOUT_MS);
+          }
+        };
+        waiting.postMessage(message, [channel.port2]);
       } else {
-        waiting.postMessage({ type: SW_SKIP_WAITING_MESSAGE });
+        waiting.postMessage(message);
       }
     } catch {
       finish('failed');
@@ -206,6 +206,27 @@ export async function applyWaitingUpdate(deps: ApplyUpdateDeps): Promise<'reload
     return 'reloaded';
   }
   return result;
+}
+
+export interface NoticeReloadHandlers {
+  /** Puts the waiting update in use; `onlyIfAlone` false means the user explicitly chose to update all tabs. */
+  applyUpdate: (onlyIfAlone: boolean) => Promise<'reloaded' | ActivationResult>;
+  /** Another tab is open: tell the user and offer the explicit update-all choice. */
+  onOtherTabsOpen: () => void;
+  /** The alone attempt failed: tell the user; never escalate to updating all tabs without a fresh choice. */
+  onFailed: () => void;
+}
+
+/**
+ * What tapping Reload on the "App updated" notice does: try to update this tab alone first. Another tab open
+ * and a failed attempt are both reported through the handlers, so the user decides what happens next. A failed
+ * alone attempt must never silently become an update of every open tab (review finding E1): a tab opened after
+ * the alone check, or one the check miscounted, would be taken over by a tap presented as this-tab-only.
+ */
+export async function reloadFromUpdateNotice(handlers: NoticeReloadHandlers): Promise<void> {
+  const result = await handlers.applyUpdate(true);
+  if (result === 'other-tabs-open') handlers.onOtherTabsOpen();
+  else if (result === 'failed') handlers.onFailed();
 }
 
 /**

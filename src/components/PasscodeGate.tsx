@@ -1,7 +1,8 @@
 'use client';
 
-import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import TopEdgeBar from '@/components/layout/TopEdgeBar';
+import PasscodeScreens from './passcode/PasscodeScreens';
 import { getAutoLockMinutes, isPasscodeEnabled, isUnlocked, lockNow } from '@/lib/secure-store';
 import { needsFirstRunPrompt, needsPasscodeOffer, passcodeGateStatus } from '@/lib/passcode-onboarding';
 
@@ -16,7 +17,9 @@ import { needsFirstRunPrompt, needsPasscodeOffer, passcodeGateStatus } from '@/l
 
 export const PASSCODE_CHANGE_EVENT = 'ascended-passcode-change';
 
-const PasscodeScreens = lazy(() => import('./passcode/PasscodeScreens'));
+// PasscodeScreens is imported statically, not lazily: this gate sits above every route error boundary, so a
+// lazy chunk that failed to load (offline, or pruned from the service worker cache by a newer version) would
+// throw here with no recovery short of a full reload, and the user could not reach passcode entry at all.
 
 type Status = 'checking' | 'locked' | 'open' | 'setup' | 'offer';
 
@@ -82,13 +85,11 @@ export default function PasscodeGate({ children }: { children: React.ReactNode }
   if (status === 'checking') return <LoadingGate />;
 
   return (
-    <Suspense fallback={<LoadingGate />}>
-      <PasscodeScreens
-        mode={status}
-        onDone={() => { window.dispatchEvent(new Event(PASSCODE_CHANGE_EVENT)); setStatus('open'); }}
-        onLater={() => { offerDismissed.current = true; setStatus('open'); }}
-        onUnlocked={() => setStatus('open')}
-      />
-    </Suspense>
+    <PasscodeScreens
+      mode={status}
+      onDone={() => { window.dispatchEvent(new Event(PASSCODE_CHANGE_EVENT)); setStatus('open'); }}
+      onLater={() => { offerDismissed.current = true; setStatus('open'); }}
+      onUnlocked={() => setStatus('open')}
+    />
   );
 }

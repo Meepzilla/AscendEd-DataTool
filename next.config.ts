@@ -1,5 +1,4 @@
 import type {NextConfig} from 'next';
-import createBundleAnalyzer from '@next/bundle-analyzer';
 
 // `BUILD_TARGET=static` builds a static export (into out/) with no server, used for the Android app
 // and the installable web app (see `npm run build:static`).
@@ -7,10 +6,23 @@ const isStaticBuild = process.env.BUILD_TARGET === 'static';
 
 // Run `npm run analyze` (or `ANALYZE=true npm run build`) to write interactive treemap reports under
 // `.next/analyze/` for measuring bundle sizes before and after code-splitting changes.
-const withBundleAnalyzer = createBundleAnalyzer({
-  enabled: process.env.ANALYZE === 'true',
-  openAnalyzer: process.env.ANALYZE_OPEN === 'true',
-});
+// @next/bundle-analyzer is a devDependency, so it is loaded only when a report is actually requested:
+// importing it unconditionally made every build fail at config load on a production-only install
+// (`npm ci --omit=dev`), for a feature that is off by default.
+const withBundleAnalyzer: (config: NextConfig) => NextConfig = (() => {
+  if (process.env.ANALYZE !== 'true') return (config) => config;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const createBundleAnalyzer = require('@next/bundle-analyzer') as typeof import('@next/bundle-analyzer');
+    return createBundleAnalyzer({
+      enabled: true,
+      openAnalyzer: process.env.ANALYZE_OPEN === 'true',
+    });
+  } catch {
+    console.warn('@next/bundle-analyzer is not installed; building without bundle reports.');
+    return (config) => config;
+  }
+})();
 
 // Shown in Settings so it is easy to tell which version a device is running. Cloudflare sets
 // WORKERS_CI_COMMIT_SHA (CF_PAGES_COMMIT_SHA for Pages), Netlify sets COMMIT_REF and GitHub Actions sets

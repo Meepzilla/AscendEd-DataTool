@@ -13,6 +13,13 @@ export interface ChangelogEntry {
 export const changelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-25',
+    title: 'Lock Screen and App Updates Made More Reliable',
+    description: 'The passcode lock and setup screens are now built into the app instead of loaded separately, so a patchy connection or an app update can never leave you stuck outside the lock screen. If tapping Reload on the "App updated" notice can\'t put the new version in use, the app now says so and changes nothing in any tab — before, it went on to update every open tab without saying. The notice also says up front that other open tabs are left alone until you choose to update them.',
+    type: 'fix',
+    icon: ShieldCheck,
+  },
+  {
+    date: '2026-11-25',
     title: 'Faster Page Loads Across the App',
     description: 'Every page in the app now loads 33% to 46% less code up front (Data Entry and Student Profiles dropped by nearly half). Heavy tools that aren\'t needed on initial load — such as the built-in goal library used when setting up a device, backup and restore tools, spreadsheet and CSV imports and exports, report narrative generation, the passcode screen while unlocked, forms and dialogs, and specialized goal-entry inputs — are now loaded only when you open or use them. Data Entry and Student Profiles also removed extra loading steps so student cards appear in a single pass, and the app no longer downloads the What\'s New page in the background until you visit it.',
     type: 'improvement',
