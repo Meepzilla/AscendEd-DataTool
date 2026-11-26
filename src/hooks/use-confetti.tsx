@@ -62,6 +62,10 @@ export const ConfettiProvider = ({ children }: { children: ReactNode }) => {
 
       }, 250);
       intervalsRef.current.add(interval);
+    }).catch(() => {
+      // Cosmetic only: a failed confetti chunk just means no celebration. Catching here keeps the
+      // failed import from surfacing as an unhandled rejection in the console.
+      console.warn('Confetti could not load; skipping the celebration.');
     });
   }, []);
 

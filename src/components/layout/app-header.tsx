@@ -1,7 +1,8 @@
 
 'use client';
 
-import React, { Suspense, lazy, useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
+import { LazyBoundary, retryableLazy } from '@/components/ui/lazy-boundary';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -25,9 +26,9 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useSidebar } from '@/components/ui/sidebar';
 
-const AddStudentModal = lazy(() => import('@/components/modals/add-student-modal'));
-const EditStudentModal = lazy(() => import('@/components/modals/edit-student-modal'));
-const ErrorLogModal = lazy(() => import('@/components/modals/error-log-modal'));
+const AddStudentModal = retryableLazy(() => import('@/components/modals/add-student-modal'));
+const EditStudentModal = retryableLazy(() => import('@/components/modals/edit-student-modal'));
+const ErrorLogModal = retryableLazy(() => import('@/components/modals/error-log-modal'));
 
 /** With the menu bar at the bottom: a thin bar of its color at the top edge, so iPadOS still draws the top sharply. */
 export function TopStrip() {
@@ -199,11 +200,13 @@ export default function AppHeader({ atBottom = false }: { atBottom?: boolean }) 
           </div>
         </div>
       </div>
-      <Suspense fallback={null}>
-        {isAddStudentModalOpen && <AddStudentModal />}
-        {editingStudent && <EditStudentModal studentToEdit={editingStudent} />}
-        {isErrorLogModalOpen && <ErrorLogModal />}
-      </Suspense>
+      <LazyBoundary label="This dialog">
+        <Suspense fallback={null}>
+          {isAddStudentModalOpen && <AddStudentModal />}
+          {editingStudent && <EditStudentModal studentToEdit={editingStudent} />}
+          {isErrorLogModalOpen && <ErrorLogModal />}
+        </Suspense>
+      </LazyBoundary>
     </header>
     </>
   );

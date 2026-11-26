@@ -25,12 +25,23 @@ export default function NarrativeDialog(props: NarrativeInput & { disabled?: boo
   const [generated, setGenerated] = useState('');
   const [style, setStyle] = useState<NarrativeStyle>('detailed');
   const [nextSteps, setNextSteps] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   const generate = async () => {
-    const { buildNarrative } = await import('@/lib/report-narrative');
-    const narrative = buildNarrative({ ...input, options: { style, nextSteps } });
-    setText(narrative);
-    setGenerated(narrative);
+    setGenerating(true);
+    try {
+      const { buildNarrative } = await import('@/lib/report-narrative');
+      const narrative = buildNarrative({ ...input, options: { style, nextSteps } });
+      setText(narrative);
+      setGenerated(narrative);
+    } catch (error) {
+      // The narrative builder is a separate chunk; if it cannot load (offline, or pruned by a
+      // newer service worker) the dialog used to sit empty with no sign anything went wrong.
+      addErrorLog({ message: `Generating the narrative failed: ${error instanceof Error ? error.message : String(error)}`, source: 'NarrativeDialog.generate', type: 'error' });
+      toast({ title: "Couldn't write the narrative", description: toSafeErrorMessage(error), variant: 'destructive' });
+    } finally {
+      setGenerating(false);
+    }
   };
   // Changing the format rewrites the text, so edits are only discarded after asking.
   const confirmDiscard = () => text === generated || window.confirm('Discard your edits and rewrite the narrative in the new format?');
@@ -107,7 +118,8 @@ export default function NarrativeDialog(props: NarrativeInput & { disabled?: boo
             </div>
             <p className="text-xs text-muted-foreground">Changing these rewrites the text; you&apos;ll be asked first if you&apos;ve edited it.</p>
           </div>
-          <Textarea value={text} onChange={(e) => setText(e.target.value)} className="min-h-[30vh] sm:min-h-[45vh] text-sm leading-relaxed" aria-label="Narrative text" />
+          {generating && <p className="text-sm text-muted-foreground" role="status">Writing the narrative…</p>}
+          <Textarea value={text} onChange={(e) => setText(e.target.value)} disabled={generating} className="min-h-[30vh] sm:min-h-[45vh] text-sm leading-relaxed" aria-label="Narrative text" />
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="ghost" onClick={generate} title="Start over from the data (discards edits)">
               <RotateCcw className="mr-2 h-4 w-4" /> Regenerate

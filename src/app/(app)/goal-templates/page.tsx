@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useMemo, Suspense, lazy, useEffect } from 'react';
+import React, { useState, useMemo, Suspense, useEffect } from 'react';
+import { LazyBoundary, retryableLazy } from '@/components/ui/lazy-boundary';
 import { useStudentData } from '@/hooks/use-student-data';
 import type { GoalTemplate } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -17,12 +18,12 @@ import { cn } from '@/lib/utils';
 import GoalTemplateFilters, { type GoalTemplateSortOrder, type GridSize } from '@/components/goal-templates/GoalTemplateFilters';
 
 // Lazy load modals
-const AddGoalTemplateModal = lazy(() => import('@/components/modals/add-goal-template-modal'));
-const EditGoalTemplateModal = lazy(() => import('@/components/modals/edit-goal-template-modal'));
-const ConfirmationModal = lazy(() => import('@/components/modals/confirmation-modal'));
-const GoalBankDetailsDialog = lazy(() => import('@/components/goal-templates/GoalBankDetailsDialog'));
-const AssignTemplateDialog = lazy(() => import('@/components/goal-templates/AssignTemplateDialog'));
-const DuplicateFinderDialog = lazy(() => import('@/components/goal-templates/DuplicateFinderDialog'));
+const AddGoalTemplateModal = retryableLazy(() => import('@/components/modals/add-goal-template-modal'));
+const EditGoalTemplateModal = retryableLazy(() => import('@/components/modals/edit-goal-template-modal'));
+const ConfirmationModal = retryableLazy(() => import('@/components/modals/confirmation-modal'));
+const GoalBankDetailsDialog = retryableLazy(() => import('@/components/goal-templates/GoalBankDetailsDialog'));
+const AssignTemplateDialog = retryableLazy(() => import('@/components/goal-templates/AssignTemplateDialog'));
+const DuplicateFinderDialog = retryableLazy(() => import('@/components/goal-templates/DuplicateFinderDialog'));
 
 // Templates rendered at first and per "Show more": the goal bank has over 1,000.
 const PAGE_SIZE = 60;
@@ -134,6 +135,7 @@ export default function GoalTemplatesPage() {
 
   return (
     <div className="space-y-6">
+      <LazyBoundary label="This dialog">
       <Suspense fallback={null}>
         {isAddGoalTemplateModalOpen && <AddGoalTemplateModal />}
         {detailsTemplate && <GoalBankDetailsDialog template={detailsTemplate} onClose={() => setDetailsTemplate(null)} />}
@@ -166,6 +168,7 @@ export default function GoalTemplatesPage() {
           />
         )}
       </Suspense>
+      </LazyBoundary>
 
       <AlertDialog open={!!builtInToDelete} onOpenChange={open => { if (!open) setBuiltInToDelete(null); }}>
         <AlertDialogContent>

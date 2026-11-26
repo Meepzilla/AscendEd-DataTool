@@ -1,7 +1,8 @@
 
 'use client';
 
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense } from 'react';
+import { LazyBoundary, retryableLazy } from '@/components/ui/lazy-boundary';
 import { fillNameBlanks } from '@/lib/goal-blanks';
 import type { Goal, GoalDataUpdater, SessionGoalData, GoalType, StudentIep, TrialStatus } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,16 +30,16 @@ import { ObservationInputs, PromptingInputs } from './goal-inputs/observation';
 import { CommunicationFunctionsInputs, StoryElementsInputs } from './goal-inputs/communication';
 
 // Heavier, specialized goal-type inputs are loaded on demand so students without those goal types don't pay for them.
-const TaskAnalysisInput = lazy(() => import('./goal-inputs/TaskAnalysisInput'));
-const LanguageSampleInput = lazy(() => import('./goal-inputs/LanguageSampleInput'));
-const ItemMasteryInput = lazy(() => import('./goal-inputs/ItemMasteryInput'));
-const GasInputs = lazy(() => import('./goal-inputs/gas').then(m => ({ default: m.GasInputs })));
-const CustomGoalInputs = lazy(() => import('./goal-inputs/custom').then(m => ({ default: m.CustomGoalInputs })));
-const FrequencyInput = lazy(() => import('./goal-inputs/behavior-inputs').then(m => ({ default: m.FrequencyInput })));
-const DurationInput = lazy(() => import('./goal-inputs/behavior-inputs').then(m => ({ default: m.DurationInput })));
-const AbcInput = lazy(() => import('./goal-inputs/behavior-inputs').then(m => ({ default: m.AbcInput })));
-const IntervalInput = lazy(() => import('./goal-inputs/behavior-inputs').then(m => ({ default: m.IntervalInput })));
-const LatencyInput = lazy(() => import('./goal-inputs/behavior-inputs').then(m => ({ default: m.LatencyInput })));
+const TaskAnalysisInput = retryableLazy(() => import('./goal-inputs/TaskAnalysisInput'));
+const LanguageSampleInput = retryableLazy(() => import('./goal-inputs/LanguageSampleInput'));
+const ItemMasteryInput = retryableLazy(() => import('./goal-inputs/ItemMasteryInput'));
+const GasInputs = retryableLazy(() => import('./goal-inputs/gas').then(m => ({ default: m.GasInputs })));
+const CustomGoalInputs = retryableLazy(() => import('./goal-inputs/custom').then(m => ({ default: m.CustomGoalInputs })));
+const FrequencyInput = retryableLazy(() => import('./goal-inputs/behavior-inputs').then(m => ({ default: m.FrequencyInput })));
+const DurationInput = retryableLazy(() => import('./goal-inputs/behavior-inputs').then(m => ({ default: m.DurationInput })));
+const AbcInput = retryableLazy(() => import('./goal-inputs/behavior-inputs').then(m => ({ default: m.AbcInput })));
+const IntervalInput = retryableLazy(() => import('./goal-inputs/behavior-inputs').then(m => ({ default: m.IntervalInput })));
+const LatencyInput = retryableLazy(() => import('./goal-inputs/behavior-inputs').then(m => ({ default: m.LatencyInput })));
 
 // A goal's card in Data Entry: its name, target and move arrows, the inputs for its type (in goal-inputs/, or the
 // behavior and task analysis inputs), and the prompt level counters. The calculations are in lib/goal-input-logic.
@@ -322,9 +323,11 @@ export default function GoalDataInputComponent({
         </div>
       </CardHeader>
       <CardContent className="p-2 space-y-1.5">
-        <Suspense fallback={<Skeleton className="h-24 w-full" />}>
-          {renderInputFields()}
-        </Suspense>
+        <LazyBoundary label="This goal input">
+          <Suspense fallback={<Skeleton className="h-24 w-full" />}>
+            {renderInputFields()}
+          </Suspense>
+        </LazyBoundary>
 
         {showPromptCounters && (
           <PromptLevelCounters captureType={captureType as GoalType} data={data} onChange={onChange} isArchived={isArchived} interact={handleInteraction} />
