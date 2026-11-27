@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { lazy, useState, useEffect, useCallback, Suspense, useMemo, useRef, useSyncExternalStore } from 'react';
+import React, { useState, useEffect, useCallback, Suspense, useMemo, useRef, useSyncExternalStore } from 'react';
 import { useStudentData } from '@/hooks/use-student-data';
 import { useAuth } from '@/hooks/use-auth';
 import { SessionDateProvider } from '@/components/forms/session-date-context';
@@ -43,7 +43,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 // keyboard shortcuts (use-data-entry-shortcuts), the save bar (DataEntrySaveBar) and the per-student state
 // (lib/data-entry-session). This file holds the state and the actions.
 
-const ConfirmationModal = lazy(() => import('@/components/modals/confirmation-modal'));
+import { LazyBoundary, retryableLazy } from '@/components/ui/lazy-boundary';
+
+const ConfirmationModal = retryableLazy(() => import('@/components/modals/confirmation-modal'));
 
 // Whether Data Entry has been open since the app loaded. Switching pages keeps the module, so the
 // "restored" notice shows only when the app reopens with unsaved data, not every time the page is revisited.
@@ -740,44 +742,54 @@ export default function DataEntryContent() {
             toast({ title: 'Unlocked', description: 'Unsaved entries were discarded. The PIN is still set and will be needed the next time you lock.' });
           }}
         />
-        <Suspense fallback={null}>
-          {pendingSlotChange && (
-            <ConfirmationModal
-              isOpen={!!pendingSlotChange}
-              onClose={() => setPendingSlotChange(null)}
-              onConfirm={() => {
-                resetSessionStateForStudent(pendingSlotChange.studentId);
-                pendingSlotChange.apply();
-                setPendingSlotChange(null);
-              }}
-              title={`Discard ${pendingSlotChange.studentName}'s unsaved data?`}
-              description={`${pendingSlotChange.studentName} has data entered that hasn't been saved. Save it first, or continue to discard it.`}
-              confirmText="Discard and Continue"
-            />
-          )}
-          {confirmRemoveAll && (
-            <ConfirmationModal
-              isOpen={!!confirmRemoveAll}
-              onClose={() => setConfirmRemoveAll(null)}
-              onConfirm={applyRemoveAll}
-              title={confirmRemoveAll.length ? 'Remove all students and discard unsaved data?' : (selectedStudentIds.length === 1 ? 'Remove the student?' : `Remove all ${selectedStudentIds.length} students?`)}
-              description={confirmRemoveAll.length
-                ? `${confirmRemoveAll.join(', ')} ${confirmRemoveAll.length === 1 ? 'has' : 'have'} data entered that hasn't been saved. Use Save All first to keep it, or continue to discard it.`
-                : 'They are taken out of Data Entry. Their saved sessions and goals aren\'t affected.'}
-              confirmText={confirmRemoveAll.length ? 'Discard and Remove All' : 'Remove All'}
-            />
-          )}
-          {isResetConfirmationOpen && (
-            <ConfirmationModal
-              isOpen={isResetConfirmationOpen}
-              onClose={() => setIsResetConfirmationOpen(false)}
-              onConfirm={handleReset}
-              title="Reset This Student?"
-              description="This clears the activity, notes and data entered but not saved for the highlighted student. It can't be undone."
-              confirmText="Yes, Reset Data"
-            />
-          )}
-        </Suspense>
+        {pendingSlotChange && (
+          <LazyBoundary label="Confirmation dialog" onDismiss={() => setPendingSlotChange(null)}>
+            <Suspense fallback={null}>
+              <ConfirmationModal
+                isOpen={!!pendingSlotChange}
+                onClose={() => setPendingSlotChange(null)}
+                onConfirm={() => {
+                  resetSessionStateForStudent(pendingSlotChange.studentId);
+                  pendingSlotChange.apply();
+                  setPendingSlotChange(null);
+                }}
+                title={`Discard ${pendingSlotChange.studentName}'s unsaved data?`}
+                description={`${pendingSlotChange.studentName} has data entered that hasn't been saved. Save it first, or continue to discard it.`}
+                confirmText="Discard and Continue"
+              />
+            </Suspense>
+          </LazyBoundary>
+        )}
+        {confirmRemoveAll && (
+          <LazyBoundary label="Confirmation dialog" onDismiss={() => setConfirmRemoveAll(null)}>
+            <Suspense fallback={null}>
+              <ConfirmationModal
+                isOpen={!!confirmRemoveAll}
+                onClose={() => setConfirmRemoveAll(null)}
+                onConfirm={applyRemoveAll}
+                title={confirmRemoveAll.length ? 'Remove all students and discard unsaved data?' : (selectedStudentIds.length === 1 ? 'Remove the student?' : `Remove all ${selectedStudentIds.length} students?`)}
+                description={confirmRemoveAll.length
+                  ? `${confirmRemoveAll.join(', ')} ${confirmRemoveAll.length === 1 ? 'has' : 'have'} data entered that hasn't been saved. Use Save All first to keep it, or continue to discard it.`
+                  : 'They are taken out of Data Entry. Their saved sessions and goals aren\'t affected.'}
+                confirmText={confirmRemoveAll.length ? 'Discard and Remove All' : 'Remove All'}
+              />
+            </Suspense>
+          </LazyBoundary>
+        )}
+        {isResetConfirmationOpen && (
+          <LazyBoundary label="Confirmation dialog" onDismiss={() => setIsResetConfirmationOpen(false)}>
+            <Suspense fallback={null}>
+              <ConfirmationModal
+                isOpen={isResetConfirmationOpen}
+                onClose={() => setIsResetConfirmationOpen(false)}
+                onConfirm={handleReset}
+                title="Reset This Student?"
+                description="This clears the activity, notes and data entered but not saved for the highlighted student. It can't be undone."
+                confirmText="Yes, Reset Data"
+              />
+            </Suspense>
+          </LazyBoundary>
+        )}
         {selectionModalType === 'student' && (
           <SelectionModal
             isOpen={selectionModalType === 'student'}

@@ -334,24 +334,24 @@ export default function CustomGoalTypesCard() {
         </div>
       </CardContent>
 
-      <LazyBoundary label="The goal type editor">
-        <Suspense fallback={null}>
-          {isModalOpen && (
-          <CustomGoalTypeModal
-            isOpen={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
-            initialType={editingType}
-            saveCustomType={saveCustomType}
-            onSave={(saved) => {
-              toast({
-                title: editingType ? 'Goal Type Updated' : 'Goal Type Created',
-                description: `“${saved.name}” is ready to use in goal templates and student goals.`,
-              });
-            }}
-          />
-          )}
-        </Suspense>
-      </LazyBoundary>
+      {isModalOpen && (
+        <LazyBoundary label="The goal type editor" onDismiss={() => setIsModalOpen(false)}>
+          <Suspense fallback={null}>
+            <CustomGoalTypeModal
+              isOpen={isModalOpen}
+              onClose={() => setIsModalOpen(false)}
+              initialType={editingType}
+              saveCustomType={saveCustomType}
+              onSave={(saved) => {
+                toast({
+                  title: editingType ? 'Goal Type Updated' : 'Goal Type Created',
+                  description: `“${saved.name}” is ready to use in goal templates and student goals.`,
+                });
+              }}
+            />
+          </Suspense>
+        </LazyBoundary>
+      )}
     </Card>
   );
 }

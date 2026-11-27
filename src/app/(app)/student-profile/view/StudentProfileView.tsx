@@ -153,67 +153,85 @@ export default function StudentProfileView() {
 
   return (
     <div className="space-y-6">
-      <LazyBoundary label="This dialog">
-      <Suspense fallback={null}>
-        {isImportModalOpen && <ImportDataModal onClose={() => setIsImportModalOpen(false)} onImport={importSessions} />}
+      {isImportModalOpen && (
+        <LazyBoundary label="Import Data dialog" onDismiss={() => setIsImportModalOpen(false)}>
+          <Suspense fallback={null}>
+            <ImportDataModal onClose={() => setIsImportModalOpen(false)} onImport={importSessions} />
+          </Suspense>
+        </LazyBoundary>
+      )}
 
-        {editingAssignedGoal && currentStudent && (
-          <EditAssignedGoalModal
-            isOpen={!!editingAssignedGoal}
-            onClose={closeEditAssignedGoalModal}
-            studentId={editingAssignedGoal.studentId} 
-            goalToEdit={editingAssignedGoal.goal}
-          />
-        )}
-        
-        {deletingAssignedGoal && (
-          <ConfirmationModal
-            isOpen={!!deletingAssignedGoal}
-            onClose={closeDeleteAssignedGoalConfirmationModal}
-            // Returns whether it was saved, so the window stays open (and says so) when it wasn't.
-            onConfirm={() => removeGoalFromStudent(deletingAssignedGoal.studentId, deletingAssignedGoal.goal.id)}
-            title={`Remove Goal: "${deletingAssignedGoal.goal.name}"?`}
-            description={`Are you sure you want to remove this goal from ${currentStudent.name}? This action cannot be undone.`}
-            confirmText="Yes, Remove Goal"
-          />
-        )}
-          
-        {/* Modal for Archiving */}
-        {deletingStudent && deletingStudent.type === 'student' && (
-           <ConfirmationModal
+      {editingAssignedGoal && currentStudent && (
+        <LazyBoundary label="Edit Goal dialog" onDismiss={closeEditAssignedGoalModal}>
+          <Suspense fallback={null}>
+            <EditAssignedGoalModal
+              isOpen={!!editingAssignedGoal}
+              onClose={closeEditAssignedGoalModal}
+              studentId={editingAssignedGoal.studentId}
+              goalToEdit={editingAssignedGoal.goal}
+            />
+          </Suspense>
+        </LazyBoundary>
+      )}
+
+      {deletingAssignedGoal && (
+        <LazyBoundary label="Confirmation dialog" onDismiss={closeDeleteAssignedGoalConfirmationModal}>
+          <Suspense fallback={null}>
+            <ConfirmationModal
+              isOpen={!!deletingAssignedGoal}
+              onClose={closeDeleteAssignedGoalConfirmationModal}
+              // Returns whether it was saved, so the window stays open (and says so) when it wasn't.
+              onConfirm={() => removeGoalFromStudent(deletingAssignedGoal.studentId, deletingAssignedGoal.goal.id)}
+              title={`Remove Goal: "${deletingAssignedGoal.goal.name}"?`}
+              description={`Are you sure you want to remove this goal from ${currentStudent.name}? This action cannot be undone.`}
+              confirmText="Yes, Remove Goal"
+            />
+          </Suspense>
+        </LazyBoundary>
+      )}
+
+      {/* Modal for Archiving */}
+      {deletingStudent && deletingStudent.type === 'student' && (
+        <LazyBoundary label="Confirmation dialog" onDismiss={closeDeleteConfirmationModal}>
+          <Suspense fallback={null}>
+            <ConfirmationModal
               isOpen={!!deletingStudent}
               onClose={closeDeleteConfirmationModal}
               title={
-                  (deletingStudent.item as Student).isArchived ? `Unarchive Student: ${(deletingStudent.item as Student).name}` : `Archive Student: ${(deletingStudent.item as Student).name}`
+                (deletingStudent.item as Student).isArchived ? `Unarchive Student: ${(deletingStudent.item as Student).name}` : `Archive Student: ${(deletingStudent.item as Student).name}`
               }
               description={
-                  (deletingStudent.item as Student).isArchived ? "Unarchiving this student will make them visible in all active lists again. Are you sure?" : "Archiving a student will hide them from active lists. Their data will be preserved. Are you sure?"
+                (deletingStudent.item as Student).isArchived ? "Unarchiving this student will make them visible in all active lists again. Are you sure?" : "Archiving a student will hide them from active lists. Their data will be preserved. Are you sure?"
               }
               onConfirm={() => updateStudent((deletingStudent.item as Student).id, { isArchived: !(deletingStudent.item as Student).isArchived })}
               confirmText={
-                  (deletingStudent.item as Student).isArchived ? 'Yes, Unarchive' : 'Yes, Archive'
+                (deletingStudent.item as Student).isArchived ? 'Yes, Unarchive' : 'Yes, Archive'
               }
-          />
-        )}
-
-        {/* Modal for Deleting */}
-        {isDeleteConfirmationOpen && currentStudent && (
-            <ConfirmationModal
-                isOpen={isDeleteConfirmationOpen}
-                onClose={() => setIsDeleteConfirmationOpen(false)}
-                title={`Delete Student: ${currentStudent.name}?`}
-                description="Are you sure you want to permanently delete this student and all their associated session data? This action cannot be undone."
-                // Back to the student list only once the student is deleted; otherwise the window stays open and says so.
-                onConfirm={async () => {
-                  if (!(await deleteStudent(currentStudent.id))) return false;
-                  setIsDeleteConfirmationOpen(false);
-                  router.push('/student-profile');
-                }}
-                confirmText="Yes, Delete Permanently"
             />
-        )}
-      </Suspense>
-      </LazyBoundary>
+          </Suspense>
+        </LazyBoundary>
+      )}
+
+      {/* Modal for Deleting */}
+      {isDeleteConfirmationOpen && currentStudent && (
+        <LazyBoundary label="Confirmation dialog" onDismiss={() => setIsDeleteConfirmationOpen(false)}>
+          <Suspense fallback={null}>
+            <ConfirmationModal
+              isOpen={isDeleteConfirmationOpen}
+              onClose={() => setIsDeleteConfirmationOpen(false)}
+              title={`Delete Student: ${currentStudent.name}?`}
+              description="Are you sure you want to permanently delete this student and all their associated session data? This action cannot be undone."
+              // Back to the student list only once the student is deleted; otherwise the window stays open and says so.
+              onConfirm={async () => {
+                if (!(await deleteStudent(currentStudent.id))) return false;
+                setIsDeleteConfirmationOpen(false);
+                router.push('/student-profile');
+              }}
+              confirmText="Yes, Delete Permanently"
+            />
+          </Suspense>
+        </LazyBoundary>
+      )}
 
 
       <Card className="shadow-lg">

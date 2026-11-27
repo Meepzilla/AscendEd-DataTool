@@ -1,6 +1,6 @@
 
 'use client';
-import React, { Suspense, lazy, useState, useMemo } from 'react';
+import React, { Suspense, useState, useMemo } from 'react';
 import { useStudentData } from '@/hooks/use-student-data';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { UserSearch, UsersRound } from 'lucide-react';
@@ -8,8 +8,9 @@ import { Button } from '@/components/ui/button';
 import AppLoadingSkeleton from '@/components/layout/AppLoadingSkeleton';
 import StudentFilters, { type StudentSortOrder } from '@/components/student-selection/StudentFilters';
 import StudentSelectionGrid from '@/components/student-selection/StudentSelectionGrid';
+import { LazyBoundary, retryableLazy } from '@/components/ui/lazy-boundary';
 
-const ManageGroupsDialog = lazy(() => import('@/components/student-groups/ManageGroupsDialog'));
+const ManageGroupsDialog = retryableLazy(() => import('@/components/student-groups/ManageGroupsDialog'));
 
 export default function StudentProfileLandingPage() {
   const { students, loading, openAddStudentModal } = useStudentData();
@@ -78,9 +79,13 @@ export default function StudentProfileLandingPage() {
           <Button variant="outline" size="sm" onClick={() => setIsGroupsOpen(true)}>
             <UsersRound className="mr-2 h-4 w-4" />Groups
           </Button>
-          <Suspense fallback={null}>
-            {isGroupsOpen && <ManageGroupsDialog open={isGroupsOpen} onOpenChange={setIsGroupsOpen} />}
-          </Suspense>
+          {isGroupsOpen && (
+            <LazyBoundary label="Manage Groups dialog" floating onDismiss={() => setIsGroupsOpen(false)}>
+              <Suspense fallback={null}>
+                <ManageGroupsDialog open={isGroupsOpen} onOpenChange={setIsGroupsOpen} />
+              </Suspense>
+            </LazyBoundary>
+          )}
         </CardHeader>
         <CardContent>
             <StudentFilters 

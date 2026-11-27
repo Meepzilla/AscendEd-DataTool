@@ -43,7 +43,7 @@ export function TopStrip() {
 /** atBottom: Settings → Menu bar position is Bottom (the layout tracks it); the account menu then opens upward. */
 export default function AppHeader({ atBottom = false }: { atBottom?: boolean }) {
   const { currentUser, signOut } = useAuth();
-  const { isAddStudentModalOpen, openAddStudentModal, editingStudent } = useStudentData();
+  const { isAddStudentModalOpen, openAddStudentModal, closeAddStudentModal, editingStudent, closeEditStudentModal } = useStudentData();
   const { isErrorLogModalOpen, toggleErrorLogModal } = useErrorLog();
   const pathname = usePathname();
   const { toggleSidebar } = useSidebar();
@@ -200,13 +200,21 @@ export default function AppHeader({ atBottom = false }: { atBottom?: boolean }) 
           </div>
         </div>
       </div>
-      <LazyBoundary label="This dialog">
-        <Suspense fallback={null}>
-          {isAddStudentModalOpen && <AddStudentModal />}
-          {editingStudent && <EditStudentModal studentToEdit={editingStudent} />}
-          {isErrorLogModalOpen && <ErrorLogModal />}
-        </Suspense>
-      </LazyBoundary>
+      {isAddStudentModalOpen && (
+        <LazyBoundary label="Add Student dialog" floating onDismiss={closeAddStudentModal}>
+          <Suspense fallback={null}><AddStudentModal /></Suspense>
+        </LazyBoundary>
+      )}
+      {editingStudent && (
+        <LazyBoundary label="Edit Student dialog" floating onDismiss={closeEditStudentModal}>
+          <Suspense fallback={null}><EditStudentModal studentToEdit={editingStudent} /></Suspense>
+        </LazyBoundary>
+      )}
+      {isErrorLogModalOpen && (
+        <LazyBoundary label="Error Log dialog" floating onDismiss={toggleErrorLogModal}>
+          <Suspense fallback={null}><ErrorLogModal /></Suspense>
+        </LazyBoundary>
+      )}
     </header>
     </>
   );

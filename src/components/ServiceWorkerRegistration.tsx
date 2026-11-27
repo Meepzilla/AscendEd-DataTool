@@ -138,6 +138,7 @@ export default function ServiceWorkerRegistration() {
         recentlyAutoUpdated: recentlyAutoUpdated(),
       });
       if (applyNow) {
+        pendingNotice = false;
         try { sessionStorage.setItem(LAST_AUTO_UPDATE_KEY, String(Date.now())); } catch { /* storage unavailable */ }
         // Only when this is the only open tab; otherwise (or if the new version doesn't take control) the notice.
         // The loop guard counts only an update that reloaded the page.
@@ -152,7 +153,8 @@ export default function ServiceWorkerRegistration() {
     };
 
     toastsChangedRef.current = () => {
-      if (pendingNotice && registration) showNotice(registration);
+      if (pendingNotice && registration?.waiting && !reloading) showNotice(registration);
+      else if (pendingNotice && !registration?.waiting) pendingNotice = false;
     };
 
     navigator.serviceWorker.register('/sw.js')

@@ -127,7 +127,7 @@ export default function GoalTypeSelect({
       </Select>
 
       {isBuilderOpen && (
-        <LazyBoundary label="The goal type editor">
+        <LazyBoundary label="The goal type editor" onDismiss={() => setIsBuilderOpen(false)}>
           <Suspense fallback={null}>
             <CustomGoalTypeModal
               isOpen={isBuilderOpen}
