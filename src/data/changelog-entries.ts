@@ -12,6 +12,27 @@ export interface ChangelogEntry {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    date: '2026-11-27',
+    title: 'New Scripted-Utterance Default Goals & Evidence-Based Terminology',
+    description: 'Added three default Communication Count goals to the built-in bank for using familiar scripts or phrases during upcoming transitions, producing new scripted utterances for a target communication function, and using familiar scripts or known phrases to request desired objects or actions during familiar routines. Six existing built-in templates were also refreshed to use evidence-based functional script and phrase terminology instead of GLP/gestalt phrasing; stored copies update automatically without duplicating templates or overwriting your edits.',
+    type: 'feature',
+    icon: BookOpen,
+  },
+  {
+    date: '2026-11-27',
+    title: 'Reports Accuracy, Narrative Isolation & Custom Communication Functions',
+    description: 'Custom Communication Functions set in Settings now load on every page (Reports, Progress Report, Profiles, and Dashboard) even when opened directly. Language sample (MLU) narratives, "At a glance", session counts, and printable Progress Reports now leave out samples counted in the other unit just like the charts. Syllable Fluency % Fluent and Counts now include all five dysfluency counters (stuttered syllables, blocks, repetitions, prolongations, and interjections) so they match Goal Progress. Weekly and monthly charts now pool ratio-based goals (fluency, prompting, task analysis, item mastery, intervals, story elements, and latency) by their denominators and enforce minimum-use targets on Communication Functions bars. Prompting & Support no longer counts sessions where prompt counters were unused as independent, Functions by session hides functions unused in the visible 12 sessions, switching one goal card\u2019s view no longer flips sibling cards (and keeps custom bar-style defaults), Communication Functions Bars view keeps spontaneous and emerging-only breakdowns, and Write Narrative clears its text on close or student switch so a previous student\u2019s text can never stay visible if loading fails.',
+    type: 'fix',
+    icon: BarChartHorizontalBig,
+  },
+  {
+    date: '2026-11-27',
+    title: 'Isolated Dialog Retries & Android Data Entry Scroll Fix',
+    description: 'Retrying a dialog or goal input that failed to load no longer resets other open dialogs or in-progress Data Entry work, and every remaining lazy dialog, input, and report chart now has its own retryable error boundary with a Close button (and floating alerts for header dialogs). On Data Entry, student card height now accounts for scrolling in the main page container so cards stay the right height while scrolling on Android. Also tightened deferred app-update notices, confetti unmount cleanup, and skipped redundant localStorage scans during saves.',
+    type: 'fix',
+    icon: Bug,
+  },
+  {
     date: '2026-11-26',
     title: 'Reports Footer Back Below the Screen',
     description: 'Since Reports moved into tabs, a short tab (such as Attendance) left the copyright and privacy footer showing at the bottom of the screen. Reports now always fills at least the whole screen, so the footer only appears when you scroll down to it.',

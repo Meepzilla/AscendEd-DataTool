@@ -19,21 +19,18 @@ const base: StudentCardHeightMeasurements = {
 };
 
 describe('studentCardHeight', () => {
-  it('does not change when the scroll area content is scrolled', () => {
-    // Scrolling inside the cards viewport moves a card's rect up by the scroll amount, but the
-    // region (outside the scroll area) and the body do not move, so the measurements the height is
-    // computed from are identical however far the user has scrolled. The old card-based
-    // measurement took the scrolled card top (200 - scrollTop) and grew the card by that amount
-    // on every re-measure.
+  it('does not change when the enclosing <main> scroll container scrolls vertically', () => {
+    // The app scrolls vertically inside <main class="overflow-y-auto">, which shifts regionTop up
+    // by scrollTop * ratio while bodyTop stays 0. Passing scrollTop cancels that shift so re-measuring
+    // after a DOM mutation or Android toolbar hide never grows the cards.
     const unscrolled = studentCardHeight(base);
     for (const scrollTop of [50, 200, 1000]) {
-      const scrolledMeasurements = { ...base }; // regionTop/bodyTop unchanged by internal scrolling
+      const scrolledMeasurements = { ...base, regionTop: base.regionTop - scrollTop * base.ratio, scrollTop };
       expect(studentCardHeight(scrolledMeasurements)).toBe(unscrolled);
-      // The card-based top the old code used would have shrunk by scrollTop; the region-based
-      // top never does.
-      expect(studentCardTop(base)).toBe(200 + 16);
-      expect(studentCardTop(base)).not.toBe(200 - scrollTop + 16);
+      expect(studentCardTop(scrolledMeasurements)).toBe(200 + 16);
     }
+    // Under display zoom (ratio = 2), scrolling <main> by 150 CSS px shifts regionTop by 300 rect units.
+    expect(studentCardTop({ regionTop: 400 - 150 * 2, bodyTop: 0, scrollTop: 150, ratio: 2 })).toBe(216);
     expect(unscrolled).toBe(800 - 216 - CARD_TO_SAVE_BAR - 64);
   });
 
