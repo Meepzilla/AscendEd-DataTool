@@ -72,12 +72,15 @@ export function toStorageEstimate(
  * fallbackBytes (localStorage entries plus the IndexedDB rows secure-store has
  * persisted) and reports no quota.
  */
-export async function estimateStorage(fallbackBytes?: () => number): Promise<StorageEstimate> {
+export async function estimateStorage(
+  fallbackBytes?: () => number,
+  options: { includeDataBytes?: boolean } = {},
+): Promise<StorageEstimate> {
   // The fallback count walks all of localStorage, so it runs only when its result is actually
-  // used: for the data-only figure alongside a successful browser estimate, or as the estimate
-  // itself when the browser has none. Running it up front (review finding B2) charged that scan
-  // to every call — checkSaveFits runs before every list save — and a throwing fallback would
-  // have broken the estimate path instead of being bypassed, so each use is guarded too.
+  // used: for the data-only figure alongside a successful browser estimate (when requested), or as
+  // the estimate itself when the browser has none. checkSaveFits passes includeDataBytes: false so
+  // every list save doesn't scan localStorage when navigator.storage.estimate() already succeeded.
+  const includeDataBytes = options.includeDataBytes !== false;
   const counted = (): number | undefined => {
     try {
       return fallbackBytes?.();
@@ -93,7 +96,12 @@ export async function estimateStorage(fallbackBytes?: () => number): Promise<Sto
       // Chromium, which silently forced the fallback sum on every call.
       const result = await storage.estimate();
       if (typeof result.usage === 'number') {
-        return toStorageEstimate(result.usage, typeof result.quota === 'number' ? result.quota : null, 'estimate', counted());
+        return toStorageEstimate(
+          result.usage,
+          typeof result.quota === 'number' ? result.quota : null,
+          'estimate',
+          includeDataBytes ? counted() : undefined,
+        );
       }
     }
   } catch {
@@ -129,7 +137,7 @@ export async function checkSaveFits(
   currentKeyBytes: number,
   options: { isIndexedDbBacked: boolean; fallbackBytes?: () => number } = { isIndexedDbBacked: false },
 ): Promise<SaveSizeCheck> {
-  const estimate = await estimateStorage(options.fallbackBytes);
+  const estimate = await estimateStorage(options.fallbackBytes, { includeDataBytes: false });
   const projectedBytes = estimate.bytes + Math.max(0, newBytes - currentKeyBytes);
   let fits = true;
   if (estimate.quota) {

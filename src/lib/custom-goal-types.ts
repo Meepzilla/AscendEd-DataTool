@@ -15,7 +15,7 @@ const VALID_CHART_IDS = new Set<string>(CUSTOM_CHART_IDS);
 // statically by Settings and the goal-type hook, and importing the Zod schema would pull Zod back
 // into those pages' first load, undoing the bundle split. Keep the two in step when either changes
 // (review findings A8/D3: the stored list once applied a weaker standard than import).
-const isRecord = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object';
+const isRecord = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 const labelOk = (v: unknown, max: number) => typeof v === 'string' && v.trim().length >= 1 && v.trim().length <= max;
 const intIn = (v: unknown, min: number, max: number) =>
   typeof v === 'number' && Number.isInteger(v) && v >= min && v <= max;

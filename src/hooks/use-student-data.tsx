@@ -20,6 +20,9 @@ import type { ImportedSession } from '@/lib/session-import';
 import type { AppBackup, ParsedBackup, RestoreMode, RestoreSummary } from '@/lib/backup';
 import type { ImportStudent } from '@/lib/student-import';
 import { visibleTemplates, deletedBuiltInTemplates as listDeletedBuiltIns, restoreBuiltInTemplates as restoreBuiltInList } from '@/lib/builtin-goals';
+// Static import (6.7 KB, no Zod) ensures comm-functions.ts registers its loader on every route
+// (Reports, Progress Report, Profiles, Dashboard), not just Data Entry and Settings.
+import { loadCustomCommFunctions } from '@/lib/comm-functions';
 
 // All student data for the app (students, goal templates, sessions) and the actions that change it. Storage
 // lives in use-data-storage.ts and lib/data-store.ts; what happens on load, import and restore is worked out in
@@ -417,13 +420,11 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const [
       { createBackup },
       { loadCustomAbcLists },
-      { loadCustomCommFunctions },
       { getStudentGroups },
       { getCustomGoalTypes },
     ] = await Promise.all([
       import('@/lib/backup'),
       import('@/lib/abc-lists'),
-      import('@/lib/comm-functions'),
       import('@/lib/student-groups'),
       import('@/lib/custom-goal-types'),
     ]);
