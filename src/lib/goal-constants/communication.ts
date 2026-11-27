@@ -207,5 +207,33 @@ export const COMMUNICATION_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'u
   { name: 'Use communicative functions with peers', type: 'COMMUNICATION_FUNCTIONS', smartGoalPrompt: 'Student will spontaneously use at least 3 different communicative functions (e.g., greeting, requesting, directing others) with peers during a structured group activity.', isDefault: true, sessionTargetValue: 3, generatedSmartGoal: '' },
   { name: 'AAC: Use device for a variety of communicative functions', type: 'COMMUNICATION_FUNCTIONS', smartGoalPrompt: 'Student will use their AAC system to spontaneously communicate for at least 4 different functions (e.g., requesting, protesting, commenting, greeting) during a session.', isDefault: true, sessionTargetValue: 4, generatedSmartGoal: '' },
   // Previously a qualitative observation (rated 1-5); see DEFAULT_TEMPLATE_UPDATES.
-  { name: 'GLP: Use language for a variety of communicative functions', type: 'COMMUNICATION_FUNCTIONS', smartGoalPrompt: 'Student will use language (including gestalts) for at least 3 different communicative functions (e.g., commenting, requesting, protesting) during play-based activities.', isDefault: true, sessionTargetValue: 3, generatedSmartGoal: '' },
+  { name: 'Use language (including scripted phrases) for a variety of communicative functions', type: 'COMMUNICATION_FUNCTIONS', smartGoalPrompt: 'Student will use language (including scripted phrases) for at least 3 different communicative functions (e.g., commenting, requesting, protesting) during play-based activities.', isDefault: true, sessionTargetValue: 3, generatedSmartGoal: '' },
+  // Scripted utterance and functional phrase goals (counted per session).
+  {
+    name: 'Use a familiar script or phrase to communicate about an upcoming transition',
+    type: 'COMMUNICATION_COUNT',
+    targetDirection: 'increase',
+    isDefault: true,
+    sessionTargetValue: 3,
+    smartGoalPrompt: 'When well-regulated and given access to total communication, student will use a familiar script or phrase to communicate about an upcoming transition (e.g., “it’s time!”, “let’s go!”).',
+    generatedSmartGoal: 'By [date], or across ___ consecutive speech therapy sessions, when well-regulated and given access to total communication, the student will use a familiar script or phrase to communicate about an upcoming transition (e.g., “it’s time!”, “let’s go!”) ___ times, when provided with ___ (types/levels of support), as measured by clinical observations and/or caregiver report.',
+  },
+  {
+    name: 'Produce new scripted utterances to express a communication function',
+    type: 'COMMUNICATION_COUNT',
+    targetDirection: 'increase',
+    isDefault: true,
+    sessionTargetValue: 3,
+    smartGoalPrompt: 'When well-regulated and given access to total communication, student will produce new scripted utterances to express a target communication function during meaningful activities.',
+    generatedSmartGoal: 'By [date], or across ___ consecutive speech therapy sessions, when well-regulated and given access to total communication, the student will produce ___ new scripted utterances to express ___ (communication function) during meaningful activities, when provided with ___ (types/levels of support), as measured by clinical observations and/or caregiver report.',
+  },
+  {
+    name: 'Use a familiar script or known phrase to request a desired object or action',
+    type: 'COMMUNICATION_COUNT',
+    targetDirection: 'increase',
+    isDefault: true,
+    sessionTargetValue: 3,
+    smartGoalPrompt: 'When well-regulated and given access to total communication, student will use a familiar script or known phrase to request a desired object or action from a communication partner during familiar routines.',
+    generatedSmartGoal: 'By [date], or across ___ consecutive speech therapy sessions, when well-regulated and given access to total communication, the student will use a familiar script or known phrase to request a desired object or action from a communication partner during familiar routines ___ times, when provided with ___ (types/levels of support), as measured by clinical observations and/or caregiver report.',
+  },
 ];

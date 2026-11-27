@@ -99,3 +99,48 @@ describe('built-in names in sentence case', () => {
     expect(prepared.students[0].goals[0]).toMatchObject({ name: current.name, smartGoal: 'My text.' });
   });
 });
+
+describe('migrating legacy GLP templates to evidence-based wording', () => {
+  it('uses no GLP or gestalt terminology in any default template', () => {
+    for (const t of DEFAULT_GOAL_TEMPLATES) {
+      expect(`${t.name} ${t.smartGoalPrompt} ${t.generatedSmartGoal}`, t.name).not.toMatch(/\bglp\b|gestalt/i);
+    }
+  });
+
+  it('renames, rewords, and type-updates a stored legacy template without adding a duplicate', () => {
+    const current = DEFAULT_GOAL_TEMPLATES.find(t => t.name === 'Use language (including scripted phrases) for a variety of communicative functions')!;
+    const oldPrompt = 'Student will use language (including gestalts) for at least 3 different communicative functions (e.g., commenting, requesting, protesting) during play-based activities.';
+    const oldGoal = 'By [date], the student will use language (including gestalts) for at least 3 different communicative functions (e.g., commenting, requesting, protesting) during play-based activities across 3 consecutive sessions, as measured by SLP or teacher observation and data collection.';
+    const old = stored(current, {
+      name: 'GLP: Use language for a variety of communicative functions',
+      defaultKey: 'GLP: Use language for a variety of communicative functions',
+      type: 'QUALITATIVE_OBSERVATION',
+      smartGoalPrompt: oldPrompt,
+      generatedSmartGoal: oldGoal,
+    });
+    const prepared = prepareLoadedData([], [...fresh().filter(t => t.name !== current.name), old], 'u');
+    const matches = prepared.templates.filter(t => t.name === current.name);
+    expect(matches).toHaveLength(1);
+    expect(matches[0]).toMatchObject({
+      id: old.id,
+      name: current.name,
+      defaultKey: current.name,
+      type: 'COMMUNICATION_FUNCTIONS',
+      smartGoalPrompt: current.smartGoalPrompt,
+      generatedSmartGoal: current.generatedSmartGoal,
+    });
+  });
+
+  it('still fills a legacy placeholder statement when the template was renamed and changed type', () => {
+    const current = DEFAULT_GOAL_TEMPLATES.find(t => t.name === 'Use language (including scripted phrases) for a variety of communicative functions')!;
+    const legacyGoal = {
+      id: 'g-legacy',
+      name: 'GLP: Use language for a variety of communicative functions',
+      type: 'QUALITATIVE_OBSERVATION' as const,
+      smartGoal: 'SMART goal for GLP: Use language for a variety of communicative functions',
+    };
+    const ava = { id: 's', name: 'Ava', userId: 'u', createdAt: '2026-01-01', goals: [legacyGoal] } as Student;
+    const prepared = prepareLoadedData([ava], fresh(), 'u');
+    expect(prepared.linkedStudents?.[0].goals[0].smartGoal).toBe(current.generatedSmartGoal);
+  });
+});

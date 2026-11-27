@@ -115,3 +115,11 @@ describe('percentAsFraction at 100%', () => {
     expect(percentAsFraction(80)).toEqual([4, 5]);
   });
 });
+
+describe('matchTextToTarget consecutive session wording', () => {
+  it('updates mastery session counts with intervening words such as speech therapy sessions', () => {
+    const text = 'By [date], or across 3 consecutive speech therapy sessions, the student will use a script.';
+    expect(matchTextToTarget(text, { type: 'COMMUNICATION_COUNT', masterySessions: 4 }))
+      .toBe('By [date], or across 4 consecutive speech therapy sessions, the student will use a script.');
+  });
+});

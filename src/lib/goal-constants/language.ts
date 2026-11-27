@@ -28,8 +28,8 @@ export const LANGUAGE_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'userId
   { name: 'Describe object using 2-3 attributes', type: 'LANGUAGE_EXPRESSION', smartGoalPrompt: 'Student will describe an object using 2-3 critical attributes (e.g., color, size, shape).', isDefault: true, sessionTargetValue: 80, generatedSmartGoal: '' },
   { name: 'Use regular plural -s', type: 'LANGUAGE_EXPRESSION', smartGoalPrompt: 'Student will use regular plural -s in phrases or sentences.', isDefault: true, sessionTargetValue: 85, generatedSmartGoal: '' },
 
-  // Gestalt Language Processing (GLP) Goals
-  { name: 'GLP: Combine single words into two-word phrases', type: 'LANGUAGE_EXPRESSION', smartGoalPrompt: 'Student will combine two single words into a functional two-word phrase.', isDefault: true, sessionTargetValue: 80, generatedSmartGoal: '' },
-  { name: 'GLP: Spontaneously use a self-generated phrase', type: 'LANGUAGE_EXPRESSION', smartGoalPrompt: 'Student will spontaneously use a novel (self-generated) phrase to communicate a need or want.', isDefault: true, sessionTargetValue: 80, generatedSmartGoal: '' },
-  { name: 'GLP: Use grammar in self-generated sentences', type: 'LANGUAGE_EXPRESSION', smartGoalPrompt: 'Student will begin to use grammatical markers (e.g., plurals, verb tenses) in self-generated sentences.', isDefault: true, sessionTargetValue: 70, generatedSmartGoal: '' },
+  // Emergent & Self-Generated Language Goals
+  { name: 'Combine single words into two-word phrases', type: 'LANGUAGE_EXPRESSION', smartGoalPrompt: 'Student will combine two single words into a functional two-word phrase.', isDefault: true, sessionTargetValue: 80, generatedSmartGoal: '' },
+  { name: 'Spontaneously use a self-generated phrase', type: 'LANGUAGE_EXPRESSION', smartGoalPrompt: 'Student will spontaneously use a novel (self-generated) phrase to communicate a need or want.', isDefault: true, sessionTargetValue: 80, generatedSmartGoal: '' },
+  { name: 'Use grammar in self-generated sentences', type: 'LANGUAGE_EXPRESSION', smartGoalPrompt: 'Student will begin to use grammatical markers (e.g., plurals, verb tenses) in self-generated sentences.', isDefault: true, sessionTargetValue: 70, generatedSmartGoal: '' },
 ];
