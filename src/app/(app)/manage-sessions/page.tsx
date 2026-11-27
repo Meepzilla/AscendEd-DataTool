@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useMemo, useEffect, useDeferredValue, lazy, Suspense, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useDeferredValue, Suspense, useRef } from 'react';
 import { useStudentData } from '@/hooks/use-student-data';
 import type { SessionData } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -19,13 +19,14 @@ import { compareSessionsOldestFirst, formatDate, sessionInDateRange, sessionMinu
 import { Skeleton } from '@/components/ui/skeleton';
 import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
 import type { DateRange } from "react-day-picker";
+import { LazyBoundary, retryableLazy } from '@/components/ui/lazy-boundary';
 
 // Dynamically imported modals. Declared once here: created inside the component, each render made a new
 // component type, so an open modal was thrown away and loaded again whenever the page re-rendered.
-const EditSessionModal = lazy(() => import('@/components/modals/edit-session-modal'));
-const ConfirmationModal = lazy(() => import('@/components/modals/confirmation-modal'));
-const ViewSessionDetailsModal = lazy(() => import('@/components/modals/view-session-details-modal'));
-const MergeSessionsDialog = lazy(() => import('@/components/sessions/MergeSessionsDialog'));
+const EditSessionModal = retryableLazy(() => import('@/components/modals/edit-session-modal'));
+const ConfirmationModal = retryableLazy(() => import('@/components/modals/confirmation-modal'));
+const ViewSessionDetailsModal = retryableLazy(() => import('@/components/modals/view-session-details-modal'));
+const MergeSessionsDialog = retryableLazy(() => import('@/components/sessions/MergeSessionsDialog'));
 
 /** A session's minutes for the Minutes column: "30 min", or a dash when it was missed or its times aren't both set. */
 function sessionLength(session: SessionData): string {
@@ -44,6 +45,7 @@ export default function ManageSessionsPage() {
     loading: studentsLoading,
     sessionsLoading, 
     openEditSessionModal,
+    closeEditSessionModal,
     openDeleteSessionModal,
     editingSession, // For EditSessionModal
     deletingSession, // For ConfirmationModal
@@ -113,37 +115,51 @@ export default function ManageSessionsPage() {
   
   return (
     <div ref={pageRef} className="space-y-6">
-      <Suspense fallback={null}>
-        {editingSession && <EditSessionModal sessionToEdit={editingSession} />}
-        {deletingSession && (
-          <ConfirmationModal
-            isOpen={!!deletingSession}
-            onClose={() => openDeleteSessionModal(null)}
-            title={`Delete Session for ${deletingSession.studentName}`}
-            description={`Are you sure you want to delete this session from ${formatDate(deletingSession.date)} at ${deletingSession.time}? This action cannot be undone.`}
-            itemToDelete={deletingSession}
-            deleteActionType="session"
-          />
-        )}
-        {viewingSessionDetails && (
-          <ViewSessionDetailsModal
+      {editingSession && (
+        <LazyBoundary label="Edit Session dialog" onDismiss={closeEditSessionModal}>
+          <Suspense fallback={null}><EditSessionModal sessionToEdit={editingSession} /></Suspense>
+        </LazyBoundary>
+      )}
+      {deletingSession && (
+        <LazyBoundary label="Confirmation dialog" onDismiss={() => openDeleteSessionModal(null)}>
+          <Suspense fallback={null}>
+            <ConfirmationModal
+              isOpen={!!deletingSession}
+              onClose={() => openDeleteSessionModal(null)}
+              title={`Delete Session for ${deletingSession.studentName}`}
+              description={`Are you sure you want to delete this session from ${formatDate(deletingSession.date)} at ${deletingSession.time}? This action cannot be undone.`}
+              itemToDelete={deletingSession}
+              deleteActionType="session"
+            />
+          </Suspense>
+        </LazyBoundary>
+      )}
+      {viewingSessionDetails && (
+        <LazyBoundary label="Session Details dialog" onDismiss={() => setViewingSessionDetails(null)}>
+          <Suspense fallback={null}>
+            <ViewSessionDetailsModal
               session={viewingSessionDetails}
               isOpen={!!viewingSessionDetails}
               onClose={() => setViewingSessionDetails(null)}
-          />
-        )}
-        {isMergeOpen && (
-          <MergeSessionsDialog
-            sessions={selectedSessions}
-            open={isMergeOpen}
-            onCancel={() => setIsMergeOpen(false)}
-            onConfirm={async () => {
-              if (await mergeSessionRecords(selectedSessions.map(s => s.sessionId))) setSelectedIds(new Set());
-              setIsMergeOpen(false);
-            }}
-          />
-        )}
-      </Suspense>
+            />
+          </Suspense>
+        </LazyBoundary>
+      )}
+      {isMergeOpen && (
+        <LazyBoundary label="Merge Sessions dialog" onDismiss={() => setIsMergeOpen(false)}>
+          <Suspense fallback={null}>
+            <MergeSessionsDialog
+              sessions={selectedSessions}
+              open={isMergeOpen}
+              onCancel={() => setIsMergeOpen(false)}
+              onConfirm={async () => {
+                if (await mergeSessionRecords(selectedSessions.map(s => s.sessionId))) setSelectedIds(new Set());
+                setIsMergeOpen(false);
+              }}
+            />
+          </Suspense>
+        </LazyBoundary>
+      )}
 
       <Card className="shadow-lg">
         <CardHeader>

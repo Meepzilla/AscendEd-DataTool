@@ -140,7 +140,7 @@ const FRACTION = new RegExp(
 // Ratings ("with a rating of at least 4 out of 5") and communication functions ("at least 4 different functions").
 const RATING = /\b(rating of at least )([1-5])( out of 5)\b/gi;
 const FUNCTIONS = /\b(at least )(\d{1,2})( different (?:communicative )?functions)\b/gi;
-const CONSECUTIVE = /\b(\d{1,2})(\s+consecutive\s+(?:sessions?|data|probes?|days?|weeks?|opportunit))/gi;
+const CONSECUTIVE = /\b(\d{1,2})(\s+consecutive\s+(?:[a-z]+\s+){0,2}(?:sessions?|data|probes?|days?|weeks?|opportunit))/gi;
 
 /** The goal text with its stated target, fractions and consecutive-session count matching the goal's settings. */
 export function matchTextToTarget(text: string, goal: BlankGoal): string {

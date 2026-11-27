@@ -78,7 +78,7 @@ export const DEFAULT_GOAL_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'us
  * are goals already assigned to students (their past sessions were recorded with the old type).
  */
 export const DEFAULT_TEMPLATE_UPDATES: { name: string; fromType: GoalType }[] = [
-  { name: 'GLP: Use language for a variety of communicative functions', fromType: 'QUALITATIVE_OBSERVATION' },
+  { name: 'Use language (including scripted phrases) for a variety of communicative functions', fromType: 'QUALITATIVE_OBSERVATION' },
   { name: 'Retell a short story with 3 key elements', fromType: 'LANGUAGE_EXPRESSION' },
   ...(goalBankTypeUpdates as { name: string; fromType: GoalType }[]),
 ];
@@ -122,6 +122,9 @@ const BUILT_IN_TEXT_UPDATES: Record<string, string[]> = {
   'Complete the handwashing routine (task analysis)': ['6cca3bf2'],
   'Complete the arrival routine (task analysis)': ['8f7c27c6'],
   'Use a communication device to make a request (task analysis)': ['9a1f487b'],
+  'Use language (including scripted phrases) for a variety of communicative functions': ['3b498c70', 'b05aa9df'],
+  'Expand repertoire of functional scripts and phrases': ['85e4235f', '2b15f771'],
+  'Modify familiar scripts or phrases into flexible combinations': ['5f2aeed0', '6110e4d6'],
 };
 
 /**
@@ -169,8 +172,13 @@ export function applyAssignedGoalStatements<T extends Student>(students: T[], te
     const goals = (student.goals || []).map(goal => {
       if (!goal.smartGoal?.startsWith('SMART goal for ')) return goal;
       const placeholderName = goal.smartGoal.slice('SMART goal for '.length);
+      const renamedPlaceholder = templateRename(placeholderName, goal.type)?.to;
       const template = templates.find(t => t.id === goal.templateId)
-        ?? templates.find(t => t.isDefault && (defaultTemplateKey(t) === placeholderName || t.name === placeholderName));
+        ?? templates.find(t => t.isDefault && (
+          defaultTemplateKey(t) === placeholderName ||
+          t.name === placeholderName ||
+          (renamedPlaceholder !== undefined && (defaultTemplateKey(t) === renamedPlaceholder || t.name === renamedPlaceholder))
+        ));
       if (!template?.generatedSmartGoal) return goal;
       studentChanged = true;
       return { ...goal, smartGoal: template.generatedSmartGoal };
@@ -223,6 +231,12 @@ const BUILT_IN_RENAMES = new Map<string, string>([
   ['Reduce Prevocalic Voicing', 'Reduce prevocalic voicing'],
   ['Discrete Trial Training - Tacting', 'Tact objects (discrete trial training)'],
   ['Discrete Trials - 5 Trials', 'Respond to a targeted skill (5 discrete trials)'],
+  ['GLP: Use language for a variety of communicative functions', 'Use language (including scripted phrases) for a variety of communicative functions'],
+  ['GLP: Combine single words into two-word phrases', 'Combine single words into two-word phrases'],
+  ['GLP: Spontaneously use a self-generated phrase', 'Spontaneously use a self-generated phrase'],
+  ['GLP: Use grammar in self-generated sentences', 'Use grammar in self-generated sentences'],
+  ['GLP: Increase inventory of mitigable gestalts', 'Expand repertoire of functional scripts and phrases'],
+  ['GLP: Mitigate gestalts into smaller units', 'Modify familiar scripts or phrases into flexible combinations'],
 ]);
 
 function templateRename(name: string, type: string | undefined): TemplateRename | null {

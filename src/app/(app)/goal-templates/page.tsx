@@ -36,7 +36,9 @@ export default function GoalTemplatesPage() {
     error,
     isAddGoalTemplateModalOpen,
     openAddGoalTemplateModal,
+    closeAddGoalTemplateModal,
     openEditGoalTemplateModal,
+    closeEditGoalTemplateModal,
     openDeleteConfirmationModal,
     editingGoalTemplate, 
     deletingStudent,
@@ -135,40 +137,60 @@ export default function GoalTemplatesPage() {
 
   return (
     <div className="space-y-6">
-      <LazyBoundary label="This dialog">
-      <Suspense fallback={null}>
-        {isAddGoalTemplateModalOpen && <AddGoalTemplateModal />}
-        {detailsTemplate && <GoalBankDetailsDialog template={detailsTemplate} onClose={() => setDetailsTemplate(null)} />}
-        {assigningTemplate && <AssignTemplateDialog template={assigningTemplate} onClose={() => setAssigningTemplate(null)} />}
-        {isDuplicateFinderOpen && <DuplicateFinderDialog open onClose={() => setIsDuplicateFinderOpen(false)} />}
-        {editingGoalTemplate && <EditGoalTemplateModal templateToEdit={editingGoalTemplate} />}
-        {deletingStudent && deletingStudent.type === 'goalTemplate' && (
-          <ConfirmationModal
-            isOpen={!!deletingStudent}
-            onClose={() => closeDeleteConfirmationModal()}
-            title={
-              (deletingStudent.item as GoalTemplate)?.isArchived !== undefined && (deletingStudent.item as GoalTemplate).isDefault
-                ? ((deletingStudent.item as GoalTemplate).isArchived ? `Unarchive Default Template` : `Archive Default Template`)
-                : `Delete Template: ${(deletingStudent.item as GoalTemplate)?.name}`
-            }
-            description={
-               (deletingStudent.item as GoalTemplate)?.isArchived !== undefined && (deletingStudent.item as GoalTemplate).isDefault
-                ? ((deletingStudent.item as GoalTemplate).isArchived ? "This will make the template visible in the main library again. Are you sure?" : "Archiving a default template will hide it from the main library. You can view and unarchive it later. Are you sure?")
-                : "Are you sure you want to permanently delete this custom goal template? This action cannot be undone."
-            }
-            itemToDelete={(deletingStudent.item as GoalTemplate)?.isDefault ? undefined : (deletingStudent.item as GoalTemplate)}
-            itemToUpdate={(deletingStudent.item as GoalTemplate)?.isDefault ? (deletingStudent.item as GoalTemplate) : undefined}
-            updateAction={(id, data) => updateGoalTemplate(id, data)}
-            confirmText={
-               (deletingStudent.item as GoalTemplate)?.isArchived !== undefined && (deletingStudent.item as GoalTemplate).isDefault
-                ? ((deletingStudent.item as GoalTemplate).isArchived ? 'Yes, Unarchive' : 'Yes, Archive')
-                : 'Yes, Delete'
-            }
-            deleteActionType="goalTemplate"
-          />
-        )}
-      </Suspense>
-      </LazyBoundary>
+      {isAddGoalTemplateModalOpen && (
+        <LazyBoundary label="Add Goal Template dialog" onDismiss={closeAddGoalTemplateModal}>
+          <Suspense fallback={null}><AddGoalTemplateModal /></Suspense>
+        </LazyBoundary>
+      )}
+      {detailsTemplate && (
+        <LazyBoundary label="Goal Details dialog" onDismiss={() => setDetailsTemplate(null)}>
+          <Suspense fallback={null}><GoalBankDetailsDialog template={detailsTemplate} onClose={() => setDetailsTemplate(null)} /></Suspense>
+        </LazyBoundary>
+      )}
+      {assigningTemplate && (
+        <LazyBoundary label="Assign Goal dialog" onDismiss={() => setAssigningTemplate(null)}>
+          <Suspense fallback={null}><AssignTemplateDialog template={assigningTemplate} onClose={() => setAssigningTemplate(null)} /></Suspense>
+        </LazyBoundary>
+      )}
+      {isDuplicateFinderOpen && (
+        <LazyBoundary label="Duplicate Finder dialog" onDismiss={() => setIsDuplicateFinderOpen(false)}>
+          <Suspense fallback={null}><DuplicateFinderDialog open onClose={() => setIsDuplicateFinderOpen(false)} /></Suspense>
+        </LazyBoundary>
+      )}
+      {editingGoalTemplate && (
+        <LazyBoundary label="Edit Goal Template dialog" onDismiss={closeEditGoalTemplateModal}>
+          <Suspense fallback={null}><EditGoalTemplateModal templateToEdit={editingGoalTemplate} /></Suspense>
+        </LazyBoundary>
+      )}
+      {deletingStudent && deletingStudent.type === 'goalTemplate' && (
+        <LazyBoundary label="Confirmation dialog" onDismiss={closeDeleteConfirmationModal}>
+          <Suspense fallback={null}>
+            <ConfirmationModal
+              isOpen={!!deletingStudent}
+              onClose={() => closeDeleteConfirmationModal()}
+              title={
+                (deletingStudent.item as GoalTemplate)?.isArchived !== undefined && (deletingStudent.item as GoalTemplate).isDefault
+                  ? ((deletingStudent.item as GoalTemplate).isArchived ? `Unarchive Default Template` : `Archive Default Template`)
+                  : `Delete Template: ${(deletingStudent.item as GoalTemplate)?.name}`
+              }
+              description={
+                (deletingStudent.item as GoalTemplate)?.isArchived !== undefined && (deletingStudent.item as GoalTemplate).isDefault
+                  ? ((deletingStudent.item as GoalTemplate).isArchived ? "This will make the template visible in the main library again. Are you sure?" : "Archiving a default template will hide it from the main library. You can view and unarchive it later. Are you sure?")
+                  : "Are you sure you want to permanently delete this custom goal template? This action cannot be undone."
+              }
+              itemToDelete={(deletingStudent.item as GoalTemplate)?.isDefault ? undefined : (deletingStudent.item as GoalTemplate)}
+              itemToUpdate={(deletingStudent.item as GoalTemplate)?.isDefault ? (deletingStudent.item as GoalTemplate) : undefined}
+              updateAction={(id, data) => updateGoalTemplate(id, data)}
+              confirmText={
+                (deletingStudent.item as GoalTemplate)?.isArchived !== undefined && (deletingStudent.item as GoalTemplate).isDefault
+                  ? ((deletingStudent.item as GoalTemplate).isArchived ? 'Yes, Unarchive' : 'Yes, Archive')
+                  : 'Yes, Delete'
+              }
+              deleteActionType="goalTemplate"
+            />
+          </Suspense>
+        </LazyBoundary>
+      )}
 
       <AlertDialog open={!!builtInToDelete} onOpenChange={open => { if (!open) setBuiltInToDelete(null); }}>
         <AlertDialogContent>

@@ -39,10 +39,10 @@ const Uses: React.FC<{ uses: CommFunctionUses }> = ({ uses }) => {
 };
 
 export function CommFunctionsBySession({ recorded }: { recorded: { data: Record<string, any>; label: string }[] }) {
-  const rows = commFunctionsBySession(recorded.map(r => r.data));
-  if (!rows.length) return null;
   const firstColumn = Math.max(0, recorded.length - COMM_TABLE_SESSIONS);
   const columns = recorded.slice(firstColumn);
+  const rows = commFunctionsBySession(columns.map(r => r.data));
+  if (!rows.length) return null;
   const hasEmerging = rows.some(r => r.total.emerging > 0);
 
   return (
@@ -74,21 +74,14 @@ export function CommFunctionsBySession({ recorded }: { recorded: { data: Record<
                   {row.label}
                   {row.hidden && <span className="sr-only"> (no longer in the list)</span>}
                 </th>
-                {row.sessions.slice(firstColumn).map((uses, i) => (
+                {row.sessions.map((uses, i) => (
                   <td key={i} className="px-1 py-1 text-center align-middle">
                     <Uses uses={uses} />
                   </td>
                 ))}
                 <td className="px-2 py-1 text-right">
-                  {/* The total covers only the sessions shown, so it adds up from the visible cells. */}
-                  <Uses uses={row.sessions.slice(firstColumn).reduce<CommFunctionUses>(
-                    (sum, u) => ({
-                      spontaneous: sum.spontaneous + u.spontaneous,
-                      emerging: sum.emerging + u.emerging,
-                      prompted: sum.prompted + u.prompted,
-                    }),
-                    { spontaneous: 0, emerging: 0, prompted: 0 },
-                  )} />
+                  {/* rows are computed over the visible columns, so row.total matches the visible cells. */}
+                  <Uses uses={row.total} />
                 </td>
               </tr>
             ))}

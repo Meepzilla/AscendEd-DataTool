@@ -123,4 +123,12 @@ describe('checkSaveFits', () => {
     const localCheck = await checkSaveFits(6 * 1024 * 1024, 0, { isIndexedDbBacked: false, fallbackBytes: () => 0 });
     expect(localCheck.fits).toBe(false);
   });
+
+  it('does not run the localStorage fallback scan when browser estimate succeeds', async () => {
+    vi.stubGlobal('navigator', { storage: { estimate: async () => ({ usage: 1024, quota: 10 * 1024 * 1024 }) } });
+    const fallbackBytes = vi.fn(() => 512);
+    const check = await checkSaveFits(2048, 512, { isIndexedDbBacked: false, fallbackBytes });
+    expect(check.fits).toBe(true);
+    expect(fallbackBytes).not.toHaveBeenCalled();
+  });
 });

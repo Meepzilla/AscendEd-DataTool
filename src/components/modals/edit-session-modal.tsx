@@ -30,7 +30,9 @@ interface EditSessionModalProps {
   sessionToEdit: SessionData | null;
 }
 
-const GoalDataInputComponent = React.lazy(() => import('@/components/forms/goal-data-input'));
+import { LazyBoundary, retryableLazy } from '@/components/ui/lazy-boundary';
+
+const GoalDataInputComponent = retryableLazy(() => import('@/components/forms/goal-data-input'));
 
 export default function EditSessionModal({ sessionToEdit }: EditSessionModalProps) {
   const {
@@ -199,6 +201,7 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
                 </div>
 
                 <SessionDateProvider date={formData.date ? fromLocalDay(formData.date) : undefined}>
+                <LazyBoundary label="Goal data inputs">
                 <React.Suspense fallback={<div>Loading Goal Inputs...</div>}>
                     {formData.goals && formData.goals.length > 0 && (
                         <div className="rounded-md border p-2">
@@ -224,6 +227,7 @@ export default function EditSessionModal({ sessionToEdit }: EditSessionModalProp
                         </div>
                     )}
                 </React.Suspense>
+                </LazyBoundary>
                 </SessionDateProvider>
 
                 <div>

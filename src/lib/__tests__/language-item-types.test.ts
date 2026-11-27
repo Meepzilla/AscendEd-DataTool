@@ -108,13 +108,17 @@ describe('language sample (MLU)', () => {
     expect(text).toMatch(/from 2.33 words in the first sample to 4 words/);
   });
 
-  it('keeps the narrative MLU to samples counted in the goal\u2019s current unit (C1)', () => {
+  it('keeps the narrative MLU and progress report to samples counted in the goal\u2019s current unit (C1)', () => {
     const goal = mlu({ id: 'g1', name: 'MLU', sampleUnit: 'morphemes' });
     const sessions = [
       sessionBuilder({ date: '2026-10-01', goals: [{ goalId: 'g1', goalName: 'MLU', goalType: 'LANGUAGE_SAMPLE', data: { unit: 'words', utterances: [2, 2] } }] }),
       sessionBuilder({ date: '2026-10-08', goals: [{ goalId: 'g1', goalName: 'MLU', goalType: 'LANGUAGE_SAMPLE', data: { unit: 'morphemes', utterances: [3, 5] } }] }),
     ];
-    const text = buildNarrative({ student: { id: 'st1', name: 'Test Student Ada', goals: [goal], createdAt: '' } as any, goals: [goal], sessions });
+    const student = { id: 'st1', name: 'Test Student Ada', goals: [goal], createdAt: '' } as any;
+    const text = buildNarrative({ student, goals: [goal], sessions });
+    expect(text).toContain('This summary covers 1 session with Test');
+    expect(text).toContain('Data were recorded in 1 session');
+    expect(text).not.toMatch(/averaged 3 morphemes/);
     expect(text).toMatch(/2 utterances were sampled/);
     expect(text).toMatch(/overall MLU of 4 morphemes/);
     expect(text).toMatch(/1 sample counted in words is not included/);

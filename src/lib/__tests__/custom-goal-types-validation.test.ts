@@ -45,5 +45,7 @@ describe('isValidStoredCustomGoalType matches the import standard', () => {
     expect(isValidStoredCustomGoalType({ ...base, kind: 'counter', counter: { label: 'Count', perMinute: true }, defaultTarget: 1001 })).toBe(false);
     expect(isValidStoredCustomGoalType({ ...base, kind: 'rating' })).toBe(false);
     expect(isValidStoredCustomGoalType({ ...base, kind: 'checklist' })).toBe(false);
+    expect(isValidStoredCustomGoalType([])).toBe(false);
+    expect(isValidStoredCustomGoalType({ ...base, kind: 'accuracy', extras: [] })).toBe(false);
   });
 });

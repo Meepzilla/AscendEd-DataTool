@@ -115,11 +115,11 @@ describe('report-chart-views data transformations', () => {
     const sessions = [
       makeSession('s1', '2026-10-05', [
         { goalId: 'g-artic', data: { correct: 5, incorrect: 5, Independent: 3, Visual: 2 } },
-        { goalId: 'g-fluency', data: { totalSyllables: 100, stutteredSyllables: 10, blocks: 4, repetitions: 6 } },
+        { goalId: 'g-fluency', data: { totalSyllables: 100, stutteredSyllables: 0, blocks: 4, repetitions: 6 } },
       ]),
       makeSession('s2', '2026-10-06', [
         { goalId: 'g-artic', data: { correct: 9, incorrect: 1, Independent: 8, Visual: 2 } },
-        { goalId: 'g-fluency', data: { totalSyllables: 100, stutteredSyllables: 4, blocks: 1, repetitions: 3 } },
+        { goalId: 'g-fluency', data: { totalSyllables: 100, stutteredSyllables: 1, blocks: 1, repetitions: 2 } },
       ]),
     ];
 
@@ -127,8 +127,11 @@ describe('report-chart-views data transformations', () => {
     expect(perSession).toHaveLength(2);
     expect(perSession[0].accuracy).toBe(50);
     expect(perSession[0].independenceRate).toBe(60); // 3 / 5
+    expect(perSession[0].dysfluentSyllables).toBe(10);
     expect(perSession[0].fluencyPct).toBe(90);
     expect(perSession[1].accuracy).toBe(90);
+    expect(perSession[1].dysfluentSyllables).toBe(4);
+    expect(perSession[1].fluencyPct).toBe(96);
     expect(perSession[1].weightedTrend).toBe(70); // (5+9)/(10+10) = 14/20 = 70%
 
     const perWeek = buildCombinedChartSeries(sessions, [articGoal, fluencyGoal], 'week');
@@ -136,6 +139,7 @@ describe('report-chart-views data transformations', () => {
     expect(perWeek[0].sessionCount).toBe(2);
     expect(perWeek[0].accuracy).toBe(70);
     expect(perWeek[0].independenceRate).toBe(73.3); // 11 / 15
+    expect(perWeek[0].dysfluentSyllables).toBe(14);
     expect(perWeek[0].fluencyPct).toBe(93); // (200 - 14) / 200
   });
 
@@ -292,5 +296,50 @@ describe('reports accuracy fixes (C1, C2, C5)', () => {
     expect(rows).toHaveLength(1);
     expect(rows[0].totalPromptTallies).toBe(0);
     expect(rows[0].independenceRate).toBeNull();
+  });
+
+  it('does not count sessions with zero prompt tallies as 0 prompts (Independent)', () => {
+    const gArtic: Goal = goal({ id: 'g-artic', name: 'Articulation', type: 'ARTICULATION', sessionTargetValue: 80 });
+    const sessions = [
+      makeSession('s1', '2026-10-05', [{ goalId: 'g-artic', data: { correct: 8, incorrect: 2 } }]), // no prompts tracked
+      makeSession('s2', '2026-10-06', [{ goalId: 'g-artic', data: { correct: 8, incorrect: 2, Independent: 8 } }]), // tracked as independent
+      makeSession('s3', '2026-10-07', [{ goalId: 'g-artic', data: { correct: 7, incorrect: 3, Visual: 3 } }]), // tracked with prompts
+    ];
+    const summary = buildPromptSummary(sessions, [gArtic]);
+    expect(summary.sessionsWithPromptGoals).toBe(2);
+    expect(summary.unpromptedSessions).toBe(1);
+  });
+
+  it('enforces sessionTargetUses on week/month grouped COMMUNICATION_FUNCTIONS metTarget', () => {
+    const commGoal: Goal = goal({
+      id: 'g-comm', name: 'Comm functions', type: 'COMMUNICATION_FUNCTIONS',
+      sessionTargetValue: 2, sessionTargetUses: 5,
+    } as Partial<Goal>);
+    const sessions = [
+      // Both sessions hit 2 functions, but only 2 unprompted uses each (below 5 uses minimum).
+      makeSession('s1', '2026-10-05', [{ goalId: 'g-comm', data: { requestingItemsSpontaneous: 1, commentingSpontaneous: 1 } }]),
+      makeSession('s2', '2026-10-06', [{ goalId: 'g-comm', data: { requestingItemsSpontaneous: 1, commentingSpontaneous: 1 } }]),
+    ];
+    const recorded = collectRecordedGoalSessions(commGoal, sessions);
+    const byWeek = groupGoalPoints(commGoal, recorded, 'week', null);
+    expect(byWeek).toHaveLength(1);
+    expect(byWeek[0].value).toBe(2);
+    expect(byWeek[0].metCount).toBe(0);
+    expect(byWeek[0].metTarget).toBe(false);
+  });
+
+  it('pools grouped fluency and prompting goals by their denominators', () => {
+    const fluencyGoal: Goal = goal({
+      id: 'g-flu', name: 'Fluency', type: 'FLUENCY_SYLLABLE_STUTTER', sessionTargetValue: 90,
+    });
+    const sessions = [
+      // 10 syllables, 0 dysfluent -> 100%; 90 syllables, 18 dysfluent -> 80%; pooled = 82/100 = 82% (not 90% unweighted mean)
+      makeSession('s1', '2026-10-05', [{ goalId: 'g-flu', data: { totalSyllables: 10, stutteredSyllables: 0 } }]),
+      makeSession('s2', '2026-10-06', [{ goalId: 'g-flu', data: { totalSyllables: 90, blocks: 10, repetitions: 8 } }]),
+    ];
+    const recorded = collectRecordedGoalSessions(fluencyGoal, sessions);
+    const byWeek = groupGoalPoints(fluencyGoal, recorded, 'week', null);
+    expect(byWeek).toHaveLength(1);
+    expect(byWeek[0].value).toBe(82);
   });
 });

@@ -91,10 +91,12 @@ export function useDataEntryLayout(selectedCount: number) {
       const menuBar = document.documentElement.classList.contains('menu-bottom')
         ? document.querySelector<HTMLElement>('.app-menubar')?.offsetHeight ?? 0
         : 0;
+      const scrollTop = region.closest('main')?.scrollTop ?? 0;
       const height = studentCardHeight({
         viewportHeight: screenBottom,
         regionTop: region.getBoundingClientRect().top,
         bodyTop,
+        scrollTop,
         ratio,
         saveBarHeight: saveBar.offsetHeight,
         menuBarHeight: menuBar,

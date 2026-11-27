@@ -91,4 +91,77 @@ describe('LazyBoundary', () => {
     expect(attempts).toBe(2);
     expect(el.textContent).toContain('loaded modal');
   });
+
+  it('retrying one failed retryableLazy component does not unmount or wipe state in an already-loaded sibling', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    let mounts = 0;
+    const Healthy = retryableLazy(async () => ({
+      default: function HealthyComponent({ tick }: { tick: number }) {
+        const [count, setCount] = React.useState(0);
+        React.useEffect(() => { mounts += 1; }, []);
+        return (
+          <div>
+            <span data-testid="state">{count}:{tick}</span>
+            <button type="button" onClick={() => setCount(c => c + 1)}>inc</button>
+          </div>
+        );
+      },
+    }));
+
+    let flakyAttempts = 0;
+    const Flaky = retryableLazy(async () => {
+      flakyAttempts += 1;
+      if (flakyAttempts === 1) throw new Error('chunk failed');
+      return { default: () => <p>flaky recovered</p> };
+    });
+
+    function Harness() {
+      const [tick, setTick] = React.useState(0);
+      return (
+        <div>
+          <button type="button" onClick={() => setTick(t => t + 1)}>rerender</button>
+          <LazyBoundary label="Healthy">
+            <React.Suspense fallback={null}><Healthy tick={tick} /></React.Suspense>
+          </LazyBoundary>
+          <LazyBoundary label="Flaky">
+            <React.Suspense fallback={null}><Flaky /></React.Suspense>
+          </LazyBoundary>
+        </div>
+      );
+    }
+
+    const el = render(<Harness />);
+    await act(async () => {});
+    expect(mounts).toBe(1);
+
+    // Mutate state inside Healthy before retrying Flaky.
+    const incBtn = [...el.querySelectorAll('button')].find(b => b.textContent === 'inc')!;
+    act(() => incBtn.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(el.querySelector('[data-testid="state"]')?.textContent).toBe('1:0');
+
+    // Retry Flaky and then trigger a re-render of Healthy.
+    const retryBtn = [...el.querySelectorAll('button')].find(b => b.textContent?.includes('Try again'))!;
+    await act(async () => { retryBtn.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+    const rerenderBtn = [...el.querySelectorAll('button')].find(b => b.textContent === 'rerender')!;
+    act(() => rerenderBtn.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+
+    expect(el.textContent).toContain('flaky recovered');
+    expect(mounts).toBe(1);
+    expect(el.querySelector('[data-testid="state"]')?.textContent).toBe('1:1');
+  });
+
+  it('supports dismissing the alert via onDismiss', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const onDismiss = vi.fn();
+    const Boom = () => { throw new Error('offline'); };
+    const el = render(
+      <LazyBoundary label="This dialog" onDismiss={onDismiss}>
+        <Boom />
+      </LazyBoundary>,
+    );
+    const closeBtn = el.querySelector('button[aria-label="Close"]');
+    expect(closeBtn).not.toBeNull();
+    act(() => closeBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
 });

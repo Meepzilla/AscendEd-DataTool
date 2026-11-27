@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useMemo, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import {
   QUICK_RANGES, QUICK_RANGE_LABELS, customRangeChoice, defaultReportStudent, rangeChoiceDates, readGoalChoice, readRangeChoice, readReportTab,
   rememberGoalChoice, rememberRangeChoice, rememberReportStudent, rememberReportTab, type QuickRange, type RangeChoice, type ReportTab,
@@ -23,10 +23,11 @@ import NarrativeDialog from '@/components/charts/NarrativeDialog';
 import { attendanceSummary, attendanceText, isMissed } from '@/lib/attendance';
 import { markReportViewed } from '@/lib/onboarding';
 import { useAuth } from '@/hooks/use-auth';
+import { LazyBoundary, retryableLazy } from '@/components/ui/lazy-boundary';
 
 // Dynamically import the heavy charting component
-const AnalysisCharts = lazy(() => import('@/components/charts/AnalysisCharts'));
-const ImportDataModal = lazy(() => import('@/components/modals/import-data-modal'));
+const AnalysisCharts = retryableLazy(() => import('@/components/charts/AnalysisCharts'));
+const ImportDataModal = retryableLazy(() => import('@/components/modals/import-data-modal'));
 
 export default function AnalysisReportPage() {
   const { students, sessions, loading: studentsLoading, sessionsLoading, importSessions } = useStudentData();
@@ -147,9 +148,13 @@ export default function AnalysisReportPage() {
 
   return (
     <div className="space-y-6">
-      <Suspense fallback={null}>
-        {isImportModalOpen && <ImportDataModal onClose={() => setIsImportModalOpen(false)} onImport={importSessions} />}
-      </Suspense>
+      {isImportModalOpen && (
+        <LazyBoundary label="Import Data dialog" onDismiss={() => setIsImportModalOpen(false)}>
+          <Suspense fallback={null}>
+            <ImportDataModal onClose={() => setIsImportModalOpen(false)} onImport={importSessions} />
+          </Suspense>
+        </LazyBoundary>
+      )}
       <Card className="shadow-lg">
         <CardHeader>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
@@ -162,6 +167,7 @@ export default function AnalysisReportPage() {
              <div className="flex flex-wrap gap-2">
                 {selectedStudent && (
                   <NarrativeDialog
+                    key={selectedStudent.id}
                     student={selectedStudent}
                     goals={selectedGoalId ? activeStudentGoals.filter(g => g.id === selectedGoalId) : activeStudentGoals}
                     sessions={studentSessions}
@@ -257,18 +263,20 @@ export default function AnalysisReportPage() {
             </CardContent>
         </Card>
       ) : (
-        <Suspense fallback={<AnalysisReportChartsSkeleton />}>
-          <AnalysisCharts 
-            studentSessions={studentSessions}
-            periodSessions={periodSessions}
-            studentHistory={studentHistory}
-            selectedStudent={selectedStudent}
-            selectedGoalId={selectedGoalId}
-            sessionsLoading={sessionsLoading}
-            activeTab={activeTab}
-            onTabChange={chooseTab}
-          />
-        </Suspense>
+        <LazyBoundary label="Analysis charts">
+          <Suspense fallback={<AnalysisReportChartsSkeleton />}>
+            <AnalysisCharts 
+              studentSessions={studentSessions}
+              periodSessions={periodSessions}
+              studentHistory={studentHistory}
+              selectedStudent={selectedStudent}
+              selectedGoalId={selectedGoalId}
+              sessionsLoading={sessionsLoading}
+              activeTab={activeTab}
+              onTabChange={chooseTab}
+            />
+          </Suspense>
+        </LazyBoundary>
       )}
     </div>
   );

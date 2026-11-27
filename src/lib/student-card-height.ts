@@ -17,6 +17,8 @@ export interface StudentCardHeightMeasurements {
   regionTop: number;
   /** Top of the document body's rect, in the same rect units as regionTop. */
   bodyTop: number;
+  /** Vertical scroll offset of the enclosing scroll container (<main>), in CSS pixels. */
+  scrollTop?: number;
   /** Rect units per CSS pixel, from an element whose size isn't animating. */
   ratio: number;
   saveBarHeight: number;
@@ -24,11 +26,12 @@ export interface StudentCardHeightMeasurements {
 }
 
 /** Where the first card's top sits with the page at the top, in CSS pixels below the body's top. */
-export function studentCardTop({ regionTop, bodyTop, ratio }: Pick<StudentCardHeightMeasurements, 'regionTop' | 'bodyTop' | 'ratio'>): number {
+export function studentCardTop({ regionTop, bodyTop, ratio, scrollTop = 0 }: Pick<StudentCardHeightMeasurements, 'regionTop' | 'bodyTop' | 'ratio' | 'scrollTop'>): number {
   // Nothing sits between the region's top and the cards list's top padding: the ScrollArea root
-  // and viewport add no border or padding, so the first card starts one list padding below the
-  // region's top, however far the viewport's content is scrolled.
-  return (regionTop - bodyTop) / ratio + CARDS_LIST_TOP_PADDING;
+  // and viewport add no border or padding. Adding the enclosing <main>'s scrollTop cancels the
+  // vertical shift of regionTop when the page scrolls inside <main>, so the card's unscrolled top
+  // stays constant however far the user has scrolled.
+  return (regionTop - bodyTop) / ratio + scrollTop + CARDS_LIST_TOP_PADDING;
 }
 
 export function studentCardHeight(measurements: StudentCardHeightMeasurements): number {

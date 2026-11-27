@@ -1,14 +1,15 @@
 'use client';
 
-import React, { Suspense, lazy, useState } from 'react';
+import React, { Suspense, useState } from 'react';
 import { UsersRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useStudentData } from '@/hooks/use-student-data';
 import type { StudentGroup } from '@/lib/student-groups';
 import { useStudentGroups } from '@/hooks/use-student-groups';
+import { LazyBoundary, retryableLazy } from '@/components/ui/lazy-boundary';
 
-const ManageGroupsDialog = lazy(() => import('./ManageGroupsDialog'));
+const ManageGroupsDialog = retryableLazy(() => import('./ManageGroupsDialog'));
 
 // Data Entry's Load Group button: a menu of saved groups (loading one puts its students in the slots) and
 // Manage Groups.
@@ -41,9 +42,13 @@ export default function LoadGroupMenu({ onLoad, disabled, size = 'lg', className
           <DropdownMenuItem onSelect={() => setManaging(true)}>Manage Groups…</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <Suspense fallback={null}>
-        {managing && <ManageGroupsDialog open={managing} onOpenChange={setManaging} />}
-      </Suspense>
+      {managing && (
+        <LazyBoundary label="Manage Groups dialog" floating onDismiss={() => setManaging(false)}>
+          <Suspense fallback={null}>
+            <ManageGroupsDialog open={managing} onOpenChange={setManaging} />
+          </Suspense>
+        </LazyBoundary>
+      )}
     </>
   );
 }

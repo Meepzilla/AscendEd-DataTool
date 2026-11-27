@@ -9,7 +9,7 @@ import { getGoalTypeDef } from './goal-types';
 import { compareSessionsOldestFirst, formatDate, formatDateOnly, formatGoalTarget, goalTypeLabel, parseDateOnly, plural } from './helpers';
 import { timePatterns, TIMING_MEASURE_LABELS, WEEKDAY_NAMES } from './behavior-timing';
 import { formatGasLevel } from './gas';
-import { formatSampleLength, goalSampleUnit, sessionSampleUnit, summarizeSample, utteranceLengths } from './language-sample';
+import { formatSampleLength, goalSampleUnit, isSampleGoal, sessionMatchesGoalUnit, sessionSampleUnit, summarizeSample, utteranceLengths } from './language-sample';
 import { ITEM_MASTERY_RUN, itemHistory, listItems } from './item-mastery';
 import type { TaskStepScore } from './task-analysis';
 import { trendWeight } from './trial-weights';
@@ -96,6 +96,8 @@ interface GoalAnalysis {
   /** The aim line (baseline to target by the target date) and where the student is against it. */
   aim: AimLine | null;
   aimStatus: AimStatus | null;
+  /** Language-sample sessions counted in the other unit (excluded from stats & MLU pooling). */
+  excludedSampleCount: number;
 }
 
 /**
@@ -151,12 +153,17 @@ function fitTrend(goal: Goal, points: { date: string; value: number; weight?: nu
 }
 
 function analyzeGoal(goal: Goal, number: number, sessions: SessionData[]): GoalAnalysis {
-  const withData = sessions
+  const rawWithData = sessions
     .map(session => {
       const data = session.goals?.find(g => g.goalId === goal.id)?.data;
       return { session, data: data ? withoutRunningTimers(data) : undefined };
     })
-    .filter((r): r is { session: SessionData; data: Record<string, any> } => !!r.data)
+    .filter((r): r is { session: SessionData; data: Record<string, any> } => !!r.data);
+  const sampleGoal = isSampleGoal(goal);
+  const excludedSampleCount = sampleGoal
+    ? rawWithData.filter(r => utteranceLengths(r.data).length > 0 && !sessionMatchesGoalUnit(r.data, goal)).length
+    : 0;
+  const withData = (sampleGoal ? rawWithData.filter(r => sessionMatchesGoalUnit(r.data, goal)) : rawWithData)
     .map(r => ({ ...r, value: goalMeasure(goal, r.data) }));
   const recorded = withData
     .filter((r): r is typeof r & { value: number } => r.value !== null)
@@ -191,6 +198,7 @@ function analyzeGoal(goal: Goal, number: number, sessions: SessionData[]): GoalA
   const points = recorded.map(r => ({ date: r.session.date, value: r.value }));
   return {
     mastery, aim, aimStatus: aimStatus(goal, aim, points),
+    excludedSampleCount,
     goal, number, recorded, values, target, streak, trend, status, unmeasured,
     unmeasuredDates: unmeasuredRows.map(r => r.session.date),
     latestUnanswered,
@@ -273,7 +281,7 @@ function taskAnalysisSentence(name: string, data: Record<string, any>[]): string
 }
 
 /** Language sample: utterances sampled, the MLU across the samples and the longest utterance. */
-function languageSampleSentence(name: string, goal: Goal, data: Record<string, any>[]): string | null {
+function languageSampleSentence(name: string, goal: Goal, data: Record<string, any>[], excludedFromGoal = 0): string | null {
   const unit = goalSampleUnit(goal);
   // Only samples counted in the goal's current unit are pooled: mixing words and morphemes would
   // manufacture an MLU change out of the unit switch alone. Left-out samples are named as such.
@@ -287,7 +295,7 @@ function languageSampleSentence(name: string, goal: Goal, data: Record<string, a
   const change = inUnit.length > 1 && first.mlu !== null && last.mlu !== null
     ? ` The MLU went from ${formatSampleLength(first.mlu, unit)} in the first sample to ${formatSampleLength(last.mlu, unit)} in the most recent one.`
     : '';
-  const excluded = sampled.length - inUnit.length;
+  const excluded = excludedFromGoal + (sampled.length - inUnit.length);
   const otherUnit = unit === 'morphemes' ? 'words' : 'morphemes';
   const note = excluded > 0
     ? ` ${plural(excluded, 'sample')} counted in ${otherUnit} ${excluded === 1 ? 'is' : 'are'} not included, because the goal now counts ${unit}.`
@@ -309,7 +317,7 @@ function itemMasterySentence(name: string, goal: Goal, data: Record<string, any>
 }
 
 /** Extra sentences that fit the goal's type, over the sessions with data. */
-function detailSentences(name: string, goal: Goal, data: Record<string, any>[]): string[] {
+function detailSentences(name: string, goal: Goal, data: Record<string, any>[], excludedSampleCount = 0): string[] {
   const type = captureTypeOf(goal);
   // Communication goals recorded with a behavior tool get the tool's figures, in their own words.
   const tool = toolTypeOf(type);
@@ -322,8 +330,8 @@ function detailSentences(name: string, goal: Goal, data: Record<string, any>[]):
     const line = taskAnalysisSentence(name, data);
     if (line) lines.push(line);
   }
-  if (type === 'LANGUAGE_SAMPLE') {
-    const line = languageSampleSentence(name, goal, data);
+  if (isSampleGoal(goal)) {
+    const line = languageSampleSentence(name, goal, data, excludedSampleCount);
     if (line) lines.push(line);
   }
   if (type === 'ITEM_MASTERY') {
@@ -506,8 +514,13 @@ function goalParagraph(name: string, a: GoalAnalysis, options: Required<Narrativ
   const heading = goalHeading(a);
   if (!a.latest) {
     // Latency trials with no response at all have no time to average, but they are still data.
-    const unanswered = a.unmeasured.length ? detailSentences(name, a.goal, a.unmeasured) : [];
-    const text = unanswered.length ? unanswered.join(' ') : 'No data were recorded for this goal during this period.';
+    const unanswered = a.unmeasured.length ? detailSentences(name, a.goal, a.unmeasured, a.excludedSampleCount) : [];
+    const unit = isSampleGoal(a.goal) ? goalSampleUnit(a.goal) : null;
+    const otherUnit = unit === 'morphemes' ? 'words' : 'morphemes';
+    const excludedNote = a.excludedSampleCount > 0 && unit
+      ? ` ${plural(a.excludedSampleCount, 'sample')} counted in ${otherUnit} ${a.excludedSampleCount === 1 ? 'is' : 'are'} not included, because the goal now counts ${unit}.`
+      : '';
+    const text = unanswered.length ? unanswered.join(' ') : `No data were recorded for this goal during this period.${excludedNote}`;
     return `${heading}\n${text}${options.nextSteps && !unanswered.length ? `\nSuggested next step: ${nextStep(a)}` : ''}`;
   }
 
@@ -533,7 +546,7 @@ function goalParagraph(name: string, a: GoalAnalysis, options: Required<Narrativ
     const n = a.unmeasured.length;
     sentences.push(`In ${n === 1 ? '1 more session' : `${n} more sessions`} (${a.unmeasuredDates.map(d => formatDateOnly(d)).join(', ')}), ${name} did not respond in any trial; ${n === 1 ? 'it is' : 'they are'} not included in the average time.`);
   }
-  sentences.push(...detailSentences(name, goal, [...a.recorded.map(r => r.data), ...a.unmeasured]));
+  sentences.push(...detailSentences(name, goal, [...a.recorded.map(r => r.data), ...a.unmeasured], a.excludedSampleCount));
   if (BEHAVIOR_GOAL_TYPES.includes(toolTypeOf(type))) {
     const timing = timingSentence(type, a.recorded);
     if (timing) sentences.push(timing);
@@ -611,6 +624,7 @@ export function buildNarrative({ student, goals, sessions, rangeLabel, options =
     const data = session.goals?.find(g => g.goalId === goal.id)?.data;
     if (!data) return false;
     const saved = withoutRunningTimers(data);
+    if (isSampleGoal(goal) && !sessionMatchesGoalUnit(saved, goal)) return false;
     return goalMeasure(goal, saved) !== null || (toolTypeOf(captureTypeOf(goal)) === 'BEHAVIOR_LATENCY' && summarizeLatency(saved).trialCount > 0);
   })).length;
   const intro = `This summary covers ${plural(sessionsWithData, 'session')} with ${name} from ${period}, for ${plural(goals.length, 'goal')}.`;

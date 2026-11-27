@@ -22,7 +22,7 @@ const SyllableFluencyChart: React.FC<SyllableFluencyChartProps> = ({ chartData, 
 
   const countsConfig = {
     totalSyllables: { label: 'Total Syllables', color: 'hsl(var(--chart-1))' },
-    stutteredSyllables: { label: 'Stuttered Syllables', color: 'hsl(var(--chart-5))' },
+    dysfluentSyllables: { label: 'Dysfluent Syllables', color: 'hsl(var(--chart-5))' },
   } as const;
 
   const pctConfig = {
@@ -41,7 +41,7 @@ const SyllableFluencyChart: React.FC<SyllableFluencyChartProps> = ({ chartData, 
             <CardDescription>
               {view === 'percent'
                 ? `Percentage of fluent (unstuttered) syllables per ${periodNoun}.`
-                : `Total syllables spoken versus stuttered syllables per ${periodNoun}.`}
+                : `Total syllables spoken versus dysfluent syllables per ${periodNoun}.`}
             </CardDescription>
           </div>
           <ViewModeToggle
@@ -67,9 +67,10 @@ const SyllableFluencyChart: React.FC<SyllableFluencyChartProps> = ({ chartData, 
                   <ChartTooltipContent
                     indicator="line"
                     formatter={(value, _name, item) => {
-                      const row = item?.payload as { totalSyllables?: number; stutteredSyllables?: number } | undefined;
+                      const row = item?.payload as { totalSyllables?: number; dysfluentSyllables?: number; stutteredSyllables?: number } | undefined;
+                      const dysfluent = row?.dysfluentSyllables ?? row?.stutteredSyllables ?? 0;
                       const detail = row?.totalSyllables
-                        ? ` (${row.stutteredSyllables ?? 0} stuttered of ${row.totalSyllables})`
+                        ? ` (${dysfluent} dysfluent of ${row.totalSyllables})`
                         : '';
                       return (
                         <div className="flex w-full items-center justify-between gap-3">
@@ -93,7 +94,7 @@ const SyllableFluencyChart: React.FC<SyllableFluencyChartProps> = ({ chartData, 
               <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
               <ChartLegend content={<ChartLegendContent />} />
               <Line type="monotone" dataKey="totalSyllables" stroke="var(--color-totalSyllables)" strokeWidth={2} dot={true} name="Total Syllables" />
-              <Line type="monotone" dataKey="stutteredSyllables" stroke="var(--color-stutteredSyllables)" strokeWidth={2} dot={true} name="Stuttered Syllables" />
+              <Line type="monotone" dataKey="dysfluentSyllables" stroke="var(--color-dysfluentSyllables)" strokeWidth={2} dot={true} name="Dysfluent Syllables" />
             </LineChart>
           </ChartContainer>
         )}

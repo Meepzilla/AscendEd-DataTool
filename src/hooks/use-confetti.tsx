@@ -17,10 +17,13 @@ export const useConfetti = () => useContext(ConfettiContext) ?? NO_CONFETTI;
 
 export const ConfettiProvider = ({ children }: { children: ReactNode }) => {
   const intervalsRef = useRef<Set<number>>(new Set());
+  const mountedRef = useRef(true);
 
   useEffect(() => {
+    mountedRef.current = true;
     const intervals = intervalsRef.current;
     return () => {
+      mountedRef.current = false;
       intervals.forEach(id => clearInterval(id));
       intervals.clear();
     };
@@ -30,6 +33,7 @@ export const ConfettiProvider = ({ children }: { children: ReactNode }) => {
     // Reduced motion: with the OS setting on, no celebration (globals.css covers the CSS side).
     if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     void import('canvas-confetti').then(({ default: confetti }) => {
+      if (!mountedRef.current) return;
       const duration = 5 * 1000;
       const animationEnd = Date.now() + duration;
 

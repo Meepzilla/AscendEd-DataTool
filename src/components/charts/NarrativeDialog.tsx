@@ -26,21 +26,45 @@ export default function NarrativeDialog(props: NarrativeInput & { disabled?: boo
   const [style, setStyle] = useState<NarrativeStyle>('detailed');
   const [nextSteps, setNextSteps] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const requestIdRef = React.useRef(0);
+
+  // Never keep a previous student's narrative in state when switching students or closing the dialog.
+  useEffect(() => {
+    requestIdRef.current += 1;
+    setText('');
+    setGenerated('');
+    setGenerating(false);
+  }, [input.student.id]);
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (!nextOpen) {
+      requestIdRef.current += 1;
+      setText('');
+      setGenerated('');
+      setGenerating(false);
+    }
+  };
 
   const generate = async () => {
+    const reqId = ++requestIdRef.current;
     setGenerating(true);
+    setText('');
+    setGenerated('');
     try {
       const { buildNarrative } = await import('@/lib/report-narrative');
+      if (reqId !== requestIdRef.current) return;
       const narrative = buildNarrative({ ...input, options: { style, nextSteps } });
       setText(narrative);
       setGenerated(narrative);
     } catch (error) {
+      if (reqId !== requestIdRef.current) return;
       // The narrative builder is a separate chunk; if it cannot load (offline, or pruned by a
       // newer service worker) the dialog used to sit empty with no sign anything went wrong.
       addErrorLog({ message: `Generating the narrative failed: ${error instanceof Error ? error.message : String(error)}`, source: 'NarrativeDialog.generate', type: 'error' });
       toast({ title: "Couldn't write the narrative", description: toSafeErrorMessage(error), variant: 'destructive' });
     } finally {
-      setGenerating(false);
+      if (reqId === requestIdRef.current) setGenerating(false);
     }
   };
   // Changing the format rewrites the text, so edits are only discarded after asking.
@@ -54,7 +78,7 @@ export default function NarrativeDialog(props: NarrativeInput & { disabled?: boo
   }, [open, style, nextSteps]);
 
   const copy = async () => {
-    if (!confirmExport()) return;
+    if (!text.trim() || !confirmExport()) return;
     try {
       await navigator.clipboard.writeText(text);
       toast({ title: 'Narrative copied', description: 'Paste it into a progress report or email.' });
@@ -64,7 +88,7 @@ export default function NarrativeDialog(props: NarrativeInput & { disabled?: boo
   };
 
   const save = async () => {
-    if (!confirmExport()) return;
+    if (!text.trim() || !confirmExport()) return;
     const safeName = input.student.name.replace(/[^a-z0-9]+/gi, '_');
     const date = localDayKey(new Date());
     // A failed save used to be swallowed (an empty catch): the narrative stayed on screen with
@@ -94,7 +118,7 @@ export default function NarrativeDialog(props: NarrativeInput & { disabled?: boo
       <Button size="sm" variant="outline" onClick={() => setOpen(true)} disabled={disabled}>
         <FileText className="mr-2 h-4 w-4" /> Write Narrative
       </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Progress Narrative</DialogTitle>
@@ -121,11 +145,11 @@ export default function NarrativeDialog(props: NarrativeInput & { disabled?: boo
           {generating && <p className="text-sm text-muted-foreground" role="status">Writing the narrative…</p>}
           <Textarea value={text} onChange={(e) => setText(e.target.value)} disabled={generating} className="min-h-[30vh] sm:min-h-[45vh] text-sm leading-relaxed" aria-label="Narrative text" />
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="ghost" onClick={generate} title="Start over from the data (discards edits)">
+            <Button variant="ghost" onClick={generate} disabled={generating} title="Start over from the data (discards edits)">
               <RotateCcw className="mr-2 h-4 w-4" /> Regenerate
             </Button>
-            <Button variant="outline" onClick={save}><Download className="mr-2 h-4 w-4" /> Save as File</Button>
-            <Button onClick={copy}><Copy className="mr-2 h-4 w-4" /> Copy</Button>
+            <Button variant="outline" onClick={save} disabled={generating || !text.trim()}><Download className="mr-2 h-4 w-4" /> Save as File</Button>
+            <Button onClick={copy} disabled={generating || !text.trim()}><Copy className="mr-2 h-4 w-4" /> Copy</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
