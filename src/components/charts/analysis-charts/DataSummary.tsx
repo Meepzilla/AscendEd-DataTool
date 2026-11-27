@@ -3,6 +3,7 @@
 import React, { useMemo } from 'react';
 import type { Student } from '@/lib/types';
 import { goalMeasure, withoutRunningTimers } from '@/lib/goal-measures';
+import { isSampleGoal, sessionMatchesGoalUnit } from '@/lib/language-sample';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Sigma, Percent, CheckCircle, XCircle, HelpCircle, Target } from 'lucide-react';
 import StatTile from './StatTile';
@@ -33,8 +34,11 @@ const DataSummary: React.FC<DataSummaryProps> = ({ studentSessions, selectedStud
       // With one goal selected, the sessions where something was recorded for it.
       sessionCount: selectedGoal
         ? studentSessions.filter(session => {
-            const data = session.goals?.find((g: { goalId: string }) => g.goalId === selectedGoal.id)?.data;
-            return !!data && goalMeasure(selectedGoal, withoutRunningTimers(data)) !== null;
+            const raw = session.goals?.find((g: { goalId: string }) => g.goalId === selectedGoal.id)?.data;
+            if (!raw) return false;
+            const data = withoutRunningTimers(raw);
+            if (isSampleGoal(selectedGoal) && !sessionMatchesGoalUnit(data, selectedGoal)) return false;
+            return goalMeasure(selectedGoal, data) !== null;
           }).length
         : studentSessions.length,
       avgAccuracy: parseFloat(avgAccuracy.toFixed(1)),

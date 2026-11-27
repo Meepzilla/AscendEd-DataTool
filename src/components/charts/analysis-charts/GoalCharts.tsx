@@ -15,7 +15,7 @@ import {
 import { goalMeasureInfo, goalResponses, goalNotes, sessionMeetsTarget, promptTotals, usesPromptCounters } from '@/lib/goal-measures';
 import { formatDate, formatGoalTarget, goalTypeLabel } from '@/lib/helpers';
 import { collectRecordedGoalSessions, groupGoalPoints, type RecordedGoalSession } from '@/lib/report-chart-views';
-import { goalCardId, type GoalChartView, type TimeGrouping } from '@/lib/report-filters';
+import { goalCardId, readGoalChartView, type GoalChartView, type TimeGrouping } from '@/lib/report-filters';
 import BehaviorTimeCharts from './BehaviorTimeCharts';
 import { ItemMasteryCharts, LanguageSampleCharts } from './LanguageItemCharts';
 import { CommFunctionsBySession } from './CommFunctionsBySession';
@@ -285,12 +285,13 @@ const GoalChartCard: React.FC<{
   const gasTick = (level: number) => (level > 0 ? `+${level}` : String(level));
 
   const customPrefersBar = type === 'CUSTOM' && customChartStyle(goal.customType) === 'bar';
-  const [localView, setLocalView] = useState<GoalChartView | null>(null);
-  const activeView: GoalChartView = localView ?? (defaultView === 'line' && customPrefersBar ? 'bar' : defaultView);
+  const [localView, setLocalView] = useState<GoalChartView>(() => (customPrefersBar ? 'bar' : (defaultView !== 'line' ? defaultView : readGoalChartView())));
+  const activeView: GoalChartView = localView;
 
   const handleSelectView = (next: GoalChartView) => {
     setLocalView(next);
-    onViewChange?.(next);
+    // Don't let clicking 'bar' on a custom bar-style goal overwrite the global default for other goals.
+    if (!customPrefersBar || next !== 'bar') onViewChange?.(next);
   };
 
   const isCommFunctions = type === 'COMMUNICATION_FUNCTIONS';
@@ -531,8 +532,8 @@ const GoalChartCard: React.FC<{
                     ) : (
                       <Line type={isGas ? 'linear' : 'monotone'} dataKey="value" stroke="var(--color-value)" strokeWidth={isCommFunctions ? 2.5 : 2} dot={true} />
                     )}
-                    {!asBars && isCommFunctions && <Line type="monotone" dataKey="spontaneousFunctions" stroke="var(--color-spontaneousFunctions)" strokeWidth={2} strokeDasharray="6 3" dot={{ r: 3 }} />}
-                    {!asBars && isCommFunctions && <Line type="monotone" dataKey="emergingFunctions" stroke="var(--color-emergingFunctions)" strokeWidth={2} strokeDasharray="2 3" dot={{ r: 3 }} />}
+                    {isCommFunctions && <Line type="monotone" dataKey="spontaneousFunctions" stroke="var(--color-spontaneousFunctions)" strokeWidth={2} strokeDasharray="6 3" dot={{ r: 3 }} />}
+                    {isCommFunctions && <Line type="monotone" dataKey="emergingFunctions" stroke="var(--color-emergingFunctions)" strokeWidth={2} strokeDasharray="2 3" dot={{ r: 3 }} />}
                     {aim && <Line type="linear" dataKey="aim" stroke="var(--color-aim)" strokeWidth={1.5} strokeDasharray="2 3" dot={false} />}
                   </ProgressChart>
                 </ChartContainer>

@@ -1,6 +1,6 @@
 import type { Goal, PromptType, SessionData, TrialStatus } from './types';
 import {
-  captureTypeOf, summarizeCommunicationFunctions, summarizeLatency, toolTypeOf,
+  captureTypeOf, scoreStory, summarizeCommunicationFunctions, summarizeIntervals, summarizeLatency, toolTypeOf,
 } from './goal-constants';
 import { fillNameBlanks } from './goal-blanks';
 import {
@@ -12,6 +12,8 @@ import { PROMPT_ABBREVIATIONS, PROMPT_COLORS, PROMPT_TYPES } from './promptConst
 import { aimValueAt, type AimLine } from './aim-line';
 import { pooledAccuracy } from './trial-weights';
 import { isSampleGoal, sessionMatchesGoalUnit, utteranceLengths } from './language-sample';
+import { taskAnalysisSummary } from './task-analysis';
+import { itemMasterySummary } from './item-mastery';
 import type { TimeGrouping } from './report-filters';
 
 const round = (n: number) => Math.round(n * 10) / 10;
@@ -139,14 +141,29 @@ export interface GoalChartPoint {
 
 /**
  * How much data sits behind one session's value: responses for trial-based goals, utterances for
- * language samples, 0 for goals measured another way (ratings, counts), whose sessions count equally.
- * Grouped (week/month) values pool by this denominator, so a 1-of-1 session can't outweigh a 9-of-99
- * one — the same pooling buildCombinedChartSeries already used for its accuracy.
+ * language samples, syllables for fluency, prompt tallies for prompting, scored steps/items/intervals/
+ * story points/responded latency trials for ratio-based goals, and 0 for counts/ratings/durations
+ * whose sessions count equally. Grouped (week/month) values pool by this denominator, so a 1-of-1
+ * session can't outweigh a 9-of-99 one and GoalCharts matches PromptingOverview / SyllableFluencyChart.
  */
 function goalValueWeight(goal: Goal, data: Record<string, any>): number {
   const resp = goalResponses(goal, data);
   if (resp) return Math.max(0, resp.correct + resp.approximate + resp.incorrect);
   if (isSampleGoal(goal)) return utteranceLengths(data).length;
+  const type = captureTypeOf(goal);
+  if (type === 'PROMPTING' || (type === 'CUSTOM' && goal.customType?.kind === 'prompting')) {
+    return PROMPT_TYPES.reduce((sum, pt) => sum + Math.max(0, Number(data[pt]) || 0), 0);
+  }
+  if (type === 'FLUENCY_SYLLABLE_STUTTER') return Math.max(0, Number(data.totalSyllables) || 0);
+  if (type === 'TASK_ANALYSIS' || (type === 'CUSTOM' && goal.customType?.kind === 'checklist')) {
+    return taskAnalysisSummary(data).scored;
+  }
+  if (type === 'ITEM_MASTERY') return itemMasterySummary(data).tried;
+  if (type === 'BEHAVIOR_INTERVAL') return summarizeIntervals(data).scored;
+  if (type === 'STORY_ELEMENTS') return scoreStory(data).maxPoints;
+  if (toolTypeOf(type) === 'BEHAVIOR_LATENCY' || (type === 'CUSTOM' && goal.customType?.kind === 'latency')) {
+    return summarizeLatency(data).respondedCount;
+  }
   return 0;
 }
 
@@ -225,7 +242,6 @@ export function groupGoalPoints(
         ? round(weightedSum / weightTotal)
         : round(items.reduce((sum, r) => sum + r.value, 0) / items.length);
       const metCount = target !== undefined ? items.filter(r => sessionMeetsTarget(goal, r.data, target)).length : 0;
-      const metTarget = target !== undefined ? meetsTarget(goal, avgValue, target) : null;
 
       let correct = 0;
       let approximate = 0;
@@ -262,6 +278,14 @@ export function groupGoalPoints(
         const text = goalNotes(r.data);
         if (text) noteEntries.push(items.length > 1 ? `${r.label}: ${text}` : text);
       }
+
+      const avgUnpromptedUses = isCommFunctions ? (spontaneousUses + emergingUses) / items.length : undefined;
+      const usesMin = isCommFunctions ? (goal.sessionTargetUses ?? 0) : 0;
+      const metTarget = target === undefined
+        ? null
+        : usesMin > 0
+          ? meetsTarget(goal, avgValue, target) && (avgUnpromptedUses ?? 0) >= usesMin
+          : meetsTarget(goal, avgValue, target);
 
       const lastSessionDate = items[items.length - 1].session.date;
       const opportunities = hasResp ? correct + approximate + incorrect : undefined;
@@ -309,6 +333,7 @@ export interface CombinedChartRow {
   Imitation: number;
   totalSyllables: number;
   stutteredSyllables: number;
+  dysfluentSyllables: number;
   fluencyPct: number | null;
   blocks: number;
   repetitions: number;
@@ -502,7 +527,8 @@ export function buildCombinedChartSeries(
     const totalPrompts = PROMPT_TYPES.reduce((sum, pt) => (pt === 'Independent' ? sum : sum + promptCounts[pt]), 0);
     const totalPromptTallies = totalPrompts + promptCounts.Independent;
     const independenceRate = totalPromptTallies > 0 ? round((promptCounts.Independent / totalPromptTallies) * 100) : null;
-    const fluencyPct = totalSyllables > 0 ? round((Math.max(0, totalSyllables - stutteredSyllables) / totalSyllables) * 100) : null;
+    const dysfluentSyllables = stutteredSyllables + blocks + repetitions + prolongations + interjections;
+    const fluencyPct = totalSyllables > 0 ? round((Math.max(0, totalSyllables - dysfluentSyllables) / totalSyllables) * 100) : null;
 
     return {
       date: bucket.label,
@@ -520,6 +546,7 @@ export function buildCombinedChartSeries(
       ...promptCounts,
       totalSyllables,
       stutteredSyllables,
+      dysfluentSyllables,
       fluencyPct,
       blocks,
       repetitions,
@@ -613,7 +640,9 @@ export function buildPromptSummary(
         }
       }
 
-      if (usesPromptCounters(goal) && (goalMeasure(goal, data) !== null || entryPromptSum > 0)) {
+      // Only count sessions where prompt tallies (including Independent) were actually recorded;
+      // sessions with trial data alone and zero prompt tallies weren't tracking prompts.
+      if (usesPromptCounters(goal) && entryPromptSum > 0) {
         sessionHadPromptGoalRecorded = true;
       }
     }

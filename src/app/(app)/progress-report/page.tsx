@@ -22,6 +22,7 @@ import { getOrganizationName } from '@/lib/ui-preferences';
 import { attendanceSummary, attendanceText, isMissed } from '@/lib/attendance';
 import { captureTypeOf, summarizeLatency, toolTypeOf } from '@/lib/goal-constants';
 import { goalMeasure, withoutRunningTimers } from '@/lib/goal-measures';
+import { isSampleGoal, sessionMatchesGoalUnit } from '@/lib/language-sample';
 import { schoolYearStart } from '@/lib/school-year';
 import { periodService } from '@/lib/student-overview';
 import ProgressReportDocument, { type ProgressReportEdits } from '@/components/reports/ProgressReportDocument';
@@ -135,6 +136,7 @@ function ProgressReportPage() {
         const goal = goals.find(item => item.id === g.goalId);
         if (!goal) return false;
         const data = withoutRunningTimers(g.data || {});
+        if (isSampleGoal(goal) && !sessionMatchesGoalUnit(data, goal)) return false;
         if (goalMeasure(goal, data) !== null) return true;
         return toolTypeOf(captureTypeOf(goal)) === 'BEHAVIOR_LATENCY' && summarizeLatency(data).trialCount > 0;
       })

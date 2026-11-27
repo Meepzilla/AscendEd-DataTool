@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState, lazy, Suspense } from 'react';
+import React, { useEffect, useMemo, useState, Suspense } from 'react';
 import { AlertTriangle, CalendarDays, CheckSquare, HandHelping, Target } from 'lucide-react';
 import type { Student, SessionData, Goal } from '@/lib/types';
 import { captureTypeOf } from '@/lib/goal-constants';
@@ -27,21 +27,22 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ViewModeToggle from './analysis-charts/ViewModeToggle';
+import { LazyBoundary, retryableLazy } from '@/components/ui/lazy-boundary';
 
 // Lazy load individual chart sections so only the active tab's charts are loaded and sized
-const GoalSummaryTable = lazy(() => import('./analysis-charts/GoalSummaryTable'));
-const GoalCharts = lazy(() => import('./analysis-charts/GoalCharts'));
-const GasTScoreLineChart = lazy(() => import('./analysis-charts/GasTScoreLineChart'));
-const GasSummaryTable = lazy(() => import('./analysis-charts/GasSummaryTable'));
-const PromptingOverview = lazy(() => import('./analysis-charts/PromptingOverview'));
-const DataSummary = lazy(() => import('./analysis-charts/DataSummary'));
-const GoalOutcomeComparison = lazy(() => import('./analysis-charts/GoalOutcomeComparison'));
-const ProgressOverTimeChart = lazy(() => import('./analysis-charts/ProgressOverTimeChart'));
-const ResponseCountsChart = lazy(() => import('./analysis-charts/ResponseCountsChart'));
-const TrialStatusChart = lazy(() => import('./analysis-charts/TrialStatusChart'));
-const SyllableFluencyChart = lazy(() => import('./analysis-charts/SyllableFluencyChart'));
-const DysfluencyTypesChart = lazy(() => import('./analysis-charts/DysfluencyTypesChart'));
-const AttendanceCard = lazy(() => import('./analysis-charts/AttendanceCard'));
+const GoalSummaryTable = retryableLazy(() => import('./analysis-charts/GoalSummaryTable'));
+const GoalCharts = retryableLazy(() => import('./analysis-charts/GoalCharts'));
+const GasTScoreLineChart = retryableLazy(() => import('./analysis-charts/GasTScoreLineChart'));
+const GasSummaryTable = retryableLazy(() => import('./analysis-charts/GasSummaryTable'));
+const PromptingOverview = retryableLazy(() => import('./analysis-charts/PromptingOverview'));
+const DataSummary = retryableLazy(() => import('./analysis-charts/DataSummary'));
+const GoalOutcomeComparison = retryableLazy(() => import('./analysis-charts/GoalOutcomeComparison'));
+const ProgressOverTimeChart = retryableLazy(() => import('./analysis-charts/ProgressOverTimeChart'));
+const ResponseCountsChart = retryableLazy(() => import('./analysis-charts/ResponseCountsChart'));
+const TrialStatusChart = retryableLazy(() => import('./analysis-charts/TrialStatusChart'));
+const SyllableFluencyChart = retryableLazy(() => import('./analysis-charts/SyllableFluencyChart'));
+const DysfluencyTypesChart = retryableLazy(() => import('./analysis-charts/DysfluencyTypesChart'));
+const AttendanceCard = retryableLazy(() => import('./analysis-charts/AttendanceCard'));
 
 const GAS_LEVEL_VALUES = GAS_LEVELS.map(info => info.level);
 const GAS_LEVEL_LABELS: Record<number, string> = Object.fromEntries(GAS_LEVELS.map(info => [info.level, info.description]));
@@ -143,7 +144,6 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({
 
   const selectDefaultGoalView = (next: GoalChartView) => {
     rememberGoalChartView(next);
-    setDefaultGoalView(next);
   };
 
   const activeStudentGoals = useMemo(
@@ -271,33 +271,37 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({
         ) : (
           <>
             {!selectedGoalId && selectedStudent && goalsInView.length > 1 && (
-              <Suspense fallback={<ChartSuspenseFallback />}>
-                <GoalSummaryTable student={selectedStudent} goals={goalsInView} sessions={studentSessions} />
-              </Suspense>
+              <LazyBoundary label="Goal summary table">
+                <Suspense fallback={<ChartSuspenseFallback />}>
+                  <GoalSummaryTable student={selectedStudent} goals={goalsInView} sessions={studentSessions} />
+                </Suspense>
+              </LazyBoundary>
             )}
 
             {goalsInView.length > 0 && (
-              <Suspense fallback={<ChartSuspenseFallback />}>
-                {!selectedGoalId && (
-                  <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <div>
-                      <h2 className="text-xl font-semibold">Goal by Goal</h2>
-                      <p className="text-sm text-muted-foreground">
-                        Switch any goal between Line, Bars, and Table to inspect trends, target-meeting sessions, or exact numbers.
-                      </p>
+              <LazyBoundary label="Goal progress charts">
+                <Suspense fallback={<ChartSuspenseFallback />}>
+                  {!selectedGoalId && (
+                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                      <div>
+                        <h2 className="text-xl font-semibold">Goal by Goal</h2>
+                        <p className="text-sm text-muted-foreground">
+                          Switch any goal between Line, Bars, and Table to inspect trends, target-meeting sessions, or exact numbers.
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                )}
-                <GoalCharts
-                  studentSessions={studentSessions}
-                  goals={goalsInView}
-                  studentName={selectedStudent?.name}
-                  studentIep={selectedStudent?.iep}
-                  grouping={grouping}
-                  defaultView={defaultGoalView}
-                  onViewChange={selectDefaultGoalView}
-                />
-              </Suspense>
+                  )}
+                  <GoalCharts
+                    studentSessions={studentSessions}
+                    goals={goalsInView}
+                    studentName={selectedStudent?.name}
+                    studentIep={selectedStudent?.iep}
+                    grouping={grouping}
+                    defaultView={defaultGoalView}
+                    onViewChange={selectDefaultGoalView}
+                  />
+                </Suspense>
+              </LazyBoundary>
             )}
 
             {hasGasGoals && (
@@ -308,19 +312,23 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({
                     Composite T-score across all GAS goals (50 = expected outcome) and attainment distribution.
                   </p>
                 </div>
-                <Suspense fallback={<ChartSuspenseFallback />}>
-                  <GasTScoreLineChart sessions={studentSessions} history={studentHistory} goals={allGasGoals} />
-                </Suspense>
-                <Suspense fallback={<ChartSuspenseFallback />}>
-                  <GasSummaryTable
-                    sessions={studentSessions}
-                    history={studentHistory}
-                    goals={gasGoals}
-                    tScoreGoals={allGasGoals}
-                    studentName={selectedStudent?.name}
-                    studentIep={selectedStudent?.iep}
-                  />
-                </Suspense>
+                <LazyBoundary label="GAS T-score chart">
+                  <Suspense fallback={<ChartSuspenseFallback />}>
+                    <GasTScoreLineChart sessions={studentSessions} history={studentHistory} goals={allGasGoals} />
+                  </Suspense>
+                </LazyBoundary>
+                <LazyBoundary label="GAS summary table">
+                  <Suspense fallback={<ChartSuspenseFallback />}>
+                    <GasSummaryTable
+                      sessions={studentSessions}
+                      history={studentHistory}
+                      goals={gasGoals}
+                      tScoreGoals={allGasGoals}
+                      studentName={selectedStudent?.name}
+                      studentIep={selectedStudent?.iep}
+                    />
+                  </Suspense>
+                </LazyBoundary>
                 <GasLevelDistribution studentSessions={studentSessions} goals={gasGoals} />
               </div>
             )}
@@ -332,15 +340,17 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({
         {onlyMissedInRange ? (
           missedOnlyNotice
         ) : (
-          <Suspense fallback={<ChartSuspenseFallback />}>
-            <PromptingOverview
-              studentSessions={studentSessions}
-              activeStudentGoals={activeStudentGoals}
-              selectedGoalId={selectedGoalId}
-              chartData={chartData}
-              grouping={grouping}
-            />
-          </Suspense>
+          <LazyBoundary label="Prompting overview">
+            <Suspense fallback={<ChartSuspenseFallback />}>
+              <PromptingOverview
+                studentSessions={studentSessions}
+                activeStudentGoals={activeStudentGoals}
+                selectedGoalId={selectedGoalId}
+                chartData={chartData}
+                grouping={grouping}
+              />
+            </Suspense>
+          </LazyBoundary>
         )}
       </TabsContent>
 
@@ -349,14 +359,16 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({
           missedOnlyNotice
         ) : (
           <>
-            <Suspense fallback={<ChartSuspenseFallback />}>
-              <DataSummary
-                studentSessions={studentSessions}
-                selectedStudent={selectedStudent}
-                selectedGoalId={selectedGoalId}
-                chartData={chartData}
-              />
-            </Suspense>
+            <LazyBoundary label="Data summary">
+              <Suspense fallback={<ChartSuspenseFallback />}>
+                <DataSummary
+                  studentSessions={studentSessions}
+                  selectedStudent={selectedStudent}
+                  selectedGoalId={selectedGoalId}
+                  chartData={chartData}
+                />
+              </Suspense>
+            </LazyBoundary>
 
             {!hasTrialGoals && !hasFluencyData ? (
               <Card>
@@ -378,47 +390,59 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {hasTrialGoals && (
                   <>
-                    <Suspense fallback={<ChartSuspenseFallback />}>
-                      <GoalOutcomeComparison
-                        studentSessions={studentSessions}
-                        activeStudentGoals={activeStudentGoals}
-                        selectedGoalId={selectedGoalId}
-                      />
-                    </Suspense>
-                    <Suspense fallback={<ChartSuspenseFallback />}>
-                      <ProgressOverTimeChart
-                        chartData={chartData}
-                        selectedGoalId={selectedGoalId}
-                        activeStudentGoals={activeStudentGoals}
-                        grouping={grouping}
-                      />
-                    </Suspense>
-                    <Suspense fallback={<ChartSuspenseFallback />}>
-                      <ResponseCountsChart
-                        chartData={chartData}
-                        selectedGoalId={selectedGoalId}
-                        activeStudentGoals={activeStudentGoals}
-                        grouping={grouping}
-                      />
-                    </Suspense>
-                    <Suspense fallback={<ChartSuspenseFallback />}>
-                      <TrialStatusChart
-                        studentSessions={studentSessions}
-                        selectedStudent={selectedStudent}
-                        selectedGoalId={selectedGoalId}
-                      />
-                    </Suspense>
+                    <LazyBoundary label="Goal outcome comparison chart">
+                      <Suspense fallback={<ChartSuspenseFallback />}>
+                        <GoalOutcomeComparison
+                          studentSessions={studentSessions}
+                          activeStudentGoals={activeStudentGoals}
+                          selectedGoalId={selectedGoalId}
+                        />
+                      </Suspense>
+                    </LazyBoundary>
+                    <LazyBoundary label="Progress over time chart">
+                      <Suspense fallback={<ChartSuspenseFallback />}>
+                        <ProgressOverTimeChart
+                          chartData={chartData}
+                          selectedGoalId={selectedGoalId}
+                          activeStudentGoals={activeStudentGoals}
+                          grouping={grouping}
+                        />
+                      </Suspense>
+                    </LazyBoundary>
+                    <LazyBoundary label="Response counts chart">
+                      <Suspense fallback={<ChartSuspenseFallback />}>
+                        <ResponseCountsChart
+                          chartData={chartData}
+                          selectedGoalId={selectedGoalId}
+                          activeStudentGoals={activeStudentGoals}
+                          grouping={grouping}
+                        />
+                      </Suspense>
+                    </LazyBoundary>
+                    <LazyBoundary label="Trial status chart">
+                      <Suspense fallback={<ChartSuspenseFallback />}>
+                        <TrialStatusChart
+                          studentSessions={studentSessions}
+                          selectedStudent={selectedStudent}
+                          selectedGoalId={selectedGoalId}
+                        />
+                      </Suspense>
+                    </LazyBoundary>
                   </>
                 )}
 
                 {hasFluencyData && (
                   <>
-                    <Suspense fallback={<ChartSuspenseFallback />}>
-                      <SyllableFluencyChart chartData={chartData} grouping={grouping} />
-                    </Suspense>
-                    <Suspense fallback={<ChartSuspenseFallback />}>
-                      <DysfluencyTypesChart chartData={chartData} grouping={grouping} />
-                    </Suspense>
+                    <LazyBoundary label="Syllable fluency chart">
+                      <Suspense fallback={<ChartSuspenseFallback />}>
+                        <SyllableFluencyChart chartData={chartData} grouping={grouping} />
+                      </Suspense>
+                    </LazyBoundary>
+                    <LazyBoundary label="Dysfluency types chart">
+                      <Suspense fallback={<ChartSuspenseFallback />}>
+                        <DysfluencyTypesChart chartData={chartData} grouping={grouping} />
+                      </Suspense>
+                    </LazyBoundary>
                   </>
                 )}
               </div>
@@ -428,9 +452,11 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({
       </TabsContent>
 
       <TabsContent value="attendance" className="mt-0 space-y-6">
-        <Suspense fallback={<ChartSuspenseFallback />}>
-          <AttendanceCard sessions={allRangeSessions} />
-        </Suspense>
+        <LazyBoundary label="Attendance summary">
+          <Suspense fallback={<ChartSuspenseFallback />}>
+            <AttendanceCard sessions={allRangeSessions} />
+          </Suspense>
+        </LazyBoundary>
       </TabsContent>
     </Tabs>
   );
