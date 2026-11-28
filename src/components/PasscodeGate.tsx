@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import TopEdgeBar from '@/components/layout/TopEdgeBar';
 import PasscodeScreens from './passcode/PasscodeScreens';
-import { getAutoLockMinutes, isPasscodeEnabled, isUnlocked, lockNow, PASSCODE_CONFIG_KEY, PASSCODE_ERASED_KEY } from '@/lib/secure-store';
+import { getAutoLockMinutes, isPasscodeEnabled, isUnlocked, lockNow, PASSCODE_CONFIG_KEY, PASSCODE_ERASED_KEY, removeStoredStudentLinkedPrefs } from '@/lib/secure-store';
 import { DATA_CHANGED_CHANNEL, isOwnDataChangedMessage } from '@/lib/data-transaction';
 import { needsFirstRunPrompt, needsPasscodeOffer, passcodeGateStatus } from '@/lib/passcode-onboarding';
 
@@ -40,6 +40,9 @@ export default function PasscodeGate({ children }: { children: React.ReactNode }
   useEffect(() => {
     const check = () => {
       const passcodeOn = isPasscodeEnabled();
+      // Student-linked preferences stay out of plain storage while protection is on (copies written before it
+      // was turned on, in this tab or another, are removed here).
+      if (passcodeOn) removeStoredStudentLinkedPrefs();
       setProtectedOn(passcodeOn);
       setStatus(passcodeGateStatus({
         passcodeOn,

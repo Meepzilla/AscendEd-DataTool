@@ -108,7 +108,8 @@ describe('Reports filters remembered on the device', () => {
     expect(() => rememberTimeGrouping('month')).not.toThrow();
     expect(() => rememberGoalChartView('bar')).not.toThrow();
     expect(readRangeChoice()).toBeNull();
-    expect(readGoalChoice('st1', ['g1'])).toBeUndefined();
+    // The goal choice is student-linked, so it has an in-memory copy and is still remembered for this visit.
+    expect(readGoalChoice('st1', ['g1'])).toBe('g1');
     expect(readReportTab()).toBe('progress');
     expect(readTimeGrouping()).toBe('session');
     expect(readGoalChartView()).toBe('line');
