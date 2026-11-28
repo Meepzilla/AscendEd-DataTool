@@ -8,6 +8,7 @@ import { z } from 'zod';
 import GenericModal from './generic-modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import CommMeasureFields from './CommMeasureFields';
 import { Textarea } from '@/components/ui/textarea';
 import { GoalTextPreview, PlaceholderChips } from '@/components/goal-templates/PlaceholderChips';
 import GoalTypeSelect from '@/components/goal-templates/GoalTypeSelect';
@@ -74,6 +75,7 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
         gasLevelDescriptions: Array.from({ length: 5 }, (_, i) => currentTemplate.gasLevelDescriptions?.[i] ?? ''),
         sessionTargetValue: currentTemplate.sessionTargetValue,
         sessionTargetUses: currentTemplate.sessionTargetUses,
+        commMeasure: currentTemplate.commMeasure,
         targetDirection: currentTemplate.targetDirection,
       });
     }
@@ -83,11 +85,11 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
 
   // What changed, old to new, so the editor says plainly what saving will change. Compared against
   // the template as it was, not against the form's dirty flags, so only real differences are listed.
-  const watched = form.watch(['name', 'type', 'dataCaptureType', 'smartGoalPrompt', 'generatedSmartGoal', 'sessionTargetValue', 'targetDirection', 'sessionTargetUses', 'gasLevelDescriptions', 'customType']);
+  const watched = form.watch(['name', 'type', 'dataCaptureType', 'smartGoalPrompt', 'generatedSmartGoal', 'sessionTargetValue', 'targetDirection', 'sessionTargetUses', 'gasLevelDescriptions', 'customType', 'commMeasure']);
   const changes = React.useMemo(() => currentTemplate ? goalTemplateChanges(currentTemplate, {
     name: watched[0], type: watched[1], dataCaptureType: watched[2], smartGoalPrompt: watched[3],
     generatedSmartGoal: watched[4], sessionTargetValue: watched[5], targetDirection: watched[6], sessionTargetUses: watched[7],
-    gasLevelDescriptions: watched[8], customType: watched[9],
+    gasLevelDescriptions: watched[8], customType: watched[9], commMeasure: watched[10],
   }) : [], [currentTemplate, watched]);
 
   const onSubmit = async (data: EditGoalTemplateFormData) => {
@@ -266,6 +268,7 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
               type: form.watch('dataCaptureType') || form.watch('type'),
               targetDirection: form.watch('targetDirection'),
               customType: form.watch('customType'),
+              commMeasure: form.watch('commMeasure'),
             });
             return (
           <FormField
@@ -296,34 +299,8 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
             );
           })()}
 
-          {/* Communication Functions templates can pair the functions target with a minimum total of uses,
-              for goals worded "at least 5 times for at least 2 different functions". */}
-          {(form.watch('dataCaptureType') || form.watch('type')) === 'COMMUNICATION_FUNCTIONS' && (
-            <FormField
-              control={form.control}
-              name="sessionTargetUses"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Minimum Total Uses per Session (Optional)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      placeholder="e.g., 5"
-                      {...field}
-                      value={field.value ?? ''}
-                      onChange={e => field.onChange(e.target.value === '' ? '' : Number(e.target.value))}
-                      min="0"
-                      max="1000"
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    A session counts toward the target only when the student also reaches this many unprompted uses (spontaneous or emerging) in total, across all functions. Leave blank for no minimum.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
+          {/* Communication Functions goals: measured by different functions or by total uses (see CommMeasureFields). */}
+          {(form.watch('dataCaptureType') || form.watch('type')) === 'COMMUNICATION_FUNCTIONS' && <CommMeasureFields control={form.control} />}
 
           <GoalChangeSummary changes={changes} />
 

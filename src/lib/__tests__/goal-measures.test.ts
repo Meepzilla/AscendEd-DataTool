@@ -69,6 +69,27 @@ describe('communication functions measure and target', () => {
     expect(sessionMeetsTarget({ type: 'COMMUNICATION_FUNCTIONS', sessionTargetUses: 5 }, { requestingItemsSpontaneous: 1, commentingSpontaneous: 1, requestingItemsPrompted: 4 }, 2)).toBe(false);
   });
 
+  it('a goal measured by total uses counts every unprompted use across all functions', () => {
+    const usesGoal = { type: 'COMMUNICATION_FUNCTIONS', commMeasure: 'uses' } as const;
+    // "At least 5 times" in any mix of functions: 2 requests + 1 rejection + 2 comments (one in an emerging form) = 5.
+    const data = { requestingItemsSpontaneous: 2, protestingSpontaneous: 1, commentingSpontaneous: 1, commentingEmerging: 1, greetingPrompted: 4 };
+    expect(goalMeasure(usesGoal, data)).toBe(5);
+    expect(sessionMeetsTarget(usesGoal, data, 5)).toBe(true);
+    // Five uses of a single function also count: the goal doesn't ask for different functions.
+    expect(sessionMeetsTarget(usesGoal, { requestingItemsSpontaneous: 5 }, 5)).toBe(true);
+    // Prompted uses never count.
+    expect(goalMeasure(usesGoal, { requestingItemsSpontaneous: 1, requestingItemsPrompted: 6 })).toBe(1);
+    expect(sessionMeetsTarget(usesGoal, { requestingItemsSpontaneous: 1, requestingItemsPrompted: 6 }, 5)).toBe(false);
+    // Prompted only is an observed 0; nothing recorded is no data.
+    expect(goalMeasure(usesGoal, { commentingPrompted: 2 })).toBe(0);
+    expect(goalMeasure(usesGoal, {})).toBeNull();
+  });
+
+  it('a goal measured by total uses ignores a leftover uses minimum', () => {
+    const usesGoal = { type: 'COMMUNICATION_FUNCTIONS', commMeasure: 'uses', sessionTargetUses: 20 } as const;
+    expect(sessionMeetsTarget(usesGoal, { requestingItemsSpontaneous: 5 }, 5)).toBe(true);
+  });
+
   it('keeps the functions-only check when no uses minimum is set', () => {
     expect(sessionMeetsTarget({ type: 'COMMUNICATION_FUNCTIONS' }, { requestingItemsSpontaneous: 2, commentingSpontaneous: 1 }, 2)).toBe(true);
     expect(sessionMeetsTarget({ type: 'COMMUNICATION_FUNCTIONS' }, { requestingItemsSpontaneous: 2 }, 2)).toBe(false);

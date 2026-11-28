@@ -1,6 +1,6 @@
 import type { CustomGoalType } from './types';
 import {
-  captureTypeOf, goalDirection, summarizeCommunicationFunctions, toolTypeOf,
+  captureTypeOf, commUsesMinimum, goalDirection, summarizeCommunicationFunctions, toolTypeOf,
 } from './goal-constants';
 import { PROMPT_TYPES } from './promptConstants';
 import { getGoalTypeDef, type MeasuredGoal } from './goal-types';
@@ -71,16 +71,16 @@ export function meetsTarget(goal: MeasuredGoal, value: number, target: number): 
  * session's measure. A Communication Functions goal can also carry a minimum total of unprompted uses
  * (sessionTargetUses, counting spontaneous and emerging forms together), for goals worded "at least 5
  * times for at least 2 different functions": the session then counts only when it reaches the functions
- * target and the uses minimum together. A session with no measure never met the target.
+ * target and the uses minimum together (a goal measured by total uses ignores the minimum). A session with no
+ * measure never met the target.
  */
 export function sessionMeetsTarget(goal: MeasuredGoal, data: Record<string, any>, target: number): boolean {
   const value = goalMeasure(goal, data);
   if (value === null || !meetsTarget(goal, value, target)) return false;
   if (toolTypeOf(captureTypeOf(goal)) === 'COMMUNICATION_FUNCTIONS') {
-    const uses = goal.sessionTargetUses;
-    if (typeof uses === 'number' && uses > 0) {
-      return summarizeCommunicationFunctions(data).unprompted >= uses;
-    }
+    // A goal measured by total uses has no separate minimum: its measure is already the uses.
+    const uses = commUsesMinimum(goal);
+    if (uses > 0) return summarizeCommunicationFunctions(data).unprompted >= uses;
   }
   return true;
 }

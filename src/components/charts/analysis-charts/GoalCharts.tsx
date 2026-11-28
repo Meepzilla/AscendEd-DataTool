@@ -9,7 +9,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLe
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, ReferenceLine, BarChart, Bar, ComposedChart, Cell } from 'recharts';
 import { customChartShown, customChartStyle } from '@/lib/goal-types/custom';
 import {
-  BEHAVIOR_GOAL_TYPES, commFunctionsFor, captureTypeOf, toolTypeOf, goalDirection, summarizeAbc, scoreStory, averageStoryPart, STORY_PARTS, STORY_LINKING_WORDS, linkingWordField,
+  BEHAVIOR_GOAL_TYPES, commFunctionsFor, captureTypeOf, measuresCommUses, toolTypeOf, goalDirection, summarizeAbc, scoreStory, averageStoryPart, STORY_PARTS, STORY_LINKING_WORDS, linkingWordField,
   type AbcIncident,
 } from '@/lib/goal-constants';
 import { goalMeasureInfo, goalResponses, goalNotes, sessionMeetsTarget, promptTotals, usesPromptCounters } from '@/lib/goal-measures';
@@ -295,6 +295,8 @@ const GoalChartCard: React.FC<{
   };
 
   const isCommFunctions = type === 'COMMUNICATION_FUNCTIONS';
+  // A Communication Functions goal measured by total uses: the main line counts uses, not different functions.
+  const commByUses = isCommFunctions && measuresCommUses(goal);
   const aim = aimLine(goal, recorded[0]?.session.date);
   const points = useMemo(() => groupGoalPoints(goal, recorded, grouping, aim), [goal, recorded, grouping, aim]);
 
@@ -319,7 +321,7 @@ const GoalChartCard: React.FC<{
     ? {
         value: { label: 'Without a prompt (total)', color: 'hsl(var(--primary))' },
         spontaneousFunctions: { label: 'Spontaneous', color: 'hsl(var(--comm-spontaneous))' },
-        emergingFunctions: { label: 'Emerging only', color: 'hsl(var(--comm-emerging))' },
+        emergingFunctions: { label: commByUses ? 'Emerging' : 'Emerging only', color: 'hsl(var(--comm-emerging))' },
         aim: { label: 'Aim line', color: 'hsl(var(--muted-foreground))' },
       }
     : {
@@ -463,7 +465,7 @@ const GoalChartCard: React.FC<{
         ) : (
           <div className={hasResponses || hasCommUsesChart ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : ''}>
             <div>
-              {isCommFunctions && <p className="text-sm font-medium mb-1">Functions ({PERIOD_UNIT_LABEL[grouping]})</p>}
+              {isCommFunctions && <p className="text-sm font-medium mb-1">{commByUses ? 'Uses without a prompt, all functions' : 'Functions'} ({PERIOD_UNIT_LABEL[grouping]})</p>}
               {asBars && target !== undefined && !isGas && (
                 <p className="mb-1 text-xs text-muted-foreground">
                   Green bars met the target ({formatGoalTarget(goal, target, goal.targetDirection, goal.sessionTargetUses)}).
@@ -507,7 +509,7 @@ const GoalChartCard: React.FC<{
                               }
                               return row.fullLabel;
                             }}
-                            formatter={isCommFunctions ? unitTooltipFormatter(lineChartConfig, 'function', 'functions') : undefined}
+                            formatter={isCommFunctions ? (commByUses ? unitTooltipFormatter(lineChartConfig, 'use', 'uses') : unitTooltipFormatter(lineChartConfig, 'function', 'functions')) : undefined}
                           />
                         }
                       />

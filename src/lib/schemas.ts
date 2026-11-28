@@ -94,10 +94,11 @@ export const CustomGoalTypeSchema = z.object({
  */
 function checkAgainstScale(
   ctx: z.RefinementCtx, type: string, customType: CustomGoalType | undefined,
-  value: number | undefined, path: string, what: string,
+  value: number | undefined, path: string, what: string, commMeasure?: 'functions' | 'uses',
 ) {
   if (value === undefined || type === 'GOAL_ATTAINMENT_SCALE' || (type === 'CUSTOM' && !customType)) return;
-  const info = goalMeasureInfo({ type, customType } as MeasuredGoal);
+  // commMeasure matters: a Communication Functions goal measured by total uses has no top (functions do).
+  const info = goalMeasureInfo({ type, customType, commMeasure } as MeasuredGoal);
   if (info.max !== undefined && value > info.max) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: [path], message: `${what} can't be more than ${info.max}${info.unit}.` });
   }
@@ -120,6 +121,7 @@ export const GoalTemplateSchema = z.object({
     emptyToUndefinedNumber,
     z.number().min(0, "Minimum uses must be 0 or greater.").max(1000, "Minimum uses cannot exceed 1000.").optional()
   ).describe("Communication Functions only: the minimum total spontaneous uses per session, alongside the functions target."),
+  commMeasure: z.enum(['functions', 'uses']).optional(),
   isArchived: z.boolean().optional(),
 }).superRefine((template, ctx) => {
   const effectiveType = template.dataCaptureType || template.type;
@@ -130,7 +132,7 @@ export const GoalTemplateSchema = z.object({
   } else if (template.sessionTargetValue !== undefined && template.sessionTargetValue < 0) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['sessionTargetValue'], message: 'Target must be 0 or greater.' });
   }
-  checkAgainstScale(ctx, effectiveType, template.customType, template.sessionTargetValue, 'sessionTargetValue', 'Target');
+  checkAgainstScale(ctx, effectiveType, template.customType, template.sessionTargetValue, 'sessionTargetValue', 'Target', template.commMeasure);
 });
 
 export const AssignedGoalEditSchema = z.object({
@@ -147,6 +149,7 @@ export const AssignedGoalEditSchema = z.object({
     emptyToUndefinedNumber,
     z.number().min(0, "Minimum uses must be 0 or greater.").max(1000, "Minimum uses cannot exceed 1000.").optional()
   ).describe("Communication Functions only: the minimum total spontaneous uses per session, alongside the functions target."),
+  commMeasure: z.enum(['functions', 'uses']).optional(),
   targetDate: z.preprocess(
     (val) => (val === '' || val === null ? undefined : val),
     z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter a valid date.').optional()
@@ -202,7 +205,7 @@ export const AssignedGoalEditSchema = z.object({
     if (goal.baseline !== undefined && goal.baseline < 0) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['baseline'], message: 'Baseline must be 0 or greater.' });
     }
-    checkAgainstScale(ctx, goal.dataCaptureType, goal.customType, goal.sessionTargetValue, 'sessionTargetValue', 'Target');
-    checkAgainstScale(ctx, goal.dataCaptureType, goal.customType, goal.baseline, 'baseline', 'Baseline');
+    checkAgainstScale(ctx, goal.dataCaptureType, goal.customType, goal.sessionTargetValue, 'sessionTargetValue', 'Target', goal.commMeasure);
+    checkAgainstScale(ctx, goal.dataCaptureType, goal.customType, goal.baseline, 'baseline', 'Baseline', goal.commMeasure);
   }
 });

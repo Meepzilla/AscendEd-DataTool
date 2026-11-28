@@ -328,6 +328,27 @@ describe('reports accuracy fixes (C1, C2, C5)', () => {
     expect(byWeek[0].metTarget).toBe(false);
   });
 
+  it('charts a COMMUNICATION_FUNCTIONS goal measured by total uses as uses, with spontaneous and emerging uses', () => {
+    const usesGoal: Goal = goal({
+      id: 'g-uses', name: 'Uses', type: 'COMMUNICATION_FUNCTIONS', sessionTargetValue: 5, commMeasure: 'uses',
+    } as Partial<Goal>);
+    const sessions = [
+      // 4 spontaneous + 2 emerging = 6 uses (met); prompted uses are left out.
+      makeSession('s1', '2026-10-05', [{ goalId: 'g-uses', data: { requestingItemsSpontaneous: 3, protestingSpontaneous: 1, commentingEmerging: 2, greetingPrompted: 3 } }]),
+      // 2 uses: not met.
+      makeSession('s2', '2026-10-06', [{ goalId: 'g-uses', data: { requestingItemsSpontaneous: 2 } }]),
+    ];
+    const recorded = collectRecordedGoalSessions(usesGoal, sessions);
+    const bySession = groupGoalPoints(usesGoal, recorded, 'session', null);
+    expect(bySession.map(p => p.value)).toEqual([6, 2]);
+    expect(bySession.map(p => p.metTarget)).toEqual([true, false]);
+    expect(bySession[0].spontaneousFunctions).toBe(4);
+    expect(bySession[0].emergingFunctions).toBe(2);
+    const byWeek = groupGoalPoints(usesGoal, recorded, 'week', null);
+    expect(byWeek[0].value).toBe(4);
+    expect(byWeek[0].metCount).toBe(1);
+  });
+
   it('pools grouped fluency and prompting goals by their denominators', () => {
     const fluencyGoal: Goal = goal({
       id: 'g-flu', name: 'Fluency', type: 'FLUENCY_SYLLABLE_STUTTER', sessionTargetValue: 90,

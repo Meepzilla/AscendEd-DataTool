@@ -53,8 +53,11 @@ export interface Goal {
   sessionTargetValue?: number; // Target percentage (0-100) or specific count for some qualitative goals
   /** COMMUNICATION_FUNCTIONS only: the minimum total unprompted uses (spontaneous or emerging) per session
    *  that must accompany the functions target (a goal worded "at least 5 times for at least 2 different
-   *  functions"). Unset or 0 means the functions target alone decides, as before. */
+   *  functions"). Unset or 0 means the functions target alone decides, as before. Ignored for a 'uses' goal. */
   sessionTargetUses?: number;
+  /** COMMUNICATION_FUNCTIONS only: measured by the number of different functions (unset, the default) or by the
+   *  total uses across all functions ('uses'). See CommMeasure in goal-constants/communication.ts. */
+  commMeasure?: 'functions' | 'uses';
   targetDirection?: TargetDirection; // Defaults by goal type; see goalDirection()
   isArchived?: boolean; // New field for archiving
   /** The template the goal was assigned from, so it is still recognized after the student's copy is renamed. */
@@ -181,6 +184,8 @@ export interface GoalTemplate {
   sessionTargetValue?: number; // Target percentage (0-100) or specific count
   /** COMMUNICATION_FUNCTIONS only: the minimum total unprompted uses (spontaneous or emerging) per session, alongside the functions target. */
   sessionTargetUses?: number;
+  /** COMMUNICATION_FUNCTIONS only: measured by different functions (default) or total uses; copied to a student's goal. */
+  commMeasure?: 'functions' | 'uses';
   createdAt: Date;
   isDefault: boolean;
   userId?: string;

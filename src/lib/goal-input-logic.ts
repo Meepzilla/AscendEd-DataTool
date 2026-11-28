@@ -2,7 +2,7 @@ import type { CustomGoalType, TrialStatus } from './types';
 import { goalResponses } from './goal-measures';
 import { getGoalTypeDef, isCustomGoal } from './goal-types';
 import { gasLevelLabel } from './gas';
-import { scoreStory, summarizeCommunicationFunctions } from './goal-constants';
+import { measuresCommUses, scoreStory, summarizeCommunicationFunctions } from './goal-constants';
 
 /** The most trials a trial grid can have (the Number of Trials input's maximum). */
 export const MAX_TRIALS = 100;
@@ -39,7 +39,7 @@ export function applyFieldChange(captureType: string, data: Record<string, any>,
  * goalResponses (the same counting as Reports), so the card and the reports agree.
  */
 export function goalAccuracyText(
-  captureTypeOrGoal: string | { type: string; dataCaptureType?: string; customType?: CustomGoalType },
+  captureTypeOrGoal: string | { type: string; dataCaptureType?: string; customType?: CustomGoalType; commMeasure?: 'functions' | 'uses' },
   data: Record<string, any>,
 ): string {
   if (typeof captureTypeOrGoal === 'object' && isCustomGoal(captureTypeOrGoal)) {
@@ -70,6 +70,9 @@ export function goalAccuracyText(
     }
     case 'COMMUNICATION_FUNCTIONS': {
       const summary = summarizeCommunicationFunctions(data);
+      if (typeof captureTypeOrGoal === 'object' && measuresCommUses(captureTypeOrGoal)) {
+        return `${summary.unprompted} ${summary.unprompted === 1 ? 'use' : 'uses'} without a prompt across ${summary.functionsUsedUnprompted} ${summary.functionsUsedUnprompted === 1 ? 'function' : 'functions'} (${summary.spontaneous} spontaneous, ${summary.emerging} emerging, ${summary.prompted} prompted)`;
+      }
       return `${summary.functionsUsedUnprompted} of ${summary.functionCount} used without a prompt (${summary.spontaneous} spontaneous, ${summary.emerging} emerging, ${summary.prompted} prompted)`;
     }
     case 'STORY_ELEMENTS': {
