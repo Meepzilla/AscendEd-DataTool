@@ -23,7 +23,7 @@ function formatClock(totalSeconds: number): string {
 }
 
 export function CustomGoalInputs({ ctx, customTypeOverride }: { ctx: GoalInputContext; customTypeOverride?: CustomGoalType }) {
-  const { goal, data, isArchived, isLocked, handleChange, handleInteraction, calculateAccuracy } = ctx;
+  const { goal, data, isArchived, isLocked, handleChange, adjustCount, handleInteraction, calculateAccuracy } = ctx;
   const ct = customTypeOverride ?? goal.customType ?? defaultCustomGoalType('fallback');
   const [, setTick] = useState(0);
 
@@ -33,9 +33,13 @@ export function CustomGoalInputs({ ctx, customTypeOverride }: { ctx: GoalInputCo
     return () => window.clearInterval(id);
   }, [ct.kind, data.runningSince]);
 
-  const updateWhole = (fields: Record<string, any>) => {
-    const firstKey = Object.keys(fields)[0] || 'recorded';
-    handleChange(firstKey, { ...data, ...fields });
+  // Every button here updates from the latest stored data, never from the values this render was drawn with:
+  // two quick taps (or a tap while the card redraws) must both count, as on the built-in goal types.
+  const updateFrom = (field: string, change: (current: Record<string, any>) => Record<string, any> | null) => {
+    handleChange(field, (current: Record<string, any>) => {
+      const patch = change(current);
+      return patch ? { ...current, ...patch } : current;
+    });
   };
 
   // The behavior tools' update: a patch, or a function of the latest data that returns one.
@@ -102,7 +106,7 @@ export function CustomGoalInputs({ ctx, customTypeOverride }: { ctx: GoalInputCo
                   variant="outline"
                   size="icon"
                   className="h-9 w-9 min-h-11 min-w-11 shrink-0 touch-manipulation"
-                  onClick={(e) => handleInteraction(e, () => handleChange('correct', Math.max(0, (Number(data.correct) || 0) - 1)))}
+                  onClick={(e) => handleInteraction(e, () => adjustCount('correct', -1))}
                   disabled={isArchived}
                 >
                   <Minus className="h-4 w-4" />
@@ -122,7 +126,7 @@ export function CustomGoalInputs({ ctx, customTypeOverride }: { ctx: GoalInputCo
                   variant="outline"
                   size="icon"
                   className="h-9 w-9 min-h-11 min-w-11 shrink-0 touch-manipulation"
-                  onClick={(e) => handleInteraction(e, () => handleChange('correct', (Number(data.correct) || 0) + 1))}
+                  onClick={(e) => handleInteraction(e, () => adjustCount('correct', 1))}
                   disabled={isArchived}
                 >
                   <Plus className="h-4 w-4" />
@@ -140,7 +144,7 @@ export function CustomGoalInputs({ ctx, customTypeOverride }: { ctx: GoalInputCo
                     variant="outline"
                     size="icon"
                     className="h-9 w-9 min-h-11 min-w-11 shrink-0 touch-manipulation"
-                    onClick={(e) => handleInteraction(e, () => handleChange('approximate', Math.max(0, (Number(data.approximate) || 0) - 1)))}
+                    onClick={(e) => handleInteraction(e, () => adjustCount('approximate', -1))}
                     disabled={isArchived}
                   >
                     <Minus className="h-4 w-4" />
@@ -160,7 +164,7 @@ export function CustomGoalInputs({ ctx, customTypeOverride }: { ctx: GoalInputCo
                     variant="outline"
                     size="icon"
                     className="h-9 w-9 min-h-11 min-w-11 shrink-0 touch-manipulation"
-                    onClick={(e) => handleInteraction(e, () => handleChange('approximate', (Number(data.approximate) || 0) + 1))}
+                    onClick={(e) => handleInteraction(e, () => adjustCount('approximate', 1))}
                     disabled={isArchived}
                   >
                     <Plus className="h-4 w-4" />
@@ -178,7 +182,7 @@ export function CustomGoalInputs({ ctx, customTypeOverride }: { ctx: GoalInputCo
                   variant="outline"
                   size="icon"
                   className="h-9 w-9 min-h-11 min-w-11 shrink-0 touch-manipulation"
-                  onClick={(e) => handleInteraction(e, () => handleChange('incorrect', Math.max(0, (Number(data.incorrect) || 0) - 1)))}
+                  onClick={(e) => handleInteraction(e, () => adjustCount('incorrect', -1))}
                   disabled={isArchived}
                 >
                   <Minus className="h-4 w-4" />
@@ -198,7 +202,7 @@ export function CustomGoalInputs({ ctx, customTypeOverride }: { ctx: GoalInputCo
                   variant="outline"
                   size="icon"
                   className="h-9 w-9 min-h-11 min-w-11 shrink-0 touch-manipulation"
-                  onClick={(e) => handleInteraction(e, () => handleChange('incorrect', (Number(data.incorrect) || 0) + 1))}
+                  onClick={(e) => handleInteraction(e, () => adjustCount('incorrect', 1))}
                   disabled={isArchived}
                 >
                   <Plus className="h-4 w-4" />
@@ -230,7 +234,7 @@ export function CustomGoalInputs({ ctx, customTypeOverride }: { ctx: GoalInputCo
                   variant="outline"
                   size="icon"
                   className="h-10 w-10 min-h-11 min-w-11 shrink-0 touch-manipulation"
-                  onClick={(e) => handleInteraction(e, () => handleChange('count', Math.max(0, count - 1)))}
+                  onClick={(e) => handleInteraction(e, () => adjustCount('count', -1))}
                   disabled={isArchived}
                 >
                   <Minus className="h-4 w-4" />
@@ -250,7 +254,7 @@ export function CustomGoalInputs({ ctx, customTypeOverride }: { ctx: GoalInputCo
                   variant="outline"
                   size="icon"
                   className="h-10 w-10 min-h-11 min-w-11 shrink-0 touch-manipulation"
-                  onClick={(e) => handleInteraction(e, () => handleChange('count', count + 1))}
+                  onClick={(e) => handleInteraction(e, () => adjustCount('count', 1))}
                   disabled={isArchived}
                 >
                   <Plus className="h-4 w-4" />
@@ -281,20 +285,24 @@ export function CustomGoalInputs({ ctx, customTypeOverride }: { ctx: GoalInputCo
       case 'timer': {
         const label = ct.timer?.label || 'Timer';
         const summary = summarizeDuration(data);
-        const episodes: number[] = summary.episodes;
-        const start = () => updateWhole({ runningSince: Date.now() });
-        const stop = () => updateWhole({
-          episodeSeconds: [...episodes, summary.runningSeconds],
-          episodeStarts: [...(Array.isArray(data.episodeStarts) ? data.episodeStarts : []), new Date(Number(data.runningSince)).toISOString()],
-          runningSince: null,
+        // Start does nothing while running and Stop nothing while stopped, so a double tap can't add a second episode.
+        const start = () => updateFrom('runningSince', current => (current.runningSince ? null : { runningSince: Date.now() }));
+        const stop = () => updateFrom('runningSince', current => {
+          if (!current.runningSince) return null;
+          const latest = summarizeDuration(current);
+          return {
+            episodeSeconds: [...latest.episodes, latest.runningSeconds],
+            episodeStarts: [...(Array.isArray(current.episodeStarts) ? current.episodeStarts : []), new Date(Number(current.runningSince)).toISOString()],
+            runningSince: null,
+          };
         });
-        const reset = () => updateWhole({
+        const reset = () => updateFrom('episodeSeconds', () => ({
           episodeSeconds: [],
           episodeStarts: [],
           runningSince: null,
           totalSeconds: 0,
           episodeCount: 0,
-        });
+        }));
         return (
           <FormItem>
             <FormLabel>{label}</FormLabel>
@@ -376,10 +384,9 @@ export function CustomGoalInputs({ ctx, customTypeOverride }: { ctx: GoalInputCo
       case 'checklist': {
         const stepLabels = ct.checklist?.steps?.length ? ct.checklist.steps : ['Step 1'];
         const steps: boolean[] = Array.isArray(data.steps) ? data.steps : [];
-        const toggleStep = (index: number, checked: boolean) => {
-          const next = stepLabels.map((_, i) => (i === index ? checked : Boolean(steps[i])));
-          handleChange('steps', next);
-        };
+        const toggleStep = (index: number, checked: boolean) => updateFrom('steps', current => ({
+          steps: stepLabels.map((_, i) => (i === index ? checked : Boolean(Array.isArray(current.steps) && current.steps[i]))),
+        }));
         return (
           <FormItem>
             <div className="flex items-center justify-between">

@@ -194,6 +194,10 @@ export function planSessionImport(currentStudents: Student[], currentSessions: S
     const student = findStudent(s as ImportedSession);
     if (!student) { unmatchedCount++; continue; }
     const needed: Goal[] = [];
+    // The goal as the session recorded it, with the row's Data Capture Type: a session saved in Data Entry keeps
+    // these (originalGoalHeaders), and the CSV export reads each goal's capture type from them. Without them an
+    // imported session exported again lost a capture type that differs from the goal type.
+    const headers: Goal[] = [];
     const goals: SessionGoalData[] = (s.goals || []).map(g => {
       const { dataCaptureType, ...goalFields } = g;
       const gNameKey = nameKey(goalFields.goalName);
@@ -212,9 +216,10 @@ export function planSessionImport(currentStudents: Student[], currentSessions: S
         pendingGoals.set(key, goal);
         needed.push(goal);
       }
+      headers.push(dataCaptureType && dataCaptureType !== goal.dataCaptureType ? { ...goal, dataCaptureType } : { ...goal });
       return { ...goalFields, goalId: goal.id, goalName: goal.name };
     });
-    const session = { ...s, studentId: student.id, studentName: student.name, goals };
+    const session = { ...s, studentId: student.id, studentName: student.name, goals, ...(headers.length ? { originalGoalHeaders: headers } : {}) };
     if ((sourceSessionId && ids.has(sourceSessionId)) || contents.has(contentKey(session))) { duplicateCount++; continue; }
     for (const goal of needed) {
       if (student.goals.includes(goal)) continue;
