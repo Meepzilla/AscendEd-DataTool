@@ -1,7 +1,7 @@
 'use client';
 
-import React, { type ComponentProps, type Ref } from 'react';
-import { ChevronLeft, ChevronRight, PlusCircle, RotateCcw, Save, XCircle } from 'lucide-react';
+import React, { useEffect, useState, type ComponentProps, type Ref } from 'react';
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, PlusCircle, RotateCcw, Save, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import TouchControls from '@/components/forms/touch-controls';
 import LoadGroupMenu from '@/components/student-groups/LoadGroupMenu';
@@ -10,6 +10,10 @@ import type { StudentGroup } from '@/lib/student-groups';
 // Data Entry's bar at the bottom of the screen: Student and Goal at the left, Load Group, Remove All and the scroll
 // arrows in the middle (on the Student button's line), and Add Student, Reset and the save buttons at the right.
 // On a short screen (a phone turned sideways) it all goes on one line, with smaller buttons and shorter labels.
+// The bar can be collapsed to a slim strip (the button at its right end), so the student cards get the room; the
+// choice is remembered on this device. Keyboard shortcuts (save, next student, ...) still work while it is hidden.
+
+const COLLAPSED_KEY = 'ascended_data_entry_bar_collapsed';
 
 // The large buttons at the right stay 44px tall on a short screen too (they were h-9 there, below the
 // 44px touch target); only their horizontal padding shrinks.
@@ -37,9 +41,27 @@ export default function DataEntrySaveBar({
   canAddStudent, onAddStudent, onReset, onSave, onSaveAll, isSaving, isSavingAll,
 }: Props) {
   const busy = isSaving || isSavingAll;
+  const [collapsed, setCollapsed] = useState(false);
+  useEffect(() => {
+    try { setCollapsed(localStorage.getItem(COLLAPSED_KEY) === '1'); } catch { /* shown */ }
+  }, []);
+  const toggle = () => setCollapsed(prev => {
+    try { localStorage.setItem(COLLAPSED_KEY, prev ? '0' : '1'); } catch { /* this visit only */ }
+    return !prev;
+  });
+
   return (
     <div ref={barRef} className="data-entry-save-bar sticky bottom-0 left-0 right-0 z-10 bg-background mt-auto">
-      <div className="flex flex-wrap short:flex-nowrap justify-between items-center gap-1.5 sm:gap-2 p-2 short:py-1 border-t">
+      {collapsed && (
+        <div className="flex justify-center border-t px-2 py-0.5">
+          <Button type="button" variant="ghost" size="sm" className="min-h-11 px-4 text-muted-foreground" onClick={toggle}
+            aria-expanded={false} aria-controls="data-entry-bar-controls" title="Show the Student and Goal selector and the save buttons">
+            <ChevronUp className="mr-1.5 h-5 w-5" />
+            Show Student &amp; Save<span className="hidden sm:inline">&nbsp;Controls</span>
+          </Button>
+        </div>
+      )}
+      <div id="data-entry-bar-controls" className={`${collapsed ? 'hidden' : 'flex'} flex-wrap short:flex-nowrap justify-between items-center gap-1.5 sm:gap-2 p-2 short:py-1 border-t`}>
         <div className="self-start short:self-center">
           <TouchControls {...touchControls} />
         </div>
@@ -86,6 +108,11 @@ export default function DataEntrySaveBar({
           <Button onClick={onSaveAll} disabled={busy} size="lg" className={SHORT_BUTTON}>
             <Save className="mr-2 h-5 w-5" />
             {isSavingAll ? 'Saving All...' : 'Save All'}
+          </Button>
+          <Button type="button" variant="ghost" size="lg" className="w-11 px-0 text-muted-foreground" onClick={toggle}
+            aria-expanded={true} aria-controls="data-entry-bar-controls" aria-label="Hide the student and save controls"
+            title="Hide this bar to give the student cards more room">
+            <ChevronDown className="h-5 w-5" />
           </Button>
         </div>
       </div>
