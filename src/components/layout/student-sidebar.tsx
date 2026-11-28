@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { Suspense, useState, useMemo } from 'react';
 import { Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarMenuSkeleton, SidebarSeparator, useSidebar } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +10,8 @@ import { User, PlusCircle, Search, Edit3, Trash2, Archive, ArchiveRestore, Panel
 import { useStudentData } from '@/hooks/use-student-data';
 import type { Student } from '@/lib/types';
 import StudentProgressSidebar from '@/components/progress/student-progress-sidebar';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { LazyBoundary, retryableLazy } from '@/components/ui/lazy-boundary';
 import Link from 'next/link';
 import {
   Accordion,
@@ -24,18 +25,27 @@ import { Switch } from '../ui/switch';
 import { studentProfilePath } from '@/lib/helpers';
 
 
+const ConfirmationModal = retryableLazy(() => import('@/components/modals/confirmation-modal'));
+
 export default function StudentSidebar() {
   const { 
     students, 
     sessions, // Get all sessions
     loading, 
     error, 
-    selectedStudent, 
+    selectedStudent: selectedSnapshot,
+    studentFromContext,
     setSelectedStudent, 
     openAddStudentModal, 
     openEditStudentModal, 
-    openDeleteConfirmationModal 
+    deleteStudent,
   } = useStudentData();
+  // The selected student as stored now (goals added, renamed, archived), not the copy taken when it was picked.
+  const selectedStudent = selectedSnapshot ? studentFromContext : null;
+  // The trash icon's own confirmation. It used to share the dialog the student profile uses for Archive, so it
+  // archived the student there and did nothing elsewhere (opening an Archive dialog later, on the next profile).
+  const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [showArchived, setShowArchived] = useState(false);
   const { state: sidebarState, toggleSidebar } = useSidebar(); // To adapt content based on collapsed/expanded
@@ -149,7 +159,7 @@ export default function StudentSidebar() {
                               variant="ghost" 
                               size="icon" 
                               className="h-7 w-7" 
-                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDeleteConfirmationModal(student, 'student');}} 
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setStudentToDelete(student);}} 
                               title={`Delete ${student.name}`}
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
@@ -181,7 +191,10 @@ export default function StudentSidebar() {
                         </div>
                       </AccordionTrigger>
                       <AccordionContent className={cn("pt-0", sidebarState === 'collapsed' && "hidden")}>
-                        <StudentProgressSidebar student={selectedStudent} studentSessions={studentSpecificSessions} />
+                        {/* A fault in one student's progress stays in this panel instead of taking down every page. */}
+                        <LazyBoundary label="This student's progress">
+                          <StudentProgressSidebar student={selectedStudent} studentSessions={studentSpecificSessions} />
+                        </LazyBoundary>
                       </AccordionContent>
                     </AccordionItem>
                   </Accordion>
@@ -191,6 +204,27 @@ export default function StudentSidebar() {
         </ScrollArea>
       </SidebarContent>
 
+      {studentToDelete && (
+        <LazyBoundary label="Delete Student dialog" floating onDismiss={() => setStudentToDelete(null)}>
+          <Suspense fallback={null}>
+            <ConfirmationModal
+              isOpen
+              onClose={() => setStudentToDelete(null)}
+              title={`Delete Student: ${studentToDelete.name}?`}
+              description="Are you sure you want to permanently delete this student and all their associated session data? This action cannot be undone."
+              onConfirm={async () => {
+                const deleted = studentToDelete;
+                if (!(await deleteStudent(deleted.id))) return false;
+                setStudentToDelete(null);
+                // Leave the deleted student's own pages rather than show "Student Not Found".
+                const openId = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('id') : null;
+                if (pathname.startsWith('/student-profile/view') && openId === deleted.id) router.push('/student-profile');
+              }}
+              confirmText="Yes, Delete Permanently"
+            />
+          </Suspense>
+        </LazyBoundary>
+      )}
     </Sidebar>
   );
 }

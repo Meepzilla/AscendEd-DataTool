@@ -1,4 +1,4 @@
-import type { Goal, GoalTemplate, Student, TargetDirection } from '@/lib/types';
+import type { CustomGoalType, Goal, GoalTemplate, Student, TargetDirection } from '@/lib/types';
 import { goalTypeLabel } from '@/lib/helpers';
 import { formatGasLevel } from '@/lib/gas';
 
@@ -52,6 +52,24 @@ const push = (changes: GoalChange[], change: GoalChange | null) => {
 };
 
 /**
+ * The data capture method line: the method, and for a custom goal type which type. Swapping one custom type for
+ * another changes how the goal is measured as much as switching built-in methods, so it is listed too. `customType`
+ * left out of the values (not given at all) counts as unchanged.
+ */
+function captureChange(
+  originalCapture: string, originalCustom: CustomGoalType | undefined,
+  values: { dataCaptureType?: string; customType?: CustomGoalType },
+  fallbackType: string,
+): GoalChange | null {
+  if (values.dataCaptureType === undefined && !('customType' in values)) return null;
+  const capture = values.dataCaptureType || fallbackType;
+  const custom = 'customType' in values ? values.customType : originalCustom;
+  const customSwapped = capture === 'CUSTOM' && originalCapture === 'CUSTOM' && (custom?.id ?? null) !== (originalCustom?.id ?? null);
+  if (capture === originalCapture && !customSwapped) return null;
+  return { label: 'Data capture method', from: goalTypeLabel(originalCapture, originalCustom), to: goalTypeLabel(capture, custom) };
+}
+
+/**
  * What changed between a student's assigned goal and its current editor values, as plain
  * old-to-new lines. Only fields that actually differ are listed, so an untouched editor
  * shows nothing.
@@ -73,6 +91,7 @@ export interface AssignedGoalFormValues {
   targetDirection?: TargetDirection;
   isArchived?: boolean;
   dataCaptureType?: string;
+  customType?: CustomGoalType;
 }
 
 export function assignedGoalChanges(original: Goal, values: AssignedGoalFormValues): GoalChange[] {
@@ -82,13 +101,7 @@ export function assignedGoalChanges(original: Goal, values: AssignedGoalFormValu
   if (values.name !== undefined) push(changes, textChange('Goal name', original.name, values.name));
   if (values.smartGoal !== undefined) push(changes, textChange('Goal text', original.smartGoal, values.smartGoal));
 
-  if (values.dataCaptureType !== undefined) {
-    const dataCaptureType = values.dataCaptureType || original.type;
-    const originalCapture = original.dataCaptureType ?? original.type;
-    if (dataCaptureType !== originalCapture) {
-      changes.push({ label: 'Data capture method', from: goalTypeLabel(originalCapture), to: goalTypeLabel(dataCaptureType) });
-    }
-  }
+  push(changes, captureChange(original.dataCaptureType ?? original.type, original.customType, values, original.type));
 
   if (values.taskSteps !== undefined) {
     const taskSteps = Array.isArray(values.taskSteps) ? values.taskSteps.join('\n') : values.taskSteps;
@@ -197,6 +210,7 @@ export interface GoalTemplateFormValues {
   sessionTargetValue?: number | string;
   sessionTargetUses?: number | string;
   targetDirection?: TargetDirection;
+  customType?: CustomGoalType;
 }
 
 export function goalTemplateChanges(original: GoalTemplate, values: GoalTemplateFormValues): GoalChange[] {
@@ -209,13 +223,7 @@ export function goalTemplateChanges(original: GoalTemplate, values: GoalTemplate
   if (values.type !== undefined && values.type !== original.type) {
     changes.push({ label: 'Clinical goal category', from: goalTypeLabel(original.type), to: goalTypeLabel(values.type) });
   }
-  if (values.dataCaptureType !== undefined) {
-    const dataCaptureType = values.dataCaptureType || original.type;
-    const originalCapture = original.dataCaptureType ?? original.type;
-    if (dataCaptureType !== originalCapture) {
-      changes.push({ label: 'Data capture method', from: goalTypeLabel(originalCapture), to: goalTypeLabel(dataCaptureType) });
-    }
-  }
+  push(changes, captureChange(original.dataCaptureType ?? original.type, original.customType, values, values.type ?? original.type));
   if (values.sessionTargetValue !== undefined && formatTarget(values.sessionTargetValue) !== formatTarget(original.sessionTargetValue)) {
     changes.push({ label: 'Session target', from: formatTarget(original.sessionTargetValue), to: formatTarget(values.sessionTargetValue) });
   }

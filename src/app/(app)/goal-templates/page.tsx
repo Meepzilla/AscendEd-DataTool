@@ -124,6 +124,9 @@ export default function GoalTemplatesPage() {
   };
 
   
+  // The dialog gets the template as it is: its title and button read the current state ("Archive" for a visible
+  // template) and it flips isArchived itself when confirmed. Passing it pre-flipped made the dialog offer the
+  // opposite action and then flip it back, so nothing changed.
   const handleArchiveToggle = (template: GoalTemplate) => {
     openDeleteConfirmationModal(template, 'goalTemplate');
   };
@@ -159,6 +162,8 @@ export default function GoalTemplatesPage() {
           <Suspense fallback={null}><EditGoalTemplateModal templateToEdit={editingGoalTemplate} /></Suspense>
         </LazyBoundary>
       )}
+      {/* A built-in template is archived or unarchived (by its current state; never archived reads as visible), a
+          template of your own is deleted. */}
       {deletingStudent && deletingStudent.type === 'goalTemplate' && (
         <LazyBoundary label="Confirmation dialog" onDismiss={closeDeleteConfirmationModal}>
           <Suspense fallback={null}>
