@@ -10,7 +10,8 @@ import type { StudentGroup } from '@/lib/student-groups';
 // Data Entry's bar at the bottom of the screen: Student and Goal at the left, Load Group, Remove All and the scroll
 // arrows in the middle (on the Student button's line), and Add Student, Reset and the save buttons at the right.
 // On a short screen (a phone turned sideways) it all goes on one line, with smaller buttons and shorter labels.
-// The bar can be collapsed to a slim strip (the button at its right end), so the student cards get the room; the
+// The bar can be collapsed to a slim strip (the button in its top-right corner, above the save buttons), so the
+// student cards get the room; the
 // choice is remembered on this device. Keyboard shortcuts (save, next student, ...) still work while it is hidden.
 
 const COLLAPSED_KEY = 'ascended_data_entry_bar_collapsed';
@@ -53,7 +54,7 @@ export default function DataEntrySaveBar({
   return (
     <div ref={barRef} className="data-entry-save-bar sticky bottom-0 left-0 right-0 z-10 bg-background mt-auto">
       {collapsed && (
-        <div className="flex justify-center border-t px-2 py-0.5">
+        <div className="flex justify-end border-t px-2 py-0.5">
           <Button type="button" variant="ghost" size="sm" className="min-h-11 px-4 text-muted-foreground" onClick={toggle}
             aria-expanded={false} aria-controls="data-entry-bar-controls" title="Show the Student and Goal selector and the save buttons">
             <ChevronUp className="mr-1.5 h-5 w-5" />
@@ -61,7 +62,14 @@ export default function DataEntrySaveBar({
           </Button>
         </div>
       )}
-      <div id="data-entry-bar-controls" className={`${collapsed ? 'hidden' : 'flex'} flex-wrap short:flex-nowrap justify-between items-center gap-1.5 sm:gap-2 p-2 short:py-1 border-t`}>
+      <div id="data-entry-bar-controls" className={`${collapsed ? 'hidden' : 'flex'} relative flex-wrap short:flex-nowrap justify-between items-center gap-1.5 sm:gap-2 p-2 pr-14 short:py-1 border-t`}>
+        {/* Hide: in the top-right corner, above the save buttons. The row keeps a column free for it (pr-14), so
+            on a wide screen, where everything fits on one line, it sits beside Save All instead of over it. */}
+        <Button type="button" variant="ghost" size="lg" className="absolute right-1.5 top-2 short:top-1 w-11 px-0 text-muted-foreground" onClick={toggle}
+          aria-expanded={true} aria-controls="data-entry-bar-controls" aria-label="Hide the student and save controls"
+          title="Hide this bar to give the student cards more room">
+          <ChevronDown className="h-5 w-5" />
+        </Button>
         <div className="self-start short:self-center">
           <TouchControls {...touchControls} />
         </div>
@@ -108,11 +116,6 @@ export default function DataEntrySaveBar({
           <Button onClick={onSaveAll} disabled={busy} size="lg" className={SHORT_BUTTON}>
             <Save className="mr-2 h-5 w-5" />
             {isSavingAll ? 'Saving All...' : 'Save All'}
-          </Button>
-          <Button type="button" variant="ghost" size="lg" className="w-11 px-0 text-muted-foreground" onClick={toggle}
-            aria-expanded={true} aria-controls="data-entry-bar-controls" aria-label="Hide the student and save controls"
-            title="Hide this bar to give the student cards more room">
-            <ChevronDown className="h-5 w-5" />
           </Button>
         </div>
       </div>
