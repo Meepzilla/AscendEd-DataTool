@@ -21,6 +21,7 @@ import TargetDirectionField from '@/components/goal-templates/TargetDirectionFie
 import GasLevelDescriptionsField from '@/components/goal-templates/GasLevelDescriptionsField';
 import { goalTypeLabel } from '@/lib/helpers';
 import { goalMeasureInfo } from '@/lib/goal-measures';
+import { withFieldsForCaptureType } from '@/lib/goal-type-fields';
 
 type AddGoalTemplateFormData = z.infer<typeof GoalTemplateSchema>;
 
@@ -76,7 +77,8 @@ export default function AddGoalTemplateModal() {
     setIsSubmitting(true);
     const descriptions = Array.from({ length: 5 }, (_, i) => (data.gasLevelDescriptions?.[i] ?? '').trim());
     const gasLevelDescriptions = descriptions.some(Boolean) ? descriptions : undefined;
-    const newTemplate = await addGoalTemplate({ ...data, generatedSmartGoal: data.generatedSmartGoal ?? '', gasLevelDescriptions });
+    // A direction or custom type the chosen data capture method can't use is left out (goal-type-fields.ts).
+    const newTemplate = await addGoalTemplate(withFieldsForCaptureType({ ...data, generatedSmartGoal: data.generatedSmartGoal ?? '', gasLevelDescriptions }));
     setIsSubmitting(false);
     if (newTemplate) {
       closeAddGoalTemplateModal();

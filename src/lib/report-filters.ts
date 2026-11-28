@@ -28,8 +28,9 @@ const DAY = /^\d{4}-\d{2}-\d{2}$/;
 /** The dates a quick range covers today; undefined for "All" (no date filter). */
 export function quickRangeDates(range: QuickRange, now = new Date()): DateSpan | undefined {
   switch (range) {
-    case 'last-30': return { from: daysAgo(30, now), to: now };
-    case 'last-9-weeks': return { from: daysAgo(63, now), to: now };
+    // Today counts as one of the days: the last 30 days start 29 days ago, the last 9 weeks (63 days) 62 days ago.
+    case 'last-30': return { from: daysAgo(29, now), to: now };
+    case 'last-9-weeks': return { from: daysAgo(62, now), to: now };
     case 'school-year': return { from: schoolYearStart(now), to: now };
     default: return undefined;
   }

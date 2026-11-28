@@ -464,7 +464,7 @@ function detailSentences(name: string, goal: Goal, data: Record<string, any>[], 
       if (times.length === 0) {
         lines.push(`${name} did not respond in any of the ${plural(trials, 'trial')}.`);
       } else {
-        lines.push(`${name} responded in ${times.length} of ${plural(trials, 'trial')} (median ${round(middle!)} seconds, fastest ${round(times[0])} seconds)${noResponse ? ` and did not respond in ${noResponse}` : ''}.`);
+        lines.push(`${name} responded in ${times.length} of ${plural(trials, 'trial')} (median ${plural(round(middle!), 'second')}, fastest ${plural(round(times[0]), 'second')})${noResponse ? ` and did not respond in ${noResponse}` : ''}.`);
       }
     }
   }

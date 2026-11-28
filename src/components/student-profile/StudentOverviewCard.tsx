@@ -117,7 +117,7 @@ export default function StudentOverviewCard({ student, sessions }: { student: St
               {overview.lines.map(line => <ServiceLineBlock key={line.type} line={line} />)}
               <Row label="School year total">{formatMinutes(service.schoolYear)}</Row>
               {service.untimed > 0 && (
-                <p className="text-xs text-muted-foreground">{service.untimed} session{service.untimed === 1 ? '' : 's'} without start and end times {service.untimed === 1 ? 'isn\'t' : 'aren\'t'} counted.</p>
+                <p className="text-xs text-muted-foreground">{service.untimed} session{service.untimed === 1 ? '' : 's'} without start and end times or a service split {service.untimed === 1 ? 'isn\'t' : 'aren\'t'} counted.</p>
               )}
             </>
           ) : service.required ? (
@@ -145,9 +145,10 @@ export default function StudentOverviewCard({ student, sessions }: { student: St
               <p className="text-sm text-muted-foreground">Add the required minutes with Edit IEP Details to track them.</p>
             </>
           )}
-          {service.per !== 'year' && <Row label="School year">{formatMinutes(service.schoolYear)}</Row>}
-          {service.untimed > 0 && (
-            <p className="text-xs text-muted-foreground">{service.untimed} session{service.untimed === 1 ? '' : 's'} without start and end times {service.untimed === 1 ? 'isn\'t' : 'aren\'t'} counted.</p>
+          {/* With several service types the block above already ends with the school year total and this note. */}
+          {!multiType && service.per !== 'year' && <Row label="School year">{formatMinutes(service.schoolYear)}</Row>}
+          {!multiType && service.untimed > 0 && (
+            <p className="text-xs text-muted-foreground">{service.untimed} session{service.untimed === 1 ? '' : 's'} without start and end times or a service split {service.untimed === 1 ? 'isn\'t' : 'aren\'t'} counted.</p>
           )}
         </Panel>
 
@@ -156,7 +157,8 @@ export default function StudentOverviewCard({ student, sessions }: { student: St
             <p className="text-sm text-muted-foreground">No sessions this school year yet.</p>
           ) : (
             <>
-              <Row label="Attended">{overview.attendanceRate}%</Row>
+              {/* Provider absences and no-school days aren't the student's: left out, as on Reports' Student attendance. */}
+              <Row label="Student attendance">{overview.attendanceRate === null ? '—' : `${overview.attendanceRate}%`}</Row>
               <Row label="Sessions held">{attendance.held}</Row>
               <Row label="Sessions missed">{attendance.missed}</Row>
               {attendance.byReason.map(r => (

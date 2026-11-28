@@ -172,9 +172,11 @@ export function captureTypeOf(goal: { type: string; dataCaptureType?: string }):
 
 /** Behavior goals usually aim to reduce something; other goal types aim to increase. */
 export function goalDirection(goal: { type: string; dataCaptureType?: string; targetDirection?: TargetDirection; customType?: { direction?: TargetDirection } }): TargetDirection {
-  if (goal.targetDirection) return goal.targetDirection;
-  if (goal.type === 'CUSTOM' && goal.customType?.direction) return goal.customType.direction;
   const type = captureTypeOf(goal);
+  // A chosen direction counts only where the method offers one: one left over from an earlier method (a behavior
+  // goal switched to Discrete Trials) would otherwise turn "at least 80%" into "at most 80%".
+  if (goal.targetDirection && hasTargetDirection(type)) return goal.targetDirection;
+  if (type === 'CUSTOM' && goal.customType?.direction) return goal.customType.direction;
   // A quicker response is the aim; other communication measures (times used, minutes) aim up.
   if (type === 'RESPONSE_TIME') return 'decrease';
   return BEHAVIOR_GOAL_TYPES.includes(type) ? 'decrease' : 'increase';

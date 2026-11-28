@@ -1,6 +1,6 @@
 import type { ServicePer, ServiceRequirement, ServiceType, SessionData, StudentIep } from './types';
 import { SERVICE_TYPE_LABELS, SERVICE_TYPES } from './types';
-import { attendanceSummary, type AttendanceSummary } from './attendance';
+import { attendanceRates, attendanceSummary, type AttendanceSummary } from './attendance';
 import { dateValue } from './aim-line';
 import { latestSessionDate, parseDateOnly, sessionMinutes } from './helpers';
 
@@ -57,6 +57,14 @@ export function sessionServiceMinutes(session: Pick<SessionData, 'time' | 'endTi
   return duration !== null ? { related: duration } : {};
 }
 
+/**
+ * A held session's service minutes in total: its split by service type when it has one, otherwise its start to end
+ * time. The totals use this, the same minutes as the per-type rows, so the two always add up.
+ */
+export function sessionServiceTotal(session: Pick<SessionData, 'time' | 'endTime' | 'missed' | 'serviceMinutes'>): number {
+  return Object.values(sessionServiceMinutes(session)).reduce((sum, value) => sum + (value ?? 0), 0);
+}
+
 /** The current week (Monday to Sunday), month or school year containing `now`, and the one before it. */
 export function servicePeriods(per: ServicePer, now = new Date()) {
   if (per === 'year') {
@@ -101,7 +109,7 @@ export interface StudentOverview {
   /** Per-type breakdown of the totals in `service`, one entry per requirement line. */
   lines: ServiceLineSummary[];
   attendance: AttendanceSummary;
-  /** Held sessions out of held + missed this school year, as a percentage (null without any). */
+  /** The student's attendance this school year: held sessions out of those held or missed for a student reason, as a percentage (null without any). */
   attendanceRate: number | null;
   lastSessionDate: string | null;
 }
@@ -120,7 +128,7 @@ export function studentOverview(sessions: SessionData[], iep: StudentIep | undef
   const { current, previous } = servicePeriods(per, now);
   const minutesIn = (from: Date, to: Date) => held
     .filter(s => { const t = parseDateOnly(s.date).getTime(); return t >= from.getTime() && t < to.getTime(); })
-    .reduce((sum, s) => sum + (sessionMinutes(s) ?? 0), 0);
+    .reduce((sum, s) => sum + sessionServiceTotal(s), 0);
   const typeMinutesIn = (type: ServiceType, from: Date, to: Date) => held
     .filter(s => { const t = parseDateOnly(s.date).getTime(); return t >= from.getTime() && t < to.getTime(); })
     .reduce((sum, s) => sum + (sessionServiceMinutes(s)[type] ?? 0), 0);
@@ -134,8 +142,8 @@ export function studentOverview(sessions: SessionData[], iep: StudentIep | undef
       per,
       thisPeriod: minutesIn(current.start, current.end),
       lastPeriod: minutesIn(previous.start, previous.end),
-      schoolYear: heldInYear.reduce((sum, s) => sum + (sessionMinutes(s) ?? 0), 0),
-      untimed: heldInYear.filter(s => sessionMinutes(s) === null).length,
+      schoolYear: heldInYear.reduce((sum, s) => sum + sessionServiceTotal(s), 0),
+      untimed: heldInYear.filter(s => sessionServiceTotal(s) === 0).length,
     },
     lines: lines.map(line => {
       const periodsForLine = servicePeriods(line.per, now);
@@ -150,7 +158,9 @@ export function studentOverview(sessions: SessionData[], iep: StudentIep | undef
       };
     }),
     attendance,
-    attendanceRate: total ? Math.round((attendance.held / total) * 100) : null,
+    // The student's attendance, as on Reports: sessions missed because the provider was absent or there was no
+    // school aren't counted against the student.
+    attendanceRate: total ? attendanceRates(attendance).student : null,
     lastSessionDate: last,
   };
 }
@@ -181,14 +191,16 @@ export interface PeriodServiceByType {
 }
 
 export interface PeriodService {
-  /** Minutes delivered in the period (held sessions' start to end times). */
+  /** Minutes delivered in the period (each held session's service split, or its start to end time). */
   delivered: number;
-  /** Held sessions without both times, so not counted. */
+  /** Held sessions with neither both times nor a service split, so not counted. */
   untimed: number;
   required: number | null;
   per: ServicePer;
   /** Weeks or months in the period (for per week/month requirements). */
   periods: number;
+  /** Delivered minutes per week or month, over a period of at least one (null when shorter, or per year). */
+  averagePerPeriod: number | null;
   /** Minutes the requirement adds up to over the period (per week/month); the yearly total for per year. */
   expected: number | null;
   /** Delivered and required minutes split by service type. */
@@ -207,7 +219,7 @@ export function periodService(sessions: SessionData[], iep: StudentIep | undefin
     return t >= fromDay && t <= toDay;
   });
   const held = inRange.filter(s => !s.missed);
-  const delivered = held.reduce((sum, s) => sum + (sessionMinutes(s) ?? 0), 0);
+  const delivered = held.reduce((sum, s) => sum + sessionServiceTotal(s), 0);
   const lines = serviceLines(iep);
   const per = lines.length > 0 ? lines[0].per : (iep?.servicePer ?? 'week');
   const required = lines.length > 0 && lines.every(l => l.per === per) ? lines.reduce((sum, l) => sum + l.minutes, 0) : null;
@@ -227,10 +239,13 @@ export function periodService(sessions: SessionData[], iep: StudentIep | undefin
   const typesInOrder = SERVICE_TYPES.filter(t => lines.some(l => l.type === t) || deliveredByType.has(t));
   return {
     delivered,
-    untimed: held.filter(s => sessionMinutes(s) === null).length,
+    untimed: held.filter(s => sessionServiceTotal(s) === 0).length,
     required,
     per,
     periods: Math.round(periods * 10) / 10,
+    // An average per week or month is only stated over at least one whole week or month: over two days, one
+    // 30-minute session would read as "300 min per week".
+    averagePerPeriod: per !== 'year' && periods >= 1 ? Math.round(delivered / periods) : null,
     expected: required === null ? null : Math.round(required * periods),
     byType: typesInOrder.map(type => {
       const line = lines.find(l => l.type === type);

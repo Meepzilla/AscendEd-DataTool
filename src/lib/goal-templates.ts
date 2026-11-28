@@ -1,11 +1,13 @@
 import type { Goal, GoalTemplate, Student } from './types';
 import { generateUUID } from './helpers';
 import { cloneCustomGoalType } from './goal-types/custom';
+import { withFieldsForCaptureType } from './goal-type-fields';
 import type { CustomGoalType } from './types';
 
 /** A student goal made from a template. */
 export function goalFromTemplate(template: GoalTemplate): Goal {
-  return {
+  // A template saved before its leftover fields were tidied (goal-type-fields.ts) still gives a clean goal.
+  return withFieldsForCaptureType<Goal>({
     id: generateUUID(),
     templateId: template.id,
     name: template.name,
@@ -21,7 +23,7 @@ export function goalFromTemplate(template: GoalTemplate): Goal {
     ...(template.sampleUnit ? { sampleUnit: template.sampleUnit } : {}),
     ...(template.gasLevelDescriptions?.length ? { gasLevelDescriptions: [...template.gasLevelDescriptions] } : {}),
     ...(template.customType ? { customType: cloneCustomGoalType(template.customType) } : {}),
-  };
+  });
 }
 
 /**

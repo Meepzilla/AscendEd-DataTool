@@ -226,7 +226,7 @@ function builtInFormatValue(type: BuiltInGoalType, goal: MeasuredGoal, value: nu
     case 'BEHAVIOR_DURATION':
     case 'COMMUNICATION_DURATION': return `${v} min`;
     case 'BEHAVIOR_LATENCY':
-    case 'RESPONSE_TIME': return `${v} seconds`;
+    case 'RESPONSE_TIME': return `${v} ${v === 1 ? 'second' : 'seconds'}`;
     case 'QUALITATIVE_OBSERVATION':
     case 'COGNITIVE': return `${v} out of 5`;
     case 'BEHAVIOR_ABC': return goalDirection(goal) === 'decrease' ? String(v) : `${v}%`;

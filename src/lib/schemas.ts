@@ -1,5 +1,7 @@
 import { z } from 'zod';
-import { CUSTOM_CHART_IDS, CUSTOM_MEASURE_KINDS, GOAL_TYPE_VALUES } from './types';
+import { CUSTOM_CHART_IDS, CUSTOM_MEASURE_KINDS, GOAL_TYPE_VALUES, type CustomGoalType } from './types';
+import { goalMeasureInfo } from './goal-measures';
+import type { MeasuredGoal } from './goal-types';
 
 // Zod validation schemas separated from pure TypeScript types (types.ts) so non-form modules
 // importing runtime constants from types.ts do not pull Zod into their client bundle.
@@ -85,6 +87,22 @@ export const CustomGoalTypeSchema = z.object({
   }
 });
 
+/**
+ * A target or baseline above the top of the goal type's scale (over 100%, over 5 on a 1-5 rating) can never be met
+ * or charted. The form's number box stops it in the browser, but Ctrl+Enter saves without the browser's check, so
+ * the schema checks it too. GAS levels are checked separately; a custom type without its definition is skipped.
+ */
+function checkAgainstScale(
+  ctx: z.RefinementCtx, type: string, customType: CustomGoalType | undefined,
+  value: number | undefined, path: string, what: string,
+) {
+  if (value === undefined || type === 'GOAL_ATTAINMENT_SCALE' || (type === 'CUSTOM' && !customType)) return;
+  const info = goalMeasureInfo({ type, customType } as MeasuredGoal);
+  if (info.max !== undefined && value > info.max) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: [path], message: `${what} can't be more than ${info.max}${info.unit}.` });
+  }
+}
+
 export const GoalTemplateSchema = z.object({
   name: z.string().min(3, "Template name is required."),
   type: z.enum(GOAL_TYPE_VALUES),
@@ -112,6 +130,7 @@ export const GoalTemplateSchema = z.object({
   } else if (template.sessionTargetValue !== undefined && template.sessionTargetValue < 0) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['sessionTargetValue'], message: 'Target must be 0 or greater.' });
   }
+  checkAgainstScale(ctx, effectiveType, template.customType, template.sessionTargetValue, 'sessionTargetValue', 'Target');
 });
 
 export const AssignedGoalEditSchema = z.object({
@@ -183,5 +202,7 @@ export const AssignedGoalEditSchema = z.object({
     if (goal.baseline !== undefined && goal.baseline < 0) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['baseline'], message: 'Baseline must be 0 or greater.' });
     }
+    checkAgainstScale(ctx, goal.dataCaptureType, goal.customType, goal.sessionTargetValue, 'sessionTargetValue', 'Target');
+    checkAgainstScale(ctx, goal.dataCaptureType, goal.customType, goal.baseline, 'baseline', 'Baseline');
   }
 });

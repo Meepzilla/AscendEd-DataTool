@@ -492,7 +492,7 @@ export function makeCustomDef(ct: CustomGoalType): GoalTypeDefinition {
         case 'trials':
           return `${v}%`;
         case 'latency':
-          return `${v} seconds`;
+          return `${v} ${v === 1 ? 'second' : 'seconds'}`;
         case 'utterances':
           return formatSampleLength(value, sampleGoal.sampleUnit);
         case 'counter':
