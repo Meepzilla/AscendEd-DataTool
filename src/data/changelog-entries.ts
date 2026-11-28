@@ -12,6 +12,13 @@ export interface ChangelogEntry {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    date: '2026-11-28',
+    title: 'Menu Bar Stays at the Bottom on Reports Again',
+    description: 'With the menu bar at the bottom, scrolling down Reports could leave the menu bar and the copyright footer stuck partway down the page, on top of the charts. They now stay where they belong: the menu bar at the bottom of the screen while you scroll, and the footer after the last chart.',
+    type: 'fix',
+    icon: PanelBottom,
+  },
+  {
     date: '2026-11-27',
     title: 'New Scripted-Utterance Default Goals & Evidence-Based Terminology',
     description: 'Added three default Communication Count goals to the built-in bank for using familiar scripts or phrases during upcoming transitions, producing new scripted utterances for a target communication function, and using familiar scripts or known phrases to request desired objects or actions during familiar routines. Six existing built-in templates were also refreshed to use evidence-based functional script and phrase terminology instead of GLP/gestalt phrasing; stored copies update automatically without duplicating templates or overwriting your edits.',

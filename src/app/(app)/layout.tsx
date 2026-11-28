@@ -172,8 +172,11 @@ export default function AppLayout({
             {/* Storage failures stay visible on every page until fixed or dismissed. */}
             <StorageFailureBanner />
             {/* On Reports the page is at least as tall as the screen, so the footer (copyright, privacy notice,
-                hotkeys) sits just below it and is reached by scrolling down, even when the open tab is short. */}
-            <div className={`flex-1 p-4 sm:p-6 lg:p-8${footerBelowScreen ? ' min-h-full shrink-0' : ''}`}>
+                hotkeys) sits just below it and is reached by scrolling down, even when the open tab is short.
+                flex: 1 0 auto keeps the content's own height as the base: with flex-1 (a zero base) plus a minimum
+                height, a long page was held to exactly one screen and overflowed it, so the bottom menu bar and the
+                footer were drawn partway down the charts. */}
+            <div className={`${footerBelowScreen ? 'flex-[1_0_auto] min-h-full' : 'flex-1'} p-4 sm:p-6 lg:p-8`}>
               {children}
             </div>
             {/* Menu bar at the bottom: after the page and above the footer. It sticks to the bottom of the screen
