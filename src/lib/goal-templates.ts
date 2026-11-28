@@ -16,6 +16,7 @@ export function goalFromTemplate(template: GoalTemplate): Goal {
     smartGoal: template.generatedSmartGoal || `SMART goal for ${template.name}`,
     sessionTargetValue: template.sessionTargetValue,
     sessionTargetUses: template.sessionTargetUses,
+    ...(template.commMeasure ? { commMeasure: template.commMeasure } : {}),
     targetDirection: template.targetDirection,
     ...(template.baseline !== undefined ? { baseline: template.baseline } : {}),
     ...(template.taskSteps?.length ? { taskSteps: [...template.taskSteps] } : {}),

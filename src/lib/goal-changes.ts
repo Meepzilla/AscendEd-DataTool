@@ -2,6 +2,9 @@ import type { CustomGoalType, Goal, GoalTemplate, Student, TargetDirection } fro
 import { goalTypeLabel } from '@/lib/helpers';
 import { formatGasLevel } from '@/lib/gas';
 
+const commMeasureLabel = (measure: 'functions' | 'uses' | undefined) =>
+  measure === 'uses' ? 'Total uses (all functions)' : 'Different functions';
+
 /** One changed field in a goal editor: its label and the old and new values as shown. */
 export interface GoalChange {
   label: string;
@@ -79,6 +82,7 @@ export interface AssignedGoalFormValues {
   smartGoal?: string;
   sessionTargetValue?: number | string;
   sessionTargetUses?: number | string;
+  commMeasure?: 'functions' | 'uses';
   targetDate?: string;
   taskSteps?: string | string[];
   listItems?: string | string[];
@@ -158,6 +162,9 @@ export function assignedGoalChanges(original: Goal, values: AssignedGoalFormValu
   if (values.sessionTargetUses !== undefined && formatTarget(values.sessionTargetUses) !== formatTarget(original.sessionTargetUses)) {
     changes.push({ label: 'Minimum uses per session', from: formatTarget(original.sessionTargetUses), to: formatTarget(values.sessionTargetUses) });
   }
+  if (values.commMeasure !== undefined && (values.commMeasure || 'functions') !== (original.commMeasure || 'functions')) {
+    changes.push({ label: 'Measure progress by', from: commMeasureLabel(original.commMeasure), to: commMeasureLabel(values.commMeasure) });
+  }
   if (values.targetDate !== undefined && formatDate(values.targetDate) !== formatDate(original.targetDate)) {
     changes.push({ label: 'Target date', from: formatDate(original.targetDate), to: formatDate(values.targetDate) });
   }
@@ -209,6 +216,7 @@ export interface GoalTemplateFormValues {
   gasLevelDescriptions?: string[];
   sessionTargetValue?: number | string;
   sessionTargetUses?: number | string;
+  commMeasure?: 'functions' | 'uses';
   targetDirection?: TargetDirection;
   customType?: CustomGoalType;
 }
@@ -229,6 +237,9 @@ export function goalTemplateChanges(original: GoalTemplate, values: GoalTemplate
   }
   if (values.sessionTargetUses !== undefined && formatTarget(values.sessionTargetUses) !== formatTarget(original.sessionTargetUses)) {
     changes.push({ label: 'Minimum uses per session', from: formatTarget(original.sessionTargetUses), to: formatTarget(values.sessionTargetUses) });
+  }
+  if (values.commMeasure !== undefined && (values.commMeasure || 'functions') !== (original.commMeasure || 'functions')) {
+    changes.push({ label: 'Measure progress by', from: commMeasureLabel(original.commMeasure), to: commMeasureLabel(values.commMeasure) });
   }
   if (values.gasLevelDescriptions !== undefined) {
     const originalGas = Array.from({ length: 5 }, (_, i) => original.gasLevelDescriptions?.[i] ?? '');

@@ -3,7 +3,7 @@
 
 import React, { useMemo } from 'react';
 import type { Student, Goal, SessionData } from '@/lib/types';
-import { captureTypeOf, goalDirection, progressTowardTarget, summarizeCommunicationFunctions } from '@/lib/goal-constants';
+import { captureTypeOf, commUsesMinimum, goalDirection, progressTowardTarget, summarizeCommunicationFunctions } from '@/lib/goal-constants';
 import { goalMeasure, goalMeasureInfo } from '@/lib/goal-measures';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -37,8 +37,8 @@ const calculateProgressForGoal = (goal: Goal, latestSessionForGoal: SessionData 
   if (target !== undefined && (target > 0 || goalDirection(goal) === 'decrease')) {
     // The value as shown (to 0.1), as meetsTarget compares it.
     const primary = progressTowardTarget(Math.round(value * 10) / 10, target, goalDirection(goal));
-    if (captureTypeOf(goal) === 'COMMUNICATION_FUNCTIONS' && goal.sessionTargetUses && goal.sessionTargetUses > 0) {
-      const usesProgress = progressTowardTarget(summarizeCommunicationFunctions(data).unprompted, goal.sessionTargetUses, 'increase');
+    if (captureTypeOf(goal) === 'COMMUNICATION_FUNCTIONS' && commUsesMinimum(goal) > 0) {
+      const usesProgress = progressTowardTarget(summarizeCommunicationFunctions(data).unprompted, commUsesMinimum(goal), 'increase');
       return Math.min(primary, usesProgress);
     }
     return primary;

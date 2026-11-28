@@ -2,7 +2,7 @@ import type { CustomGoalType, Goal, GoalType, TargetDirection } from '../types';
 import type { GoalMeasureInfo } from '../goal-measures';
 
 /** The goal fields measuring and formatting need; goals are measured by the type their data was entered as. */
-export type MeasuredGoal = Pick<Goal, 'type' | 'targetDirection' | 'dataCaptureType' | 'sessionTargetUses' | 'customType' | 'sampleUnit'>;
+export type MeasuredGoal = Pick<Goal, 'type' | 'targetDirection' | 'dataCaptureType' | 'sessionTargetUses' | 'commMeasure' | 'customType' | 'sampleUnit'>;
 
 /**
  * Everything the app needs to know about a goal type in one place: how its session data starts and is finalized on

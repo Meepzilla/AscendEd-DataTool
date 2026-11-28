@@ -18,6 +18,7 @@ import {
 import { clockInputValue, formatClockTime, withClockTime } from '@/lib/behavior-timing';
 import { useSessionDate } from '../session-date-context';
 import { useAbcLists } from '@/hooks/use-abc-lists';
+import { readStudentLinkedPref, writeStudentLinkedPref } from '@/lib/student-linked-prefs';
 
 // Data entry for the behavior goal types. `update` merges fields into the goal's session data;
 // `interact` runs a change unless the goal is archived or the student access lock is on.
@@ -405,6 +406,7 @@ export const AbcInput: React.FC<BehaviorInputProps> = (props) => {
 };
 
 // The interval setup last used for each goal on this device, so it doesn't have to be chosen every session.
+// Keyed by goal id, so it is a student-linked preference (memory only while a passcode is on).
 const INTERVAL_SETUPS_KEY = 'ascended_interval_setups';
 const INTERVAL_CUE_KEY = 'ascended_interval_cue';
 
@@ -414,6 +416,15 @@ function readStored<T>(key: string, fallback: T): T {
     return value ? JSON.parse(value) : fallback;
   } catch {
     return fallback;
+  }
+}
+function readIntervalSetups(): Record<string, IntervalSetup> {
+  try {
+    const value = readStudentLinkedPref(INTERVAL_SETUPS_KEY);
+    const parsed: unknown = value ? JSON.parse(value) : null;
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as Record<string, IntervalSetup> : {};
+  } catch {
+    return {};
   }
 }
 function writeStored(key: string, value: unknown) {
@@ -466,7 +477,7 @@ export const IntervalInput: React.FC<BehaviorInputProps> = (props) => {
   const { prepare, cue } = useIntervalCue();
 
   useEffect(() => {
-    if (goalId) setRemembered(readStored<Record<string, IntervalSetup>>(INTERVAL_SETUPS_KEY, {})[goalId] ?? {});
+    if (goalId) setRemembered(readIntervalSetups()[goalId] ?? {});
     setCueOn(readStored(INTERVAL_CUE_KEY, false));
   }, [goalId]);
 
@@ -488,7 +499,7 @@ export const IntervalInput: React.FC<BehaviorInputProps> = (props) => {
   const setupFields = { method, intervalSeconds, intervalCount };
   const changeSetup = (fields: Partial<IntervalSetup>) => {
     const next = { ...setupFields, ...fields };
-    if (goalId) writeStored(INTERVAL_SETUPS_KEY, { ...readStored(INTERVAL_SETUPS_KEY, {}), [goalId]: next });
+    if (goalId) writeStudentLinkedPref(INTERVAL_SETUPS_KEY, JSON.stringify({ ...readIntervalSetups(), [goalId]: next }));
     setRemembered(next);
     update(current => {
       const curIntervals = summarizeIntervals(current, Date.now(), next).intervals;

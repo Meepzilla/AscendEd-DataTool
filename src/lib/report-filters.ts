@@ -1,4 +1,5 @@
 import { schoolYearStart } from './school-year';
+import { readStudentLinkedPref, writeStudentLinkedPref } from './student-linked-prefs';
 
 // Reports' filters, remembered on this device: the date range (a quick range such as "Last 9 weeks", worked out
 // again from today each time, or custom dates) and the goal chosen for each student. Only ids and dates are
@@ -50,6 +51,7 @@ export function customRangeChoice(span: DateSpan | undefined): RangeChoice | nul
 }
 
 const RANGE_KEY = 'ascended_report_range';
+// Maps student ids to goal ids, so it is a student-linked preference (memory only while a passcode is on).
 const GOAL_KEY = 'ascended_report_goals';
 
 function read<T>(key: string): T | null {
@@ -86,18 +88,27 @@ export function rememberRangeChoice(choice: RangeChoice | null): void {
   write(RANGE_KEY, choice && 'quick' in choice && choice.quick === 'all' ? null : choice);
 }
 
+function readGoalChoices(): Record<string, unknown> | null {
+  try {
+    const raw = readStudentLinkedPref(GOAL_KEY);
+    return raw ? JSON.parse(raw) as Record<string, unknown> : null;
+  } catch {
+    return null;
+  }
+}
+
 /** The goal last chosen for the student, if it is still one of `goalIds`. */
 export function readGoalChoice(studentId: string, goalIds: string[]): string | undefined {
-  const stored = read<Record<string, unknown>>(GOAL_KEY);
+  const stored = readGoalChoices();
   const goalId = stored && typeof stored === 'object' ? stored[studentId] : undefined;
   return typeof goalId === 'string' && goalIds.includes(goalId) ? goalId : undefined;
 }
 
 export function rememberGoalChoice(studentId: string, goalId: string | undefined): void {
-  const stored = read<Record<string, unknown>>(GOAL_KEY);
+  const stored = readGoalChoices();
   const next: Record<string, unknown> = stored && typeof stored === 'object' && !Array.isArray(stored) ? { ...stored } : {};
   if (goalId) next[studentId] = goalId; else delete next[studentId];
-  write(GOAL_KEY, Object.keys(next).length ? next : null);
+  writeStudentLinkedPref(GOAL_KEY, Object.keys(next).length ? JSON.stringify(next) : null);
 }
 
 export type ReportTab = 'progress' | 'prompts' | 'trials' | 'attendance';
@@ -164,25 +175,17 @@ export function rememberGoalChartView(view: GoalChartView): void {
 
 // The student last chosen on Reports (and the Progress Report), remembered on this device so the page opens on
 // the same student after switching to another page, closing the app or reloading. Only the student's id is
-// kept (a random id, not a name). A remembered student who has since been archived or deleted is ignored.
+// kept (a random id, not a name), and only in memory while a passcode is on. A remembered student who has since
+// been archived or deleted is ignored.
 const REPORT_STUDENT_KEY = 'ascended_report_student';
 
 export function rememberReportStudent(studentId: string): void {
-  try {
-    window.localStorage.setItem(REPORT_STUDENT_KEY, studentId);
-  } catch {
-    // Not remembered; the page still works for this visit.
-  }
+  writeStudentLinkedPref(REPORT_STUDENT_KEY, studentId);
 }
 
 /** The remembered student if they are still in `activeStudentIds`, else the first of them (undefined when there are none). */
 export function defaultReportStudent(activeStudentIds: string[]): string | undefined {
-  let remembered: string | null = null;
-  try {
-    remembered = window.localStorage.getItem(REPORT_STUDENT_KEY);
-  } catch {
-    remembered = null;
-  }
+  const remembered = readStudentLinkedPref(REPORT_STUDENT_KEY);
   return remembered && activeStudentIds.includes(remembered) ? remembered : activeStudentIds[0];
 }
 

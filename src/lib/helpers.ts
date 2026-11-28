@@ -89,7 +89,7 @@ export function checkImportFileSize(bytes: number): void {
  * behavior goals a count, minutes, % or seconds with "≤" (decrease goals, the default) or "≥" (increase goals).
  */
 export function formatGoalTarget(
-  typeOrGoal: string | { type: string; dataCaptureType?: string; targetDirection?: 'increase' | 'decrease'; sessionTargetUses?: number; customType?: CustomGoalType; sampleUnit?: 'words' | 'morphemes' },
+  typeOrGoal: string | { type: string; dataCaptureType?: string; targetDirection?: 'increase' | 'decrease'; sessionTargetUses?: number; commMeasure?: 'functions' | 'uses'; customType?: CustomGoalType; sampleUnit?: 'words' | 'morphemes' },
   target: number,
   direction?: 'increase' | 'decrease',
   usesTarget?: number,
@@ -122,6 +122,8 @@ export function formatGoalTarget(
     return dir === 'increase' ? `≥ ${target}% replacement skill` : `≤ ${plural(target, 'incident')}`;
   }
   if (type === 'COMMUNICATION_FUNCTIONS') {
+    // A goal measured by total uses ("at least 5 times", any functions): the target is a number of uses.
+    if (typeof typeOrGoal === 'object' && typeOrGoal.commMeasure === 'uses') return `at least ${plural(target, 'use')} (all functions)`;
     // A goal worded "at least 5 times for at least 2 different functions" carries both halves.
     return uses && uses > 0
       ? `${plural(target, 'function')} and at least ${plural(uses, 'use')}`

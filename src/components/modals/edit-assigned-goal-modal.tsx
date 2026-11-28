@@ -8,6 +8,7 @@ import { z } from 'zod';
 import GenericModal from './generic-modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import CommMeasureFields from './CommMeasureFields';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { useStudentData } from '@/hooks/use-student-data';
@@ -66,6 +67,7 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
       smartGoal: '',
       sessionTargetValue: undefined,
       sessionTargetUses: undefined,
+      commMeasure: undefined,
       isArchived: false,
       dataCaptureType: undefined,
     },
@@ -79,6 +81,7 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
         smartGoal: goalToEdit.smartGoal,
         sessionTargetValue: goalToEdit.sessionTargetValue,
         sessionTargetUses: goalToEdit.sessionTargetUses,
+        commMeasure: goalToEdit.commMeasure,
         targetDate: goalToEdit.targetDate ?? '',
         taskSteps: (goalToEdit.taskSteps ?? []).join('\n') as unknown as string[],
         listItems: (goalToEdit.listItems ?? []).join('\n') as unknown as string[],
@@ -100,12 +103,12 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
 
   // What changed, old to new, so the editor says plainly what saving will change. Compared against
   // the goal as it was, not against the form's dirty flags, so only real differences are listed.
-  const watched = form.watch(['name', 'smartGoal', 'sessionTargetValue', 'targetDate', 'taskSteps', 'baseline', 'baselineDate', 'gasLevelDescriptions', 'masterySessions', 'blankFills', 'targetDirection', 'isArchived', 'dataCaptureType', 'sessionTargetUses', 'listItems', 'sampleUnit', 'customType']);
+  const watched = form.watch(['name', 'smartGoal', 'sessionTargetValue', 'targetDate', 'taskSteps', 'baseline', 'baselineDate', 'gasLevelDescriptions', 'masterySessions', 'blankFills', 'targetDirection', 'isArchived', 'dataCaptureType', 'sessionTargetUses', 'listItems', 'sampleUnit', 'customType', 'commMeasure']);
   const changes = React.useMemo(() => assignedGoalChanges(goalToEdit, {
     name: watched[0], smartGoal: watched[1], sessionTargetValue: watched[2], targetDate: watched[3],
     taskSteps: watched[4], baseline: watched[5], baselineDate: watched[6], gasLevelDescriptions: watched[7],
     masterySessions: watched[8], blankFills: watched[9], targetDirection: watched[10], isArchived: watched[11],
-    dataCaptureType: watched[12], sessionTargetUses: watched[13], listItems: watched[14], sampleUnit: watched[15], customType: watched[16],
+    dataCaptureType: watched[12], sessionTargetUses: watched[13], listItems: watched[14], sampleUnit: watched[15], customType: watched[16], commMeasure: watched[17],
   }), [goalToEdit, watched]);
 
   const captureBefore = goalToEdit?.dataCaptureType || goalToEdit?.type;
@@ -324,6 +327,7 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
               type: form.watch('dataCaptureType') || goalToEdit?.type,
               targetDirection: form.watch('targetDirection'),
               customType: form.watch('customType'),
+              commMeasure: form.watch('commMeasure'),
             });
             return (
           <FormField
@@ -354,34 +358,8 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
             );
           })()}
 
-          {/* Communication Functions goals can pair the functions target with a minimum total of uses,
-              for goals worded "at least 5 times for at least 2 different functions". */}
-          {(form.watch('dataCaptureType') ?? goalToEdit?.dataCaptureType ?? goalToEdit?.type) === 'COMMUNICATION_FUNCTIONS' && (
-            <FormField
-              control={form.control}
-              name="sessionTargetUses"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Minimum Total Uses per Session (Optional)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      placeholder="e.g., 5"
-                      {...field}
-                      value={field.value ?? ''}
-                      onChange={e => field.onChange(e.target.value === '' ? '' : Number(e.target.value))}
-                      min="0"
-                      max="1000"
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    A session counts toward the target only when the student also reaches this many unprompted uses (spontaneous or emerging) in total, across all functions. Leave blank for no minimum.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
+          {/* Communication Functions goals: measured by different functions or by total uses (see CommMeasureFields). */}
+          {(form.watch('dataCaptureType') ?? goalToEdit?.dataCaptureType ?? goalToEdit?.type) === 'COMMUNICATION_FUNCTIONS' && <CommMeasureFields control={form.control} />}
 
           <FormField
             control={form.control}

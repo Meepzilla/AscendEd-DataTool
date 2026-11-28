@@ -196,7 +196,28 @@ export function summarizeCommunicationFunctions(data: Record<string, any> = {}) 
   };
 }
 
-// sessionTargetValue for this type is a number of different functions, not a percentage.
+/**
+ * What a Communication Functions goal is measured by in each session:
+ * - 'functions' (the default): the number of different functions used without a prompt, for goals worded
+ *   "at least 3 different functions". sessionTargetUses can add a minimum of total uses alongside it.
+ * - 'uses': every use without a prompt added up, across all the functions, for goals worded "at least 5 times"
+ *   (e.g. to request, reject, comment or direct, in any mix). The target is then a number of uses.
+ * Either way only unprompted uses count (spontaneous or emerging form); prompted uses are shown but never counted.
+ */
+export type CommMeasure = 'functions' | 'uses';
+
+/** Whether a Communication Functions goal is measured by its total uses rather than its number of functions. */
+export function measuresCommUses(goal: { commMeasure?: CommMeasure } | null | undefined): boolean {
+  return goal?.commMeasure === 'uses';
+}
+
+/** The minimum total of unprompted uses a session must also reach (0 for none, and always 0 for a uses goal). */
+export function commUsesMinimum(goal: { commMeasure?: CommMeasure; sessionTargetUses?: number }): number {
+  const uses = goal.sessionTargetUses;
+  return !measuresCommUses(goal) && typeof uses === 'number' && uses > 0 ? uses : 0;
+}
+
+// sessionTargetValue for this type is a number of different functions (or of uses, for a 'uses' goal), not a percentage.
 export const COMMUNICATION_TEMPLATES: Omit<GoalTemplate, 'id' | 'createdAt' | 'userId'>[] = [
   { name: 'Use a variety of communicative functions', type: 'COMMUNICATION_FUNCTIONS', smartGoalPrompt: 'Student will spontaneously use at least 4 different communicative functions (e.g., requesting, commenting, protesting, greeting) during a session.', isDefault: true, sessionTargetValue: 4, generatedSmartGoal: '' },
   { name: 'Expand communicative functions beyond requesting', type: 'COMMUNICATION_FUNCTIONS', smartGoalPrompt: 'Student will spontaneously use at least 2 communicative functions other than requesting (e.g., commenting, greeting, answering questions) during a session.', isDefault: true, sessionTargetValue: 3, generatedSmartGoal: '' },

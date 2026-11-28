@@ -1,6 +1,6 @@
 import type { Goal, PromptType, SessionData, TrialStatus } from './types';
 import {
-  captureTypeOf, scoreStory, summarizeCommunicationFunctions, summarizeIntervals, summarizeLatency, toolTypeOf,
+  captureTypeOf, commUsesMinimum, measuresCommUses, scoreStory, summarizeCommunicationFunctions, summarizeIntervals, summarizeLatency, toolTypeOf,
 } from './goal-constants';
 import { fillNameBlanks } from './goal-blanks';
 import {
@@ -129,6 +129,9 @@ export interface GoalChartPoint {
   approximate?: number;
   incorrect?: number;
   opportunities?: number;
+  /** Communication Functions: the spontaneous and emerging-only parts of the main line. For a goal measured by
+   *  functions these are numbers of functions; for one measured by total uses, numbers of uses (spontaneous and
+   *  emerging form). */
   spontaneousFunctions?: number;
   emergingFunctions?: number;
   spontaneousUses?: number;
@@ -184,6 +187,7 @@ export function groupGoalPoints(
 
   const type = captureTypeOf(goal);
   const isCommFunctions = type === 'COMMUNICATION_FUNCTIONS';
+  const byUses = isCommFunctions && measuresCommUses(goal);
   const hasResp = goalResponses(goal) !== null;
   const target = goal.sessionTargetValue;
 
@@ -206,8 +210,8 @@ export function groupGoalPoints(
         metTarget: met,
         ...(resp ? { ...resp, opportunities } : {}),
         ...(comm ? {
-          spontaneousFunctions: comm.functionsUsedSpontaneously,
-          emergingFunctions: comm.functionsUsedEmergingOnly,
+          spontaneousFunctions: byUses ? comm.spontaneous : comm.functionsUsedSpontaneously,
+          emergingFunctions: byUses ? comm.emerging : comm.functionsUsedEmergingOnly,
           spontaneousUses: comm.spontaneous,
           emergingUses: comm.emerging,
           promptedUses: comm.prompted,
@@ -268,8 +272,8 @@ export function groupGoalPoints(
         }
         if (isCommFunctions) {
           const comm = summarizeCommunicationFunctions(r.data);
-          spontaneousFunctionsSum += comm.functionsUsedSpontaneously;
-          emergingFunctionsSum += comm.functionsUsedEmergingOnly;
+          spontaneousFunctionsSum += byUses ? comm.spontaneous : comm.functionsUsedSpontaneously;
+          emergingFunctionsSum += byUses ? comm.emerging : comm.functionsUsedEmergingOnly;
           spontaneousUses += comm.spontaneous;
           emergingUses += comm.emerging;
           promptedUses += comm.prompted;
@@ -283,7 +287,7 @@ export function groupGoalPoints(
       }
 
       const avgUnpromptedUses = isCommFunctions ? (spontaneousUses + emergingUses) / items.length : undefined;
-      const usesMin = isCommFunctions ? (goal.sessionTargetUses ?? 0) : 0;
+      const usesMin = isCommFunctions ? commUsesMinimum(goal) : 0;
       const metTarget = target === undefined
         ? null
         : usesMin > 0

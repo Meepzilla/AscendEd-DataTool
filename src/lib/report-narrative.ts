@@ -1,6 +1,6 @@
 import type { Goal, SessionData, Student } from './types';
 import {
-  BEHAVIOR_GOAL_TYPES, INTERVAL_METHODS, captureTypeOf, toolTypeOf, goalDirection, summarizeAbc, summarizeCommunicationFunctions,
+  BEHAVIOR_GOAL_TYPES, INTERVAL_METHODS, captureTypeOf, toolTypeOf, goalDirection, measuresCommUses, summarizeAbc, summarizeCommunicationFunctions,
   median, summarizeDuration, summarizeFrequency, summarizeIntervals, summarizeLatency,
   commFunctionsFor, STORY_PARTS, averageStoryPart, STORY_LINKING_WORDS, linkingWordField, topTied, joinWithAnd, type AbcIncident,
 } from './goal-constants';
@@ -712,11 +712,12 @@ export function buildProgressReport({ student, goals, sessions }: Omit<Narrative
       points: a.recorded.map(r => {
         if (type === 'COMMUNICATION_FUNCTIONS') {
           const s = summarizeCommunicationFunctions(r.data);
+          const byUses = measuresCommUses(goal);
           return {
             date: r.session.date,
             value: r.value,
-            spontaneous: s.functionsUsedSpontaneously,
-            emerging: s.functionsUsedEmergingOnly,
+            spontaneous: byUses ? s.spontaneous : s.functionsUsedSpontaneously,
+            emerging: byUses ? s.emerging : s.functionsUsedEmergingOnly,
           };
         }
         return { date: r.session.date, value: r.value };

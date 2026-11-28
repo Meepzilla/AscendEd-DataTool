@@ -1,7 +1,7 @@
 import { BUILT_IN_GOAL_TYPE_VALUES, type BuiltInGoalType, type CustomGoalType, type GoalType, type TargetDirection, type TrialStatus } from '../types';
 import {
   BEHAVIOR_GOAL_TYPES, activeCommFunctions, GOAL_TYPE_FIELDS, GOAL_TYPES_WITHOUT_PROMPT_COUNTERS,
-  behaviorMeasure, captureTypeOf, finalizeBehaviorData, goalDirection, scoreStory, summarizeCommunicationFunctions, toolTypeOf,
+  behaviorMeasure, captureTypeOf, finalizeBehaviorData, goalDirection, measuresCommUses, scoreStory, summarizeCommunicationFunctions, toolTypeOf,
 } from '../goal-constants';
 import { gasLevelLabel } from '../gas';
 import { PROMPT_TYPES } from '../promptConstants';
@@ -74,7 +74,10 @@ function builtInMeasureInfo(type: BuiltInGoalType, goal: MeasuredGoal): GoalMeas
   switch (type) {
     case 'FLUENCY_SYLLABLE_STUTTER': return { label: '% fluent syllables', unit: '%', max: 100 };
     case 'STORY_ELEMENTS': return { label: 'Story score', unit: '%', max: 100 };
-    case 'COMMUNICATION_FUNCTIONS': return { label: 'Functions used without a prompt', unit: '', max: Math.max(activeCommFunctions().length, 1) };
+    case 'COMMUNICATION_FUNCTIONS':
+      return measuresCommUses(goal)
+        ? { label: 'Uses without a prompt (all functions)', unit: '' }
+        : { label: 'Functions used without a prompt', unit: '', max: Math.max(activeCommFunctions().length, 1) };
     case 'QUALITATIVE_OBSERVATION':
     case 'COGNITIVE': return { label: 'Rating (1-5)', unit: '', max: 5 };
     case 'GOAL_ATTAINMENT_SCALE': return { label: 'Attainment level', unit: '', max: 2, min: -2 };
@@ -134,7 +137,7 @@ function builtInMeasure(rawType: BuiltInGoalType, goal: MeasuredGoal, data: Reco
     }
     case 'COMMUNICATION_FUNCTIONS': {
       const summary = summarizeCommunicationFunctions(data);
-      if (summary.total > 0) return Math.max(0, summary.functionsUsedUnprompted);
+      if (summary.total > 0) return Math.max(0, measuresCommUses(goal) ? summary.unprompted : summary.functionsUsedUnprompted);
       return data.recorded === true ? 0 : null;
     }
     case 'PROMPTING': {
@@ -167,7 +170,10 @@ function builtInFormula(type: BuiltInGoalType, goal: MeasuredGoal): string {
   switch (type) {
     case 'FLUENCY_SYLLABLE_STUTTER': return '(Total syllables − stuttered syllables, blocks, repetitions, prolongations and interjections) ÷ total syllables × 100.';
     case 'STORY_ELEMENTS': return 'Points for the story parts assessed (0, 1 or 2 each) ÷ 2 × the number of parts assessed × 100. Parts marked N/A (not assessed) are left out.';
-    case 'COMMUNICATION_FUNCTIONS': return 'The number of different functions used without a prompt in the session (spontaneous or emerging form).';
+    case 'COMMUNICATION_FUNCTIONS':
+      return measuresCommUses(goal)
+        ? 'Every use without a prompt in the session added up, across all the functions (spontaneous or emerging form). Prompted uses are not counted.'
+        : 'The number of different functions used without a prompt in the session (spontaneous or emerging form).';
     case 'QUALITATIVE_OBSERVATION':
     case 'COGNITIVE': return 'The 1–5 rating given in the session.';
     case 'GOAL_ATTAINMENT_SCALE': return 'The attainment level recorded in the session, -2 to +2; 0 is the expected outcome.';
@@ -194,7 +200,7 @@ function builtInNarrativeNoun(type: BuiltInGoalType, goal: MeasuredGoal): string
   switch (type) {
     case 'FLUENCY_SYLLABLE_STUTTER': return 'the percentage of fluent syllables';
     case 'STORY_ELEMENTS': return 'the story score';
-    case 'COMMUNICATION_FUNCTIONS': return 'the number of functions used without a prompt';
+    case 'COMMUNICATION_FUNCTIONS': return measuresCommUses(goal) ? 'the number of times communicating without a prompt' : 'the number of functions used without a prompt';
     case 'QUALITATIVE_OBSERVATION':
     case 'COGNITIVE': return 'the rating';
     case 'PROMPTING': return 'the percentage of independent responses';
@@ -253,6 +259,7 @@ function builtInFormatTarget(type: string, target: number, direction?: TargetDir
     return direction === 'increase' ? `≥ ${target}% replacement skill` : `≤ ${pluralWord(target, 'incident')}`;
   }
   if (type === 'COMMUNICATION_FUNCTIONS') {
+    if (measuresCommUses(goal)) return `at least ${pluralWord(target, 'use')} (all functions)`;
     return usesTarget && usesTarget > 0
       ? `${pluralWord(target, 'function')} and at least ${pluralWord(usesTarget, 'use')}`
       : pluralWord(target, 'function');

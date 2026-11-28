@@ -57,32 +57,26 @@ describe('access PIN', () => {
     expect(storage.getItem(KEY)).not.toBe(stored);
   }, 20000);
 
-  it('upgrades a legacy SHA-256 hash to the new scheme on a successful unlock', async () => {
-    storage.setItem(KEY, legacySha256(UID, PIN));
-    expect(await pin.checkAccessPin(UID, PIN)).toBe(true);
-    expect(storage.getItem(KEY)!.startsWith('pbkdf2:v1:')).toBe(true);
-    expect(await pin.checkAccessPin(UID, PIN)).toBe(true);
-  }, 20000);
+  it.each([
+    ['unsalted SHA-256', legacySha256],
+    ['djb2', legacyDjb2],
+  ])('rejects a legacy %s value, even with the right PIN, and removes it', async (_name, legacyHash) => {
+    storage.setItem(KEY, legacyHash(UID, PIN));
+    expect(await pin.checkAccessPin(UID, PIN)).toBe(false);
+    expect(storage.getItem(KEY)).toBeNull();
+    // A rejected legacy value is not a wrong guess: it must not count toward the lockout.
+    expect(storage.getItem('ascended_attempt_lockout_v1_access-pin')).toBeNull();
+  });
 
-  it('does not upgrade a legacy SHA-256 hash on a wrong PIN', async () => {
-    const legacy = legacySha256(UID, PIN);
-    storage.setItem(KEY, legacy);
-    expect(await pin.checkAccessPin(UID, '9999')).toBe(false);
-    expect(storage.getItem(KEY)).toBe(legacy);
-  }, 20000);
-
-  it('upgrades a legacy djb2 hash to the new scheme on a successful unlock', async () => {
-    storage.setItem(KEY, legacyDjb2(UID, PIN));
-    expect(await pin.checkAccessPin(UID, PIN)).toBe(true);
-    expect(storage.getItem(KEY)!.startsWith('pbkdf2:v1:')).toBe(true);
-    expect(await pin.checkAccessPin(UID, PIN)).toBe(true);
-  }, 20000);
-
-  it('does not upgrade a legacy djb2 hash on a wrong PIN', async () => {
-    const legacy = legacyDjb2(UID, PIN);
-    storage.setItem(KEY, legacy);
-    expect(await pin.checkAccessPin(UID, '9999')).toBe(false);
-    expect(storage.getItem(KEY)).toBe(legacy);
+  it.each([
+    ['unsalted SHA-256', legacySha256],
+    ['djb2', legacyDjb2],
+  ])('treats a legacy %s value as no PIN, so a new one is chosen on the next lock', async (_name, legacyHash) => {
+    storage.setItem(KEY, legacyHash(UID, PIN));
+    expect(pin.hasAccessPin(UID)).toBe(false);
+    expect(storage.getItem(KEY)).toBeNull();
+    expect(await pin.setAccessPin(UID, '5678')).toBe(true);
+    expect(await pin.checkAccessPin(UID, '5678')).toBe(true);
   }, 20000);
 
   it('never creates a new djb2 hash: without Web Crypto, setting a PIN fails and stores nothing', async () => {
@@ -96,26 +90,12 @@ describe('access PIN', () => {
     }
   });
 
-  it('without Web Crypto, a legacy djb2 value still verifies but the upgrade is deferred', async () => {
-    const legacy = legacyDjb2(UID, PIN);
-    storage.setItem(KEY, legacy);
-    vi.stubGlobal('crypto', undefined);
-    try {
-      expect(await pin.checkAccessPin(UID, PIN)).toBe(true);
-      expect(storage.getItem(KEY)).toBe(legacy);
-      expect(await pin.checkAccessPin(UID, '9999')).toBe(false);
-    } finally {
-      vi.unstubAllGlobals();
-      vi.stubGlobal('localStorage', storage);
-    }
-  });
-
-  it('without Web Crypto, a legacy SHA-256 value cannot be verified (it needs crypto.subtle)', async () => {
-    storage.setItem(KEY, legacySha256(UID, PIN));
+  it('without Web Crypto, a legacy djb2 value is still rejected (it once verified without crypto.subtle)', async () => {
+    storage.setItem(KEY, legacyDjb2(UID, PIN));
     vi.stubGlobal('crypto', undefined);
     try {
       expect(await pin.checkAccessPin(UID, PIN)).toBe(false);
-      expect(storage.getItem(KEY)).toBe(legacySha256(UID, PIN));
+      expect(storage.getItem(KEY)).toBeNull();
     } finally {
       vi.unstubAllGlobals();
       vi.stubGlobal('localStorage', storage);

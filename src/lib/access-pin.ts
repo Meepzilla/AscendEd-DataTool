@@ -7,13 +7,12 @@
 // 16-byte per-device salt and 100,000 iterations. The salt travels with the hash so the value is
 // self-describing. Comparison is constant-time over equal-length byte arrays (see below).
 //
-// Legacy values (a single SHA-256 hex string, or a `djb2:<hex>` value from insecure origins) are still
-// verified, and a successful check transparently re-hashes the PIN into the new scheme. No new djb2
-// hash is ever created: without Web Crypto, setting a PIN fails instead of storing a weak hash.
-// Without Web Crypto the upgrade is deferred (PBKDF2 needs crypto.subtle), the legacy value is left
-// untouched, and only a djb2 legacy value can still be verified — a legacy SHA-256 value cannot be
-// checked without crypto.subtle, exactly as before. A later visit with Web Crypto available can still
-// verify the legacy value and upgrade it then.
+// Older versions stored an unsalted SHA-256 hex value or a `djb2:<hex>` value. Either can be reversed in
+// moments for a 4 to 8 digit PIN by anyone who can read localStorage, so they are no longer accepted: a
+// stored value in any format other than the one above counts as no PIN and is removed when it is next
+// read. The teacher chooses a new PIN the next time they turn the lock on (the lock itself is not kept
+// across a reload, so nobody is left locked out). Without Web Crypto, setting a PIN fails instead of
+// storing a weak hash.
 
 import { clearAttempts, isLockedOut, recordAttempt } from './attempt-lockout';
 
@@ -30,22 +29,9 @@ const HASH_BYTES = 32;
 
 const b64 = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes));
 const unb64 = (text: string) => Uint8Array.from(atob(text), c => c.charCodeAt(0));
-const hex = (bytes: Uint8Array) => Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
-const unhex = (text: string) => Uint8Array.from(text.match(/../g) ?? [], pair => parseInt(pair, 16));
 
 function hasSubtle(): boolean {
   return typeof crypto !== 'undefined' && !!crypto.subtle;
-}
-
-async function sha256Hex(text: string): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
-  return hex(new Uint8Array(digest));
-}
-
-function djb2Hex(text: string): string {
-  let hash = 5381;
-  for (let i = 0; i < text.length; i++) hash = ((hash * 33) ^ text.charCodeAt(i)) >>> 0;
-  return hash.toString(16);
 }
 
 /**
@@ -72,47 +58,42 @@ async function hashPinNew(uid: string, pin: string): Promise<string> {
   return `pbkdf2:v1:${ITERATIONS}:${b64(salt)}:${b64(derived)}`;
 }
 
-function isLegacyFormat(stored: string): boolean {
-  return stored.startsWith('djb2:') || /^[0-9a-f]{64}$/.test(stored);
+const CURRENT_PREFIX = 'pbkdf2:v1:';
+
+/** The stored value, or null when there is none. A value in an old, weak format is removed and counts as none. */
+function readStoredPin(uid: string): string | null {
+  const storageKey = PIN_KEY + uid;
+  const stored = localStorage.getItem(storageKey);
+  if (stored === null) return null;
+  if (stored.startsWith(CURRENT_PREFIX)) return stored;
+  try { localStorage.removeItem(storageKey); } catch { /* left in place; still never accepted */ }
+  return null;
 }
 
-/** Verifies a PIN against a stored value of any known format. Returns false for unknown formats. */
+/** Verifies a PIN against a stored PBKDF2 value. Returns false for anything else. */
 async function verifyStored(uid: string, pin: string, stored: string): Promise<boolean> {
-  if (stored.startsWith('pbkdf2:v1:')) {
-    if (!hasSubtle()) return false;
-    const parts = stored.split(':');
-    const iterations = Number(parts[2]);
-    // Both come from storage and PBKDF2 runs them as given: a huge count would hang every PIN check, a huge length
-    // would ask for an enormous derived key. Anything outside what this app writes (with room to raise the count)
-    // is treated as not matching.
-    if (!Number.isInteger(iterations) || iterations <= 0 || iterations > MAX_PIN_ITERATIONS || parts.length !== 5) return false;
-    try {
-      const salt = unb64(parts[3]);
-      const expected = unb64(parts[4]);
-      if (expected.length < 16 || expected.length > 64) return false;
-      const material = await crypto.subtle.importKey('raw', new TextEncoder().encode(pinText(uid, pin)), 'PBKDF2', false, ['deriveBits']);
-      const derived = new Uint8Array(await crypto.subtle.deriveBits({ name: 'PBKDF2', salt, iterations, hash: 'SHA-256' }, material, expected.length * 8));
-      return constantTimeEqual(derived, expected);
-    } catch {
-      return false;
-    }
+  if (!stored.startsWith(CURRENT_PREFIX) || !hasSubtle()) return false;
+  const parts = stored.split(':');
+  const iterations = Number(parts[2]);
+  // Both come from storage and PBKDF2 runs them as given: a huge count would hang every PIN check, a huge length
+  // would ask for an enormous derived key. Anything outside what this app writes (with room to raise the count)
+  // is treated as not matching.
+  if (!Number.isInteger(iterations) || iterations <= 0 || iterations > MAX_PIN_ITERATIONS || parts.length !== 5) return false;
+  try {
+    const salt = unb64(parts[3]);
+    const expected = unb64(parts[4]);
+    if (expected.length < 16 || expected.length > 64) return false;
+    const material = await crypto.subtle.importKey('raw', new TextEncoder().encode(pinText(uid, pin)), 'PBKDF2', false, ['deriveBits']);
+    const derived = new Uint8Array(await crypto.subtle.deriveBits({ name: 'PBKDF2', salt, iterations, hash: 'SHA-256' }, material, expected.length * 8));
+    return constantTimeEqual(derived, expected);
+  } catch {
+    return false;
   }
-  if (stored.startsWith('djb2:')) {
-    // Legacy insecure-origin fallback. Verified only so an existing PIN can be upgraded (see below);
-    // a new djb2 hash is never created.
-    return constantTimeEqual(new TextEncoder().encode(djb2Hex(pinText(uid, pin))), new TextEncoder().encode(stored.slice('djb2:'.length)));
-  }
-  if (/^[0-9a-f]{64}$/.test(stored)) {
-    // Legacy single SHA-256, unsalted. Needs Web Crypto; without it this cannot be checked.
-    if (!hasSubtle()) return false;
-    return constantTimeEqual(unhex(await sha256Hex(pinText(uid, pin))), unhex(stored));
-  }
-  return false;
 }
 
 export function hasAccessPin(uid: string | undefined): boolean {
   try {
-    return !!localStorage.getItem(PIN_KEY + (uid || 'guest'));
+    return readStoredPin(uid || 'guest') !== null;
   } catch {
     return false;
   }
@@ -120,7 +101,7 @@ export function hasAccessPin(uid: string | undefined): boolean {
 
 export async function setAccessPin(uid: string | undefined, pin: string): Promise<boolean> {
   if (!PIN_PATTERN.test(pin)) return false;
-  // No Web Crypto means no PBKDF2: fail rather than store a weak hash (the old djb2 fallback is gone).
+  // No Web Crypto means no PBKDF2: fail rather than store a weak hash.
   if (!hasSubtle()) return false;
   try {
     localStorage.setItem(PIN_KEY + (uid || 'guest'), await hashPinNew(uid || 'guest', pin));
@@ -136,7 +117,7 @@ export async function checkAccessPin(uid: string | undefined, pin: string): Prom
   // extend the lockout) and without spending a PBKDF2 derivation.
   if (isLockedOut(LOCKOUT_NAMESPACE)) return false;
   try {
-    const stored = localStorage.getItem(PIN_KEY + (uid || 'guest'));
+    const stored = readStoredPin(uid || 'guest');
     if (!stored) return false;
     const ok = await verifyStored(uid || 'guest', pin, stored);
     if (!ok) {
@@ -144,12 +125,6 @@ export async function checkAccessPin(uid: string | undefined, pin: string): Prom
       return false;
     }
     recordAttempt(LOCKOUT_NAMESPACE, true);
-    if (isLegacyFormat(stored)) {
-      // Transparent migration: the PIN just proved correct, so re-hash it into the new scheme.
-      // If Web Crypto is unavailable setAccessPin fails and the legacy value is left in place,
-      // so a later visit with Web Crypto available can still verify and upgrade it.
-      await setAccessPin(uid, pin);
-    }
     return true;
   } catch {
     return false;

@@ -24,6 +24,7 @@ describe('the student remembered on Reports', () => {
   it('still works when storage is unavailable', () => {
     vi.stubGlobal('window', { localStorage: { getItem: () => { throw new Error('blocked'); }, setItem: () => { throw new Error('blocked'); } } });
     expect(() => rememberReportStudent('b')).not.toThrow();
-    expect(defaultReportStudent(['a', 'b'])).toBe('a');
+    // Kept in memory instead, so the choice still holds for this visit.
+    expect(defaultReportStudent(['a', 'b'])).toBe('b');
   });
 });

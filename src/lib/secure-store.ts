@@ -80,6 +80,21 @@ export const PASSCODE_ERASED_KEY = ERASED_KEY;
 const SENSITIVE = /^ascended_(students_v2|sessions_v2|data_entry_draft_v1|goal_templates_v2|student_groups_v1|abc_lists|comm_functions|custom_goal_types_v1)(_|$)/;
 export const isSensitiveKey = (key: string) => SENSITIVE.test(key);
 
+/**
+ * Small device preferences that name a student or goal by id (Reports' remembered student and per-student goal,
+ * the interval setup last used for each goal). They are not encrypted; instead, while passcode protection is on
+ * they are kept in memory for the visit only (src/lib/student-linked-prefs.ts) and never written to plain
+ * storage, and any stored copy is removed when protection is turned on.
+ */
+export const STUDENT_LINKED_PREF_KEYS = ['ascended_report_student', 'ascended_report_goals', 'ascended_interval_setups'] as const;
+
+/** Removes stored copies of the student-linked preferences (see STUDENT_LINKED_PREF_KEYS). */
+export function removeStoredStudentLinkedPrefs() {
+  for (const storageKey of STUDENT_LINKED_PREF_KEYS) {
+    try { localStorage.removeItem(storageKey); } catch { /* storage unavailable: nothing to remove */ }
+  }
+}
+
 /** The three main lists, whatever their backend: base key, IndexedDB store, id field. */
 const LIST_KEYS = [
   { base: 'ascended_students_v2', store: idb.LIST_STORES.students, idField: 'id' },
@@ -1531,6 +1546,7 @@ export async function enablePasscode(passcode: string, autoLockMinutes = 15, rec
   rewriteAll(encrypted, JSON.stringify(config));
   key = dek;
   legacyKey = kek;
+  removeStoredStudentLinkedPrefs();
   // Lists already in IndexedDB have no localStorage blob, so they are not in `plain`: keep their
   // in-memory values and re-encrypt their rows with the new key instead of dropping them.
   const listCache = [...cache].filter(([storageKey]) => isListKey(storageKey) && getListBackend(storageKey) === 'idb');
