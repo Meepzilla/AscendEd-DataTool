@@ -137,5 +137,24 @@ describe('planSessionImport dedup', () => {
     expect(planDeid.newCount).toBe(1);
     expect(planDeid.students[0].goals.find(g => g.id === 'g-custom')?.dataCaptureType).toBe('GOAL_ATTAINMENT_SCALE');
   });
-});
 
+  it('keeps Data Capture Type when an imported session is exported again', async () => {
+    const Papa = (await import('papaparse')).default;
+    const { buildSessionsCsv, unescapeCsvFormula } = await import('../session-csv');
+    const { parseSessionCsvRows } = await import('../session-import');
+    const toRows = (csv: string) => Papa.parse<Record<string, string>>(csv, { header: true, skipEmptyLines: true, transform: (v: string) => unescapeCsvFormula(v) }).data;
+    const recorded = session({
+      sessionId: 'sess-capture-2', studentId: 'st1', studentName: 'Ava', date: '2026-10-09', time: '10:00', endTime: '10:30',
+      originalGoalHeaders: [{ id: 'g-custom', name: 'Social via GAS', type: 'LANGUAGE_EXPRESSION', dataCaptureType: 'GOAL_ATTAINMENT_SCALE', smartGoal: '' }],
+      goals: [{ goalId: 'g-custom', goalName: 'Social via GAS', goalType: 'LANGUAGE_EXPRESSION', data: { gasLevel: 1, recorded: true } }],
+    });
+    const firstExport = toRows(buildSessionsCsv([recorded], 'Ava').csv);
+    expect(firstExport[0]['Data Capture Type']).toBe('GOAL_ATTAINMENT_SCALE');
+
+    // Imported on a device where the student doesn't have the goal yet, then exported again.
+    const plan = planSessionImport(students, [], parseSessionCsvRows(firstExport), 'u');
+    const imported = plan.sessions.find(s => s.date === '2026-10-09')!;
+    expect(toRows(buildSessionsCsv([imported], 'Ava').csv)[0]['Data Capture Type']).toBe('GOAL_ATTAINMENT_SCALE');
+    expect(toRows(buildSessionsCsv([imported], 'Ava', { deidentified: true }).csv)[0]['Data Capture Type']).toBe('GOAL_ATTAINMENT_SCALE');
+  });
+});

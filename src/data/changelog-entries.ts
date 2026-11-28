@@ -13,6 +13,13 @@ export interface ChangelogEntry {
 export const changelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-28',
+    title: 'Quick Taps Count on Custom Goal Types, and Imported Sessions Keep Their Data Capture Type',
+    description: 'On goals measured with one of your custom goal types, tapping a + or − button quickly (or with two thumbs) now counts every tap, as on the built-in goal types: before, taps made before the card redrew could be lost, so three quick taps might record 1. The timer\'s Start and Stop and the checklist\'s steps update the same way, and a double tap on Start or Stop no longer adds an extra timing. Sessions imported from a CSV file now keep each goal\'s Data Capture Type, so exporting them again writes the same Data Capture Type instead of the goal\'s type.',
+    type: 'fix',
+    icon: Zap,
+  },
+  {
+    date: '2026-11-28',
     title: 'Archive, Delete and Goal Changes Do What They Say',
     description: 'Archive on a built-in goal template now archives it (and Unarchive unarchives it): before, the confirmation offered the opposite action and then saved nothing. The trash icon next to a student in the sidebar now asks to delete that student and deletes them; before, it did nothing on most pages, archived the student on a profile page, and could pop up an Archive dialog later. After a student is deleted, the sidebar no longer shows their progress panel, and the panel now keeps up with goals you add or edit and with archiving. Changing a goal\'s Data Capture Method when it already has recorded sessions now warns that those sessions will be read with the new method and asks you to confirm, and swapping one custom goal type for another is listed in the summary of changes. A fault in the sidebar\'s progress panel now stays in that panel instead of taking down the whole app.',
     type: 'fix',
