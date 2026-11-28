@@ -13,6 +13,13 @@ export interface ChangelogEntry {
 export const changelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-28',
+    title: 'Archive, Delete and Goal Changes Do What They Say',
+    description: 'Archive on a built-in goal template now archives it (and Unarchive unarchives it): before, the confirmation offered the opposite action and then saved nothing. The trash icon next to a student in the sidebar now asks to delete that student and deletes them; before, it did nothing on most pages, archived the student on a profile page, and could pop up an Archive dialog later. After a student is deleted, the sidebar no longer shows their progress panel, and the panel now keeps up with goals you add or edit and with archiving. Changing a goal\'s Data Capture Method when it already has recorded sessions now warns that those sessions will be read with the new method and asks you to confirm, and swapping one custom goal type for another is listed in the summary of changes. A fault in the sidebar\'s progress panel now stays in that panel instead of taking down the whole app.',
+    type: 'fix',
+    icon: Bug,
+  },
+  {
+    date: '2026-11-28',
     title: 'Mastery, Service Minutes and Attendance Figures Corrected',
     description: 'A goal whose data capture method was changed (for example a behavior goal switched to Discrete Trials or Articulation) could keep its old "decrease" direction out of sight, so a session far below the target counted as meeting it; the old direction is now dropped, and goals already saved that way are fixed when the app opens. Choosing one of your custom goal types as a built-in goal\'s method now makes it a custom goal, with the type\'s direction, its result line in Data Entry and its place in Settings\' usage count and Update to latest. Built-in goal templates switched away from Goal Attainment Scaling no longer pass on a hidden baseline of -2. On the Progress Report, service minutes now count each session\'s service split (so the total matches the rows by type), Average per week or month is only shown over at least a whole week or month (one session no longer reads as 300 minutes a week), and a date range with only a start date runs to today. Last 30 days and Last 9 weeks now cover exactly 30 days and 9 weeks. On a student\'s profile, attendance no longer counts your own absences or no-school days against the student (it matches Student attendance on Reports), and the Service Minutes panel no longer repeats the school-year total. Targets and baselines above a goal type\'s scale (such as 800% or a 9 on a 1–5 rating) can no longer be saved, even with Ctrl+Enter, and response times read "1 second" instead of "1 seconds".',
     type: 'fix',

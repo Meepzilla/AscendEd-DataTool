@@ -268,6 +268,8 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     // while the student remains (or the other way round).
     if (!(await applyTransaction(next))) return false;
     applyLists(next);
+    // A deleted student no longer shows in the sidebar's progress panel (as with deleting several).
+    setSelectedStudent(prev => (prev?.id === studentId ? null : prev));
     toast({ title: "Success", description: "Student and sessions deleted." });
     return true;
   }, [currentUser, toast, applyTransaction, applyLists]);
