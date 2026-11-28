@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   checkSaveFits, estimateStorage, formatBytes, serializedBytes, storageLevel,
-  STORAGE_WARN_BYTES,
+  DATA_WARN_BYTES,
 } from '../storage-size';
 
 describe('formatBytes', () => {
@@ -46,7 +46,15 @@ describe('estimateStorage', () => {
     expect(estimate.quota).toBe(10 * 1024 * 1024);
     expect(estimate.percent).toBe(80);
     expect(estimate.level).toBe('warn');
-    expect(estimate.over3MB).toBe(true);
+    // 8 MB in the browser's total, but only 1.5 MB of it is data (the rest is the offline app): no data warning.
+    expect(estimate.overDataWarn).toBe(false);
+  });
+
+  it('warns about large data on the data alone, not the total with the offline app cache', async () => {
+    vi.stubGlobal('navigator', { storage: { estimate: async () => ({ usage: 40 * 1024 * 1024, quota: 1000 * 1024 * 1024 }) } });
+    expect((await estimateStorage(() => 3 * 1024 * 1024)).overDataWarn).toBe(false);
+    expect((await estimateStorage(() => 26 * 1024 * 1024)).overDataWarn).toBe(true);
+    expect(DATA_WARN_BYTES).toBe(25 * 1024 * 1024);
   });
 
   it('calls estimate as a method of the storage object, as Chromium requires', async () => {
@@ -72,7 +80,9 @@ describe('estimateStorage', () => {
     expect(estimate.quota).toBe(null);
     expect(estimate.percent).toBe(null);
     expect(estimate.level).toBe('ok');
-    expect(estimate.over3MB).toBe(true);
+    // With no browser estimate the count is the data alone: 4 MB is well under the warning.
+    expect(estimate.overDataWarn).toBe(false);
+    expect((await estimateStorage(() => 30 * 1024 * 1024)).overDataWarn).toBe(true);
   });
 
   it('a throwing fallback count cannot break the estimate (finding B2)', async () => {
@@ -105,21 +115,24 @@ describe('checkSaveFits', () => {
     expect(await checkSaveFits(3.5 * 1024 * 1024, 2 * 1024 * 1024)).toMatchObject({ fits: false });
   });
 
-  it('flags the 3 MB warning on the projected total', async () => {
-    vi.stubGlobal('navigator', { storage: { estimate: async () => ({ usage: 2 * 1024 * 1024, quota: 100 * 1024 * 1024 }) } });
-    const below = await checkSaveFits(512 * 1024, 0);
-    expect(below.over3MB).toBe(false);
-    const above = await checkSaveFits(2 * 1024 * 1024, 0);
-    expect(above.over3MB).toBe(true);
+  it('flags the large-data warning on the projected data, not the browser total', async () => {
+    // The browser total (with the offline app) is far past 25 MB; the data is what counts.
+    vi.stubGlobal('navigator', { storage: { estimate: async () => ({ usage: 60 * 1024 * 1024, quota: 1000 * 1024 * 1024 }) } });
+    const below = await checkSaveFits(512 * 1024, 0, { isIndexedDbBacked: true, dataBytes: () => 20 * 1024 * 1024 });
+    expect(below.overDataWarn).toBe(false);
+    expect(below.projectedDataBytes).toBe(20.5 * 1024 * 1024);
+    const above = await checkSaveFits(6 * 1024 * 1024, 0, { isIndexedDbBacked: true, dataBytes: () => 20 * 1024 * 1024 });
+    expect(above.overDataWarn).toBe(true);
     expect(above.fits).toBe(true);
-    expect(STORAGE_WARN_BYTES).toBe(3 * 1024 * 1024);
+    // Without a data count there is no data warning (the total alone can't tell data from the app cache).
+    expect((await checkSaveFits(6 * 1024 * 1024, 0)).overDataWarn).toBe(false);
   });
 
   it('does not apply the localStorage cap to IndexedDB-backed saves without a quota', async () => {
     vi.stubGlobal('navigator', {});
     const check = await checkSaveFits(6 * 1024 * 1024, 0, { isIndexedDbBacked: true, fallbackBytes: () => 0 });
     expect(check.fits).toBe(true);
-    expect(check.over3MB).toBe(true);
+    expect(check.overDataWarn).toBe(false);
     const localCheck = await checkSaveFits(6 * 1024 * 1024, 0, { isIndexedDbBacked: false, fallbackBytes: () => 0 });
     expect(localCheck.fits).toBe(false);
   });

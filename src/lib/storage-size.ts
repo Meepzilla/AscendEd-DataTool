@@ -6,7 +6,12 @@
 // still outgrow the device, so the app measures what it holds and warns before
 // a save fails instead of after.
 
-export const STORAGE_WARN_BYTES = 3 * 1024 * 1024;
+// The size of the app's own data (student, session and template records and settings) that prompts a backup.
+// It is measured on the data alone: the browser's total for the site also holds the offline copy of the app
+// (several MB of program files), which used to trip a 3 MB limit on every device whatever the data. 25 MB is
+// half the largest backup file that can be written or restored (MAX_BACKUP_FILE_BYTES, 50 MB), so the warning
+// comes while a backup still works. A device actually running out of room is covered by the quota levels below.
+export const DATA_WARN_BYTES = 25 * 1024 * 1024;
 export const QUOTA_WARN_RATIO = 0.7;
 export const QUOTA_CRITICAL_RATIO = 0.9;
 
@@ -25,8 +30,9 @@ export interface StorageEstimate {
   quota: number | null;
   /** bytes / quota as a percentage, when the quota is known. */
   percent: number | null;
-  /** Whether the stored total passes 3 MB (warned about even without a quota). */
-  over3MB: boolean;
+  /** Whether the app's own data passes DATA_WARN_BYTES (warned about even without a quota). False when the data
+   *  alone wasn't counted. */
+  overDataWarn: boolean;
   /** warn at 70% of quota, critical at 90%. */
   level: StorageLevel;
   /** Where the numbers came from: the browser estimate, or the fallback sum. */
@@ -60,7 +66,7 @@ export function toStorageEstimate(
     ...(dataBytes !== undefined ? { dataBytes } : {}),
     quota,
     percent: quota && quota > 0 ? (bytes / quota) * 100 : null,
-    over3MB: bytes > STORAGE_WARN_BYTES,
+    overDataWarn: (dataBytes ?? (source === 'fallback' ? bytes : 0)) > DATA_WARN_BYTES,
     level: storageLevel(bytes, quota),
     source,
   };
@@ -121,21 +127,23 @@ export interface SaveSizeCheck {
   fits: boolean;
   /** Projected stored total after this save. */
   projectedBytes: number;
-  /** Whether the projected total passes 3 MB. */
-  over3MB: boolean;
+  /** The app's own data after this save, when counted (see checkSaveFits' dataBytes option). */
+  projectedDataBytes?: number;
+  /** Whether the projected data passes DATA_WARN_BYTES. */
+  overDataWarn: boolean;
 }
 
 /**
  * Size check run before a save: the stored total after this write, against the
  * quota when the browser reports one, else against the ~5 MB localStorage cap
- * for localStorage-backed keys (IndexedDB-backed keys have no such cap, so
- * they only get the 3 MB warning). currentKeyBytes is what this key holds now,
- * so replacing a list does not double-count it.
+ * for localStorage-backed keys (IndexedDB-backed keys have no such cap). The data
+ * warning is judged on the app's own data (options.dataBytes, a cheap count), not on the total, which includes the
+ * offline app cache. currentKeyBytes is what this key holds now, so replacing a list does not double-count it.
  */
 export async function checkSaveFits(
   newBytes: number,
   currentKeyBytes: number,
-  options: { isIndexedDbBacked: boolean; fallbackBytes?: () => number } = { isIndexedDbBacked: false },
+  options: { isIndexedDbBacked: boolean; fallbackBytes?: () => number; dataBytes?: () => number } = { isIndexedDbBacked: false },
 ): Promise<SaveSizeCheck> {
   const estimate = await estimateStorage(options.fallbackBytes, { includeDataBytes: false });
   const projectedBytes = estimate.bytes + Math.max(0, newBytes - currentKeyBytes);
@@ -145,7 +153,19 @@ export async function checkSaveFits(
   } else if (!options.isIndexedDbBacked) {
     fits = projectedBytes <= 5 * 1024 * 1024;
   }
-  return { fits, projectedBytes, over3MB: projectedBytes > STORAGE_WARN_BYTES };
+  let dataNow: number | undefined;
+  try {
+    dataNow = options.dataBytes?.() ?? (estimate.source === 'fallback' ? estimate.bytes : undefined);
+  } catch {
+    dataNow = undefined;
+  }
+  const projectedDataBytes = dataNow === undefined ? undefined : dataNow + Math.max(0, newBytes - currentKeyBytes);
+  return {
+    fits,
+    projectedBytes,
+    ...(projectedDataBytes !== undefined ? { projectedDataBytes } : {}),
+    overDataWarn: (projectedDataBytes ?? 0) > DATA_WARN_BYTES,
+  };
 }
 
 let persistRequested = false;

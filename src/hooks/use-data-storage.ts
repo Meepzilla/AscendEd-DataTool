@@ -18,7 +18,7 @@ import { setSafeStorageErrorHandler } from '@/lib/safe-storage';
 // read back. It returns false (with an error shown) when the write did not land, and callers only
 // update React state on true — so the UI never reports success for data that never reached disk. A size
 // check runs before each save: a save that would not fit is refused up front, and a stored total past
-// 3 MB warns once until the total drops back below it.
+// DATA_WARN_BYTES (the app's own data, not the offline app cache) warns once until the data drops back below it.
 
 export function useDataStorage(uid: string | undefined) {
   const { toast } = useToast();
@@ -26,8 +26,8 @@ export function useDataStorage(uid: string | undefined) {
   const keys = useMemo(() => storageKeys(uid), [uid]);
   // Keys whose stored data couldn't be read: they are never written over, so the data can still be recovered.
   const unreadableKeys = useRef<Set<string>>(new Set());
-  // Whether the over-3-MB warning has been shown for the current stretch above 3 MB.
-  const warnedOver3MB = useRef(false);
+  // Whether the large-data warning has been shown for the current stretch above DATA_WARN_BYTES.
+  const warnedLargeData = useRef(false);
 
   /** Fills the lists' in-memory cache from durable storage (migrating localStorage blobs first). */
   const hydrate = useCallback(() => hydrateLists(keys), [keys]);
@@ -53,12 +53,14 @@ export function useDataStorage(uid: string | undefined) {
       toast({ title: "Couldn't save", description: "This device's saved data couldn't be read, so it wasn't overwritten. Restore a backup in Settings.", variant: 'destructive' });
       return false;
     }
-    // Size check before the save: refuse a write that would not fit, and warn past 3 MB.
+    // Size check before the save: refuse a write that would not fit, and warn when the data grows large.
     const newBytes = serializedBytes(data);
     try {
       const size = await checkSaveFits(newBytes, secureStore.getCurrentKeyBytes(key), {
         isIndexedDbBacked: secureStore.isListKey(key) && secureStore.getListBackend(key) === 'idb',
         fallbackBytes,
+        // The records' own size (IndexedDB list rows), which is where the data grows; cheap, unlike fallbackBytes.
+        dataBytes: secureStore.getPersistedListBytes,
       });
       if (!size.fits) {
         addErrorLog({ message: `Saving failed: storage is full (${formatBytes(size.projectedBytes)} needed).`, source: 'storage', type: 'error' });
@@ -69,14 +71,14 @@ export function useDataStorage(uid: string | undefined) {
         });
         return false;
       }
-      if (size.over3MB && !warnedOver3MB.current) {
-        warnedOver3MB.current = true;
+      if (size.overDataWarn && !warnedLargeData.current) {
+        warnedLargeData.current = true;
         toast({
-          title: 'Storage is getting full',
-          description: `Your data now uses ${formatBytes(size.projectedBytes)}. Back up your data in Settings so it isn't lost if this device is reset.`,
+          title: 'Time for a backup: your data is getting large',
+          description: `Your data now uses about ${formatBytes(size.projectedDataBytes ?? size.projectedBytes)}. Back up your data in Settings so it isn't lost if this device is reset.`,
         });
-      } else if (!size.over3MB) {
-        warnedOver3MB.current = false;
+      } else if (!size.overDataWarn) {
+        warnedLargeData.current = false;
       }
     } catch {
       // The size check itself failed: carry on and let the write report the real result.
