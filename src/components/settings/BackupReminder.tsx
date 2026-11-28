@@ -9,14 +9,14 @@ import { Button } from '@/components/ui/button';
 import { useStudentData } from '@/hooks/use-student-data';
 import { useBackup } from '@/hooks/use-backup';
 import { useStorageSize } from '@/hooks/use-storage-size';
-import { formatBytes } from '@/lib/storage-size';
+import { DATA_WARN_BYTES, formatBytes } from '@/lib/storage-size';
 import BackUpNowButton from './BackUpNowButton';
 
 const REMIND_AFTER_DAYS = 7;
 
 /**
  * Dashboard reminder shown when there is data on this device and it hasn't been backed up
- * in the last week — or when storage itself is pressing: past 70% of quota, or past 3 MB
+ * in the last week — or when storage itself is pressing: past 70% of quota, or the data itself past DATA_WARN_BYTES
  * stored, even when the last backup was recent.
  */
 export default function BackupReminder() {
@@ -26,12 +26,12 @@ export default function BackupReminder() {
 
   const hasData = students.length > 0 || sessions.length > 0;
   const isOverdue = !lastBackupAt || Date.now() - lastBackupAt.getTime() > REMIND_AFTER_DAYS * 24 * 60 * 60 * 1000;
-  const sizePressing = !!estimate && (estimate.level !== 'ok' || estimate.over3MB);
+  const sizePressing = !!estimate && (estimate.level !== 'ok' || estimate.overDataWarn);
   if (!hasData || (!isOverdue && !sizePressing)) return null;
 
   const sizeText = sizePressing && estimate
     ? [
-        estimate.over3MB ? `has passed ${formatBytes(3 * 1024 * 1024)}` : null,
+        estimate.overDataWarn ? `has passed ${formatBytes(DATA_WARN_BYTES)}` : null,
         estimate.level !== 'ok'
           ? `is using ${estimate.percent !== null ? `${estimate.percent.toFixed(0)}% of` : 'a large share of'} the storage this browser allows`
           : null,

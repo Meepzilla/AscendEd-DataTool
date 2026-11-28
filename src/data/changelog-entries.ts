@@ -13,6 +13,34 @@ export interface ChangelogEntry {
 export const changelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-28',
+    title: 'The Backup Warning Measures Your Data, Not the Offline App',
+    description: 'The "Back up your data" warning on the Dashboard said the data had passed 3 MB on almost every device, because it measured everything the browser keeps for the app, including the offline copy of the app itself (several MB of program files). It now measures your student, session and goal data alone, and warns when that passes 25 MB, half the largest backup that can be saved and restored, so there is time to act while a backup still works. Settings still shows both figures, and the warnings when the device\'s storage is 70% or 90% full are unchanged. The weekly reminder when nothing has been backed up for 7 days is unchanged too.',
+    type: 'fix',
+    icon: Database,
+  },
+  {
+    date: '2026-11-28',
+    title: 'Hide the Data Entry Bar',
+    description: 'The bar at the bottom of Data Entry (the Student and Goal selector and the save buttons) can now be hidden with the ⌄ button at its right end, so the student cards get the room. Tap "Show Student & Save Controls" to bring it back. Your choice is remembered on this device, and keyboard shortcuts keep working while the bar is hidden.',
+    type: 'improvement',
+    icon: PanelBottom,
+  },
+  {
+    date: '2026-11-28',
+    title: 'Communication Functions Goals Can Count Total Uses',
+    description: 'A Communication Functions goal can now be measured by its total uses across all the functions, for goals worded "will communicate (request, reject, comment, direct...) at least 5 times". Choose Measure Progress By → Total uses, all functions when editing the goal or its template. Every use without a prompt (spontaneous or emerging) counts toward the target, in any mix of functions; prompted uses are still recorded but not counted. Charts, progress, the Progress Report and Data Entry\'s result line count uses for these goals. Goals measured by different functions work as before.',
+    type: 'feature',
+    icon: MessagesSquare,
+  },
+  {
+    date: '2026-11-28',
+    title: 'Older Access PINs Need Setting Again; Reports Choices Stay Private',
+    description: 'A Student Access Lock PIN saved in an older, weaker format is no longer accepted: the next time you turn the lock on, choose the PIN again. PINs set since the passcode update are not affected. With passcode protection on, Reports\' remembered student and goal, and the interval setup remembered for each goal, are now kept only while the app is open instead of in the browser\'s unencrypted storage, so after a reload Reports opens on the first student.',
+    type: 'fix',
+    icon: Lock,
+  },
+  {
+    date: '2026-11-28',
     title: 'Storage, Passcode & Backup Reliability Hardening',
     description: 'IndexedDB list updates and rollbacks now commit in a single atomic transaction, and saved custom goal types are encrypted under your passcode and included in storage-full alerts. Locking the app now hides student data immediately before background work finishes, and locking, changing the passcode, or erasing data syncs across open tabs. Passcode lockout is enforced when confirming a passcode, failed saves or backup verifications roll back cleanly without overwriting existing data, backups containing older goal types verify their checksums before upgrading, duplicate IDs are deduplicated during merge restores, and impossible calendar dates (such as Feb 30) are rejected.',
     type: 'fix',
