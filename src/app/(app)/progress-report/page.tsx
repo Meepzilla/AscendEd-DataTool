@@ -47,8 +47,9 @@ function daysAgo(n: number) { const d = startOfDay(new Date()); d.setDate(d.getD
 
 function rangeFor(period: Period, custom: DateRange | undefined): DateRange | undefined {
   switch (period) {
-    case 'last-30': return { from: daysAgo(30), to: new Date() };
-    case 'last-9-weeks': return { from: daysAgo(63), to: new Date() };
+    // Today counts as one of the days: the last 30 days start 29 days ago, the last 9 weeks (63 days) 62 days ago.
+    case 'last-30': return { from: daysAgo(29), to: new Date() };
+    case 'last-9-weeks': return { from: daysAgo(62), to: new Date() };
     case 'school-year': return { from: schoolYearStart(), to: new Date() };
     case 'custom': return custom;
     default: return undefined;
@@ -180,7 +181,9 @@ function ProgressReportPage() {
   const service = useMemo(() => {
     if (!student || periodSessions.length === 0 && !range?.from) return undefined;
     const from = range?.from ?? parseDateOnly(periodSessions[0].date);
-    const to = range?.to ?? (range?.from ? range.from : parseDateOnly(periodSessions[periodSessions.length - 1].date));
+    // A range with only a start date runs to today (it was read as that one day, so the expected minutes were a
+    // single day's worth).
+    const to = range?.to ?? (range?.from ? new Date() : parseDateOnly(periodSessions[periodSessions.length - 1].date));
     return periodService(periodSessions, student.iep, from, to);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [student, periodSessions, period, customRange]);

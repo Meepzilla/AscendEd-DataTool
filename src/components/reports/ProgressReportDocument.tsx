@@ -74,7 +74,7 @@ function ServiceSection({ service }: { service: PeriodService }) {
   ];
   if (service.required && service.per !== 'year' && service.expected !== null) {
     rows.push([`Expected for this period (${service.periods} ${service.per}s)`, `${service.expected} min`]);
-    rows.push([`Average per ${service.per}`, `${Math.round(service.delivered / Math.max(service.periods, 0.1))} min`]);
+    if (service.averagePerPeriod !== null) rows.push([`Average per ${service.per}`, `${service.averagePerPeriod} min`]);
     const difference = service.delivered - service.expected;
     rows.push(['Difference', difference >= 0 ? `${difference} min over` : `${-difference} min short`]);
   }
@@ -112,8 +112,8 @@ function ServiceSection({ service }: { service: PeriodService }) {
         </dl>
       )}
       <p className="mt-1 text-[11px] text-muted-foreground">
-        From each session&apos;s start and end times; missed sessions aren&apos;t counted
-        {service.untimed ? `, and ${service.untimed} session${service.untimed === 1 ? '' : 's'} without times ${service.untimed === 1 ? 'isn\'t' : 'aren\'t'} either` : ''}.
+        From each session&apos;s service split, or its start and end times; missed sessions aren&apos;t counted
+        {service.untimed ? `, and ${service.untimed} session${service.untimed === 1 ? '' : 's'} with neither ${service.untimed === 1 ? 'isn\'t' : 'aren\'t'} either` : ''}.
       </p>
     </section>
   );

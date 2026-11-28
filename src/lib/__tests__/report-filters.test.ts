@@ -15,8 +15,8 @@ describe('Reports filters remembered on the device', () => {
   afterEach(() => { vi.unstubAllGlobals(); });
 
   it('works out a quick range from today', () => {
-    expect(day(quickRangeDates('last-30', NOW)?.from)).toBe('2026-10-16');
-    expect(day(quickRangeDates('last-9-weeks', NOW)?.from)).toBe('2026-09-13');
+    expect(day(quickRangeDates('last-30', NOW)?.from)).toBe('2026-10-17');  // 30 days counting today
+    expect(day(quickRangeDates('last-9-weeks', NOW)?.from)).toBe('2026-09-14');
     expect(quickRangeDates('last-9-weeks', NOW)?.to).toBe(NOW);
     expect(quickRangeDates('all', NOW)).toBeUndefined();
     const year = quickRangeDates('school-year', NOW)!;
@@ -27,7 +27,7 @@ describe('Reports filters remembered on the device', () => {
     rememberRangeChoice({ quick: 'last-30' });
     const choice = readRangeChoice();
     expect(choice).toEqual({ quick: 'last-30' });
-    expect(day(rangeChoiceDates(choice, new Date('2026-12-01T09:00:00'))?.from)).toBe('2026-11-01');
+    expect(day(rangeChoiceDates(choice, new Date('2026-12-01T09:00:00'))?.from)).toBe('2026-11-02');
   });
 
   it('remembers custom dates as the days picked', () => {

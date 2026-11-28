@@ -27,6 +27,8 @@ import { goalStatement } from '@/lib/helpers';
 import { toSafeErrorMessage } from '@/lib/error-message';
 import { automaticBlankValues, findBlanks } from '@/lib/goal-blanks';
 import { goalMeasureInfo } from '@/lib/goal-measures';
+import { tidiedUpdate } from '@/lib/goal-type-fields';
+import { hasTargetDirection } from '@/lib/goal-constants/behavior';
 
 type EditAssignedGoalFormData = z.infer<typeof AssignedGoalEditSchema>;
 
@@ -104,7 +106,9 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
       const descriptions = Array.from({ length: 5 }, (_, i) => (data.gasLevelDescriptions?.[i] ?? '').trim());
       const gasLevelDescriptions = descriptions.some(Boolean) ? descriptions : undefined;
       // Not saved (the storage error was shown): the window stays open with the edits, so they can be saved again.
-      if (!(await updateStudentGoal(studentId, goalToEdit.id, { ...data, blankFills: blankFills.some(Boolean) ? blankFills : undefined, gasLevelDescriptions }))) return;
+      // A direction, custom type or negative baseline the new data capture method can't use is tidied (goal-type-fields.ts).
+      const updates = tidiedUpdate(goalToEdit, { ...data, blankFills: blankFills.some(Boolean) ? blankFills : undefined, gasLevelDescriptions } as Partial<Goal>);
+      if (!(await updateStudentGoal(studentId, goalToEdit.id, updates))) return;
       toast({ title: 'Success', description: 'Goal updated successfully.' });
       onClose();
     } catch (error) {
@@ -189,6 +193,9 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
                   onChange={(type, customType) => {
                     field.onChange(type);
                     form.setValue('customType', type === 'CUSTOM' ? customType : undefined, { shouldDirty: true });
+                    // A custom type brings its own direction; a method with no direction choice keeps none.
+                    if (type === 'CUSTOM' && customType) form.setValue('targetDirection', customType.direction, { shouldDirty: true });
+                    else if (!hasTargetDirection(type)) form.setValue('targetDirection', undefined, { shouldDirty: true });
                   }}
                 />
                 <FormDescription>

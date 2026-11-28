@@ -218,3 +218,41 @@ describe('periodService byType', () => {
   });
 });
 
+
+describe('periodService totals and average', () => {
+  const iep = { serviceMinutes: 60, servicePer: 'week' as const };
+  it('totals the service split, the same minutes as the by-type rows', () => {
+    // 09:00-09:30 split 20 + 20, and a session with a split but no end time.
+    const result = periodService([
+      session({ date: '2026-10-06', time: '09:00', endTime: '09:30', serviceMinutes: { related: 20, aac: 20 } }),
+      session({ date: '2026-10-07', time: '09:00', serviceMinutes: { related: 30 } }),
+    ], iep, new Date(2026, 9, 5), new Date(2026, 9, 11));
+    expect(result.delivered).toBe(70);
+    expect(result.byType.reduce((sum, t) => sum + t.delivered, 0)).toBe(70);
+    expect(result.untimed).toBe(0);
+  });
+  it('gives no average per week over less than a week', () => {
+    const short = periodService([session({ date: '2026-10-06', time: '09:00', endTime: '09:30' })], iep, new Date(2026, 9, 6), new Date(2026, 9, 6));
+    expect(short.averagePerPeriod).toBeNull();
+    const twoWeeks = periodService([session({ date: '2026-10-06', time: '09:00', endTime: '09:30' })], iep, new Date(2026, 9, 5), new Date(2026, 9, 18));
+    expect(twoWeeks.averagePerPeriod).toBe(15);
+  });
+  it('the school year total on the profile counts the split too', () => {
+    const overview = studentOverview([session({ date: '2026-10-07', time: '09:00', serviceMinutes: { related: 30 } })], iep, new Date(2026, 9, 8));
+    expect(overview.service.schoolYear).toBe(30);
+    expect(overview.service.untimed).toBe(0);
+  });
+});
+
+describe('profile attendance rate', () => {
+  it("doesn't count the provider's absences or no-school days against the student", () => {
+    const sessions = [
+      ...Array.from({ length: 8 }, (_, i) => session({ date: `2026-10-${String(i + 1).padStart(2, '0')}` })),
+      session({ date: '2026-10-12', missed: { reason: 'provider-absent' } }),
+      session({ date: '2026-10-13', missed: { reason: 'no-school' } }),
+    ];
+    expect(studentOverview(sessions, undefined, new Date(2026, 9, 20)).attendanceRate).toBe(100);
+    const withAbsence = [...sessions, session({ date: '2026-10-14', missed: { reason: 'student-absent' } })];
+    expect(studentOverview(withAbsence, undefined, new Date(2026, 9, 20)).attendanceRate).toBe(89);
+  });
+});
