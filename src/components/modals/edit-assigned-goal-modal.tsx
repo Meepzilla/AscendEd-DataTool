@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -23,11 +23,14 @@ import TargetDirectionField from '@/components/goal-templates/TargetDirectionFie
 import GoalChangeSummary from '@/components/goal-templates/GoalChangeSummary';
 import GasLevelDescriptionsField from '@/components/goal-templates/GasLevelDescriptionsField';
 import { assignedGoalChanges } from '@/lib/goal-changes';
-import { goalStatement } from '@/lib/helpers';
+import { goalStatement, goalTypeLabel } from '@/lib/helpers';
 import { toSafeErrorMessage } from '@/lib/error-message';
 import { automaticBlankValues, findBlanks } from '@/lib/goal-blanks';
 import { goalMeasureInfo } from '@/lib/goal-measures';
 import { tidiedUpdate } from '@/lib/goal-type-fields';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertTriangle } from 'lucide-react';
 import { hasTargetDirection } from '@/lib/goal-constants/behavior';
 
 type EditAssignedGoalFormData = z.infer<typeof AssignedGoalEditSchema>;
@@ -40,12 +43,19 @@ interface EditAssignedGoalModalProps {
 }
 
 export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goalToEdit }: EditAssignedGoalModalProps) {
-  const { updateStudentGoal, students, loading: dataLoading } = useStudentData();
+  const { updateStudentGoal, students, sessions, loading: dataLoading } = useStudentData();
   const studentName = students.find(s => s.id === studentId)?.name;
   const studentIep = students.find(s => s.id === studentId)?.iep;
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+  // Changing the data capture method of a goal with recorded sessions reads those sessions with the new method
+  // (they keep only their raw numbers), so past results can change or drop off the charts. Saving that change
+  // needs an explicit "I understand".
+  const [methodChangeUnderstood, setMethodChangeUnderstood] = useState(false);
+  const recordedSessionCount = useMemo(
+    () => sessions.filter(s => s.studentId === studentId && !s.missed && s.goals?.some(g => g.goalId === goalToEdit?.id)).length,
+    [sessions, studentId, goalToEdit?.id],
+  );
 
 
   const form = useForm<EditAssignedGoalFormData>({
@@ -87,16 +97,30 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
 
   // What changed, old to new, so the editor says plainly what saving will change. Compared against
   // the goal as it was, not against the form's dirty flags, so only real differences are listed.
-  const watched = form.watch(['name', 'smartGoal', 'sessionTargetValue', 'targetDate', 'taskSteps', 'baseline', 'baselineDate', 'gasLevelDescriptions', 'masterySessions', 'blankFills', 'targetDirection', 'isArchived', 'dataCaptureType', 'sessionTargetUses', 'listItems', 'sampleUnit']);
+  const watched = form.watch(['name', 'smartGoal', 'sessionTargetValue', 'targetDate', 'taskSteps', 'baseline', 'baselineDate', 'gasLevelDescriptions', 'masterySessions', 'blankFills', 'targetDirection', 'isArchived', 'dataCaptureType', 'sessionTargetUses', 'listItems', 'sampleUnit', 'customType']);
   const changes = React.useMemo(() => assignedGoalChanges(goalToEdit, {
     name: watched[0], smartGoal: watched[1], sessionTargetValue: watched[2], targetDate: watched[3],
     taskSteps: watched[4], baseline: watched[5], baselineDate: watched[6], gasLevelDescriptions: watched[7],
     masterySessions: watched[8], blankFills: watched[9], targetDirection: watched[10], isArchived: watched[11],
-    dataCaptureType: watched[12], sessionTargetUses: watched[13], listItems: watched[14], sampleUnit: watched[15],
+    dataCaptureType: watched[12], sessionTargetUses: watched[13], listItems: watched[14], sampleUnit: watched[15], customType: watched[16],
   }), [goalToEdit, watched]);
+
+  const captureBefore = goalToEdit?.dataCaptureType || goalToEdit?.type;
+  const captureNow = form.watch('dataCaptureType') || goalToEdit?.type;
+  const customNow = form.watch('customType');
+  const methodChanged = captureNow !== captureBefore
+    || (captureNow === 'CUSTOM' && (customNow?.id !== goalToEdit?.customType?.id));
+  const needsMethodConfirm = methodChanged && recordedSessionCount > 0;
+  useEffect(() => { if (!methodChanged) setMethodChangeUnderstood(false); }, [methodChanged]);
+  useEffect(() => { if (isOpen) setMethodChangeUnderstood(false); }, [isOpen]);
 
   const onSubmit = async (data: EditAssignedGoalFormData) => {
     if (!goalToEdit) return;
+    // Ctrl+Enter saves without the button, so the confirmation is checked here too.
+    if (needsMethodConfirm && !methodChangeUnderstood) {
+      toast({ title: 'Confirm the data capture change', description: 'Tick "I understand" under the warning to change how this goal\'s past sessions are read.', variant: 'destructive' });
+      return;
+    }
     setIsSubmitting(true);
     try {
       // One fill per blank in the (possibly edited) text; empty ones use the automatic value.
@@ -445,13 +469,32 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
           />
 
 
+          {needsMethodConfirm && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Past sessions will be read with the new method</AlertTitle>
+              <AlertDescription className="space-y-2">
+                <p>
+                  This goal has {recordedSessionCount} recorded session{recordedSessionCount === 1 ? '' : 's'} measured
+                  as {goalTypeLabel({ type: captureBefore ?? '', customType: goalToEdit?.customType })}. After the change they are measured
+                  as {goalTypeLabel({ type: captureNow ?? '', customType: customNow })}, so past results can change or no longer
+                  show in charts and reports. To keep them as they are, cancel and add a new goal for the new method instead.
+                </p>
+                <label className="flex items-center gap-2 font-medium">
+                  <Checkbox checked={methodChangeUnderstood} onCheckedChange={v => setMethodChangeUnderstood(v === true)} />
+                  I understand
+                </label>
+              </AlertDescription>
+            </Alert>
+          )}
+
           <GoalChangeSummary changes={changes} />
 
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting || dataLoading}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting || dataLoading}>
+            <Button type="submit" disabled={isSubmitting || dataLoading || (needsMethodConfirm && !methodChangeUnderstood)}>
               {isSubmitting || dataLoading ? 'Saving...' : 'Save Changes'}
             </Button>
           </div>

@@ -124,11 +124,11 @@ export default function GoalTemplatesPage() {
   };
 
   
+  // The dialog gets the template as it is: its title and button read the current state ("Archive" for a visible
+  // template) and it flips isArchived itself when confirmed. Passing it pre-flipped made the dialog offer the
+  // opposite action and then flip it back, so nothing changed.
   const handleArchiveToggle = (template: GoalTemplate) => {
-    openDeleteConfirmationModal({
-      ...template,
-      isArchived: !template.isArchived,
-    }, 'goalTemplate');
+    openDeleteConfirmationModal(template, 'goalTemplate');
   };
 
   if (error) {
@@ -162,6 +162,8 @@ export default function GoalTemplatesPage() {
           <Suspense fallback={null}><EditGoalTemplateModal templateToEdit={editingGoalTemplate} /></Suspense>
         </LazyBoundary>
       )}
+      {/* A built-in template is archived or unarchived (by its current state; never archived reads as visible), a
+          template of your own is deleted. */}
       {deletingStudent && deletingStudent.type === 'goalTemplate' && (
         <LazyBoundary label="Confirmation dialog" onDismiss={closeDeleteConfirmationModal}>
           <Suspense fallback={null}>
@@ -169,12 +171,12 @@ export default function GoalTemplatesPage() {
               isOpen={!!deletingStudent}
               onClose={() => closeDeleteConfirmationModal()}
               title={
-                (deletingStudent.item as GoalTemplate)?.isArchived !== undefined && (deletingStudent.item as GoalTemplate).isDefault
+                (deletingStudent.item as GoalTemplate)?.isDefault
                   ? ((deletingStudent.item as GoalTemplate).isArchived ? `Unarchive Default Template` : `Archive Default Template`)
                   : `Delete Template: ${(deletingStudent.item as GoalTemplate)?.name}`
               }
               description={
-                (deletingStudent.item as GoalTemplate)?.isArchived !== undefined && (deletingStudent.item as GoalTemplate).isDefault
+                (deletingStudent.item as GoalTemplate)?.isDefault
                   ? ((deletingStudent.item as GoalTemplate).isArchived ? "This will make the template visible in the main library again. Are you sure?" : "Archiving a default template will hide it from the main library. You can view and unarchive it later. Are you sure?")
                   : "Are you sure you want to permanently delete this custom goal template? This action cannot be undone."
               }
@@ -182,7 +184,7 @@ export default function GoalTemplatesPage() {
               itemToUpdate={(deletingStudent.item as GoalTemplate)?.isDefault ? (deletingStudent.item as GoalTemplate) : undefined}
               updateAction={(id, data) => updateGoalTemplate(id, data)}
               confirmText={
-                (deletingStudent.item as GoalTemplate)?.isArchived !== undefined && (deletingStudent.item as GoalTemplate).isDefault
+                (deletingStudent.item as GoalTemplate)?.isDefault
                   ? ((deletingStudent.item as GoalTemplate).isArchived ? 'Yes, Unarchive' : 'Yes, Archive')
                   : 'Yes, Delete'
               }

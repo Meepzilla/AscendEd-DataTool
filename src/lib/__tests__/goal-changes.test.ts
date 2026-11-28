@@ -168,3 +168,16 @@ describe('withStudentGoals (goal changes worked out at the moment of the write)'
     expect(withStudentGoals([ava([])], 's1', goals => goals, AT)?.[0].updatedAt).toBe(AT);
   });
 });
+
+describe('custom goal type swaps', () => {
+  it('lists swapping one custom type for another as a data capture change', async () => {
+    const { assignedGoalChanges } = await import('../goal-changes');
+    const { defaultCustomGoalType } = await import('../goal-types/custom');
+    const rating = { ...defaultCustomGoalType('ct-rating'), name: 'Peer rating' };
+    const hits = { ...defaultCustomGoalType('ct-hits'), name: 'Hits counter', kind: 'counter' as const };
+    const goal = { id: 'g1', name: 'Test goal', type: 'CUSTOM', customType: rating, smartGoal: 'Test Student Ada will …' } as Goal;
+    const changes = assignedGoalChanges(goal, { dataCaptureType: 'CUSTOM', customType: hits });
+    expect(changes).toEqual([expect.objectContaining({ label: 'Data capture method', from: expect.stringContaining('Peer rating'), to: expect.stringContaining('Hits counter') })]);
+    expect(assignedGoalChanges(goal, { dataCaptureType: 'CUSTOM', customType: rating })).toEqual([]);
+  });
+});
