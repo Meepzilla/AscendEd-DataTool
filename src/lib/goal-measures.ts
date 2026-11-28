@@ -89,6 +89,12 @@ export function usesPromptCounters(typeOrGoal: string | MeasuredGoal): boolean {
   return getGoalTypeDef(typeOrGoal).usesPromptCounters;
 }
 
+/** True for built-in latency goals (BEHAVIOR_LATENCY / RESPONSE_TIME) and custom latency goals. */
+export function isLatencyGoal(goal: MeasuredGoal): boolean {
+  const type = captureTypeOf(goal);
+  return toolTypeOf(type) === 'BEHAVIOR_LATENCY' || (type === 'CUSTOM' && goal.customType?.kind === 'latency');
+}
+
 /** A session's free-text notes for a goal, whichever field the goal type uses. */
 export function goalNotes(data: Record<string, any> = {}): string {
   return [data.notes, data.details, data.observationNotes].map(v => String(v ?? '').trim()).filter(Boolean).join(' · ');

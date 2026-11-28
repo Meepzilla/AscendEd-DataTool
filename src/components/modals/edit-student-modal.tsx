@@ -81,10 +81,13 @@ export default function EditStudentModal({ studentToEdit } : EditStudentModalPro
   const onSubmitName = async (data: EditStudentFormData) => {
     if (!currentStudent) return;
     setIsSubmittingName(true);
-    const saved = await updateStudent(currentStudent.id, { name: data.name });
-    setIsSubmittingName(false);
-    // The saved name is what the box now shows, so a later change to the record can refresh it.
-    if (saved) nameBoxRef.current = { id: currentStudent.id, name: data.name };
+    try {
+      const saved = await updateStudent(currentStudent.id, { name: data.name });
+      // The saved name is what the box now shows, so a later change to the record can refresh it.
+      if (saved) nameBoxRef.current = { id: currentStudent.id, name: data.name };
+    } finally {
+      setIsSubmittingName(false);
+    }
     // Toast is handled in updateStudent
   };
 

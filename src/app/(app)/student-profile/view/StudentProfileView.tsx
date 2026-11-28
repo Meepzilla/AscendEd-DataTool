@@ -258,11 +258,13 @@ export default function StudentProfileView() {
           </div>
           <div className="flex flex-wrap xl:flex-nowrap gap-2 w-full xl:w-auto">
             {/* This student's charts, data summary and attendance, with the Progress Report from there. */}
-            <Button asChild size="sm" className="w-full sm:w-auto">
-              <Link href={`/analysis-report?studentId=${currentStudent.id}`}>
-                <BarChart2 className="mr-2 h-4 w-4" /> View Report
-              </Link>
-            </Button>
+            {!currentStudent.isArchived && (
+              <Button asChild size="sm" className="w-full sm:w-auto">
+                <Link href={`/analysis-report?studentId=${currentStudent.id}`}>
+                  <BarChart2 className="mr-2 h-4 w-4" /> View Report
+                </Link>
+              </Button>
+            )}
                 {currentStudent && (
                   <CsvExportWarning
                     studentName={currentStudent.name}

@@ -59,7 +59,7 @@ export default function AttendanceCard({ sessions }: Props) {
   // The calendar opens on the latest month with a session, and follows the data when the student or range changes.
   const [month, setMonth] = useState<string | undefined>(lastMonth);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
-  useEffect(() => { setMonth(lastMonth); setSelectedDay(null); }, [lastMonth, firstMonth]);
+  useEffect(() => { setMonth(lastMonth); setSelectedDay(null); }, [lastMonth, firstMonth, sessions]);
 
   if (sessions.length === 0 || !firstMonth || !lastMonth) return null;
   const shown = month && month >= firstMonth && month <= lastMonth ? month : lastMonth;

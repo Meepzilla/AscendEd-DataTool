@@ -268,6 +268,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     // while the student remains (or the other way round).
     if (!(await applyTransaction(next))) return false;
     applyLists(next);
+    setSelectedStudent(prev => (prev && prev.id === studentId ? null : prev));
     toast({ title: "Success", description: "Student and sessions deleted." });
     return true;
   }, [currentUser, toast, applyTransaction, applyLists]);
@@ -417,6 +418,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   // The refs, not React state: a backup taken right after a rapid change exports what
   // is stored, not the state from the last render.
   const exportBackup = useCallback(async () => {
+    if (!currentUser) throw new Error('Not authenticated.');
     const [
       { createBackup },
       { loadCustomAbcLists },
@@ -457,6 +459,11 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
 
     const { next, summary } = planRestore(current, backup, mode);
+    // Snapshot raw storage (including damaged/quarantined rows) before overwriting so a verification
+    // failure puts the original bytes/rows back instead of overwriting damaged storage with [].
+    const preRestoreSnapshots = await Promise.all(
+      keys.map(async k => (k ? [k, await secureStore.snapshotItemAsync(k)] as const : null)),
+    );
     // Replacing is how damaged data is recovered, so those lists may be overwritten now. If storage fills
     // part way, the transaction puts each list back exactly as it was stored (damaged ones too).
     unmark(damaged);
@@ -478,8 +485,16 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
           throw new Error('Restore verification failed: the restored data did not read back.');
         }
       }
-    } catch (error) {
-      const rolledBack = await applyTransaction(current);
+    } catch {
+      let rolledBack = true;
+      for (const entry of preRestoreSnapshots) {
+        if (!entry) continue;
+        try {
+          await secureStore.restoreItemAsync(entry[0], entry[1]);
+        } catch {
+          rolledBack = false;
+        }
+      }
       mark(damaged);
       if (!rolledBack) {
         throw new Error("The backup couldn't be verified on this device, and putting the previous data back also failed. Restore the backup again, or check the error log.");
@@ -496,7 +511,7 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     // second toast here would replace this one at once, since only one shows at a time).
     const leftOut = describeLeftOut(backup as Partial<ParsedBackup>);
     return leftOut.length > 0 ? { ...summary, leftOut } : summary;
-  }, [currentUser, studentsKey, templatesKey, sessionsKey, addErrorLog, isUnreadable, unmark, mark, applyTransaction, applyLists, toast]);
+  }, [currentUser, studentsKey, templatesKey, sessionsKey, addErrorLog, isUnreadable, unmark, mark, applyTransaction, applyLists]);
 
   // --- End Data Actions ---
 
@@ -507,6 +522,9 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       return;
     }
     if (!currentUser) {
+      studentsRef.current = [];
+      templatesRef.current = [];
+      sessionsRef.current = [];
       setStudents([]);
       setTemplateList([]);
       setSessions([]);
@@ -617,15 +635,22 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   // sender id (see isOwnDataChangedMessage) instead of reloading on its own saves.
   useEffect(() => {
     if (typeof window === 'undefined' || !currentUser) return;
+    let cancelled = false;
     // Once after a burst of saves ends, and again if more arrive while reloading: every save from the other tab is
     // picked up. (Reloading only on the first message of a burst missed the rest, and this tab's next save then
     // wrote its incomplete list back, deleting the other tab's newer records.)
     const doReload = async () => {
       await hydrateLists({ students: studentsKey, templates: templatesKey, sessions: sessionsKey });
+      if (cancelled) return;
       const nextStudents = readList<Student>(studentsKey);
       const nextTemplates = readList<GoalTemplate>(templatesKey);
       const nextSessions = readList<SessionData>(sessionsKey);
-      if (nextStudents === undefined || nextTemplates === undefined || nextSessions === undefined) {
+      const failedKeys: string[] = [];
+      if (nextStudents === undefined && studentsKey) failedKeys.push(studentsKey);
+      if (nextTemplates === undefined && templatesKey) failedKeys.push(templatesKey);
+      if (nextSessions === undefined && sessionsKey) failedKeys.push(sessionsKey);
+      if (failedKeys.length > 0 || nextStudents === undefined || nextTemplates === undefined || nextSessions === undefined) {
+        mark(failedKeys);
         toast({
           title: "Data changed in another tab, but it couldn't be reloaded",
           description: "Some of this device's data couldn't be read, so what you see here is unchanged. Restore a backup in Settings if data looks wrong.",
@@ -633,6 +658,9 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         });
         return;
       }
+      const cleanKeys = [studentsKey, templatesKey, sessionsKey].filter((k): k is string => !!k);
+      unmark(cleanKeys);
+      setError(null);
       applyListsQuiet({
         students: [...nextStudents].sort(byName),
         goalTemplates: [...nextTemplates].sort(byName),
@@ -662,11 +690,12 @@ export const StudentDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       // No channel: the storage event still covers the localStorage-backed lists.
     }
     return () => {
+      cancelled = true;
       window.removeEventListener('storage', onStorage);
       channel?.close();
       reloader.cancel();
     };
-  }, [currentUser, studentsKey, templatesKey, sessionsKey, toast, applyListsQuiet, oneAtATime]);
+  }, [currentUser, studentsKey, templatesKey, sessionsKey, toast, applyListsQuiet, oneAtATime, mark, unmark]);
   
 
   const getSessionsForStudent = useCallback((studentId: string) => {

@@ -61,6 +61,7 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
   const sortedDataCaptureTypes = React.useMemo(() => Object.keys(GOAL_TYPE_FIELDS).sort((a, b) => a.localeCompare(b)), []);
 
 
+  const templateId = currentTemplate?.id;
   useEffect(() => {
     if (currentTemplate) {
       form.reset({
@@ -76,7 +77,9 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
         targetDirection: currentTemplate.targetDirection,
       });
     }
-  }, [currentTemplate, form]);
+    // Only reset when a different template is opened, so cross-tab reloads don't wipe in-progress edits.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [templateId, form]);
 
   // What changed, old to new, so the editor says plainly what saving will change. Compared against
   // the template as it was, not against the form's dirty flags, so only real differences are listed.
@@ -90,14 +93,17 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
   const onSubmit = async (data: EditGoalTemplateFormData) => {
     if (!currentTemplate) return;
     setIsSubmitting(true);
-    // Five level descriptions, one per level from -2 to +2; all blank means no custom descriptions.
-    const descriptions = Array.from({ length: 5 }, (_, i) => (data.gasLevelDescriptions?.[i] ?? '').trim());
-    const gasLevelDescriptions = descriptions.some(Boolean) ? descriptions : undefined;
-    // A direction, custom type or negative baseline the new data capture method can't use is tidied (goal-type-fields.ts).
-    const saved = await updateGoalTemplate(currentTemplate.id, tidiedUpdate(currentTemplate, { ...data, gasLevelDescriptions } as Partial<GoalTemplate>));
-    setIsSubmitting(false);
-    // Not saved (the storage error was shown): stays open with the edits, so they can be saved again.
-    if (saved) closeEditGoalTemplateModal();
+    try {
+      // Five level descriptions, one per level from -2 to +2; all blank means no custom descriptions.
+      const descriptions = Array.from({ length: 5 }, (_, i) => (data.gasLevelDescriptions?.[i] ?? '').trim());
+      const gasLevelDescriptions = descriptions.some(Boolean) ? descriptions : undefined;
+      // A direction, custom type or negative baseline the new data capture method can't use is tidied (goal-type-fields.ts).
+      const saved = await updateGoalTemplate(currentTemplate.id, tidiedUpdate(currentTemplate, { ...data, gasLevelDescriptions } as Partial<GoalTemplate>));
+      // Not saved (the storage error was shown): stays open with the edits, so they can be saved again.
+      if (saved) closeEditGoalTemplateModal();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!currentTemplate) return null;
@@ -259,6 +265,7 @@ export default function EditGoalTemplateModal({ templateToEdit }: EditGoalTempla
             const targetInfo = goalMeasureInfo({
               type: form.watch('dataCaptureType') || form.watch('type'),
               targetDirection: form.watch('targetDirection'),
+              customType: form.watch('customType'),
             });
             return (
           <FormField

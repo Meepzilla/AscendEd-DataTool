@@ -577,6 +577,7 @@ export const IntervalInput: React.FC<BehaviorInputProps> = (props) => {
           <label className="flex items-center gap-1.5 text-xs text-muted-foreground ml-auto">
             <Switch
               checked={cueOn}
+              disabled={disabled || isLocked}
               onCheckedChange={(on) => { setCueOn(on); writeStored(INTERVAL_CUE_KEY, on); if (on) prepare(); }}
               aria-label="Beep at each interval"
             />

@@ -13,6 +13,20 @@ export interface ChangelogEntry {
 export const changelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-28',
+    title: 'Storage, Passcode & Backup Reliability Hardening',
+    description: 'IndexedDB list updates and rollbacks now commit in a single atomic transaction, and saved custom goal types are encrypted under your passcode and included in storage-full alerts. Locking the app now hides student data immediately before background work finishes, and locking, changing the passcode, or erasing data syncs across open tabs. Passcode lockout is enforced when confirming a passcode, failed saves or backup verifications roll back cleanly without overwriting existing data, backups containing older goal types verify their checksums before upgrading, duplicate IDs are deduplicated during merge restores, and impossible calendar dates (such as Feb 30) are rejected.',
+    type: 'fix',
+    icon: ShieldCheck,
+  },
+  {
+    date: '2026-11-28',
+    title: 'Custom Goal Scoring, Data Entry Shortcuts & UI Fixes',
+    description: 'Custom latency goals now treat unanswered sessions like built-in latency goals (breaking mastery streaks and appearing in reports), custom per-minute counters wait for observation minutes before computing a rate, custom trial-grid goals use opportunity-weighted trends, and prompt hotkeys no longer mutate custom goals that have prompt counters turned off. Importing ABC and interval goals now infers increase vs. decrease direction from the goal text, Dashboard service status counts explicit per-service minute splits, and Language Sample targets are no longer rewritten as percentages. On Data Entry, Ctrl+Enter now saves all students as documented, and Student Access Lock disables the student switcher dropdown and interval beep switch. Also fixed default template Archive/Unarchive double-toggling, aligned single-day Progress Report expected service minutes, removed a nested form in Language Sample entry inside modals, prevented cross-tab reloads from wiping open goal edits, guarded backup restores against double-clicks, and added accessible labels to icon-only buttons.',
+    type: 'fix',
+    icon: CheckSquare,
+  },
+  {
+    date: '2026-11-28',
     title: 'Mastery, Service Minutes and Attendance Figures Corrected',
     description: 'A goal whose data capture method was changed (for example a behavior goal switched to Discrete Trials or Articulation) could keep its old "decrease" direction out of sight, so a session far below the target counted as meeting it; the old direction is now dropped, and goals already saved that way are fixed when the app opens. Choosing one of your custom goal types as a built-in goal\'s method now makes it a custom goal, with the type\'s direction, its result line in Data Entry and its place in Settings\' usage count and Update to latest. Built-in goal templates switched away from Goal Attainment Scaling no longer pass on a hidden baseline of -2. On the Progress Report, service minutes now count each session\'s service split (so the total matches the rows by type), Average per week or month is only shown over at least a whole week or month (one session no longer reads as 300 minutes a week), and a date range with only a start date runs to today. Last 30 days and Last 9 weeks now cover exactly 30 days and 9 weeks. On a student\'s profile, attendance no longer counts your own absences or no-school days against the student (it matches Student attendance on Reports), and the Service Minutes panel no longer repeats the school-year total. Targets and baselines above a goal type\'s scale (such as 800% or a 9 on a 1–5 rating) can no longer be saved, even with Ctrl+Enter, and response times read "1 second" instead of "1 seconds".',
     type: 'fix',

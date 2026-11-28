@@ -12,6 +12,7 @@ import { hydrateLists, readList, storageKeys } from './data-store';
 import { defaultTemplateKey } from './goal-constants';
 import { decryptWithPassword, encryptWithPassword, type PasswordProtected } from './secure-store';
 import { LAST_BACKUP_KEY, MAX_BACKUP_FILE_BYTES, PLAINTEXT_BACKUP_ACKNOWLEDGEMENT, isPlaintextBackupAcknowledged } from './backup-constants';
+import { isRealDate } from './helpers';
 
 export { LAST_BACKUP_KEY, MAX_BACKUP_FILE_BYTES, PLAINTEXT_BACKUP_ACKNOWLEDGEMENT, isPlaintextBackupAcknowledged };
 
@@ -71,7 +72,7 @@ export type RestoreMode = 'merge' | 'replace';
 // (below) is checked over this stripped payload, and settings are validated block by
 // block in parseBackup so a damaged block is reported instead of silently dropped.
 const BackupGoalSchema = z.object({
-  id: z.string(),
+  id: z.string().min(1),
   name: z.string(),
   type: z.string(),
   dataCaptureType: z.string().optional(),
@@ -94,7 +95,7 @@ const BackupGoalSchema = z.object({
 });
 
 const BackupStudentSchema = z.object({
-  id: z.string(),
+  id: z.string().min(1),
   name: z.string(),
   goals: z.array(BackupGoalSchema),
   // Checked after parsing: a present-but-invalid createdAt drops the student, with a warning.
@@ -117,7 +118,7 @@ const BackupStudentSchema = z.object({
 });
 
 const BackupTemplateSchema = z.object({
-  id: z.string(),
+  id: z.string().min(1),
   name: z.string(),
   type: z.string(),
   dataCaptureType: z.string().optional(),
@@ -146,8 +147,8 @@ const BackupTemplateSchema = z.object({
 });
 
 const BackupSessionSchema = z.object({
-  sessionId: z.string(),
-  studentId: z.string(),
+  sessionId: z.string().min(1),
+  studentId: z.string().min(1),
   studentName: z.string().optional(),
   // Checked after parsing: a date that is not a real date drops the session, with a warning.
   date: z.string(),
@@ -420,11 +421,14 @@ export async function decryptBackupText(text: string, password: string): Promise
   }
 }
 
-/** Whether a value is a real date (a parseable date string, or a timestamp inside the range a Date can hold). */
+/** Whether a value is a real date (a parseable date string with a real calendar day, or a valid timestamp). */
 function validDateValue(value: unknown): value is string | number {
   // A finite number can still be out of range (1e20): toISOString() on it throws and would abort the whole restore.
   if (typeof value === 'number') return Number.isFinite(value) && !Number.isNaN(new Date(value).getTime());
-  return typeof value === 'string' && value.length > 0 && !Number.isNaN(Date.parse(value));
+  if (typeof value !== 'string' || value.length === 0) return false;
+  const isoDay = /^(\d{4})-(\d{2})-(\d{2})(?:$|[T\s])/.exec(value);
+  if (isoDay && !isRealDate(Number(isoDay[1]), Number(isoDay[2]), Number(isoDay[3]))) return false;
+  return !Number.isNaN(Date.parse(value));
 }
 
 /** A date value as an ISO string, or null when it is not a real date. */
@@ -447,9 +451,13 @@ export function parseBackup(text: string): ParsedBackup {
   if (new TextEncoder().encode(text).length > MAX_BACKUP_FILE_BYTES) {
     throw new Error(`This backup file is too large (${TOO_LARGE}). It cannot be restored.`);
   }
+  let rawJson: unknown;
   let json: unknown;
   try {
-    json = JSON.parse(text, reviveGoalTypes); // backups from earlier versions may use earlier goal type keys
+    // Parse once without reviver so checksum verification can check the payload exactly as written
+    // (before legacy goal type keys are rewritten), then parse with reviveGoalTypes for normalization.
+    rawJson = JSON.parse(text);
+    json = JSON.parse(text, reviveGoalTypes);
   } catch {
     throw new Error('This file is not an AscendEd backup (it is not valid JSON).');
   }
@@ -467,15 +475,16 @@ export function parseBackup(text: string): ParsedBackup {
     throw new Error('This backup has no valid export date. It cannot be restored.');
   }
   const raw = json as Record<string, unknown>;
+  const rawAsWritten = rawJson as Record<string, unknown>;
   const { settings, droppedSettings } = extractSettings(raw.settings);
   const strippedUnknownFields = hasStrippedFields(raw.data);
   // The checksum is verified over the stripped payload, before any record is dropped,
   // so changing a value (or a date) fails the check instead of silently dropping a record.
   if (typeof result.data.checksum === 'string' && result.data.checksum.length > 0) {
     const expected = sha256HexSync(canonicalJson(settings === undefined ? { data: result.data.data } : { data: result.data.data, settings }));
-    // The writer hashed the payload as it wrote it, which can hold fields this version strips (a newer version's,
-    // or an older record's): the file as written matching its checksum is intact too.
-    const asWritten = () => sha256HexSync(canonicalJson(raw.settings === undefined ? { data: raw.data } : { data: raw.data, settings: raw.settings }));
+    // The writer hashed the payload as it wrote it, which can hold fields this version strips or
+    // legacy goal type keys before revival: the file as written matching its checksum is intact too.
+    const asWritten = () => sha256HexSync(canonicalJson(rawAsWritten.settings === undefined ? { data: rawAsWritten.data } : { data: rawAsWritten.data, settings: rawAsWritten.settings }));
     if (expected !== result.data.checksum && asWritten() !== result.data.checksum) {
       throw new Error('This backup file is damaged (its contents do not match its checksum). Restore an earlier backup.');
     }
@@ -588,7 +597,12 @@ export function describeLeftOut(backup: Partial<Pick<ParsedBackup, 'droppedSetti
  */
 export function mergeBackupData(current: BackupData, incoming: BackupData): { merged: BackupData; added: RestoreSummary } {
   const studentIds = new Set(current.students.map(s => s.id));
-  const newStudents = incoming.students.filter(s => !studentIds.has(s.id));
+  const newStudents: Student[] = [];
+  for (const s of incoming.students) {
+    if (studentIds.has(s.id)) continue;
+    studentIds.add(s.id);
+    newStudents.push(s);
+  }
 
   // A student on both keeps the device's version, plus any goals only the backup has (so sessions
   // recorded for those goals still have them).
@@ -596,7 +610,11 @@ export function mergeBackupData(current: BackupData, incoming: BackupData): { me
   let addedGoals = 0;
   const students = current.students.map(student => {
     const goalIds = new Set((student.goals || []).map(g => g.id));
-    const extra = (incomingById.get(student.id)?.goals || []).filter(g => !goalIds.has(g.id));
+    const extra = (incomingById.get(student.id)?.goals || []).filter(g => {
+      if (goalIds.has(g.id)) return false;
+      goalIds.add(g.id);
+      return true;
+    });
     if (extra.length === 0) return student;
     addedGoals += extra.length;
     return { ...student, goals: [...(student.goals || []), ...extra] };
@@ -605,10 +623,21 @@ export function mergeBackupData(current: BackupData, incoming: BackupData): { me
   const templateIds = new Set(current.goalTemplates.map(t => t.id));
   // Built-in templates are matched by the name they were added under, so a renamed one isn't added twice.
   const defaultNames = new Set(current.goalTemplates.filter(t => t.isDefault).map(defaultTemplateKey));
-  const newTemplates = incoming.goalTemplates.filter(t => !templateIds.has(t.id) && !(t.isDefault && defaultNames.has(defaultTemplateKey(t))));
+  const newTemplates: GoalTemplate[] = [];
+  for (const t of incoming.goalTemplates) {
+    if (templateIds.has(t.id) || (t.isDefault && defaultNames.has(defaultTemplateKey(t)))) continue;
+    templateIds.add(t.id);
+    if (t.isDefault) defaultNames.add(defaultTemplateKey(t));
+    newTemplates.push(t);
+  }
 
   const sessionIds = new Set(current.sessions.map(s => s.sessionId));
-  const newSessions = incoming.sessions.filter(s => !sessionIds.has(s.sessionId));
+  const newSessions: SessionData[] = [];
+  for (const s of incoming.sessions) {
+    if (sessionIds.has(s.sessionId)) continue;
+    sessionIds.add(s.sessionId);
+    newSessions.push(s);
+  }
 
   return {
     merged: {

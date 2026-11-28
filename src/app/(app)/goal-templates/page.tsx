@@ -125,10 +125,7 @@ export default function GoalTemplatesPage() {
 
   
   const handleArchiveToggle = (template: GoalTemplate) => {
-    openDeleteConfirmationModal({
-      ...template,
-      isArchived: !template.isArchived,
-    }, 'goalTemplate');
+    openDeleteConfirmationModal(template, 'goalTemplate');
   };
 
   if (error) {
@@ -169,12 +166,12 @@ export default function GoalTemplatesPage() {
               isOpen={!!deletingStudent}
               onClose={() => closeDeleteConfirmationModal()}
               title={
-                (deletingStudent.item as GoalTemplate)?.isArchived !== undefined && (deletingStudent.item as GoalTemplate).isDefault
+                (deletingStudent.item as GoalTemplate)?.isDefault
                   ? ((deletingStudent.item as GoalTemplate).isArchived ? `Unarchive Default Template` : `Archive Default Template`)
                   : `Delete Template: ${(deletingStudent.item as GoalTemplate)?.name}`
               }
               description={
-                (deletingStudent.item as GoalTemplate)?.isArchived !== undefined && (deletingStudent.item as GoalTemplate).isDefault
+                (deletingStudent.item as GoalTemplate)?.isDefault
                   ? ((deletingStudent.item as GoalTemplate).isArchived ? "This will make the template visible in the main library again. Are you sure?" : "Archiving a default template will hide it from the main library. You can view and unarchive it later. Are you sure?")
                   : "Are you sure you want to permanently delete this custom goal template? This action cannot be undone."
               }
@@ -182,7 +179,7 @@ export default function GoalTemplatesPage() {
               itemToUpdate={(deletingStudent.item as GoalTemplate)?.isDefault ? (deletingStudent.item as GoalTemplate) : undefined}
               updateAction={(id, data) => updateGoalTemplate(id, data)}
               confirmText={
-                (deletingStudent.item as GoalTemplate)?.isArchived !== undefined && (deletingStudent.item as GoalTemplate).isDefault
+                (deletingStudent.item as GoalTemplate)?.isDefault
                   ? ((deletingStudent.item as GoalTemplate).isArchived ? 'Yes, Unarchive' : 'Yes, Archive')
                   : 'Yes, Delete'
               }
@@ -309,12 +306,12 @@ export default function GoalTemplatesPage() {
                       </p>
                       <div className="flex gap-1">
                         {!template.isArchived && (
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setAssigningTemplate(template)} title="Assign to students">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setAssigningTemplate(template)} title="Assign to students" aria-label={`Assign ${template.name} to students`}>
                             <UserPlus className="h-4 w-4 text-primary" />
                           </Button>
                         )}
                         {template.bankId && (
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDetailsTemplate(template)} title="Purpose & activity ideas">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDetailsTemplate(template)} title="Purpose & activity ideas" aria-label={`Purpose and activity ideas for ${template.name}`}>
                             <Info className="h-4 w-4" />
                           </Button>
                         )}
@@ -323,7 +320,7 @@ export default function GoalTemplatesPage() {
                         </Button>
                         {template.isDefault ? (
                           <>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleArchiveToggle(template)} title={template.isArchived ? "Unarchive Template" : "Archive Template"}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleArchiveToggle(template)} title={template.isArchived ? "Unarchive Template" : "Archive Template"} aria-label={template.isArchived ? `Unarchive ${template.name}` : `Archive ${template.name}`}>
                                {template.isArchived ? <ArchiveRestore className="h-4 w-4 text-green-600"/> : <Archive className="h-4 w-4 text-orange-600"/>}
                             </Button>
                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setBuiltInToDelete(template)} title="Delete built-in goal (restore in Settings)" aria-label={`Delete built-in goal ${template.name}`}>

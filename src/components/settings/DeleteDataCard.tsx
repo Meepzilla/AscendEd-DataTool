@@ -58,8 +58,12 @@ export default function DeleteDataCard() {
     const count = selected.size;
     setCleaningUp(true);
     setCleanUpError(null);
-    const deleted = await deleteStudents([...selected]);
-    setCleaningUp(false);
+    let deleted = false;
+    try {
+      deleted = await deleteStudents([...selected]);
+    } finally {
+      setCleaningUp(false);
+    }
     if (!deleted) {
       // Not deleted (the storage error was shown): stays open and says so, with the same students ticked.
       setCleanUpError('Nothing was deleted, because this device\'s storage could not be written. You can try again, or cancel.');

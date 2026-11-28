@@ -61,8 +61,8 @@ export function behaviorEvents(rawType: string, data: Record<string, any> = {}, 
     const at = parseDate(value);
     return at && (!start || at.toDateString() === start.toDateString()) ? at : null;
   };
-  const fallback = (amount: number, detail?: string) => {
-    if (start && amount > 0) events.push({ at: start, exact: false, amount, detail });
+  const fallback = (amount: number, detail?: string, allowZero = false) => {
+    if (start && (allowZero ? amount >= 0 : amount > 0)) events.push({ at: start, exact: false, amount, detail });
   };
 
   if (type === 'BEHAVIOR_FREQUENCY') {
@@ -101,11 +101,11 @@ export function behaviorEvents(rawType: string, data: Record<string, any> = {}, 
     const latencies: unknown[] = Array.isArray(data.latencies) ? data.latencies : [];
     const times: unknown[] = Array.isArray(data.trialTimes) ? data.trialTimes : [];
     latencies.forEach((value, i) => {
-      if (value === null || value === undefined || value === '' || !Number.isFinite(Number(value))) return;
+      if (value === null || value === undefined || value === '' || !Number.isFinite(Number(value)) || Number(value) < 0) return;
       const at = validDate(times[i]);
       const detail = `Trial ${i + 1}: ${Number(value)} s`;
       if (at) events.push({ at, exact: true, amount: Number(value), detail });
-      else fallback(Number(value), detail);
+      else fallback(Number(value), detail, true);
     });
   }
   return events.sort((a, b) => a.at.getTime() - b.at.getTime());
@@ -147,6 +147,7 @@ export function timePatterns(type: string, sessions: { session: Pick<SessionData
     behaviorEvents(type, data, start).forEach(e => all.push({ ...e, start }));
     if (!start) return;
     sessionDays.set(start.getDay(), (sessionDays.get(start.getDay()) || 0) + 1);
+    if (!session.time) return;
     // The hours the session ran (to its end time when one was entered).
     const end = sessionStart({ date: session.date, time: session.endTime || '' });
     const lastHour = end && session.endTime && end > start ? end.getHours() : start.getHours();

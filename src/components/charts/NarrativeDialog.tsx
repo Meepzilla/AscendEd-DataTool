@@ -145,7 +145,7 @@ export default function NarrativeDialog(props: NarrativeInput & { disabled?: boo
           {generating && <p className="text-sm text-muted-foreground" role="status">Writing the narrative…</p>}
           <Textarea value={text} onChange={(e) => setText(e.target.value)} disabled={generating} className="min-h-[30vh] sm:min-h-[45vh] text-sm leading-relaxed" aria-label="Narrative text" />
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="ghost" onClick={generate} disabled={generating} title="Start over from the data (discards edits)">
+            <Button variant="ghost" onClick={() => { if (confirmDiscard()) void generate(); }} disabled={generating} title="Start over from the data (discards edits)">
               <RotateCcw className="mr-2 h-4 w-4" /> Regenerate
             </Button>
             <Button variant="outline" onClick={save} disabled={generating || !text.trim()}><Download className="mr-2 h-4 w-4" /> Save as File</Button>

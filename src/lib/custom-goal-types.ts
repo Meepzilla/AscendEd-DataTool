@@ -86,7 +86,7 @@ export function isValidStoredCustomGoalType(raw: unknown): raw is CustomGoalType
   if (ct.kind === 'checklist' && !isRecord(ct.checklist)) return false;
   if (ct.defaultTarget !== undefined) {
     if (typeof ct.defaultTarget !== 'number' || Number.isNaN(ct.defaultTarget) || ct.defaultTarget < 0 || ct.defaultTarget > 1000) return false;
-    if ((ct.kind === 'accuracy' || ct.kind === 'checklist' || ct.kind === 'yesno') && ct.defaultTarget > 100) return false;
+    if ((ct.kind === 'accuracy' || ct.kind === 'checklist' || ct.kind === 'yesno' || ct.kind === 'prompting' || ct.kind === 'trials') && ct.defaultTarget > 100) return false;
   }
   return true;
 }

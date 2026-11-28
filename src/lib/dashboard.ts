@@ -1,6 +1,6 @@
 import type { ServicePer, ServiceType, SessionData, Student } from './types';
 import { SERVICE_TYPE_LABELS, SERVICE_TYPES } from './types';
-import { daysUntil, serviceLines, servicePeriods, sessionMinutes, sessionServiceMinutes } from './student-overview';
+import { daysUntil, serviceLines, servicePeriods, sessionServiceMinutes, sessionServiceTotal } from './student-overview';
 import { parseDateOnly } from './helpers';
 
 // What the dashboard's "Due soon" and "Service minutes" sections show, worked out from the students' IEP
@@ -87,7 +87,7 @@ export function serviceStatus(
     const held = sessions.filter(s => s.studentId === student.id && !s.missed);
     const minutesIn = (from: Date, to: Date) => held
       .filter(s => { const t = parseDateOnly(s.date).getTime(); return t >= from.getTime() && t < to.getTime(); })
-      .reduce((sum, s) => sum + (sessionMinutes(s) ?? 0), 0);
+      .reduce((sum, s) => sum + sessionServiceTotal(s), 0);
     // Per-type figures, over the same current period (a line with its own period is measured over that
     // period instead, like the Overview does). The breakdown is attached only when more than one type is
     // in play; single-type students keep the item exactly as it was.

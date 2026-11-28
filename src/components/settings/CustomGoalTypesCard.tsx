@@ -16,6 +16,7 @@ import {
   exportCustomGoalTypesJson,
 } from '@/lib/custom-goal-types';
 import { useCustomGoalTypes } from '@/hooks/use-custom-goal-types';
+import { captureTypeOf } from '@/lib/goal-constants';
 import { CUSTOM_MEASURE_KIND_INFO, customTypeSummary } from '@/lib/goal-types/custom';
 import { saveTextFile } from '@/lib/save-file';
 import { plural } from '@/lib/helpers';
@@ -49,7 +50,7 @@ export default function CustomGoalTypesCard() {
     const versionById = new Map(customTypes.map(ct => [ct.id, ct.version || 1]));
     for (const student of students) {
       for (const goal of student.goals || []) {
-        if (goal.type === 'CUSTOM' && goal.customType?.id) {
+        if (captureTypeOf(goal) === 'CUSTOM' && goal.customType?.id) {
           const id = goal.customType.id;
           const entry = map.get(id) ?? { goals: 0, templates: 0, outdatedGoals: 0, outdatedTemplates: 0 };
           entry.goals++;
@@ -62,7 +63,7 @@ export default function CustomGoalTypesCard() {
       }
     }
     for (const template of goalTemplates) {
-      if (template.type === 'CUSTOM' && template.customType?.id) {
+      if (captureTypeOf(template) === 'CUSTOM' && template.customType?.id) {
         const id = template.customType.id;
         const entry = map.get(id) ?? { goals: 0, templates: 0, outdatedGoals: 0, outdatedTemplates: 0 };
         entry.templates++;
@@ -97,11 +98,11 @@ export default function CustomGoalTypesCard() {
     let updatedTemplates = 0;
     for (const student of students) {
       const hasOutdated = (student.goals || []).some(
-        g => g.type === 'CUSTOM' && g.customType?.id === ct.id && (g.customType.version || 1) < (ct.version || 1),
+        g => captureTypeOf(g) === 'CUSTOM' && g.customType?.id === ct.id && (g.customType.version || 1) < (ct.version || 1),
       );
       if (hasOutdated) {
         const nextGoals = (student.goals || []).map(g => {
-          if (g.type === 'CUSTOM' && g.customType?.id === ct.id && (g.customType.version || 1) < (ct.version || 1)) {
+          if (captureTypeOf(g) === 'CUSTOM' && g.customType?.id === ct.id && (g.customType.version || 1) < (ct.version || 1)) {
             updatedGoals++;
             return applyCustomGoalTypeUpdate(g, ct);
           }
@@ -111,7 +112,7 @@ export default function CustomGoalTypesCard() {
       }
     }
     for (const template of goalTemplates) {
-      if (template.type === 'CUSTOM' && template.customType?.id === ct.id && (template.customType.version || 1) < (ct.version || 1)) {
+      if (captureTypeOf(template) === 'CUSTOM' && template.customType?.id === ct.id && (template.customType.version || 1) < (ct.version || 1)) {
         updatedTemplates++;
         await updateGoalTemplate(template.id, { customType: applyCustomGoalTypeUpdate(template, ct).customType });
       }
@@ -125,7 +126,11 @@ export default function CustomGoalTypesCard() {
   const handleExport = async () => {
     if (customTypes.length === 0) return;
     const json = exportCustomGoalTypesJson(customTypes);
-    await saveTextFile('AscendEd-custom-goal-types.json', json);
+    try {
+      await saveTextFile('AscendEd-custom-goal-types.json', json);
+    } catch {
+      toast({ title: 'Export Failed', description: 'Could not save the custom goal types file on this device.', variant: 'destructive' });
+    }
   };
 
   const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {

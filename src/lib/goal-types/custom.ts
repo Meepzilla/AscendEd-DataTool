@@ -367,7 +367,7 @@ export function makeCustomDef(ct: CustomGoalType): GoalTypeDefinition {
           if (!touched) return null;
           if (ct.counter?.perMinute) {
             const mins = Number(data.observationMinutes);
-            return Number.isFinite(mins) && mins > 0 ? count / mins : count;
+            return Number.isFinite(mins) && mins > 0 ? count / mins : null;
           }
           return count;
         }

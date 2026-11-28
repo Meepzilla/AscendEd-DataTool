@@ -101,7 +101,13 @@ export function removeCorrect(type: GoalType, data: Record<string, any>): Record
  * The goal's data after a hotkey, or null when the key does nothing for this goal type.
  * `type` is the type the goal's data is entered as (its data capture type).
  */
-export function applyGoalHotkey(type: GoalType, key: string, data: Record<string, any>, steps: string[] = []): Record<string, any> | null {
+export function applyGoalHotkey(
+  type: GoalType,
+  key: string,
+  data: Record<string, any>,
+  steps: string[] = [],
+  allowPrompts?: boolean,
+): Record<string, any> | null {
   // Task analysis: the next unscored step gets the level (C = independent, N = not done, prompt keys = that prompt).
   if (type === 'TASK_ANALYSIS') {
     const level: StepLevel | undefined = key === 'C' ? 'Independent' : key === 'N' ? 'NotDone' : PROMPT_HOTKEY_MAP[key as keyof typeof PROMPT_HOTKEY_MAP];
@@ -135,7 +141,8 @@ export function applyGoalHotkey(type: GoalType, key: string, data: Record<string
   }
 
   const promptType = PROMPT_HOTKEY_MAP[key as keyof typeof PROMPT_HOTKEY_MAP];
-  if (promptType && !GOAL_TYPES_WITHOUT_PROMPT_COUNTERS.includes(type)) {
+  const promptsAllowed = allowPrompts ?? (!GOAL_TYPES_WITHOUT_PROMPT_COUNTERS.includes(type) && type !== 'CUSTOM');
+  if (promptType && promptsAllowed) {
     const withPrompt = add(data, promptType);
     // An independent response is also a correct one. On the trial grid it needs a trial to fill: with every trial
     // scored it does nothing, so each Independent tally stands for a correct trial that removing it can take back.

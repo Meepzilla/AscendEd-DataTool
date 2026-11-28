@@ -214,7 +214,7 @@ export function periodService(sessions: SessionData[], iep: StudentIep | undefin
   const toDay = day(to);
   const inRange = sessions.filter(s => {
     const d = parseDateOnly(s.date);
-    if (Number.isNaN(d.getTime())) return true;
+    if (Number.isNaN(d.getTime())) return false;
     const t = day(d);
     return t >= fromDay && t <= toDay;
   });

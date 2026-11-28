@@ -13,6 +13,7 @@ export type StorageFailureSource =
   | 'student-groups'
   | 'abc-lists'
   | 'comm-functions'
+  | 'custom-goal-types'
   | 'school-year'
   | 'theme'
   | 'safe-storage'
@@ -35,6 +36,7 @@ const LABELS: Record<StorageFailureSource, string> = {
   'student-groups': 'Student groups',
   'abc-lists': 'ABC lists',
   'comm-functions': 'Communication functions',
+  'custom-goal-types': 'Custom goal types',
   'school-year': 'School year setting',
   theme: 'Theme',
   'safe-storage': 'A setting',
@@ -50,6 +52,8 @@ const DETAILS: Record<StorageFailureSource, string> = {
     'The ABC lists could not be saved on this device, so changes are only kept for this visit.',
   'comm-functions':
     'The communication functions could not be saved on this device, so changes are only kept for this visit.',
+  'custom-goal-types':
+    'The custom goal types could not be saved on this device, so changes are only kept for this visit.',
   'school-year':
     'The school year could not be saved on this device, so it applies for this visit only.',
   theme: 'The theme could not be saved on this device, so it applies for this visit only.',
@@ -121,5 +125,6 @@ export function sourceForStorageKey(storageKey: string): StorageFailureSource {
   if (storageKey.startsWith('ascended_student_groups_v1_')) return 'student-groups';
   if (storageKey === 'ascended_abc_lists') return 'abc-lists';
   if (storageKey === 'ascended_comm_functions') return 'comm-functions';
+  if (storageKey.startsWith('ascended_custom_goal_types_v1_')) return 'custom-goal-types';
   return 'save';
 }
