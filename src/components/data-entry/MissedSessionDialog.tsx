@@ -27,9 +27,12 @@ export default function MissedSessionDialog({ studentName, disabled, onRecord }:
   const close = () => { setOpen(false); setReason('student-absent'); setNote(''); };
   const save = async () => {
     setSaving(true);
-    const ok = await onRecord(reason, note.trim());
-    setSaving(false);
-    if (ok) close();
+    try {
+      const ok = await onRecord(reason, note.trim());
+      if (ok) close();
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (

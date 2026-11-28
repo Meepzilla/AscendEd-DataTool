@@ -71,6 +71,7 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
     },
   });
 
+  const goalId = goalToEdit?.id;
   useEffect(() => {
     if (goalToEdit && isOpen) {
       form.reset({
@@ -93,7 +94,9 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
         customType: goalToEdit.customType,
       });
     }
-  }, [goalToEdit, isOpen, form]);
+    // Only reset when a different goal is opened, so cross-tab reloads don't wipe in-progress edits.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [goalId, isOpen, form]);
 
   // What changed, old to new, so the editor says plainly what saving will change. Compared against
   // the goal as it was, not against the form's dirty flags, so only real differences are listed.
@@ -320,6 +323,7 @@ export default function EditAssignedGoalModal({ isOpen, onClose, studentId, goal
             const targetInfo = goalMeasureInfo({
               type: form.watch('dataCaptureType') || goalToEdit?.type,
               targetDirection: form.watch('targetDirection'),
+              customType: form.watch('customType'),
             });
             return (
           <FormField
@@ -558,12 +562,12 @@ function BlankFills({ form, goalType }: { form: ReturnType<typeof useForm<EditAs
  * matching the settings below, the target date and the student's name. Updates as the fields change.
  */
 function ShownAs({ form, studentName, studentIep }: { form: ReturnType<typeof useForm<EditAssignedGoalFormData>>; studentName?: string; studentIep?: StudentIep }) {
-  const [smartGoal, target, mastery, blankFills, targetDate, dataCaptureType, targetDirection, baseline, baselineDate] =
-    form.watch(['smartGoal', 'sessionTargetValue', 'masterySessions', 'blankFills', 'targetDate', 'dataCaptureType', 'targetDirection', 'baseline', 'baselineDate']);
+  const [smartGoal, target, mastery, blankFills, targetDate, dataCaptureType, targetDirection, baseline, baselineDate, customType] =
+    form.watch(['smartGoal', 'sessionTargetValue', 'masterySessions', 'blankFills', 'targetDate', 'dataCaptureType', 'targetDirection', 'baseline', 'baselineDate', 'customType']);
   const toNumber = (v: unknown) => (v === '' || v === undefined || v === null || Number.isNaN(Number(v)) ? undefined : Number(v));
   const shown = goalStatement({
     smartGoal, blankFills, targetDate: targetDate || undefined, sessionTargetValue: toNumber(target),
-    masterySessions: toNumber(mastery), dataCaptureType, targetDirection,
+    masterySessions: toNumber(mastery), dataCaptureType, targetDirection, customType,
     baseline: toNumber(baseline), baselineDate: baselineDate || undefined,
   }, studentName, studentIep);
   if (!shown || shown === smartGoal) return null;

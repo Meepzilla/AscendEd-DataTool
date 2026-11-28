@@ -150,10 +150,12 @@ export async function hydrateLists(keys: StorageKeys): Promise<MigrationResult[]
 
   const listKeys = [keys.students, keys.templates, keys.sessions].filter((k): k is string => !!k && secureStore.isListKey(k));
   if (listKeys.length > 0 && secureStore.isEraseMarkerSet()) {
-    await idb.clearAllListStores();
+    if (idb.isIndexedDbSupported()) {
+      await idb.clearAllListStores();
+    }
     secureStore.clearEraseMarker();
     for (const key of listKeys) {
-      secureStore.setListBackend(key, 'idb');
+      secureStore.setListBackend(key, idb.isIndexedDbSupported() ? 'idb' : 'localstorage');
       secureStore.setCachedValue(key, '[]');
       secureStore.markListHydrated(key);
       results.push({ key, status: 'empty' });
@@ -164,6 +166,7 @@ export async function hydrateLists(keys: StorageKeys): Promise<MigrationResult[]
   for (const key of listKeys) {
     if (!idb.isIndexedDbSupported()) {
       secureStore.setListBackend(key, 'localstorage');
+      await secureStore.refreshFromStorage(key);
       secureStore.markListHydrated(key);
       results.push({ key, status: 'skipped-no-idb' });
       continue;
@@ -171,13 +174,11 @@ export async function hydrateLists(keys: StorageKeys): Promise<MigrationResult[]
     const storeName = secureStore.listStoreName(key)!;
     const idField = storeName === idb.LIST_STORES.sessions ? 'sessionId' : 'id';
     if (secureStore.getListBackend(key) === 'idb') {
-      // A leftover blob means an earlier migration never finished: the blob is still the source
-      // of truth, so migrate from it again instead of trusting partial rows.
-      const rawBlob = rawLocalStorageGet(key);
-      const plain = secureStore.getCachedValue(key) ?? rawBlob;
-      if (rawBlob !== null && plain && plain !== '\u0000damaged' && isMigratableBlob(plain) && blobHasIds(plain, idField)) {
-        results.push({ key, status: await migrateBlob(key, plain) });
-        continue;
+      // Once the idb migration flag is set, IndexedDB is the source of truth; any leftover
+      // localStorage blob is inert (a prior removeItem may have failed) — remove it instead of
+      // overwriting newer IndexedDB rows with a stale blob.
+      if (rawLocalStorageGet(key) !== null) {
+        try { localStorage.removeItem(key); } catch { /* stays inert */ }
       }
       const read = await secureStore.readDurableListResult(key);
       if (!read.ok && read.reason === 'read-failed') {
@@ -202,7 +203,8 @@ export async function hydrateLists(keys: StorageKeys): Promise<MigrationResult[]
       results.push({ key, status: 'already' });
       continue;
     }
-    // LocalStorage backend: migrate the blob, or mark the list empty when there is none.
+    // LocalStorage backend: refresh from storage (for cross-tab updates under passcode), then migrate or mark empty.
+    await secureStore.refreshFromStorage(key);
     const blob = secureStore.getItem(key);
     if (!blob) {
       secureStore.setListBackend(key, 'idb');

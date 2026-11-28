@@ -20,8 +20,8 @@ import { compareSessionsOldestFirst, formatDate, localDayKey, parseDateOnly, ses
 import { buildProgressReport, type ProgressStatus } from '@/lib/report-narrative';
 import { getOrganizationName } from '@/lib/ui-preferences';
 import { attendanceSummary, attendanceText, isMissed } from '@/lib/attendance';
-import { captureTypeOf, summarizeLatency, toolTypeOf } from '@/lib/goal-constants';
-import { goalMeasure, withoutRunningTimers } from '@/lib/goal-measures';
+import { summarizeLatency } from '@/lib/goal-constants';
+import { goalMeasure, isLatencyGoal, withoutRunningTimers } from '@/lib/goal-measures';
 import { isSampleGoal, sessionMatchesGoalUnit } from '@/lib/language-sample';
 import { schoolYearStart } from '@/lib/school-year';
 import { periodService } from '@/lib/student-overview';
@@ -139,7 +139,7 @@ function ProgressReportPage() {
         const data = withoutRunningTimers(g.data || {});
         if (isSampleGoal(goal) && !sessionMatchesGoalUnit(data, goal)) return false;
         if (goalMeasure(goal, data) !== null) return true;
-        return toolTypeOf(captureTypeOf(goal)) === 'BEHAVIOR_LATENCY' && summarizeLatency(data).trialCount > 0;
+        return isLatencyGoal(goal) && summarizeLatency(data).trialCount > 0;
       })
     ).length,
     [heldSessions, goals],
@@ -181,9 +181,8 @@ function ProgressReportPage() {
   const service = useMemo(() => {
     if (!student || periodSessions.length === 0 && !range?.from) return undefined;
     const from = range?.from ?? parseDateOnly(periodSessions[0].date);
-    // A range with only a start date runs to today (it was read as that one day, so the expected minutes were a
-    // single day's worth).
-    const to = range?.to ?? (range?.from ? new Date() : parseDateOnly(periodSessions[periodSessions.length - 1].date));
+    // Match periodSessions and periodLabel: a range with only a start date covers just that day.
+    const to = range?.to ?? range?.from ?? parseDateOnly(periodSessions[periodSessions.length - 1].date);
     return periodService(periodSessions, student.iep, from, to);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [student, periodSessions, period, customRange]);

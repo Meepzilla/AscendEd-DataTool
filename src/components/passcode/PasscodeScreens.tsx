@@ -107,7 +107,11 @@ function SetPasscodeForm({ onEnabled }: { onEnabled: () => void }) {
         setBackupIncomplete(true);
         return;
       }
-      window.localStorage.setItem(LAST_BACKUP_KEY, backup.exportedAt);
+      try {
+        window.localStorage.setItem(LAST_BACKUP_KEY, backup.exportedAt);
+      } catch {
+        // Backup file already saved on disk; don't block onboarding if localStorage is full.
+      }
       setBackupIncomplete(false);
       goRecovery();
     } catch (err) {
@@ -550,7 +554,7 @@ function LockScreen({ onUnlocked }: { onUnlocked: () => void }) {
               <div className="flex gap-2">
                 <Button type="button" variant="outline" className="flex-1" onClick={() => { setForgot(false); setEraseText(''); }}>Back</Button>
                 <Button type="button" variant="destructive" className="flex-1" disabled={eraseText.trim().toUpperCase() !== 'ERASE'}
-                  onClick={() => { eraseProtectedData(); clearPasscodeDecision(); window.location.reload(); }}>
+                  onClick={() => { eraseProtectedData(); clearPasscodeDecision(); void import('@/lib/data-transaction').then(({ postDataErased }) => postDataErased()).finally(() => window.location.reload()); }}>
                   Erase and Start Over
                 </Button>
               </div>

@@ -65,16 +65,19 @@ const MIGRATION_FLAG_KEY = 'ascended_idb_migrated_v1';
 const ERASED_KEY = 'ascended_idb_erased_v1';
 export const MIN_PASSCODE_LENGTH = 6;
 
+export const PASSCODE_CONFIG_KEY = CONFIG_KEY;
+export const PASSCODE_ERASED_KEY = ERASED_KEY;
+
 /**
  * Keys holding student data, encrypted when passcode protection is on. The goal templates list is
  * included whole, built-ins and all: custom templates share the list with the 903 seeded built-ins,
  * so splitting it per record would need a second store, and a renamed built-in can carry the user's
  * own wording. The built-ins themselves are public content shipped in the app, so encrypting them
  * buys uniformity rather than secrecy — the point is that no custom template can leak through a
- * plaintext list. Student groups (student IDs) and custom ABC lists (behavior wording) are in too.
- * Display settings stay as they are.
+ * plaintext list. Student groups (student IDs), custom ABC lists (behavior wording), communication
+ * functions, and custom goal types are in too. Display settings stay as they are.
  */
-const SENSITIVE = /^ascended_(students_v2|sessions_v2|data_entry_draft_v1|goal_templates_v2|student_groups_v1|abc_lists|comm_functions)(_|$)/;
+const SENSITIVE = /^ascended_(students_v2|sessions_v2|data_entry_draft_v1|goal_templates_v2|student_groups_v1|abc_lists|comm_functions|custom_goal_types_v1)(_|$)/;
 export const isSensitiveKey = (key: string) => SENSITIVE.test(key);
 
 /** The three main lists, whatever their backend: base key, IndexedDB store, id field. */
@@ -584,9 +587,8 @@ async function persistListRecords(storageKey: string): Promise<void> {
     bytes += row.v.length + id.length;
     rows.push(row);
   }
-  if (changed.length) await idb.putRecords(info.store, changed);
   const stale = [...existing.keys()].filter(id => !ids.has(id));
-  if (stale.length) await idb.deleteRecords(info.store, stale);
+  if (changed.length || stale.length) await idb.updateStoreRecords(info.store, changed, stale);
   // Verify: read the rows back and check each against what was written. A row written now is decrypted and
   // compared with its record; a row kept as it was must still hold exactly the stored value verified before.
   const back = await idb.getAllRecords(info.store);
@@ -749,17 +751,37 @@ export async function setItemAsync(storageKey: string, value: string): Promise<v
     if (!(isListKey(storageKey) && getListBackend(storageKey) === 'idb') && !fits(storageKey, encryptedLength(value))) {
       throw new DOMException('Storage is full', 'QuotaExceededError');
     }
+    const hadCache = cache.has(storageKey);
+    const prevCache = cache.get(storageKey);
+    const wasUndecryptable = undecryptable.has(storageKey);
     undecryptable.delete(storageKey);
     cache.set(storageKey, value);
     persist(storageKey);
-    await awaitPersisted(storageKey);
+    try {
+      await awaitPersisted(storageKey);
+    } catch (err) {
+      if (wasUndecryptable) undecryptable.add(storageKey);
+      if (hadCache) cache.set(storageKey, prevCache ?? null);
+      else cache.delete(storageKey);
+      throw err;
+    }
     return;
   }
   if (isListKey(storageKey) && getListBackend(storageKey) === 'idb') {
+    const hadCache = cache.has(storageKey);
+    const prevCache = cache.get(storageKey);
+    const wasUndecryptable = undecryptable.has(storageKey);
     undecryptable.delete(storageKey);
     cache.set(storageKey, value);
     persist(storageKey);
-    await awaitPersisted(storageKey);
+    try {
+      await awaitPersisted(storageKey);
+    } catch (err) {
+      if (wasUndecryptable) undecryptable.add(storageKey);
+      if (hadCache) cache.set(storageKey, prevCache ?? null);
+      else cache.delete(storageKey);
+      throw err;
+    }
     return;
   }
   localStorage.setItem(storageKey, value);
@@ -785,10 +807,20 @@ export function removeItem(storageKey: string) {
 export async function removeItemAsync(storageKey: string): Promise<void> {
   if ((isSensitiveKey(storageKey) && isPasscodeEnabled()) || (isListKey(storageKey) && getListBackend(storageKey) === 'idb')) {
     if (isSensitiveKey(storageKey) && isPasscodeEnabled() && !key) throw new Error('Locked');
+    const hadCache = cache.has(storageKey);
+    const prevCache = cache.get(storageKey);
+    const wasUndecryptable = undecryptable.has(storageKey);
     undecryptable.delete(storageKey);
     cache.set(storageKey, null);
     persist(storageKey);
-    await awaitPersisted(storageKey);
+    try {
+      await awaitPersisted(storageKey);
+    } catch (err) {
+      if (wasUndecryptable) undecryptable.add(storageKey);
+      if (hadCache) cache.set(storageKey, prevCache ?? null);
+      else cache.delete(storageKey);
+      throw err;
+    }
     return;
   }
   localStorage.removeItem(storageKey);
@@ -807,6 +839,7 @@ export function labelForStorageKey(storageKey: string): string {
   if (storageKey.startsWith('ascended_student_groups_v1_')) return 'Student groups';
   if (storageKey === 'ascended_abc_lists') return 'ABC lists';
   if (storageKey === 'ascended_comm_functions') return 'Communication functions';
+  if (storageKey.startsWith('ascended_custom_goal_types_v1_')) return 'Custom goal types';
   return storageKey;
 }
 
@@ -860,9 +893,8 @@ export async function restoreItemAsync(storageKey: string, snapshot: ItemSnapsho
   if (snapshot.damaged) {
     const store = listStoreName(storageKey);
     if (snapshot.records && store) {
-      // The damaged rows exactly as they were (a failed write may have replaced or deleted some).
-      await idb.clearStore(store);
-      await idb.putRecords(store, snapshot.records);
+      // The damaged rows exactly as they were, restored atomically in a single transaction.
+      await idb.replaceStoreRecords(store, snapshot.records);
     }
     restoreItem(storageKey, snapshot);
     return;
@@ -1523,8 +1555,14 @@ async function confirmPasscode(current: string, wrong: string) {
   if (!config) throw new Error('Passcode protection is off.');
   if (!key) {
     if (!(await unlock(current))) throw new Error(wrong);
-  } else if (!(await keyFor(current, config))) {
-    throw new Error(wrong);
+  } else {
+    if (isLockedOut('passcode')) {
+      const remaining = Math.max(1, Math.ceil(getLockoutRemainingMs('passcode') / 1000));
+      throw new Error(`Too many wrong attempts. Try again in ${remaining} seconds.`);
+    }
+    const ok = !!(await keyFor(current, config));
+    recordAttempt('passcode', ok);
+    if (!ok) throw new Error(wrong);
   }
 }
 
@@ -1757,19 +1795,29 @@ export async function resetPasscodeWithRecoveryKey(recoveryKey: string, next: st
   return { quarantined: getQuarantinedLists() };
 }
 
+let lockingPromise: Promise<void> | null = null;
+
 /** Locks the app: waits for pending writes, then reloads, which clears the data and key from memory. */
 export async function lockNow() {
+  if (lockingPromise) return lockingPromise;
+  lockingPromise = (async () => {
+    try {
+      await flushWrites();
+    } catch {
+      // A failed write was already reported; reloading loses nothing more than the failed write did.
+    }
+    // If a newer Service Worker is waiting and this is the only open tab, promote it before reloading
+    // so the lock screen lands directly on the new version without disrupting another tab. The wait
+    // is bounded (activateForLock gives up after two attempts and two re-checks), and the reload
+    // happens either way, so the data always ends up locked even if the update never takes control.
+    await activateWaitingUpdateBeforeReload();
+    window.location.reload();
+  })();
   try {
-    await flushWrites();
-  } catch {
-    // A failed write was already reported; reloading loses nothing more than the failed write did.
+    await lockingPromise;
+  } finally {
+    lockingPromise = null;
   }
-  // If a newer Service Worker is waiting and this is the only open tab, promote it before reloading
-  // so the lock screen lands directly on the new version without disrupting another tab. The wait
-  // is bounded (activateForLock gives up after two attempts and two re-checks), and the reload
-  // happens either way, so the data always ends up locked even if the update never takes control.
-  await activateWaitingUpdateBeforeReload();
-  window.location.reload();
 }
 
 // ---- Password-protected files (backups) ----

@@ -4,7 +4,7 @@ import {
   median, summarizeDuration, summarizeFrequency, summarizeIntervals, summarizeLatency,
   commFunctionsFor, STORY_PARTS, averageStoryPart, STORY_LINKING_WORDS, linkingWordField, topTied, joinWithAnd, type AbcIncident,
 } from './goal-constants';
-import { goalMeasure, goalMeasureInfo, goalNotes, goalResponses, sessionMeetsTarget, promptTotals, usesPromptCounters, withoutRunningTimers } from './goal-measures';
+import { goalMeasure, goalMeasureInfo, goalNotes, goalResponses, isLatencyGoal, sessionMeetsTarget, promptTotals, usesPromptCounters, withoutRunningTimers } from './goal-measures';
 import { getGoalTypeDef } from './goal-types';
 import { compareSessionsOldestFirst, formatDate, formatDateOnly, formatGoalTarget, goalTypeLabel, parseDateOnly, plural } from './helpers';
 import { timePatterns, TIMING_MEASURE_LABELS, WEEKDAY_NAMES } from './behavior-timing';
@@ -172,7 +172,7 @@ function analyzeGoal(goal: Goal, number: number, sessions: SessionData[]): GoalA
     .sort((x, y) => compareSessionsOldestFirst(x.session, y.session));
   // Latency sessions where the student never responded have no time to average, but they are data (and a
   // target can't have been met in them).
-  const unmeasuredRows = toolTypeOf(captureTypeOf(goal)) === 'BEHAVIOR_LATENCY'
+  const unmeasuredRows = isLatencyGoal(goal)
     ? withData.filter(r => r.value === null && summarizeLatency(r.data).trialCount > 0)
     : [];
   const unmeasured = unmeasuredRows.map(r => r.data);
@@ -187,7 +187,7 @@ function analyzeGoal(goal: Goal, number: number, sessions: SessionData[]): GoalA
     .sort((x, y) => compareSessionsOldestFirst(x.session, y.session));
   let streak = 0;
   for (let i = timeline.length - 1; i >= 0 && timeline[i].met; i--) streak++;
-  const trend = fitTrend(goal, recorded.map(r => ({ date: r.session.date, value: r.value, weight: trendWeight(captureTypeOf(goal), r.data) })));
+  const trend = fitTrend(goal, recorded.map(r => ({ date: r.session.date, value: r.value, weight: trendWeight(goal, r.data) })));
   const last = recorded[recorded.length - 1];
   const mastery = masterySessions(goal);
   const status: GoalStatus = recorded.length === 0 ? 'no data'
@@ -454,7 +454,7 @@ function detailSentences(name: string, goal: Goal, data: Record<string, any>[], 
     if (scored > 0) lines.push(`Using ${methods.join(' and ') || 'interval recording'}, the behavior was scored in ${occurred} of ${plural(scored, 'interval')} (${pct((occurred / scored) * 100)}).`);
   }
 
-  if (tool === 'BEHAVIOR_LATENCY') {
+  if (isLatencyGoal(goal)) {
     const latencies = data.map(d => summarizeLatency(d));
     const trials = sum(latencies.map(l => l.trialCount));
     const noResponse = sum(latencies.map(l => l.noResponseCount));
@@ -625,7 +625,7 @@ export function buildNarrative({ student, goals, sessions, rangeLabel, options =
     if (!data) return false;
     const saved = withoutRunningTimers(data);
     if (isSampleGoal(goal) && !sessionMatchesGoalUnit(saved, goal)) return false;
-    return goalMeasure(goal, saved) !== null || (toolTypeOf(captureTypeOf(goal)) === 'BEHAVIOR_LATENCY' && summarizeLatency(saved).trialCount > 0);
+    return goalMeasure(goal, saved) !== null || (isLatencyGoal(goal) && summarizeLatency(saved).trialCount > 0);
   })).length;
   const intro = `This summary covers ${plural(sessionsWithData, 'session')} with ${name} from ${period}, for ${plural(goals.length, 'goal')}.`;
   const body = settings.style === 'brief'
@@ -734,7 +734,7 @@ export function buildProgressReport({ student, goals, sessions }: Omit<Narrative
       comment: goalParagraph(name, a, settings).split('\n').slice(1).join(' ').trim(),
       nextStep: nextStep(a),
       mastery: a.mastery,
-      baseline: goal.baseline !== undefined && goal.baseline !== null ? formatValue(goal, Number(goal.baseline)) : null,
+      baseline: typeof goal.baseline === 'number' && Number.isFinite(goal.baseline) ? formatValue(goal, goal.baseline) : null,
       aim: a.aim,
       aimStatus: a.aimStatus,
       measureLabel: info.label,

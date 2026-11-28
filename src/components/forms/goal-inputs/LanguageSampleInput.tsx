@@ -58,15 +58,7 @@ export default function LanguageSampleInput({ unit: goalUnit, data, update, inte
           </button>
         ))}
       </div>
-      <form
-        className="space-y-1"
-        onSubmit={e => {
-          e.preventDefault();
-          if (!typedValid || disabled || isLocked) return;
-          add(typedNumber);
-          setTyped('');
-        }}
-      >
+      <div className="space-y-1">
         <Label htmlFor={`ls-len-${goalId}`} className="block text-xs">Longer utterance ({unitWord})</Label>
         <div className="flex flex-wrap items-center gap-2">
           <Input
@@ -77,10 +69,30 @@ export default function LanguageSampleInput({ unit: goalUnit, data, update, inte
             max={MAX_UTTERANCE_LENGTH}
             value={typed}
             onChange={e => setTyped(e.target.value)}
+            onKeyDown={e => {
+              if (e.key !== 'Enter') return;
+              e.preventDefault();
+              e.stopPropagation();
+              if (!typedValid || disabled || isLocked) return;
+              add(typedNumber);
+              setTyped('');
+            }}
             className="h-11 w-24 text-base"
             disabled={disabled || isLocked}
           />
-        <Button type="submit" variant="outline" className="h-11" disabled={!typedValid || disabled || isLocked}>Add</Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11"
+          disabled={!typedValid || disabled || isLocked}
+          onClick={() => {
+            if (!typedValid || disabled || isLocked) return;
+            add(typedNumber);
+            setTyped('');
+          }}
+        >
+          Add
+        </Button>
         <Button
           type="button"
           variant="ghost"
@@ -91,7 +103,7 @@ export default function LanguageSampleInput({ unit: goalUnit, data, update, inte
           <Undo2 className="mr-1 h-4 w-4" aria-hidden="true" />Undo last
         </Button>
         </div>
-      </form>
+      </div>
       {lengths.length > 0 && (
         <ol className="flex flex-wrap gap-1" aria-label="Utterances recorded (tap one to remove it)">
           {lengths.map((n, i) => (

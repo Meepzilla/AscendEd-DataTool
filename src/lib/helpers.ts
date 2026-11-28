@@ -46,7 +46,7 @@ export function formatDate(date: Date | string): string {
 
 /** A date-only value (YYYY-MM-DD) as a date, read as that day in local time (not UTC, which can show the day before). */
 export function formatDateOnly(value: string): string {
-  return formatDate(/^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T00:00`) : value);
+  return formatDate(/^\d{4}-\d{2}-\d{2}$/.test(value) ? parseDateOnly(value) : value);
 }
 
 /** A date as YYYY-MM-DD on the local calendar (toISOString gives the UTC day, which is tomorrow on a US evening). */

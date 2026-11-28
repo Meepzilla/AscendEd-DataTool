@@ -112,12 +112,13 @@ async function withStore<T>(name: string, mode: IDBTransactionMode, fn: (store: 
   const db = await openDb();
   try {
     const tx = db.transaction(name, mode);
-    const result = await fn(tx.objectStore(name));
-    await new Promise<void>((resolve, reject) => {
+    const done = new Promise<void>((resolve, reject) => {
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error ?? new Error('IndexedDB transaction failed'));
       tx.onabort = () => reject(tx.error ?? new Error('IndexedDB transaction aborted'));
     });
+    const result = await fn(tx.objectStore(name));
+    await done;
     return result;
   } finally {
     db.close();
@@ -205,6 +206,39 @@ export async function deleteRecords(storeName: ListStoreName, keys: string[]): P
   }
   await withStore(storeName, 'readwrite', async store => {
     await Promise.all(keys.map(key => runRequest(store.delete(key))));
+  });
+}
+
+/** Atomically puts changed rows and deletes removed keys in a single readwrite transaction. */
+export async function updateStoreRecords(storeName: ListStoreName, puts: IdRecord[], deletes: string[]): Promise<void> {
+  if (puts.length === 0 && deletes.length === 0) return;
+  if (failWrites) throw new DOMException('Storage is full', 'QuotaExceededError');
+  if (memoryMode) {
+    const store = memoryStore(storeName);
+    for (const record of puts) store.set(record.k, record);
+    for (const key of deletes) store.delete(key);
+    return;
+  }
+  await withStore(storeName, 'readwrite', async store => {
+    await Promise.all([
+      ...puts.map(record => runRequest(store.put(record))),
+      ...deletes.map(key => runRequest(store.delete(key))),
+    ]);
+  });
+}
+
+/** Atomically clears a store and writes the replacement rows in a single readwrite transaction. */
+export async function replaceStoreRecords(storeName: ListStoreName, records: IdRecord[]): Promise<void> {
+  if (failWrites) throw new DOMException('Storage is full', 'QuotaExceededError');
+  if (memoryMode) {
+    const store = memoryStore(storeName);
+    store.clear();
+    for (const record of records) store.set(record.k, record);
+    return;
+  }
+  await withStore(storeName, 'readwrite', async store => {
+    await runRequest(store.clear());
+    if (records.length) await Promise.all(records.map(record => runRequest(store.put(record))));
   });
 }
 

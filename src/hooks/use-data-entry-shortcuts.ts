@@ -3,6 +3,7 @@
 import { useEffect, useRef, type Dispatch, type SetStateAction } from 'react';
 import type { Student, StudentSessionState } from '@/lib/types';
 import { captureTypeOf } from '@/lib/goal-constants';
+import { usesPromptCounters } from '@/lib/goal-measures';
 import { hotkeyList } from '@/lib/task-analysis';
 import { applyGoalHotkey, dialogIsOpen, hotkeyChar, hotkeysBlocked, singleKeyShortcutsEnabled } from '@/lib/data-entry-hotkeys';
 
@@ -96,7 +97,7 @@ export function useDataEntryShortcuts(options: DataEntryShortcutOptions) {
       // Data for the focused goal. Holding a key down doesn't repeat it.
       if (event.repeat || !studentId) return;
       const focusedGoal = visibleGoals[focusedGoalIndexByStudentId[studentId] ?? 0];
-      if (!focusedGoal || !applyGoalHotkey(captureTypeOf(focusedGoal), key, {}, hotkeyList(focusedGoal))) return;
+      if (!focusedGoal || !applyGoalHotkey(captureTypeOf(focusedGoal), key, {}, hotkeyList(focusedGoal), usesPromptCounters(focusedGoal))) return;
       event.preventDefault();
       applyHotkeyToGoal(studentId, focusedGoal.id, key);
     };

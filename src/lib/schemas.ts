@@ -82,7 +82,7 @@ export const CustomGoalTypeSchema = z.object({
   if (ct.kind === 'checklist' && (!ct.checklist || ct.checklist.steps.length === 0)) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['checklist'], message: 'Add at least 1 step.' });
   }
-  if ((ct.kind === 'accuracy' || ct.kind === 'checklist' || ct.kind === 'yesno') && ct.defaultTarget !== undefined && ct.defaultTarget > 100) {
+  if ((ct.kind === 'accuracy' || ct.kind === 'checklist' || ct.kind === 'yesno' || ct.kind === 'prompting' || ct.kind === 'trials') && ct.defaultTarget !== undefined && ct.defaultTarget > 100) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['defaultTarget'], message: 'Percentage target cannot exceed 100.' });
   }
 });

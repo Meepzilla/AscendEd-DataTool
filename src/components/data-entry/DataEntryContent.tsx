@@ -21,6 +21,7 @@ import { formatDate } from '@/lib/helpers';
 import { ConfettiProvider } from '@/hooks/use-confetti';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 import { captureTypeOf } from '@/lib/goal-constants';
+import { usesPromptCounters } from '@/lib/goal-measures';
 import { applyGoalHotkey } from '@/lib/data-entry-hotkeys';
 import { freshGoalData, freshStudentState, moveGoal, restoreAfterFailedSave, sessionFromState, syncSessionStates } from '@/lib/data-entry-session';
 import { sessionMinutes } from '@/lib/student-overview';
@@ -374,7 +375,11 @@ export default function DataEntryContent() {
   // session date and times. What was entered on the card is kept.
   const recordMissedSession = async (studentId: string, reason: MissedReason, note: string): Promise<boolean> => {
     const student = students.find(s => s.id === studentId);
-    if (!student || !validSessionDate) return false;
+    if (!student) return false;
+    if (!validSessionDate) {
+      toast({ title: 'Error', description: 'Please select a valid session date.', variant: 'destructive' });
+      return false;
+    }
     if (isStudentAccessLocked) {
       toast({ title: 'Access Locked', description: 'Student access is locked. Unlock to record a missed session.' });
       return false;
@@ -702,7 +707,7 @@ export default function DataEntryContent() {
       if (!studentState || !goal || goal.isArchived) return prevStates;
       const type = captureTypeOf(goal);
       const current = studentState.goalData[goalId] || freshGoalData(goal);
-      const next = applyGoalHotkey(type, key, current, hotkeyList(goal));
+      const next = applyGoalHotkey(type, key, current, hotkeyList(goal), usesPromptCounters(goal));
       if (!next) return prevStates;
       return { ...prevStates, [studentId]: { ...studentState, goalData: { ...studentState.goalData, [goalId]: { ...next, recorded: true } } } };
     });
@@ -712,7 +717,7 @@ export default function DataEntryContent() {
     selectedStudentIds, focusedStudentSlotIndex, studentSessionStates, showArchivedByStudentId, focusedGoalIndexByStudentId,
     activeStudentsInSlots, isStudentAccessLocked, setFocusedStudentSlotIndex, setFocusedGoalIndexByStudentId,
     setSelectionModalType, addStudentSlot, removeStudentSlot, openEditStudent: openEditStudentModalUnlocked,
-    requestAccessLock, save: handleSave, applyHotkeyToGoal,
+    requestAccessLock, save: handleSaveAll, applyHotkeyToGoal,
   });
 
   const { rootRef, headerRef, cardsRegionRef, saveBarRef, viewportProbeRef, cardScroll, scrollCards } = useDataEntryLayout(selectedStudentIds.length);

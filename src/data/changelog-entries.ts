@@ -13,6 +13,20 @@ export interface ChangelogEntry {
 export const changelogEntries: ChangelogEntry[] = [
   {
     date: '2026-11-28',
+    title: 'Storage, Passcode & Backup Reliability Hardening',
+    description: 'IndexedDB list updates and rollbacks now commit in a single atomic transaction, and saved custom goal types are encrypted under your passcode and included in storage-full alerts. Locking the app now hides student data immediately before background work finishes, and locking, changing the passcode, or erasing data syncs across open tabs. Passcode lockout is enforced when confirming a passcode, failed saves or backup verifications roll back cleanly without overwriting existing data, backups containing older goal types verify their checksums before upgrading, duplicate IDs are deduplicated during merge restores, and impossible calendar dates (such as Feb 30) are rejected.',
+    type: 'fix',
+    icon: ShieldCheck,
+  },
+  {
+    date: '2026-11-28',
+    title: 'Custom Goal Scoring, Data Entry Shortcuts & UI Fixes',
+    description: 'Custom latency goals now treat unanswered sessions like built-in latency goals (breaking mastery streaks and appearing in reports), custom per-minute counters wait for observation minutes before computing a rate, custom trial-grid goals use opportunity-weighted trends, and prompt hotkeys no longer mutate custom goals that have prompt counters turned off. Importing ABC and interval goals now infers increase vs. decrease direction from the goal text, Dashboard service status counts explicit per-service minute splits, and Language Sample targets are no longer rewritten as percentages. On Data Entry, Ctrl+Enter now saves all students as documented, and Student Access Lock disables the student switcher dropdown and interval beep switch. Also aligned single-day Progress Report expected service minutes, removed a nested form in Language Sample entry inside modals, prevented cross-tab reloads from wiping open goal edits, guarded backup restores against double-clicks, and added accessible labels to icon-only buttons.',
+    type: 'fix',
+    icon: CheckSquare,
+  },
+  {
+    date: '2026-11-28',
     title: 'Quick Taps Count on Custom Goal Types, and Imported Sessions Keep Their Data Capture Type',
     description: 'On goals measured with one of your custom goal types, tapping a + or − button quickly (or with two thumbs) now counts every tap, as on the built-in goal types: before, taps made before the card redrew could be lost, so three quick taps might record 1. The timer\'s Start and Stop and the checklist\'s steps update the same way, and a double tap on Start or Stop no longer adds an extra timing. Sessions imported from a CSV file now keep each goal\'s Data Capture Type, so exporting them again writes the same Data Capture Type instead of the goal\'s type.',
     type: 'fix',

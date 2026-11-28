@@ -65,6 +65,7 @@ export function clearPasscodeDecision() {
   memoryBackupDeclined = null;
   try {
     localStorage.removeItem(PASSCODE_DECISION_KEY);
+    localStorage.removeItem(PASSCODE_BACKUP_DECLINED_KEY);
   } catch {
     /* nothing stored */
   }

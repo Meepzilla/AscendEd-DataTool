@@ -279,8 +279,19 @@ export function classifyGoal(text: string, area = ''): { type: GoalType } {
   return { type: 'DISCRETE_TRIALS' };
 }
 
-/** Whether a behavior goal aims to raise or lower its count or time; other types use their usual direction. */
+/** Whether a behavior goal aims to raise or lower its count, time, or percentage; other types use their usual direction. */
 export function goalDirectionFor(type: GoalType, text: string): TargetDirection | undefined {
+  if (type === 'BEHAVIOR_ABC') {
+    return /\b(replacement\s+(?:skill|behavior|response)|instead\s+of|use\s+(?:a\s+)?(?:coping|calm|break|functional|appropriate)\b|%[^.]{0,40}replacement)/i.test(text)
+      ? 'increase'
+      : 'decrease';
+  }
+  if (type === 'BEHAVIOR_INTERVAL') {
+    const decrease = /\b(reduce|decrease|no more than|fewer than|off[- ]?task|disrupt|out[- ]?of[- ]?seat|calling out|elop|aggression)\b/i.test(text);
+    const increase = /\b(on[- ]?task|engag(?:e|ed|ement)|appropriate\s+(?:play|behavior)|in[- ]?seat|attentive|participat|following\s+directions)\b/i.test(text);
+    if (increase && !decrease) return 'increase';
+    return 'decrease';
+  }
   if (type !== 'BEHAVIOR_FREQUENCY' && type !== 'BEHAVIOR_DURATION' && type !== 'COMMUNICATION_COUNT' && type !== 'COMMUNICATION_DURATION') return undefined;
   return /\b(reduce|decrease|no more than|fewer than)\b/i.test(text) ? 'decrease' : 'increase';
 }

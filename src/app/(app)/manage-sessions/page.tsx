@@ -270,13 +270,13 @@ export default function ManageSessionsPage() {
                         ) : session.activity}
                       </TableCell>
                       <TableCell className="text-right space-x-1">
-                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setViewingSessionDetails(session)} title="View Details">
+                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setViewingSessionDetails(session)} title="View Details" aria-label="View Details">
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditSessionModal(session)} title="Edit Session">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditSessionModal(session)} title="Edit Session" aria-label="Edit Session">
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openDeleteSessionModal(session)} title="Delete Session">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openDeleteSessionModal(session)} title="Delete Session" aria-label="Delete Session">
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </TableCell>

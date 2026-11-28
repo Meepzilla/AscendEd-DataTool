@@ -36,6 +36,7 @@ export default function BackupRestoreCard() {
   const [backupPassword, setBackupPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [isDecrypting, setIsDecrypting] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
 
   const closePasswordPrompt = () => { setProtectedText(null); setBackupPassword(''); setPasswordError(''); };
   const openProtectedBackup = async (e: React.FormEvent) => {
@@ -77,7 +78,8 @@ export default function BackupRestoreCard() {
   };
 
   const handleRestore = async (mode: RestoreMode) => {
-    if (!pendingBackup) return;
+    if (!pendingBackup || isRestoring) return;
+    setIsRestoring(true);
     let summary;
     try {
       summary = await restoreBackup(pendingBackup, mode);
@@ -85,6 +87,8 @@ export default function BackupRestoreCard() {
       // Storage full: nothing was changed.
       toast({ title: "Couldn't restore the backup", description: error instanceof Error ? error.message : String(error), variant: 'destructive' });
       return;
+    } finally {
+      setIsRestoring(false);
     }
     setPendingBackup(null);
     setIsConfirmingReplace(false);
@@ -168,9 +172,9 @@ export default function BackupRestoreCard() {
             </div>
           )}
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setPendingBackup(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={() => setIsConfirmingReplace(true)}>Replace All Data</Button>
-            <Button onClick={() => handleRestore('merge')}>Add to This Device</Button>
+            <Button variant="outline" disabled={isRestoring} onClick={() => setPendingBackup(null)}>Cancel</Button>
+            <Button variant="destructive" disabled={isRestoring} onClick={() => setIsConfirmingReplace(true)}>Replace All Data</Button>
+            <Button disabled={isRestoring} onClick={() => handleRestore('merge')}>Add to This Device</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -210,8 +214,9 @@ export default function BackupRestoreCard() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isRestoring}>Cancel</AlertDialogCancel>
             <AlertDialogAction
+              disabled={isRestoring}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => handleRestore('replace')}
             >

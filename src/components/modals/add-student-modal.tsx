@@ -43,8 +43,12 @@ export default function AddStudentModal() {
 
   const onSubmit = async (data: AddStudentFormData) => {
     setIsSubmitting(true);
-    const newStudent = await addStudent(data.name, { quiet: true });
-    setIsSubmitting(false);
+    let newStudent;
+    try {
+      newStudent = await addStudent(data.name, { quiet: true });
+    } finally {
+      setIsSubmitting(false);
+    }
     if (newStudent) {
       closeAddStudentModal();
       // Next: their goals. From the dashboard or Students, go to the new profile; elsewhere (Data Entry in the

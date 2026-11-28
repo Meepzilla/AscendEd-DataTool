@@ -4,7 +4,7 @@ import {
 } from './goal-constants';
 import { fillNameBlanks } from './goal-blanks';
 import {
-  goalMeasure, goalNotes, goalResponses, meetsTarget, promptTotals, sessionMeetsTarget,
+  goalMeasure, goalNotes, goalResponses, isLatencyGoal, meetsTarget, promptTotals, sessionMeetsTarget,
   usesPromptCounters, withoutRunningTimers,
 } from './goal-measures';
 import { formatDate, goalTypeLabel, parseDateOnly } from './helpers';
@@ -53,7 +53,7 @@ export function collectRecordedGoalSessions(
     // morphemes series (and the other way round), so a unit change can't read as progress.
     if (isSampleGoal(goal) && !sessionMatchesGoalUnit(data, goal)) continue;
     let value = goalMeasure(goal, data);
-    if (value === null && includeUnansweredLatency && toolTypeOf(captureTypeOf(goal)) === 'BEHAVIOR_LATENCY' && summarizeLatency(data).trialCount > 0) {
+    if (value === null && includeUnansweredLatency && isLatencyGoal(goal) && summarizeLatency(data).trialCount > 0) {
       value = Number.NaN;
     }
     if (value === null) continue;
@@ -155,13 +155,16 @@ function goalValueWeight(goal: Goal, data: Record<string, any>): number {
     return PROMPT_TYPES.reduce((sum, pt) => sum + Math.max(0, Number(data[pt]) || 0), 0);
   }
   if (type === 'FLUENCY_SYLLABLE_STUTTER') return Math.max(0, Number(data.totalSyllables) || 0);
-  if (type === 'TASK_ANALYSIS' || (type === 'CUSTOM' && goal.customType?.kind === 'checklist')) {
-    return taskAnalysisSummary(data).scored;
+  if (type === 'TASK_ANALYSIS') return taskAnalysisSummary(data).scored;
+  if (type === 'CUSTOM' && goal.customType?.kind === 'checklist') {
+    const configured = goal.customType.checklist?.steps?.length ?? 0;
+    const saved = Array.isArray(data.steps) ? data.steps.length : 0;
+    return configured > 0 ? configured : saved;
   }
   if (type === 'ITEM_MASTERY') return itemMasterySummary(data).tried;
   if (type === 'BEHAVIOR_INTERVAL') return summarizeIntervals(data).scored;
   if (type === 'STORY_ELEMENTS') return scoreStory(data).maxPoints;
-  if (toolTypeOf(type) === 'BEHAVIOR_LATENCY' || (type === 'CUSTOM' && goal.customType?.kind === 'latency')) {
+  if (isLatencyGoal(goal)) {
     return summarizeLatency(data).respondedCount;
   }
   return 0;

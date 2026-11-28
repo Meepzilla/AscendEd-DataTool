@@ -77,11 +77,14 @@ export default function AddGoalTemplateModal() {
     setIsSubmitting(true);
     const descriptions = Array.from({ length: 5 }, (_, i) => (data.gasLevelDescriptions?.[i] ?? '').trim());
     const gasLevelDescriptions = descriptions.some(Boolean) ? descriptions : undefined;
-    // A direction or custom type the chosen data capture method can't use is left out (goal-type-fields.ts).
-    const newTemplate = await addGoalTemplate(withFieldsForCaptureType({ ...data, generatedSmartGoal: data.generatedSmartGoal ?? '', gasLevelDescriptions }));
-    setIsSubmitting(false);
-    if (newTemplate) {
-      closeAddGoalTemplateModal();
+    try {
+      // A direction or custom type the chosen data capture method can't use is left out (goal-type-fields.ts).
+      const newTemplate = await addGoalTemplate(withFieldsForCaptureType({ ...data, generatedSmartGoal: data.generatedSmartGoal ?? '', gasLevelDescriptions }));
+      if (newTemplate) {
+        closeAddGoalTemplateModal();
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -242,6 +245,7 @@ export default function AddGoalTemplateModal() {
             const targetInfo = goalMeasureInfo({
               type: form.watch('dataCaptureType') || form.watch('type'),
               targetDirection: form.watch('targetDirection'),
+              customType: form.watch('customType'),
             });
             return (
           <FormField
